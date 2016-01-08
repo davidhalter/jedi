@@ -12,6 +12,23 @@ from jedi.evaluate.helpers import FakeName
 from jedi.cache import underscore_memoization
 
 
+def try_iter_content(types, depth=0):
+    """Helper method for static analysis."""
+    if depth > 10:
+        # It's possible that a loop has references on itself (especially with
+        # CompiledObject). Therefore don't loop infinitely.
+        return
+
+    for typ in types:
+        try:
+            f = typ.py__iter__
+        except AttributeError:
+            pass
+        else:
+            for iter_types in f():
+                try_iter_content(iter_types, depth + 1)
+
+
 class Arguments(tree.Base):
     def __init__(self, evaluator, argument_node, trailer=None):
         """
@@ -49,7 +66,7 @@ class Arguments(tree.Base):
                 element = self.argument_node[0]
                 from jedi.evaluate.iterable import AlreadyEvaluated
                 if isinstance(element, AlreadyEvaluated):
-                    element = self._evaluator.eval_element(element)[0]
+                    element = list(self._evaluator.eval_element(element))[0]
             except IndexError:
                 return None
             else:
@@ -131,8 +148,8 @@ class Arguments(tree.Base):
                 debug.warning('TypeError: %s expected at least %s arguments, got %s',
                               name, len(arguments), i)
                 raise ValueError
-            values = list(chain.from_iterable(self._evaluator.eval_element(el)
-                                              for el in va_values))
+            values = set(chain.from_iterable(self._evaluator.eval_element(el)
+                                             for el in va_values))
             if not values and not optional:
                 # For the stdlib we always want values. If we don't get them,
                 # that's ok, maybe something is too hard to resolve, however,
@@ -160,6 +177,16 @@ class Arguments(tree.Base):
         else:
             return None
 
+    def eval_all(self, func=None):
+        """
+        Evaluates all arguments as a support for static analysis
+        (normally Jedi).
+        """
+        for key, element_values in self.unpack():
+            for element in element_values:
+                types = self._evaluator.eval_element(element)
+                try_iter_content(types)
+
 
 class ExecutedParam(tree.Param):
     """Fake a param and give it values."""
@@ -169,9 +196,9 @@ class ExecutedParam(tree.Param):
         self._values = values
 
     def eval(self, evaluator):
-        types = []
+        types = set()
         for v in self._values:
-            types += evaluator.eval_element(v)
+            types |= evaluator.eval_element(v)
         return types
 
     @property
@@ -353,11 +380,12 @@ def get_params(evaluator, func, var_args):
 def _iterate_star_args(evaluator, array, input_node, func=None):
     from jedi.evaluate.representation import Instance
     if isinstance(array, iterable.Array):
-        for field_stmt in array:  # yield from plz!
-            yield field_stmt
+        # TODO ._items is not the call we want here. Replace in the future.
+        for node in array._items():
+            yield node
     elif isinstance(array, iterable.Generator):
-        for field_stmt in array.iter_content():
-            yield iterable.AlreadyEvaluated([field_stmt])
+        for types in array.py__iter__():
+            yield iterable.AlreadyEvaluated(types)
     elif isinstance(array, Instance) and array.name.get_code() == 'tuple':
         debug.warning('Ignored a tuple *args input %s' % array)
     else:

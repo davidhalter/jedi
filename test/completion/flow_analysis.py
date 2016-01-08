@@ -218,3 +218,40 @@ else:
     a = ''
 #? int()
 a
+
+
+# -----------------
+# Recursion issues
+# -----------------
+
+def possible_recursion_error(filename):
+    if filename == 'a':
+        return filename
+    # It seems like without the brackets there wouldn't be a RecursionError.
+    elif type(filename) == str:
+        return filename
+
+
+if NOT_DEFINED:
+    s = str()
+else:
+    s = str()
+#? str()
+possible_recursion_error(s)
+
+
+# -----------------
+# In combination with imports
+# -----------------
+
+from import_tree import flow_import
+
+if 1 == flow_import.env:
+    a = 1
+elif 2 == flow_import.env:
+    a = ''
+elif 3 == flow_import.env:
+    a = 1.0
+
+#? int() str()
+a

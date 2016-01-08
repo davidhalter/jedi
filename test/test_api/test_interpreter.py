@@ -17,13 +17,13 @@ class TestInterpreterAPI(TestCase):
 
     def test_complete_raw_function(self):
         from os.path import join
-        self.check_interpreter_complete('join().up',
+        self.check_interpreter_complete('join("").up',
                                         locals(),
                                         ['upper'])
 
     def test_complete_raw_function_different_name(self):
         from os.path import join as pjoin
-        self.check_interpreter_complete('pjoin().up',
+        self.check_interpreter_complete('pjoin("").up',
                                         locals(),
                                         ['upper'])
 

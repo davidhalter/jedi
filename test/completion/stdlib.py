@@ -36,6 +36,36 @@ next(open(''))
 tuple.__itemsize__
 
 # -----------------
+# type() calls with one parameter
+# -----------------
+#? int
+type(1)
+#? int
+type(int())
+#? type
+type(int)
+#? type
+type(type)
+#? list
+type([])
+
+def x():
+    yield 1
+generator = type(x())
+#? generator
+type(x for x in [])
+#? type(x)
+type(lambda: x)
+
+import math
+import os
+#? type(os)
+type(math)
+class X(): pass
+#? type
+type(X)
+
+# -----------------
 # enumerate
 # -----------------
 for i, j in enumerate(["as", "ad"]):

@@ -124,7 +124,7 @@ class list():
         return self.__iterable[y]
 
     def pop(self):
-        return self.__iterable[-1]
+        return self.__iterable[int()]
 
 
 class tuple():
@@ -201,6 +201,9 @@ class dict():
             pass
         except KeyError:
             return d
+
+    def values(self):
+        return self.__elements.values()
 
     def setdefault(self, k, d):
         # TODO maybe also return the content

@@ -3,7 +3,6 @@ import keyword
 
 from jedi._compatibility import is_py3
 from jedi import common
-from jedi.evaluate import compiled
 from jedi.evaluate.helpers import FakeName
 from jedi.parser.tree import Leaf
 try:
@@ -29,8 +28,9 @@ def has_inappropriate_leaf_keyword(pos, module):
 
     return False
 
+
 def completion_names(evaluator, stmt, pos, module):
-    keyword_list = all_keywords()
+    keyword_list = all_keywords(evaluator)
 
     if not isinstance(stmt, Leaf) or has_inappropriate_leaf_keyword(pos, module):
         keyword_list = filter(
@@ -40,19 +40,19 @@ def completion_names(evaluator, stmt, pos, module):
     return [keyword.name for keyword in keyword_list]
 
 
-def all_keywords(pos=(0,0)):
-    return set([Keyword(k, pos) for k in keys])
+def all_keywords(evaluator, pos=(0, 0)):
+    return set([Keyword(evaluator, k, pos) for k in keys])
 
 
-def keyword(string, pos=(0,0)):
+def keyword(evaluator, string, pos=(0, 0)):
     if string in keys:
-        return Keyword(string, pos)
+        return Keyword(evaluator, string, pos)
     else:
         return None
 
 
-def get_operator(string, pos):
-    return Keyword(string, pos)
+def get_operator(evaluator, string, pos):
+    return Keyword(evaluator, string, pos)
 
 
 keywords_only_valid_as_leaf = (
@@ -62,10 +62,10 @@ keywords_only_valid_as_leaf = (
 
 
 class Keyword(object):
-    def __init__(self, name, pos):
+    def __init__(self, evaluator, name, pos):
         self.name = FakeName(name, self, pos)
         self.start_pos = pos
-        self.parent = compiled.builtin
+        self.parent = evaluator.BUILTINS
 
     def get_parent_until(self):
         return self.parent

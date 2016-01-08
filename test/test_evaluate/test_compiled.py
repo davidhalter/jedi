@@ -6,31 +6,33 @@ from jedi.evaluate import Evaluator
 from jedi import Script
 
 
+def _evaluator():
+    return Evaluator(load_grammar())
+
+
 def test_simple():
-    e = Evaluator(load_grammar())
-    bltn = compiled.CompiledObject(builtins)
-    obj = compiled.CompiledObject('_str_', bltn)
+    e = _evaluator()
+    bltn = compiled.CompiledObject(e, builtins)
+    obj = compiled.CompiledObject(e, '_str_', bltn)
     upper = e.find_types(obj, 'upper')
     assert len(upper) == 1
-    objs = list(e.execute(upper[0]))
+    objs = list(e.execute(list(upper)[0]))
     assert len(objs) == 1
     assert isinstance(objs[0], representation.Instance)
 
 
 def test_fake_loading():
-    assert isinstance(compiled.create(Evaluator(load_grammar()), next), Function)
+    e = _evaluator()
+    assert isinstance(compiled.create(e, next), Function)
 
-    string = compiled.builtin.get_subscope_by_name('str')
-    from_name = compiled._create_from_name(
-        compiled.builtin,
-        string,
-        '__init__'
-    )
+    builtin = compiled.get_special_object(e, 'BUILTINS')
+    string = builtin.get_subscope_by_name('str')
+    from_name = compiled._create_from_name(e, builtin, string, '__init__')
     assert isinstance(from_name, Function)
 
 
 def test_fake_docstr():
-    assert compiled.create(Evaluator(load_grammar()), next).raw_doc == next.__doc__
+    assert compiled.create(_evaluator(), next).raw_doc == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():
@@ -47,7 +49,7 @@ def test_doc():
     Even CompiledObject docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    obj = compiled.CompiledObject(''.__getnewargs__)
+    obj = compiled.CompiledObject(_evaluator(), ''.__getnewargs__)
     assert obj.doc == ''
 
 

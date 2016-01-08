@@ -40,7 +40,10 @@ def test_completion(case, monkeypatch):
 
 
 def test_static_analysis(static_analysis_case):
-    static_analysis_case.run(assert_static_analysis)
+    if static_analysis_case.skip is not None:
+        pytest.skip(static_analysis_case.skip)
+    else:
+        static_analysis_case.run(assert_static_analysis)
 
 
 def test_refactor(refactor_case):

@@ -322,7 +322,7 @@ class BaseDefinition(object):
         elif self._definition.isinstance(tree.Import):
             return imports.ImportWrapper(self._evaluator, self._name).follow()
         else:
-            return [self._definition]
+            return set([self._definition])
 
     @property
     @memoize_default()
@@ -331,12 +331,12 @@ class BaseDefinition(object):
         Raises an ``AttributeError``if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
-        followed = self._follow_statements_imports()
+        followed = list(self._follow_statements_imports())
         if not followed or not hasattr(followed[0], 'py__call__'):
             raise AttributeError()
         followed = followed[0]  # only check the first one.
 
-        if followed.type == 'funcdef':
+        if followed.type in ('funcdef', 'lambda'):
             if isinstance(followed, er.InstanceElement):
                 params = followed.params[1:]
             else:
@@ -449,7 +449,7 @@ class Completion(BaseDefinition):
                 followed = self._follow_statements_imports()
                 if followed:
                     # TODO: Use all of the followed objects as input to Documentation.
-                    definition = followed[0]
+                    definition = list(followed)[0]
 
         if raw:
             return _Help(definition).raw()

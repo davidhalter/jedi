@@ -1,13 +1,12 @@
 import os
-import shutil
 import re
-import tempfile
 
 import pytest
 
 from . import helpers
 from . import run
 from . import refactor
+
 import jedi
 from jedi.evaluate.analysis import Warning
 
@@ -90,10 +89,14 @@ class StaticAnalysisCase(object):
     The tests also start with `#!`, like the goto_definition tests.
     """
     def __init__(self, path):
-        self.skip = False
         self._path = path
         with open(path) as f:
             self._source = f.read()
+
+        self.skip = False
+        for line in self._source.splitlines():
+            self.skip = self.skip or run.skip_python_version(line)
+
 
     def collect_comparison(self):
         cases = []
@@ -125,25 +128,3 @@ def isolated_jedi_cache(monkeypatch, tmpdir):
     """
     from jedi import settings
     monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
-
-
-@pytest.fixture(scope='session')
-def clean_jedi_cache(request):
-    """
-    Set `jedi.settings.cache_directory` to a temporary directory during test.
-
-    Note that you can't use built-in `tmpdir` and `monkeypatch`
-    fixture here because their scope is 'function', which is not used
-    in 'session' scope fixture.
-
-    This fixture is activated in ../pytest.ini.
-    """
-    from jedi import settings
-    old = settings.cache_directory
-    tmp = tempfile.mkdtemp(prefix='jedi-test-')
-    settings.cache_directory = tmp
-
-    @request.addfinalizer
-    def restore():
-        settings.cache_directory = old
-        shutil.rmtree(tmp)
