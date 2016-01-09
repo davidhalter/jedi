@@ -6,6 +6,8 @@ Additionally you can add a debug function with :func:`set_debug_function`.
 
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
+from collections import namedtuple
+
 import re
 import os
 import warnings
@@ -13,7 +15,7 @@ import sys
 from itertools import chain
 
 from jedi._compatibility import unicode, builtins
-from jedi.parser import Parser, load_grammar
+from jedi.parser import Parser, load_grammar, ParseError
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import tree
 from jedi.parser.user_context import UserContext, UserContextParser
@@ -30,10 +32,12 @@ from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
+from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
-from jedi.evaluate import analysis
+from jedi.evaluate.sys_path import get_venv_path
+from jedi.evaluate.iterable import unpack_tuple_to_dict
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -49,6 +53,8 @@ class NotFoundError(Exception):
     .. todo:: Remove!
     """
 
+Position = namedtuple('Position', 'line column')
+
 
 class Script(object):
     """
@@ -57,6 +63,18 @@ class Script(object):
 
     You can either use the ``source`` parameter or ``path`` to read a file.
     Usually you're going to want to use both of them (in an editor).
+
+    The script might be analyzed in a different ``sys.path`` than |jedi|:
+
+    - if `sys_path` parameter is not ``None``, it will be used as ``sys.path``
+      for the script;
+
+    - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
+      variable is defined, ``sys.path`` for the specified environment will be
+      guessed (see :func:`jedi.evaluate.sys_path.get_venv_path`) and used for
+      the script;
+
+    - otherwise ``sys.path`` will match that of |jedi|.
 
     :param source: The source code of the current file, separated by newlines.
     :type source: str
@@ -73,9 +91,13 @@ class Script(object):
     :param source_encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
+    :param sys_path: ``sys.path`` to use during analysis of the script
+    :type sys_path: list
+
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', source_path=None, source_encoding=None):
+                 encoding='utf-8', source_path=None, source_encoding=None,
+                 sys_path=None):
         if source_path is not None:
             warnings.warn("Use path instead of source_path.", DeprecationWarning)
             path = source_path
@@ -104,12 +126,16 @@ class Script(object):
 
         cache.clear_time_caches()
         debug.reset_time()
-        self._grammar = load_grammar('grammar%s.%s' % sys.version_info[:2])
+        self._grammar = load_grammar(version='%s.%s' % sys.version_info[:2])
         self._user_context = UserContext(self.source, self._pos)
         self._parser = UserContextParser(self._grammar, self.source, path,
                                          self._pos, self._user_context,
                                          self._parsed_callback)
-        self._evaluator = Evaluator(self._grammar)
+        if sys_path is None:
+            venv = os.getenv('VIRTUAL_ENV')
+            if venv:
+                sys_path = list(get_venv_path(venv))
+        self._evaluator = Evaluator(self._grammar, sys_path=sys_path)
         debug.speed('init')
 
     def _parsed_callback(self, parser):
@@ -157,7 +183,7 @@ class Script(object):
                     if unfinished_dotted:
                         return completion_names
                     else:
-                        return set([keywords.keyword('import').name])
+                        return set([keywords.keyword(self._evaluator, 'import').name])
 
             if isinstance(user_stmt, tree.Import):
                 module = self._parser.module()
@@ -188,8 +214,7 @@ class Script(object):
 
         user_stmt = self._parser.user_stmt_with_whitespace()
 
-        b = compiled.builtin
-        completion_names = get_completions(user_stmt, b)
+        completion_names = get_completions(user_stmt, self._evaluator.BUILTINS)
 
         if not dot:
             # add named params
@@ -251,7 +276,7 @@ class Script(object):
         elif self._get_under_cursor_stmt(path) is None:
             return []
         else:
-            scopes = list(self._prepare_goto(path, True))
+            scopes = list(self._type_inference(path, True))
             completion_names = []
             debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
@@ -262,7 +287,7 @@ class Script(object):
                 completion_names += filter_definition_names(names, self._parser.user_stmt())
         return completion_names
 
-    def _prepare_goto(self, goto_path, is_completion=False):
+    def _type_inference(self, goto_path, is_completion=False):
         """
         Base for completions/goto. Basically it returns the resolved scopes
         under cursor.
@@ -283,7 +308,7 @@ class Script(object):
                 return []
             scopes = [i]
         else:
-            # just parse one statement, take it and evaluate it
+            # Just parse one statement, take it and evaluate it.
             eval_stmt = self._get_under_cursor_stmt(goto_path)
             if eval_stmt is None:
                 return []
@@ -301,13 +326,9 @@ class Script(object):
 
     @memoize_default()
     def _get_under_cursor_stmt(self, cursor_txt, start_pos=None):
-        tokenizer = source_tokens(cursor_txt)
-        r = Parser(self._grammar, cursor_txt, tokenizer=tokenizer)
         try:
-            # Take the last statement available that is not an endmarker.
-            # And because it's a simple_stmt, we need to get the first child.
-            stmt = r.module.children[-2].children[0]
-        except (AttributeError, IndexError):
+            stmt = Parser(self._grammar, cursor_txt, 'eval_input').get_parsed_node()
+        except ParseError:
             return None
 
         user_stmt = self._parser.user_stmt()
@@ -335,23 +356,24 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        def resolve_import_paths(scopes):
-            for s in scopes.copy():
+        def resolve_import_paths(definitions):
+            new_defs = list(definitions)
+            for s in definitions:
                 if isinstance(s, imports.ImportWrapper):
-                    scopes.remove(s)
-                    scopes.update(resolve_import_paths(set(s.follow())))
-            return scopes
+                    new_defs.remove(s)
+                    new_defs += resolve_import_paths(set(s.follow()))
+            return new_defs
 
         goto_path = self._user_context.get_path_under_cursor()
         context = self._user_context.get_context()
-        definitions = set()
+        definitions = []
         if next(context) in ('class', 'def'):
-            definitions = set([self._evaluator.wrap(self._parser.user_scope())])
+            definitions = [self._evaluator.wrap(self._parser.user_scope())]
         else:
             # Fetch definition of callee, if there's no path otherwise.
             if not goto_path:
-                definitions = set(signature._definition
-                                  for signature in self.call_signatures())
+                definitions = [signature._definition
+                               for signature in self.call_signatures()]
 
         if re.match('\w[\w\d_]*$', goto_path) and not definitions:
             user_stmt = self._parser.user_stmt()
@@ -360,14 +382,17 @@ class Script(object):
                     if name.start_pos <= self._pos <= name.end_pos:
                         # TODO scaning for a name and then using it should be
                         # the default.
-                        definitions = set(self._evaluator.goto_definition(name))
+                        definitions = self._evaluator.goto_definition(name)
 
         if not definitions and goto_path:
-            definitions = set(self._prepare_goto(goto_path))
+            definitions = self._type_inference(goto_path)
 
         definitions = resolve_import_paths(definitions)
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
+        # The additional set here allows the definitions to become unique in an
+        # API sense. In the internals we want to separate more things than in
+        # the API.
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self):
@@ -429,7 +454,6 @@ class Script(object):
 
         if next(context) in ('class', 'def'):
             # The cursor is on a class/function name.
-            user_scope = self._parser.user_scope()
             definitions = set([user_scope.name])
         elif isinstance(user_stmt, tree.Import):
             s, name = helpers.get_on_import_stmt(self._evaluator,
@@ -529,29 +553,34 @@ class Script(object):
                 for o in origins if hasattr(o, 'py__call__')]
 
     def _analysis(self):
-        def check_types(types):
-            for typ in types:
-                try:
-                    f = typ.iter_content
-                except AttributeError:
-                    pass
+        self._evaluator.is_analysis = True
+        self._evaluator.analysis_modules = [self._parser.module()]
+        try:
+            for node in self._parser.module().nodes_to_execute():
+                if node.type in ('funcdef', 'classdef'):
+                    if node.type == 'classdef':
+                        continue
+                        raise NotImplementedError
+                    er.Function(self._evaluator, node).get_decorated_func()
+                elif isinstance(node, tree.Import):
+                    import_names = set(node.get_defined_names())
+                    if node.is_nested():
+                        import_names |= set(path[-1] for path in node.paths())
+                    for n in import_names:
+                        imports.ImportWrapper(self._evaluator, n).follow()
+                elif node.type == 'expr_stmt':
+                    types = self._evaluator.eval_element(node)
+                    for testlist in node.children[:-1:2]:
+                        # Iterate tuples.
+                        unpack_tuple_to_dict(self._evaluator, types, testlist)
                 else:
-                    check_types(f())
+                    try_iter_content(self._evaluator.goto_definition(node))
+                self._evaluator.reset_recursion_limitations()
 
-        #statements = set(chain(*self._parser.module().used_names.values()))
-        nodes, imp_names, decorated_funcs = \
-            analysis.get_module_statements(self._parser.module())
-        # Sort the statements so that the results are reproducible.
-        for n in imp_names:
-            imports.ImportWrapper(self._evaluator, n).follow()
-        for node in sorted(nodes, key=lambda obj: obj.start_pos):
-            check_types(self._evaluator.eval_element(node))
-
-        for dec_func in decorated_funcs:
-            er.Function(self._evaluator, dec_func).get_decorated_func()
-
-        ana = [a for a in self._evaluator.analysis if self.path == a.path]
-        return sorted(set(ana), key=lambda x: x.line)
+            ana = [a for a in self._evaluator.analysis if self.path == a.path]
+            return sorted(set(ana), key=lambda x: x.line)
+        finally:
+            self._evaluator.is_analysis = False
 
 
 class Interpreter(Script):
@@ -565,7 +594,7 @@ class Interpreter(Script):
 
     >>> from os.path import join
     >>> namespace = locals()
-    >>> script = Interpreter('join().up', [namespace])
+    >>> script = Interpreter('join("").up', [namespace])
     >>> print(script.completions()[0].name)
     upper
     """
@@ -607,6 +636,7 @@ class Interpreter(Script):
         if isinstance(user_stmt, tree.Import) or not is_simple_path:
             return super(Interpreter, self)._simple_complete(path, dot, like)
         else:
+            # TODO Remove this branch? The above branch should be fast enough IMO.
             class NamespaceModule(object):
                 def __getattr__(_, name):
                     for n in self.namespaces:

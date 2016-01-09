@@ -32,5 +32,5 @@ def test_class_mro():
         pass
     X"""
     cls, evaluator = get_definition_and_evaluator(s)
-    mro = cls.py__mro__(evaluator)
+    mro = cls.py__mro__()
     assert [str(c.name) for c in mro] == ['X', 'object']

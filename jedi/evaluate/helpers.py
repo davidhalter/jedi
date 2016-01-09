@@ -81,10 +81,16 @@ def call_of_name(name, cut_own_trailer=False):
     You would get a node with the content ``list([]).append`` back.
 
     This generates a copy of the original ast node.
+
+    # TODO remove cut_own_trailer option, since its always used with it. Just
+    #      ignore it, It's not what we want anyway. Or document it better?
     """
     par = name
     if tree.is_node(par.parent, 'trailer'):
         par = par.parent
+        if par.children[0] in ('(', '['):
+            # The trailer is not a NAME.NAME trailer, but a call to something.
+            return name
 
     power = par.parent
     if tree.is_node(power, 'power') and power.children[0] != name \
@@ -103,6 +109,18 @@ def call_of_name(name, cut_own_trailer=False):
             par.children[index:] = []
 
     return par
+
+
+def get_names_of_node(node):
+    try:
+        children = node.children
+    except AttributeError:
+        if node.type == 'name':
+            return [node]
+        else:
+            return []
+    else:
+        return list(chain.from_iterable(get_names_of_node(c) for c in children))
 
 
 def get_module_names(module, all_scopes):

@@ -15,7 +15,6 @@ from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 from jedi.evaluate import helpers
 from jedi.evaluate import iterable
-from jedi.evaluate import representation as er
 
 
 def add_namespaces_to_parser(evaluator, namespaces, parser_module):
@@ -75,12 +74,12 @@ class LazyName(helpers.FakeName):
         except AttributeError:
             pass
         else:
+            # cut the `c` from `.pyc`
             path = re.sub('c$', '', path)
             if path.endswith('.py'):
-                # cut the `c` from `.pyc`
                 with open(path) as f:
                     source = source_to_unicode(f.read())
-                mod = FastParser(load_grammar(), source, path[:-1]).module
+                mod = FastParser(load_grammar(), source, path).module
                 if parser_path:
                     assert len(parser_path) == 1
                     found = self._evaluator.find_types(mod, parser_path[0], search_global=True)
@@ -88,14 +87,11 @@ class LazyName(helpers.FakeName):
                     found = [self._evaluator.wrap(mod)]
 
                 if not found:
-                    debug.warning('Possibly an interpreter lookup for Python code failed %s',
+                    debug.warning('Interpreter lookup failed in global scope for %s',
                                   parser_path)
 
         if not found:
-            evaluated = compiled.CompiledObject(obj)
-            if evaluated == builtins:
-                # The builtins module is special and always cached.
-                evaluated = compiled.builtin
+            evaluated = compiled.create(self._evaluator, obj)
             found = [evaluated]
 
         content = iterable.AlreadyEvaluated(found)

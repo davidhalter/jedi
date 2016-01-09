@@ -1,8 +1,9 @@
 import tempfile
 import shutil
 
-import jedi
+import pytest
 
+import jedi
 
 collect_ignore = ["setup.py"]
 
@@ -47,3 +48,25 @@ def pytest_unconfigure(config):
     global jedi_cache_directory_orig, jedi_cache_directory_temp
     jedi.settings.cache_directory = jedi_cache_directory_orig
     shutil.rmtree(jedi_cache_directory_temp)
+
+
+@pytest.fixture(scope='session')
+def clean_jedi_cache(request):
+    """
+    Set `jedi.settings.cache_directory` to a temporary directory during test.
+
+    Note that you can't use built-in `tmpdir` and `monkeypatch`
+    fixture here because their scope is 'function', which is not used
+    in 'session' scope fixture.
+
+    This fixture is activated in ../pytest.ini.
+    """
+    from jedi import settings
+    old = settings.cache_directory
+    tmp = tempfile.mkdtemp(prefix='jedi-test-')
+    settings.cache_directory = tmp
+
+    @request.addfinalizer
+    def restore():
+        settings.cache_directory = old
+        shutil.rmtree(tmp)

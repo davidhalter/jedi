@@ -1,7 +1,7 @@
 def generator():
     yield 1
 
-#! 12 type-error-generator
+#! 11 type-error-not-subscriptable
 generator()[0]
 
 list(generator())[0]

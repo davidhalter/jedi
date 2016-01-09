@@ -152,3 +152,13 @@ def splitlines(string):
     Also different: Returns ``['']`` for an empty string input.
     """
     return re.split('\n|\r\n', string)
+
+
+def content(file_path):
+    with open(file_path, 'r') as f:
+        return f.read()
+
+
+def unite(iterable):
+    """Turns a two dimensional array into a one dimensional."""
+    return set(chain.from_iterable(iterable))

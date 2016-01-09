@@ -54,7 +54,7 @@ Alternate Test Runner
 If you don't like the output of ``py.test``, there's an alternate test runner
 that you can start by running ``./run.py``. The above example could be run by::
 
-    ./run.py basic 4 6 8
+    ./run.py basic 4 6 8 50-80
 
 The advantage of this runner is simplicity and more customized error reports.
 Using both runners will help you to have a quicker overview of what's
@@ -111,6 +111,8 @@ Tests look like this::
 """
 import os
 import re
+import sys
+import operator
 from ast import literal_eval
 from io import StringIO
 from functools import reduce
@@ -127,7 +129,7 @@ TEST_USAGES = 3
 
 class IntegrationTestCase(object):
     def __init__(self, test_type, correct, line_nr, column, start, line,
-                 path=None):
+                 path=None, skip=None):
         self.test_type = test_type
         self.correct = correct
         self.line_nr = line_nr
@@ -135,7 +137,7 @@ class IntegrationTestCase(object):
         self.start = start
         self.line = line
         self.path = path
-        self.skip = None
+        self.skip = skip
 
     @property
     def module_name(self):
@@ -232,12 +234,33 @@ class IntegrationTestCase(object):
         return compare_cb(self, compare, sorted(wanted))
 
 
+def skip_python_version(line):
+    comp_map = {
+        '==': 'eq',
+        '<=': 'le',
+        '>=': 'ge',
+        '<': 'gk',
+        '>': 'lt',
+    }
+    # check for python minimal version number
+    match = re.match(r" *# *python *([<>]=?|==) *(\d+(?:\.\d+)?)$", line)
+    if match:
+        minimal_python_version = tuple(
+            map(int, match.group(2).split(".")))
+        operation = getattr(operator, comp_map[match.group(1)])
+        if not operation(sys.version_info, minimal_python_version):
+            return "Minimal python version %s" % match.group(1)
+
+    return None
+
+
 def collect_file_tests(lines, lines_to_execute):
     makecase = lambda t: IntegrationTestCase(t, correct, line_nr, column,
-                                             start, line)
+                                             start, line, path=None, skip=skip)
     start = None
     correct = None
     test_type = None
+    skip = None
     for line_nr, line in enumerate(lines, 1):
         if correct is not None:
             r = re.match('^(\d+)\s*(.*)$', correct)
@@ -257,6 +280,7 @@ def collect_file_tests(lines, lines_to_execute):
                 yield makecase(TEST_DEFINITIONS)
             correct = None
         else:
+            skip = skip or skip_python_version(line)
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
                 # test_type is ? for completion and ! for goto_assignments
@@ -269,9 +293,14 @@ def collect_file_tests(lines, lines_to_execute):
             except AttributeError:
                 correct = None
             else:
-                # skip the test, if this is not specified test
-                if lines_to_execute and line_nr not in lines_to_execute:
-                    correct = None
+                # Skip the test, if this is not specified test.
+                for l in lines_to_execute:
+                    if isinstance(l, tuple) and l[0] <= line_nr <= l[1] \
+                            or line_nr == l:
+                        break
+                else:
+                    if lines_to_execute:
+                        correct = None
 
 
 def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
@@ -338,7 +367,11 @@ if __name__ == '__main__':
     test_files = {}
     last = None
     for arg in arguments['<rest>']:
-        if arg.isdigit():
+        match = re.match('(\d+)-(\d+)', arg)
+        if match:
+            start, end = match.groups()
+            test_files[last].append((int(start), int(end)))
+        elif arg.isdigit():
             if last is None:
                 continue
             test_files[last].append(int(arg))
@@ -347,7 +380,9 @@ if __name__ == '__main__':
             last = arg
 
     # completion tests:
-    completion_test_dir = '../test/completion'
+    dir = os.path.dirname(os.path.realpath(__file__))
+    completion_test_dir = os.path.join(dir, '../test/completion')
+    completion_test_dir = os.path.abspath(completion_test_dir)
     summary = []
     tests_fail = 0
 
@@ -374,6 +409,8 @@ if __name__ == '__main__':
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
+        if c.skip:
+            continue
         if current != c.path:
             file_change(current, count, fails)
             current = c.path
