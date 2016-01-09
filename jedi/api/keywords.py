@@ -3,9 +3,8 @@ import keyword
 
 from jedi._compatibility import is_py3
 from jedi import common
-from jedi.evaluate import compiled
 from jedi.evaluate.helpers import FakeName
-
+from jedi.parser.tree import Leaf
 try:
     from pydoc_data import topics as pydoc_topics
 except ImportError:
@@ -18,30 +17,62 @@ else:
     keys = keyword.kwlist + ['None', 'False', 'True']
 
 
-def keywords(string='', pos=(0, 0), all=False):
-    if all:
-        return set([Keyword(k, pos) for k in keys])
+def has_inappropriate_leaf_keyword(pos, module):
+    relevant_errors = filter(
+        lambda error: error.first_pos[0] == pos[0],
+        module.error_statement_stacks)
+
+    for error in relevant_errors:
+        if error.next_token in keys:
+            return True
+
+    return False
+
+
+def completion_names(evaluator, stmt, pos, module):
+    keyword_list = all_keywords(evaluator)
+
+    if not isinstance(stmt, Leaf) or has_inappropriate_leaf_keyword(pos, module):
+        keyword_list = filter(
+            lambda keyword: not keyword.only_valid_as_leaf,
+            keyword_list
+        )
+    return [keyword.name for keyword in keyword_list]
+
+
+def all_keywords(evaluator, pos=(0, 0)):
+    return set([Keyword(evaluator, k, pos) for k in keys])
+
+
+def keyword(evaluator, string, pos=(0, 0)):
     if string in keys:
-        return set([Keyword(string, pos)])
-    return set()
+        return Keyword(evaluator, string, pos)
+    else:
+        return None
 
 
-def keyword_names(*args, **kwargs):
-    return [k.name for k in keywords(*args, **kwargs)]
+def get_operator(evaluator, string, pos):
+    return Keyword(evaluator, string, pos)
 
 
-def get_operator(string, pos):
-    return Keyword(string, pos)
+keywords_only_valid_as_leaf = (
+    'continue',
+    'break',
+)
 
 
 class Keyword(object):
-    def __init__(self, name, pos):
+    def __init__(self, evaluator, name, pos):
         self.name = FakeName(name, self, pos)
         self.start_pos = pos
-        self.parent = compiled.builtin
+        self.parent = evaluator.BUILTINS
 
     def get_parent_until(self):
         return self.parent
+
+    @property
+    def only_valid_as_leaf(self):
+        return self.name.value in keywords_only_valid_as_leaf
 
     @property
     def names(self):

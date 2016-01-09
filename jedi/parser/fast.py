@@ -8,7 +8,7 @@ from itertools import chain
 
 from jedi._compatibility import use_metaclass
 from jedi import settings
-from jedi.parser import Parser
+from jedi.parser import ParserWithRecovery
 from jedi.parser import tree
 from jedi import cache
 from jedi import debug
@@ -52,8 +52,9 @@ class FastModule(tree.Module):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
                                         self.start_pos[0], self.end_pos[0])
 
-    # To avoid issues with with the `parser.Parser`, we need setters that do
-    # nothing, because if pickle comes along and sets those values.
+    # To avoid issues with with the `parser.ParserWithRecovery`, we need
+    # setters that do nothing, because if pickle comes along and sets those
+    # values.
     @global_names.setter
     def global_names(self, value):
         pass
@@ -99,10 +100,10 @@ class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, grammar, source, module_path=None):
         if not settings.fast_parser:
-            return Parser(grammar, source, module_path)
+            return ParserWithRecovery(grammar, source, module_path)
 
         pi = cache.parser_cache.get(module_path, None)
-        if pi is None or isinstance(pi.parser, Parser):
+        if pi is None or isinstance(pi.parser, ParserWithRecovery):
             p = super(CachedFastParser, self).__call__(grammar, source, module_path)
         else:
             p = pi.parser  # pi is a `cache.ParserCacheItem`
@@ -432,7 +433,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         else:
             tokenizer = FastTokenizer(parser_code)
             self.number_parsers_used += 1
-            p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
+            p = ParserWithRecovery(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
 
             end = line_offset + p.module.end_pos[0]
             used_lines = self._lines[line_offset:end - 1]

@@ -5,7 +5,7 @@ from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
 from jedi.parser import tree
-from jedi.parser import Parser
+from jedi.parser import ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
@@ -118,11 +118,13 @@ def _paths_from_assignment(evaluator, expr_stmt):
         except AssertionError:
             continue
 
-        from jedi.evaluate.iterable import get_iterator_types
+        from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
-        for val in get_iterator_types(evaluator.eval_statement(expr_stmt)):
-            if is_string(val):
-                yield val.obj
+        types = evaluator.eval_element(expr_stmt)
+        for types in py__iter__(evaluator, types, expr_stmt):
+            for typ in types:
+                if is_string(typ):
+                    yield typ.obj
 
 
 def _paths_from_list_modifications(module_path, trailer1, trailer2):
@@ -207,7 +209,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
             debug.dbg('Error trying to read buildout_script: %s', buildout_script)
             return
 
-        p = Parser(evaluator.grammar, source, buildout_script)
+        p = ParserWithRecovery(evaluator.grammar, source, buildout_script)
         cache.save_parser(buildout_script, p)
         return p.module
 
@@ -271,8 +273,8 @@ def _get_buildout_scripts(module_path):
                 firstline = f.readline()
                 if firstline.startswith('#!') and 'python' in firstline:
                     extra_module_paths.append(filepath)
-        except IOError as e:
-            # either permission error or race cond. because file got deleted
+        except (UnicodeDecodeError, IOError) as e:
+            # Probably a binary file; permission error or race cond. because file got deleted
             # ignore
             debug.warning(unicode(e))
             continue

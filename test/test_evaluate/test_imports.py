@@ -56,6 +56,13 @@ def test_not_importable_file():
     assert not jedi.Script(src, path='example.py').completions()
 
 
+def test_import_unique():
+    src = "import os; os.path"
+    defs = jedi.Script(src, path='example.py').goto_definitions()
+    defs = [d._definition for d in defs]
+    assert len(defs) == len(set(defs))
+
+
 def test_cache_works_with_sys_path_param(tmpdir):
     foo_path = tmpdir.join('foo')
     bar_path = tmpdir.join('bar')

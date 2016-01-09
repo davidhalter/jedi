@@ -18,8 +18,12 @@ how this parsing engine works.
 from jedi.parser import tokenize
 
 
-class ParseError(Exception):
-    """Exception to signal the parser is stuck."""
+class InternalParseError(Exception):
+    """
+    Exception to signal the parser is stuck and error recovery didn't help.
+    Basically this shouldn't happen. It's a sign that something is really
+    wrong.
+    """
 
     def __init__(self, msg, type, value, start_pos):
         Exception.__init__(self, "%s: type=%r, value=%r, start_pos=%r" %
@@ -38,7 +42,7 @@ class PgenParser(object):
     p = Parser(grammar, [converter])  # create instance
     p.setup([start])                  # prepare for parsing
     <for each input token>:
-        if p.addtoken(...):           # parse a token; may raise ParseError
+        if p.addtoken(...):           # parse a token
             break
     root = p.rootnode                 # root of abstract syntax tree
 
@@ -53,14 +57,14 @@ class PgenParser(object):
 
     Parsing is complete when addtoken() returns True; the root of the
     abstract syntax tree can then be retrieved from the rootnode
-    instance variable.  When a syntax error occurs, addtoken() raises
-    the ParseError exception.  There is no error recovery; the parser
-    cannot be used after a syntax error was reported (but it can be
-    reinitialized by calling setup()).
+    instance variable.  When a syntax error occurs, error_recovery()
+    is called. There is no error recovery; the parser cannot be used
+    after a syntax error was reported (but it can be reinitialized by
+    calling setup()).
 
     """
 
-    def __init__(self, grammar, convert_node, convert_leaf, error_recovery):
+    def __init__(self, grammar, convert_node, convert_leaf, error_recovery, start):
         """Constructor.
 
         The grammar argument is a grammar.Grammar instance; see the
@@ -90,8 +94,6 @@ class PgenParser(object):
         self.convert_node = convert_node
         self.convert_leaf = convert_leaf
 
-        # Prepare for parsing.
-        start = self.grammar.start
         # Each stack entry is a tuple: (dfa, state, node).
         # A node is a tuple: (type, children),
         # where children is a list of nodes or None
@@ -111,7 +113,7 @@ class PgenParser(object):
                                 start_pos, prefix, self.addtoken)
             # Add the ENDMARKER again.
             if not self.addtoken(type, value, prefix, start_pos):
-                raise ParseError("incomplete input", type, value, start_pos)
+                raise InternalParseError("incomplete input", type, value, start_pos)
         return self.rootnode
 
     def addtoken(self, type, value, prefix, start_pos):
@@ -164,7 +166,7 @@ class PgenParser(object):
                     self.pop()
                     if not self.stack:
                         # Done parsing, but another token is input
-                        raise ParseError("too much input", type, value, start_pos)
+                        raise InternalParseError("too much input", type, value, start_pos)
                 else:
                     self.error_recovery(self.grammar, self.stack, type,
                                         value, start_pos, prefix, self.addtoken)

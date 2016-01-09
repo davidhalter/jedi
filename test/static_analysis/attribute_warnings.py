@@ -35,7 +35,7 @@ Inherited().undefined
 class SetattrCls():
     def __init__(self, dct):
         # Jedi doesn't even try to understand such code
-        for k, v in dct:
+        for k, v in dct.items():
             setattr(self, k, v)
 
         self.defined = 3

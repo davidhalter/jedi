@@ -15,7 +15,7 @@ from jedi._compatibility import u
 from jedi import Script
 from jedi import api
 from jedi.evaluate import imports
-from jedi.parser import Parser, load_grammar
+from jedi.parser import ParserWithRecovery, load_grammar
 
 #jedi.set_debug_function()
 
@@ -102,7 +102,7 @@ class TestRegression(TestCase):
     def test_end_pos_line(self):
         # jedi issue #150
         s = u("x()\nx( )\nx(  )\nx (  )")
-        parser = Parser(load_grammar(), s)
+        parser = ParserWithRecovery(load_grammar(), s)
         for i, s in enumerate(parser.module.statements):
             assert s.end_pos == (i + 1, i + 3)
 

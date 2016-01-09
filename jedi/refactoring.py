@@ -12,86 +12,146 @@ following functions (sometimes bug-prone):
 - extract variable
 - inline variable
 """
-import difflib
+from difflib import unified_diff
+from collections import namedtuple
 
+from itertools import groupby
 from jedi import common
 from jedi.evaluate import helpers
 from jedi.parser import tree as pt
+from common import content, source_to_unicode, splitlines
 
 
-class Refactoring(object):
-    def __init__(self, change_dct):
-        """
-        :param change_dct: dict(old_path=(new_path, old_lines, new_lines))
-        """
-        self.change_dct = change_dct
+class Pos(namedtuple('Position', ['line', 'column'])):
+    @property
+    def real_line(self):
+        return self.line - 1
 
-    def old_files(self):
-        dct = {}
-        for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            dct[new_path] = '\n'.join(new_l)
-        return dct
+
+class PosRange(namedtuple('PRange', ['start', 'stop'])):
+    pass
+
+
+class Content(object):
+    def __init__(self, lines=()):
+        self.lines = list(lines)
+
+    def __getitem__(self, index):
+        start_line_slice_start = index.start.column
+        start_line_slice_stop = None
+        first_line = []
+        whole_lines = []
+        end_line = []
+        if index.start.real_line < index.stop.real_line:
+            whole_lines.extend(
+                    self.lines[index.start.real_line + 1: index.stop.real_line]
+            )
+            end_line = [
+                self.lines[index.stop.real_line][:index.stop.column]
+            ]
+        else:
+            start_line_slice_stop = index.stop.column
+        fst_selected_line = self.lines[index.start.real_line]
+        first_line.append(
+                fst_selected_line[start_line_slice_start:start_line_slice_stop]
+        )
+        return first_line + whole_lines + end_line
+
+    def __delitem__(self, index):
+        fst_affected_line = self.lines[index.start.real_line]
+        lst_affected_line = self.lines[index.stop.real_line]
+        fst_ln_slice_start = index.start.column
+        fst_ln_slice_stop = len(fst_affected_line)
+        lst_ln_remainder = ''
+        if index.start.real_line == index.stop.real_line:
+            fst_ln_slice_stop = index.stop.column
+        else:
+            del self.lines[index.start.real_line + 1: index.stop.real_line]
+            del self.lines[index.stop.real_line]
+            lst_ln_remainder = lst_affected_line[index.stop.column:]
+        p1 = fst_affected_line[:fst_ln_slice_start]
+        p2 = fst_affected_line[fst_ln_slice_stop:]
+        fst_ln_remainder = p1 + p2
+        self.lines[index.start.real_line] = fst_ln_remainder + lst_ln_remainder
+        if self.lines[index.start.real_line] == '':
+            del self.lines[index.start.real_line]
+
+    def __setitem__(self, index, value):
+        del self[index]
+        line = self.lines[index.start.real_line]
+        part_1 = line[:index.start.column]
+        part_2 = line[index.start.column:]
+        self.lines[index.start.real_line] = ''.join((part_1, value, part_2))
+
+    @classmethod
+    def from_file(cls, path):
+        return cls(splitlines(source_to_unicode(content(path))))
+
+
+class FileState(namedtuple('FileState', ['path', 'lines'])):
+    @property
+    def content_str(self):
+        return '\n'.join(self.lines)
+
+    def __eq__(self, other):
+        if not isinstance(other, FileState):
+            return False
+        return self.path == other.path and \
+               len(self.lines) == len(other.lines) and \
+               all((l1 == l2 for l1, l2 in zip(self.lines, other.lines)))
+
+
+class Change(namedtuple('Change', ['old_state', 'new_state'])):
+    @property
+    def diff(self):
+        return unified_diff(self.old_state.lines, self.new_state.lines)
+
+    def __eq__(self, other):
+        if not isinstance(other, Change):
+            return False
+        return self.old_state == other.old_state and \
+               self.new_state == other.new_state
+
+
+class Changes(object):
+    def __init__(self, changes):
+        self.changes = changes
 
     def new_files(self):
-        dct = {}
-        for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            dct[new_path] = '\n'.join(new_l)
-        return dct
+        return {ch.new_state.path: ch.new_state.content_str
+                for ch in self.changes}
+
+    def old_files(self):
+        return {ch.old_state.path: ch.old_state.content_str
+                for ch in self.changes}
 
     def diff(self):
-        texts = []
-        for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            if old_path:
-                udiff = difflib.unified_diff(old_l, new_l)
-            else:
-                udiff = difflib.unified_diff(old_l, new_l, old_path, new_path)
-            texts.append('\n'.join(udiff))
-        return '\n'.join(texts)
+        return '\n'.join([ch.content_str for ch in self.changes])
+
+
+def changes_for(refactoring, *args, **kwargs):
+    return Changes(refactoring(*args, **kwargs))
 
 
 def rename(script, new_name):
-    """ The `args` / `kwargs` params are the same as in `api.Script`.
-    :param operation: The refactoring operation to execute.
-    :type operation: str
-    :type source: str
-    :return: list of changed lines/changed files
-    """
-    return Refactoring(_rename(script.usages(), new_name))
+    def by_module_path(script):
+        return script.module_path
+
+    usages = (u for u in sorted(script.usages(), key=by_module_path)
+              if not u.in_builtin_module())
+    usages_by_file = groupby(usages, by_module_path)
+    return [change_for_rename(m_path, usages, new_name)
+            for m_path, usages in usages_by_file]
 
 
-def _rename(names, replace_str):
-    """ For both rename and inline. """
-    order = sorted(names, key=lambda x: (x.module_path, x.line, x.column),
-                   reverse=True)
-
-    def process(path, old_lines, new_lines):
-        if new_lines is not None:  # goto next file, save last
-            dct[path] = path, old_lines, new_lines
-
-    dct = {}
-    current_path = object()
-    new_lines = old_lines = None
-    for name in order:
-        if name.in_builtin_module():
-            continue
-        if current_path != name.module_path:
-            current_path = name.module_path
-
-            process(current_path, old_lines, new_lines)
-            if current_path is not None:
-                # None means take the source that is a normal param.
-                with open(current_path) as f:
-                    source = f.read()
-
-            new_lines = common.splitlines(common.source_to_unicode(source))
-            old_lines = new_lines[:]
-
-        nr, indent = name.line, name.column
-        line = new_lines[nr - 1]
-        new_lines[nr - 1] = line[:indent] + replace_str + \
-            line[indent + len(name.name):]
-    process(current_path, old_lines, new_lines)
-    return dct
+def change_for_rename(path, usages, new_name):
+    c = Content.from_file(path)
+    old_state = FileState(path, c.lines[:])
+    for u in usages:
+        start_pos = Pos(u.line, u.column)
+        end_pos = Pos(u.line, u.column + len(u.name))
+        c[PosRange(start_pos, end_pos)] = new_name
+    return Change(old_state, FileState(path, c.lines))
 
 
 def extract(script, new_name):
@@ -145,7 +205,7 @@ def extract(script, new_name):
             open_brackets = ['(', '[', '{']
             close_brackets = [')', ']', '}']
             if '\n' in text and not (text[0] in open_brackets and text[-1] ==
-                                     close_brackets[open_brackets.index(text[0])]):
+                close_brackets[open_brackets.index(text[0])]):
                 text = '(%s)' % text
 
             # add new line before statement
@@ -153,7 +213,7 @@ def extract(script, new_name):
             new = "%s%s = %s" % (' ' * indent, new_name, text)
             new_lines.insert(line_index, new)
     dct[script.path] = script.path, old_lines, new_lines
-    return Refactoring(dct)
+    return Changes(dct)
 
 
 def inline(script):
@@ -199,4 +259,4 @@ def inline(script):
         else:
             new_lines.pop(index)
 
-    return Refactoring(dct)
+    return Changes(dct)

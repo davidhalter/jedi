@@ -131,6 +131,18 @@ def simple():
         yield ""
 
 a, b = simple()
+#? int() str()
+a
+# For now this is ok.
+#?
+b
+
+
+def simple2():
+    yield 1
+    yield ""
+
+a, b = simple2()
 #? int()
 a
 #? str()
