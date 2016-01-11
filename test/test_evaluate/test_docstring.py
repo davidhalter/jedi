@@ -150,3 +150,31 @@ class TestDocstring(unittest.TestCase):
         assert 'capitalize' in names
         assert 'numerator' in names
         assert 'append' in names
+
+    def test_hierarchical_hint_param(self):
+        code = dedent('''
+        class ISample(object):
+            def a_method(self, a_arg):
+                """:type a_arg: random.Random"""
+
+
+        class Sample(ISample):
+            def a_method(self, a_arg):
+                a_arg.''')
+        names = [c.name for c in jedi.Script(code).completions()]
+        assert 'randint' in names
+
+    def test_hierarchical_hint_rtype(self):
+        code = dedent('''
+        class ISample(object):
+            def b_method(self):
+                """:rtype: random.Random"""
+
+
+        class Sample(ISample):
+            def b_method(self):
+                pass
+            def a_method(self):
+                self.b_method().''')
+        names = [c.name for c in jedi.Script(code).completions()]
+        assert 'randint' in names
