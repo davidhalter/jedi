@@ -82,6 +82,8 @@ class NameFinder(object):
 
     @debug.increase_indent
     def find(self, scopes, search_global=False):
+        if not scopes:
+            return []
         # TODO rename scopes to names_dicts
         names = self.filter_name(scopes)
         types = self._names_to_types(names, search_global)
@@ -106,7 +108,8 @@ class NameFinder(object):
         if search_global:
             return global_names_dict_generator(self._evaluator, self.scope, self.position)
         else:
-            return ((n, None) for n in self.scope.names_dicts(search_global))
+            if hasattr(self.scope, "names_dicts"):
+                return ((n, None) for n in self.scope.names_dicts(search_global))
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(scope, el):
