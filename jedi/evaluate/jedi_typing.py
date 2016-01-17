@@ -13,7 +13,8 @@ except ImportError:
 def factory(typing_name, indextypes):
     class Iterable(abc.Iterable):
         def __iter__(self):
-            yield indextypes[0]()
+            while True:
+                yield indextypes[0]()
 
     class Iterator(Iterable, abc.Iterator):
         def next(self):
@@ -23,9 +24,13 @@ def factory(typing_name, indextypes):
         def __next__(self):
             return indextypes[0]()
 
-    class Sequence(Iterable, abc.Sequence):
+    class Sequence(abc.Sequence):
         def __getitem__(self, index):
             return indextypes[0]()
+
+        def __len__(self):
+            import sys
+            return sys.maxint
 
     class MutableSequence(Sequence, abc.MutableSequence):
         pass
@@ -42,6 +47,13 @@ def factory(typing_name, indextypes):
             else:
                 return indextypes[index]()
 
+        def __len__(self):
+            if indextypes[1] == ...:
+                import sys
+                return sys.maxint
+            else:
+                return len(indextypes)
+
     class AbstractSet(Iterable, abc.Set):
         pass
 
@@ -53,11 +65,13 @@ def factory(typing_name, indextypes):
 
     class ValuesView(abc.ValuesView):
         def __iter__(self):
-            yield indextypes[1]()
+            while True:
+                yield indextypes[1]()
 
     class ItemsView(abc.ItemsView):
         def __iter__(self):
-            yield Tuple()
+            while True:
+                yield Tuple()
 
     class Mapping(Iterable, abc.Mapping):
         def __getitem__(self, item):

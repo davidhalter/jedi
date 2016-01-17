@@ -47,6 +47,16 @@ def iterators(
         p
     #?
     next(ps)
+    a, b = ps
+    #? int()
+    a
+    ##? int()  --- TODO fix support for tuple assignment
+    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
+    # test below is just to make sure that in case it gets fixed by accident
+    # these tests will be fixed as well the way they should be
+    #?
+    b
+
     for q in qs:
         #? str()
         q
@@ -93,8 +103,12 @@ def tuple(
     #? int()
     i
     ##? str()  --- TODO fix support for tuple assignment
+    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
+    #?
     s
     ##? float()  --- TODO fix support for tuple assignment
+    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
+    #?
     f
 
 class Key:
@@ -136,11 +150,15 @@ def mapping(
         #? Key()
         key
         ##? Value()  --- TODO fix support for tuple assignment
+        # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
+        #?
         value
     for key, value in p.items():
         #? Key()
         key
         ##? Value()  --- TODO fix support for tuple assignment
+        # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
+        #?
         value
     for key in r:
         #? Key()
@@ -152,6 +170,8 @@ def mapping(
         #? Key()
         key
         ##? Value()  --- TODO fix support for tuple assignment
+        # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
+        #?
         value
 
 def union(
