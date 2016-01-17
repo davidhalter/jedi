@@ -71,7 +71,7 @@ def factory(typing_name, indextypes):
     class ItemsView(abc.ItemsView):
         def __iter__(self):
             while True:
-                yield Tuple()
+                yield (indextypes[0](), indextypes[1]())
 
     class Mapping(Iterable, abc.Mapping):
         def __getitem__(self, item):
