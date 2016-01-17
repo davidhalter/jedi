@@ -28,10 +28,6 @@ def factory(typing_name, indextypes):
         def __getitem__(self, index):
             return indextypes[0]()
 
-        def __len__(self):
-            import sys
-            return sys.maxint
-
     class MutableSequence(Sequence, abc.MutableSequence):
         pass
 
@@ -46,13 +42,6 @@ def factory(typing_name, indextypes):
                 return indextypes[0]()
             else:
                 return indextypes[index]()
-
-        def __len__(self):
-            if indextypes[1] == ...:
-                import sys
-                return sys.maxint
-            else:
-                return len(indextypes)
 
     class AbstractSet(Iterable, abc.Set):
         pass
