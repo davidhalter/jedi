@@ -83,7 +83,7 @@ def tuple(
     q[2]
     #? B()
     r[0]
-    ##? B()  --- TODO fix support for arbitrary length
+    #? B()
     r[1]
     #? B()
     r[2]
