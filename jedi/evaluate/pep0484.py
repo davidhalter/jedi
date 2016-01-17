@@ -24,6 +24,7 @@ import os
 from jedi.parser import \
     Parser, load_grammar, ParseError, ParserWithRecovery, tree
 from jedi.evaluate.cache import memoize_default
+from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi import debug
 
@@ -114,7 +115,7 @@ def get_types_for_typing_module(evaluator, typ, node):
 
     # hacked in Union and Optional, since it's hard to do nicely in parsed code
     if typ.name.value == "Union":
-        return set().union(*[evaluator.eval_element(node) for node in nodes])
+        return unite(evaluator.eval_element(node) for node in nodes)
     if typ.name.value == "Optional":
         return evaluator.eval_element(nodes[0])
 
