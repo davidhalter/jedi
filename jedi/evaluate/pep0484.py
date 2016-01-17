@@ -132,8 +132,7 @@ def get_types_for_typing_module(evaluator, typ, node):
     compiled_classname = compiled.create(evaluator, typ.name.value)
 
     result = set()
-    # don't know what the last parameter is for, this seems to work :)
-    args = FakeSequence(evaluator, nodes, "x-type")
+    args = FakeSequence(evaluator, nodes, "tuple")
 
     result |= evaluator.execute_evaluated(factory, compiled_classname, args)
     human_nodes = []

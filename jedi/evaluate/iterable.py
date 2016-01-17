@@ -431,6 +431,9 @@ class ImplicitTuple(_FakeArray):
 
 class FakeSequence(_FakeArray):
     def __init__(self, evaluator, sequence_values, type):
+        """
+        type should be one of "tuple", "list"
+        """
         super(FakeSequence, self).__init__(evaluator, sequence_values, type)
         self._sequence_values = sequence_values
 
