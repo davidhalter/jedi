@@ -31,45 +31,36 @@ from jedi import debug
 
 def _evaluate_for_annotation(evaluator, annotation):
     if annotation is not None:
-        dereferenced_annotation = _fix_forward_reference(evaluator, annotation)
-        definitions = evaluator.eval_element(dereferenced_annotation)
+        definitions = evaluator.eval_element(
+            _fix_forward_reference(evaluator, annotation))
         return list(itertools.chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
         return []
 
 
-def _fix_forward_reference(evaluator, item):
-    """
-    Gets something from the parse tree, and replaces any string literal
-    in there with the result of evaluating that string at the bottom of the
-    module
-    """
-    if isinstance(item, tree.String):
-        compiledobjects = evaluator.eval_element(item)
-        assert len(compiledobjects) == 1
-        compiledobject = list(compiledobjects)[0]
+def _fix_forward_reference(evaluator, node):
+    evaled_nodes = evaluator.eval_element(node)
+    if len(evaled_nodes) != 1:
+        debug.warning("Eval'ed typing index %s should lead to 1 object, "
+                      " not %s" % (node, evaled_nodes))
+        return node
+    evaled_node = list(evaled_nodes)[0]
+    if isinstance(evaled_node, compiled.CompiledObject) and \
+            isinstance(evaled_node.obj, str):
         try:
-            p = Parser(load_grammar(), compiledobject.obj, start='eval_input')
-            element = p.get_parsed_node()
+            p = Parser(load_grammar(), evaled_node.obj, start='eval_input')
+            newnode = p.get_parsed_node()
         except ParseError:
-            debug.warning('Annotation not parsed: %s' % compiledobject.obj)
-            return item
+            debug.warning('Annotation not parsed: %s' % evaled_node.obj)
+            return node
         else:
-            module = item.get_parent_until()
+            module = node.get_parent_until()
             p.position_modifier.line = module.end_pos[0]
-            element.parent = module
-            dereferenced = _fix_forward_reference(evaluator, element)
-            return dereferenced
-    if isinstance(item, tree.Node):
-        newnode = tree.Node(item.type, [])
-        for child in item.children:
-            newchild = _fix_forward_reference(evaluator, child)
-            newchild.parent = newnode
-            newnode.children.append(newchild)
-        newnode.parent = item.parent
-        return newnode
-    return item
+            newnode.parent = module
+            return newnode
+    else:
+        return node
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
@@ -113,6 +104,8 @@ def get_types_for_typing_module(evaluator, typ, node):
         nodes = [node]
     del node
 
+    nodes = [_fix_forward_reference(evaluator, node) for node in nodes]
+
     # hacked in Union and Optional, since it's hard to do nicely in parsed code
     if typ.name.value == "Union":
         return unite(evaluator.eval_element(node) for node in nodes)
@@ -132,25 +125,24 @@ def get_types_for_typing_module(evaluator, typ, node):
         return None
     compiled_classname = compiled.create(evaluator, typ.name.value)
 
-    result = set()
     args = FakeSequence(evaluator, nodes, "tuple")
 
-    result |= evaluator.execute_evaluated(factory, compiled_classname, args)
+    result = evaluator.execute_evaluated(factory, compiled_classname, args)
     human_nodes = []
     for node in nodes:
-        evalled_node = evaluator.eval_element(node)
-        if len(evalled_node) != 1:
+        evaled_node = evaluator.eval_element(node)
+        if len(evaled_node) != 1:
             human_nodes.append("???")
             continue
-        evalled_node = list(evalled_node)[0]
+        evaled_node = list(evaled_node)[0]
         try:
-            human_nodes.append(str(evalled_node.name))
+            human_nodes.append(str(evaled_node.name))
         except AttributeError:
             pass
         else:
             continue
         try:
-            human_nodes.append(evalled_node.obj.__name__)
+            human_nodes.append(evaled_node.obj.__name__)
         except AttributeError:
             pass
         else:
