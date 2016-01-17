@@ -149,16 +149,12 @@ def mapping(
         (key, value) = item
         #? Key()
         key
-        ##? Value()  --- TODO fix support for tuple assignment
-        # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-        #?
+        #? Value()
         value
     for key, value in p.items():
         #? Key()
         key
-        ##? Value()  --- TODO fix support for tuple assignment
-        # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-        #?
+        #? Value()
         value
     for key in r:
         #? Key()
@@ -169,9 +165,7 @@ def mapping(
     for key, value in t:
         #? Key()
         key
-        ##? Value()  --- TODO fix support for tuple assignment
-        # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-        #?
+        #? Value()
         value
 
 def union(
