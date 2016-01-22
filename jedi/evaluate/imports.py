@@ -271,9 +271,11 @@ class Importer(object):
 
         module_name = '.'.join(import_parts)
         try:
-            return [self._evaluator.modules[module_name]]
+            module = self._evaluator.modules[module_name]
         except KeyError:
             pass
+        else:
+            return [module] if module else []
 
         if len(import_path) > 1:
             # This is a recursive way of importing that works great with
