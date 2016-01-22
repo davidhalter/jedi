@@ -347,7 +347,7 @@ class Importer(object):
             module = _load_module(self._evaluator, module_path, source, sys_path)
 
         self._evaluator.modules[module_name] = module
-        return [module]
+        return [module] if module else []
 
     def _generate_name(self, name):
         return helpers.FakeName(name, parent=self.module)
