@@ -1,15 +1,21 @@
-# python >= 3.2
+"""
+Test the typing library, with docstrings. This is needed since annotations
+are not supported in python 2.7 else then annotating by comment (and this is
+still TODO at 2016-01-23)
+"""
 import typing
 class B:
     pass
 
-def we_can_has_sequence(
-        p: typing.Sequence[int],
-        q: typing.Sequence[B],
-        r: "typing.Sequence[int]",
-        s: typing.Sequence["int"],
-        t: typing.MutableSequence[dict],
-        u: typing.List[float]):
+def we_can_has_sequence(p, q, r, s, t, u):
+    """
+    :type p: typing.Sequence[int]
+    :type q: typing.Sequence[B]
+    :type r: typing.Sequence[int]
+    :type s: typing.Sequence["int"]
+    :type t: typing.MutableSequence[dict]
+    :type u: typing.List[float]
+    """
     #? ["count"]
     p.c
     #? int()
@@ -37,11 +43,13 @@ def we_can_has_sequence(
     #? float()
     u[1]
 
-def iterators(
-        ps: typing.Iterable[int],
-        qs: typing.Iterator[str],
-        rs: typing.Sequence["ForwardReference"],
-        ts: typing.AbstractSet["float"]):
+def iterators(ps, qs, rs, ts):
+    """
+    :type ps: typing.Iterable[int]
+    :type qs: typing.Iterator[str]
+    :type rs: typing.Sequence["ForwardReference"]
+    :type ts: typing.AbstractSet["float"]
+    """
     for p in ps:
         #? int()
         p
@@ -71,18 +79,22 @@ def iterators(
         #? float()
         t
 
-def sets(
-        p: typing.AbstractSet[int],
-        q: typing.MutableSet[float]):
+def sets(p, q):
+    """
+    :type p: typing.AbstractSet[int]
+    :type q: typing.MutableSet[float]
+    """
     #? []
     p.a
     #? ["add"]
     q.a
 
-def tuple(
-        p: typing.Tuple[int],
-        q: typing.Tuple[int, str, float],
-        r: typing.Tuple[B, ...]):
+def tuple(p, q, r):
+    """
+    :type p: typing.Tuple[int]
+    :type q: typing.Tuple[int, str, float]
+    :type r: typing.Tuple[B, ...]
+    """
     #? int()
     p[0]
     #? int()
@@ -117,13 +129,15 @@ class Key:
 class Value:
     pass
 
-def mapping(
-        p: typing.Mapping[Key, Value],
-        q: typing.MutableMapping[Key, Value],
-        d: typing.Dict[Key, Value],
-        r: typing.KeysView[Key],
-        s: typing.ValuesView[Value],
-        t: typing.ItemsView[Key, Value]):
+def mapping(p, q, d, r, s, t):
+    """
+    :type p: typing.Mapping[Key, Value]
+    :type q: typing.MutableMapping[Key, Value]
+    :type d: typing.Dict[Key, Value]
+    :type r: typing.KeysView[Key]
+    :type s: typing.ValuesView[Value]
+    :type t: typing.ItemsView[Key, Value]
+    """
     #? []
     p.setd
     #? ["setdefault"]
@@ -168,12 +182,14 @@ def mapping(
         #? Value()
         value
 
-def union(
-        p: typing.Union[int],
-        q: typing.Union[int, int],
-        r: typing.Union[int, str, "int"],
-        s: typing.Union[int, typing.Union[str, "typing.Union['float', 'dict']"]],
-        t: typing.Union[int, None]):
+def union(p, q, r, s, t):
+    """
+    :type p: typing.Union[int]
+    :type q: typing.Union[int, int]
+    :type r: typing.Union[int, str, "int"]
+    :type s: typing.Union[int, typing.Union[str, "typing.Union['float', 'dict']"]]
+    :type t: typing.Union[int, None]
+    """
     #? int()
     p
     #? int()
@@ -185,9 +201,9 @@ def union(
     #? int()
     t
 
-def optional(
-        p: typing.Optional[int]):
+def optional(p):
     """
+    :type p: typing.Optional[int]
     Optional does not do anything special. However it should be recognised
     as being of that type. Jedi doesn't do anything with the extra into that
     it can be None as well
@@ -198,26 +214,14 @@ def optional(
 class ForwardReference:
     pass
 
-import typing as t
-def union2(x: t.Union[int, str]):
-    #? int() str()
-    x
-
-from typing import Union
-def union3(x: Union[int, str]):
-    #? int() str()
-    x
-
-from typing import Union as U
-def union4(x: U[int, str]):
-    #? int() str()
-    x
-
 class TestDict(typing.Dict[str, int]):
     def setdud(self):
         pass
 
-def testdict(x: TestDict):
+def testdict(x):
+    """
+    :type x: TestDict
+    """
     #? ["setdud", "setdefault"]
     x.setd
     for key in x.keys():
@@ -236,3 +240,22 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
+# python >= 3.2
+"""
+docstrings have some auto-import, annotations can use all of Python's
+import logic
+"""
+import typing as t
+def union2(x: t.Union[int, str]):
+    #? int() str()
+    x
+
+from typing import Union
+def union3(x: Union[int, str]):
+    #? int() str()
+    x
+
+from typing import Union as U
+def union4(x: U[int, str]):
+    #? int() str()
+    x

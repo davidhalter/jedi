@@ -27,6 +27,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi import debug
+from jedi import _compatibility
 
 
 def _evaluate_for_annotation(evaluator, annotation):
@@ -49,7 +50,8 @@ def _fix_forward_reference(evaluator, node):
     if isinstance(evaled_node, compiled.CompiledObject) and \
             isinstance(evaled_node.obj, str):
         try:
-            p = Parser(load_grammar(), evaled_node.obj, start='eval_input')
+            p = Parser(load_grammar(), _compatibility.unicode(evaled_node.obj),
+                       start='eval_input')
             newnode = p.get_parsed_node()
         except ParseError:
             debug.warning('Annotation not parsed: %s' % evaled_node.obj)
@@ -84,7 +86,7 @@ def _get_typing_replacement_module():
 
     typing_path = os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
     with open(typing_path) as f:
-        code = f.read()
+        code = _compatibility.unicode(f.read())
     p = ParserWithRecovery(load_grammar(), code)
     return p.module
 
