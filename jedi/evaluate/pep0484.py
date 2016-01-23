@@ -128,26 +128,4 @@ def get_types_for_typing_module(evaluator, typ, node):
     args = FakeSequence(evaluator, nodes, "tuple")
 
     result = evaluator.execute_evaluated(factory, compiled_classname, args)
-    human_nodes = []
-    for node in nodes:
-        evaled_node = evaluator.eval_element(node)
-        if len(evaled_node) != 1:
-            human_nodes.append("???")
-            continue
-        evaled_node = list(evaled_node)[0]
-        try:
-            human_nodes.append(str(evaled_node.name))
-        except AttributeError:
-            pass
-        else:
-            continue
-        try:
-            human_nodes.append(evaled_node.obj.__name__)
-        except AttributeError:
-            pass
-        else:
-            continue
-        human_nodes.append("???")
-    for singleresult in result:
-        singleresult.name.value += "[%s]" % ", ".join(human_nodes)
     return result
