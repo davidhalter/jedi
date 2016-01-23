@@ -77,18 +77,23 @@ def find_return_types(evaluator, func):
     return _evaluate_for_annotation(evaluator, annotation)
 
 
-# TODO: Memoize
+_typing_module = None
+
+
 def _get_typing_replacement_module():
     """
     The idea is to return our jedi replacement for the PEP-0484 typing module
     as discussed at https://github.com/davidhalter/jedi/issues/663
     """
-
-    typing_path = os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
-    with open(typing_path) as f:
-        code = _compatibility.unicode(f.read())
-    p = ParserWithRecovery(load_grammar(), code)
-    return p.module
+    global _typing_module
+    if _typing_module is None:
+        typing_path = \
+            os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
+        with open(typing_path) as f:
+            code = _compatibility.unicode(f.read())
+        p = ParserWithRecovery(load_grammar(), code)
+        _typing_module = p.module
+    return _typing_module
 
 
 def get_types_for_typing_module(evaluator, typ, node):
