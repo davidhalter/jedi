@@ -36,7 +36,7 @@ def factory(typing_name, indextypes):
 
     class Tuple(Sequence, tuple):
         def __getitem__(self, index):
-            if indextypes[1] == ...:
+            if indextypes[1] == Ellipsis:
                 # https://www.python.org/dev/peps/pep-0484/#the-typing-module
                 # Tuple[int, ...] means a tuple of ints of indetermined length
                 return indextypes[0]()
