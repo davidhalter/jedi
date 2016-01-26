@@ -9,6 +9,7 @@ test_grammar.py files from both Python 2 and Python 3.
 from textwrap import dedent
 
 
+from jedi._compatibility import unicode
 from jedi.parser import Parser, load_grammar, ParseError
 import pytest
 
@@ -18,7 +19,7 @@ from test.helpers import TestCase
 def parse(code, version='3.4'):
     code = dedent(code) + "\n\n"
     grammar = load_grammar(version=version)
-    return Parser(grammar, code, 'file_input').get_parsed_node()
+    return Parser(grammar, unicode(code), 'file_input').get_parsed_node()
 
 
 class TestDriver(TestCase):
@@ -232,6 +233,9 @@ class TestParserIdempotency(TestCase):
 
 
 class TestLiterals(GrammarTest):
+    # It's not possible to get the same result when using \xaa in Python 2/3,
+    # because it's treated differently.
+    @pytest.mark.skipif('sys.version_info[0] < 3')
     def test_multiline_bytes_literals(self):
         s = """
             md5test(b"\xaa" * 80,
@@ -250,6 +254,7 @@ class TestLiterals(GrammarTest):
             '''
         parse(s)
 
+    @pytest.mark.skipif('sys.version_info[0] < 3')
     def test_multiline_str_literals(self):
         s = """
             md5test("\xaa" * 80,
