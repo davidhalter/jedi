@@ -18,36 +18,51 @@ x support for type hint comments `# type: (int, str) -> int`. See comment from
     Guido https://github.com/davidhalter/jedi/issues/662
 """
 
-from itertools import chain
+import itertools
 
-from jedi.parser import Parser, load_grammar, ParseError
+import os
+from jedi.parser import \
+    Parser, load_grammar, ParseError, ParserWithRecovery, tree
 from jedi.evaluate.cache import memoize_default
-from jedi.evaluate.compiled import CompiledObject
+from jedi.common import unite
+from jedi.evaluate import compiled
 from jedi import debug
+from jedi import _compatibility
 
 
 def _evaluate_for_annotation(evaluator, annotation):
     if annotation is not None:
-        definitions = set()
-        for definition in evaluator.eval_element(annotation):
-            if (isinstance(definition, CompiledObject) and
-                    isinstance(definition.obj, str)):
-                try:
-                    p = Parser(load_grammar(), definition.obj, start='eval_input')
-                    element = p.get_parsed_node()
-                except ParseError:
-                    debug.warning('Annotation not parsed: %s' % definition.obj)
-                else:
-                    module = annotation.get_parent_until()
-                    p.position_modifier.line = module.end_pos[0]
-                    element.parent = module
-                    definitions |= evaluator.eval_element(element)
-            else:
-                definitions.add(definition)
-        return list(chain.from_iterable(
+        definitions = evaluator.eval_element(
+            _fix_forward_reference(evaluator, annotation))
+        return list(itertools.chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
         return []
+
+
+def _fix_forward_reference(evaluator, node):
+    evaled_nodes = evaluator.eval_element(node)
+    if len(evaled_nodes) != 1:
+        debug.warning("Eval'ed typing index %s should lead to 1 object, "
+                      " not %s" % (node, evaled_nodes))
+        return node
+    evaled_node = list(evaled_nodes)[0]
+    if isinstance(evaled_node, compiled.CompiledObject) and \
+            isinstance(evaled_node.obj, str):
+        try:
+            p = Parser(load_grammar(), _compatibility.unicode(evaled_node.obj),
+                       start='eval_input')
+            newnode = p.get_parsed_node()
+        except ParseError:
+            debug.warning('Annotation not parsed: %s' % evaled_node.obj)
+            return node
+        else:
+            module = node.get_parent_until()
+            p.position_modifier.line = module.end_pos[0]
+            newnode.parent = module
+            return newnode
+    else:
+        return node
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
@@ -60,3 +75,64 @@ def follow_param(evaluator, param):
 def find_return_types(evaluator, func):
     annotation = func.py__annotations__().get("return", None)
     return _evaluate_for_annotation(evaluator, annotation)
+
+
+_typing_module = None
+
+
+def _get_typing_replacement_module():
+    """
+    The idea is to return our jedi replacement for the PEP-0484 typing module
+    as discussed at https://github.com/davidhalter/jedi/issues/663
+    """
+    global _typing_module
+    if _typing_module is None:
+        typing_path = \
+            os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
+        with open(typing_path) as f:
+            code = _compatibility.unicode(f.read())
+        p = ParserWithRecovery(load_grammar(), code)
+        _typing_module = p.module
+    return _typing_module
+
+
+def get_types_for_typing_module(evaluator, typ, node):
+    from jedi.evaluate.iterable import FakeSequence
+    if not typ.base.get_parent_until().name.value == "typing":
+        return None
+    # we assume that any class using [] in a module called
+    # "typing" with a name for which we have a replacement
+    # should be replaced by that class. This is not 100%
+    # airtight but I don't have a better idea to check that it's
+    # actually the PEP-0484 typing module and not some other
+    if tree.is_node(node, "subscriptlist"):
+        nodes = node.children[::2]  # skip the commas
+    else:
+        nodes = [node]
+    del node
+
+    nodes = [_fix_forward_reference(evaluator, node) for node in nodes]
+
+    # hacked in Union and Optional, since it's hard to do nicely in parsed code
+    if typ.name.value == "Union":
+        return unite(evaluator.eval_element(node) for node in nodes)
+    if typ.name.value == "Optional":
+        return evaluator.eval_element(nodes[0])
+
+    typing = _get_typing_replacement_module()
+    factories = evaluator.find_types(typing, "factory")
+    assert len(factories) == 1
+    factory = list(factories)[0]
+    assert factory
+    function_body_nodes = factory.children[4].children
+    valid_classnames = set(child.name.value
+                           for child in function_body_nodes
+                           if isinstance(child, tree.Class))
+    if typ.name.value not in valid_classnames:
+        return None
+    compiled_classname = compiled.create(evaluator, typ.name.value)
+
+    args = FakeSequence(evaluator, nodes, "tuple")
+
+    result = evaluator.execute_evaluated(factory, compiled_classname, args)
+    return result

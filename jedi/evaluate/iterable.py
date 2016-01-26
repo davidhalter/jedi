@@ -29,6 +29,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
+from jedi.evaluate import pep0484
 
 
 class IterableWrapper(tree.Base):
@@ -430,6 +431,9 @@ class ImplicitTuple(_FakeArray):
 
 class FakeSequence(_FakeArray):
     def __init__(self, evaluator, sequence_values, type):
+        """
+        type should be one of "tuple", "list"
+        """
         super(FakeSequence, self).__init__(evaluator, sequence_values, type)
         self._sequence_values = sequence_values
 
@@ -559,37 +563,56 @@ def py__iter__types(evaluator, types, node=None):
     return unite(py__iter__(evaluator, types, node))
 
 
-def py__getitem__(evaluator, types, index, node):
+def py__getitem__(evaluator, types, trailer):
+    from jedi.evaluate.representation import Class
     result = set()
 
-    # Index handling.
-    if isinstance(index, (compiled.CompiledObject, Slice)):
-        index = index.obj
+    trailer_op, node, trailer_cl = trailer.children
+    assert trailer_op == "["
+    assert trailer_cl == "]"
 
-    if type(index) not in (float, int, str, unicode, slice):
-        # If the index is not clearly defined, we have to get all the
-        # possiblities.
-        for typ in list(types):
-            if isinstance(typ, Array) and typ.type == 'dict':
+    # special case: PEP0484 typing module, see
+    # https://github.com/davidhalter/jedi/issues/663
+    for typ in list(types):
+        if isinstance(typ, Class):
+            typing_module_types = \
+                pep0484.get_types_for_typing_module(evaluator, typ, node)
+            if typing_module_types is not None:
                 types.remove(typ)
-                result |= typ.dict_values()
-        return result | py__iter__types(evaluator, types)
+                result |= typing_module_types
 
-    for typ in types:
-        # The actual getitem call.
-        try:
-            getitem = typ.py__getitem__
-        except AttributeError:
-            analysis.add(evaluator, 'type-error-not-subscriptable', node,
-                         message="TypeError: '%s' object is not subscriptable" % typ)
-        else:
+    if not types:
+        # all consumed by special cases
+        return result
+
+    for index in create_index_types(evaluator, node):
+        if isinstance(index, (compiled.CompiledObject, Slice)):
+            index = index.obj
+
+        if type(index) not in (float, int, str, unicode, slice):
+            # If the index is not clearly defined, we have to get all the
+            # possiblities.
+            for typ in list(types):
+                if isinstance(typ, Array) and typ.type == 'dict':
+                    types.remove(typ)
+                    result |= typ.dict_values()
+            return result | py__iter__types(evaluator, types)
+
+        for typ in types:
+            # The actual getitem call.
             try:
-                result |= getitem(index)
-            except IndexError:
-                result |= py__iter__types(evaluator, set([typ]))
-            except KeyError:
-                # Must be a dict. Lists don't raise IndexErrors.
-                result |= typ.dict_values()
+                getitem = typ.py__getitem__
+            except AttributeError:
+                analysis.add(evaluator, 'type-error-not-subscriptable', trailer_op,
+                             message="TypeError: '%s' object is not subscriptable" % typ)
+            else:
+                try:
+                    result |= getitem(index)
+                except IndexError:
+                    result |= py__iter__types(evaluator, set([typ]))
+                except KeyError:
+                    # Must be a dict. Lists don't raise KeyErrors.
+                    result |= typ.dict_values()
     return result
 
 

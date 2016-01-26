@@ -391,8 +391,7 @@ class Evaluator(object):
 
         new_types = set()
         if trailer_op == '[':
-            for trailer_typ in iterable.create_index_types(self, node):
-                new_types |= iterable.py__getitem__(self, types, trailer_typ, trailer_op)
+            new_types |= iterable.py__getitem__(self, types, trailer)
         else:
             for typ in types:
                 debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
