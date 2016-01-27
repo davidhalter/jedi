@@ -47,7 +47,7 @@ def load_grammar(version='3.4'):
     if version in ('3.2', '3.3'):
         version = '3.4'
     elif version == '2.6':
-        version == '2.7'
+        version = '2.7'
 
     file = 'grammar' + version + '.txt'
 
