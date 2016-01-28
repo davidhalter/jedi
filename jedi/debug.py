@@ -14,7 +14,12 @@ try:
         # pytest resets the stream at the end - causes troubles. Since after
         # every output the stream is reset automatically we don't need this.
         initialise.atexit_done = True
-        init()
+        try:
+            init()
+        except Exception:
+            # Colorama fails with initializing under vim and is buggy in
+            # version 0.3.6.
+            pass
 except ImportError:
     class Fore(object):
         RED = ''
