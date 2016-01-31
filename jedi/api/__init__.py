@@ -6,6 +6,8 @@ Additionally you can add a debug function with :func:`set_debug_function`.
 
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
+from collections import namedtuple
+
 import re
 import os
 import warnings
@@ -50,6 +52,8 @@ class NotFoundError(Exception):
        valid name.
     .. todo:: Remove!
     """
+
+Position = namedtuple('Position', 'line column')
 
 
 class Script(object):

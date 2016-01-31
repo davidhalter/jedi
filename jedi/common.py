@@ -3,7 +3,6 @@ import sys
 import contextlib
 import functools
 import re
-from itertools import chain
 from ast import literal_eval
 
 from jedi._compatibility import unicode, reraise
@@ -153,6 +152,11 @@ def splitlines(string):
     Also different: Returns ``['']`` for an empty string input.
     """
     return re.split('\n|\r\n', string)
+
+
+def content(file_path):
+    with open(file_path, 'r') as f:
+        return f.read()
 
 
 def unite(iterable):
