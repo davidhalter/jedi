@@ -41,6 +41,7 @@ Jedi can currently be used with the following editors:
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
 - Atom_ (autocomplete-python_)
 - SourceLair_
+- `GNOME BUILDER`_
 
 And it powers the following projects:
 
@@ -191,3 +192,4 @@ For more detailed information visit the `testing documentation
 .. _Atom: https://atom.io/
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
 .. _SourceLair: https://www.sourcelair.com
+.. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
