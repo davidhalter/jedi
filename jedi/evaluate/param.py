@@ -60,6 +60,10 @@ class Arguments(tree.Base):
                     continue
                 elif child in ('*', '**'):
                     yield len(child.value), next(iterator)
+                elif tree.is_node(child, 'argument') and \
+                        child.children[0] in ('*', '**'):
+                    assert len(child.children) == 2
+                    yield len(child.children[0].value), child.children[1]
                 else:
                     yield 0, child
 
