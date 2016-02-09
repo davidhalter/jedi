@@ -47,7 +47,10 @@ class Arguments(tree.Base):
             for el in self.argument_node:
                 yield 0, el
         else:
-            if not tree.is_node(self.argument_node, 'arglist'):
+            if not (tree.is_node(self.argument_node, 'arglist') or (
+                    # in python 3.5 **arg is an argument, not arglist
+                    (tree.is_node(self.argument_node, 'argument') and
+                     self.argument_node.children[0] in ('*', '**')))):
                 yield 0, self.argument_node
                 return
 
