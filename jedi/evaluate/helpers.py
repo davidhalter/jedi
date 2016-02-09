@@ -88,7 +88,8 @@ def call_of_name(name, cut_own_trailer=False):
             return name
 
     power = par.parent
-    if tree.is_node(power, 'power') and power.children[0] != name \
+    if (tree.is_node(power, 'power') or tree.is_node(power, 'atom_expr')) \
+            and power.children[0] != name \
             and not (power.children[-2] == '**' and
                      name.start_pos > power.children[-1].start_pos):
         par = power
