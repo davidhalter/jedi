@@ -16,7 +16,7 @@ import re
 from io import StringIO
 from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER,
                                NAME, OP, ERRORTOKEN, NEWLINE, INDENT, DEDENT)
-from jedi._compatibility import is_py3, is_py35
+from jedi._compatibility import is_py3
 
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
@@ -151,58 +151,7 @@ def source_tokens(source):
     """Generate tokens from a the source code (string)."""
     source = source
     readline = StringIO(source).readline
-    tokenizer = generate_tokens(readline)
-    if is_py35:
-        tokenizer = fix_async_await_tokenizer(tokenizer)
-    return tokenizer
-
-
-def fix_async_await_tokenizer(tokenizer):
-    # We need to recognise async functions as per
-    # https://www.python.org/dev/peps/pep-0492/#transition-plan
-    # so we need a three item look-ahead
-    from jedi.parser.token import ASYNC, AWAIT
-    assert is_py35
-    try:
-        first = next(tokenizer)
-    except StopIteration:
-        return
-
-    try:
-        second = next(tokenizer)
-    except StopIteration:
-        yield first
-        return
-
-    defs_stack = []
-    indent = 0
-    for item in tokenizer:
-        if first[0] == INDENT:
-            indent += 1
-
-        if first[0] == DEDENT:
-            indent -= 1
-
-        if first[0] == NEWLINE and second[0] != INDENT:
-            while defs_stack and indent <= defs_stack[-1][0]:
-                defs_stack.pop()
-
-        if second[0] == NAME and second[1] == "def" and item[0] == NAME:
-            if first[0] == NAME and first[1] == "async":
-                defs_stack.append((indent, True))
-            else:
-                defs_stack.append((indent, False))
-        in_async_def = defs_stack and defs_stack[-1][1]
-        if in_async_def and first[0] == NAME and first[1] == "async":
-            yield (ASYNC, ) + first[1:]
-        elif in_async_def and first[0] == NAME and first[1] == "await":
-            yield (AWAIT, ) + first[1:]
-        else:
-            yield first
-        first = second
-        second = item
-    yield first
-    yield second
+    return generate_tokens(readline)
 
 
 def generate_tokens(readline):

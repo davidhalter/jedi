@@ -46,8 +46,8 @@ class GrammarTest(TestCase):
 class TestMatrixMultiplication(GrammarTest):
     @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_matrix_multiplication_operator(self):
-        parse("a @ b", "3.5")
-        parse("a @= b", "3.5")
+        parse("a @ b")
+        parse("a @= b")
 
 
 class TestYieldFrom(GrammarTest):
@@ -62,7 +62,7 @@ class TestAsyncAwait(GrammarTest):
     def test_await_expr(self):
         parse("""async def foo():
                              await x
-                      """, "3.5")
+                      """)
 
         parse("""async def foo():
 
@@ -71,51 +71,46 @@ class TestAsyncAwait(GrammarTest):
             def foo(): pass
 
             await x
-        """, "3.5")
+        """)
 
-        parse("""async def foo(): return await a""", "3.5")
+        parse("""async def foo(): return await a""")
 
         parse("""def foo():
             def foo(): pass
             async def foo(): await x
-        """, "3.5")
+        """)
 
-        self.invalid_syntax("await x", version="3.5")
+        self.invalid_syntax("await x")
         self.invalid_syntax("""def foo():
-                                   await x""", version="3.5")
+                                   await x""")
 
         self.invalid_syntax("""def foo():
             def foo(): pass
             async def foo(): pass
             await x
-        """, version="3.5")
-
-        self.invalid_syntax("""async def foo():
-            def foo():
-                await x
-        """, version="3.5")
+        """)
 
     @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_async_var(self):
-        parse("""async = 1""", "3.5")
-        parse("""await = 1""", "3.5")
-        parse("""def async(): pass""", "3.5")
+        parse("""async = 1""")
+        parse("""await = 1""")
+        parse("""def async(): pass""")
 
     @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_async_with(self):
         parse("""async def foo():
-                             async for a in b: pass""", "3.5")
+                             async for a in b: pass""")
 
         self.invalid_syntax("""def foo():
-                                   async for a in b: pass""", version="3.5")
+                                   async for a in b: pass""")
 
     @pytest.mark.skipif('sys.version_info[:2] < (3, 5)')
     def test_async_for(self):
         parse("""async def foo():
-                             async with a: pass""", "3.5")
+                             async with a: pass""")
 
         self.invalid_syntax("""def foo():
-                                   async with a: pass""", version="3.5")
+                                   async with a: pass""")
 
 
 class TestRaiseChanges(GrammarTest):
