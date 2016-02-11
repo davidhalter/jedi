@@ -1,7 +1,7 @@
 import pydoc
 import keyword
 
-from jedi._compatibility import is_py3
+from jedi._compatibility import is_py3, is_py35
 from jedi import common
 from jedi.evaluate.helpers import FakeName
 from jedi.parser.tree import Leaf
@@ -12,7 +12,12 @@ except ImportError:
     import pydoc_topics
 
 if is_py3:
-    keys = keyword.kwlist
+    if is_py35:
+        # in python 3.5 async and await are not proper keywords, but for
+        # completion pursposes should as as though they are
+        keys = keyword.kwlist + ["async", "await"]
+    else:
+        keys = keyword.kwlist
 else:
     keys = keyword.kwlist + ['None', 'False', 'True']
 
