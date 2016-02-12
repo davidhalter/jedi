@@ -55,6 +55,12 @@ SourceLair:
 
 - SourceLair_
 
+GNOME Builder:
+
+- `GNOME Builder`_ `supports it natively
+  <https://git.gnome.org/browse/gnome-builder/tree/plugins/jedi>`__,
+  and is enabled by default.
+
 
 .. _other-software:
 
@@ -96,3 +102,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _kate: http://kate-editor.org/
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
 .. _SourceLair: https://www.sourcelair.com
+.. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
