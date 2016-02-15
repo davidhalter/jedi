@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from jedi._compatibility import is_py3
+from jedi._compatibility import is_py3, is_py35
 from token import *
 
 
@@ -22,6 +22,11 @@ else:
     N_TOKENS += 1
     ELLIPSIS = N_TOKENS
     tok_name[ELLIPSIS] = 'ELLIPSIS'
+    N_TOKENS += 1
+
+if not is_py35:
+    ATEQUAL = N_TOKENS
+    tok_name[ATEQUAL] = 'ATEQUAL'
     N_TOKENS += 1
 
 
@@ -68,6 +73,7 @@ opmap_raw = """\
 %= PERCENTEQUAL
 &= AMPEREQUAL
 |= VBAREQUAL
+@= ATEQUAL
 ^= CIRCUMFLEXEQUAL
 <<= LEFTSHIFTEQUAL
 >>= RIGHTSHIFTEQUAL

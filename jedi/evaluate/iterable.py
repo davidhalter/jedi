@@ -528,7 +528,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
             analysis.add(evaluator, 'value-error-too-few-values', has_parts,
                          message="ValueError: need more than %s values to unpack" % n)
         return dct
-    elif exprlist.type == 'power':
+    elif exprlist.type == 'power' or exprlist.type == 'atom_expr':
         # Something like ``arr[x], var = ...``.
         # This is something that is not yet supported, would also be difficult
         # to write into a dict.

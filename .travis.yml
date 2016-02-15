@@ -1,4 +1,5 @@
 language: python
+python: 3.5
 sudo: false
 env:
     - TOXENV=py26
@@ -6,6 +7,7 @@ env:
     - TOXENV=py32
     - TOXENV=py33
     - TOXENV=py34
+    - TOXENV=py35
     - TOXENV=pypy
     - TOXENV=cov
     - TOXENV=sith
@@ -14,8 +16,9 @@ matrix:
         - env: TOXENV=cov
         - env: TOXENV=sith
         - env: TOXENV=pypy
+
 install:
-    - pip install --quiet --use-mirrors tox
+    - pip install tox
 script:
     - tox
 after_script:

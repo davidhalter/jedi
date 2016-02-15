@@ -15,15 +15,17 @@
 #       file_input is a module or sequence of commands read from an input file;
 #       eval_input is the input for the eval() functions.
 # NB: compound_stmt in single_input is followed by extra NEWLINE!
-single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
 file_input: (NEWLINE | stmt)* ENDMARKER
+single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE
 eval_input: testlist NEWLINE* ENDMARKER
 
 decorator: '@' dotted_name [ '(' [arglist] ')' ] NEWLINE
 decorators: decorator+
 decorated: decorators (classdef | funcdef | async_funcdef)
 
-async_funcdef: ASYNC funcdef
+# NOTE: Reinoud Elhorst, using ASYNC/AWAIT keywords instead of tokens
+# skipping python3.5 compatibility, in favour of 3.7 solution
+async_funcdef: 'async' funcdef
 funcdef: 'def' NAME parameters ['->' test] ':' suite
 
 parameters: '(' [typedargslist] ')'
@@ -69,7 +71,7 @@ nonlocal_stmt: 'nonlocal' NAME (',' NAME)*
 assert_stmt: 'assert' test [',' test]
 
 compound_stmt: if_stmt | while_stmt | for_stmt | try_stmt | with_stmt | funcdef | classdef | decorated | async_stmt
-async_stmt: ASYNC (funcdef | with_stmt | for_stmt)
+async_stmt: 'async' (funcdef | with_stmt | for_stmt)
 if_stmt: 'if' test ':' suite ('elif' test ':' suite)* ['else' ':' suite]
 while_stmt: 'while' test ':' suite ['else' ':' suite]
 for_stmt: 'for' exprlist 'in' testlist ':' suite ['else' ':' suite]
@@ -82,7 +84,9 @@ with_stmt: 'with' with_item (',' with_item)*  ':' suite
 with_item: test ['as' expr]
 # NB compile.c makes sure that the default except clause is last
 except_clause: 'except' [test ['as' NAME]]
-suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT
+# Edit by David Halter: The stmt is now optional. This reflects how Jedi allows
+# classes and functions to be empty, which is beneficial for autocompletion.
+suite: simple_stmt | NEWLINE INDENT stmt* DEDENT
 
 test: or_test ['if' or_test 'else' test] | lambdef
 test_nocond: or_test | lambdef_nocond
@@ -104,7 +108,7 @@ arith_expr: term (('+'|'-') term)*
 term: factor (('*'|'@'|'/'|'%'|'//') factor)*
 factor: ('+'|'-'|'~') factor | power
 power: atom_expr ['**' factor]
-atom_expr: [AWAIT] atom trailer*
+atom_expr: ['await'] atom trailer*
 atom: ('(' [yield_expr|testlist_comp] ')' |
        '[' [testlist_comp] ']' |
        '{' [dictorsetmaker] '}' |
