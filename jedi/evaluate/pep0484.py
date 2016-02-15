@@ -14,6 +14,7 @@ v Assigned types: `Url = str\ndef get(url:Url) -> str:`
 v Type hints in `with` statements
 x Stub files support
 x support `@no_type_check` and `@no_type_check_decorator`
+x support for typing.cast() operator
 x support for type hint comments for functions, `# type: (int, str) -> int`.
     See comment from Guido https://github.com/davidhalter/jedi/issues/662
 """
