@@ -154,6 +154,13 @@ def find_type_from_comment_hint_for(evaluator, node, name):
         _find_type_from_comment_hint(evaluator, node, node.children[1], name)
 
 
+def find_type_from_comment_hint_with(evaluator, node, name):
+    assert len(node.children[1].children) == 3, \
+        "Can only be here when children[1] is 'foo() as f'"
+    return _find_type_from_comment_hint(
+        evaluator, node, node.children[1].children[2], name)
+
+
 def find_type_from_comment_hint_assign(evaluator, node, name):
     return \
         _find_type_from_comment_hint(evaluator, node, node.children[0], name)

@@ -526,6 +526,8 @@ class BaseNode(Base):
         try:
             if self.isinstance(ForStmt):
                 whitespace = self.children[5].first_leaf().prefix
+            elif self.isinstance(WithStmt):
+                whitespace = self.children[3].first_leaf().prefix
             else:
                 whitespace = self.last_leaf().get_next().prefix
         except AttributeError:

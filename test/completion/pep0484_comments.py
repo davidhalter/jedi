@@ -77,3 +77,10 @@ for bar, baz in foo():  # type: int, float
     bar
     #? float()
     baz
+
+with foo():  # type: int
+    ...
+
+with foo() as f:  # type: str
+    #? str()
+    f
