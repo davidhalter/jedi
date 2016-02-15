@@ -98,3 +98,8 @@ with foo() as f:
     """ type hinting on next line should not work """
     #?
     f
+
+aaa = some_extremely_long_function_name_that_doesnt_leave_room_for_hints() \
+    # type: float # We should be able to put hints on the next line with a \
+#? float()
+aaa
