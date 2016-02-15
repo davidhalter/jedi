@@ -355,7 +355,7 @@ def _remove_statements(evaluator, stmt, name):
         check_instance = stmt.instance
         stmt = stmt.var
 
-    pep0484types = pep0484.find_type_from_comment_hint(evaluator, stmt)
+    pep0484types = pep0484.find_type_from_comment_hint(evaluator, stmt, name)
     if pep0484types:
         return pep0484types
     types |= evaluator.eval_statement(stmt, seek_name=name)

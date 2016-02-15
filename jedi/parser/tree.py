@@ -514,7 +514,7 @@ class BaseNode(Base):
 
     def last_leaf(self):
         try:
-            return self.children[-1].first_leaf()
+            return self.children[-1].last_leaf()
         except AttributeError:
             return self.children[-1]
 
@@ -526,6 +526,10 @@ class BaseNode(Base):
         try:
             whitespace = self.last_leaf().get_next().prefix
         except AttributeError:
+            return None
+        except ValueError:
+            # in some particular cases, the tree doesn't seem to be linked
+            # correctly
             return None
         if "#" not in whitespace:
             return None

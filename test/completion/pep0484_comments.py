@@ -37,3 +37,32 @@ def test(a, b):
     d
     #? str()
     e
+
+a,b = 1, 2 # type: str, float
+#? str()
+a
+#? float()
+b
+
+class Employee:
+    pass
+
+from typing import List
+x = []   # type: List[Employee]
+#? Employee()
+x[1]
+x, y, z = [], [], []  # type: List[int], List[int], List[str]
+#? int()
+y[2]
+x, y, z = [], [], []  # type: (List[float], List[float], List[BB])
+for zi in z:
+    #? BB()
+    zi
+
+x = [
+   1,
+   2,
+]  # type: List[str]
+
+#? str()
+x[1]

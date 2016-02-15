@@ -31,10 +31,20 @@ from jedi import _compatibility
 import re
 
 
-def _evaluate_for_annotation(evaluator, annotation):
+def _evaluate_for_annotation(evaluator, annotation, index=None):
+    """
+    Evaluates a string-node, looking for an annotation
+    If index is not None, the annotation is expected to be a tuple
+    and we're interested in that index
+    """
     if annotation is not None:
         definitions = evaluator.eval_element(
             _fix_forward_reference(evaluator, annotation))
+        if index is not None:
+            definitions = list(itertools.chain.from_iterable(
+                definition.py__getitem__(index) for definition in definitions
+                if definition.type == 'tuple' and
+                len(list(definition.py__iter__())) >= index))
         return list(itertools.chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
@@ -139,7 +149,21 @@ def get_types_for_typing_module(evaluator, typ, node):
     return result
 
 
-def find_type_from_comment_hint(evaluator, stmt):
+def find_type_from_comment_hint(evaluator, stmt, name):
+    index = None
+    if stmt.children[0].type == "testlist_star_expr":
+        # something like "a, b = 1, 2"
+        leftside = stmt.children[0]
+        index = 0
+        for child in leftside.children:
+            if child == name:
+                break
+            if child.type == "operator":
+                continue
+            index += 1
+        else:
+            return []
+
     comment = stmt.get_following_comment_same_line()
     if comment is None:
         return []
@@ -151,4 +175,4 @@ def find_type_from_comment_hint(evaluator, stmt):
         repr(str(match.group(1).strip())),
         stmt.start_pos)
     annotation.parent = stmt.parent
-    return _evaluate_for_annotation(evaluator, annotation)
+    return _evaluate_for_annotation(evaluator, annotation, index)
