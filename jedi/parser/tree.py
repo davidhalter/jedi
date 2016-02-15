@@ -1342,7 +1342,7 @@ def _defined_names(current):
             names += _defined_names(child)
     elif is_node(current, 'atom'):
         names += _defined_names(current.children[1])
-    elif is_node(current, 'power') or is_node(current, 'atom_expr'):
+    elif is_node(current, 'power', 'atom_expr'):
         if current.children[-2] != '**':  # Just if there's no operation
             trailer = current.children[-1]
             if trailer.children[0] == '.':

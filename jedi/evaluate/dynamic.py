@@ -89,8 +89,7 @@ def search_function_call(evaluator, func):
                     parent = parent.parent
 
                 trailer = None
-                if tree.is_node(parent, 'power') or \
-                        tree.is_node(parent, 'atom_expr'):
+                if tree.is_node(parent, 'power', 'atom_expr'):
                     for t in parent.children[1:]:
                         if t == '**':
                             break

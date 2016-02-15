@@ -448,7 +448,7 @@ def check_flow_information(evaluator, flow, search_name, pos):
 
 def _check_isinstance_type(evaluator, element, search_name):
     try:
-        assert element.type == 'power' or element.type == 'atom_expr'
+        assert element.type in ('power', 'atom_expr')
         # this might be removed if we analyze and, etc
         assert len(element.children) == 2
         first, trailer = element.children
