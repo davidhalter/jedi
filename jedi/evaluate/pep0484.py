@@ -149,13 +149,22 @@ def get_types_for_typing_module(evaluator, typ, node):
     return result
 
 
-def find_type_from_comment_hint(evaluator, stmt, name):
+def find_type_from_comment_hint_for(evaluator, node, name):
+    return \
+        _find_type_from_comment_hint(evaluator, node, node.children[1], name)
+
+
+def find_type_from_comment_hint_assign(evaluator, node, name):
+    return \
+        _find_type_from_comment_hint(evaluator, node, node.children[0], name)
+
+
+def _find_type_from_comment_hint(evaluator, node, varlist, name):
     index = None
-    if stmt.children[0].type == "testlist_star_expr":
+    if varlist.type in ("testlist_star_expr", "exprlist"):
         # something like "a, b = 1, 2"
-        leftside = stmt.children[0]
         index = 0
-        for child in leftside.children:
+        for child in varlist.children:
             if child == name:
                 break
             if child.type == "operator":
@@ -164,7 +173,7 @@ def find_type_from_comment_hint(evaluator, stmt, name):
         else:
             return []
 
-    comment = stmt.get_following_comment_same_line()
+    comment = node.get_following_comment_same_line()
     if comment is None:
         return []
     match = re.match(r"^#\s*type:\s*([^#]*)", comment)
@@ -173,6 +182,6 @@ def find_type_from_comment_hint(evaluator, stmt, name):
     annotation = tree.String(
         tree.zero_position_modifier,
         repr(str(match.group(1).strip())),
-        stmt.start_pos)
-    annotation.parent = stmt.parent
+        node.start_pos)
+    annotation.parent = node.parent
     return _evaluate_for_annotation(evaluator, annotation, index)

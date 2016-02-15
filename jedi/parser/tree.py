@@ -524,7 +524,10 @@ class BaseNode(Base):
         after the node, including the #
         """
         try:
-            whitespace = self.last_leaf().get_next().prefix
+            if self.isinstance(ForStmt):
+                whitespace = self.children[5].first_leaf().prefix
+            else:
+                whitespace = self.last_leaf().get_next().prefix
         except AttributeError:
             return None
         except ValueError:

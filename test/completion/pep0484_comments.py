@@ -66,3 +66,14 @@ x = [
 
 #? str()
 x[1]
+
+
+for bar in foo():  # type: str
+    #? str()
+    bar
+
+for bar, baz in foo():  # type: int, float
+    #? int()
+    bar
+    #? float()
+    baz

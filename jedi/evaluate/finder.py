@@ -304,6 +304,10 @@ class NameFinder(object):
 @memoize_default(set(), evaluator_is_first_arg=True)
 def _name_to_types(evaluator, name, scope):
     typ = name.get_definition()
+    if typ.isinstance(tree.ForStmt):
+        types = pep0484.find_type_from_comment_hint_for(evaluator, typ, name)
+        if types:
+            return types
     if typ.isinstance(tree.ForStmt, tree.CompFor):
         container_types = evaluator.eval_element(typ.children[3])
         for_types = iterable.py__iter__types(evaluator, container_types, typ.children[3])
@@ -355,7 +359,8 @@ def _remove_statements(evaluator, stmt, name):
         check_instance = stmt.instance
         stmt = stmt.var
 
-    pep0484types = pep0484.find_type_from_comment_hint(evaluator, stmt, name)
+    pep0484types = \
+        pep0484.find_type_from_comment_hint_assign(evaluator, stmt, name)
     if pep0484types:
         return pep0484types
     types |= evaluator.eval_statement(stmt, seek_name=name)
