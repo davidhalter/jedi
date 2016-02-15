@@ -78,9 +78,23 @@ for bar, baz in foo():  # type: int, float
     #? float()
     baz
 
+for bar, baz in foo():
+    # type: str, str
+    """ type hinting on next line should not work """
+    #?
+    bar
+    #?
+    baz
+
 with foo():  # type: int
     ...
 
 with foo() as f:  # type: str
     #? str()
+    f
+
+with foo() as f:
+    # type: str
+    """ type hinting on next line should not work """
+    #?
     f
