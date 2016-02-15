@@ -9,13 +9,13 @@ v Function parameter annotations with builtin/custom type classes
 v Function returntype annotations with builtin/custom type classes
 v Function parameter annotations with strings (forward reference)
 v Function return type annotations with strings (forward reference)
-x Local variable type hints
+v Local variable type hints
 v Assigned types: `Url = str\ndef get(url:Url) -> str:`
-x Type hints in `with` statements
+v Type hints in `with` statements
 x Stub files support
 x support `@no_type_check` and `@no_type_check_decorator`
-x support for type hint comments `# type: (int, str) -> int`. See comment from
-    Guido https://github.com/davidhalter/jedi/issues/662
+x support for type hint comments for functions, `# type: (int, str) -> int`.
+    See comment from Guido https://github.com/davidhalter/jedi/issues/662
 """
 
 import itertools
