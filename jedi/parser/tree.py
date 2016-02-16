@@ -239,12 +239,34 @@ class Leaf(Base):
             else:
                 node = c[i - 1]
                 break
-
         while True:
             try:
                 node = node.children[-1]
             except AttributeError:  # A Leaf doesn't have children.
                 return node
+
+    def get_next(self):
+        """
+        Returns the next leaf in the parser tree.
+        """
+        node = self
+        while True:
+            c = node.parent.children
+            i = c.index(node)
+            try:
+                node = c[i + 1]
+            except IndexError:
+                node = node.parent
+                if node.parent is None:
+                    raise IndexError('Cannot access the next element of the last one.')
+            else:
+                break
+        while True:
+            try:
+                node = node.children[0]
+            except AttributeError:  # A Leaf doesn't have children.
+                return node
+
 
     def get_code(self, normalized=False):
         if normalized:
@@ -264,6 +286,7 @@ class Leaf(Base):
                 except IndexError:
                     return None
 
+
     def prev_sibling(self):
         """
         The node/leaf immediately preceding the invocant in their parent's
@@ -276,6 +299,7 @@ class Leaf(Base):
                 if i == 0:
                     return None
                 return self.parent.children[i - 1]
+
 
     def nodes_to_execute(self, last_added=False):
         return []
@@ -487,6 +511,39 @@ class BaseNode(Base):
             return self.children[0].first_leaf()
         except AttributeError:
             return self.children[0]
+
+    def last_leaf(self):
+        try:
+            return self.children[-1].last_leaf()
+        except AttributeError:
+            return self.children[-1]
+
+    def get_following_comment_same_line(self):
+        """
+        returns (as string) any comment that appears on the same line,
+        after the node, including the #
+        """
+        try:
+            if self.isinstance(ForStmt):
+                whitespace = self.children[5].first_leaf().prefix
+            elif self.isinstance(WithStmt):
+                whitespace = self.children[3].first_leaf().prefix
+            else:
+                whitespace = self.last_leaf().get_next().prefix
+        except AttributeError:
+            return None
+        except ValueError:
+            # in some particular cases, the tree doesn't seem to be linked
+            # correctly
+            return None
+        if "#" not in whitespace:
+            return None
+        comment = whitespace[whitespace.index("#"):]
+        if "\r" in comment:
+            comment = comment[:comment.index("\r")]
+        if "\n" in comment:
+            comment = comment[:comment.index("\n")]
+        return comment
 
     @utf8_repr
     def __repr__(self):

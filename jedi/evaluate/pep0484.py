@@ -9,13 +9,14 @@ v Function parameter annotations with builtin/custom type classes
 v Function returntype annotations with builtin/custom type classes
 v Function parameter annotations with strings (forward reference)
 v Function return type annotations with strings (forward reference)
-x Local variable type hints
+v Local variable type hints
 v Assigned types: `Url = str\ndef get(url:Url) -> str:`
-x Type hints in `with` statements
+v Type hints in `with` statements
 x Stub files support
 x support `@no_type_check` and `@no_type_check_decorator`
-x support for type hint comments `# type: (int, str) -> int`. See comment from
-    Guido https://github.com/davidhalter/jedi/issues/662
+x support for typing.cast() operator
+x support for type hint comments for functions, `# type: (int, str) -> int`.
+    See comment from Guido https://github.com/davidhalter/jedi/issues/662
 """
 
 import itertools
@@ -28,12 +29,23 @@ from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi import debug
 from jedi import _compatibility
+import re
 
 
-def _evaluate_for_annotation(evaluator, annotation):
+def _evaluate_for_annotation(evaluator, annotation, index=None):
+    """
+    Evaluates a string-node, looking for an annotation
+    If index is not None, the annotation is expected to be a tuple
+    and we're interested in that index
+    """
     if annotation is not None:
         definitions = evaluator.eval_element(
             _fix_forward_reference(evaluator, annotation))
+        if index is not None:
+            definitions = list(itertools.chain.from_iterable(
+                definition.py__getitem__(index) for definition in definitions
+                if definition.type == 'tuple' and
+                len(list(definition.py__iter__())) >= index))
         return list(itertools.chain.from_iterable(
             evaluator.execute(d) for d in definitions))
     else:
@@ -136,3 +148,48 @@ def get_types_for_typing_module(evaluator, typ, node):
 
     result = evaluator.execute_evaluated(factory, compiled_classname, args)
     return result
+
+
+def find_type_from_comment_hint_for(evaluator, node, name):
+    return \
+        _find_type_from_comment_hint(evaluator, node, node.children[1], name)
+
+
+def find_type_from_comment_hint_with(evaluator, node, name):
+    assert len(node.children[1].children) == 3, \
+        "Can only be here when children[1] is 'foo() as f'"
+    return _find_type_from_comment_hint(
+        evaluator, node, node.children[1].children[2], name)
+
+
+def find_type_from_comment_hint_assign(evaluator, node, name):
+    return \
+        _find_type_from_comment_hint(evaluator, node, node.children[0], name)
+
+
+def _find_type_from_comment_hint(evaluator, node, varlist, name):
+    index = None
+    if varlist.type in ("testlist_star_expr", "exprlist"):
+        # something like "a, b = 1, 2"
+        index = 0
+        for child in varlist.children:
+            if child == name:
+                break
+            if child.type == "operator":
+                continue
+            index += 1
+        else:
+            return []
+
+    comment = node.get_following_comment_same_line()
+    if comment is None:
+        return []
+    match = re.match(r"^#\s*type:\s*([^#]*)", comment)
+    if not match:
+        return []
+    annotation = tree.String(
+        tree.zero_position_modifier,
+        repr(str(match.group(1).strip())),
+        node.start_pos)
+    annotation.parent = node.parent
+    return _evaluate_for_annotation(evaluator, annotation, index)
