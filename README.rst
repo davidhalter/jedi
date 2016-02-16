@@ -93,7 +93,7 @@ understands, see: `Features
 <https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
 caveats can be found on the same page.
 
-You can run Jedi on cPython 2.6, 2.7, 3.2, 3.3 or 3.4, but it should also
+You can run Jedi on cPython 2.6, 2.7, 3.2, 3.3, 3.4 or 3.5 but it should also
 understand/parse code older than those versions.
 
 Tips on how to use Jedi efficiently can be found `here
