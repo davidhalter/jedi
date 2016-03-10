@@ -64,6 +64,7 @@ Not yet implemented:
 
 - manipulations of instances outside the instance variables without using
   methods
+- implicit namespace packages (Python 3.3+, `PEP 420 <https://www.python.org/dev/peps/pep-0420/>`_)
 
 Will probably never be implemented:
 
