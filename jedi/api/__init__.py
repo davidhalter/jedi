@@ -3,6 +3,9 @@ The API basically only provides one class. You can create a :class:`Script` and
 use its methods.
 
 Additionally you can add a debug function with :func:`set_debug_function`.
+Alternatively, if you don't need a custom function and are happy with printing
+debug messages to stdout, simply call :func:`set_debug_function` without
+arguments.
 
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
@@ -721,6 +724,8 @@ def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
                        notices=True, speed=True):
     """
     Define a callback debug function to get all the debug messages.
+
+    If you don't specify any parameters, debug messages will be printed to stdout.
 
     :param func_cb: The callback function for debug messages, with n params.
     """
