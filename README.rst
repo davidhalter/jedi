@@ -43,6 +43,7 @@ Jedi can currently be used with the following editors:
 - SourceLair_
 - `GNOME Builder`_ (with support for GObject Introspection)
 - `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
+- Gedit (gedi_)
 
 And it powers the following projects:
 
@@ -195,3 +196,4 @@ For more detailed information visit the `testing documentation
 .. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
 .. _Visual Studio Code: https://code.visualstudio.com/
+.. _gedi: https://github.com/isamert/gedi
