@@ -61,6 +61,9 @@ GNOME Builder:
   <https://git.gnome.org/browse/gnome-builder/tree/plugins/jedi>`__,
   and is enabled by default.
 
+Gedit:
+
+- gedi_
 
 .. _other-software:
 
@@ -103,3 +106,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
 .. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
+.. _gedi: https://github.com/isamert/gedi
