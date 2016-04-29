@@ -385,8 +385,9 @@ class Completion(BaseDefinition):
         if settings.add_dot_after_module:
             if isinstance(self._definition, tree.Module):
                 append += '.'
-        if isinstance(self._definition, tree.Param):
-            append += '='
+        # Remove those two lines should fix jedi-vim issue #385: https://github.com/davidhalter/jedi-vim/issues/385.
+        # if isinstance(self._definition, tree.Param):
+        #     append += '='
 
         name = str(self._name)
         if like_name:
