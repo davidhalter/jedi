@@ -155,7 +155,12 @@ class CompiledObject(Base):
         search_global shouldn't change the fact that there's one dict, this way
         there's only one `object`.
         """
-        return [LazyNamesDict(self._evaluator, self._cls(), is_instance)]
+        cls = self._cls()
+        if cls != self:
+            # If we are working with a class, the names_dict should not include
+            # class names.
+            is_instance = True
+        return [LazyNamesDict(self._evaluator, cls, is_instance)]
 
     def get_subscope_by_name(self, name):
         if name in dir(self._cls().obj):
