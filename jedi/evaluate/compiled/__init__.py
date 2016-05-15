@@ -113,7 +113,7 @@ class CompiledObject(Base):
         elif inspect.ismodule(cls):
             return 'module'
         elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
-                or inspect.ismethoddescriptor(cls):
+                or inspect.ismethoddescriptor(cls) or inspect.isfunction(cls):
             return 'function'
 
     @property

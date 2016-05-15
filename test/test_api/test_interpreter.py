@@ -7,6 +7,34 @@ import jedi
 from jedi._compatibility import is_py33
 
 
+def get_completion(source, namespace):
+    i = jedi.Interpreter(source, [namespace])
+    completions = i.completions()
+    assert len(completions) == 1
+    return completions[0]
+
+
+def test_builtin_details():
+    import keyword
+
+    class EmptyClass:
+        pass
+
+    variable = EmptyClass()
+
+    def func():
+        pass
+
+    cls = get_completion('EmptyClass', locals())
+    var = get_completion('variable', locals())
+    f = get_completion('func', locals())
+    m = get_completion('keyword', locals())
+    assert cls.type == 'class'
+    assert var.type == 'instance'
+    assert f.type == 'function'
+    assert m.type == 'module'
+
+
 class TestInterpreterAPI(TestCase):
     def check_interpreter_complete(self, source, namespace, completions,
                                    **kwds):

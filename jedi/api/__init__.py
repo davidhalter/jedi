@@ -626,46 +626,6 @@ class Interpreter(Script):
         interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
                                              self._parser.module())
 
-    def _simple_complete(self, path, dot, like):
-        user_stmt = self._parser.user_stmt_with_whitespace()
-        is_simple_path = not path or re.search('^[\w][\w\d.]*$', path)
-        if isinstance(user_stmt, tree.Import) or not is_simple_path:
-            return super(Interpreter, self)._simple_complete(path, dot, like)
-        else:
-            # TODO Remove this branch? The above branch should be fast enough IMO.
-            class NamespaceModule(object):
-                def __getattr__(_, name):
-                    for n in self.namespaces:
-                        try:
-                            return n[name]
-                        except KeyError:
-                            pass
-                    raise AttributeError()
-
-                def __dir__(_):
-                    gen = (n.keys() for n in self.namespaces)
-                    return list(set(chain.from_iterable(gen)))
-
-            paths = path.split('.') if path else []
-
-            namespaces = (NamespaceModule(), builtins)
-            for p in paths:
-                old, namespaces = namespaces, []
-                for n in old:
-                    try:
-                        namespaces.append(getattr(n, p))
-                    except Exception:
-                        pass
-
-            completion_names = []
-            for namespace in namespaces:
-                for name in dir(namespace):
-                    if name.lower().startswith(like.lower()):
-                        scope = self._parser.module()
-                        n = FakeName(name, scope)
-                        completion_names.append(n)
-            return completion_names
-
 
 def defined_names(source, path=None, encoding='utf-8'):
     """

@@ -6,6 +6,7 @@ mixing in Python code, the autocompletion should work much better for builtins.
 
 import os
 import inspect
+import types
 
 from jedi._compatibility import is_py3, builtins, unicode
 from jedi.parser import ParserWithRecovery, load_grammar
@@ -13,6 +14,28 @@ from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
 
 modules = {}
+
+
+MethodDescriptorType = type(str.replace)
+# These are not considered classes and access is granted even though they have
+# a __class__ attribute.
+NOT_CLASS_TYPES = (
+    types.BuiltinFunctionType,
+    types.CodeType,
+    types.DynamicClassAttribute,
+    types.FrameType,
+    types.FunctionType,
+    types.GeneratorType,
+    types.GetSetDescriptorType,
+    types.LambdaType,
+    types.MappingProxyType,
+    types.MemberDescriptorType,
+    types.MethodType,
+    types.ModuleType,
+    types.SimpleNamespace,
+    types.TracebackType,
+    MethodDescriptorType
+)
 
 
 def _load_faked_module(module):
@@ -134,7 +157,9 @@ def get_faked(module, obj, name=None):
 
 def is_class_instance(obj):
     """Like inspect.* methods."""
-    return not (inspect.isclass(obj) or inspect.ismodule(obj)
-                or inspect.isbuiltin(obj) or inspect.ismethod(obj)
-                or inspect.ismethoddescriptor(obj) or inspect.iscode(obj)
-                or inspect.isgenerator(obj))
+    try:
+        cls = obj.__class__
+    except AttributeError:
+        return False
+    else:
+        return cls != type and not issubclass(cls, NOT_CLASS_TYPES)

@@ -88,7 +88,7 @@ def setup_readline(namespace_module=__main__):
     try:
         import readline
     except ImportError:
-        print("Module readline not available.")
+        print("Jedi: Module readline not available.")
     else:
         readline.set_completer(JediRL().complete)
         readline.parse_and_bind("tab: complete")
