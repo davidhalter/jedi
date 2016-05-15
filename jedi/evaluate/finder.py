@@ -153,6 +153,13 @@ class NameFinder(object):
                 last_names.append(name)
                 continue
 
+            if isinstance(stmt, er.ModuleWrapper):
+                # In case of REPL completion, we can infer modules names that
+                # don't really have a definition (because they are really just
+                # namespaces). In this case we can just add it.
+                last_names.append(name)
+                continue
+
             if isinstance(name, compiled.CompiledName) \
                     or isinstance(name, er.InstanceName) and isinstance(name._origin_name, compiled.CompiledName):
                 last_names.append(name)

@@ -116,7 +116,7 @@ class LazyName(helpers.FakeName):
             evaluated = compiled.create(self._evaluator, obj)
             found = [evaluated]
 
-        if len(found) > 1 or True:
+        if len(found) > 1:
             content = iterable.AlreadyEvaluated(found)
             stmt = pt.ExprStmt([self, pt.Operator(pt.zero_position_modifier,
                                                   '=', (0, 0), ''), content])
