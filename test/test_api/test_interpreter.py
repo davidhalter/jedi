@@ -6,6 +6,10 @@ from ..helpers import TestCase
 import jedi
 from jedi._compatibility import is_py33
 
+class _GlobalNameSpace():
+    class SideEffectContainer():
+        pass
+
 
 def get_completion(source, namespace):
     i = jedi.Interpreter(source, [namespace])
@@ -33,6 +37,27 @@ def test_builtin_details():
     assert var.type == 'instance'
     assert f.type == 'function'
     assert m.type == 'module'
+
+
+def test_nested_resolve():
+    class X():
+        def x():
+            pass
+
+    cls = get_completion('X', locals())
+    func = get_completion('X.x', locals())
+    assert func.start_pos == (func.start_pos[0] + 1, 8)
+
+
+def test_side_effect_completion():
+    """
+    In the repl it's possible to cause side effects that are not documented in
+    Python code, however we want references to Python code as well. Therefore
+    we need some mixed kind of magic for tests.
+    """
+    _GlobalNameSpace.SideEffectContainer.foo = 1
+    foo = get_completion('foo', _GlobalNameSpace.__dict__)
+    assert foo.name == 'foo'
 
 
 class TestInterpreterAPI(TestCase):
