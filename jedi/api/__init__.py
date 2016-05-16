@@ -10,6 +10,7 @@ import re
 import os
 import warnings
 import sys
+import collections
 from itertools import chain
 
 from jedi._compatibility import unicode, builtins
@@ -610,8 +611,8 @@ class Interpreter(Script):
         `source`.
         """
         if type(namespaces) is not list or len(namespaces) == 0 or \
-           any([type(x) is not dict for x in namespaces]):
-            raise TypeError("namespaces must be a non-empty list of dict")
+                not all(isinstance(x, collections.Mapping) for x in namespaces):
+            raise TypeError("namespaces must be a non-empty list of dicts.")
 
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
