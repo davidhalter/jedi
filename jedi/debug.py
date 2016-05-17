@@ -3,6 +3,11 @@ import inspect
 import os
 import time
 
+def _lazy_colorama_init():
+    pass
+
+_inited=False
+
 try:
     if os.name == 'nt':
         # does not work on Windows, as pyreadline and colorama interfere
@@ -13,8 +18,13 @@ try:
         from colorama import initialise
         # pytest resets the stream at the end - causes troubles. Since after
         # every output the stream is reset automatically we don't need this.
-        initialise.atexit_done = True
-        init()
+        def _lazy_colorama_init():
+            global _inited
+            if not _inited:
+                initialise.atexit_done = True
+                init()
+            _inited = True
+
 except ImportError:
     class Fore(object):
         RED = ''
@@ -63,6 +73,7 @@ def dbg(message, *args):
         mod = inspect.getmodule(frm[0])
         if not (mod.__name__ in ignored_modules):
             i = ' ' * _debug_indent
+            _lazy_colorama_init()
             debug_function(NOTICE, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
 
 
@@ -81,6 +92,7 @@ def speed(name):
 
 def print_to_stdout(level, str_out):
     """ The default debug function """
+    _lazy_colorama_init()
     if level == NOTICE:
         col = Fore.GREEN
     elif level == WARNING:
