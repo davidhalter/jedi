@@ -4,9 +4,9 @@ Used only for REPL Completion.
 
 import inspect
 
-from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 from jedi.evaluate import compiled
+from jedi.cache import underscore_memoization, memoize_method
 
 
 class MixedObject(object):
@@ -20,10 +20,41 @@ class MixedObject(object):
     This combined logic makes it possible to provide more powerful REPL
     completion. It allows side effects that are not noticable with the default
     parser structure to still be completeable.
+
+    The biggest difference from CompiledObject to MixedObject is that we are
+    generally dealing with Python code and not with C code. This will generate
+    fewer special cases, because we in Python you don't have the same freedoms
+    to modify the runtime.
     """
-    def __init__(self, evaluator, obj):
+    def __init__(self, evaluator, obj, node_name):
         self._evaluator = evaluator
         self.obj = obj
+        self.node_name = node_name
+        self._definition = node_name.get_definition()
+
+    def names_dicts(self):
+        return [LazyMixedNamesDict(self._evaluator, self, is_instance=False)]
+
+    def __getattr__(self, name):
+        return getattr(self._definition, name)
+
+
+class MixedName(compiled.CompiledName):
+    """
+    The ``CompiledName._compiled_object`` is our MixedObject.
+    """
+    @property
+    @underscore_memoization
+    def parent(self):
+        return create(self._evaluator, getattr(self._compiled_obj, self.name))
+
+    @parent.setter
+    def parent(self, value):
+        pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
+
+
+class LazyMixedNamesDict(compiled.LazyNamesDict):
+    name_class = MixedName
 
 
 def _load_module(evaluator, path, python_object):
@@ -34,30 +65,54 @@ def _load_module(evaluator, path, python_object):
     return module
 
 
-def find_syntax_node(evaluator, python_object):
+def find_syntax_node_name(evaluator, python_object):
     path = inspect.getsourcefile(python_object)
     if path is None:
         return None
 
     module = _load_module(evaluator, path, python_object)
+
     if inspect.ismodule(python_object):
+        # We don't need to check names for modules, because there's not really
+        # a way to write a module in a module in Python (and also __name__ can
+        # be something like ``email.utils``).
         return module
 
     try:
+        names = module.used_names[python_object.__name__]
+    except NameError:
+        return None
+
+    names = [n for n in names if n.is_definition()]
+
+    try:
         code = python_object.__code__
-    except AttributeError:
         # By using the line number of a code object we make the lookup in a
         # file pretty easy. There's still a possibility of people defining
         # stuff like ``a = 3; foo(a); a = 4`` on the same line, but if people
         # do so we just don't care.
         line_nr = code.co_firstlineno
-    return None
+    except AttributeError:
+        pass
+    else:
+        line_names = [name for name in names if name.start_pos[0] == line_nr]
+        # There's a chance that the object is not available anymore, because
+        # the code has changed in the background.
+        if line_names:
+            return line_names[-1]
+
+    # It's really hard to actually get the right definition, here as a last
+    # resort we just return the last one. This chance might lead to odd
+    # completions at some points but will lead to mostly correct type
+    # inference, because people tend to define a public name in a module only
+    # once.
+    return names[-1]
 
 
-@compiled_objects_cache
+@compiled.compiled_objects_cache
 def create(evaluator, obj):
-    node = find_syntax_node(obj)
-    if node is None:
+    name = find_syntax_node_name(obj)
+    if name is None:
         return compiled.create(evaluator, obj)
     else:
-        return MixedObject(evaluator, obj)
+        return MixedObject(evaluator, obj, name)

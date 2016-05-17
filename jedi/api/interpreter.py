@@ -102,7 +102,7 @@ class LazyName(helpers.FakeName):
                                               'should be part of sys.modules.')
 
                 if parser_path:
-                    assert len(parser_path) == 1
+                    #assert len(parser_path) == 1
                     found = list(self._evaluator.find_types(mod, parser_path[0],
                                                             search_global=True))
                 else:

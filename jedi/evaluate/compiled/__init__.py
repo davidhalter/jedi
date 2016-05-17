@@ -234,10 +234,40 @@ class CompiledObject(Base):
         return []  # Builtins don't have imports
 
 
+class CompiledName(FakeName):
+    def __init__(self, evaluator, compiled_obj, name):
+        super(CompiledName, self).__init__(name)
+        self._evaluator = evaluator
+        self._compiled_obj = compiled_obj
+        self.name = name
+
+    def __repr__(self):
+        try:
+            name = self._compiled_obj.name  # __name__ is not defined all the time
+        except AttributeError:
+            name = None
+        return '<%s: (%s).%s>' % (type(self).__name__, name, self.name)
+
+    def is_definition(self):
+        return True
+
+    @property
+    @underscore_memoization
+    def parent(self):
+        module = self._compiled_obj.get_parent_until()
+        return _create_from_name(self._evaluator, module, self._compiled_obj, self.name)
+
+    @parent.setter
+    def parent(self, value):
+        pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
+
+
 class LazyNamesDict(object):
     """
     A names_dict instance for compiled objects, resembles the parser.tree.
     """
+    name_class = CompiledName
+
     def __init__(self, evaluator, compiled_obj, is_instance):
         self._evaluator = evaluator
         self._compiled_obj = compiled_obj
@@ -252,7 +282,7 @@ class LazyNamesDict(object):
             getattr(self._compiled_obj.obj, name)
         except AttributeError:
             raise KeyError('%s in %s not found.' % (name, self._compiled_obj))
-        return [CompiledName(self._evaluator, self._compiled_obj, name)]
+        return [self.name_class(self._evaluator, self._compiled_obj, name)]
 
     def values(self):
         obj = self._compiled_obj.obj
@@ -265,38 +295,10 @@ class LazyNamesDict(object):
                 # The dir function can be wrong.
                 pass
 
-        # dir doesn't include the type names.
+        # ``dir`` doesn't include the type names.
         if not inspect.ismodule(obj) and obj != type and not self._is_instance:
             values += create(self._evaluator, type).names_dict.values()
         return values
-
-
-class CompiledName(FakeName):
-    def __init__(self, evaluator, obj, name):
-        super(CompiledName, self).__init__(name)
-        self._evaluator = evaluator
-        self._obj = obj
-        self.name = name
-
-    def __repr__(self):
-        try:
-            name = self._obj.name  # __name__ is not defined all the time
-        except AttributeError:
-            name = None
-        return '<%s: (%s).%s>' % (type(self).__name__, name, self.name)
-
-    def is_definition(self):
-        return True
-
-    @property
-    @underscore_memoization
-    def parent(self):
-        module = self._obj.get_parent_until()
-        return _create_from_name(self._evaluator, module, self._obj, self.name)
-
-    @parent.setter
-    def parent(self, value):
-        pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
 
 
 def dotted_from_fs_path(fs_path, sys_path):
