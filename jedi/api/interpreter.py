@@ -18,13 +18,17 @@ from jedi.evaluate import iterable
 from jedi.evaluate.compiled import mixed
 
 
-def add_namespaces_to_parser(evaluator, namespaces, parser_module):
-    for namespace in namespaces:
-        for key, value in namespace.items():
+def add_namespaces_to_parser(evaluator, namespace_dicts, parser_module):
+    for dct in namespace_dicts:
+        namespace = compiled.CompiledObject(evaluator, type('namespace', (), dct))
+
+        for key, value in dct.items():
             # Name lookups in an ast tree work by checking names_dict.
             # Therefore we just add fake names to that and we're done.
             arr = parser_module.names_dict.setdefault(key, [])
-            arr.append(LazyName(evaluator, parser_module, key, value))
+            name = mixed.MixedName(evaluator, namespace, key)
+            arr.append(name)
+            #arr.append(LazyName(evaluator, parser_module, key, value))
 
 
 class LazyName(helpers.FakeName):

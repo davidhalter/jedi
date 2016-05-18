@@ -56,7 +56,15 @@ class MixedName(compiled.CompiledName):
 
     @parent.setter
     def parent(self, value):
-        pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
+        pass  # Just ignore this, Name tries to overwrite the parent attribute.
+
+    @property
+    def start_pos(self):
+        if isinstance(self.parent, MixedObject):
+            return self.parent.node_name.start_pos
+
+        # This means a start_pos that doesn't exist (compiled objects).
+        return (0, 0)
 
 
 class LazyMixedNamesDict(compiled.LazyNamesDict):
