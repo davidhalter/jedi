@@ -4,6 +4,10 @@ import os
 import time
 
 def _lazy_colorama_init():
+    """lazily init colorama if necessary, not to screw up stdout is debug not enabled.
+
+    This version of the function does nothing.
+    """
     pass
 
 _inited=False
@@ -16,11 +20,15 @@ try:
         # Use colorama for nicer console output.
         from colorama import Fore, init
         from colorama import initialise
-        # pytest resets the stream at the end - causes troubles. Since after
-        # every output the stream is reset automatically we don't need this.
         def _lazy_colorama_init():
+            """lazily init colorama if necessary, not to screw up stdout is debug not enabled.
+
+            This version of the function does init colorama.
+            """
             global _inited
             if not _inited:
+                # pytest resets the stream at the end - causes troubles. Since after
+                # every output the stream is reset automatically we don't need this.
                 initialise.atexit_done = True
                 init()
             _inited = True
