@@ -4,9 +4,11 @@ Used only for REPL Completion.
 
 import inspect
 
+from jedi import common
 from jedi.parser.fast import FastParser
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization, memoize_method
+from jedi.evaluate.cache import memoize_default
 
 
 class MixedObject(object):
@@ -32,7 +34,8 @@ class MixedObject(object):
         self.node_name = node_name
         self._definition = node_name.get_definition()
 
-    def names_dicts(self):
+    def names_dicts(self, search_global):
+        assert search_global is False
         return [LazyMixedNamesDict(self._evaluator, self, is_instance=False)]
 
     def __getattr__(self, name):
@@ -46,7 +49,7 @@ class MixedName(compiled.CompiledName):
     @property
     @underscore_memoization
     def parent(self):
-        return create(self._evaluator, getattr(self._compiled_obj, self.name))
+        return create(self._evaluator, getattr(self._compiled_obj.obj, self.name))
 
     @parent.setter
     def parent(self, value):
@@ -57,8 +60,15 @@ class LazyMixedNamesDict(compiled.LazyNamesDict):
     name_class = MixedName
 
 
+def parse(grammar, path):
+    with open(path) as f:
+        source = f.read()
+    source = common.source_to_unicode(source)
+    return FastParser(grammar, source, path)
+
+
 def _load_module(evaluator, path, python_object):
-    module = FastParser(evaluator.grammar, path=path).module
+    module = parse(evaluator.grammar, path).module
     python_module = inspect.getmodule(python_object)
 
     evaluator.modules[python_module.__name__] = module
@@ -66,7 +76,11 @@ def _load_module(evaluator, path, python_object):
 
 
 def find_syntax_node_name(evaluator, python_object):
-    path = inspect.getsourcefile(python_object)
+    try:
+        path = inspect.getsourcefile(python_object)
+    except TypeError:
+        # The type might not be known (e.g. class_with_dict.__weakref__)
+        return None
     if path is None:
         return None
 
@@ -109,9 +123,9 @@ def find_syntax_node_name(evaluator, python_object):
     return names[-1]
 
 
-@compiled.compiled_objects_cache
+@memoize_default(evaluator_is_first_arg=True)
 def create(evaluator, obj):
-    name = find_syntax_node_name(obj)
+    name = find_syntax_node_name(evaluator, obj)
     if name is None:
         return compiled.create(evaluator, obj)
     else:

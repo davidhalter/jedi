@@ -56,7 +56,7 @@ def test_side_effect_completion():
     we need some mixed kind of magic for tests.
     """
     _GlobalNameSpace.SideEffectContainer.foo = 1
-    foo = get_completion('foo', _GlobalNameSpace.__dict__)
+    foo = get_completion('SideEffectContainer.foo', _GlobalNameSpace.__dict__)
     assert foo.name == 'foo'
 
 

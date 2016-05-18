@@ -15,6 +15,7 @@ from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 from jedi.evaluate import helpers
 from jedi.evaluate import iterable
+from jedi.evaluate.compiled import mixed
 
 
 def add_namespaces_to_parser(evaluator, namespaces, parser_module):
@@ -46,6 +47,7 @@ class LazyName(helpers.FakeName):
         Here we are trying to link back to Python code, if possible. This means
         we try to find the python module for a name (not the builtin).
         """
+        return mixed.create(self._evaluator, self._value)
         obj = self._value
         parser_path = []
         if inspect.ismodule(obj):
