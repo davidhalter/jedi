@@ -38,6 +38,9 @@ class MixedObject(object):
         assert search_global is False
         return [LazyMixedNamesDict(self._evaluator, self, is_instance=False)]
 
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, repr(self.obj))
+
     def __getattr__(self, name):
         return getattr(self._definition, name)
 

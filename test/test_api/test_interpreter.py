@@ -5,6 +5,7 @@ Tests of ``jedi.api.Interpreter``.
 from ..helpers import TestCase
 import jedi
 from jedi._compatibility import is_py33
+from jedi.evaluate.compiled import mixed
 
 class _GlobalNameSpace():
     class SideEffectContainer():
@@ -56,6 +57,9 @@ def test_side_effect_completion():
     we need some mixed kind of magic for tests.
     """
     _GlobalNameSpace.SideEffectContainer.foo = 1
+    side_effect = get_completion('SideEffectContainer', _GlobalNameSpace.__dict__)
+
+    assert isinstance(side_effect._definition, mixed.MixedObject)
     foo = get_completion('SideEffectContainer.foo', _GlobalNameSpace.__dict__)
     assert foo.name == 'foo'
 
