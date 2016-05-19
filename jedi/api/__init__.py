@@ -14,8 +14,7 @@ import collections
 from itertools import chain
 
 from jedi._compatibility import unicode, builtins
-from jedi.parser import Parser, load_grammar, ParseError
-from jedi.parser.tokenize import source_tokens
+from jedi.parser import load_grammar
 from jedi.parser import tree
 from jedi.parser.user_context import UserContext, UserContextParser
 from jedi import debug
@@ -27,12 +26,12 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import usages
 from jedi.api import helpers
+from jedi.api import inference
 from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate.param import try_iter_content
-from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.helpers import FakeName, get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate.sys_path import get_venv_path
@@ -270,7 +269,8 @@ class Script(object):
                 if not names:
                     continue
                 completion_names += filter_definition_names(names, self._parser.user_stmt(), pos)
-        elif self._get_under_cursor_stmt(path) is None:
+        elif inference.get_under_cursor_stmt(self._evaluator, self._parser,
+                                             path, self._pos) is None:
             return []
         else:
             scopes = list(self._type_inference(path, True))
@@ -284,16 +284,16 @@ class Script(object):
                 completion_names += filter_definition_names(names, self._parser.user_stmt())
         return completion_names
 
-    def _type_inference(self, goto_path, is_completion=False):
+    def _type_inference(self, dotted_path, is_completion=False):
         """
         Base for completions/goto. Basically it returns the resolved scopes
         under cursor.
         """
-        debug.dbg('start: %s in %s', goto_path, self._parser.user_scope())
+        debug.dbg('start: %s in %s', dotted_path, self._parser.user_scope())
 
         user_stmt = self._parser.user_stmt_with_whitespace()
-        if not user_stmt and len(goto_path.split('\n')) > 1:
-            # If the user_stmt is not defined and the goto_path is multi line,
+        if not user_stmt and len(dotted_path.split('\n')) > 1:
+            # If the user_stmt is not defined and the dotted_path is multi line,
             # something's strange. Most probably the backwards tokenizer
             # matched to much.
             return []
@@ -306,7 +306,8 @@ class Script(object):
             scopes = [i]
         else:
             # Just parse one statement, take it and evaluate it.
-            eval_stmt = self._get_under_cursor_stmt(goto_path)
+            eval_stmt = inference.get_under_cursor_stmt(self._evaluator,
+                                                        self._parser, dotted_path, self._pos)
             if eval_stmt is None:
                 return []
 
@@ -320,26 +321,6 @@ class Script(object):
             scopes = self._evaluator.eval_element(eval_stmt)
 
         return scopes
-
-    @memoize_default()
-    def _get_under_cursor_stmt(self, cursor_txt, start_pos=None):
-        try:
-            stmt = Parser(self._grammar, cursor_txt, 'eval_input').get_parsed_node()
-        except ParseError:
-            return None
-
-        user_stmt = self._parser.user_stmt()
-        if user_stmt is None:
-            # Set the start_pos to a pseudo position, that doesn't exist but
-            # works perfectly well (for both completions in docstrings and
-            # statements).
-            pos = start_pos or self._pos
-        else:
-            pos = user_stmt.start_pos
-
-        stmt.move(pos[0] - 1, pos[1])  # Moving the offset.
-        stmt.parent = self._parser.user_scope()
-        return stmt
 
     def goto_definitions(self):
         """
@@ -430,7 +411,8 @@ class Script(object):
         user_stmt = self._parser.user_stmt()
         user_scope = self._parser.user_scope()
 
-        stmt = self._get_under_cursor_stmt(goto_path)
+        stmt = inference.get_under_cursor_stmt(self._evaluator, self._parser,
+                                               goto_path, self._pos)
         if stmt is None:
             return []
 
@@ -537,7 +519,8 @@ class Script(object):
         if call_txt is None:
             return []
 
-        stmt = self._get_under_cursor_stmt(call_txt, start_pos)
+        stmt = inference.get_under_cursor_stmt(self._evaluator, self._parser,
+                                               call_txt, start_pos)
         if stmt is None:
             return []
 
