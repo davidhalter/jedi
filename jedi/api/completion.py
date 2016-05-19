@@ -21,48 +21,48 @@ class Completion:
         self._pos = position
         self._call_signatures_method = call_signatures_method
 
-    def completions(self):
-        def get_completions(user_stmt, bs):
-            # TODO this closure is ugly. it also doesn't work with
-            # simple_complete (used for Interpreter), somehow redo.
-            module = self._evaluator.wrap(self._parser.module())
-            names, level, only_modules, unfinished_dotted = \
-                helpers.check_error_statements(module, self._pos)
-            completion_names = []
-            if names is not None:
-                imp_names = tuple(str(n) for n in names if n.end_pos < self._pos)
-                i = imports.Importer(self._evaluator, imp_names, module, level)
-                completion_names = i.completion_names(self._evaluator, only_modules)
+    def get_completions(self, user_stmt, path, dot, like):
+        # TODO this closure is ugly. it also doesn't work with
+        # simple_complete (used for Interpreter), somehow redo.
+        module = self._evaluator.wrap(self._parser.module())
+        names, level, only_modules, unfinished_dotted = \
+            helpers.check_error_statements(module, self._pos)
+        completion_names = []
+        if names is not None:
+            imp_names = tuple(str(n) for n in names if n.end_pos < self._pos)
+            i = imports.Importer(self._evaluator, imp_names, module, level)
+            completion_names = i.completion_names(self._evaluator, only_modules)
 
-            # TODO this paragraph is necessary, but not sure it works.
-            context = self._user_context.get_context()
-            if not next(context).startswith('.'):  # skip the path
-                if next(context) == 'from':
-                    # completion is just "import" if before stands from ..
-                    if unfinished_dotted:
-                        return completion_names
-                    else:
-                        return set([keywords.keyword(self._evaluator, 'import').name])
+        # TODO this paragraph is necessary, but not sure it works.
+        context = self._user_context.get_context()
+        if not next(context).startswith('.'):  # skip the path
+            if next(context) == 'from':
+                # completion is just "import" if before stands from ..
+                if unfinished_dotted:
+                    return completion_names
+                else:
+                    return set([keywords.keyword(self._evaluator, 'import').name])
 
-            if isinstance(user_stmt, tree.Import):
-                module = self._parser.module()
-                completion_names += imports.completion_names(self._evaluator,
-                                                             user_stmt, self._pos)
-                return completion_names
-
-            if names is None and not isinstance(user_stmt, tree.Import):
-                if not path and not dot:
-                    # add keywords
-                    completion_names += keywords.completion_names(
-                        self._evaluator,
-                        user_stmt,
-                        self._pos,
-                        module)
-                    # TODO delete? We should search for valid parser
-                    # transformations.
-                completion_names += self._simple_complete(path, dot, like)
+        if isinstance(user_stmt, tree.Import):
+            module = self._parser.module()
+            completion_names += imports.completion_names(self._evaluator,
+                                                         user_stmt, self._pos)
             return completion_names
 
+        if names is None and not isinstance(user_stmt, tree.Import):
+            if not path and not dot:
+                # add keywords
+                completion_names += keywords.completion_names(
+                    self._evaluator,
+                    user_stmt,
+                    self._pos,
+                    module)
+                # TODO delete? We should search for valid parser
+                # transformations.
+            completion_names += self._simple_complete(path, dot, like)
+        return completion_names
+
+    def completions(self):
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
         # Dots following an int are not the start of a completion but a float
@@ -73,7 +73,7 @@ class Completion:
 
         user_stmt = self._parser.user_stmt_with_whitespace()
 
-        completion_names = get_completions(user_stmt, self._evaluator.BUILTINS)
+        completion_names = self.get_completions(user_stmt, path, dot, like)
 
         if not dot:
             # add named params
@@ -131,7 +131,9 @@ class Completion:
                 names = list(chain.from_iterable(names_dict.values()))
                 if not names:
                     continue
-                completion_names += filter_definition_names(names, self._parser.user_stmt(), pos)
+                completion_names += filter_definition_names(
+                    names, self._parser.user_stmt(), pos
+                )
         elif inference.get_under_cursor_stmt(self._evaluator, self._parser,
                                              path, self._pos) is None:
             return []
@@ -147,5 +149,7 @@ class Completion:
                 for names_dict in s.names_dicts(search_global=False):
                     names += chain.from_iterable(names_dict.values())
 
-                completion_names += filter_definition_names(names, self._parser.user_stmt())
+                completion_names += filter_definition_names(
+                    names, self._parser.user_stmt()
+                )
         return completion_names
