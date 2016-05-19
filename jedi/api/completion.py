@@ -21,6 +21,58 @@ class Completion:
         self._pos = position
         self._call_signatures_method = call_signatures_method
 
+    def completions(self, path):
+        # Dots following an int are not the start of a completion but a float
+        # literal.
+        if re.search(r'^\d\.$', path):
+            return []
+        completion_parts = helpers.get_completion_parts(path)
+
+        user_stmt = self._parser.user_stmt_with_whitespace()
+
+        completion_names = self.get_completions(user_stmt, completion_parts)
+
+        if not completion_parts.has_dot:
+            # add named params
+            for call_sig in self._call_signatures_method():
+                # Allow protected access, because it's a public API.
+                module = call_sig._name.get_parent_until()
+                # Compiled modules typically don't allow keyword arguments.
+                if not isinstance(module, compiled.CompiledObject):
+                    for p in call_sig.params:
+                        # Allow access on _definition here, because it's a
+                        # public API and we don't want to make the internal
+                        # Name object public.
+                        if p._definition.stars == 0:  # no *args/**kwargs
+                            completion_names.append(p._name)
+
+        needs_dot = not completion_parts.has_dot and completion_parts.path
+
+        comps = []
+        comp_dct = {}
+        for c in set(completion_names):
+            n = str(c)
+            if settings.case_insensitive_completion \
+                    and n.lower().startswith(completion_parts.name.lower()) \
+                    or n.startswith(completion_parts.name):
+                if isinstance(c.parent, (tree.Function, tree.Class)):
+                    # TODO I think this is a hack. It should be an
+                    #   er.Function/er.Class before that.
+                    c = self._evaluator.wrap(c.parent).name
+                new = classes.Completion(self._evaluator, c, needs_dot, len(completion_parts.name))
+                k = (new.name, new.complete)  # key
+                if k in comp_dct and settings.no_completion_duplicates:
+                    comp_dct[k]._same_name_completions.append(new)
+                else:
+                    comp_dct[k] = new
+                    comps.append(new)
+
+        debug.speed('completions end')
+
+        return sorted(comps, key=lambda x: (x.name.startswith('__'),
+                                            x.name.startswith('_'),
+                                            x.name.lower()))
+
     def get_completions(self, user_stmt, completion_parts):
         # TODO this closure is ugly. it also doesn't work with
         # simple_complete (used for Interpreter), somehow redo.
@@ -61,58 +113,6 @@ class Completion:
                 # transformations.
             completion_names += self._simple_complete(completion_parts)
         return completion_names
-
-    def completions(self, path):
-        # Dots following an int are not the start of a completion but a float
-        # literal.
-        if re.search(r'^\d\.$', path):
-            return []
-        completion_parts = helpers.get_completion_parts(path)
-
-        user_stmt = self._parser.user_stmt_with_whitespace()
-
-        completion_names = self.get_completions(user_stmt, completion_parts)
-
-        if not completion_parts.has_dot:
-            # add named params
-            for call_sig in self._call_signatures_method():
-                # Allow protected access, because it's a public API.
-                module = call_sig._name.get_parent_until()
-                # Compiled modules typically don't allow keyword arguments.
-                if not isinstance(module, compiled.CompiledObject):
-                    for p in call_sig.params:
-                        # Allow access on _definition here, because it's a
-                        # public API and we don't want to make the internal
-                        # Name object public.
-                        if p._definition.stars == 0:  # no *args/**kwargs
-                            completion_names.append(p._name)
-
-        needs_dot = not completion_parts.has_dot and path
-
-        comps = []
-        comp_dct = {}
-        for c in set(completion_names):
-            n = str(c)
-            if settings.case_insensitive_completion \
-                    and n.lower().startswith(completion_parts.name.lower()) \
-                    or n.startswith(completion_parts.name):
-                if isinstance(c.parent, (tree.Function, tree.Class)):
-                    # TODO I think this is a hack. It should be an
-                    #   er.Function/er.Class before that.
-                    c = self._evaluator.wrap(c.parent).name
-                new = classes.Completion(self._evaluator, c, needs_dot, len(completion_parts.name))
-                k = (new.name, new.complete)  # key
-                if k in comp_dct and settings.no_completion_duplicates:
-                    comp_dct[k]._same_name_completions.append(new)
-                else:
-                    comp_dct[k] = new
-                    comps.append(new)
-
-        debug.speed('completions end')
-
-        return sorted(comps, key=lambda x: (x.name.startswith('__'),
-                                            x.name.startswith('_'),
-                                            x.name.lower()))
 
     def _simple_complete(self, completion_parts):
         if not completion_parts.path and not completion_parts.has_dot:
