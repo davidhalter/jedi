@@ -156,11 +156,13 @@ class Script(object):
         :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`classes.Completion`
         """
+        debug.speed('completions start')
+        path = self._user_context.get_path_until_cursor()
         completion = Completion(
             self._evaluator, self._parser, self._user_context,
             self._pos, self.call_signatures
         )
-        return completion.completions()
+        return completion.completions(path)
 
     def goto_definitions(self):
         """

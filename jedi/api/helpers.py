@@ -2,18 +2,22 @@
 Helpers for the API
 """
 import re
+from collections import namedtuple
 
 from jedi.parser import tree as pt
 from jedi.evaluate import imports
 
 
-def completion_parts(path_until_cursor):
+CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
+
+def get_completion_parts(path_until_cursor):
     """
     Returns the parts for the completion
     :return: tuple - (path, dot, like)
     """
     match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path_until_cursor, flags=re.S)
-    return match.groups()
+    path, dot, name = match.groups()
+    return CompletionParts(path, bool(dot), name)
 
 
 def sorted_definitions(defs):

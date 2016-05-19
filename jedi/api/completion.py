@@ -21,7 +21,7 @@ class Completion:
         self._pos = position
         self._call_signatures_method = call_signatures_method
 
-    def get_completions(self, user_stmt, path, dot, like):
+    def get_completions(self, user_stmt, completion_parts):
         # TODO this closure is ugly. it also doesn't work with
         # simple_complete (used for Interpreter), somehow redo.
         module = self._evaluator.wrap(self._parser.module())
@@ -50,7 +50,7 @@ class Completion:
             return completion_names
 
         if names is None and not isinstance(user_stmt, tree.Import):
-            if not path and not dot:
+            if not completion_parts.path and not completion_parts.has_dot:
                 # add keywords
                 completion_names += keywords.completion_names(
                     self._evaluator,
@@ -59,23 +59,21 @@ class Completion:
                     module)
                 # TODO delete? We should search for valid parser
                 # transformations.
-            completion_names += self._simple_complete(path, dot, like)
+            completion_names += self._simple_complete(completion_parts)
         return completion_names
 
-    def completions(self):
-        debug.speed('completions start')
-        path = self._user_context.get_path_until_cursor()
+    def completions(self, path):
         # Dots following an int are not the start of a completion but a float
         # literal.
         if re.search(r'^\d\.$', path):
             return []
-        path, dot, like = helpers.completion_parts(path)
+        completion_parts = helpers.get_completion_parts(path)
 
         user_stmt = self._parser.user_stmt_with_whitespace()
 
-        completion_names = self.get_completions(user_stmt, path, dot, like)
+        completion_names = self.get_completions(user_stmt, completion_parts)
 
-        if not dot:
+        if not completion_parts.has_dot:
             # add named params
             for call_sig in self._call_signatures_method():
                 # Allow protected access, because it's a public API.
@@ -89,20 +87,20 @@ class Completion:
                         if p._definition.stars == 0:  # no *args/**kwargs
                             completion_names.append(p._name)
 
-        needs_dot = not dot and path
+        needs_dot = not completion_parts.has_dot and path
 
         comps = []
         comp_dct = {}
         for c in set(completion_names):
             n = str(c)
             if settings.case_insensitive_completion \
-                    and n.lower().startswith(like.lower()) \
-                    or n.startswith(like):
+                    and n.lower().startswith(completion_parts.name.lower()) \
+                    or n.startswith(completion_parts.name):
                 if isinstance(c.parent, (tree.Function, tree.Class)):
                     # TODO I think this is a hack. It should be an
                     #   er.Function/er.Class before that.
                     c = self._evaluator.wrap(c.parent).name
-                new = classes.Completion(self._evaluator, c, needs_dot, len(like))
+                new = classes.Completion(self._evaluator, c, needs_dot, len(completion_parts.name))
                 k = (new.name, new.complete)  # key
                 if k in comp_dct and settings.no_completion_duplicates:
                     comp_dct[k]._same_name_completions.append(new)
@@ -116,8 +114,8 @@ class Completion:
                                             x.name.startswith('_'),
                                             x.name.lower()))
 
-    def _simple_complete(self, path, dot, like):
-        if not path and not dot:
+    def _simple_complete(self, completion_parts):
+        if not completion_parts.path and not completion_parts.has_dot:
             scope = self._parser.user_scope()
             if not scope.is_scope():  # Might be a flow (if/while/etc).
                 scope = scope.get_parent_scope()
@@ -135,12 +133,12 @@ class Completion:
                     names, self._parser.user_stmt(), pos
                 )
         elif inference.get_under_cursor_stmt(self._evaluator, self._parser,
-                                             path, self._pos) is None:
+                                             completion_parts.path, self._pos) is None:
             return []
         else:
             scopes = list(inference.type_inference(
                 self._evaluator, self._parser, self._user_context,
-                self._pos, path, is_completion=True
+                self._pos, completion_parts.path, is_completion=True
             ))
             completion_names = []
             debug.dbg('possible completion scopes: %s', scopes)
