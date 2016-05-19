@@ -13,7 +13,7 @@ import sys
 import collections
 from itertools import chain
 
-from jedi._compatibility import unicode, builtins
+from jedi._compatibility import unicode
 from jedi.parser import load_grammar
 from jedi.parser import tree
 from jedi.parser.user_context import UserContext, UserContextParser
@@ -32,7 +32,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate.param import try_iter_content
-from jedi.evaluate.helpers import FakeName, get_module_names
+from jedi.evaluate.helpers import get_module_names
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate.sys_path import get_venv_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
@@ -273,7 +273,10 @@ class Script(object):
                                              path, self._pos) is None:
             return []
         else:
-            scopes = list(self._type_inference(path, True))
+            scopes = list(inference.type_inference(
+                self._evaluator, self._parser, self._user_context,
+                self._pos, path, is_completion=True
+            ))
             completion_names = []
             debug.dbg('possible completion scopes: %s', scopes)
             for s in scopes:
@@ -283,44 +286,6 @@ class Script(object):
 
                 completion_names += filter_definition_names(names, self._parser.user_stmt())
         return completion_names
-
-    def _type_inference(self, dotted_path, is_completion=False):
-        """
-        Base for completions/goto. Basically it returns the resolved scopes
-        under cursor.
-        """
-        debug.dbg('start: %s in %s', dotted_path, self._parser.user_scope())
-
-        user_stmt = self._parser.user_stmt_with_whitespace()
-        if not user_stmt and len(dotted_path.split('\n')) > 1:
-            # If the user_stmt is not defined and the dotted_path is multi line,
-            # something's strange. Most probably the backwards tokenizer
-            # matched to much.
-            return []
-
-        if isinstance(user_stmt, tree.Import):
-            i, _ = helpers.get_on_import_stmt(self._evaluator, self._user_context,
-                                              user_stmt, is_completion)
-            if i is None:
-                return []
-            scopes = [i]
-        else:
-            # Just parse one statement, take it and evaluate it.
-            eval_stmt = inference.get_under_cursor_stmt(self._evaluator,
-                                                        self._parser, dotted_path, self._pos)
-            if eval_stmt is None:
-                return []
-
-            module = self._evaluator.wrap(self._parser.module())
-            names, level, _, _ = helpers.check_error_statements(module, self._pos)
-            if names:
-                names = [str(n) for n in names]
-                i = imports.Importer(self._evaluator, names, module, level)
-                return i.follow()
-
-            scopes = self._evaluator.eval_element(eval_stmt)
-
-        return scopes
 
     def goto_definitions(self):
         """
@@ -363,7 +328,10 @@ class Script(object):
                         definitions = self._evaluator.goto_definition(name)
 
         if not definitions and goto_path:
-            definitions = self._type_inference(goto_path)
+            definitions = inference.type_inference(
+                self._evaluator, self._parser, self._user_context,
+                self._pos, goto_path
+            )
 
         definitions = resolve_import_paths(definitions)
         names = [s.name for s in definitions]
