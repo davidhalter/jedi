@@ -11,7 +11,6 @@ import os
 import warnings
 import sys
 import collections
-from itertools import chain
 
 from jedi._compatibility import unicode
 from jedi.parser import load_grammar
@@ -21,19 +20,17 @@ from jedi import debug
 from jedi import settings
 from jedi import common
 from jedi import cache
-from jedi.api import keywords
 from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import usages
 from jedi.api import helpers
 from jedi.api import inference
+from jedi.api.completion import Completion
 from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
-from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.helpers import get_module_names
-from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate.sys_path import get_venv_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
 
@@ -159,133 +156,11 @@ class Script(object):
         :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`classes.Completion`
         """
-        def get_completions(user_stmt, bs):
-            # TODO this closure is ugly. it also doesn't work with
-            # simple_complete (used for Interpreter), somehow redo.
-            module = self._evaluator.wrap(self._parser.module())
-            names, level, only_modules, unfinished_dotted = \
-                helpers.check_error_statements(module, self._pos)
-            completion_names = []
-            if names is not None:
-                imp_names = tuple(str(n) for n in names if n.end_pos < self._pos)
-                i = imports.Importer(self._evaluator, imp_names, module, level)
-                completion_names = i.completion_names(self._evaluator, only_modules)
-
-            # TODO this paragraph is necessary, but not sure it works.
-            context = self._user_context.get_context()
-            if not next(context).startswith('.'):  # skip the path
-                if next(context) == 'from':
-                    # completion is just "import" if before stands from ..
-                    if unfinished_dotted:
-                        return completion_names
-                    else:
-                        return set([keywords.keyword(self._evaluator, 'import').name])
-
-            if isinstance(user_stmt, tree.Import):
-                module = self._parser.module()
-                completion_names += imports.completion_names(self._evaluator,
-                                                             user_stmt, self._pos)
-                return completion_names
-
-            if names is None and not isinstance(user_stmt, tree.Import):
-                if not path and not dot:
-                    # add keywords
-                    completion_names += keywords.completion_names(
-                        self._evaluator,
-                        user_stmt,
-                        self._pos,
-                        module)
-                    # TODO delete? We should search for valid parser
-                    # transformations.
-                completion_names += self._simple_complete(path, dot, like)
-            return completion_names
-
-        debug.speed('completions start')
-        path = self._user_context.get_path_until_cursor()
-        # Dots following an int are not the start of a completion but a float
-        # literal.
-        if re.search(r'^\d\.$', path):
-            return []
-        path, dot, like = helpers.completion_parts(path)
-
-        user_stmt = self._parser.user_stmt_with_whitespace()
-
-        completion_names = get_completions(user_stmt, self._evaluator.BUILTINS)
-
-        if not dot:
-            # add named params
-            for call_sig in self.call_signatures():
-                # Allow protected access, because it's a public API.
-                module = call_sig._name.get_parent_until()
-                # Compiled modules typically don't allow keyword arguments.
-                if not isinstance(module, compiled.CompiledObject):
-                    for p in call_sig.params:
-                        # Allow access on _definition here, because it's a
-                        # public API and we don't want to make the internal
-                        # Name object public.
-                        if p._definition.stars == 0:  # no *args/**kwargs
-                            completion_names.append(p._name)
-
-        needs_dot = not dot and path
-
-        comps = []
-        comp_dct = {}
-        for c in set(completion_names):
-            n = str(c)
-            if settings.case_insensitive_completion \
-                    and n.lower().startswith(like.lower()) \
-                    or n.startswith(like):
-                if isinstance(c.parent, (tree.Function, tree.Class)):
-                    # TODO I think this is a hack. It should be an
-                    #   er.Function/er.Class before that.
-                    c = self._evaluator.wrap(c.parent).name
-                new = classes.Completion(self._evaluator, c, needs_dot, len(like))
-                k = (new.name, new.complete)  # key
-                if k in comp_dct and settings.no_completion_duplicates:
-                    comp_dct[k]._same_name_completions.append(new)
-                else:
-                    comp_dct[k] = new
-                    comps.append(new)
-
-        debug.speed('completions end')
-
-        return sorted(comps, key=lambda x: (x.name.startswith('__'),
-                                            x.name.startswith('_'),
-                                            x.name.lower()))
-
-    def _simple_complete(self, path, dot, like):
-        if not path and not dot:
-            scope = self._parser.user_scope()
-            if not scope.is_scope():  # Might be a flow (if/while/etc).
-                scope = scope.get_parent_scope()
-            names_dicts = global_names_dict_generator(
-                self._evaluator,
-                self._evaluator.wrap(scope),
-                self._pos
-            )
-            completion_names = []
-            for names_dict, pos in names_dicts:
-                names = list(chain.from_iterable(names_dict.values()))
-                if not names:
-                    continue
-                completion_names += filter_definition_names(names, self._parser.user_stmt(), pos)
-        elif inference.get_under_cursor_stmt(self._evaluator, self._parser,
-                                             path, self._pos) is None:
-            return []
-        else:
-            scopes = list(inference.type_inference(
-                self._evaluator, self._parser, self._user_context,
-                self._pos, path, is_completion=True
-            ))
-            completion_names = []
-            debug.dbg('possible completion scopes: %s', scopes)
-            for s in scopes:
-                names = []
-                for names_dict in s.names_dicts(search_global=False):
-                    names += chain.from_iterable(names_dict.values())
-
-                completion_names += filter_definition_names(names, self._parser.user_stmt())
-        return completion_names
+        completion = Completion(
+            self._evaluator, self._parser, self._user_context,
+            self._pos, self.call_signatures
+        )
+        return completion.completions()
 
     def goto_definitions(self):
         """
