@@ -438,3 +438,8 @@ def test_string_literals():
 
     script = jedi.Script(dedent(source))
     assert script.completions()
+
+def test_nested_get():
+    """Test merged dict get()"""
+    s = jedi.Script(u'from email import message', 1, 22, None, 'utf-8')
+    s.goto_assignments()
