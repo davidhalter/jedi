@@ -104,29 +104,29 @@ class PgenParser(object):
         self.error_recovery = error_recovery
 
     def parse(self, tokenizer):
-        for type, value, prefix, start_pos in tokenizer:
-            if self.addtoken(type, value, prefix, start_pos):
+        for type_, value, prefix, start_pos in tokenizer:
+            if self.addtoken(type_, value, prefix, start_pos):
                 break
         else:
             # We never broke out -- EOF is too soon -- Unfinished statement.
-            self.error_recovery(self.grammar, self.stack, type, value,
+            self.error_recovery(self.grammar, self.stack, type_, value,
                                 start_pos, prefix, self.addtoken)
             # Add the ENDMARKER again.
-            if not self.addtoken(type, value, prefix, start_pos):
-                raise InternalParseError("incomplete input", type, value, start_pos)
+            if not self.addtoken(type_, value, prefix, start_pos):
+                raise InternalParseError("incomplete input", type_, value, start_pos)
         return self.rootnode
 
-    def addtoken(self, type, value, prefix, start_pos):
+    def addtoken(self, type_, value, prefix, start_pos):
         """Add a token; return True if this is the end of the program."""
         # Map from token to label
-        if type == tokenize.NAME:
+        if type_ == tokenize.NAME:
             # Check for reserved words (keywords)
             try:
                 ilabel = self.grammar.keywords[value]
             except KeyError:
-                ilabel = self.grammar.tokens[type]
+                ilabel = self.grammar.tokens[type_]
         else:
-            ilabel = self.grammar.tokens[type]
+            ilabel = self.grammar.tokens[type_]
 
         # Loop until the token is shifted; may raise exceptions
         while True:
@@ -140,7 +140,7 @@ class PgenParser(object):
                     # Look it up in the list of labels
                     assert t < 256
                     # Shift a token; we're done with it
-                    self.shift(type, value, newstate, prefix, start_pos)
+                    self.shift(type_, value, newstate, prefix, start_pos)
                     # Pop while we are in an accept-only state
                     state = newstate
                     while states[state] == [(0, state)]:
@@ -166,36 +166,36 @@ class PgenParser(object):
                     self.pop()
                     if not self.stack:
                         # Done parsing, but another token is input
-                        raise InternalParseError("too much input", type, value, start_pos)
+                        raise InternalParseError("too much input", type_, value, start_pos)
                 else:
-                    self.error_recovery(self.grammar, self.stack, type,
+                    self.error_recovery(self.grammar, self.stack, type_,
                                         value, start_pos, prefix, self.addtoken)
                     break
 
-    def shift(self, type, value, newstate, prefix, start_pos):
+    def shift(self, type_, value, newstate, prefix, start_pos):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = self.convert_leaf(self.grammar, type, value, prefix, start_pos)
+        newnode = self.convert_leaf(self.grammar, type_, value, prefix, start_pos)
         node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 
-    def push(self, type, newdfa, newstate):
+    def push(self, type_, newdfa, newstate):
         """Push a nonterminal.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = (type, [])
+        newnode = (type_, [])
         self.stack[-1] = (dfa, newstate, node)
         self.stack.append((newdfa, 0, newnode))
 
     def pop(self):
         """Pop a nonterminal.  (Internal)"""
-        popdfa, popstate, (type, children) = self.stack.pop()
+        popdfa, popstate, (type_, children) = self.stack.pop()
         # If there's exactly one child, return that child instead of creating a
         # new node.  We still create expr_stmt and file_input though, because a
         # lot of Jedi depends on its logic.
         if len(children) == 1:
             newnode = children[0]
         else:
-            newnode = self.convert_node(self.grammar, type, children)
+            newnode = self.convert_node(self.grammar, type_, children)
 
         try:
             # Equal to:
