@@ -186,7 +186,7 @@ class Script(object):
             return new_defs
 
         goto_path = self._user_context.get_path_under_cursor()
-        context = self._user_context.get_context()
+        context = self._user_context.get_reverse_context()
         definitions = []
         if next(context) in ('class', 'def'):
             definitions = [self._evaluator.wrap(self._parser.user_scope())]
@@ -253,7 +253,7 @@ class Script(object):
             return definitions
 
         goto_path = self._user_context.get_path_under_cursor()
-        context = self._user_context.get_context()
+        context = self._user_context.get_reverse_context()
         user_stmt = self._parser.user_stmt()
         user_scope = self._parser.user_scope()
 

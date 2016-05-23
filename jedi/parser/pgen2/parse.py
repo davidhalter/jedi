@@ -34,6 +34,18 @@ class InternalParseError(Exception):
         self.start_pos = start_pos
 
 
+def token_to_ilabel(grammar, type_, value):
+    # Map from token to label
+    if type_ == tokenize.NAME:
+        # Check for reserved words (keywords)
+        try:
+            return grammar.keywords[value]
+        except KeyError:
+            pass
+
+    return grammar.tokens[type_]
+
+
 class PgenParser(object):
     """Parser engine.
 
@@ -118,15 +130,7 @@ class PgenParser(object):
 
     def addtoken(self, type_, value, prefix, start_pos):
         """Add a token; return True if this is the end of the program."""
-        # Map from token to label
-        if type_ == tokenize.NAME:
-            # Check for reserved words (keywords)
-            try:
-                ilabel = self.grammar.keywords[value]
-            except KeyError:
-                ilabel = self.grammar.tokens[type_]
-        else:
-            ilabel = self.grammar.tokens[type_]
+        ilabel = token_to_ilabel(self.grammar, type_, value)
 
         # Loop until the token is shifted; may raise exceptions
         while True:
@@ -168,7 +172,7 @@ class PgenParser(object):
                         # Done parsing, but another token is input
                         raise InternalParseError("too much input", type_, value, start_pos)
                 else:
-                    self.error_recovery(self.grammar, self.stack, type_,
+                    self.error_recovery(self.grammar, self.stack, arcs, type_,
                                         value, start_pos, prefix, self.addtoken)
                     break
 

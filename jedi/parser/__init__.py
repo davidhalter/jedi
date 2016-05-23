@@ -24,7 +24,7 @@ from jedi.parser import token
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, OP, ERRORTOKEN)
 from jedi.parser.pgen2.pgen import generate_grammar
-from jedi.parser.pgen2.parse import PgenParser
+from jedi.parser.pgen2.parse import PgenParser, token_to_ilabel
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
 # Not used yet. In the future I intend to add something like KeywordStatement
@@ -60,11 +60,19 @@ def load_grammar(version='3.4'):
 
 
 class ErrorStatement(object):
-    def __init__(self, stack, next_token, position_modifier, next_start_pos):
+    def __init__(self, stack, arcs, next_token, position_modifier, next_start_pos):
         self.stack = stack
+        self.arcs = arcs
         self._position_modifier = position_modifier
         self.next_token = next_token
         self._next_start_pos = next_start_pos
+
+    def __repr__(self):
+        return '<%s next: %s@%s>' % (
+            type(self).__name__,
+            repr(self.next_token),
+            self.next_start_pos
+        )
 
     @property
     def next_start_pos(self):
@@ -80,6 +88,16 @@ class ErrorStatement(object):
     def first_type(self):
         first_type, nodes = self.stack[0]
         return first_type
+
+    def is_a_valid_token(self, type_, value):
+        ilabel = token_to_ilabel(type_, value)
+        for i, newstate in self.arcs:
+            if ilabel == i:
+                return True
+        return False
+
+    def get_code(self):
+        return ''.join(node.get_code() for _, nodes in self.stack for node in nodes)
 
 
 class ParserSyntaxError(object):
@@ -119,8 +137,10 @@ class Parser(object):
         'lambdef_nocond': pt.Lambda,
     }
 
-    def __init__(self, grammar, source, start, tokenizer=None):
-        start_number = grammar.symbol2number[start]
+    def __init__(self, grammar, source, start_symbol='file_input',
+                 tokenizer=None, start_parsing=True):
+        # Todo Remove start_parsing (with False)
+        start_number = grammar.symbol2number[start_symbol]
 
         self._used_names = {}
         self._scope_names_stack = [{}]
@@ -131,27 +151,42 @@ class Parser(object):
         # For the fast parser.
         self.position_modifier = pt.PositionModifier()
 
-        added_newline = False
+        self._added_newline = False
         # The Python grammar needs a newline at the end of each statement.
-        if not source.endswith('\n') and start == 'file_input':
+        if not source.endswith('\n') and start_symbol == 'file_input':
             source += '\n'
-            added_newline = True
+            self._added_newline = True
 
-        p = PgenParser(grammar, self.convert_node, self.convert_leaf,
-                       self.error_recovery, start_number)
+        self.pgen_parser = PgenParser(
+            grammar, self.convert_node, self.convert_leaf,
+            self.error_recovery, start_number
+        )
+
+        self._start_symbol = start_symbol
+        self._grammar = grammar
+        self._tokenizer = tokenizer
         if tokenizer is None:
-            tokenizer = tokenize.source_tokens(source)
+            self._tokenizer = tokenize.source_tokens(source, use_exact_op_types=True)
 
-        self._parsed = p.parse(self._tokenize(tokenizer))
+        self._parsed = None
 
-        if start == 'file_input' != self._parsed.type:
+        if start_parsing:
+            self.parse()
+
+    def parse(self):
+        if self._parsed is not None:
+            return self._parsed
+
+        self._parsed = self.pgen_parser.parse(self._tokenize(self._tokenizer))
+
+        if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's
             # not what we want, we want a module, so we add it here:
-            self._parsed = self.convert_node(grammar,
-                                             grammar.symbol2number['file_input'],
+            self._parsed = self.convert_node(self._grammar,
+                                             self._grammar.symbol2number['file_input'],
                                              [self._parsed])
 
-        if added_newline:
+        if self._added_newline:
             self.remove_last_newline()
 
     def get_parsed_node(self):
@@ -161,8 +196,6 @@ class Parser(object):
         for typ, value, start_pos, prefix in tokenizer:
             if typ == ERRORTOKEN:
                 raise ParseError
-            elif typ == OP:
-                typ = token.opmap[value]
             yield typ, value, prefix, start_pos
 
     def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
@@ -301,7 +334,7 @@ class ParserWithRecovery(Parser):
         #if self.options["print_function"]:
         #    python_grammar = pygram.python_grammar_no_print_statement
         #else:
-        super(ParserWithRecovery, self).__init__(grammar, source, 'file_input', tokenizer)
+        super(ParserWithRecovery, self).__init__(grammar, source, tokenizer=tokenizer)
 
         self.module = self._parsed
         self.module.used_names = self._used_names
@@ -309,7 +342,7 @@ class ParserWithRecovery(Parser):
         self.module.global_names = self._global_names
         self.module.error_statement_stacks = self._error_statement_stacks
 
-    def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
+    def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
         """
         This parser is written in a dynamic way, meaning that this parser
@@ -345,7 +378,7 @@ class ParserWithRecovery(Parser):
             stack[index]
 
         #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
-        self._stack_removal(grammar, stack, index + 1, value, start_pos)
+        self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos)
         if typ == INDENT:
             # For every deleted INDENT we have to delete a DEDENT as well.
             # Otherwise the parser will get into trouble and DEDENT too early.
@@ -366,7 +399,7 @@ class ParserWithRecovery(Parser):
             # doesn't stop you from defining `continue` in a module, etc.
             add_token_callback(typ, value, prefix, start_pos)
 
-    def _stack_removal(self, grammar, stack, start_index, value, start_pos):
+    def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
         def clear_names(children):
             for c in children:
                 try:
@@ -393,7 +426,7 @@ class ParserWithRecovery(Parser):
             if nodes and nodes[0] in ('def', 'class', 'lambda'):
                 self._scope_names_stack.pop()
         if failed_stack:
-            err = ErrorStatement(failed_stack, value, self.position_modifier, start_pos)
+            err = ErrorStatement(failed_stack, arcs, value, self.position_modifier, start_pos)
             self._error_statement_stacks.append(err)
 
         self._last_failed_start_pos = start_pos
@@ -418,8 +451,6 @@ class ParserWithRecovery(Parser):
                 self._add_syntax_error('Strange token', start_pos)
                 continue
 
-            if typ == OP:
-                typ = token.opmap[value]
             yield typ, value, prefix, start_pos
 
     def _add_syntax_error(self, message, position):

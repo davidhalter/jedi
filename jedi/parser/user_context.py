@@ -1,16 +1,20 @@
 import re
 import os
 import keyword
+from collections import namedtuple
 
 from jedi import cache
 from jedi import common
 from jedi.parser import tokenize, ParserWithRecovery
 from jedi._compatibility import u
+from jedi.parser import token
 from jedi.parser.fast import FastParser
 from jedi.parser import tree
 from jedi import debug
 from jedi.common import PushBackIterator
 
+# TODO this should be part of the tokenizer not just of this user_context.
+Token = namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])
 
 REPLACE_STR = r"[bBuU]?[rR]?" + (r"(?:(')[^\n'\\]*(?:\\.[^\n'\\]*)*(?:'|$)" +
                                  '|' +
@@ -66,7 +70,7 @@ class UserContext(object):
             first_line = common.splitlines(tok_str)[0]
             column -= len(first_line)
             # Reverse the token again, so that it is in normal order again.
-            yield typ, tok_str[::-1], (self._line_temp, column), prefix[::-1]
+            yield Token(typ, tok_str[::-1], (self._line_temp, column), prefix[::-1])
 
     def _calc_path_until_cursor(self, start_pos):
         """
@@ -214,11 +218,14 @@ class UserContext(object):
                 next_is_key = True
         return None, 0, None, (0, 0)
 
-    def get_context(self, yield_positions=False):
+    def get_reverse_context(self, yield_positions=False):
+        """
+        Returns the token strings in reverse order from the start position.
+        """
         self.get_path_until_cursor()  # In case _start_cursor_pos is undefined.
         pos = self._start_cursor_pos
         while True:
-            # remove non important white space
+            # Remove non important white space.
             line = self.get_line(pos[0])
             while True:
                 if pos[1] == 0:
@@ -245,6 +252,35 @@ class UserContext(object):
                     yield None
                 else:
                     yield ''
+
+    def get_backwards_context_tokens(self):
+        self.get_path_until_cursor()  # In case _start_cursor_pos is undefined.
+        pos = self._start_cursor_pos
+        while True:
+            # Remove non important white space.
+            line = self.get_line(pos[0])
+            while True:
+                if pos[1] == 0:
+                    line = self.get_line(pos[0] - 1)
+                    if line and line[-1] == '\\':
+                        pos = pos[0] - 1, len(line) - 1
+                        continue
+                    else:
+                        break
+
+                if line[pos[1] - 1].isspace():
+                    pos = pos[0], pos[1] - 1
+                else:
+                    break
+
+            try:
+                token_ = next(self._get_backwards_tokenizer(pos))
+                pos = token_.start_pos
+                yield token_
+            except StopIteration:
+                # Make it clear that there's nothing coming anymore.
+                #yield Token('', token.ENDMARKER, (1, 0), '')
+                break
 
     def get_line(self, line_nr):
         if not self._line_cache:
@@ -310,7 +346,7 @@ class UserContextParser(object):
                 # process it - probably a Syntax Error (or in a comment).
                 debug.warning('No statement under the cursor.')
                 return
-            pos = next(self._user_context.get_context(yield_positions=True))
+            pos = next(self._user_context.get_reverse_context(yield_positions=True))
             user_stmt = self.module().get_statement_for_position(pos)
         return user_stmt
 

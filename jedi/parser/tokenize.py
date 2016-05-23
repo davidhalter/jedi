@@ -14,7 +14,7 @@ from __future__ import absolute_import
 import string
 import re
 from io import StringIO
-from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER,
+from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, opmap,
                                NAME, OP, ERRORTOKEN, NEWLINE, INDENT, DEDENT)
 from jedi._compatibility import is_py3
 
@@ -143,18 +143,19 @@ del _compile
 
 tabsize = 8
 
+# TODO add with?
 ALWAYS_BREAK_TOKENS = (';', 'import', 'class', 'def', 'try', 'except',
                        'finally', 'while', 'return')
 
 
-def source_tokens(source):
+def source_tokens(source, use_exact_op_types=False):
     """Generate tokens from a the source code (string)."""
     source = source
     readline = StringIO(source).readline
-    return generate_tokens(readline)
+    return generate_tokens(readline, use_exact_op_types)
 
 
-def generate_tokens(readline):
+def generate_tokens(readline, use_exact_op_types=False):
     """
     A heavily modified Python standard library tokenizer.
 
@@ -285,7 +286,12 @@ def generate_tokens(readline):
                     paren_level += 1
                 elif token in ')]}':
                     paren_level -= 1
-                yield OP, token, spos, prefix
+
+                if use_exact_op_types:
+                    typ = opmap[token]
+                else:
+                    typ = OP
+                yield typ, token, spos, prefix
 
     if new_line:
         end_pos = lnum + 1, 0

@@ -451,7 +451,7 @@ class FastTokenizer(object):
     """
     def __init__(self, source):
         self.source = source
-        self._gen = source_tokens(source)
+        self._gen = source_tokens(source, use_exact_op_types=True)
         self._closed = False
 
         # fast parser options

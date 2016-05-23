@@ -1,6 +1,7 @@
 from itertools import chain
 import re
 
+from jedi.parser import token
 from jedi.parser import tree
 from jedi import debug
 from jedi import settings
@@ -70,7 +71,7 @@ class Completion:
 
         user_stmt = self._parser.user_stmt_with_whitespace()
 
-        completion_names = self.get_completions(user_stmt, completion_parts)
+        completion_names = self._get_context_completions(user_stmt, completion_parts)
 
         if not completion_parts.has_dot:
             call_signatures = self._call_signatures_method()
@@ -85,30 +86,73 @@ class Completion:
                                                   x.name.startswith('_'),
                                                   x.name.lower()))
 
-    def get_completions(self, user_stmt, completion_parts):
-        # TODO this closure is ugly. it also doesn't work with
-        # simple_complete (used for Interpreter), somehow redo.
+    def _get_context_completions(self, user_stmt, completion_parts):
+        """
+        Analyzes the context that a completion is made in and decides what to
+        return.
+
+        Could provide context for:
+        - from/import completions
+        - as nothing
+        - statements that start always on new line
+                       'import', 'class', 'def', 'try', 'except',
+                       'finally', 'while', with
+        - statements that start always on new line or after ; or after :
+                        return raise continue break del pass global nonlocal assert
+        - def/class nothing
+        - async for/def/with
+        - \n@/del/return/raise no keyword (after keyword no keyword)?
+        - after keyword
+        - continue/break/pass nothing
+        - global/nonlocal search global
+        - after operator no keyword: return
+        - yield like return + after ( and =
+        - almost always ok
+              'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
+        - after operations no keyword:
+                + = * ** - etc Maybe work with the parser state?
+
+        # hard:
+        - await
+        - yield from / raise from / from import difference
+        - In args: */**: no completion
+        - In params (also lambda): no completion before =
+        """
         module = self._evaluator.wrap(self._parser.module())
         names, level, only_modules, unfinished_dotted = \
             helpers.check_error_statements(module, self._pos)
+
+        grammar = self._evaluator.grammar
+        stack = helpers.get_stack_at_position(grammar, module, self._pos)
+        allowed_keywords, allowed_tokens = \
+            helpers.get_possible_completion_types(grammar, stack)
+
+        completion_names = list(self._get_keyword_completion_names(allowed_keywords))
+        if token.NAME in allowed_tokens:
+            # Differentiate between import names and other names.
+            completion_names += self._simple_complete(completion_parts)
+
         completion_names = []
         if names is not None:
             imp_names = tuple(str(n) for n in names if n.end_pos < self._pos)
             i = imports.Importer(self._evaluator, imp_names, module, level)
             completion_names = i.completion_names(self._evaluator, only_modules)
 
+        return completion_names
+
         # TODO this paragraph is necessary, but not sure it works.
-        context = self._user_context.get_context()
-        if not next(context).startswith('.'):  # skip the path
-            if next(context) == 'from':
-                # completion is just "import" if before stands from ..
-                if unfinished_dotted:
-                    return completion_names
-                else:
-                    return [keywords.keyword(self._evaluator, 'import').name]
+        context = self._user_context.get_backwards_context_tokens()
+        x = next(context, None)
+        #print(x)
+        #if not x.string.startswith('.'):  # skip the path
+        if next(context, None).string == 'from':
+            # completion is just "import" if before stands from ..
+            if unfinished_dotted:
+                return completion_names
+            else:
+                return [keywords.keyword(self._evaluator, 'import').name]
 
         if isinstance(user_stmt, tree.Import):
-            module = self._parser.module()
             completion_names += imports.completion_names(self._evaluator,
                                                          user_stmt, self._pos)
             return completion_names
@@ -125,6 +169,10 @@ class Completion:
                 # transformations.
             completion_names += self._simple_complete(completion_parts)
         return completion_names
+
+    def _get_keyword_completion_names(self, keywords):
+        for keyword in keywords:
+            yield keywords.keyword(self._evaluator, keyword).name
 
     def _simple_complete(self, completion_parts):
         if not completion_parts.path and not completion_parts.has_dot:
