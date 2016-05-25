@@ -58,6 +58,7 @@ class Completion:
     def __init__(self, evaluator, parser, user_context, position, call_signatures_method):
         self._evaluator = evaluator
         self._parser = parser
+        self._module = parser.module()
         self._user_context = user_context
         self._pos = position
         self._call_signatures_method = call_signatures_method
@@ -118,9 +119,10 @@ class Completion:
         - In args: */**: no completion
         - In params (also lambda): no completion before =
         """
-        module = self._evaluator.wrap(self._parser.module())
+        '''
         names, level, only_modules, unfinished_dotted = \
-            helpers.check_error_statements(module, self._pos)
+            helpers.check_error_statements(self._module, self._pos)
+'''
 
         grammar = self._evaluator.grammar
 
@@ -130,7 +132,7 @@ class Completion:
         if completion_parts.name:
             pos = pos[0], pos[1] - len(completion_parts.name)
 
-        stack = helpers.get_stack_at_position(grammar, module, pos)
+        stack = helpers.get_stack_at_position(grammar, self._module, pos)
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)
 
@@ -141,10 +143,14 @@ class Completion:
             # This means that we actually have to do type inference.
 
             symbol_names = list(stack.get_node_names(grammar))
+            print(symbol_names)
 
             if "import_stmt" in symbol_names:
-                if "dotted_name" in symbol_names:
-                    completion_names += self._complete_dotted_name(stack, module)
+                if symbol_names[-1] == "dotted_name":
+                    completion_names += self._complete_dotted_name(stack, self._module)
+                elif symbol_names[-1] == "import_name":
+                    names = list(stack.get_nodes())[1::2]
+                    completion_names += self._get_importer_names(names)
             else:
                 completion_names += self._simple_complete(completion_parts)
 
@@ -158,6 +164,7 @@ class Completion:
 
         return completion_names
 
+        '''
         # TODO this paragraph is necessary, but not sure it works.
         context = self._user_context.get_backwards_context_tokens()
         x = next(context, None)
@@ -187,6 +194,7 @@ class Completion:
                 # transformations.
             completion_names += self._simple_complete(completion_parts)
         return completion_names
+        '''
 
     def _get_keyword_completion_names(self, keywords_):
         for k in keywords_:
@@ -238,9 +246,12 @@ class Completion:
             if node in ('.', '...'):
                 level += len(node.value)
             else:
-                names = [str(n) for n in nodes[i::2]]
+                names = nodes[i::2]
                 break
 
-        print(names, nodes)
-        i = imports.Importer(self._evaluator, names, module, level)
-        return i.completion_names(self._evaluator, only_modules=True)
+        return self._get_importer_names(names, level=level)
+
+    def _get_importer_names(self, names, level=0, only_modules=True):
+        names = [str(n) for n in names]
+        i = imports.Importer(self._evaluator, names, self._module, level)
+        return i.completion_names(self._evaluator, only_modules=only_modules)
