@@ -24,7 +24,7 @@ def type_inference(evaluator, parser, user_context, position, dotted_path, is_co
         # matched to much.
         return []
 
-    if isinstance(user_stmt, tree.Import):
+    if isinstance(user_stmt, tree.Import) and not is_completion:
         i, _ = helpers.get_on_import_stmt(evaluator, user_context,
                                           user_stmt, is_completion)
         if i is None:
@@ -36,12 +36,13 @@ def type_inference(evaluator, parser, user_context, position, dotted_path, is_co
         if eval_stmt is None:
             return []
 
-        module = evaluator.wrap(parser.module())
-        names, level, _, _ = helpers.check_error_statements(module, position)
-        if names:
-            names = [str(n) for n in names]
-            i = imports.Importer(evaluator, names, module, level)
-            return i.follow()
+        if not is_completion:
+            module = evaluator.wrap(parser.module())
+            names, level, _, _ = helpers.check_error_statements(module, position)
+            if names:
+                names = [str(n) for n in names]
+                i = imports.Importer(evaluator, names, module, level)
+                return i.follow()
 
         scopes = evaluator.eval_element(eval_stmt)
 

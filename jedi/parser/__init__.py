@@ -20,7 +20,6 @@ import re
 
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
-from jedi.parser import token
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, OP, ERRORTOKEN)
 from jedi.parser.pgen2.pgen import generate_grammar
@@ -75,14 +74,13 @@ class ErrorStatement(object):
         )
 
     @property
-    def next_start_pos(self):
+    def end_pos(self):
         s = self._next_start_pos
         return s[0] + self._position_modifier.line, s[1]
 
     @property
-    def first_pos(self):
-        first_type, nodes = self.stack[0]
-        return nodes[0].start_pos
+    def start_pos(self):
+        return next(self._iter_nodes()).start_pos
 
     @property
     def first_type(self):
@@ -96,8 +94,15 @@ class ErrorStatement(object):
                 return True
         return False
 
-    def get_code(self):
-        return ''.join(node.get_code() for _, nodes in self.stack for node in nodes)
+    def _iter_nodes(self):
+        for _, nodes in self.stack:
+            for node in nodes:
+                yield node
+
+    def get_code(self, include_prefix=True):
+        iterator = self._iter_nodes()
+        first = next(iterator)
+        return first.get_code(include_prefix=include_prefix) + ''.join(node.get_code() for node in iterator)
 
 
 class ParserSyntaxError(object):
@@ -144,7 +149,7 @@ class Parser(object):
 
         self._used_names = {}
         self._scope_names_stack = [{}]
-        self._error_statement_stacks = []
+        self._error_statements = []
         self._last_failed_start_pos = (0, 0)
         self._global_names = []
 
@@ -164,20 +169,19 @@ class Parser(object):
 
         self._start_symbol = start_symbol
         self._grammar = grammar
-        self._tokenizer = tokenizer
-        if tokenizer is None:
-            self._tokenizer = tokenize.source_tokens(source, use_exact_op_types=True)
 
         self._parsed = None
 
         if start_parsing:
-            self.parse()
+            if tokenizer is None:
+                tokenizer = tokenize.source_tokens(source, use_exact_op_types=True)
+            self.parse(tokenizer)
 
-    def parse(self):
+    def parse(self, tokenizer):
         if self._parsed is not None:
             return self._parsed
 
-        self._parsed = self.pgen_parser.parse(self._tokenize(self._tokenizer))
+        self._parsed = self.pgen_parser.parse(self._tokenize(tokenizer))
 
         if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's
@@ -198,7 +202,7 @@ class Parser(object):
                 raise ParseError
             yield typ, value, prefix, start_pos
 
-    def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
+    def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
         raise ParseError
 
@@ -308,7 +312,6 @@ class Parser(object):
                         endmarker._start_pos = newline._start_pos
                     break
 
-
 class ParserWithRecovery(Parser):
     """
     This class is used to parse a Python file, it then divides them into a
@@ -340,7 +343,7 @@ class ParserWithRecovery(Parser):
         self.module.used_names = self._used_names
         self.module.path = module_path
         self.module.global_names = self._global_names
-        self.module.error_statement_stacks = self._error_statement_stacks
+        self.module.error_statements = self._error_statements
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
@@ -427,7 +430,7 @@ class ParserWithRecovery(Parser):
                 self._scope_names_stack.pop()
         if failed_stack:
             err = ErrorStatement(failed_stack, arcs, value, self.position_modifier, start_pos)
-            self._error_statement_stacks.append(err)
+            self._error_statements.append(err)
 
         self._last_failed_start_pos = start_pos
 

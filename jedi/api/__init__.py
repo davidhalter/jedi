@@ -162,8 +162,9 @@ class Script(object):
             self._evaluator, self._parser, self._user_context,
             self._pos, self.call_signatures
         )
+        completions = completion.completions(path)
         debug.speed('completions end')
-        return completion.completions(path)
+        return completions
 
     def goto_definitions(self):
         """

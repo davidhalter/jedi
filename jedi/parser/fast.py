@@ -45,8 +45,8 @@ class FastModule(tree.Module):
         return [name for m in self.modules for name in m.global_names]
 
     @property
-    def error_statement_stacks(self):
-        return [e for m in self.modules for e in m.error_statement_stacks]
+    def error_statements(self):
+        return [e for m in self.modules for e in m.error_statements]
 
     def __repr__(self):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
@@ -59,8 +59,8 @@ class FastModule(tree.Module):
     def global_names(self, value):
         pass
 
-    @error_statement_stacks.setter
-    def error_statement_stacks(self, value):
+    @error_statements.setter
+    def error_statements(self, value):
         pass
 
     @used_names.setter

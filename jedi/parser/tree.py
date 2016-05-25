@@ -38,6 +38,7 @@ from inspect import cleandoc
 from itertools import chain
 import textwrap
 
+from jedi import common
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
 from jedi import cache
@@ -196,6 +197,28 @@ class Base(object):
     def nodes_to_execute(self, last_added=False):
         raise NotImplementedError()
 
+    def get_code_with_error_statements(self, include_prefix=False):
+        module = self.get_parent_until()
+        source = self.get_code(include_prefix=include_prefix)
+        start_pos, end_pos = self.start_pos, self.end_pos
+        # Check for error statements that are inside the node.
+        error_statements = [
+            e for e in module.error_statements
+            if start_pos <= e.start_pos and end_pos >= e.end_pos
+        ]
+        lines = common.splitlines(source)
+        # Note: Error statements must not be sorted. The positions are only
+        # correct if we insert them the way that they were tokenized.
+        for error_statement in error_statements:
+            line_index = error_statement.start_pos[0] - start_pos[0]
+
+            line = lines[line_index]
+            index = error_statement.start_pos[1]
+            line = line[:index] + error_statement.get_code() + line[index:]
+            lines[line_index] = line
+
+        return '\n'.join(lines)
+
 
 class Leaf(Base):
     __slots__ = ('position_modifier', 'value', 'parent', '_start_pos', 'prefix')
@@ -246,10 +269,13 @@ class Leaf(Base):
             except AttributeError:  # A Leaf doesn't have children.
                 return node
 
-    def get_code(self, normalized=False):
+    def get_code(self, normalized=False, include_prefix=True):
         if normalized:
             return self.value
-        return self.prefix + self.value
+        if include_prefix:
+            return self.prefix + self.value
+        else:
+            return self.value
 
     def next_sibling(self):
         """
@@ -304,10 +330,10 @@ class LeafWithNewLines(Leaf):
             end_pos_col = len(lines[-1])
         return end_pos_line, end_pos_col
 
-
     @utf8_repr
     def __repr__(self):
         return "<%s: %r>" % (type(self).__name__, self.value)
+
 
 class Whitespace(LeafWithNewLines):
     """Contains NEWLINE and ENDMARKER tokens."""
@@ -452,9 +478,13 @@ class BaseNode(Base):
     def end_pos(self):
         return self.children[-1].end_pos
 
-    def get_code(self, normalized=False):
-        # TODO implement normalized (dependin on context).
-        return "".join(c.get_code(normalized) for c in self.children)
+    def get_code(self, normalized=False, include_prefix=True):
+        # TODO implement normalized (depending on context).
+        if include_prefix:
+            return "".join(c.get_code(normalized) for c in self.children)
+        else:
+            first = self.children[0].get_code(include_prefix=False)
+            return first + "".join(c.get_code(normalized) for c in self.children[1:])
 
     @Python3Method
     def name_for_position(self, position):
@@ -467,6 +497,16 @@ class BaseNode(Base):
                 if result is not None:
                     return result
         return None
+
+    def get_leaf_for_position(self, position):
+        for c in self.children:
+            if c.start_pos <= position <= c.end_pos:
+                try:
+                    return c.get_leaf_for_position(position)
+                except AttributeError:
+                    return c
+
+        raise ValueError("Position does not exist.")
 
     @Python3Method
     def get_statement_for_position(self, pos):
@@ -633,7 +673,7 @@ class Module(Scope):
     of a module.
     """
     __slots__ = ('path', 'global_names', 'used_names', '_name',
-                 'error_statement_stacks')
+                 'error_statements')
     type = 'file_input'
 
     def __init__(self, children):

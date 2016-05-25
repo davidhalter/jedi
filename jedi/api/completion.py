@@ -123,20 +123,38 @@ class Completion:
             helpers.check_error_statements(module, self._pos)
 
         grammar = self._evaluator.grammar
-        stack = helpers.get_stack_at_position(grammar, module, self._pos)
+
+        # Now we set the position to the place where we try to find out what we
+        # have before it.
+        pos = self._pos
+        if completion_parts.name:
+            pos = pos[0], pos[1] - len(completion_parts.name)
+
+        stack = helpers.get_stack_at_position(grammar, module, pos)
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)
 
+        print(allowed_keywords, allowed_tokens)
         completion_names = list(self._get_keyword_completion_names(allowed_keywords))
-        if token.NAME in allowed_tokens:
-            # Differentiate between import names and other names.
-            completion_names += self._simple_complete(completion_parts)
 
+        if token.NAME in allowed_tokens:
+            # This means that we actually have to do type inference.
+
+            symbol_names = list(stack.get_node_names(grammar))
+
+            if "import_stmt" in symbol_names:
+                if "dotted_name" in symbol_names:
+                    completion_names += self._complete_dotted_name(stack, module)
+            else:
+                completion_names += self._simple_complete(completion_parts)
+
+        """
         completion_names = []
         if names is not None:
             imp_names = tuple(str(n) for n in names if n.end_pos < self._pos)
             i = imports.Importer(self._evaluator, imp_names, module, level)
             completion_names = i.completion_names(self._evaluator, only_modules)
+        """
 
         return completion_names
 
@@ -170,9 +188,9 @@ class Completion:
             completion_names += self._simple_complete(completion_parts)
         return completion_names
 
-    def _get_keyword_completion_names(self, keywords):
-        for keyword in keywords:
-            yield keywords.keyword(self._evaluator, keyword).name
+    def _get_keyword_completion_names(self, keywords_):
+        for k in keywords_:
+            yield keywords.keyword(self._evaluator, k).name
 
     def _simple_complete(self, completion_parts):
         if not completion_parts.path and not completion_parts.has_dot:
@@ -211,3 +229,18 @@ class Completion:
                     names, self._parser.user_stmt()
                 )
         return completion_names
+
+    def _complete_dotted_name(self, stack, module):
+        nodes = list(stack.get_nodes())
+
+        level = 0
+        for i, node in enumerate(nodes[1:], 1):
+            if node in ('.', '...'):
+                level += len(node.value)
+            else:
+                names = [str(n) for n in nodes[i::2]]
+                break
+
+        print(names, nodes)
+        i = imports.Importer(self._evaluator, names, module, level)
+        return i.completion_names(self._evaluator, only_modules=True)

@@ -13,6 +13,7 @@ from jedi.parser import tokenize, token
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
 
+
 def get_completion_parts(path_until_cursor):
     """
     Returns the parts for the completion
@@ -42,25 +43,28 @@ def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False)
 
 
 def check_error_statements(module, pos):
-    for error_statement in module.error_statement_stacks:
+    for error_statement in module.error_statements:
         if error_statement.first_type in ('import_from', 'import_name') \
-                and error_statement.first_pos < pos <= error_statement.next_start_pos:
+                and error_statement.start_pos < pos <= error_statement.end_pos:
             return importer_from_error_statement(error_statement, pos)
     return None, 0, False, False
 
 
-def get_code_until(code, start_pos, end_pos):
+def get_code_until(code, code_start_pos, end_pos):
+    """
+    :param code_start_pos: is where the code starts.
+    """
     lines = common.splitlines(code)
-    line_difference = end_pos[0] - start_pos[0]
+    line_difference = end_pos[0] - code_start_pos[0]
     if line_difference == 0:
-        end_line_length = end_pos[1] - start_pos[1]
+        end_line_length = end_pos[1] - code_start_pos[1]
     else:
         end_line_length = end_pos[1]
 
-    if line_difference > len(lines) or end_line_length > len(lines[-1]):
+    if line_difference > len(lines) or end_line_length > len(lines[line_difference]):
         raise ValueError("The end_pos seems to be after the code part.")
 
-    new_lines = lines[:line_difference] + [lines[-1][:end_line_length]]
+    new_lines = lines[:line_difference] + [lines[line_difference][:end_line_length]]
     return '\n'.join(new_lines)
 
 
@@ -68,30 +72,56 @@ def get_stack_at_position(grammar, module, pos):
     """
     Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
     """
-    for error_statement in module.error_statement_stacks:
-        if error_statement.first_pos < pos <= error_statement.next_start_pos:
-            code = error_statement.get_code()
-            code = get_code_until(code, error_statement.first_pos, pos)
-            break
+    user_stmt = module.get_statement_for_position(pos)
+    if user_stmt is None:
+        # If there's no error statement and we're just somewhere, we want
+        # completions for just whitespace.
+        code = ''
+
+        for error_statement in module.error_statements:
+            if error_statement.start_pos < pos <= error_statement.end_pos:
+                code = error_statement.get_code(include_prefix=False)
+                start_pos = error_statement.start_pos
+                break
     else:
-        raise NotImplementedError
+        code = user_stmt.get_code_with_error_statements(include_prefix=False)
+        start_pos = user_stmt.start_pos
+
+    # Remove indentations.
+    code = code.lstrip()
+    code = get_code_until(code, start_pos, pos)
+    # Remove whitespace at the end.
+    code = code.rstrip()
 
     class EndMarkerReached(Exception):
         pass
 
     def tokenize_without_endmarker(code):
-        for token_ in tokenize.source_tokens(code):
+        for token_ in tokenize.source_tokens(code, use_exact_op_types=True):
             if token_[0] == token.ENDMARKER:
                 raise EndMarkerReached()
             else:
+                print(token_, token.tok_name[token_[0]])
                 yield token_
 
-    p = parser.Parser(grammar, code, tokenizer=tokenize_without_endmarker(code),
+    print(repr(code))
+    p = parser.Parser(grammar, code,
                       start_parsing=False)
     try:
-        p.parse()
+        p.parse(tokenizer=tokenize_without_endmarker(code))
     except EndMarkerReached:
-        return p.pgen_parser.stack
+        return Stack(p.pgen_parser.stack)
+
+
+class Stack(list):
+    def get_node_names(self, grammar):
+        for dfa, state, (node_number, nodes) in self:
+            yield grammar.number2symbol[node_number]
+
+    def get_nodes(self):
+        for dfa, state, (node_number, nodes) in self:
+            for node in nodes:
+                yield node
 
 
 def get_possible_completion_types(grammar, stack):
