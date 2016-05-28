@@ -58,7 +58,7 @@ class Completion:
     def __init__(self, evaluator, parser, user_context, position, call_signatures_method):
         self._evaluator = evaluator
         self._parser = parser
-        self._module = parser.module()
+        self._module = evaluator.wrap(parser.module())
         self._user_context = user_context
         self._pos = position
         self._call_signatures_method = call_signatures_method
@@ -136,7 +136,7 @@ class Completion:
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)
 
-        print(allowed_keywords, allowed_tokens)
+        print(allowed_keywords, [token.tok_name[a] for a in allowed_tokens])
         completion_names = list(self._get_keyword_completion_names(allowed_keywords))
 
         if token.NAME in allowed_tokens:
@@ -145,12 +145,39 @@ class Completion:
             symbol_names = list(stack.get_node_names(grammar))
             print(symbol_names)
 
+            nodes = list(stack.get_nodes())
+            last_symbol = symbol_names[-1]
+
             if "import_stmt" in symbol_names:
-                if symbol_names[-1] == "dotted_name":
-                    completion_names += self._complete_dotted_name(stack, self._module)
-                elif symbol_names[-1] == "import_name":
-                    names = list(stack.get_nodes())[1::2]
-                    completion_names += self._get_importer_names(names)
+                level = 0
+                only_modules = True
+                level, names = self._parse_dotted_names(nodes)
+                if "import_from" in symbol_names:
+                    if 'import' in nodes:
+                        only_modules = False
+                    '''
+                    if last_symbol == "dotted_name":
+                    elif last_symbol == "import_from":
+                        # No names are given yet, but the dots for level might be
+                        # there.
+                        if 'import' in nodes:
+                            print(nodes[1])
+                            raise NotImplementedError
+                        else:
+                            raise NotImplementedError
+                    elif last_symbol == "import_name":
+                        names = nodes[1::2]
+                        completion_names += self._get_importer_names(names)
+                    '''
+                else:
+                    assert "import_name" in symbol_names
+
+                print(names, level)
+                completion_names += self._get_importer_names(
+                    names,
+                    level,
+                    only_modules
+                )
             else:
                 completion_names += self._simple_complete(completion_parts)
 
@@ -238,18 +265,20 @@ class Completion:
                 )
         return completion_names
 
-    def _complete_dotted_name(self, stack, module):
-        nodes = list(stack.get_nodes())
-
+    def _parse_dotted_names(self, nodes):
         level = 0
-        for i, node in enumerate(nodes[1:], 1):
+        names = []
+        for node in nodes[1:]:
             if node in ('.', '...'):
-                level += len(node.value)
+                if not names:
+                    level += len(node.value)
+            elif node.type == 'dotted_name':
+                names += node.children[::2]
+            elif node.type == 'name':
+                names.append(node)
             else:
-                names = nodes[i::2]
                 break
-
-        return self._get_importer_names(names, level=level)
+        return level, names
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [str(n) for n in names]

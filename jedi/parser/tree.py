@@ -37,6 +37,7 @@ import re
 from inspect import cleandoc
 from itertools import chain
 import textwrap
+import abc
 
 from jedi import common
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
@@ -194,6 +195,7 @@ class Base(object):
         # Default is not being a scope. Just inherit from Scope.
         return False
 
+    @abc.abstractmethod
     def nodes_to_execute(self, last_added=False):
         raise NotImplementedError()
 
@@ -238,6 +240,12 @@ class Leaf(Base):
     def start_pos(self, value):
         self._start_pos = value[0] - self.position_modifier.line, value[1]
 
+    def get_start_pos_of_prefix(self):
+        try:
+            return self.get_previous().end_pos
+        except IndexError:
+            return 1, 0  # It's the first leaf.
+
     @property
     def end_pos(self):
         return (self._start_pos[0] + self.position_modifier.line,
@@ -250,6 +258,8 @@ class Leaf(Base):
     def get_previous(self):
         """
         Returns the previous leaf in the parser tree.
+        Raises an IndexError if it's the first element.
+        # TODO rename to get_previous_leaf
         """
         node = self
         while True:
@@ -268,6 +278,33 @@ class Leaf(Base):
                 node = node.children[-1]
             except AttributeError:  # A Leaf doesn't have children.
                 return node
+
+    def first_leaf(self):
+        return self
+
+    def get_next_leaf(self):
+        """
+        Returns the previous leaf in the parser tree.
+        Raises an IndexError if it's the last element.
+        """
+        node = self
+        while True:
+            c = node.parent.children
+            i = c.index(self)
+            if i == len(c) - 1:
+                node = node.parent
+                if node.parent is None:
+                    raise IndexError('Cannot access the next element of the last one.')
+            else:
+                node = c[i + 1]
+                break
+
+        while True:
+            try:
+                node = node.children[0]
+            except AttributeError:  # A Leaf doesn't have children.
+                return node
+
 
     def get_code(self, normalized=False, include_prefix=True):
         if normalized:
@@ -474,6 +511,9 @@ class BaseNode(Base):
     def start_pos(self):
         return self.children[0].start_pos
 
+    def get_start_pos_of_prefix(self):
+        return self.children[0].get_start_pos_of_prefix()
+
     @property
     def end_pos(self):
         return self.children[-1].end_pos
@@ -498,9 +538,14 @@ class BaseNode(Base):
                     return result
         return None
 
-    def get_leaf_for_position(self, position):
+    def get_leaf_for_position(self, position, include_prefixes=False):
         for c in self.children:
-            if c.start_pos <= position <= c.end_pos:
+            if include_prefixes:
+                start_pos = c.get_start_pos_with_prefix()
+            else:
+                start_pos = c.start_pos
+
+            if start_pos <= position <= c.end_pos:
                 try:
                     return c.get_leaf_for_position(position)
                 except AttributeError:
@@ -527,6 +572,17 @@ class BaseNode(Base):
             return self.children[0].first_leaf()
         except AttributeError:
             return self.children[0]
+
+    def get_next_leaf(self):
+        """
+        Raises an IndexError if it's the last node. (Would be the module)
+        """
+        c = self.parent.children
+        index = c.index(self)
+        if index == len(c) - 1:
+            return self.get_next_leaf()
+        else:
+            return c[index + 1]
 
     @utf8_repr
     def __repr__(self):

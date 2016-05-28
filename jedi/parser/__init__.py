@@ -67,10 +67,10 @@ class ErrorStatement(object):
         self._next_start_pos = next_start_pos
 
     def __repr__(self):
-        return '<%s next: %s@%s>' % (
+        return '<%s %s@%s>' % (
             type(self).__name__,
             repr(self.next_token),
-            self.next_start_pos
+            self.end_pos
         )
 
     @property
@@ -103,6 +103,32 @@ class ErrorStatement(object):
         iterator = self._iter_nodes()
         first = next(iterator)
         return first.get_code(include_prefix=include_prefix) + ''.join(node.get_code() for node in iterator)
+
+    def get_next_leaf(self):
+        for child in self.parent.children:
+            if child.start_pos == self.end_pos:
+                return child.first_leaf()
+
+        if child.start_pos > self.end_pos:
+            raise NotImplementedError('Node not found, must be in error statements.')
+        raise ValueError("Doesn't have a next leaf")
+
+    def set_parent(self, root_node):
+        """
+        Used by the parser at the end of parsing. The error statements parents
+        have to be calculated at the end, because they are basically ripped out
+        of the stack at which time its parents don't yet exist..
+        """
+        start_pos = self.start_pos
+        for c in root_node.children:
+            if c.start_pos < start_pos <= c.end_pos:
+                return self.set_parent(c)
+
+        self.parent = root_node
+
+
+class ErrorToken(tree.LeafWithNewLines):
+    type = 'error_token'
 
 
 class ParserSyntaxError(object):
@@ -192,6 +218,9 @@ class Parser(object):
 
         if self._added_newline:
             self.remove_last_newline()
+
+        for e in self._error_statements:
+            e.set_parent(self.get_parsed_node())
 
     def get_parsed_node(self):
         return self._parsed
@@ -381,13 +410,23 @@ class ParserWithRecovery(Parser):
             stack[index]
 
         #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
-        self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos)
+        if self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos):
+            #add_token_callback(typ, value, prefix, start_pos)
+            pass
+        else:
+            #error_leaf = ErrorToken(self.position_modifier, value, start_pos, prefix)
+            #stack = [(None, [error_leaf])]
+            # TODO document the shizzle!
+            #self._error_statements.append(ErrorStatement(stack, None, None,
+            #                          self.position_modifier, error_leaf.end_pos))
+            return
+
         if typ == INDENT:
             # For every deleted INDENT we have to delete a DEDENT as well.
             # Otherwise the parser will get into trouble and DEDENT too early.
             self._omit_dedent_list.append(self._indent_counter)
 
-        if value in ('import', 'class', 'def', 'try', 'while', 'return'):
+        if value in ('import', 'class', 'def', 'try', 'while', 'return', '\n'):
             # Those can always be new statements.
             add_token_callback(typ, value, prefix, start_pos)
         elif typ == DEDENT and symbol == 'suite':
@@ -435,6 +474,7 @@ class ParserWithRecovery(Parser):
         self._last_failed_start_pos = start_pos
 
         stack[start_index:] = []
+        return failed_stack
 
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:

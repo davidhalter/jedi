@@ -73,7 +73,7 @@ def get_stack_at_position(grammar, module, pos):
     Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
     """
     user_stmt = module.get_statement_for_position(pos)
-    if user_stmt is None:
+    if user_stmt is None or user_stmt.type == 'whitespace':
         # If there's no error statement and we're just somewhere, we want
         # completions for just whitespace.
         code = ''
@@ -81,16 +81,23 @@ def get_stack_at_position(grammar, module, pos):
         for error_statement in module.error_statements:
             if error_statement.start_pos < pos <= error_statement.end_pos:
                 code = error_statement.get_code(include_prefix=False)
-                start_pos = error_statement.start_pos
+                node = error_statement
                 break
+        else:
+            raise NotImplementedError
     else:
         code = user_stmt.get_code_with_error_statements(include_prefix=False)
-        start_pos = user_stmt.start_pos
+        node = user_stmt
 
-    # Remove indentations.
-    code = code.lstrip()
-    code = get_code_until(code, start_pos, pos)
-    # Remove whitespace at the end.
+    # Make sure we include the whitespace after the statement as well, since it
+    # could be where we would want to complete.
+    print('a', repr(code), node, repr(node.get_next_leaf().prefix))
+    code += node.get_next_leaf().prefix
+
+    code = get_code_until(code, node.start_pos, pos)
+    # Remove whitespace at the end. Necessary, because the tokenizer will parse
+    # an error token (there's no new line at the end in our case). This doesn't
+    # alter any truth about the valid tokens at that position.
     code = code.rstrip()
 
     class EndMarkerReached(Exception):
@@ -101,7 +108,6 @@ def get_stack_at_position(grammar, module, pos):
             if token_[0] == token.ENDMARKER:
                 raise EndMarkerReached()
             else:
-                print(token_, token.tok_name[token_[0]])
                 yield token_
 
     print(repr(code))
