@@ -22,20 +22,24 @@ MethodDescriptorType = type(str.replace)
 NOT_CLASS_TYPES = (
     types.BuiltinFunctionType,
     types.CodeType,
-    types.DynamicClassAttribute,
     types.FrameType,
     types.FunctionType,
     types.GeneratorType,
     types.GetSetDescriptorType,
     types.LambdaType,
-    types.MappingProxyType,
     types.MemberDescriptorType,
     types.MethodType,
     types.ModuleType,
-    types.SimpleNamespace,
     types.TracebackType,
     MethodDescriptorType
 )
+
+if is_py3:
+    NOT_CLASS_TYPES += (
+        types.DynamicClassAttribute,
+        types.MappingProxyType,
+        types.SimpleNamespace
+    )
 
 
 def _load_faked_module(module):
