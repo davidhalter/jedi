@@ -60,6 +60,7 @@ class Completion:
         self._parser = parser
         self._module = evaluator.wrap(parser.module())
         self._user_context = user_context
+        self._source = user_context.source
         self._pos = position
         self._call_signatures_method = call_signatures_method
 
@@ -132,7 +133,7 @@ class Completion:
         if completion_parts.name:
             pos = pos[0], pos[1] - len(completion_parts.name)
 
-        stack = helpers.get_stack_at_position(grammar, self._module, pos)
+        stack = helpers.get_stack_at_position(grammar, self._source, self._module, pos)
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)
 

@@ -221,6 +221,52 @@ class Base(object):
 
         return '\n'.join(lines)
 
+    def get_previous_leaf(self):
+        """
+        Returns the previous leaf in the parser tree.
+        Raises an IndexError if it's the first element.
+        """
+        node = self
+        while True:
+            c = node.parent.children
+            i = c.index(node)
+            if i == 0:
+                node = node.parent
+                if node.parent is None:
+                    raise IndexError('Cannot access the previous element of the first one.')
+            else:
+                node = c[i - 1]
+                break
+
+        while True:
+            try:
+                node = node.children[-1]
+            except AttributeError:  # A Leaf doesn't have children.
+                return node
+
+    def get_next_leaf(self):
+        """
+        Returns the previous leaf in the parser tree.
+        Raises an IndexError if it's the last element.
+        """
+        node = self
+        while True:
+            c = node.parent.children
+            i = c.index(node)
+            if i == len(c) - 1:
+                node = node.parent
+                if node.parent is None:
+                    raise IndexError('Cannot access the next element of the last one.')
+            else:
+                node = c[i + 1]
+                break
+
+        while True:
+            try:
+                node = node.children[0]
+            except AttributeError:  # A Leaf doesn't have children.
+                return node
+
 
 class Leaf(Base):
     __slots__ = ('position_modifier', 'value', 'parent', '_start_pos', 'prefix')
@@ -242,7 +288,7 @@ class Leaf(Base):
 
     def get_start_pos_of_prefix(self):
         try:
-            return self.get_previous().end_pos
+            return self.get_previous_leaf().end_pos
         except IndexError:
             return 1, 0  # It's the first leaf.
 
@@ -255,56 +301,8 @@ class Leaf(Base):
         self._start_pos = (self._start_pos[0] + line_offset,
                            self._start_pos[1] + column_offset)
 
-    def get_previous(self):
-        """
-        Returns the previous leaf in the parser tree.
-        Raises an IndexError if it's the first element.
-        # TODO rename to get_previous_leaf
-        """
-        node = self
-        while True:
-            c = node.parent.children
-            i = c.index(self)
-            if i == 0:
-                node = node.parent
-                if node.parent is None:
-                    raise IndexError('Cannot access the previous element of the first one.')
-            else:
-                node = c[i - 1]
-                break
-
-        while True:
-            try:
-                node = node.children[-1]
-            except AttributeError:  # A Leaf doesn't have children.
-                return node
-
     def first_leaf(self):
         return self
-
-    def get_next_leaf(self):
-        """
-        Returns the previous leaf in the parser tree.
-        Raises an IndexError if it's the last element.
-        """
-        node = self
-        while True:
-            c = node.parent.children
-            i = c.index(self)
-            if i == len(c) - 1:
-                node = node.parent
-                if node.parent is None:
-                    raise IndexError('Cannot access the next element of the last one.')
-            else:
-                node = c[i + 1]
-                break
-
-        while True:
-            try:
-                node = node.children[0]
-            except AttributeError:  # A Leaf doesn't have children.
-                return node
-
 
     def get_code(self, normalized=False, include_prefix=True):
         if normalized:
@@ -541,13 +539,13 @@ class BaseNode(Base):
     def get_leaf_for_position(self, position, include_prefixes=False):
         for c in self.children:
             if include_prefixes:
-                start_pos = c.get_start_pos_with_prefix()
+                start_pos = c.get_start_pos_of_prefix()
             else:
                 start_pos = c.start_pos
 
             if start_pos <= position <= c.end_pos:
                 try:
-                    return c.get_leaf_for_position(position)
+                    return c.get_leaf_for_position(position, include_prefixes)
                 except AttributeError:
                     return c
 

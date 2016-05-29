@@ -59,6 +59,8 @@ def load_grammar(version='3.4'):
 
 
 class ErrorStatement(object):
+    type = 'error_stmt'
+
     def __init__(self, stack, arcs, next_token, position_modifier, next_start_pos):
         self.stack = stack
         self.arcs = arcs
@@ -103,15 +105,6 @@ class ErrorStatement(object):
         iterator = self._iter_nodes()
         first = next(iterator)
         return first.get_code(include_prefix=include_prefix) + ''.join(node.get_code() for node in iterator)
-
-    def get_next_leaf(self):
-        for child in self.parent.children:
-            if child.start_pos == self.end_pos:
-                return child.first_leaf()
-
-        if child.start_pos > self.end_pos:
-            raise NotImplementedError('Node not found, must be in error statements.')
-        raise ValueError("Doesn't have a next leaf")
 
     def set_parent(self, root_node):
         """
@@ -313,14 +306,14 @@ class Parser(object):
             endmarker._start_pos = endmarker._start_pos[0] - 1, len(last_line)
         else:
             try:
-                newline = endmarker.get_previous()
+                newline = endmarker.get_previous_leaf()
             except IndexError:
                 return  # This means that the parser is empty.
             while True:
                 if newline.value == '':
                     # Must be a DEDENT, just continue.
                     try:
-                        newline = newline.get_previous()
+                        newline = newline.get_previous_leaf()
                     except IndexError:
                         # If there's a statement that fails to be parsed, there
                         # will be no previous leaf. So just ignore it.

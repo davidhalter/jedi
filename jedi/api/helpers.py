@@ -50,55 +50,61 @@ def check_error_statements(module, pos):
     return None, 0, False, False
 
 
-def get_code_until(code, code_start_pos, end_pos):
+def get_code(code, start_pos, end_pos):
     """
     :param code_start_pos: is where the code starts.
     """
     lines = common.splitlines(code)
-    line_difference = end_pos[0] - code_start_pos[0]
-    if line_difference == 0:
-        end_line_length = end_pos[1] - code_start_pos[1]
-    else:
-        end_line_length = end_pos[1]
-
-    if line_difference > len(lines) or end_line_length > len(lines[line_difference]):
-        raise ValueError("The end_pos seems to be after the code part.")
-
-    new_lines = lines[:line_difference] + [lines[line_difference][:end_line_length]]
-    return '\n'.join(new_lines)
+    # Get relevant lines.
+    lines = lines[start_pos[0] - 1:end_pos[0]]
+    # Remove the parts at the end of the line.
+    lines[-1] = lines[-1][:end_pos[1]]
+    # Remove first line indentation.
+    lines[0] = lines[0][start_pos[1]:]
+    return ''.join(lines)
 
 
-def get_stack_at_position(grammar, module, pos):
-    """
-    Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
-    """
-    user_stmt = module.get_statement_for_position(pos)
+def get_user_or_error_stmt(module, position):
+    user_stmt = module.get_statement_for_position(position)
     if user_stmt is None or user_stmt.type == 'whitespace':
         # If there's no error statement and we're just somewhere, we want
         # completions for just whitespace.
-        code = ''
+        for error_stmt in module.error_statements:
+            if error_stmt.start_pos < position <= error_stmt.end_pos:
+                return error_stmt
 
-        for error_statement in module.error_statements:
-            if error_statement.start_pos < pos <= error_statement.end_pos:
-                code = error_statement.get_code(include_prefix=False)
-                node = error_statement
+    return user_stmt
+
+
+def get_stack_at_position(grammar, source, module, pos):
+    """
+    Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
+    """
+    user_stmt = get_user_or_error_stmt(module, pos)
+
+    if user_stmt is None:
+        user_stmt = module.get_leaf_for_position(pos, include_prefixes=True)
+    # Only if were in front of the leaf we want to get the stack,
+    # because after there's probably a newline or whatever that would
+    # be actually tokenized and is not just prefix.
+    if pos <= user_stmt.start_pos:
+        leaf = user_stmt.get_previous_leaf()
+        for error_stmt in reversed(module.error_statements):
+            if leaf.start_pos <= error_stmt.start_pos <= user_stmt.start_pos:
+                # The leaf appears not to be the last leaf. It's actually an
+                # error statement.
+                user_stmt = error_stmt
                 break
         else:
-            raise NotImplementedError
-    else:
-        code = user_stmt.get_code_with_error_statements(include_prefix=False)
-        node = user_stmt
+            user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
 
-    # Make sure we include the whitespace after the statement as well, since it
-    # could be where we would want to complete.
-    print('a', repr(code), node, repr(node.get_next_leaf().prefix))
-    code += node.get_next_leaf().prefix
 
-    code = get_code_until(code, node.start_pos, pos)
+    print(user_stmt.start_pos, pos)
+    code = get_code(source, user_stmt.start_pos, pos)
     # Remove whitespace at the end. Necessary, because the tokenizer will parse
     # an error token (there's no new line at the end in our case). This doesn't
     # alter any truth about the valid tokens at that position.
-    code = code.rstrip()
+    code = code.strip()
 
     class EndMarkerReached(Exception):
         pass
@@ -110,9 +116,8 @@ def get_stack_at_position(grammar, module, pos):
             else:
                 yield token_
 
-    print(repr(code))
-    p = parser.Parser(grammar, code,
-                      start_parsing=False)
+    print(repr(code), 'x')
+    p = parser.Parser(grammar, code, start_parsing=False)
     try:
         p.parse(tokenizer=tokenize_without_endmarker(code))
     except EndMarkerReached:
@@ -147,17 +152,25 @@ def get_possible_completion_types(grammar, stack):
                 for first_label_index in itsfirst.keys():
                     add_results(first_label_index)
 
-    dfa, state, node = stack[-1]
-    states, first = dfa
-    arcs = states[state]
-
     inversed_keywords = dict((v, k) for k, v in grammar.keywords.items())
     inversed_tokens = dict((v, k) for k, v in grammar.tokens.items())
 
     keywords = []
     grammar_labels = []
-    for label_index, new_state in arcs:
-        add_results(label_index)
+
+    def scan_stack(index):
+        dfa, state, node = stack[index]
+        states, first = dfa
+        arcs = states[state]
+
+        for label_index, new_state in arcs:
+            if label_index == 0:
+                # An accepting state, check the stack below.
+                scan_stack(index - 1)
+            else:
+                add_results(label_index)
+
+    scan_stack(-1)
 
     return keywords, grammar_labels
 
