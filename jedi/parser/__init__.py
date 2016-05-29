@@ -422,6 +422,8 @@ class ParserWithRecovery(Parser):
             # TODO document the shizzle!
             #self._error_statements.append(ErrorStatement(stack, None, None,
             #                          self.position_modifier, error_leaf.end_pos))
+            error_leaf = pt.ErrorLeaf(self.position_modifier, value, start_pos, prefix)
+            stack[-1][2][1].append(error_leaf)
             return
 
         if typ == INDENT:
@@ -462,17 +464,20 @@ class ParserWithRecovery(Parser):
 
         failed_stack = []
         found = False
+        all_nodes = []
         for dfa, state, (typ, nodes) in stack[start_index:]:
             if nodes:
                 found = True
             if found:
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
+                all_nodes += nodes
             if nodes and nodes[0] in ('def', 'class', 'lambda'):
                 self._scope_names_stack.pop()
         if failed_stack:
             err = ErrorStatement(failed_stack, arcs, value, self.position_modifier, start_pos)
             self._error_statements.append(err)
+            stack[start_index - 1][2][1].append(pt.ErrorNode(all_nodes))
 
         self._last_failed_start_pos = start_pos
 

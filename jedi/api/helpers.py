@@ -69,11 +69,19 @@ def get_user_or_error_stmt(module, position):
     if user_stmt is None or user_stmt.type == 'whitespace':
         # If there's no error statement and we're just somewhere, we want
         # completions for just whitespace.
+        '''
         for error_stmt in module.error_statements:
             if error_stmt.start_pos < position <= error_stmt.end_pos:
                 return error_stmt
+'''
 
     return user_stmt
+
+
+class OnErrorLeaf(Exception):
+    @property
+    def error_leaf(self):
+        return self.args[0]
 
 
 def get_stack_at_position(grammar, source, module, pos):
@@ -87,19 +95,38 @@ def get_stack_at_position(grammar, source, module, pos):
     else:
         if user_stmt is None:
             user_stmt = module.get_leaf_for_position(pos, include_prefixes=True)
+        print(user_stmt)
+        if pos <= user_stmt.start_pos:
+            try:
+                leaf = user_stmt.get_previous_leaf()
+            except IndexError:
+                pass
+            else:
+                user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
         # Only if were in front of the leaf we want to get the stack,
         # because after there's probably a newline or whatever that would
         # be actually tokenized and is not just prefix.
         if pos <= user_stmt.start_pos:
-            leaf = user_stmt.get_previous_leaf()
-            for error_stmt in reversed(module.error_statements):
-                if leaf.start_pos <= error_stmt.start_pos <= user_stmt.start_pos:
-                    # The leaf appears not to be the last leaf. It's actually an
-                    # error statement.
-                    user_stmt = error_stmt
-                    break
+            try:
+                leaf = user_stmt.get_previous_leaf()
+            except IndexError:
+                # Seems to be the first element.
+                pass
             else:
-                user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
+                '''
+                for error_stmt in reversed(module.error_statements):
+                    if leaf.start_pos <= error_stmt.start_pos <= user_stmt.start_pos:
+                        # The leaf appears not to be the last leaf. It's actually an
+                        # error statement.
+                        user_stmt = error_stmt
+                        break
+                else:
+                    user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
+'''
+
+        if user_stmt.type == 'error_leaf':
+            # Error leafs cannot be parsed.
+            raise OnErrorLeaf(user_stmt)
 
         print(user_stmt.start_pos, pos)
         code = _get_code(source, user_stmt.start_pos, pos)

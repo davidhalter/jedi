@@ -133,7 +133,11 @@ class Completion:
         if completion_parts.name:
             pos = pos[0], pos[1] - len(completion_parts.name)
 
-        stack = helpers.get_stack_at_position(grammar, self._source, self._module, pos)
+        try:
+            stack = helpers.get_stack_at_position(grammar, self._source, self._module, pos)
+        except helpers.OnErrorLeaf:
+            return []
+
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)
 

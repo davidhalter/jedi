@@ -641,6 +641,22 @@ class Node(BaseNode):
         return "%s(%s, %r)" % (self.__class__.__name__, self.type, self.children)
 
 
+class ErrorNode(BaseNode):
+    """
+    TODO doc
+    """
+    __slots__ = ()
+    type = 'error_node'
+
+
+class ErrorLeaf(Leaf):
+    """
+    TODO doc
+    """
+    __slots__ = ()
+    type = 'error_leaf'
+
+
 class IsScopeMeta(type):
     def __instancecheck__(self, other):
         return other.is_scope()

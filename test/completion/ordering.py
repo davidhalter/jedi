@@ -86,7 +86,7 @@ from os import path
 
 # should not return a function, because `a` is a function above
 def f(b, a): return a
-#? []
+#? ['in', 'is', 'and', 'if', 'or', 'not']
 f(b=3)
 
 # -----------------

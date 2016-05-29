@@ -2,7 +2,7 @@
 #? ['raise']
 raise
 
-#? ['except', 'Exception']
+#? ['Exception']
 except
 
 #? []
