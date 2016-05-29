@@ -50,7 +50,7 @@ def check_error_statements(module, pos):
     return None, 0, False, False
 
 
-def get_code(code, start_pos, end_pos):
+def _get_code(code, start_pos, end_pos):
     """
     :param code_start_pos: is where the code starts.
     """
@@ -61,7 +61,7 @@ def get_code(code, start_pos, end_pos):
     lines[-1] = lines[-1][:end_pos[1]]
     # Remove first line indentation.
     lines[0] = lines[0][start_pos[1]:]
-    return ''.join(lines)
+    return '\n'.join(lines)
 
 
 def get_user_or_error_stmt(module, position):
@@ -82,29 +82,31 @@ def get_stack_at_position(grammar, source, module, pos):
     """
     user_stmt = get_user_or_error_stmt(module, pos)
 
-    if user_stmt is None:
-        user_stmt = module.get_leaf_for_position(pos, include_prefixes=True)
-    # Only if were in front of the leaf we want to get the stack,
-    # because after there's probably a newline or whatever that would
-    # be actually tokenized and is not just prefix.
-    if pos <= user_stmt.start_pos:
-        leaf = user_stmt.get_previous_leaf()
-        for error_stmt in reversed(module.error_statements):
-            if leaf.start_pos <= error_stmt.start_pos <= user_stmt.start_pos:
-                # The leaf appears not to be the last leaf. It's actually an
-                # error statement.
-                user_stmt = error_stmt
-                break
-        else:
-            user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
+    if user_stmt is not None and user_stmt.type in ('indent', 'dedent'):
+        code = ''
+    else:
+        if user_stmt is None:
+            user_stmt = module.get_leaf_for_position(pos, include_prefixes=True)
+        # Only if were in front of the leaf we want to get the stack,
+        # because after there's probably a newline or whatever that would
+        # be actually tokenized and is not just prefix.
+        if pos <= user_stmt.start_pos:
+            leaf = user_stmt.get_previous_leaf()
+            for error_stmt in reversed(module.error_statements):
+                if leaf.start_pos <= error_stmt.start_pos <= user_stmt.start_pos:
+                    # The leaf appears not to be the last leaf. It's actually an
+                    # error statement.
+                    user_stmt = error_stmt
+                    break
+            else:
+                user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
 
-
-    print(user_stmt.start_pos, pos)
-    code = get_code(source, user_stmt.start_pos, pos)
-    # Remove whitespace at the end. Necessary, because the tokenizer will parse
-    # an error token (there's no new line at the end in our case). This doesn't
-    # alter any truth about the valid tokens at that position.
-    code = code.strip()
+        print(user_stmt.start_pos, pos)
+        code = _get_code(source, user_stmt.start_pos, pos)
+        # Remove whitespace at the end. Necessary, because the tokenizer will parse
+        # an error token (there's no new line at the end in our case). This doesn't
+        # alter any truth about the valid tokens at that position.
+        code = code.strip()
 
     class EndMarkerReached(Exception):
         pass

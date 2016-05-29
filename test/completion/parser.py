@@ -32,5 +32,5 @@ Just because there's a def keyword, doesn't mean it should not be able to
 complete to definition.
 """
 definition = 0
-#? ['definition', 'def']
+#? ['definition']
 str(def

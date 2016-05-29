@@ -433,6 +433,16 @@ class String(Literal):
     __slots__ = ()
 
 
+class Indent(Leaf):
+    type = 'indent'
+    __slots__ = ()
+
+
+class Dedent(Leaf):
+    type = 'indent'
+    __slots__ = ()
+
+
 class Operator(Leaf):
     type = 'operator'
     __slots__ = ()

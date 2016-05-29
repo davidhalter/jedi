@@ -113,11 +113,17 @@ class ErrorStatement(object):
         of the stack at which time its parents don't yet exist..
         """
         start_pos = self.start_pos
-        for c in root_node.children:
-            if c.start_pos < start_pos <= c.end_pos:
-                return self.set_parent(c)
+        try:
+            children = root_node.children
+        except AttributeError:
+            self.parent = root_node
+        else:
+            for c in children:
+                if c.start_pos < start_pos <= c.end_pos:
+                    self.set_parent(c)
+                    return
 
-        self.parent = root_node
+            self.parent = root_node
 
 
 class ErrorToken(tree.LeafWithNewLines):
@@ -288,6 +294,10 @@ class Parser(object):
             return pt.Number(self.position_modifier, value, start_pos, prefix)
         elif type in (NEWLINE, ENDMARKER):
             return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
+        elif type == INDENT:
+            return pt.Indent(self.position_modifier, value, start_pos, prefix)
+        elif type == DEDENT:
+            return pt.Dedent(self.position_modifier, value, start_pos, prefix)
         else:
             return pt.Operator(self.position_modifier, value, start_pos, prefix)
 
