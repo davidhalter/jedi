@@ -414,23 +414,24 @@ class ParserWithRecovery(Parser):
 
         #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
         if self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos):
-            #add_token_callback(typ, value, prefix, start_pos)
-            pass
+            add_token_callback(typ, value, prefix, start_pos)
+            if typ == INDENT:
+                # For every deleted INDENT we have to delete a DEDENT as well.
+                # Otherwise the parser will get into trouble and DEDENT too early.
+                self._omit_dedent_list.append(self._indent_counter)
+
         else:
             #error_leaf = ErrorToken(self.position_modifier, value, start_pos, prefix)
             #stack = [(None, [error_leaf])]
             # TODO document the shizzle!
             #self._error_statements.append(ErrorStatement(stack, None, None,
             #                          self.position_modifier, error_leaf.end_pos))
-            error_leaf = pt.ErrorLeaf(self.position_modifier, value, start_pos, prefix)
+            error_leaf = pt.ErrorLeaf(self.position_modifier, typ, value, start_pos, prefix)
             stack[-1][2][1].append(error_leaf)
+
             return
 
-        if typ == INDENT:
-            # For every deleted INDENT we have to delete a DEDENT as well.
-            # Otherwise the parser will get into trouble and DEDENT too early.
-            self._omit_dedent_list.append(self._indent_counter)
-
+        '''
         if value in ('import', 'class', 'def', 'try', 'while', 'return', '\n'):
             # Those can always be new statements.
             add_token_callback(typ, value, prefix, start_pos)
@@ -445,6 +446,7 @@ class ParserWithRecovery(Parser):
             # anyway (compile.c does that for Python), because Python's grammar
             # doesn't stop you from defining `continue` in a module, etc.
             add_token_callback(typ, value, prefix, start_pos)
+'''
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
         def clear_names(children):

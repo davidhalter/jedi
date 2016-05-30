@@ -98,6 +98,7 @@ def get_stack_at_position(grammar, source, module, pos):
         if pos <= user_stmt.start_pos:
             try:
                 leaf = user_stmt.get_previous_leaf()
+                print(user_stmt, leaf)
             except IndexError:
                 pass
             else:

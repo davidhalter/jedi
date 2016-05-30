@@ -10,7 +10,7 @@ import os
 import sys
 
 from jedi import Interpreter
-from jedi.api.helpers import completion_parts
+from jedi.api.helpers import get_completion_parts
 from jedi.parser.user_context import UserContext
 
 
@@ -73,7 +73,7 @@ def setup_readline(namespace_module=__main__):
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
                     path = UserContext(text, (1, len(text))).get_path_until_cursor()
-                    path, dot, like = completion_parts(path)
+                    path, dot, like = get_completion_parts(path)
                     before = text[:len(text) - len(like)]
                     completions = interpreter.completions()
                 finally:

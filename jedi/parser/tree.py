@@ -43,6 +43,7 @@ from jedi import common
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
 from jedi import cache
+from jedi.parser import token
 
 
 def is_node(node, *symbol_names):
@@ -653,8 +654,16 @@ class ErrorLeaf(Leaf):
     """
     TODO doc
     """
-    __slots__ = ()
+    __slots__ = ('original_type')
     type = 'error_leaf'
+
+    def __init__(self, position_modifier, original_type, value, start_pos, prefix=''):
+        super(ErrorLeaf, self).__init__(position_modifier, value, start_pos, prefix)
+        self.original_type = original_type
+
+    def __repr__(self):
+        token_type = token.tok_name[self.original_type]
+        return "<%s: %s, %s)>" % (type(self).__name__, token_type, repr(self.value))
 
 
 class IsScopeMeta(type):

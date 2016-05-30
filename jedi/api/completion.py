@@ -136,7 +136,7 @@ class Completion:
         try:
             stack = helpers.get_stack_at_position(grammar, self._source, self._module, pos)
         except helpers.OnErrorLeaf:
-            return []
+            return self._simple_complete(completion_parts)
 
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)

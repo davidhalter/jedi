@@ -121,11 +121,9 @@ class PgenParser(object):
                 break
         else:
             # We never broke out -- EOF is too soon -- Unfinished statement.
-            # TODO the arcs argument [] is not correctly defined.
-            self.error_recovery(self.grammar, self.stack, [], type_, value,
-                                start_pos, prefix, self.addtoken)
-            # Add the ENDMARKER again.
-            if not self.addtoken(type_, value, prefix, start_pos):
+            # However, the error recovery might have added the token again, if
+            # the stack is empty, we're fine.
+            if self.stack:
                 raise InternalParseError("incomplete input", type_, value, start_pos)
         return self.rootnode
 
