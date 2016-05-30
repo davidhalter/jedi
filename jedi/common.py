@@ -127,7 +127,7 @@ def source_to_unicode(source, encoding=None):
             # UTF-8 byte-order mark
             return 'utf-8'
 
-        first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', str(source)).group(0)
+        first_two_lines = re.match(r'(?:[^\n]*\n){0,2}', source.decode('iso-8859-1')).group(0)
         possible_encoding = re.search(r"coding[=:]\s*([-\w.]+)",
                                       first_two_lines)
         if possible_encoding:
