@@ -22,7 +22,7 @@ def gen_ret(value):
 next(gen_ret(1))
 
 #? []
-next(gen_ret())
+next(gen_ret()).
 
 # generators evaluate to true if cast by bool.
 a = ''
@@ -42,7 +42,7 @@ def get(param):
         yield ""
 
 #? []
-get()[0]
+get()[0].
 
 # -----------------
 # __iter__

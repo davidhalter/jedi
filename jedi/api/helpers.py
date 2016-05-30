@@ -95,7 +95,6 @@ def get_stack_at_position(grammar, source, module, pos):
     else:
         if user_stmt is None:
             user_stmt = module.get_leaf_for_position(pos, include_prefixes=True)
-        print(user_stmt)
         if pos <= user_stmt.start_pos:
             try:
                 leaf = user_stmt.get_previous_leaf()
@@ -103,6 +102,7 @@ def get_stack_at_position(grammar, source, module, pos):
                 pass
             else:
                 user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
+                print(user_stmt, leaf.start_pos)
         # Only if were in front of the leaf we want to get the stack,
         # because after there's probably a newline or whatever that would
         # be actually tokenized and is not just prefix.
@@ -128,7 +128,6 @@ def get_stack_at_position(grammar, source, module, pos):
             # Error leafs cannot be parsed.
             raise OnErrorLeaf(user_stmt)
 
-        print(user_stmt.start_pos, pos)
         code = _get_code(source, user_stmt.start_pos, pos)
         # Remove whitespace at the end. Necessary, because the tokenizer will parse
         # an error token (there's no new line at the end in our case). This doesn't

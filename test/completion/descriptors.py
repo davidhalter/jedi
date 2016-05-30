@@ -62,14 +62,14 @@ class B():
     p = property(t)
 
 #? []
-B().r()
+B().r().
 #? int()
 B().r
 
 #? str()
 B().p
 #? []
-B().p()
+B().p().
 
 class PropClass():
     def __init__(self, a):
