@@ -275,6 +275,7 @@ class Importer(object):
         except KeyError:
             pass
 
+        module_path = None
         if len(import_path) > 1:
             # This is a recursive way of importing that works great with
             # the module cache.
@@ -312,7 +313,7 @@ class Importer(object):
                             find_module(import_parts[-1], [path])
                         break
                     except ImportError:
-                        module_path = None
+                        pass
                 if module_path is None:
                     _add_error(self._evaluator, import_path[-1])
                     return []
