@@ -162,7 +162,7 @@ def test_error_correction_with():
 def test_newline_positions():
     endmarker = ParserWithRecovery(load_grammar(), u('a\n')).module.children[-1]
     assert endmarker.end_pos == (2, 0)
-    new_line = endmarker.get_previous()
+    new_line = endmarker.get_previous_leaf()
     assert new_line.start_pos == (1, 1)
     assert new_line.end_pos == (2, 0)
 

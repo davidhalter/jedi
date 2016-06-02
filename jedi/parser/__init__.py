@@ -387,9 +387,9 @@ class ParserWithRecovery(Parser):
         def current_suite(stack):
             # For now just discard everything that is not a suite or
             # file_input, if we detect an error.
-            for index, (dfa, state, (typ, nodes)) in reversed(list(enumerate(stack))):
+            for index, (dfa, state, (type_, nodes)) in reversed(list(enumerate(stack))):
                 # `suite` can sometimes be only simple_stmt, not stmt.
-                symbol = grammar.number2symbol[typ]
+                symbol = grammar.number2symbol[type_]
                 if symbol == 'file_input':
                     break
                 elif symbol == 'suite' and len(nodes) > 1:
@@ -404,8 +404,8 @@ class ParserWithRecovery(Parser):
         index, symbol, nodes = current_suite(stack)
         if symbol == 'simple_stmt':
             index -= 2
-            (_, _, (typ, suite_nodes)) = stack[index]
-            symbol = grammar.number2symbol[typ]
+            (_, _, (type_, suite_nodes)) = stack[index]
+            symbol = grammar.number2symbol[type_]
             suite_nodes.append(pt.Node(symbol, list(nodes)))
             # Remove
             nodes[:] = []
@@ -415,19 +415,20 @@ class ParserWithRecovery(Parser):
         #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
         if self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos):
             add_token_callback(typ, value, prefix, start_pos)
-            if typ == INDENT:
-                # For every deleted INDENT we have to delete a DEDENT as well.
-                # Otherwise the parser will get into trouble and DEDENT too early.
-                self._omit_dedent_list.append(self._indent_counter)
-
         else:
             #error_leaf = ErrorToken(self.position_modifier, value, start_pos, prefix)
             #stack = [(None, [error_leaf])]
             # TODO document the shizzle!
             #self._error_statements.append(ErrorStatement(stack, None, None,
             #                          self.position_modifier, error_leaf.end_pos))
-            error_leaf = pt.ErrorLeaf(self.position_modifier, typ, value, start_pos, prefix)
-            stack[-1][2][1].append(error_leaf)
+            if typ == INDENT:
+                # For every deleted INDENT we have to delete a DEDENT as well.
+                # Otherwise the parser will get into trouble and DEDENT too early.
+                self._omit_dedent_list.append(self._indent_counter)
+            else:
+                error_leaf = pt.ErrorLeaf(self.position_modifier, typ, value, start_pos, prefix)
+                stack[-1][2][1].append(error_leaf)
+                print('\t\tole', repr(typ),  error_leaf.start_pos)
 
             return
 
