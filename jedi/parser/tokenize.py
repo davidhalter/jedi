@@ -293,7 +293,7 @@ def generate_tokens(readline, use_exact_op_types=False):
                     typ = OP
                 yield typ, token, spos, prefix
 
-    if new_line:
+    if new_line or additional_prefix[-1:] == '\n':
         end_pos = lnum + 1, 0
     else:
         end_pos = lnum, max
