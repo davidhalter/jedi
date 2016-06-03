@@ -75,6 +75,9 @@ def test_split_parts():
     test('a\n\n', 'def b(): pass\n', 'c\n')
     test('a\n', 'def b():\n pass\n', 'c\n')
 
+    test('from x\\\n')
+    test('a\n\\\n')
+
 
 def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
     if number_of_splits is None:

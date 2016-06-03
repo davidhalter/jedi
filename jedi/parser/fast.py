@@ -353,6 +353,9 @@ class FastParser(use_metaclass(CachedFastParser)):
                         - l.count(')') - l.count(']') - l.count('}')))
 
             current_lines.append(l)
+
+        if previous_line is not None:
+            current_lines.append(previous_line)
         if current_lines:
             yield gen_part()
 
