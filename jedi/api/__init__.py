@@ -10,7 +10,6 @@ import re
 import os
 import warnings
 import sys
-import collections
 
 from jedi._compatibility import unicode
 from jedi.parser import load_grammar
@@ -134,6 +133,9 @@ class Script(object):
     def _parsed_callback(self, parser):
         module = self._evaluator.wrap(parser.module)
         imports.add_module(self._evaluator, unicode(module.name), module)
+
+    def _get_module(self):
+        return self._parser.module()
 
     @property
     def source_path(self):
@@ -336,7 +338,7 @@ class Script(object):
                                                                definitions)
 
             module = set([d.get_parent_until() for d in definitions])
-            module.add(self._parser.module())
+            module.add(self._get_module())
             names = usages.usages(self._evaluator, definitions, module)
 
             for d in set(definitions):
@@ -381,9 +383,9 @@ class Script(object):
 
     def _analysis(self):
         self._evaluator.is_analysis = True
-        self._evaluator.analysis_modules = [self._parser.module()]
+        self._evaluator.analysis_modules = [self._get_module()]
         try:
-            for node in self._parser.module().nodes_to_execute():
+            for node in self._get_module().nodes_to_execute():
                 if node.type in ('funcdef', 'classdef'):
                     if node.type == 'classdef':
                         continue
@@ -440,8 +442,9 @@ class Interpreter(Script):
         If `line` and `column` are None, they are assumed be at the end of
         `source`.
         """
-        if type(namespaces) is not list or len(namespaces) == 0 or \
-                not all(isinstance(x, collections.Mapping) for x in namespaces):
+        try:
+            namespaces = [dict(n) for n in namespaces]
+        except Exception:
             raise TypeError("namespaces must be a non-empty list of dicts.")
 
         super(Interpreter, self).__init__(source, **kwds)
@@ -454,8 +457,12 @@ class Interpreter(Script):
                                          self._orig_path, self._pos,
                                          self._user_context, self._parsed_callback,
                                          use_fast_parser=False)
-        interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
-                                             self._parser.module())
+        #interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
+                                             #self._get_module())
+
+    def _get_module(self):
+        parser_module = super(Interpreter, self)._get_module()
+        return interpreter.MixedModule(parser_module, self.namespaces)
 
 
 def defined_names(source, path=None, encoding='utf-8'):
@@ -501,7 +508,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
     defs = [classes.Definition(script._evaluator, name_part)
-            for name_part in get_module_names(script._parser.module(), all_scopes)]
+            for name_part in get_module_names(script._get_module(), all_scopes)]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
 

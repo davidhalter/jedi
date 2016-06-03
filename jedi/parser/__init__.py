@@ -226,8 +226,6 @@ class Parser(object):
 
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
-            if typ == ERRORTOKEN:
-                raise ParseError
             yield typ, value, prefix, start_pos
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,

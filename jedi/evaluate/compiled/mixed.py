@@ -134,7 +134,7 @@ def find_syntax_node_name(evaluator, python_object):
     return names[-1]
 
 
-@memoize_default(evaluator_is_first_arg=True)
+@compiled.compiled_objects_cache('mixed_cache')
 def create(evaluator, obj):
     name = find_syntax_node_name(evaluator, obj)
     if name is None:

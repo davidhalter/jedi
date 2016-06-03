@@ -139,9 +139,15 @@ def get_stack_at_position(grammar, source, module, pos):
         pass
 
     def tokenize_without_endmarker(code):
-        for token_ in tokenize.source_tokens(code, use_exact_op_types=True):
+        tokens = tokenize.source_tokens(code, use_exact_op_types=True)
+        for token_ in tokens:
             if token_[0] == token.ENDMARKER:
                 raise EndMarkerReached()
+            elif token_[0] == token.DEDENT:
+                # Ignore those. Error statements should not contain them, if
+                # they do it's for cases where an indentation happens and
+                # before the endmarker we still see them.
+                pass
             else:
                 yield token_
 

@@ -93,7 +93,7 @@ class Completion:
         Analyzes the context that a completion is made in and decides what to
         return.
 
-        Could provide context for:
+        Could specialized completions for:
         - from/import completions
         - as nothing
         - statements that start always on new line

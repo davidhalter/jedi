@@ -62,8 +62,8 @@ def filter_definition_names(names, origin, position=None):
     stmt = names[0].get_definition()
     scope = stmt.get_parent_scope()
 
-    if not (isinstance(scope, er.FunctionExecution)
-            and isinstance(scope.base, er.LambdaWrapper)):
+    if not (isinstance(scope, er.FunctionExecution) and
+            isinstance(scope.base, er.LambdaWrapper)):
         names = filter_after_position(names, position)
     names = [name for name in names if name.is_definition()]
 

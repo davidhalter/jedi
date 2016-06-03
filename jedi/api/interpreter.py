@@ -31,6 +31,23 @@ def add_namespaces_to_parser(evaluator, namespace_dicts, parser_module):
             #arr.append(LazyName(evaluator, parser_module, key, value))
 
 
+class MixedModule():
+    def __init__(self, evaluator, parser_module, namespaces):
+        self._evaluator = evaluator
+        self._parser_module = parser_module
+        self._namespaces = namespaces
+
+    def names_dicts(self):
+        for names_dict in self._parser_module.names_dicts():
+            yield names_dict
+
+        for namespace in self._namespaces:
+            print('ole')
+            yield mixed.MixedObject(self._evaluator, namespace, self._parser_module.name)
+
+        yield namespace
+
+
 class LazyName(helpers.FakeName):
     def __init__(self, evaluator, module, name, value):
         super(LazyName, self).__init__(name)

@@ -475,21 +475,35 @@ def get_special_object(evaluator, identifier):
     return create(evaluator, obj, parent=create(evaluator, _builtins))
 
 
-def compiled_objects_cache(func):
-    def wrapper(evaluator, obj, parent=None, module=None):
-        # Do a very cheap form of caching here.
-        key = id(obj)
-        try:
-            return evaluator.compiled_cache[key][0]
-        except KeyError:
-            result = func(evaluator, obj, parent, module)
-            # Need to cache all of them, otherwise the id could be overwritten.
-            evaluator.compiled_cache[key] = result, obj, parent, module
-            return result
-    return wrapper
+def compiled_objects_cache(attribute_name):
+    def decorator(func):
+        """
+        This decorator caches just the ids, oopposed to caching the object itself.
+        Caching the id has the advantage that an object doesn't need to be
+        hashable.
+        """
+        def wrapper(evaluator, obj, parent=None, module=None):
+            cache = getattr(evaluator, attribute_name)
+            # Do a very cheap form of caching here.
+            key = id(obj)
+            try:
+                return cache[key][0]
+            except KeyError:
+                # TODO this whole decorator looks way too ugly and this if
+                # doesn't make it better. Find a more generic solution.
+                if parent or module:
+                    result = func(evaluator, obj, parent, module)
+                else:
+                    result = func(evaluator, obj)
+                # Need to cache all of them, otherwise the id could be overwritten.
+                cache[key] = result, obj, parent, module
+                return result
+        return wrapper
+
+    return decorator
 
 
-@compiled_objects_cache
+@compiled_objects_cache('compiled_cache')
 def create(evaluator, obj, parent=None, module=None):
     """
     A very weird interface class to this module. The more options provided the

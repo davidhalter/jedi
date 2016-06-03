@@ -85,7 +85,8 @@ class Evaluator(object):
         self.memoize_cache = {}  # for memoize decorators
         # To memorize modules -> equals `sys.modules`.
         self.modules = {}  # like `sys.modules`.
-        self.compiled_cache = {}  # see `compiled.create()`
+        self.compiled_cache = {}  # see `evaluate.compiled.create()`
+        self.mixed_cache = {}  # see `evaluate.compiled.mixed.create()`
         self.analysis = []
         self.predefined_if_name_dict_dict = {}
         self.is_analysis = False
