@@ -43,7 +43,10 @@ def token_to_ilabel(grammar, type_, value):
         except KeyError:
             pass
 
-    return grammar.tokens[type_]
+    try:
+        return grammar.tokens[type_]
+    except KeyError:
+        return None
 
 
 class PgenParser(object):

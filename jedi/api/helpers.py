@@ -125,15 +125,16 @@ def get_stack_at_position(grammar, source, module, pos):
                     user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
 '''
 
-        if user_stmt.type == 'error_leaf':
-            # Error leafs cannot be parsed.
+        if user_stmt.type == 'error_leaf' or user_stmt.type == 'string':
+            # Error leafs cannot be parsed, completion in strings is also
+            # impossible.
             raise OnErrorLeaf(user_stmt)
 
         code = _get_code(source, user_stmt.start_pos, pos)
         # Remove whitespace at the end. Necessary, because the tokenizer will parse
         # an error token (there's no new line at the end in our case). This doesn't
         # alter any truth about the valid tokens at that position.
-        code = code.strip()
+        code = code.strip('\t ')
 
     class EndMarkerReached(Exception):
         pass
