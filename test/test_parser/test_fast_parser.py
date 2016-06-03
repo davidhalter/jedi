@@ -441,3 +441,17 @@ def test_string_literals():
 
     script = jedi.Script(dedent(source))
     assert script.completions()
+
+
+def test_decorator_string_issue():
+    """
+    Test case from #589
+    """
+    s = jedi.Script(dedent('''\
+    """
+      @"""
+    def bla():
+      pass
+
+    bla.'''))
+    assert s.completions()
