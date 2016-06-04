@@ -134,7 +134,7 @@ def source_to_unicode(source, encoding=None):
             return possible_encoding.group(1)
         else:
             # the default if nothing else has been set -> PEP 263
-            return encoding if encoding is not None else 'iso-8859-1'
+            return encoding if encoding is not None else 'utf-8'
 
     if isinstance(source, unicode):
         # only cast str/bytes
