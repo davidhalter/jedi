@@ -499,9 +499,6 @@ class ParserWithRecovery(Parser):
                 self._indent_counter -= 1
             elif typ == INDENT:
                 self._indent_counter += 1
-            elif typ == ERRORTOKEN:
-                self._add_syntax_error('Strange token', start_pos)
-                continue
 
             yield typ, value, prefix, start_pos
 

@@ -650,7 +650,7 @@ class ErrorNode(BaseNode):
     type = 'error_node'
 
 
-class ErrorLeaf(Leaf):
+class ErrorLeaf(LeafWithNewLines):
     """
     TODO doc
     """
