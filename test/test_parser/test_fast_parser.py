@@ -447,11 +447,14 @@ def test_decorator_string_issue():
     """
     Test case from #589
     """
-    s = jedi.Script(dedent('''\
+    source = dedent('''\
     """
       @"""
     def bla():
       pass
 
-    bla.'''))
+    bla.''')
+
+    s = jedi.Script(source)
     assert s.completions()
+    assert s._parser.module().get_code() == source

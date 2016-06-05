@@ -424,14 +424,12 @@ class FastParser(use_metaclass(CachedFastParser)):
         """
         Side effect: Alters the list of nodes.
         """
-        indent = len(source) - len(source.lstrip('\t '))
-        self.current_node = self.current_node.parent_until_indent(indent)
-
         h = hash(source)
         for index, node in enumerate(nodes):
             if node.hash == h and node.source == source:
                 node.reset_node()
                 nodes.remove(node)
+                parser_code = source
                 break
         else:
             tokenizer = FastTokenizer(parser_code)
@@ -443,6 +441,9 @@ class FastParser(use_metaclass(CachedFastParser)):
             code_part_actually_used = ''.join(used_lines)
 
             node = ParserNode(self.module, p, code_part_actually_used)
+
+        indent = len(parser_code) - len(parser_code.lstrip('\t '))
+        self.current_node = self.current_node.parent_until_indent(indent)
 
         self.current_node.add_node(node, line_offset)
         return node
