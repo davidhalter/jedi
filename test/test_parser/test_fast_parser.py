@@ -423,6 +423,17 @@ def test_fake_parentheses():
     check_fp(src, 3, 2, 1)
 
 
+def test_additional_indent():
+    source = dedent('''\
+    int(
+      def x():
+          pass
+    ''')
+
+    x = check_fp(source, 2)
+    import pdb; pdb.set_trace()
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 
