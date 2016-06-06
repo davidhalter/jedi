@@ -124,8 +124,12 @@ class ParserNode(object):
         try:
             # With fast_parser we have either 1 subscope or only statements.
             self._content_scope = parser.module.subscopes[0]
+            # A parsed node's content will be in the first indent, because
+            # everything that's parsed is within this subscope.
+            self._is_class_or_def = True
         except IndexError:
             self._content_scope = parser.module
+            self._is_class_or_def = False
         else:
             self._rewrite_last_newline()
 
@@ -197,10 +201,11 @@ class ParserNode(object):
         Adding a node means adding a node that was either just parsed or one
         that can be reused.
         """
-        print(indent, self._indent)
-        #if indent > 0:
-            #import pdb;pdb.set_trace()
-        if self._indent >= indent and not self.is_root_node():
+        # Content that is not a subscope can never be part of the current node,
+        # because it's basically a sister node, that sits next to it and not
+        # within it.
+        if (self._indent >= indent or not self._is_class_or_def) and \
+                not self.is_root_node():
             self.close()
             return self.parent.add_node(node, line_offset, indent)
 
@@ -526,7 +531,6 @@ class FastTokenizer(object):
             # open parentheses ignored them.
             previous_type = NEWLINE
 
-        print('x', typ, repr(value), self.previous)
         # Parentheses ignore the indentation rules. The other three stand for
         # new lines.
         if previous_type in (NEWLINE, INDENT, DEDENT) \

@@ -430,8 +430,7 @@ def test_additional_indent():
           pass
     ''')
 
-    x = check_fp(source, 2)
-    import pdb; pdb.set_trace()
+    check_fp(source, 2)
 
 
 def test_incomplete_function():
