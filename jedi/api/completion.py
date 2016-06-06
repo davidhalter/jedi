@@ -164,6 +164,9 @@ class Completion:
                     level,
                     only_modules
                 )
+            elif nodes and nodes[-1] == 'as':
+                # No completions for ``with x as foo`` and ``import x as foo``.
+                return []
             else:
                 completion_names += self._simple_complete(completion_parts)
 

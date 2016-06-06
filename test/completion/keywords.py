@@ -25,3 +25,7 @@ a + break
 
 #? ['break']
 b; break
+
+# Should not complete after as.
+#? []
+with open() as f
