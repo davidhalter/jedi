@@ -120,10 +120,6 @@ class Completion:
         - In args: */**: no completion
         - In params (also lambda): no completion before =
         """
-        '''
-        names, level, only_modules, unfinished_dotted = \
-            helpers.check_error_statements(self._module, self._pos)
-'''
 
         grammar = self._evaluator.grammar
 
@@ -160,24 +156,9 @@ class Completion:
                 if "import_from" in symbol_names:
                     if 'import' in nodes:
                         only_modules = False
-                    '''
-                    if last_symbol == "dotted_name":
-                    elif last_symbol == "import_from":
-                        # No names are given yet, but the dots for level might be
-                        # there.
-                        if 'import' in nodes:
-                            print(nodes[1])
-                            raise NotImplementedError
-                        else:
-                            raise NotImplementedError
-                    elif last_symbol == "import_name":
-                        names = nodes[1::2]
-                        completion_names += self._get_importer_names(names)
-                    '''
                 else:
                     assert "import_name" in symbol_names
 
-                print(names, level)
                 completion_names += self._get_importer_names(
                     names,
                     level,
@@ -186,47 +167,7 @@ class Completion:
             else:
                 completion_names += self._simple_complete(completion_parts)
 
-        """
-        completion_names = []
-        if names is not None:
-            imp_names = tuple(str(n) for n in names if n.end_pos < self._pos)
-            i = imports.Importer(self._evaluator, imp_names, module, level)
-            completion_names = i.completion_names(self._evaluator, only_modules)
-        """
-
         return completion_names
-
-        '''
-        # TODO this paragraph is necessary, but not sure it works.
-        context = self._user_context.get_backwards_context_tokens()
-        x = next(context, None)
-        #print(x)
-        #if not x.string.startswith('.'):  # skip the path
-        if next(context, None).string == 'from':
-            # completion is just "import" if before stands from ..
-            if unfinished_dotted:
-                return completion_names
-            else:
-                return [keywords.keyword(self._evaluator, 'import').name]
-
-        if isinstance(user_stmt, tree.Import):
-            completion_names += imports.completion_names(self._evaluator,
-                                                         user_stmt, self._pos)
-            return completion_names
-
-        if names is None and not isinstance(user_stmt, tree.Import):
-            if not completion_parts.path and not completion_parts.has_dot:
-                # add keywords
-                completion_names += keywords.completion_names(
-                    self._evaluator,
-                    user_stmt,
-                    self._pos,
-                    module)
-                # TODO delete? We should search for valid parser
-                # transformations.
-            completion_names += self._simple_complete(completion_parts)
-        return completion_names
-        '''
 
     def _get_keyword_completion_names(self, keywords_):
         for k in keywords_:
