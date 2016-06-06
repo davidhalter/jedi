@@ -93,30 +93,12 @@ class Completion:
         Analyzes the context that a completion is made in and decides what to
         return.
 
-        Could specialized completions for:
-        - from/import completions
-        - as nothing
-        - statements that start always on new line
-                       'import', 'class', 'def', 'try', 'except',
-                       'finally', 'while', with
-        - statements that start always on new line or after ; or after :
-                        return raise continue break del pass global nonlocal assert
-        - def/class nothing
-        - async for/def/with
-        - \n@/del/return/raise no keyword (after keyword no keyword)?
-        - after keyword
-        - continue/break/pass nothing
-        - global/nonlocal search global
-        - after operator no keyword: return
-        - yield like return + after ( and =
-        - almost always ok
-              'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
-        - after operations no keyword:
-                + = * ** - etc Maybe work with the parser state?
+        Technically this works by generating a parser stack and analysing the
+        current stack for possible grammar nodes.
 
-        # hard:
-        - await
-        - yield from / raise from / from import difference
+        Possible enhancements:
+        - global/nonlocal search global
+        - yield from / raise from <- could be only exceptions/generators
         - In args: */**: no completion
         - In params (also lambda): no completion before =
         """
@@ -164,8 +146,9 @@ class Completion:
                     level,
                     only_modules
                 )
-            elif nodes and nodes[-1] == 'as':
+            elif nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
+                # Also true for defining names as a class or function.
                 return []
             else:
                 completion_names += self._simple_complete(completion_parts)

@@ -26,6 +26,34 @@ a + break
 #? ['break']
 b; break
 
-# Should not complete after as.
+# -----------------
+# Keywords should not appear everywhere.
+# -----------------
+
 #? []
 with open() as f
+#? []
+def i
+#? []
+class i
+
+#? []
+continue i
+
+# More syntax details, e.g. while only after newline, but not after semicolon,
+# continue also after semicolon
+#? ['while']
+while
+#? []
+x while
+#? []
+x; while
+#? ['continue']
+x; continue
+
+#? []
+and
+#? ['and']
+x and
+#? []
+x * and
