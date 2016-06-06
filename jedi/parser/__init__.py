@@ -21,7 +21,7 @@ import re
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
-                               STRING, OP, ERRORTOKEN)
+                               STRING)
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser, token_to_ilabel
 
@@ -100,34 +100,6 @@ class ErrorStatement(object):
         for _, nodes in self.stack:
             for node in nodes:
                 yield node
-
-    def get_code(self, include_prefix=True):
-        iterator = self._iter_nodes()
-        first = next(iterator)
-        return first.get_code(include_prefix=include_prefix) + ''.join(node.get_code() for node in iterator)
-
-    def set_parent(self, root_node):
-        """
-        Used by the parser at the end of parsing. The error statements parents
-        have to be calculated at the end, because they are basically ripped out
-        of the stack at which time its parents don't yet exist..
-        """
-        start_pos = self.start_pos
-        try:
-            children = root_node.children
-        except AttributeError:
-            self.parent = root_node
-        else:
-            for c in children:
-                if c.start_pos < start_pos <= c.end_pos:
-                    self.set_parent(c)
-                    return
-
-            self.parent = root_node
-
-
-class ErrorToken(tree.LeafWithNewLines):
-    type = 'error_token'
 
 
 class ParserSyntaxError(object):
@@ -218,9 +190,6 @@ class Parser(object):
         if self._added_newline:
             self.remove_last_newline()
 
-        for e in self._error_statements:
-            e.set_parent(self.get_parsed_node())
-
     def get_parsed_node(self):
         return self._parsed
 
@@ -271,7 +240,7 @@ class Parser(object):
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
-        #print('leaf', repr(value), token.tok_name[type])
+        # print('leaf', repr(value), token.tok_name[type])
         if type == tokenize.NAME:
             if value in grammar.keywords:
                 if value in ('def', 'class', 'lambda'):
@@ -342,6 +311,7 @@ class Parser(object):
                         endmarker._start_pos = newline._start_pos
                     break
 
+
 class ParserWithRecovery(Parser):
     """
     This class is used to parse a Python file, it then divides them into a
@@ -410,15 +380,10 @@ class ParserWithRecovery(Parser):
             nodes = suite_nodes
             stack[index]
 
-        #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
+        # print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
         if self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos):
             add_token_callback(typ, value, prefix, start_pos)
         else:
-            #error_leaf = ErrorToken(self.position_modifier, value, start_pos, prefix)
-            #stack = [(None, [error_leaf])]
-            # TODO document the shizzle!
-            #self._error_statements.append(ErrorStatement(stack, None, None,
-            #                          self.position_modifier, error_leaf.end_pos))
             if typ == INDENT:
                 # For every deleted INDENT we have to delete a DEDENT as well.
                 # Otherwise the parser will get into trouble and DEDENT too early.
@@ -426,26 +391,6 @@ class ParserWithRecovery(Parser):
             else:
                 error_leaf = pt.ErrorLeaf(self.position_modifier, typ, value, start_pos, prefix)
                 stack[-1][2][1].append(error_leaf)
-                print('\t\tole', repr(typ),  error_leaf.start_pos)
-
-            return
-
-        '''
-        if value in ('import', 'class', 'def', 'try', 'while', 'return', '\n'):
-            # Those can always be new statements.
-            add_token_callback(typ, value, prefix, start_pos)
-        elif typ == DEDENT and symbol == 'suite':
-            # Close the current suite, with DEDENT.
-            # Note that this may cause some suites to not contain any
-            # statements at all. This is contrary to valid Python syntax. We
-            # keep incomplete suites in Jedi to be able to complete param names
-            # or `with ... as foo` names. If we want to use this parser for
-            # syntax checks, we have to check in a separate turn if suites
-            # contain statements or not. However, a second check is necessary
-            # anyway (compile.c does that for Python), because Python's grammar
-            # doesn't stop you from defining `continue` in a module, etc.
-            add_token_callback(typ, value, prefix, start_pos)
-'''
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
         def clear_names(children):
@@ -487,7 +432,7 @@ class ParserWithRecovery(Parser):
 
     def _tokenize(self, tokenizer):
         for typ, value, start_pos, prefix in tokenizer:
-            #print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
+            # print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
             if typ == DEDENT:
                 # We need to count indents, because if we just omit any DEDENT,
                 # we might omit them in the wrong place.

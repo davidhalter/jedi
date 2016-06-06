@@ -64,20 +64,6 @@ def _get_code(code, start_pos, end_pos):
     return '\n'.join(lines)
 
 
-def get_user_or_error_stmt(module, position):
-    user_stmt = module.get_statement_for_position(position)
-    if user_stmt is None or user_stmt.type == 'whitespace':
-        # If there's no error statement and we're just somewhere, we want
-        # completions for just whitespace.
-        '''
-        for error_stmt in module.error_statements:
-            if error_stmt.start_pos < position <= error_stmt.end_pos:
-                return error_stmt
-'''
-
-    return user_stmt
-
-
 class OnErrorLeaf(Exception):
     @property
     def error_leaf(self):
@@ -88,7 +74,7 @@ def get_stack_at_position(grammar, source, module, pos):
     """
     Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
     """
-    user_stmt = get_user_or_error_stmt(module, pos)
+    user_stmt = module.get_statement_for_position(pos)
 
     if user_stmt is not None and user_stmt.type in ('indent', 'dedent'):
         code = ''
@@ -98,32 +84,10 @@ def get_stack_at_position(grammar, source, module, pos):
         if pos <= user_stmt.start_pos:
             try:
                 leaf = user_stmt.get_previous_leaf()
-                print(user_stmt, leaf)
             except IndexError:
                 pass
             else:
-                user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
-                print(user_stmt, leaf.start_pos)
-        # Only if were in front of the leaf we want to get the stack,
-        # because after there's probably a newline or whatever that would
-        # be actually tokenized and is not just prefix.
-        if pos <= user_stmt.start_pos:
-            try:
-                leaf = user_stmt.get_previous_leaf()
-            except IndexError:
-                # Seems to be the first element.
-                pass
-            else:
-                '''
-                for error_stmt in reversed(module.error_statements):
-                    if leaf.start_pos <= error_stmt.start_pos <= user_stmt.start_pos:
-                        # The leaf appears not to be the last leaf. It's actually an
-                        # error statement.
-                        user_stmt = error_stmt
-                        break
-                else:
-                    user_stmt = get_user_or_error_stmt(module, leaf.start_pos)
-'''
+                user_stmt = module.get_statement_for_position(leaf.start_pos)
 
         if user_stmt.type == 'error_leaf' or user_stmt.type == 'string':
             # Error leafs cannot be parsed, completion in strings is also
@@ -156,7 +120,6 @@ def get_stack_at_position(grammar, source, module, pos):
             else:
                 yield token_
 
-    print(repr(code), 'x')
     p = parser.Parser(grammar, code, start_parsing=False)
     try:
         p.parse(tokenizer=tokenize_without_endmarker(code))
