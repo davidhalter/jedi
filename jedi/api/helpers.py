@@ -131,6 +131,10 @@ def get_stack_at_position(grammar, source, module, pos):
             raise OnErrorLeaf(user_stmt)
 
         code = _get_code(source, user_stmt.start_pos, pos)
+        if code == ';':
+            # ; cannot be parsed.
+            code = ''
+
         # Remove whitespace at the end. Necessary, because the tokenizer will parse
         # an error token (there's no new line at the end in our case). This doesn't
         # alter any truth about the valid tokens at that position.
