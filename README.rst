@@ -41,6 +41,9 @@ Jedi can currently be used with the following editors:
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
 - Atom_ (autocomplete-python_)
 - SourceLair_
+- `GNOME Builder`_ (with support for GObject Introspection)
+- `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
+- Gedit (gedi_)
 
 And it powers the following projects:
 
@@ -202,3 +205,6 @@ Acknowledgements
 .. _Atom: https://atom.io/
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
 .. _SourceLair: https://www.sourcelair.com
+.. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
+.. _Visual Studio Code: https://code.visualstudio.com/
+.. _gedi: https://github.com/isamert/gedi
