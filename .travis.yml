@@ -1,4 +1,5 @@
 language: python
+python: 3.5
 sudo: false
 env:
     - TOXENV=py26

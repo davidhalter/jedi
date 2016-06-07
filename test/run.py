@@ -249,14 +249,16 @@ def skip_python_version(line):
             map(int, match.group(2).split(".")))
         operation = getattr(operator, comp_map[match.group(1)])
         if not operation(sys.version_info, minimal_python_version):
-            return "Minimal python version %s" % match.group(1)
+            return "Minimal python version %s %s" % (match.group(1), match.group(2))
 
     return None
 
 
-def collect_file_tests(lines, lines_to_execute):
-    makecase = lambda t: IntegrationTestCase(t, correct, line_nr, column,
-                                             start, line, path=None, skip=skip)
+def collect_file_tests(path, lines, lines_to_execute):
+    def makecase(t):
+        return IntegrationTestCase(t, correct, line_nr, column,
+                                   start, line, path=path, skip=skip)
+
     start = None
     correct = None
     test_type = None
@@ -325,9 +327,8 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
             else:
                 source = unicode(open(path).read(), 'UTF-8')
 
-            for case in collect_file_tests(StringIO(source),
+            for case in collect_file_tests(path, StringIO(source),
                                            lines_to_execute):
-                case.path = path
                 case.source = source
                 if skip:
                     case.skip = skip

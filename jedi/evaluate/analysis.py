@@ -174,7 +174,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
     def check_hasattr(node, suite):
         try:
             assert suite.start_pos <= jedi_obj.start_pos < suite.end_pos
-            assert node.type == 'power'
+            assert node.type in ('power', 'atom_expr')
             base = node.children[0]
             assert base.type == 'name' and base.value == 'hasattr'
             trailer = node.children[1]

@@ -589,9 +589,43 @@ class BaseNode(Base):
         c = self.parent.children
         index = c.index(self)
         if index == len(c) - 1:
+            # TODO WTF? recursion?
             return self.get_next_leaf()
         else:
             return c[index + 1]
+
+    def last_leaf(self):
+        try:
+            return self.children[-1].last_leaf()
+        except AttributeError:
+            return self.children[-1]
+
+    def get_following_comment_same_line(self):
+        """
+        returns (as string) any comment that appears on the same line,
+        after the node, including the #
+        """
+        try:
+            if self.isinstance(ForStmt):
+                whitespace = self.children[5].first_leaf().prefix
+            elif self.isinstance(WithStmt):
+                whitespace = self.children[3].first_leaf().prefix
+            else:
+                whitespace = self.last_leaf().get_next_leaf().prefix
+        except AttributeError:
+            return None
+        except ValueError:
+            # TODO in some particular cases, the tree doesn't seem to be linked
+            # correctly
+            return None
+        if "#" not in whitespace:
+            return None
+        comment = whitespace[whitespace.index("#"):]
+        if "\r" in comment:
+            comment = comment[:comment.index("\r")]
+        if "\n" in comment:
+            comment = comment[:comment.index("\n")]
+        return comment
 
     @utf8_repr
     def __repr__(self):
@@ -1471,7 +1505,7 @@ def _defined_names(current):
             names += _defined_names(child)
     elif is_node(current, 'atom'):
         names += _defined_names(current.children[1])
-    elif is_node(current, 'power'):
+    elif is_node(current, 'power', 'atom_expr'):
         if current.children[-2] != '**':  # Just if there's no operation
             trailer = current.children[-1]
             if trailer.children[0] == '.':

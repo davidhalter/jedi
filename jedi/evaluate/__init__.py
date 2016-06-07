@@ -292,7 +292,7 @@ class Evaluator(object):
             types = set([element])  # TODO this is no real evaluation.
         elif element.type == 'expr_stmt':
             types = self.eval_statement(element)
-        elif element.type == 'power':
+        elif element.type in ('power', 'atom_expr'):
             types = self._eval_atom(element.children[0])
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
@@ -392,8 +392,7 @@ class Evaluator(object):
 
         new_types = set()
         if trailer_op == '[':
-            for trailer_typ in iterable.create_index_types(self, node):
-                new_types |= iterable.py__getitem__(self, types, trailer_typ, trailer_op)
+            new_types |= iterable.py__getitem__(self, types, trailer)
         else:
             for typ in types:
                 debug.dbg('eval_trailer: %s in scope %s', trailer, typ)

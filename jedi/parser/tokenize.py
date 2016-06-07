@@ -76,7 +76,7 @@ triple = group("[uUbB]?[rR]?'''", '[uUbB]?[rR]?"""')
 # recognized as two instances of =).
 operator = group(r"\*\*=?", r">>=?", r"<<=?", r"!=",
                  r"//=?", r"->",
-                 r"[+\-*/%&|^=<>]=?",
+                 r"[+\-*@/%&|^=<>]=?",
                  r"~")
 
 bracket = '[][(){}]'
