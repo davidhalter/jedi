@@ -97,7 +97,7 @@ def search_function_call(evaluator, func):
                             trailer = t
                             break
                 if trailer is not None:
-                    types = evaluator.goto_definition(name)
+                    types = evaluator.goto_definitions(name)
 
                     # We have to remove decorators, because they are not the
                     # "original" functions, this way we can easily compare.

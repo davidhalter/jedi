@@ -215,7 +215,7 @@ class Evaluator(object):
                 str_element_names = [str(e) for e in element_names]
                 if any(str(i) in str_element_names for i in if_names):
                     for if_name in if_names:
-                        definitions = self.goto_definition(if_name)
+                        definitions = self.goto_definitions(if_name)
                         # Every name that has multiple different definitions
                         # causes the complexity to rise. The complexity should
                         # never fall below 1.
@@ -438,8 +438,7 @@ class Evaluator(object):
             debug.dbg('execute result: %s in %s', types, obj)
             return types
 
-    def goto_definition(self, name):
-        # TODO rename to goto_definitions
+    def goto_definitions(self, name):
         def_ = name.get_definition()
         is_simple_name = name.parent.type not in ('power', 'trailer')
         if is_simple_name:

@@ -234,7 +234,7 @@ class ContextResults():
 
         name = self._module.name_for_position(self._pos)
         if name is not None:
-            return self._evaluator.goto_definition(name)
+            return self._evaluator.goto_definitions(name)
 
         leaf = self._module.get_leaf_for_position(self._pos)
         if leaf is None:
