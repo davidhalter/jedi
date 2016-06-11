@@ -184,7 +184,8 @@ class IntegrationTestCase(object):
         def definition(correct, correct_start, path):
             should_be = set()
             for match in re.finditer('(?:[^ ]+)', correct):
-                parser = Parser(load_grammar(), match.string, start_symbol='eval_input')
+                string = match.group(0)
+                parser = Parser(load_grammar(), string, start_symbol='eval_input')
                 parser.position_modifier.line = self.line_nr
                 element = parser.get_parsed_node()
                 element.parent = script._parser.user_scope()
