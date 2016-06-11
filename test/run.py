@@ -119,6 +119,8 @@ from functools import reduce
 
 import jedi
 from jedi._compatibility import unicode, is_py3
+from jedi.parser import Parser, load_grammar
+from jedi.api.classes import Definition
 
 
 TEST_COMPLETIONS = 0
@@ -172,36 +174,31 @@ class IntegrationTestCase(object):
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))
 
     def run_goto_definitions(self, compare_cb):
+        script = self.script()
+        evaluator = script._evaluator
+
         def comparison(definition):
             suffix = '()' if definition.type == 'instance' else ''
             return definition.desc_with_module + suffix
 
         def definition(correct, correct_start, path):
-            def defs(line_nr, indent):
-                s = jedi.Script(self.source, line_nr, indent, path)
-                return set(s.goto_definitions())
-
             should_be = set()
-            number = 0
-            for index in re.finditer('(?:[^ ]+)', correct):
-                end = index.end()
-                # +3 because of the comment start `#? `
-                end += 3
-                number += 1
-                try:
-                    should_be |= defs(self.line_nr - 1, end + correct_start)
-                except Exception:
-                    print('could not resolve %s indent %s'
-                          % (self.line_nr - 1, end))
-                    raise
-            # because the objects have different ids, `repr`, then compare.
+            for match in re.finditer('(?:[^ ]+)', correct):
+                parser = Parser(load_grammar(), match.string, start_symbol='eval_input')
+                parser.position_modifier.line = self.line_nr
+                element = parser.get_parsed_node()
+                element.parent = script._parser.user_scope()
+                results = evaluator.eval_element(element)
+                if not results:
+                    raise Exception('Could not resolve %s on line %s'
+                                    % (match.string, self.line_nr - 1))
+
+                should_be |= set(Definition(evaluator, r) for r in results)
+
+            # Because the objects have different ids, `repr`, then compare.
             should = set(comparison(r) for r in should_be)
-            if len(should) < number:
-                raise Exception('Solution @%s not right, too few test results: %s'
-                                % (self.line_nr - 1, should))
             return should
 
-        script = self.script()
         should = definition(self.correct, self.start, script.path)
         result = script.goto_definitions()
         is_str = set(comparison(r) for r in result)
@@ -381,8 +378,8 @@ if __name__ == '__main__':
             last = arg
 
     # completion tests:
-    dir = os.path.dirname(os.path.realpath(__file__))
-    completion_test_dir = os.path.join(dir, '../test/completion')
+    dir_ = os.path.dirname(os.path.realpath(__file__))
+    completion_test_dir = os.path.join(dir_, '../test/completion')
     completion_test_dir = os.path.abspath(completion_test_dir)
     summary = []
     tests_fail = 0
