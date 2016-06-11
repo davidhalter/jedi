@@ -183,41 +183,9 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        def resolve_import_paths(definitions):
-            new_defs = list(definitions)
-            for s in definitions:
-                if isinstance(s, imports.ImportWrapper):
-                    new_defs.remove(s)
-                    new_defs += resolve_import_paths(set(s.follow()))
-            return new_defs
+        c = helpers.ContextResults(self._evaluator, self.source, self._get_module(), self._pos)
+        definitions = c.get_results()
 
-        goto_path = self._user_context.get_path_under_cursor()
-        context = self._user_context.get_reverse_context()
-        definitions = []
-        if next(context) in ('class', 'def'):
-            definitions = [self._evaluator.wrap(self._parser.user_scope())]
-        else:
-            # Fetch definition of callee, if there's no path otherwise.
-            if not goto_path:
-                definitions = [signature._definition
-                               for signature in self.call_signatures()]
-
-        if re.match('\w[\w\d_]*$', goto_path) and not definitions:
-            user_stmt = self._parser.user_stmt()
-            if user_stmt is not None and user_stmt.type == 'expr_stmt':
-                for name in user_stmt.get_defined_names():
-                    if name.start_pos <= self._pos <= name.end_pos:
-                        # TODO scaning for a name and then using it should be
-                        # the default.
-                        definitions = self._evaluator.goto_definition(name)
-
-        if not definitions and goto_path:
-            definitions = inference.type_inference(
-                self._evaluator, self._parser, self._user_context,
-                self._pos, goto_path
-            )
-
-        definitions = resolve_import_paths(definitions)
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
         # The additional set here allows the definitions to become unique in an

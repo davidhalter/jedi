@@ -441,16 +441,19 @@ class Evaluator(object):
     def goto_definition(self, name):
         # TODO rename to goto_definitions
         def_ = name.get_definition()
-        if def_.type == 'expr_stmt' and name in def_.get_defined_names():
-            types = self.eval_statement(def_, name)
-        elif def_.type == 'for_stmt':
-            container_types = self.eval_element(def_.children[3])
-            for_types = iterable.py__iter__types(self, container_types, def_.children[3])
-            types = finder.check_tuple_assignments(self, for_types, name)
-        else:
-            call = helpers.call_of_name(name)
-            types = self.eval_element(call)
-        return types
+        is_simple_name = name.parent.type not in ('power', 'trailer')
+        if is_simple_name:
+            if def_.type == 'expr_stmt' and name in def_.get_defined_names():
+                return self.eval_statement(def_, name)
+            elif def_.type == 'for_stmt':
+                container_types = self.eval_element(def_.children[3])
+                for_types = iterable.py__iter__types(self, container_types, def_.children[3])
+                return finder.check_tuple_assignments(self, for_types, name)
+            elif def_.type == 'import_from':
+                return imports.ImportWrapper(self, name).follow()
+
+        call = helpers.call_of_name(name)
+        return self.eval_element(call)
 
     def goto(self, name):
         def resolve_implicit_imports(names):

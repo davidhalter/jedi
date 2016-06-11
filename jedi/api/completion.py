@@ -183,7 +183,7 @@ class Completion:
         else:
             scopes = list(inference.type_inference(
                 self._evaluator, self._parser, self._user_context,
-                self._pos, completion_parts.path, is_completion=True
+                self._pos, completion_parts.path
             ))
             completion_names = []
             debug.dbg('possible completion scopes: %s', scopes)

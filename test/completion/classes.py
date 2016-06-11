@@ -131,6 +131,8 @@ A().addition
 A().addition = None
 #? 8 int()
 A(1).addition = None
+#? 1 A
+A(1).addition = None
 a = A()
 #? 8 int()
 a.addition = None

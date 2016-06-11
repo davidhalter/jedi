@@ -560,7 +560,7 @@ class BaseNode(Base):
                 except AttributeError:
                     return c
 
-        raise ValueError("Position does not exist.")
+        return None
 
     @Python3Method
     def get_statement_for_position(self, pos):

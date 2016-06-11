@@ -102,7 +102,7 @@ if isi
 try:
     except TypeError:
         #? str()
-        ""
+        str()
 
 def break(): pass
 # wrong ternary expression

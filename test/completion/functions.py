@@ -202,8 +202,9 @@ default_function()
 def a():
     l = 3
     def func_b():
-        #? str()
         l = ''
+        #? str()
+        l
     #? ['func_b']
     func_b
     #? int()

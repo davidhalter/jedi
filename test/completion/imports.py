@@ -75,6 +75,7 @@ def scope_from_import_variable():
     without the use of ``sys.modules`` modifications (e.g. ``os.path`` see also
     github issue #213 for clarification.
     """
+    a = 3
     #? 
     from import_tree.mod2.fake import a
     #? 

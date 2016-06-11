@@ -212,3 +212,70 @@ def importer_from_error_statement(error_statement, pos):
                     only_modules = False
 
     return names, level, only_modules, unfinished_dotted
+
+
+class ContextResults():
+    def __init__(self, evaluator, source, module, pos):
+        self._evaluator = evaluator
+        self._module = module
+        self._source = source
+        self._pos = pos
+
+    def _on_defining_name(self, leaf):
+        return [self._evaluator.wrap(self._parser.user_scope())]
+
+    def get_results(self):
+        '''
+        try:
+            stack = get_stack_at_position(self._evaluator.grammar, self._source, self._module, self._leaf.end_pos)
+        except OnErrorLeaf:
+            return []
+'''
+
+        name = self._module.name_for_position(self._pos)
+        if name is not None:
+            return self._evaluator.goto_definition(name)
+
+        leaf = self._module.get_leaf_for_position(self._pos)
+        if leaf is None:
+            return []
+
+        if leaf.parent.type == 'atom':
+            return self._evaluator.eval_element(leaf.parent)
+        if leaf.parent.type == 'trailer':
+            return self._evaluator.eval_element(leaf.parent.parent)
+        return []
+        symbol_names = list(stack.get_node_names(self._evaluator.grammar))
+
+        nodes = list(stack.get_nodes())
+
+        if "import_stmt" in symbol_names:
+            level = 0
+            only_modules = True
+            level, names = self._parse_dotted_names(nodes)
+            if "import_from" in symbol_names:
+                if 'import' in nodes:
+                    only_modules = False
+            else:
+                assert "import_name" in symbol_names
+
+            completion_names += self._get_importer_names(
+                names,
+                level,
+                only_modules
+            )
+        elif nodes[-2] in ('as', 'def', 'class'):
+            # No completions for ``with x as foo`` and ``import x as foo``.
+            # Also true for defining names as a class or function.
+            return self._on_defining_name(self._leaf)
+        else:
+            completion_names += self._simple_complete(completion_parts)
+        return 
+
+
+class GotoDefinition(ContextResults):
+    def _():
+        definitions = inference.type_inference(
+            self._evaluator, self._parser, self._user_context,
+            self._pos, goto_path
+        )
