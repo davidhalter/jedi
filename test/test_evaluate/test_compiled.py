@@ -55,7 +55,7 @@ def test_doc():
 
 def test_string_literals():
     def typ(string):
-        d = Script(string).goto_definitions()[0]
+        d = Script("a = %s; a" % string).goto_definitions()[0]
         return d.name
 
     assert typ('""') == 'str'
