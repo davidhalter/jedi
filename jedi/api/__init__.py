@@ -206,72 +206,14 @@ class Script(object):
         d = [classes.Definition(self._evaluator, d) for d in set(results)]
         return helpers.sorted_definitions(d)
 
-    def _goto(self, add_import_name=False):
+    def _goto(self):
         """
         Used for goto_assignments and usages.
-
-        :param add_import_name: Add the the name (if import) to the result.
         """
-        def follow_inexistent_imports(defs):
-            """ Imports can be generated, e.g. following
-            `multiprocessing.dummy` generates an import dummy in the
-            multiprocessing module. The Import doesn't exist -> follow.
-            """
-            definitions = set(defs)
-            for d in defs:
-                if isinstance(d.parent, tree.Import) \
-                        and d.start_pos == (0, 0):
-                    i = imports.ImportWrapper(self._evaluator, d.parent).follow(is_goto=True)
-                    definitions.remove(d)
-                    definitions |= follow_inexistent_imports(i)
-            return definitions
-
-        goto_path = self._user_context.get_path_under_cursor()
-        context = self._user_context.get_reverse_context()
-        user_stmt = self._parser.user_stmt()
-        user_scope = self._parser.user_scope()
-
-        stmt = inference.get_under_cursor_stmt(self._evaluator, self._parser,
-                                               goto_path, self._pos)
-        if stmt is None:
+        name = self._get_module().name_for_position(self._pos)
+        if name is None:
             return []
-
-        if user_scope is None:
-            last_name = None
-        else:
-            # Try to use the parser if possible.
-            last_name = user_scope.name_for_position(self._pos)
-
-        if last_name is None:
-            last_name = stmt
-            while not isinstance(last_name, tree.Name):
-                try:
-                    last_name = last_name.children[-1]
-                except AttributeError:
-                    # Doesn't have a name in it.
-                    return []
-
-        if next(context) in ('class', 'def'):
-            # The cursor is on a class/function name.
-            definitions = set([user_scope.name])
-        elif isinstance(user_stmt, tree.Import):
-            s, name = helpers.get_on_import_stmt(self._evaluator,
-                                                 self._user_context, user_stmt)
-
-            definitions = self._evaluator.goto(name)
-        else:
-            # The Evaluator.goto function checks for definitions, but since we
-            # use a reverse tokenizer, we have new name_part objects, so we
-            # have to check the user_stmt here for positions.
-            if isinstance(user_stmt, tree.ExprStmt) \
-                    and isinstance(last_name.parent, tree.ExprStmt):
-                for name in user_stmt.get_defined_names():
-                    if name.start_pos <= self._pos <= name.end_pos:
-                        return [name]
-
-            defs = self._evaluator.goto(last_name)
-            definitions = follow_inexistent_imports(defs)
-        return definitions
+        return list(self._evaluator.goto(name))
 
     def usages(self, additional_module_paths=()):
         """
@@ -288,7 +230,7 @@ class Script(object):
             settings.dynamic_flow_information, False
         try:
             user_stmt = self._parser.user_stmt()
-            definitions = self._goto(add_import_name=True)
+            definitions = self._goto()
             if not definitions and isinstance(user_stmt, tree.Import):
                 # For not defined imports (goto doesn't find something, we take
                 # the name as a definition. This is enough, because every name
