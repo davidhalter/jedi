@@ -259,6 +259,9 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.module = FastModule(self.module_path)
         self.root_node = self.current_node = ParserNode(self.module, self, '')
 
+    def get_parsed_node(self):
+        return self.module
+
     def update(self, source):
         # Variables for testing purposes: It is important that the number of
         # parsers used can be minimized. With these variables we can test
@@ -326,13 +329,13 @@ class FastParser(use_metaclass(CachedFastParser)):
                 current_lines.append(l)  # Just ignore comments and blank lines
                 continue
 
-            if new_indent:
+            if new_indent and not parentheses_level:
                 if indent > indent_list[-2]:
                     # Set the actual indent, not just the random old indent + 1.
                     indent_list[-1] = indent
                 new_indent = False
 
-            while indent <= indent_list[-2]:  # -> dedent
+            while indent < indent_list[-1]:  # -> dedent
                 indent_list.pop()
                 # This automatically resets the flow_indent if there was a
                 # dedent or a flow just on one line (with one simple_stmt).

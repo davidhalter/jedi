@@ -191,6 +191,7 @@ class Parser(object):
             self.remove_last_newline()
 
     def get_parsed_node(self):
+        # TODO rename to get_root_node
         return self._parsed
 
     def _tokenize(self, tokenizer):

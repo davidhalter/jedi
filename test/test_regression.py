@@ -146,7 +146,7 @@ class TestRegression(TestCase):
         x = 0
         a = \
           [1, 2, 3, 4, 5, 6, 7, 8, 9, (x)]  # <-- here
-        """, '(x)]  # <-- here', [])
+        """, '(x)]  # <-- here', ['int'])
 
     def test_generator(self):
         # Did have some problems with the usage of generator completions this

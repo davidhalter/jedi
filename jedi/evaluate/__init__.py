@@ -442,13 +442,15 @@ class Evaluator(object):
         def_ = name.get_definition()
         is_simple_name = name.parent.type not in ('power', 'trailer')
         if is_simple_name:
+            if name.parent.type in ('file_input', 'classdef', 'funcdef'):
+                return [self.wrap(name.parent)]
             if def_.type == 'expr_stmt' and name in def_.get_defined_names():
                 return self.eval_statement(def_, name)
             elif def_.type == 'for_stmt':
                 container_types = self.eval_element(def_.children[3])
                 for_types = iterable.py__iter__types(self, container_types, def_.children[3])
                 return finder.check_tuple_assignments(self, for_types, name)
-            elif def_.type == 'import_from':
+            elif def_.type in ('import_from', 'import_name'):
                 return imports.ImportWrapper(self, name).follow()
 
         call = helpers.call_of_name(name)

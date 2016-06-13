@@ -469,3 +469,13 @@ def test_decorator_string_issue():
     s = jedi.Script(source)
     assert s.completions()
     assert s._parser.module().get_code() == source
+
+
+def test_round_trip():
+    source = dedent('''
+    def x():
+        """hahaha"""
+    func''')
+
+    f = FastParser(load_grammar(), source)
+    assert f.get_parsed_node().get_code() == source
