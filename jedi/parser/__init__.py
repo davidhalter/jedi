@@ -336,7 +336,7 @@ class ParserWithRecovery(Parser):
 
         # print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
         if self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos):
-            add_token_callback(typ, value, prefix, start_pos)
+            add_token_callback(typ, value, start_pos, prefix)
         else:
             if typ == INDENT:
                 # For every deleted INDENT we have to delete a DEDENT as well.

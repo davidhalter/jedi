@@ -120,7 +120,7 @@ class PgenParser(object):
 
     def parse(self, tokenizer):
         for type_, value, start_pos, prefix in tokenizer:
-            if self.addtoken(type_, value, prefix, start_pos):
+            if self.addtoken(type_, value, start_pos, prefix):
                 break
         else:
             # We never broke out -- EOF is too soon -- Unfinished statement.
@@ -130,7 +130,7 @@ class PgenParser(object):
                 raise InternalParseError("incomplete input", type_, value, start_pos)
         return self.rootnode
 
-    def addtoken(self, type_, value, prefix, start_pos):
+    def addtoken(self, type_, value, start_pos, prefix):
         """Add a token; return True if this is the end of the program."""
         ilabel = token_to_ilabel(self.grammar, type_, value)
 
