@@ -9,7 +9,6 @@ arguments.
 
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
-import re
 import os
 import warnings
 import sys

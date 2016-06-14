@@ -23,7 +23,7 @@ from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING)
 from jedi.parser.pgen2.pgen import generate_grammar
-from jedi.parser.pgen2.parse import PgenParser, token_to_ilabel
+from jedi.parser.pgen2.parse import PgenParser
 
 OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
 # Not used yet. In the future I intend to add something like KeywordStatement
@@ -56,50 +56,6 @@ def load_grammar(version='3.4'):
         return _loaded_grammars[path]
     except KeyError:
         return _loaded_grammars.setdefault(path, generate_grammar(path))
-
-
-class ErrorStatement(object):
-    type = 'error_stmt'
-
-    def __init__(self, stack, arcs, next_token, position_modifier, next_start_pos):
-        self.stack = stack
-        self.arcs = arcs
-        self._position_modifier = position_modifier
-        self.next_token = next_token
-        self._next_start_pos = next_start_pos
-
-    def __repr__(self):
-        return '<%s %s@%s>' % (
-            type(self).__name__,
-            repr(self.next_token),
-            self.end_pos
-        )
-
-    @property
-    def end_pos(self):
-        s = self._next_start_pos
-        return s[0] + self._position_modifier.line, s[1]
-
-    @property
-    def start_pos(self):
-        return next(self._iter_nodes()).start_pos
-
-    @property
-    def first_type(self):
-        first_type, nodes = self.stack[0]
-        return first_type
-
-    def is_a_valid_token(self, type_, value):
-        ilabel = token_to_ilabel(type_, value)
-        for i, newstate in self.arcs:
-            if ilabel == i:
-                return True
-        return False
-
-    def _iter_nodes(self):
-        for _, nodes in self.stack:
-            for node in nodes:
-                yield node
 
 
 class ParserSyntaxError(object):
@@ -146,7 +102,6 @@ class Parser(object):
 
         self._used_names = {}
         self._scope_names_stack = [{}]
-        self._error_statements = []
         self._last_failed_start_pos = (0, 0)
         self._global_names = []
 
@@ -330,21 +285,20 @@ class ParserWithRecovery(Parser):
         self._indent_counter = 0
 
         # TODO do print absolute import detection here.
-        #try:
-        #    del python_grammar_no_print_statement.keywords["print"]
-        #except KeyError:
-        #    pass  # Doesn't exist in the Python 3 grammar.
+        # try:
+        #     del python_grammar_no_print_statement.keywords["print"]
+        # except KeyError:
+        #     pass  # Doesn't exist in the Python 3 grammar.
 
-        #if self.options["print_function"]:
-        #    python_grammar = pygram.python_grammar_no_print_statement
-        #else:
+        # if self.options["print_function"]:
+        #     python_grammar = pygram.python_grammar_no_print_statement
+        # else:
         super(ParserWithRecovery, self).__init__(grammar, source, tokenizer=tokenizer)
 
         self.module = self._parsed
         self.module.used_names = self._used_names
         self.module.path = module_path
         self.module.global_names = self._global_names
-        self.module.error_statements = self._error_statements
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
@@ -422,8 +376,6 @@ class ParserWithRecovery(Parser):
             if nodes and nodes[0] in ('def', 'class', 'lambda'):
                 self._scope_names_stack.pop()
         if failed_stack:
-            err = ErrorStatement(failed_stack, arcs, value, self.position_modifier, start_pos)
-            self._error_statements.append(err)
             stack[start_index - 1][2][1].append(pt.ErrorNode(all_nodes))
 
         self._last_failed_start_pos = start_pos
@@ -447,9 +399,6 @@ class ParserWithRecovery(Parser):
                 self._indent_counter += 1
 
             yield typ, value, prefix, start_pos
-
-    def _add_syntax_error(self, message, position):
-        self.syntax_errors.append(ParserSyntaxError(message, position))
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
