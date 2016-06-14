@@ -162,8 +162,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     sub = self._get_method_execution(sub)
             for name_list in sub.names_dict.values():
                 for name in name_list:
-                    if name.value == self_name and name.prev_sibling() is None:
-                        trailer = name.next_sibling()
+                    if name.value == self_name and name.get_previous_sibling() is None:
+                        trailer = name.get_next_sibling()
                         if tree.is_node(trailer, 'trailer') \
                                 and len(trailer.children) == 2 \
                                 and trailer.children[0] == '.':

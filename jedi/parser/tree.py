@@ -199,6 +199,32 @@ class Base(object):
     def nodes_to_execute(self, last_added=False):
         raise NotImplementedError()
 
+    def get_next_sibling(self):
+        """
+        The node immediately following the invocant in their parent's children
+        list. If the invocant does not have a next sibling, it is None
+        """
+        # Can't use index(); we need to test by identity
+        for i, child in enumerate(self.parent.children):
+            if child is self:
+                try:
+                    return self.parent.children[i + 1]
+                except IndexError:
+                    return None
+
+    def get_previous_sibling(self):
+        """
+        The node/leaf immediately preceding the invocant in their parent's
+        children list. If the invocant does not have a previous sibling, it is
+        None.
+        """
+        # Can't use index(); we need to test by identity
+        for i, child in enumerate(self.parent.children):
+            if child is self:
+                if i == 0:
+                    return None
+                return self.parent.children[i - 1]
+
     def get_previous_leaf(self):
         """
         Returns the previous leaf in the parser tree.
@@ -290,32 +316,6 @@ class Leaf(Base):
         else:
             return self.value
 
-    def next_sibling(self):
-        """
-        The node immediately following the invocant in their parent's children
-        list. If the invocant does not have a next sibling, it is None
-        """
-        # Can't use index(); we need to test by identity
-        for i, child in enumerate(self.parent.children):
-            if child is self:
-                try:
-                    return self.parent.children[i + 1]
-                except IndexError:
-                    return None
-
-    def prev_sibling(self):
-        """
-        The node/leaf immediately preceding the invocant in their parent's
-        children list. If the invocant does not have a previous sibling, it is
-        None.
-        """
-        # Can't use index(); we need to test by identity
-        for i, child in enumerate(self.parent.children):
-            if child is self:
-                if i == 0:
-                    return None
-                return self.parent.children[i - 1]
-
     def nodes_to_execute(self, last_added=False):
         return []
 
@@ -383,7 +383,7 @@ class Name(Leaf):
         elif stmt.type == 'for_stmt':
             return self.start_pos < stmt.children[2].start_pos
         elif stmt.type == 'try_stmt':
-            return self.prev_sibling() == 'as'
+            return self.get_previous_sibling() == 'as'
         else:
             return stmt.type in ('expr_stmt', 'import_name', 'import_from',
                                  'comp_for', 'with_stmt') \
