@@ -39,7 +39,6 @@ from itertools import chain
 import textwrap
 import abc
 
-from jedi import common
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
 from jedi import cache
@@ -199,28 +198,6 @@ class Base(object):
     @abc.abstractmethod
     def nodes_to_execute(self, last_added=False):
         raise NotImplementedError()
-
-    def get_code_with_error_statements(self, include_prefix=False):
-        module = self.get_parent_until()
-        source = self.get_code(include_prefix=include_prefix)
-        start_pos, end_pos = self.start_pos, self.end_pos
-        # Check for error statements that are inside the node.
-        error_statements = [
-            e for e in module.error_statements
-            if start_pos <= e.start_pos and end_pos >= e.end_pos
-        ]
-        lines = common.splitlines(source)
-        # Note: Error statements must not be sorted. The positions are only
-        # correct if we insert them the way that they were tokenized.
-        for error_statement in error_statements:
-            line_index = error_statement.start_pos[0] - start_pos[0]
-
-            line = lines[line_index]
-            index = error_statement.start_pos[1]
-            line = line[:index] + error_statement.get_code() + line[index:]
-            lines[line_index] = line
-
-        return '\n'.join(lines)
 
     def get_previous_leaf(self):
         """
@@ -795,8 +772,7 @@ class Module(Scope):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'global_names', 'used_names', '_name',
-                 'error_statements')
+    __slots__ = ('path', 'global_names', 'used_names', '_name')
     type = 'file_input'
 
     def __init__(self, children):
