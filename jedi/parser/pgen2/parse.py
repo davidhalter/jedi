@@ -119,7 +119,7 @@ class PgenParser(object):
         self.error_recovery = error_recovery
 
     def parse(self, tokenizer):
-        for type_, value, prefix, start_pos in tokenizer:
+        for type_, value, start_pos, prefix in tokenizer:
             if self.addtoken(type_, value, prefix, start_pos):
                 break
         else:

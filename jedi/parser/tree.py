@@ -1060,7 +1060,7 @@ class Function(ClassOrFunc):
 
     def _get_paramlist_code(self):
         return self.children[2].get_code()
-    
+
     @property
     def doc(self):
         """ Return a document string including call signature. """
@@ -1110,7 +1110,7 @@ class Lambda(Function):
 
     def _get_paramlist_code(self):
         return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'
-    
+
     @property
     def params(self):
         return self.children[1:-2]

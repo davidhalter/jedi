@@ -133,7 +133,7 @@ class Parser(object):
         if self._parsed is not None:
             return self._parsed
 
-        self._parsed = self.pgen_parser.parse(self._tokenize(tokenizer))
+        self._parsed = self.pgen_parser.parse(tokenizer)
 
         if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's
@@ -148,10 +148,6 @@ class Parser(object):
     def get_parsed_node(self):
         # TODO rename to get_root_node
         return self._parsed
-
-    def _tokenize(self, tokenizer):
-        for typ, value, start_pos, prefix in tokenizer:
-            yield typ, value, prefix, start_pos
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
@@ -300,6 +296,9 @@ class ParserWithRecovery(Parser):
         self.module.path = module_path
         self.module.global_names = self._global_names
 
+    def parse(self, tokenizer):
+        return super().parse(self._tokenize(self._tokenize(tokenizer)))
+
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
         """
@@ -398,7 +397,7 @@ class ParserWithRecovery(Parser):
             elif typ == INDENT:
                 self._indent_counter += 1
 
-            yield typ, value, prefix, start_pos
+            yield typ, value, start_pos, prefix
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module)
