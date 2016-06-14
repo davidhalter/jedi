@@ -9,6 +9,7 @@ from . import refactor
 
 import jedi
 from jedi.evaluate.analysis import Warning
+from jedi import settings
 
 
 def pytest_addoption(parser):
@@ -126,5 +127,4 @@ def isolated_jedi_cache(monkeypatch, tmpdir):
     Same as `clean_jedi_cache`, but create the temporary directory for
     each test case (scope='function').
     """
-    from jedi import settings
     monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
