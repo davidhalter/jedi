@@ -81,15 +81,32 @@ def call_of_name(name, cut_own_trailer=False):
     # TODO remove cut_own_trailer option, since its always used with it. Just
     #      ignore it, It's not what we want anyway. Or document it better?
     """
-    par = name
-    if tree.is_node(par.parent, 'trailer'):
+    trailer = name.parent
+    if trailer.type != 'trailer' or trailer.children[0] != '.':
+        return name
+
+    assert  not cut_own_trailer  # TODO remove
+    power = trailer.parent
+    index = power.children.index(trailer)
+    power = deep_ast_copy(power)
+    power.children[index + 1:] = []
+
+    if power.type == 'error_node':
+        transformed = tree.Node('power', power.children)
+        transformed.parent = power.parent
+        return transformed
+
+    return power
+    if 1:
         par = par.parent
         if par.children[0] in ('(', '['):
             # The trailer is not a NAME.NAME trailer, but a call to something.
             return name
 
     power = par.parent
-    if tree.is_node(power, 'power', 'atom_expr') \
+    # `atom_expr` got introduced in Python 3.5 and is essentially just the
+    # whole call part without the optional ** power element.
+    if power.type in ('power', 'atom_expr') \
             and power.children[0] != name \
             and not (power.children[-2] == '**' and
                      name.start_pos > power.children[-1].start_pos):

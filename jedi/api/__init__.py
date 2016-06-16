@@ -182,8 +182,12 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        c = helpers.ContextResults(self._evaluator, self.source, self._get_module(), self._pos)
-        definitions = c.get_results()
+        leaf = self._get_module().name_for_position(self._pos)
+        if leaf is None:
+            leaf = self._get_module().get_leaf_for_position(self._pos)
+            if leaf is None:
+                return []
+        definitions = helpers.evaluate_goto_definition(self._evaluator, leaf)
 
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
@@ -272,26 +276,30 @@ class Script(object):
 
             abs()# <-- cursor is here
 
-        This would return ``None``.
+        This would return an empty list..
 
         :rtype: list of :class:`classes.CallSignature`
         """
-        call_txt, call_index, key_name, start_pos = self._user_context.call_signature()
-        if call_txt is None:
+        call_signature_details = \
+            helpers.get_call_signature_details(self._get_module(), self._pos)
+        if call_signature_details is None:
             return []
 
-        stmt = inference.get_under_cursor_stmt(self._evaluator, self._parser,
-                                               call_txt, start_pos)
-        if stmt is None:
-            return []
-
-        with common.scale_speed_settings(settings.scale_call_signatures):
-            origins = cache.cache_call_signatures(self._evaluator, stmt,
-                                                  self.source, self._pos)
+        # TODO insert caching again here.
+        #with common.scale_speed_settings(settings.scale_call_signatures):
+        #    definitions = cache.cache_call_signatures(self._evaluator, stmt,
+        #                                              self.source, self._pos)
+        definitions = helpers.evaluate_goto_definition(
+            self._evaluator,
+            call_signature_details.leaf
+        )
         debug.speed('func_call followed')
 
-        return [classes.CallSignature(self._evaluator, o.name, stmt, call_index, key_name)
-                for o in origins if hasattr(o, 'py__call__')]
+        return [classes.CallSignature(self._evaluator, d.name,
+                                      call_signature_details.leaf.start_pos,
+                                      call_signature_details.call_index,
+                                      call_signature_details.keyword_name)
+                for d in definitions if hasattr(d, 'py__call__')]
 
     def _analysis(self):
         self._evaluator.is_analysis = True

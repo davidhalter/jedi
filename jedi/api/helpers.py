@@ -6,6 +6,7 @@ from collections import namedtuple
 
 from jedi import common
 from jedi.evaluate import imports
+from jedi.evaluate.helpers import deep_ast_copy
 from jedi import parser
 from jedi.parser import tokenize, token
 
@@ -169,68 +170,63 @@ def get_possible_completion_types(grammar, stack):
     return keywords, grammar_labels
 
 
-class ContextResults():
-    def __init__(self, evaluator, source, module, pos):
-        self._evaluator = evaluator
-        self._module = module
-        self._source = source
-        self._pos = pos
+def evaluate_goto_definition(evaluator, leaf):
+    if leaf.type == 'name':
+        # In case of a name we can just use goto_definition which does all the
+        # magic itself.
+        return evaluator.goto_definitions(leaf)
 
-    def _on_defining_name(self, leaf):
-        return [self._evaluator.wrap(self._parser.user_scope())]
+    node = None
+    parent = leaf.parent
+    if parent.type == 'atom':
+        node = leaf.parent
+    elif parent.type == 'trailer':
+        index = parent.parent.children.index(parent)
+        node = deep_ast_copy(parent.parent)
+        node.children = node.children[:index + 1]
 
-    def get_results(self):
-        '''
-        try:
-            stack = get_stack_at_position(self._evaluator.grammar, self._source, self._module, self._leaf.end_pos)
-        except OnErrorLeaf:
-            return []
-'''
-
-        name = self._module.name_for_position(self._pos)
-        if name is not None:
-            return self._evaluator.goto_definitions(name)
-
-        leaf = self._module.get_leaf_for_position(self._pos)
-        if leaf is None:
-            return []
-
-        if leaf.parent.type == 'atom':
-            return self._evaluator.eval_element(leaf.parent)
-        if leaf.parent.type == 'trailer':
-            return self._evaluator.eval_element(leaf.parent.parent)
+    if node is None:
         return []
-        symbol_names = list(stack.get_node_names(self._evaluator.grammar))
-
-        nodes = list(stack.get_nodes())
-
-        if "import_stmt" in symbol_names:
-            level = 0
-            only_modules = True
-            level, names = self._parse_dotted_names(nodes)
-            if "import_from" in symbol_names:
-                if 'import' in nodes:
-                    only_modules = False
-            else:
-                assert "import_name" in symbol_names
-
-            completion_names += self._get_importer_names(
-                names,
-                level,
-                only_modules
-            )
-        elif nodes[-2] in ('as', 'def', 'class'):
-            # No completions for ``with x as foo`` and ``import x as foo``.
-            # Also true for defining names as a class or function.
-            return self._on_defining_name(self._leaf)
-        else:
-            completion_names += self._simple_complete(completion_parts)
-        return 
+    return evaluator.eval_element(node)
 
 
-class GotoDefinition(ContextResults):
-    def _():
-        definitions = inference.type_inference(
-            self._evaluator, self._parser, self._user_context,
-            self._pos, goto_path
-        )
+CallSignatureDetails = namedtuple(
+    'CallSignatureDetails',
+    ['leaf', 'call_index', 'keyword_name']
+)
+
+
+def _get_call_signature_details_from_error_node(node, position):
+    for index, element in reversed(list(enumerate(node.children))):
+        # `index > 0` means that it's a trailer and not an atom.
+        if element == '(' and element.end_pos <= position and index > 0:
+            name = element.get_previous_leaf()
+            if name.type == 'name':
+                nodes_before = [c for c in node.children[index:] if c.start_pos < position]
+                return CallSignatureDetails(name, nodes_before.count(','), None)
+
+
+def get_call_signature_details(module, position):
+    leaf = module.get_leaf_for_position(position, include_prefixes=True)
+    if leaf == ')':
+        if leaf.end_pos == position:
+            leaf = leaf.get_next_leaf()
+    # Now that we know where we are in the syntax tree, we start to look at
+    # parents for possible function definitions.
+    node = leaf.parent
+    name = None
+    while node is not None:
+        for n in node.children:
+            if n.start_pos < position and n.type == 'error_node':
+                result = _get_call_signature_details_from_error_node(n, position)
+                if result is not None:
+                    return result
+
+        if node.type == 'trailer' and node.children[0] == '(':
+            name = node.get_previous_sibling()
+            nodes_before = [c for c in node.children if c.start_pos < position]
+            return CallSignatureDetails(name, nodes_before.count(','), None)
+
+        node = node.parent
+
+    return None

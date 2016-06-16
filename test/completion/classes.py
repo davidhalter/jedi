@@ -83,6 +83,9 @@ TestClass.var_local.
 
 #? int()
 TestClass().ret(1)
+# Should not return int(), because we want the type before `.ret(1)`.
+#? 11 TestClass()
+TestClass().ret(1)
 #? int()
 inst.ret(1)
 

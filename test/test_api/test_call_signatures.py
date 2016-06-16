@@ -14,7 +14,8 @@ class TestCallSignatures(TestCase):
         assert len(signatures) <= 1
 
         if not signatures:
-            assert expected_name is None
+            assert expected_name is None, \
+                'There are no signatures, but %s expected.' % expected_name
         else:
             assert signatures[0].name == expected_name
             assert signatures[0].index == expected_index
@@ -27,9 +28,6 @@ class TestCallSignatures(TestCase):
 
     def test_simple(self):
         run = self._run_simple
-        s7 = "str().upper().center("
-        s8 = "str(int[zip("
-        run(s7, 'center', 0)
 
         # simple
         s1 = "sorted(a, str("
