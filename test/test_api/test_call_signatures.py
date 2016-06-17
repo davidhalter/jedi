@@ -324,6 +324,15 @@ def test_keyword_argument_index():
     assert get('sorted([], key=').index == 2
     assert get('sorted([], no_key=a').index is None
 
+    kw_func = 'def foo(a, b): pass\nfoo(b=3, a=4)'
+    assert get(kw_func, column=len('foo(b')).index == 0
+    assert get(kw_func, column=len('foo(b=')).index == 1
+    assert get(kw_func, column=len('foo(b=3, a=')).index == 0
+
+    kw_func_simple = 'def foo(a, b): pass\nfoo(b=4)'
+    assert get(kw_func_simple, column=len('foo(b')).index == 0
+    assert get(kw_func_simple, column=len('foo(b=')).index == 1
+
     args_func = 'def foo(*kwargs): pass\n'
     assert get(args_func + 'foo(a').index == 0
     assert get(args_func + 'foo(a, b').index == 0
@@ -335,6 +344,7 @@ def test_keyword_argument_index():
     both = 'def foo(*args, **kwargs): pass\n'
     assert get(both + 'foo(a=2').index == 1
     assert get(both + 'foo(a=2, b=2').index == 1
+    assert get(both + 'foo(a=2, b=2)', column=len('foo(b=2, a=2')).index == 1
     assert get(both + 'foo(a, b, c').index == 0
 
 

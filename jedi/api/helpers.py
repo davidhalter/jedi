@@ -196,30 +196,38 @@ CallSignatureDetails = namedtuple(
 )
 
 
+def _get_index_and_key(node, position):
+    """
+    Returns the amount of commas and the keyword argument string.
+    """
+    nodes_before = [c for c in node.children if c.start_pos < position]
+    if nodes_before[-1].type == 'arglist':
+        node = nodes_before[-1]
+        nodes_before = [c for c in node.children if c.start_pos < position]
+
+    key_str = None
+
+    if nodes_before:
+        last = nodes_before[-1]
+        print('xxxxx', last)
+        if last.type == 'argument' and last.children[1].end_pos <= position:
+            # Checked if the argument
+            key_str = last.children[0].value
+        elif last == '=':
+            key_str = nodes_before[-2].value
+
+    return nodes_before.count(','), key_str
+
+
 def _get_call_signature_details_from_error_node(node, position):
     for index, element in reversed(list(enumerate(node.children))):
         # `index > 0` means that it's a trailer and not an atom.
         if element == '(' and element.end_pos <= position and index > 0:
             name = element.get_previous_leaf()
             if name.type == 'name':
-                if node.children[-1].type == 'arglist':
-                    node = node.children[-1]
-                    children = node.children
-                else:
-                    # It's an error node, we don't want to match too much, just
-                    # until the parentheses is enough.
-                    children = node.children[index:]
-                nodes_before = [c for c in children if c.start_pos < position]
-                key_str = None
-                if nodes_before:
-                    if nodes_before[-1].type == 'argument':
-                        key_str = nodes_before[-1].children[0].value
-                    elif nodes_before[-1] == '=':
-                        key_str = nodes_before[-2].value
                 return CallSignatureDetails(
                     element,
-                    nodes_before.count(','),
-                    key_str
+                    *_get_index_and_key(node, position)
                 )
 
 
@@ -245,8 +253,8 @@ def get_call_signature_details(module, position):
 
         if node.type == 'trailer' and node.children[0] == '(':
             leaf = node.get_previous_leaf()
-            nodes_before = [c for c in node.children if c.start_pos < position]
-            return CallSignatureDetails(node.children[0], nodes_before.count(','), None)
+            return CallSignatureDetails(
+                node.children[0], *_get_index_and_key(node, position))
 
         node = node.parent
 
