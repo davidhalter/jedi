@@ -192,7 +192,7 @@ def evaluate_goto_definition(evaluator, leaf):
 
 CallSignatureDetails = namedtuple(
     'CallSignatureDetails',
-    ['leaf', 'call_index', 'keyword_name']
+    ['bracket_leaf', 'call_index', 'keyword_name_str']
 )
 
 
@@ -202,8 +202,25 @@ def _get_call_signature_details_from_error_node(node, position):
         if element == '(' and element.end_pos <= position and index > 0:
             name = element.get_previous_leaf()
             if name.type == 'name':
-                nodes_before = [c for c in node.children[index:] if c.start_pos < position]
-                return CallSignatureDetails(name, nodes_before.count(','), None)
+                if node.children[-1].type == 'arglist':
+                    node = node.children[-1]
+                    children = node.children
+                else:
+                    # It's an error node, we don't want to match too much, just
+                    # until the parentheses is enough.
+                    children = node.children[index:]
+                nodes_before = [c for c in children if c.start_pos < position]
+                key_str = None
+                if nodes_before:
+                    if nodes_before[-1].type == 'argument':
+                        key_str = nodes_before[-1].children[0].value
+                    elif nodes_before[-1] == '=':
+                        key_str = nodes_before[-2].value
+                return CallSignatureDetails(
+                    element,
+                    nodes_before.count(','),
+                    key_str
+                )
 
 
 def get_call_signature_details(module, position):
@@ -214,8 +231,12 @@ def get_call_signature_details(module, position):
     # Now that we know where we are in the syntax tree, we start to look at
     # parents for possible function definitions.
     node = leaf.parent
-    name = None
     while node is not None:
+        if node.type in ('funcdef', 'classdef'):
+            # Don't show call signatures if there's stuff before it that just
+            # makes it feel strange to have a call signature.
+            return None
+
         for n in node.children:
             if n.start_pos < position and n.type == 'error_node':
                 result = _get_call_signature_details_from_error_node(n, position)
@@ -223,9 +244,9 @@ def get_call_signature_details(module, position):
                     return result
 
         if node.type == 'trailer' and node.children[0] == '(':
-            name = node.get_previous_sibling()
+            leaf = node.get_previous_leaf()
             nodes_before = [c for c in node.children if c.start_pos < position]
-            return CallSignatureDetails(name, nodes_before.count(','), None)
+            return CallSignatureDetails(node.children[0], nodes_before.count(','), None)
 
         node = node.parent
 

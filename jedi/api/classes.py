@@ -629,10 +629,10 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, executable_name, bracket_start_pos, index, key_name):
+    def __init__(self, evaluator, executable_name, bracket_start_pos, index, key_name_str):
         super(CallSignature, self).__init__(evaluator, executable_name)
         self._index = index
-        self._key_name = key_name
+        self._key_name_str = key_name_str
         self._bracket_start_pos = bracket_start_pos
 
     @property
@@ -641,9 +641,9 @@ class CallSignature(Definition):
         The Param index of the current call.
         Returns None if the index cannot be found in the curent call.
         """
-        if self._key_name is not None:
+        if self._key_name_str is not None:
             for i, param in enumerate(self.params):
-                if self._key_name == param.name:
+                if self._key_name_str == param.name:
                     return i
             if self.params and self.params[-1]._name.get_definition().stars == 2:
                 return i

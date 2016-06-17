@@ -291,14 +291,14 @@ class Script(object):
         #                                              self.source, self._pos)
         definitions = helpers.evaluate_goto_definition(
             self._evaluator,
-            call_signature_details.leaf
+            call_signature_details.bracket_leaf.get_previous_leaf()
         )
         debug.speed('func_call followed')
 
         return [classes.CallSignature(self._evaluator, d.name,
-                                      call_signature_details.leaf.start_pos,
+                                      call_signature_details.bracket_leaf.start_pos,
                                       call_signature_details.call_index,
-                                      call_signature_details.keyword_name)
+                                      call_signature_details.keyword_name_str)
                 for d in definitions if hasattr(d, 'py__call__')]
 
     def _analysis(self):

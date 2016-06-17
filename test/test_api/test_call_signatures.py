@@ -15,7 +15,7 @@ class TestCallSignatures(TestCase):
 
         if not signatures:
             assert expected_name is None, \
-                'There are no signatures, but %s expected.' % expected_name
+                'There are no signatures, but `%s` expected.' % expected_name
         else:
             assert signatures[0].name == expected_name
             assert signatures[0].index == expected_index
@@ -73,10 +73,11 @@ class TestCallSignatures(TestCase):
 
         run("import time; abc = time; abc.sleep(", 'sleep', 0)
 
+    def test_issue_57(self):
         # jedi #57
         s = "def func(alpha, beta): pass\n" \
             "func(alpha='101',"
-        run(s, 'func', 0, column=13, line=2)
+        self._run_simple(s, 'func', 0, column=13, line=2)
 
     def test_flows(self):
         # jedi-vim #9
@@ -178,9 +179,7 @@ class TestCallSignatures(TestCase):
     def test_whitespace_before_bracket(self):
         self._run('str (', 'str', 0)
         self._run('str (";', 'str', 0)
-        # TODO this is not actually valid Python, the newline token should be
-        # ignored.
-        self._run('str\n(', 'str', 0)
+        self._run('str\n(', None)
 
     def test_brackets_in_string_literals(self):
         self._run('str (" (', 'str', 0)
@@ -191,7 +190,8 @@ class TestCallSignatures(TestCase):
         Function definitions (and other tokens that cannot exist within call
         signatures) should break and not be able to return a call signature.
         """
-        assert not Script('str(\ndef x').call_signatures()
+        assert not self._run('str(\ndef x', 'str', 0)
+        assert not Script('str(\ndef x(): pass').call_signatures()
 
     def test_flow_call(self):
         assert not Script('if (1').call_signatures()
@@ -316,11 +316,12 @@ def test_completion_interference():
     assert Script('open(').call_signatures()
 
 
-def test_signature_index():
-    def get(source):
-        return Script(source).call_signatures()[0]
+def test_keyword_argument_index():
+    def get(source, column=None):
+        return Script(source, column=column).call_signatures()[0]
 
     assert get('sorted([], key=a').index == 2
+    assert get('sorted([], key=').index == 2
     assert get('sorted([], no_key=a').index is None
 
     args_func = 'def foo(*kwargs): pass\n'
