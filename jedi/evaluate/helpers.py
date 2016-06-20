@@ -80,6 +80,8 @@ def call_of_name(name, cut_own_trailer=False):
 
     # TODO remove cut_own_trailer option, since its always used with it. Just
     #      ignore it, It's not what we want anyway. Or document it better?
+    # TODO rename this function, it's probably better called `call_of_leaf`,
+    #      since it can also be used for closing parentheses?!
     """
     trailer = name.parent
     if trailer.type != 'trailer':

@@ -223,7 +223,7 @@ def _get_call_signature_details_from_error_node(node, position):
             # until the parentheses is enough.
             children = node.children[index:]
             name = element.get_previous_leaf()
-            if name.type == 'name' or name.parent.type == 'trailer':
+            if name.type == 'name' or name.parent.type in ('trailer', 'atom'):
                 return CallSignatureDetails(
                     element,
                     *_get_index_and_key(children, position)
