@@ -7,24 +7,26 @@ from jedi import cache
 from jedi._compatibility import is_py33
 
 
+def assert_signature(source, expected_name, expected_index=0, line=None, column=None):
+    signatures = Script(source, line, column).call_signatures()
+
+    assert len(signatures) <= 1
+
+    if not signatures:
+        assert expected_name is None, \
+            'There are no signatures, but `%s` expected.' % expected_name
+    else:
+        assert signatures[0].name == expected_name
+        assert signatures[0].index == expected_index
+        return signatures[0]
+
+
 class TestCallSignatures(TestCase):
-    def _run(self, source, expected_name, expected_index=0, line=None, column=None):
-        signatures = Script(source, line, column).call_signatures()
-
-        assert len(signatures) <= 1
-
-        if not signatures:
-            assert expected_name is None, \
-                'There are no signatures, but `%s` expected.' % expected_name
-        else:
-            assert signatures[0].name == expected_name
-            assert signatures[0].index == expected_index
-
     def _run_simple(self, source, name, index=0, column=None, line=1):
-        self._run(source, name, index, line, column)
+        assert_signature(source, name, index, line, column)
 
     def test_valid_call(self):
-        self._run('str()', 'str', column=4)
+        assert_signature('str()', 'str', column=4)
 
     def test_simple(self):
         run = self._run_simple
@@ -98,14 +100,14 @@ class TestCallSignatures(TestCase):
                 if 1:
                     pass
             """
-        self._run(s, 'abc', 0, line=6, column=24)
+        assert_signature(s, 'abc', 0, line=6, column=24)
         s = """
                 import re
                 def huhu(it):
                     re.compile(
                     return it * 2
             """
-        self._run(s, 'compile', 0, line=4, column=31)
+        assert_signature(s, 'compile', 0, line=4, column=31)
 
         # jedi-vim #70
         s = """def foo("""
@@ -113,7 +115,7 @@ class TestCallSignatures(TestCase):
 
         # jedi-vim #116
         s = """import itertools; test = getattr(itertools, 'chain'); test("""
-        self._run(s, 'chain', 0)
+        assert_signature(s, 'chain', 0)
 
     def test_call_signature_on_module(self):
         """github issue #240"""
@@ -126,7 +128,7 @@ class TestCallSignatures(TestCase):
         def f(a, b):
             pass
         f( )""")
-        self._run(s, 'f', 0, line=3, column=3)
+        assert_signature(s, 'f', 0, line=3, column=3)
 
     def test_multiple_signatures(self):
         s = dedent("""\
@@ -145,7 +147,7 @@ class TestCallSignatures(TestCase):
         def x():
             pass
         """)
-        self._run(s, 'abs', 0, line=1, column=5)
+        assert_signature(s, 'abs', 0, line=1, column=5)
 
     def test_decorator_in_class(self):
         """
@@ -171,26 +173,26 @@ class TestCallSignatures(TestCase):
         assert x == ['*args']
 
     def test_additional_brackets(self):
-        self._run('str((', 'str', 0)
+        assert_signature('str((', 'str', 0)
 
     def test_unterminated_strings(self):
-        self._run('str(";', 'str', 0)
+        assert_signature('str(";', 'str', 0)
 
     def test_whitespace_before_bracket(self):
-        self._run('str (', 'str', 0)
-        self._run('str (";', 'str', 0)
-        self._run('str\n(', None)
+        assert_signature('str (', 'str', 0)
+        assert_signature('str (";', 'str', 0)
+        assert_signature('str\n(', None)
 
     def test_brackets_in_string_literals(self):
-        self._run('str (" (', 'str', 0)
-        self._run('str (" )', 'str', 0)
+        assert_signature('str (" (', 'str', 0)
+        assert_signature('str (" )', 'str', 0)
 
     def test_function_definitions_should_break(self):
         """
         Function definitions (and other tokens that cannot exist within call
         signatures) should break and not be able to return a call signature.
         """
-        assert not self._run('str(\ndef x', 'str', 0)
+        assert_signature('str(\ndef x', 'str', 0)
         assert not Script('str(\ndef x(): pass').call_signatures()
 
     def test_flow_call(self):
@@ -208,14 +210,14 @@ class TestCallSignatures(TestCase):
 
         A().test1().test2(''')
 
-        self._run(source, 'test2', 0)
+        assert_signature(source, 'test2', 0)
 
     def test_return(self):
         source = dedent('''
         def foo():
             return '.'.join()''')
 
-        self._run(source, 'join', 0, column=len("    return '.'.join("))
+        assert_signature(source, 'join', 0, column=len("    return '.'.join("))
 
 
 class TestParams(TestCase):
@@ -248,7 +250,6 @@ class TestParams(TestCase):
         assert p[1].name == 'suffix'
         p = self.params('str().endswith(')
         assert p[0].name == 'suffix'
-
 
 
 def test_signature_is_definition():
