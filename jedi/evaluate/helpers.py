@@ -82,7 +82,7 @@ def call_of_name(name, cut_own_trailer=False):
     #      ignore it, It's not what we want anyway. Or document it better?
     """
     trailer = name.parent
-    if trailer.type != 'trailer' or trailer.children[0] != '.':
+    if trailer.type != 'trailer':
         return name
 
     assert  not cut_own_trailer  # TODO remove

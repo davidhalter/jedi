@@ -356,3 +356,16 @@ def test_bracket_start():
         return signatures[0].bracket_start
 
     assert bracket_start('str(') == (1, 3)
+
+
+def test_different_caller():
+    """
+    It's possible to not use names, but another function result or an array
+    index and then get the call signature of it.
+    """
+
+    assert_signature('[str][0](', 'str', 0)
+    assert_signature('[str][0]()', 'str', 0, column=len('[str][0]('))
+
+    assert_signature('(str)(', 'str', 0)
+    assert_signature('(str)()', 'str', 0, column=len('(str)('))

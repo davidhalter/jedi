@@ -6,7 +6,7 @@ from collections import namedtuple
 
 from jedi import common
 from jedi.evaluate import imports
-from jedi.evaluate.helpers import deep_ast_copy
+from jedi.evaluate.helpers import deep_ast_copy, call_of_name
 from jedi import parser
 from jedi.parser import tokenize, token
 
@@ -181,9 +181,7 @@ def evaluate_goto_definition(evaluator, leaf):
     if parent.type == 'atom':
         node = leaf.parent
     elif parent.type == 'trailer':
-        index = parent.parent.children.index(parent)
-        node = deep_ast_copy(parent.parent)
-        node.children = node.children[:index + 1]
+        node = call_of_name(leaf)
 
     if node is None:
         return []
@@ -225,7 +223,7 @@ def _get_call_signature_details_from_error_node(node, position):
             # until the parentheses is enough.
             children = node.children[index:]
             name = element.get_previous_leaf()
-            if name.type == 'name':
+            if name.type == 'name' or name.parent.type == 'trailer':
                 return CallSignatureDetails(
                     element,
                     *_get_index_and_key(children, position)
