@@ -196,20 +196,18 @@ CallSignatureDetails = namedtuple(
 )
 
 
-def _get_index_and_key(node, position):
+def _get_index_and_key(nodes, position):
     """
     Returns the amount of commas and the keyword argument string.
     """
-    nodes_before = [c for c in node.children if c.start_pos < position]
+    nodes_before = [c for c in nodes if c.start_pos < position]
     if nodes_before[-1].type == 'arglist':
-        node = nodes_before[-1]
-        nodes_before = [c for c in node.children if c.start_pos < position]
+        nodes_before = [c for c in nodes_before[-1].children if c.start_pos < position]
 
     key_str = None
 
     if nodes_before:
         last = nodes_before[-1]
-        print('xxxxx', last)
         if last.type == 'argument' and last.children[1].end_pos <= position:
             # Checked if the argument
             key_str = last.children[0].value
@@ -223,11 +221,14 @@ def _get_call_signature_details_from_error_node(node, position):
     for index, element in reversed(list(enumerate(node.children))):
         # `index > 0` means that it's a trailer and not an atom.
         if element == '(' and element.end_pos <= position and index > 0:
+            # It's an error node, we don't want to match too much, just
+            # until the parentheses is enough.
+            children = node.children[index:]
             name = element.get_previous_leaf()
             if name.type == 'name':
                 return CallSignatureDetails(
                     element,
-                    *_get_index_and_key(node, position)
+                    *_get_index_and_key(children, position)
                 )
 
 
@@ -254,7 +255,7 @@ def get_call_signature_details(module, position):
         if node.type == 'trailer' and node.children[0] == '(':
             leaf = node.get_previous_leaf()
             return CallSignatureDetails(
-                node.children[0], *_get_index_and_key(node, position))
+                node.children[0], *_get_index_and_key(node.children, position))
 
         node = node.parent
 
