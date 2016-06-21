@@ -105,32 +105,6 @@ def call_of_name(leaf, cut_own_trailer=False):
         return transformed
 
     return power
-    if 1:
-        par = par.parent
-        if par.children[0] in ('(', '['):
-            # The trailer is not a NAME.NAME trailer, but a call to something.
-            return name
-
-    power = par.parent
-    # `atom_expr` got introduced in Python 3.5 and is essentially just the
-    # whole call part without the optional ** power element.
-    if power.type in ('power', 'atom_expr') \
-            and power.children[0] != name \
-            and not (power.children[-2] == '**' and
-                     name.start_pos > power.children[-1].start_pos):
-        par = power
-        # Now the name must be part of a trailer
-        index = par.children.index(name.parent)
-        if index != len(par.children) - 1 or cut_own_trailer:
-            # Now we have to cut the other trailers away.
-            par = deep_ast_copy(par)
-            if not cut_own_trailer:
-                # Normally we would remove just the stuff after the index, but
-                # if the option is set remove the index as well. (for goto)
-                index = index + 1
-            par.children[index:] = []
-
-    return par
 
 
 def get_names_of_node(node):
