@@ -5,15 +5,9 @@ because we still want to infer types where the syntax is invalid.
 from jedi import debug
 from jedi.parser import Parser, ParseError
 from jedi.evaluate.cache import memoize_default
-from jedi.api import helpers
 
 
-def goto_checks(evaluator, parser, user_context, position, dotted_path, follow_types=False):
-    module = evaluator.wrap(parser.module())
-    stack = helpers.get_stack_at_position(evaluator.grammar, self._source, module, position)
-    stack
-
-def type_inference(evaluator, parser, user_context, position, dotted_path):
+def type_inference(evaluator, parser, position, dotted_path):
     """
     Base for completions/goto. Basically it returns the resolved scopes
     under cursor.

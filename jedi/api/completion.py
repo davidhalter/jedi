@@ -59,7 +59,6 @@ class Completion:
         self._evaluator = evaluator
         self._parser = parser
         self._module = evaluator.wrap(parser.module())
-        self._user_context = user_context
         self._source = user_context.source
         self._pos = position
         self._call_signatures_method = call_signatures_method
@@ -182,7 +181,7 @@ class Completion:
             return []
         else:
             scopes = list(inference.type_inference(
-                self._evaluator, self._parser, self._user_context,
+                self._evaluator, self._parser,
                 self._pos, completion_parts.path
             ))
             completion_names = []

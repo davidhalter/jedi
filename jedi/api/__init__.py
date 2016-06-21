@@ -25,7 +25,6 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import usages
 from jedi.api import helpers
-from jedi.api import inference
 from jedi.api.completion import Completion
 from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er

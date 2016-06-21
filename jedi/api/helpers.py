@@ -5,7 +5,6 @@ import re
 from collections import namedtuple
 
 from jedi import common
-from jedi.evaluate import imports
 from jedi.evaluate.helpers import call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize, token
@@ -27,19 +26,6 @@ def get_completion_parts(path_until_cursor):
 def sorted_definitions(defs):
     # Note: `or ''` below is required because `module_path` could be
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
-
-
-def get_on_import_stmt(evaluator, user_context, user_stmt, is_like_search=False):
-    """
-    Resolve the user statement, if it is an import. Only resolve the
-    parts until the user position.
-    """
-    name = user_stmt.name_for_position(user_context.position)
-    if name is None:
-        return None, None
-
-    i = imports.ImportWrapper(evaluator, name)
-    return i, name
 
 
 def _get_code(code, start_pos, end_pos):
