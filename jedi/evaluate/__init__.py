@@ -453,7 +453,7 @@ class Evaluator(object):
             elif def_.type in ('import_from', 'import_name'):
                 return imports.ImportWrapper(self, name).follow()
 
-        call = helpers.call_of_name(name)
+        call = helpers.call_of_leaf(name)
         return self.eval_element(call)
 
     def goto(self, name):
@@ -514,7 +514,7 @@ class Evaluator(object):
 
         scope = name.get_parent_scope()
         if tree.is_node(name.parent, 'trailer'):
-            call = helpers.call_of_name(name, cut_own_trailer=True)
+            call = helpers.call_of_leaf(name, cut_own_trailer=True)
             types = self.eval_element(call)
             return resolve_implicit_imports(iterable.unite(
                 self.find_types(typ, name, is_goto=True) for typ in types

@@ -716,7 +716,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                             or execution_trailer.children[0] != '(' \
                             or execution_trailer.children[1] == ')':
                         continue
-                power = helpers.call_of_name(name, cut_own_trailer=True)
+                power = helpers.call_of_leaf(name, cut_own_trailer=True)
                 # InstanceElements are special, because they don't get copied,
                 # but have this wrapper around them.
                 if isinstance(comp_arr_parent, er.InstanceElement):

@@ -67,7 +67,7 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
     return new_obj
 
 
-def call_of_name(leaf, cut_own_trailer=False):
+def call_of_leaf(leaf, cut_own_trailer=False):
     """
     Creates a "call" node that consist of all ``trailer`` and ``power``
     objects.  E.g. if you call it with ``append``::

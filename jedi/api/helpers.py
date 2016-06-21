@@ -6,7 +6,7 @@ from collections import namedtuple
 
 from jedi import common
 from jedi.evaluate import imports
-from jedi.evaluate.helpers import deep_ast_copy, call_of_name
+from jedi.evaluate.helpers import deep_ast_copy, call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize, token
 
@@ -181,7 +181,7 @@ def evaluate_goto_definition(evaluator, leaf):
     if parent.type == 'atom':
         node = leaf.parent
     elif parent.type == 'trailer':
-        node = call_of_name(leaf)
+        node = call_of_leaf(leaf)
 
     if node is None:
         return []
