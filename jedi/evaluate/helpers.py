@@ -67,7 +67,7 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
     return new_obj
 
 
-def call_of_name(name, cut_own_trailer=False):
+def call_of_name(leaf, cut_own_trailer=False):
     """
     Creates a "call" node that consist of all ``trailer`` and ``power``
     objects.  E.g. if you call it with ``append``::
@@ -78,14 +78,18 @@ def call_of_name(name, cut_own_trailer=False):
 
     This generates a copy of the original ast node.
 
+    If you're using the leaf, e.g. the bracket `)` it will return ``list([])``.
+
     # TODO remove cut_own_trailer option, since its always used with it. Just
     #      ignore it, It's not what we want anyway. Or document it better?
-    # TODO rename this function, it's probably better called `call_of_leaf`,
-    #      since it can also be used for closing parentheses?!
     """
-    trailer = name.parent
-    if trailer.type != 'trailer':
-        return name
+    trailer = leaf.parent
+    print(leaf)
+    # The leaf may not be the last or first child, because there exist three
+    # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
+    # we should not match anything more than x.
+    if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
+        return leaf
 
     assert  not cut_own_trailer  # TODO remove
     power = trailer.parent
