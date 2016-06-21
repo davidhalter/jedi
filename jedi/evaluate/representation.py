@@ -537,6 +537,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 if trailer:
                     # Create a trailer and evaluate it.
                     trailer = tree.Node('trailer', trailer)
+                    # TODO WTF WHY IS THIS CHANGING PARENTS
                     trailer.parent = dec
                     dec_results = self._evaluator.eval_trailer(dec_results, trailer)
 
@@ -632,7 +633,9 @@ class FunctionExecution(Executed):
         self._copy_dict = {}
         new_func = helpers.deep_ast_copy(base.base_func, new_elements=self._copy_dict)
         for child in new_func.children:
-            child.parent = self
+            if child.type not in ('operator', 'keyword'):
+                # Not all nodes are properly copied by deep_ast_copy.
+                child.parent = self
         self.children = new_func.children
         self.names_dict = new_func.names_dict
 

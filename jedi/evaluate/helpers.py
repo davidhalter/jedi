@@ -84,18 +84,20 @@ def call_of_name(leaf, cut_own_trailer=False):
     #      ignore it, It's not what we want anyway. Or document it better?
     """
     trailer = leaf.parent
-    print(leaf)
     # The leaf may not be the last or first child, because there exist three
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
         return leaf
 
-    assert  not cut_own_trailer  # TODO remove
     power = trailer.parent
     index = power.children.index(trailer)
     power = deep_ast_copy(power)
-    power.children[index + 1:] = []
+    if cut_own_trailer:
+        cut = index
+    else:
+        cut = index + 1
+    power.children[cut:] = []
 
     if power.type == 'error_node':
         transformed = tree.Node('power', power.children)
