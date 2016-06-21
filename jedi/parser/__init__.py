@@ -297,7 +297,7 @@ class ParserWithRecovery(Parser):
         self.module.global_names = self._global_names
 
     def parse(self, tokenizer):
-        return super().parse(self._tokenize(self._tokenize(tokenizer)))
+        return super(ParserWithRecovery, self).parse(self._tokenize(self._tokenize(tokenizer)))
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
