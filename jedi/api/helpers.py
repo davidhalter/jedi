@@ -6,7 +6,7 @@ from collections import namedtuple
 
 from jedi import common
 from jedi.evaluate import imports
-from jedi.evaluate.helpers import deep_ast_copy, call_of_leaf
+from jedi.evaluate.helpers import call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize, token
 

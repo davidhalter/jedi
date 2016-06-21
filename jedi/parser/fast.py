@@ -532,7 +532,8 @@ class FastTokenizer(object):
             self._parentheses_level = 0
             # We need to simulate a newline before the indent, because the
             # open parentheses ignored them.
-            previous_type = NEWLINE
+            if re.search('\n\s*', prefix):
+                previous_type = NEWLINE
 
         # Parentheses ignore the indentation rules. The other three stand for
         # new lines.
