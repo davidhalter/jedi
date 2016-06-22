@@ -86,13 +86,6 @@ case_insensitive_completion = True
 The completion is by default case insensitive.
 """
 
-add_dot_after_module = False
-"""
-Adds a dot after a module, because a module that is not accessed this way is
-definitely not the normal case. However, in VIM this doesn't work, that's why
-it isn't used at the moment.
-"""
-
 add_bracket_after_function = False
 """
 Adds an opening bracket after a function, because that's normal behaviour.

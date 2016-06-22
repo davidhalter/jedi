@@ -29,7 +29,7 @@ def get_call_signature_param_names(call_signatures):
                     yield p._name
 
 
-def filter_names(evaluator, completion_names, needs_dot, like_name):
+def filter_names(evaluator, completion_names, like_name):
     comp_dct = {}
     for name in set(completion_names):
         if settings.case_insensitive_completion \
@@ -43,7 +43,6 @@ def filter_names(evaluator, completion_names, needs_dot, like_name):
             new = classes.Completion(
                 evaluator,
                 name,
-                needs_dot,
                 len(like_name)
             )
             k = (new.name, new.complete)  # key
@@ -74,10 +73,8 @@ class Completion:
             call_signatures = self._call_signatures_method()
             completion_names += get_call_signature_param_names(call_signatures)
 
-        needs_dot = not completion_parts.has_dot and completion_parts.path
-
         completions = filter_names(self._evaluator, completion_names,
-                                   needs_dot, completion_parts.name)
+                                   completion_parts.name)
 
         return sorted(completions, key=lambda x: (x.name.startswith('__'),
                                                   x.name.startswith('_'),
