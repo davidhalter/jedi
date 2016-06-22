@@ -64,10 +64,6 @@ class Completion:
         self._call_signatures_method = call_signatures_method
 
     def completions(self, path):
-        # Dots following an int are not the start of a completion but a float
-        # literal.
-        if re.search(r'^\d\.$', path):
-            return []
         completion_parts = helpers.get_completion_parts(path)
 
         user_stmt = self._parser.user_stmt_with_whitespace()
@@ -112,8 +108,13 @@ class Completion:
 
         try:
             stack = helpers.get_stack_at_position(grammar, self._source, self._module, pos)
-        except helpers.OnErrorLeaf:
-            return self._simple_complete(completion_parts)
+        except helpers.OnErrorLeaf as e:
+            if e.error_leaf.value == '.':
+                # After ErrorLeaf's that are dots, we will not do any
+                # completions since this probably just confuses the user.
+                return []
+            # If we don't have a context, just use global completion.
+            return self._global_completions()
 
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)
@@ -125,7 +126,7 @@ class Completion:
             # This means that we actually have to do type inference.
 
             symbol_names = list(stack.get_node_names(grammar))
-            print(symbol_names)
+            print('symbolnames',symbol_names)
 
             nodes = list(stack.get_nodes())
             last_symbol = symbol_names[-1]
@@ -149,8 +150,10 @@ class Completion:
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
                 return []
+            elif symbol_names[-1] == 'trailer' and '(' != nodes[-1]:
+                completion_names += self._trailer_completions(completion_parts)
             else:
-                completion_names += self._simple_complete(completion_parts)
+                completion_names += self._global_completions()
 
         return completion_names
 
@@ -158,42 +161,40 @@ class Completion:
         for k in keywords_:
             yield keywords.keyword(self._evaluator, k).name
 
-    def _simple_complete(self, completion_parts):
-        if not completion_parts.path and not completion_parts.has_dot:
-            scope = self._parser.user_scope()
-            if not scope.is_scope():  # Might be a flow (if/while/etc).
-                scope = scope.get_parent_scope()
-            names_dicts = global_names_dict_generator(
-                self._evaluator,
-                self._evaluator.wrap(scope),
-                self._pos
+    def _global_completions(self):
+        scope = self._parser.user_scope()
+        if not scope.is_scope():  # Might be a flow (if/while/etc).
+            scope = scope.get_parent_scope()
+        names_dicts = global_names_dict_generator(
+            self._evaluator,
+            self._evaluator.wrap(scope),
+            self._pos
+        )
+        completion_names = []
+        for names_dict, pos in names_dicts:
+            names = list(chain.from_iterable(names_dict.values()))
+            if not names:
+                continue
+            completion_names += filter_definition_names(
+                names, self._parser.user_stmt(), pos
             )
-            completion_names = []
-            for names_dict, pos in names_dicts:
-                names = list(chain.from_iterable(names_dict.values()))
-                if not names:
-                    continue
-                completion_names += filter_definition_names(
-                    names, self._parser.user_stmt(), pos
-                )
-        elif inference.get_under_cursor_stmt(self._evaluator, self._parser,
-                                             completion_parts.path, self._pos) is None:
-            return []
-        else:
-            scopes = list(inference.type_inference(
-                self._evaluator, self._parser,
-                self._pos, completion_parts.path
-            ))
-            completion_names = []
-            debug.dbg('possible completion scopes: %s', scopes)
-            for s in scopes:
-                names = []
-                for names_dict in s.names_dicts(search_global=False):
-                    names += chain.from_iterable(names_dict.values())
+        return completion_names
 
-                completion_names += filter_definition_names(
-                    names, self._parser.user_stmt()
-                )
+    def _trailer_completions(self, completion_parts):
+        scopes = list(inference.type_inference(
+            self._evaluator, self._parser,
+            self._pos, completion_parts.path
+        ))
+        completion_names = []
+        debug.dbg('possible completion scopes: %s', scopes)
+        for s in scopes:
+            names = []
+            for names_dict in s.names_dicts(search_global=False):
+                names += chain.from_iterable(names_dict.values())
+
+            completion_names += filter_definition_names(
+                names, self._parser.user_stmt()
+            )
         return completion_names
 
     def _parse_dotted_names(self, nodes):

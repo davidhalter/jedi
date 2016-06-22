@@ -62,7 +62,8 @@ def _check_number(source, result='float'):
 
 def test_completion_on_number_literals():
     # No completions on an int literal (is a float).
-    assert api.Script('1.').completions() == []
+    assert [c.name for c in api.Script('1.').completions()] \
+        == ['and', 'if', 'in', 'is', 'not', 'or']
 
     # Multiple points after an int literal basically mean that there's a float
     # and a call after that.
