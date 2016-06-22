@@ -21,6 +21,7 @@ Vim:
 
 - jedi-vim_
 - YouCompleteMe_
+- deoplete-jedi_
 
 Emacs:
 
@@ -94,6 +95,7 @@ Using a custom ``$HOME/.pythonrc.py``
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
 .. _anaconda-mode: https://github.com/proofit404/anaconda-mode
