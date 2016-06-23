@@ -172,7 +172,7 @@ class Completion:
             if not names:
                 continue
             completion_names += filter_definition_names(
-                names, self._parser.user_stmt(), pos
+                names, self._module.get_statement_for_position(self._position), pos
             )
         return completion_names
 
@@ -186,7 +186,7 @@ class Completion:
                 names += chain.from_iterable(names_dict.values())
 
             completion_names += filter_definition_names(
-                names, self._parser.user_stmt()
+                names, self._module.get_statement_for_position(self._position)
             )
         return completion_names
 

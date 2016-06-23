@@ -12,16 +12,6 @@ from jedi.parser import tokenize, token
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
 
 
-def get_completion_parts(path_until_cursor):
-    """
-    Returns the parts for the completion
-    :return: tuple - (path, dot, like)
-    """
-    match = re.match(r'^(.*?)(\.|)(\w?[\w\d]*)$', path_until_cursor, flags=re.S)
-    path, dot, name = match.groups()
-    return CompletionParts(path, bool(dot), name)
-
-
 def sorted_definitions(defs):
     # Note: `or ''` below is required because `module_path` could be
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))

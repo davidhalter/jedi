@@ -6,7 +6,6 @@ from jedi import cache
 from jedi.parser import ParserWithRecovery
 from jedi.parser.fast import FastParser
 from jedi.parser import tree
-from jedi import debug
 
 # TODO this should be part of the tokenizer not just of this user_context.
 Token = namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])
@@ -40,17 +39,11 @@ class UserContextParser(object):
         return parser
 
     @cache.underscore_memoization
-    def user_stmt(self):
-        module = self.module()
-        debug.speed('parsed')
-        return module.get_statement_for_position(self._position)
-
-    @cache.underscore_memoization
     def user_scope(self):
         """
         Returns the scope in which the user resides. This includes flows.
         """
-        user_stmt = self.user_stmt()
+        user_stmt = self.module().get_statement_for_position(self._position)
         if user_stmt is None:
             def scan(scope):
                 for s in scope.children:
