@@ -160,12 +160,11 @@ class Script(object):
         :rtype: list of :class:`classes.Completion`
         """
         debug.speed('completions start')
-        path = self._user_context.get_path_until_cursor()
         completion = Completion(
             self._evaluator, self._parser, self._code_lines,
             self._pos, self.call_signatures
         )
-        completions = completion.completions(path)
+        completions = completion.completions()
         debug.speed('completions end')
         return completions
 

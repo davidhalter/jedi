@@ -1,3 +1,4 @@
+import re
 from itertools import chain
 
 from jedi.parser import token
@@ -58,22 +59,28 @@ class Completion:
         self._parser = parser
         self._module = evaluator.wrap(parser.module())
         self._code_lines = code_lines
-        self._pos = position
+
+        line = self._code_lines[position[0] - 1]
+        # The first step of completions is to get the name
+        self._like_name = re.search(
+            r'(?!\d)\w+$|$', line[:position[1]]
+        ).group(0)
+        # The actual cursor position is not what we need to calculate
+        # everything. We want the start of the name we're on.
+        self._position = position[0], position[1] - len(self._like_name)
         self._call_signatures_method = call_signatures_method
 
-    def completions(self, path):
-        completion_parts = helpers.get_completion_parts(path)
-
-        completion_names = self._get_context_completions(completion_parts)
+    def completions(self):
+        completion_names = self._get_context_completions()
 
         completions = filter_names(self._evaluator, completion_names,
-                                   completion_parts.name)
+                                   self._like_name)
 
         return sorted(completions, key=lambda x: (x.name.startswith('__'),
                                                   x.name.startswith('_'),
                                                   x.name.lower()))
 
-    def _get_context_completions(self, completion_parts):
+    def _get_context_completions(self):
         """
         Analyzes the context that a completion is made in and decides what to
         return.
@@ -90,14 +97,10 @@ class Completion:
 
         grammar = self._evaluator.grammar
 
-        # Now we set the position to the place where we try to find out what we
-        # have before it.
-        pos = self._pos
-        if completion_parts.name:
-            pos = pos[0], pos[1] - len(completion_parts.name)
-
         try:
-            stack = helpers.get_stack_at_position(grammar, self._code_lines, self._module, pos)
+            stack = helpers.get_stack_at_position(
+                grammar, self._code_lines, self._module, self._position
+            )
         except helpers.OnErrorLeaf as e:
             if e.error_leaf.value == '.':
                 # After ErrorLeaf's that are dots, we will not do any
@@ -141,7 +144,7 @@ class Completion:
                 # Also true for defining names as a class or function.
                 return []
             elif symbol_names[-1] == 'trailer' and nodes[-1] == '.':
-                dot = self._module.get_leaf_for_position(pos)
+                dot = self._module.get_leaf_for_position(self._position)
                 atom_expr = call_of_leaf(dot.get_previous_leaf())
                 completion_names += self._trailer_completions(atom_expr)
             else:
@@ -164,7 +167,7 @@ class Completion:
         names_dicts = global_names_dict_generator(
             self._evaluator,
             self._evaluator.wrap(scope),
-            self._pos
+            self._position
         )
         completion_names = []
         for names_dict, pos in names_dicts:
