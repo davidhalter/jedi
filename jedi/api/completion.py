@@ -1,5 +1,4 @@
 from itertools import chain
-import re
 
 from jedi.parser import token
 from jedi.parser import tree
@@ -11,6 +10,7 @@ from jedi.api import inference
 from jedi.evaluate import imports
 from jedi.api import keywords
 from jedi.evaluate import compiled
+from jedi.evaluate.helpers import call_of_leaf
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 
 
@@ -65,13 +65,7 @@ class Completion:
     def completions(self, path):
         completion_parts = helpers.get_completion_parts(path)
 
-        user_stmt = self._parser.user_stmt_with_whitespace()
-
-        completion_names = self._get_context_completions(user_stmt, completion_parts)
-
-        if not completion_parts.has_dot:
-            call_signatures = self._call_signatures_method()
-            completion_names += get_call_signature_param_names(call_signatures)
+        completion_names = self._get_context_completions(completion_parts)
 
         completions = filter_names(self._evaluator, completion_names,
                                    completion_parts.name)
@@ -80,7 +74,7 @@ class Completion:
                                                   x.name.startswith('_'),
                                                   x.name.lower()))
 
-    def _get_context_completions(self, user_stmt, completion_parts):
+    def _get_context_completions(self, completion_parts):
         """
         Analyzes the context that a completion is made in and decides what to
         return.
@@ -147,10 +141,16 @@ class Completion:
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
                 return []
-            elif symbol_names[-1] == 'trailer' and '(' != nodes[-1]:
-                completion_names += self._trailer_completions(completion_parts)
+            elif symbol_names[-1] == 'trailer' and nodes[-1] == '.':
+                dot = self._module.get_leaf_for_position(pos)
+                atom_expr = call_of_leaf(dot.get_previous_leaf())
+                completion_names += self._trailer_completions(atom_expr)
             else:
                 completion_names += self._global_completions()
+
+            if 'trailer' in symbol_names:
+                call_signatures = self._call_signatures_method()
+                completion_names += get_call_signature_param_names(call_signatures)
 
         return completion_names
 
@@ -177,11 +177,8 @@ class Completion:
             )
         return completion_names
 
-    def _trailer_completions(self, completion_parts):
-        scopes = list(inference.type_inference(
-            self._evaluator, self._parser,
-            self._pos, completion_parts.path
-        ))
+    def _trailer_completions(self, atom_expr):
+        scopes = self._evaluator.eval_element(atom_expr)
         completion_names = []
         debug.dbg('possible completion scopes: %s', scopes)
         for s in scopes:

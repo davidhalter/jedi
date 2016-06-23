@@ -88,6 +88,8 @@ def call_of_leaf(leaf, cut_own_trailer=False):
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
+        if trailer.type == 'atom':
+            return trailer
         return leaf
 
     power = trailer.parent

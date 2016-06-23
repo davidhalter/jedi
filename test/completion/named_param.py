@@ -20,3 +20,12 @@ a(some_args)
 
 #? 13 []
 a(some_kwargs)
+
+def multiple(foo, bar):
+    pass
+
+#? 17 ['bar']
+multiple(foo, bar)
+
+#? ['bar']
+multiple(foo, bar

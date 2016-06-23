@@ -2,24 +2,8 @@
 This module has helpers for doing type inference on strings. It is needed,
 because we still want to infer types where the syntax is invalid.
 """
-from jedi import debug
 from jedi.parser import Parser, ParseError
 from jedi.evaluate.cache import memoize_default
-
-
-def type_inference(evaluator, parser, position, dotted_path):
-    """
-    Base for completions/goto. Basically it returns the resolved scopes
-    under cursor.
-    """
-    debug.dbg('start: %s in %s', dotted_path, parser.user_scope())
-
-    # Just parse one statement, take it and evaluate it.
-    eval_stmt = get_under_cursor_stmt(evaluator, parser, dotted_path, position)
-    if eval_stmt is None:
-        return []
-
-    return evaluator.eval_element(eval_stmt)
 
 
 @memoize_default(evaluator_is_first_arg=True)
