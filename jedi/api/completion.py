@@ -53,11 +53,11 @@ def filter_names(evaluator, completion_names, like_name):
 
 
 class Completion:
-    def __init__(self, evaluator, parser, user_context, position, call_signatures_method):
+    def __init__(self, evaluator, parser, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
         self._parser = parser
         self._module = evaluator.wrap(parser.module())
-        self._source = user_context.source
+        self._code_lines = code_lines
         self._pos = position
         self._call_signatures_method = call_signatures_method
 
@@ -97,7 +97,7 @@ class Completion:
             pos = pos[0], pos[1] - len(completion_parts.name)
 
         try:
-            stack = helpers.get_stack_at_position(grammar, self._source, self._module, pos)
+            stack = helpers.get_stack_at_position(grammar, self._code_lines, self._module, pos)
         except helpers.OnErrorLeaf as e:
             if e.error_leaf.value == '.':
                 # After ErrorLeaf's that are dots, we will not do any

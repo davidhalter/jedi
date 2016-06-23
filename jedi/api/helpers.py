@@ -4,7 +4,6 @@ Helpers for the API
 import re
 from collections import namedtuple
 
-from jedi import common
 from jedi.evaluate.helpers import call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize, token
@@ -28,13 +27,12 @@ def sorted_definitions(defs):
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
-def _get_code(code, start_pos, end_pos):
+def _get_code(code_lines, start_pos, end_pos):
     """
     :param code_start_pos: is where the code starts.
     """
-    lines = common.splitlines(code)
     # Get relevant lines.
-    lines = lines[start_pos[0] - 1:end_pos[0]]
+    lines = code_lines[start_pos[0] - 1:end_pos[0]]
     # Remove the parts at the end of the line.
     lines[-1] = lines[-1][:end_pos[1]]
     # Remove first line indentation.
@@ -48,7 +46,7 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
-def get_stack_at_position(grammar, source, module, pos):
+def get_stack_at_position(grammar, code_lines, module, pos):
     """
     Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
     """
@@ -72,7 +70,7 @@ def get_stack_at_position(grammar, source, module, pos):
             # impossible.
             raise OnErrorLeaf(user_stmt)
 
-        code = _get_code(source, user_stmt.start_pos, pos)
+        code = _get_code(code_lines, user_stmt.start_pos, pos)
         if code == ';':
             # ; cannot be parsed.
             code = ''

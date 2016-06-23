@@ -106,12 +106,12 @@ class Script(object):
                 source = f.read()
 
         self._source = common.source_to_unicode(source, encoding)
-        lines = common.splitlines(self._source)
-        line = max(len(lines), 1) if line is None else line
-        if not (0 < line <= len(lines)):
+        self._code_lines = common.splitlines(self._source)
+        line = max(len(self._code_lines), 1) if line is None else line
+        if not (0 < line <= len(self._code_lines)):
             raise ValueError('`line` parameter is not in a valid range.')
 
-        line_len = len(lines[line - 1])
+        line_len = len(self._code_lines[line - 1])
         column = line_len if column is None else column
         if not (0 <= column <= line_len):
             raise ValueError('`column` parameter is not in a valid range.')
@@ -162,7 +162,7 @@ class Script(object):
         debug.speed('completions start')
         path = self._user_context.get_path_until_cursor()
         completion = Completion(
-            self._evaluator, self._parser, self._user_context,
+            self._evaluator, self._parser, self._code_lines,
             self._pos, self.call_signatures
         )
         completions = completion.completions(path)
