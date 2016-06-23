@@ -105,8 +105,8 @@ class Script(object):
             with open(path) as f:
                 source = f.read()
 
-        self.source = common.source_to_unicode(source, encoding)
-        lines = common.splitlines(self.source)
+        self._source = common.source_to_unicode(source, encoding)
+        lines = common.splitlines(self._source)
         line = max(len(lines), 1) if line is None else line
         if not (0 < line <= len(lines)):
             raise ValueError('`line` parameter is not in a valid range.')
@@ -120,8 +120,8 @@ class Script(object):
         cache.clear_time_caches()
         debug.reset_time()
         self._grammar = load_grammar(version='%s.%s' % sys.version_info[:2])
-        self._user_context = UserContext(self.source, self._pos)
-        self._parser = UserContextParser(self._grammar, self.source, path,
+        self._user_context = UserContext(self._source, self._pos)
+        self._parser = UserContextParser(self._grammar, self._source, path,
                                          self._pos, self._user_context,
                                          self._parsed_callback)
         if sys_path is None:
@@ -287,7 +287,7 @@ class Script(object):
         # TODO insert caching again here.
         #with common.scale_speed_settings(settings.scale_call_signatures):
         #    definitions = cache.cache_call_signatures(self._evaluator, stmt,
-        #                                              self.source, self._pos)
+        #                                              self._source, self._pos)
         definitions = helpers.evaluate_goto_definition(
             self._evaluator,
             call_signature_details.bracket_leaf.get_previous_leaf()
@@ -372,7 +372,7 @@ class Interpreter(Script):
         # Don't use the fast parser, because it does crazy stuff that we don't
         # need in our very simple and small code here (that is always
         # changing).
-        self._parser = UserContextParser(self._grammar, self.source,
+        self._parser = UserContextParser(self._grammar, self._source,
                                          self._orig_path, self._pos,
                                          self._user_context, self._parsed_callback,
                                          use_fast_parser=False)
