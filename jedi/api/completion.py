@@ -6,7 +6,6 @@ from jedi import debug
 from jedi import settings
 from jedi.api import classes
 from jedi.api import helpers
-from jedi.api import inference
 from jedi.evaluate import imports
 from jedi.api import keywords
 from jedi.evaluate import compiled
