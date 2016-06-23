@@ -15,7 +15,7 @@ def test_user_statement_on_import():
           "    time)")
 
     for pos in [(2, 1), (2, 4)]:
-        p = UserContextParser(load_grammar(), s, None, pos, None, lambda x: 1).user_stmt()
+        p = UserContextParser(load_grammar(), s, None, pos, lambda x: 1).user_stmt()
         assert isinstance(p, pt.Import)
         assert [str(n) for n in p.get_defined_names()] == ['time']
 

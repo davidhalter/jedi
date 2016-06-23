@@ -16,7 +16,7 @@ import sys
 from jedi._compatibility import unicode
 from jedi.parser import load_grammar
 from jedi.parser import tree
-from jedi.parser.user_context import UserContext, UserContextParser
+from jedi.parser.user_context import UserContextParser
 from jedi import debug
 from jedi import settings
 from jedi import common
@@ -120,9 +120,8 @@ class Script(object):
         cache.clear_time_caches()
         debug.reset_time()
         self._grammar = load_grammar(version='%s.%s' % sys.version_info[:2])
-        self._user_context = UserContext(self._source, self._pos)
         self._parser = UserContextParser(self._grammar, self._source, path,
-                                         self._pos, self._user_context,
+                                         self._pos,
                                          self._parsed_callback)
         if sys_path is None:
             venv = os.getenv('VIRTUAL_ENV')
@@ -373,7 +372,7 @@ class Interpreter(Script):
         # changing).
         self._parser = UserContextParser(self._grammar, self._source,
                                          self._orig_path, self._pos,
-                                         self._user_context, self._parsed_callback,
+                                         self._parsed_callback,
                                          use_fast_parser=False)
         #interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
                                              #self._get_module())

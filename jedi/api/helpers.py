@@ -27,6 +27,14 @@ def sorted_definitions(defs):
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
+def get_on_completion_name(lines, position):
+    line = lines[position[0] - 1]
+    # The first step of completions is to get the name
+    return re.search(
+        r'(?!\d)\w+$|$', line[:position[1]]
+    ).group(0)
+
+
 def _get_code(code_lines, start_pos, end_pos):
     """
     :param code_start_pos: is where the code starts.

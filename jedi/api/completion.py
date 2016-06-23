@@ -60,11 +60,8 @@ class Completion:
         self._module = evaluator.wrap(parser.module())
         self._code_lines = code_lines
 
-        line = self._code_lines[position[0] - 1]
         # The first step of completions is to get the name
-        self._like_name = re.search(
-            r'(?!\d)\w+$|$', line[:position[1]]
-        ).group(0)
+        self._like_name = helpers.get_on_completion_name(code_lines, position)
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._position = position[0], position[1] - len(self._like_name)
