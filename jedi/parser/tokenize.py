@@ -150,7 +150,18 @@ ALWAYS_BREAK_TOKENS = (';', 'import', 'class', 'def', 'try', 'except',
                        'finally', 'while', 'return')
 
 
-Token = namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])
+class TokenInfo(namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])):
+    def __repr__(self):
+        annotated_type = tok_name[self.type]
+        return ('TokenInfo(type=%s, string=%r, start=%r, prefix=%r)' %
+                self._replace(type=annotated_type))
+
+    @property
+    def exact_type(self):
+        if self.type == OP and self.string in opmap:
+            return opmap[self.string]
+        else:
+            return self.type
 
 
 def source_tokens(source, use_exact_op_types=False):
@@ -186,7 +197,7 @@ def generate_tokens(readline, use_exact_op_types=False):
         line = readline()  # readline returns empty when finished. See StringIO
         if not line:
             if contstr:
-                yield ERRORTOKEN, contstr, contstr_start, prefix
+                yield TokenInfo(ERRORTOKEN, contstr, contstr_start, prefix)
             break
 
         lnum += 1
@@ -196,7 +207,7 @@ def generate_tokens(readline, use_exact_op_types=False):
             endmatch = endprog.match(line)
             if endmatch:
                 pos = endmatch.end(0)
-                yield STRING, contstr + line[:pos], contstr_start, prefix
+                yield TokenInfo(STRING, contstr + line[:pos], contstr_start, prefix)
                 contstr = ''
                 contline = None
             else:
@@ -212,7 +223,7 @@ def generate_tokens(readline, use_exact_op_types=False):
                     # If a literal starts but doesn't end the whole rest of the
                     # line is an error token.
                     txt = line[pos:]
-                yield ERRORTOKEN, txt, (lnum, pos), prefix
+                yield TokenInfo(ERRORTOKEN, txt, (lnum, pos), prefix)
                 pos += 1
                 continue
 
@@ -230,18 +241,18 @@ def generate_tokens(readline, use_exact_op_types=False):
                         i += 1
                         start -= 1
                     if start > indents[-1]:
-                        yield INDENT, '', spos, ''
+                        yield TokenInfo(INDENT, '', spos, '')
                         indents.append(start)
                     while start < indents[-1]:
-                        yield DEDENT, '', spos, ''
+                        yield TokenInfo(DEDENT, '', spos, '')
                         indents.pop()
 
             if (initial in numchars or                      # ordinary number
                     (initial == '.' and token != '.' and token != '...')):
-                yield NUMBER, token, spos, prefix
+                yield TokenInfo(NUMBER, token, spos, prefix)
             elif initial in '\r\n':
                 if not new_line and paren_level == 0:
-                    yield NEWLINE, token, spos, prefix
+                    yield TokenInfo(NEWLINE, token, spos, prefix)
                 else:
                     additional_prefix = prefix + token
                 new_line = True
@@ -254,7 +265,7 @@ def generate_tokens(readline, use_exact_op_types=False):
                 if endmatch:                                # all on one line
                     pos = endmatch.end(0)
                     token = line[start:pos]
-                    yield STRING, token, spos, prefix
+                    yield TokenInfo(STRING, token, spos, prefix)
                 else:
                     contstr_start = (lnum, start)           # multiple lines
                     contstr = line[start:]
@@ -271,18 +282,18 @@ def generate_tokens(readline, use_exact_op_types=False):
                     contline = line
                     break
                 else:                                       # ordinary string
-                    yield STRING, token, spos, prefix
+                    yield TokenInfo(STRING, token, spos, prefix)
             elif is_identifier(initial):                      # ordinary name
                 if token in ALWAYS_BREAK_TOKENS:
                     paren_level = 0
                     while True:
                         indent = indents.pop()
                         if indent > start:
-                            yield DEDENT, '', spos, ''
+                            yield TokenInfo(DEDENT, '', spos, '')
                         else:
                             indents.append(indent)
                             break
-                yield NAME, token, spos, prefix
+                yield TokenInfo(NAME, token, spos, prefix)
             elif initial == '\\' and line[start:] in ('\\\n', '\\\r\n'):  # continued stmt
                 additional_prefix += prefix + line[start:]
                 break
@@ -296,7 +307,7 @@ def generate_tokens(readline, use_exact_op_types=False):
                     typ = opmap[token]
                 else:
                     typ = OP
-                yield typ, token, spos, prefix
+                yield TokenInfo(typ, token, spos, prefix)
 
     if new_line or additional_prefix[-1:] == '\n':
         end_pos = lnum + 1, 0
@@ -305,5 +316,5 @@ def generate_tokens(readline, use_exact_op_types=False):
     # As the last position we just take the maximally possible position. We
     # remove -1 for the last new line.
     for indent in indents[1:]:
-        yield DEDENT, '', end_pos, ''
-    yield ENDMARKER, '', end_pos, additional_prefix
+        yield TokenInfo(DEDENT, '', end_pos, '')
+    yield TokenInfo(ENDMARKER, '', end_pos, additional_prefix)
