@@ -16,7 +16,7 @@ import sys
 from jedi._compatibility import unicode
 from jedi.parser import load_grammar
 from jedi.parser import tree
-from jedi.parser.user_context import UserContextParser
+from jedi.parser.fast import FastParser
 from jedi import debug
 from jedi import settings
 from jedi import common
@@ -116,13 +116,11 @@ class Script(object):
         if not (0 <= column <= line_len):
             raise ValueError('`column` parameter is not in a valid range.')
         self._pos = line, column
+        self._path = path
 
         cache.clear_time_caches()
         debug.reset_time()
         self._grammar = load_grammar(version='%s.%s' % sys.version_info[:2])
-        self._parser = UserContextParser(self._grammar, self._source, path,
-                                         self._pos,
-                                         self._parsed_callback)
         if sys_path is None:
             venv = os.getenv('VIRTUAL_ENV')
             if venv:
@@ -130,12 +128,14 @@ class Script(object):
         self._evaluator = Evaluator(self._grammar, sys_path=sys_path)
         debug.speed('init')
 
-    def _parsed_callback(self, parser):
+    def _get_module(self):
+        cache.invalidate_star_import_cache(self._path)
+        parser = FastParser(self._grammar, self._source, self._path)
+        cache.save_parser(self._path, parser, pickling=False)
+
         module = self._evaluator.wrap(parser.module)
         imports.add_module(self._evaluator, unicode(module.name), module)
-
-    def _get_module(self):
-        return self._parser.module()
+        return parser.module
 
     @property
     def source_path(self):
@@ -160,7 +160,7 @@ class Script(object):
         """
         debug.speed('completions start')
         completion = Completion(
-            self._evaluator, self._parser, self._code_lines,
+            self._evaluator, self._get_module(), self._code_lines,
             self._pos, self.call_signatures
         )
         completions = completion.completions()

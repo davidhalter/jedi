@@ -13,7 +13,9 @@ from __future__ import absolute_import
 
 import string
 import re
+from collections import namedtuple
 from io import StringIO
+
 from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, opmap,
                                NAME, OP, ERRORTOKEN, NEWLINE, INDENT, DEDENT)
 from jedi._compatibility import is_py3
@@ -146,6 +148,9 @@ tabsize = 8
 # TODO add with?
 ALWAYS_BREAK_TOKENS = (';', 'import', 'class', 'def', 'try', 'except',
                        'finally', 'while', 'return')
+
+
+Token = namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])
 
 
 def source_tokens(source, use_exact_op_types=False):

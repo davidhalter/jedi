@@ -38,7 +38,7 @@ def test_class_in_docstr():
     Regression test for a problem with classes in docstrings.
     """
     a = '"\nclasses\n"'
-    jedi.Script(a, 1, 0)._parser
+    jedi.Script(a, 1, 0)._get_module()
 
     b = a + '\nimport os'
     assert jedi.Script(b, 4, 8).goto_assignments()
@@ -450,7 +450,7 @@ def test_string_literals():
     """)
 
     script = jedi.Script(dedent(source))
-    script._parser.module().end_pos == (6, 0)
+    script._get_module().end_pos == (6, 0)
     assert script.completions()
 
 
@@ -468,7 +468,7 @@ def test_decorator_string_issue():
 
     s = jedi.Script(source)
     assert s.completions()
-    assert s._parser.module().get_code() == source
+    assert s._get_module().get_code() == source
 
 
 def test_round_trip():

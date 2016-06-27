@@ -27,15 +27,7 @@ class UserContextParser(object):
 
     @cache.underscore_memoization
     def _parser(self):
-        cache.invalidate_star_import_cache(self._path)
-        if self._use_fast_parser:
-            parser = FastParser(self._grammar, self._source, self._path)
-            # Don't pickle that module, because the main module is changing quickly
-            cache.save_parser(self._path, parser, pickling=False)
-        else:
-            parser = ParserWithRecovery(self._grammar, self._source, self._path)
-        self._parser_done_callback(parser)
-        return parser
+        pass
 
     def module(self):
         return self._parser().module

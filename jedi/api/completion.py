@@ -1,4 +1,3 @@
-import re
 from itertools import chain
 
 from jedi.parser import token
@@ -74,10 +73,9 @@ def get_user_scope(module, position):
 
 
 class Completion:
-    def __init__(self, evaluator, parser, code_lines, position, call_signatures_method):
+    def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
-        self._parser = parser
-        self._module = evaluator.wrap(parser.module())
+        self._module = evaluator.wrap(module)
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
