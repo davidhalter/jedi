@@ -229,7 +229,7 @@ class Script(object):
         temp, settings.dynamic_flow_information = \
             settings.dynamic_flow_information, False
         try:
-            user_stmt = self._parser.user_stmt()
+            user_stmt = self._get_module().get_statement_for_position(self._pos)
             definitions = self._goto()
             if not definitions and isinstance(user_stmt, tree.Import):
                 # For not defined imports (goto doesn't find something, we take

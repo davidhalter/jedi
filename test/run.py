@@ -188,7 +188,10 @@ class IntegrationTestCase(object):
                 parser = Parser(load_grammar(), string, start_symbol='eval_input')
                 parser.position_modifier.line = self.line_nr
                 element = parser.get_parsed_node()
-                element.parent = script._parser.user_scope()
+                element.parent = jedi.api.completion.get_user_scope(
+                    script._get_module(),
+                    (self.line_nr, self.column)
+                )
                 results = evaluator.eval_element(element)
                 if not results:
                     raise Exception('Could not resolve %s on line %s'

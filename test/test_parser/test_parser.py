@@ -4,7 +4,6 @@ import sys
 import jedi
 from jedi._compatibility import u, is_py3
 from jedi.parser import ParserWithRecovery, load_grammar
-from jedi.parser.user_context import UserContextParser
 from jedi.parser import tree as pt
 from textwrap import dedent
 
@@ -15,9 +14,10 @@ def test_user_statement_on_import():
           "    time)")
 
     for pos in [(2, 1), (2, 4)]:
-        p = UserContextParser(load_grammar(), s, None, pos, lambda x: 1).user_stmt()
-        assert isinstance(p, pt.Import)
-        assert [str(n) for n in p.get_defined_names()] == ['time']
+        p = ParserWithRecovery(load_grammar(), s)
+        stmt = p.module.get_statement_for_position(pos)
+        assert isinstance(stmt, pt.Import)
+        assert [str(n) for n in stmt.get_defined_names()] == ['time']
 
 
 class TestCallAndName():

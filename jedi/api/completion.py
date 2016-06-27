@@ -53,6 +53,26 @@ def filter_names(evaluator, completion_names, like_name):
                 yield new
 
 
+def get_user_scope(module, position):
+    """
+    Returns the scope in which the user resides. This includes flows.
+    """
+    user_stmt = module.get_statement_for_position(position)
+    if user_stmt is None:
+        def scan(scope):
+            for s in scope.children:
+                if s.start_pos <= position <= s.end_pos:
+                    if isinstance(s, (tree.Scope, tree.Flow)):
+                        return scan(s) or s
+                    elif s.type in ('suite', 'decorated'):
+                        return scan(s)
+            return None
+
+        return scan(module) or module
+    else:
+        return user_stmt.get_parent_scope(include_flows=True)
+
+
 class Completion:
     def __init__(self, evaluator, parser, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
@@ -158,7 +178,7 @@ class Completion:
             yield keywords.keyword(self._evaluator, k).name
 
     def _global_completions(self):
-        scope = self._parser.user_scope()
+        scope = get_user_scope(self._module, self._position)
         if not scope.is_scope():  # Might be a flow (if/while/etc).
             scope = scope.get_parent_scope()
         names_dicts = global_names_dict_generator(
