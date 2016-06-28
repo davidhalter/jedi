@@ -41,8 +41,8 @@ import abc
 
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
-from jedi import cache
 from jedi.parser import token
+from jedi.parser.utils import underscore_memoization
 
 
 def is_node(node, *symbol_names):
@@ -788,7 +788,7 @@ class Module(Scope):
         self.path = None  # Set later.
 
     @property
-    @cache.underscore_memoization
+    @underscore_memoization
     def name(self):
         """ This is used for the goto functions. """
         if self.path is None:

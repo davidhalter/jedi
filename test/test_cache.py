@@ -8,7 +8,7 @@ import pytest
 
 import jedi
 from jedi import settings, cache
-from jedi.cache import ParserCacheItem, ParserPickling
+from jedi.parser.utils import ParserCacheItem, ParserPickling
 
 
 ParserPicklingCls = type(ParserPickling)

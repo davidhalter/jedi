@@ -9,7 +9,7 @@ from jedi.parser import ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
-from jedi import cache
+from jedi.parser.utils import load_parser, save_parser
 
 
 def get_venv_path(venv):
@@ -211,10 +211,10 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
             return
 
         p = ParserWithRecovery(evaluator.grammar, source, buildout_script)
-        cache.save_parser(buildout_script, p)
+        save_parser(buildout_script, p)
         return p.module
 
-    cached = cache.load_parser(buildout_script)
+    cached = load_parser(buildout_script)
     module = cached and cached.module or load(buildout_script)
     if not module:
         return

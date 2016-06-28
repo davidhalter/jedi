@@ -7,6 +7,7 @@ from textwrap import dedent
 from jedi import api
 from jedi._compatibility import is_py3
 from pytest import raises
+from jedi.parser import utils
 
 
 def test_preload_modules():
@@ -16,16 +17,15 @@ def test_preload_modules():
         for i in modules:
             assert [i in k for k in parser_cache.keys() if k is not None]
 
-    from jedi import cache
-    temp_cache, cache.parser_cache = cache.parser_cache, {}
-    parser_cache = cache.parser_cache
+    temp_cache, utils.parser_cache = utils.parser_cache, {}
+    parser_cache = utils.parser_cache
 
     api.preload_module('sys')
     check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
     api.preload_module('json', 'token')
     check_loaded('json', 'token')
 
-    cache.parser_cache = temp_cache
+    utils.parser_cache = temp_cache
 
 
 def test_empty_script():

@@ -10,7 +10,7 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.parser import ParserWithRecovery
 from jedi.parser import tree
-from jedi import cache
+from jedi.parser.utils import underscore_memoization, parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (source_tokens, NEWLINE,
                                   ENDMARKER, INDENT, DEDENT)
@@ -36,7 +36,7 @@ class FastModule(tree.Module):
             pass  # It was never used.
 
     @property
-    @cache.underscore_memoization
+    @underscore_memoization
     def used_names(self):
         return MergedNamesDict([m.used_names for m in self.modules])
 
@@ -102,7 +102,7 @@ class CachedFastParser(type):
         if not settings.fast_parser:
             return ParserWithRecovery(grammar, source, module_path)
 
-        pi = cache.parser_cache.get(module_path, None)
+        pi = parser_cache.get(module_path, None)
         if pi is None or isinstance(pi.parser, ParserWithRecovery):
             p = super(CachedFastParser, self).__call__(grammar, source, module_path)
         else:
@@ -236,7 +236,7 @@ class ParserNode(object):
             for y in n.all_sub_nodes():
                 yield y
 
-    @cache.underscore_memoization  # Should only happen once!
+    @underscore_memoization  # Should only happen once!
     def remove_last_newline(self):
         self.parser.remove_last_newline()
 

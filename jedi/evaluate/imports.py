@@ -20,9 +20,9 @@ from itertools import chain
 from jedi._compatibility import find_module, unicode
 from jedi import common
 from jedi import debug
-from jedi import cache
 from jedi.parser import fast
 from jedi.parser import tree
+from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi import settings
@@ -435,7 +435,7 @@ def _load_module(evaluator, path=None, source=None, sys_path=None):
     def load(source):
         dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith('.py') \
-                and not dotted_path in settings.auto_import_modules:
+                and dotted_path not in settings.auto_import_modules:
             if source is None:
                 with open(path, 'rb') as f:
                     source = f.read()
@@ -443,13 +443,13 @@ def _load_module(evaluator, path=None, source=None, sys_path=None):
             return compiled.load_module(evaluator, path)
         p = path
         p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
-        cache.save_parser(path, p)
+        save_parser(path, p)
         return p.module
 
     if sys_path is None:
         sys_path = evaluator.sys_path
 
-    cached = cache.load_parser(path)
+    cached = load_parser(path)
     module = load(source) if cached is None else cached.module
     module = evaluator.wrap(module)
     return module
@@ -470,7 +470,7 @@ def get_modules_containing_name(evaluator, mods, name):
     """
     def check_python_file(path):
         try:
-            return cache.parser_cache[path].parser.module
+            return parser_cache[path].parser.module
         except KeyError:
             try:
                 return check_fs(path)

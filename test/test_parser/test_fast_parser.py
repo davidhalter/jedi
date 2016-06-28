@@ -5,6 +5,7 @@ from jedi._compatibility import u
 from jedi import cache
 from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
+from jedi.parser.utils import save_parser
 
 
 def test_add_to_end():
@@ -84,7 +85,7 @@ def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0
         number_of_splits = number_parsers_used
 
     p = FastParser(load_grammar(), u(src))
-    cache.save_parser(None, p, pickling=False)
+    save_parser(None, p, pickling=False)
 
     assert src == p.module.get_code()
     assert p.number_of_splits == number_of_splits
@@ -355,7 +356,7 @@ def test_open_parentheses():
     assert p.module.get_code() == code
     assert p.number_of_splits == 2
     assert p.number_parsers_used == 2
-    cache.save_parser(None, p, pickling=False)
+    save_parser(None, p, pickling=False)
 
     # Now with a correct parser it should work perfectly well.
     check_fp('isinstance()\n' + func, 1, 2)

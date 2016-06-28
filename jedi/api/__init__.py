@@ -17,6 +17,7 @@ from jedi._compatibility import unicode
 from jedi.parser import load_grammar
 from jedi.parser import tree
 from jedi.parser.fast import FastParser
+from jedi.parser.utils import save_parser
 from jedi import debug
 from jedi import settings
 from jedi import common
@@ -131,7 +132,7 @@ class Script(object):
     def _get_module(self):
         cache.invalidate_star_import_cache(self._path)
         parser = FastParser(self._grammar, self._source, self._path)
-        cache.save_parser(self._path, parser, pickling=False)
+        save_parser(self._path, parser, pickling=False)
 
         module = self._evaluator.wrap(parser.module)
         imports.add_module(self._evaluator, unicode(module.name), module)
@@ -282,14 +283,13 @@ class Script(object):
         if call_signature_details is None:
             return []
 
-        # TODO insert caching again here.
-        #with common.scale_speed_settings(settings.scale_call_signatures):
-        #    definitions = cache.cache_call_signatures(self._evaluator, stmt,
-        #                                              self._source, self._pos)
-        definitions = helpers.evaluate_goto_definition(
-            self._evaluator,
-            call_signature_details.bracket_leaf.get_previous_leaf()
-        )
+        with common.scale_speed_settings(settings.scale_call_signatures):
+            definitions = helpers.cache_call_signatures(
+                self._evaluator,
+                call_signature_details.bracket_leaf,
+                self._code_lines,
+                self._pos
+            )
         debug.speed('func_call followed')
 
         return [classes.CallSignature(self._evaluator, d.name,

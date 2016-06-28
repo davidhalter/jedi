@@ -7,6 +7,7 @@ from collections import namedtuple
 from jedi.evaluate.helpers import call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize, token
+from jedi.cache import time_cache
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
@@ -240,3 +241,24 @@ def get_call_signature_details(module, position):
         node = node.parent
 
     return None
+
+
+@time_cache("call_signatures_validity")
+def cache_call_signatures(evaluator, bracket_leaf, code_lines, user_pos):
+    """This function calculates the cache key."""
+    index = user_pos[0] - 1
+
+    before_cursor = code_lines[index][:user_pos[1]]
+    other_lines = code_lines[bracket_leaf.start_pos[0]:index]
+    whole = '\n'.join(other_lines + [before_cursor])
+    before_bracket = re.match(r'.*\(', whole, re.DOTALL)
+
+    module_path = bracket_leaf.get_parent_until().path
+    if module_path is None:
+        yield None  # Don't cache!
+    else:
+        yield (module_path, before_bracket, bracket_leaf.start_pos)
+    yield evaluate_goto_definition(
+        evaluator,
+        bracket_leaf.get_previous_leaf()
+    )
