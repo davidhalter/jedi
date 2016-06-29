@@ -16,6 +16,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
+from jedi.evaluate.compiled import mixed
 from jedi.api import keywords
 from jedi.evaluate.finder import filter_definition_names
 
@@ -148,7 +149,7 @@ class BaseDefinition(object):
         if isinstance(stripped, er.InstanceElement):
             stripped = stripped.var
 
-        if isinstance(stripped, compiled.CompiledObject):
+        if isinstance(stripped, (compiled.CompiledObject, mixed.MixedObject)):
             return stripped.api_type()
         elif isinstance(stripped, iterable.Array):
             return 'instance'

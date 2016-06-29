@@ -115,6 +115,7 @@ class CompiledObject(Base):
         elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
                 or inspect.ismethoddescriptor(cls) or inspect.isfunction(cls):
             return 'function'
+        raise NotImplementedError
 
     @property
     def type(self):

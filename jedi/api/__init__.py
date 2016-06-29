@@ -367,19 +367,11 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
 
-        # Don't use the fast parser, because it does crazy stuff that we don't
-        # need in our very simple and small code here (that is always
-        # changing).
-        self._parser = UserContextParser(self._grammar, self._source,
-                                         self._orig_path, self._pos,
-                                         self._parsed_callback,
-                                         use_fast_parser=False)
-        #interpreter.add_namespaces_to_parser(self._evaluator, namespaces,
-                                             #self._get_module())
+        parser_module = super(Interpreter, self)._get_module()
+        self._module = interpreter.MixedModule(self._evaluator, parser_module, self.namespaces)
 
     def _get_module(self):
-        parser_module = super(Interpreter, self)._get_module()
-        return interpreter.MixedModule(parser_module, self.namespaces)
+        return self._module
 
 
 def defined_names(source, path=None, encoding='utf-8'):

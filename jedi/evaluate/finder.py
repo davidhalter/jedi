@@ -559,6 +559,8 @@ def global_names_dict_generator(evaluator, scope, position):
 
             for names_dict in scope.names_dicts(True):
                 yield names_dict, position
+                if hasattr(scope, 'resets_positions'):
+                    position = None
             if scope.type == 'funcdef':
                 # The position should be reset if the current scope is a function.
                 in_func = True

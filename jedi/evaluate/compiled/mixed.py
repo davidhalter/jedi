@@ -7,8 +7,7 @@ import inspect
 from jedi import common
 from jedi.parser.fast import FastParser
 from jedi.evaluate import compiled
-from jedi.cache import underscore_memoization, memoize_method
-from jedi.evaluate.cache import memoize_default
+from jedi.cache import underscore_memoization
 
 
 class MixedObject(object):
@@ -37,6 +36,15 @@ class MixedObject(object):
     def names_dicts(self, search_global):
         assert search_global is False
         return [LazyMixedNamesDict(self._evaluator, self, is_instance=False)]
+
+    def api_type(self):
+        mappings = {
+            'expr_stmt': 'statement',
+            'classdef': 'class',
+            'funcdef': 'function',
+            'file_input': 'module',
+        }
+        return mappings[self._definition.type]
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, repr(self.obj))

@@ -15,37 +15,38 @@ from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
 from jedi.evaluate import helpers
 from jedi.evaluate import iterable
+from jedi.evaluate.representation import ModuleWrapper
 from jedi.evaluate.compiled import mixed
 
 
-def add_namespaces_to_parser(evaluator, namespace_dicts, parser_module):
-    for dct in namespace_dicts:
-        namespace = compiled.CompiledObject(evaluator, type('namespace', (), dct))
+class MixedModule(object):
+    resets_positions = True
 
-        for key, value in dct.items():
-            # Name lookups in an ast tree work by checking names_dict.
-            # Therefore we just add fake names to that and we're done.
-            arr = parser_module.names_dict.setdefault(key, [])
-            name = mixed.MixedName(evaluator, namespace, key)
-            arr.append(name)
-            #arr.append(LazyName(evaluator, parser_module, key, value))
-
-
-class MixedModule():
     def __init__(self, evaluator, parser_module, namespaces):
         self._evaluator = evaluator
-        self._parser_module = parser_module
         self._namespaces = namespaces
 
-    def names_dicts(self):
-        for names_dict in self._parser_module.names_dicts():
+        self._namespace_objects = [type('jedi_namespace', (), n) for n in namespaces]
+        self._wrapped_module = ModuleWrapper(evaluator, parser_module)
+        # Usually we are dealing with very small code sizes when it comes to
+        # interpreter modules. In this case we just copy the whole syntax tree
+        # to be able to modify it.
+        self._parser_module = helpers.deep_ast_copy(parser_module)
+
+        for child in self._parser_module.children:
+            child.parent = self
+
+    def names_dicts(self, search_global):
+        for names_dict in self._wrapped_module.names_dicts(search_global):
             yield names_dict
 
-        for namespace in self._namespaces:
-            print('ole')
-            yield mixed.MixedObject(self._evaluator, namespace, self._parser_module.name)
+        for namespace_obj in self._namespace_objects:
+            m = mixed.MixedObject(self._evaluator, namespace_obj, self._parser_module.name)
+            for names_dict in m.names_dicts(False):
+                yield names_dict
 
-        yield namespace
+    def __getattr__(self, name):
+        return getattr(self._parser_module, name)
 
 
 class LazyName(helpers.FakeName):
@@ -125,7 +126,7 @@ class LazyName(helpers.FakeName):
                                               'should be part of sys.modules.')
 
                 if parser_path:
-                    #assert len(parser_path) == 1
+                    assert len(parser_path) == 1
                     found = list(self._evaluator.find_types(mod, parser_path[0],
                                                             search_global=True))
                 else:
