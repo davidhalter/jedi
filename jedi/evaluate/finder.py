@@ -560,6 +560,10 @@ def global_names_dict_generator(evaluator, scope, position):
             for names_dict in scope.names_dicts(True):
                 yield names_dict, position
                 if hasattr(scope, 'resets_positions'):
+                    # TODO This is so ugly, seriously. However there's
+                    #      currently no good way of influencing
+                    #      global_names_dict_generator when it comes to certain
+                    #      objects.
                     position = None
             if scope.type == 'funcdef':
                 # The position should be reset if the current scope is a function.

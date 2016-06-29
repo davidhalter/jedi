@@ -109,15 +109,18 @@ class Evaluator(object):
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
     def wrap(self, element):
-        if isinstance(element, tree.Class):
+        if isinstance(element, (er.Wrapper, er.InstanceElement,
+            er.ModuleWrapper, er.FunctionExecution, er.Instance, compiled.CompiledObject)) or element is None:
+            # TODO this is so ugly, please refactor.
+            return element
+
+        if element.type == 'classdef':
             return er.Class(self, element)
-        elif isinstance(element, tree.Function):
-            if isinstance(element, tree.Lambda):
-                return er.LambdaWrapper(self, element)
-            else:
-                return er.Function(self, element)
-        elif isinstance(element, (tree.Module)) \
-                and not isinstance(element, er.ModuleWrapper):
+        elif element.type == 'funcdef':
+            return er.Function(self, element)
+        elif element.type == 'lambda':
+            return er.LambdaWrapper(self, element)
+        elif element.type == 'file_input':
             return er.ModuleWrapper(self, element)
         else:
             return element

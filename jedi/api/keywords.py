@@ -67,6 +67,8 @@ keywords_only_valid_as_leaf = (
 
 
 class Keyword(object):
+    type = 'completion_keyword'
+
     def __init__(self, evaluator, name, pos):
         self.name = FakeName(name, self, pos)
         self.start_pos = pos

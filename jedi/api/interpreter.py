@@ -4,6 +4,7 @@ TODO Some parts of this module are still not well documented.
 import inspect
 import re
 import sys
+import copy
 
 from jedi._compatibility import builtins
 from jedi import debug
@@ -31,7 +32,7 @@ class MixedModule(object):
         # Usually we are dealing with very small code sizes when it comes to
         # interpreter modules. In this case we just copy the whole syntax tree
         # to be able to modify it.
-        self._parser_module = helpers.deep_ast_copy(parser_module)
+        self._parser_module = copy.deepcopy(parser_module)
 
         for child in self._parser_module.children:
             child.parent = self

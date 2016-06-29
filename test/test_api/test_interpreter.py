@@ -34,7 +34,6 @@ def test_builtin_details():
     var = get_completion('variable', locals())
     f = get_completion('func', locals())
     m = get_completion('keyword', locals())
-    print(cls._definition.type)
     assert cls.type == 'class'
     assert var.type == 'instance'
     assert f.type == 'function'
