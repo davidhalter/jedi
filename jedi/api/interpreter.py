@@ -22,6 +22,7 @@ from jedi.evaluate.compiled import mixed
 
 class MixedModule(object):
     resets_positions = True
+    type = 'mixed_module'
 
     def __init__(self, evaluator, parser_module, namespaces):
         self._evaluator = evaluator

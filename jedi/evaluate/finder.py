@@ -235,7 +235,12 @@ class NameFinder(object):
         """
         for n in names:
             definition = n.parent
-            if isinstance(definition, (tree.Function, tree.Class, tree.Module)):
+            if isinstance(definition, (compiled.CompiledObject,
+                iterable.BuiltinMethod)):
+                # TODO this if should really be removed by changing the type of
+                #      those classes.
+                yield n
+            elif definition.type in ('funcdef', 'classdef', 'file_input'):
                 yield self._evaluator.wrap(definition).name
             else:
                 yield n

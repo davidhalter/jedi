@@ -179,9 +179,11 @@ class Completion:
         scope = get_user_scope(self._module, self._position)
         if not scope.is_scope():  # Might be a flow (if/while/etc).
             scope = scope.get_parent_scope()
+        scope = self._evaluator.wrap(scope)
+        debug.dbg('global completion scope: %s', scope)
         names_dicts = global_names_dict_generator(
             self._evaluator,
-            self._evaluator.wrap(scope),
+            scope,
             self._position
         )
         completion_names = []
