@@ -31,11 +31,16 @@ class MixedObject(object):
         self._evaluator = evaluator
         self.obj = obj
         self.node_name = node_name
-        self._definition = node_name.get_definition()
+        self.definition = node_name.get_definition()
+
+    @property
+    def names_dict(self):
+        return LazyMixedNamesDict(self._evaluator, self, is_instance=False)
 
     def names_dicts(self, search_global):
+        # TODO is this needed?
         assert search_global is False
-        return [LazyMixedNamesDict(self._evaluator, self, is_instance=False)]
+        return [self.names_dict]
 
     def api_type(self):
         mappings = {
@@ -44,13 +49,13 @@ class MixedObject(object):
             'funcdef': 'function',
             'file_input': 'module',
         }
-        return mappings[self._definition.type]
+        return mappings[self.definition.type]
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, repr(self.obj))
 
     def __getattr__(self, name):
-        return getattr(self._definition, name)
+        return getattr(self.definition, name)
 
 
 class MixedName(compiled.CompiledName):

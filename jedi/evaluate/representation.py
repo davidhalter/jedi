@@ -46,6 +46,7 @@ from jedi import common
 from jedi.cache import underscore_memoization, cache_star_import
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
 from jedi.evaluate import compiled
+from jedi.evaluate.compiled import mixed
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
@@ -631,13 +632,20 @@ class FunctionExecution(Executed):
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         self._copy_dict = {}
-        new_func = helpers.deep_ast_copy(base.base_func, new_elements=self._copy_dict)
-        for child in new_func.children:
+        funcdef = base.base_func
+        if isinstance(funcdef, mixed.MixedObject):
+            # The extra information in mixed is not needed anymore. We can just
+            # unpack it and give it the tree object.
+            funcdef = funcdef.definition
+
+        # Just overwrite the old version. We don't need it anymore.
+        funcdef = helpers.deep_ast_copy(funcdef, new_elements=self._copy_dict)
+        for child in funcdef.children:
             if child.type not in ('operator', 'keyword'):
                 # Not all nodes are properly copied by deep_ast_copy.
                 child.parent = self
-        self.children = new_func.children
-        self.names_dict = new_func.names_dict
+        self.children = funcdef.children
+        self.names_dict = funcdef.names_dict
 
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator

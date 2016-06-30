@@ -199,7 +199,7 @@ class Completion:
     def _trailer_completions(self, atom_expr):
         scopes = self._evaluator.eval_element(atom_expr)
         completion_names = []
-        debug.dbg('possible completion scopes: %s', scopes)
+        debug.dbg('trailer completion scopes: %s', scopes)
         for s in scopes:
             names = []
             for names_dict in s.names_dicts(search_global=False):
