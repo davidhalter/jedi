@@ -127,17 +127,14 @@ class Completion:
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar, stack)
 
-        print(allowed_keywords, [token.tok_name[a] for a in allowed_tokens])
         completion_names = list(self._get_keyword_completion_names(allowed_keywords))
 
         if token.NAME in allowed_tokens:
             # This means that we actually have to do type inference.
 
             symbol_names = list(stack.get_node_names(grammar))
-            print('symbolnames',symbol_names)
 
             nodes = list(stack.get_nodes())
-            last_symbol = symbol_names[-1]
 
             if "import_stmt" in symbol_names:
                 level = 0

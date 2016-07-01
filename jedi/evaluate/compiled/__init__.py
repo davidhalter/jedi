@@ -303,8 +303,9 @@ class LazyNamesDict(object):
                 # The dir function can be wrong.
                 pass
 
+        is_instance = self._is_instance or fake.is_class_instance(obj)
         # ``dir`` doesn't include the type names.
-        if not inspect.ismodule(obj) and obj != type and not self._is_instance:
+        if not inspect.ismodule(obj) and obj != type and not is_instance:
             values += create(self._evaluator, type).names_dict.values()
         return values
 
