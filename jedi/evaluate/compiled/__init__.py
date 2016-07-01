@@ -83,7 +83,7 @@ class CompiledObject(Base):
     def params(self):
         params_str, ret = self._parse_function_doc()
         tokens = params_str.split(',')
-        if inspect.ismethoddescriptor(self._cls().obj):
+        if inspect.ismethoddescriptor(self.obj):
             tokens.insert(0, 'self')
         params = []
         for p in tokens:
@@ -107,20 +107,20 @@ class CompiledObject(Base):
         if fake.is_class_instance(self.obj):
             return 'instance'
 
-        cls = self._cls().obj
-        if inspect.isclass(cls):
+        obj = self.obj
+        if inspect.isclass(obj):
             return 'class'
-        elif inspect.ismodule(cls):
+        elif inspect.ismodule(obj):
             return 'module'
-        elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
-                or inspect.ismethoddescriptor(cls) or inspect.isfunction(cls):
+        elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
+                or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
             return 'function'
         raise NotImplementedError
 
     @property
     def type(self):
         """Imitate the tree.Node.type values."""
-        cls = self._cls().obj
+        cls = self._get_class()
         if inspect.isclass(cls):
             return 'classdef'
         elif inspect.ismodule(cls):
@@ -131,16 +131,23 @@ class CompiledObject(Base):
 
     @underscore_memoization
     def _cls(self):
+        """
+        We used to limit the lookups for instantiated objects like list(), but
+        this is not the case anymore. Python itself
+        """
         # Ensures that a CompiledObject is returned that is not an instance (like list)
-        if fake.is_class_instance(self.obj):
-            try:
-                c = self.obj.__class__
-            except AttributeError:
-                # happens with numpy.core.umath._UFUNC_API (you get it
-                # automatically by doing `import numpy`.
-                c = type(None)
-            return create(self._evaluator, c, self.parent)
         return self
+
+    def _get_class(self):
+        if not fake.is_class_instance(self.obj):
+            return self.obj
+
+        try:
+            return self.obj.__class__
+        except AttributeError:
+            # happens with numpy.core.umath._UFUNC_API (you get it
+            # automatically by doing `import numpy`.
+            return type
 
     @property
     def names_dict(self):
@@ -156,16 +163,11 @@ class CompiledObject(Base):
         search_global shouldn't change the fact that there's one dict, this way
         there's only one `object`.
         """
-        cls = self._cls()
-        if cls != self:
-            # If we are working with a class, the names_dict should not include
-            # class names.
-            is_instance = True
-        return [LazyNamesDict(self._evaluator, cls, is_instance)]
+        return [LazyNamesDict(self._evaluator, self, is_instance)]
 
     def get_subscope_by_name(self, name):
-        if name in dir(self._cls().obj):
-            return CompiledName(self._evaluator, self._cls(), name).parent
+        if name in dir(self.obj):
+            return CompiledName(self._evaluator, self, name).parent
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
@@ -189,7 +191,7 @@ class CompiledObject(Base):
     @property
     def name(self):
         # might not exist sometimes (raises AttributeError)
-        return FakeName(self._cls().obj.__name__, self)
+        return FakeName(self._get_class().__name__, self)
 
     def _execute_function(self, params):
         if self.type != 'funcdef':
@@ -218,7 +220,7 @@ class CompiledObject(Base):
         """
         module = self.get_parent_until()
         faked_subscopes = []
-        for name in dir(self._cls().obj):
+        for name in dir(self.obj):
             f = fake.get_faked(module.obj, self.obj, name)
             if f:
                 f.parent = self
@@ -269,7 +271,7 @@ class LazyNamesDict(object):
     """
     name_class = CompiledName
 
-    def __init__(self, evaluator, compiled_obj, is_instance):
+    def __init__(self, evaluator, compiled_obj, is_instance=False):
         self._evaluator = evaluator
         self._compiled_obj = compiled_obj
         self._is_instance = is_instance

@@ -35,7 +35,7 @@ class MixedObject(object):
 
     @property
     def names_dict(self):
-        return LazyMixedNamesDict(self._evaluator, self, is_instance=False)
+        return LazyMixedNamesDict(self._evaluator, self)
 
     def names_dicts(self, search_global):
         # TODO is this needed?
