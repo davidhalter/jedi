@@ -87,7 +87,7 @@ class TestInterpreterAPI(TestCase):
 
     def test_complete_raw_module(self):
         import os
-        self.check_interpreter_complete('os.path.join().up',
+        self.check_interpreter_complete('os.path.join("a").up',
                                         locals(),
                                         ['upper'])
 

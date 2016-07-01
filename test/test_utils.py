@@ -34,7 +34,7 @@ class TestSetupReadline(unittest.TestCase):
     def test_simple(self):
         assert self.completions('list') == ['list']
         assert self.completions('importerror') == ['ImportError']
-        s = "print BaseE"
+        s = "print(BaseE"
         assert self.completions(s) == [s + 'xception']
 
     def test_nested(self):
@@ -53,7 +53,8 @@ class TestSetupReadline(unittest.TestCase):
 
         try:
             assert self.completions('os.path.join') == ['os.path.join']
-            assert self.completions('os.path.join().upper') == ['os.path.join().upper']
+            string = 'os.path.join("a").upper'
+            assert self.completions(string) == [string]
 
             c = set(['os.' + d for d in dir(os) if d.startswith('ch')])
             assert set(self.completions('os.ch')) == set(c)
