@@ -285,6 +285,11 @@ class LazyNamesDict(object):
             getattr(self._compiled_obj.obj, name)
         except AttributeError:
             raise KeyError('%s in %s not found.' % (name, self._compiled_obj))
+        except Exception:
+            # This is a bit ugly. We're basically returning this to make
+            # lookups possible without having the actual attribute. However
+            # this makes proper completion possible.
+            return [FakeName(name, create(self._evaluator, None), is_definition=True)]
         return [self.name_class(self._evaluator, self._compiled_obj, name)]
 
     def values(self):
