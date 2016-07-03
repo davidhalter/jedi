@@ -87,7 +87,7 @@ def save_parser(path, parser, pickling=True):
 
 class ParserPickling(object):
 
-    version = 24
+    version = 25
     """
     Version number (integer) for file system cache.
 
