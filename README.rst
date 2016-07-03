@@ -30,12 +30,11 @@ implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
 which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
 It's really easy.
 
-Jedi can currently be used with the following editors:
+Jedi can currently be used with the following editors/projects:
 
 - Vim (jedi-vim_, YouCompleteMe_, deoplete-jedi_)
 - Emacs (Jedi.el_, company-mode_, elpy_, anaconda-mode_, ycmd_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
-- SynWrite_
 - TextMate_ (Not sure if it's actually working)
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
@@ -44,10 +43,9 @@ Jedi can currently be used with the following editors:
 - `GNOME Builder`_ (with support for GObject Introspection)
 - `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
 - Gedit (gedi_)
-
-And it powers the following projects:
-
 - wdb_ - Web Debugger
+
+and many more!
 
 
 Here are some pictures taken from jedi-vim_:
@@ -199,7 +197,6 @@ Acknowledgements
 .. _ycmd: https://github.com/abingham/emacs-ycmd
 .. _sublimejedi: https://github.com/srusskih/SublimeJEDI
 .. _anaconda: https://github.com/DamnWidget/anaconda
-.. _SynWrite: http://uvviewsoft.com/synjedi/
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _Kate: http://kate-editor.org

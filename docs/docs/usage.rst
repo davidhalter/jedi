@@ -68,11 +68,11 @@ Gedit:
 
 .. _other-software:
 
-Other Software Using Jedi
--------------------------
+Web Debugger:
 
-- wdb_ - Web Debugger
+- wdb_
 
+and many more!
 
 .. _repl-completion:
 
