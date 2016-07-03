@@ -44,6 +44,7 @@ Jedi can currently be used with the following editors/projects:
 - `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
 - Gedit (gedi_)
 - wdb_ - Web Debugger
+- `Eric IDE`_ (Available as a plugin)
 
 and many more!
 
@@ -206,3 +207,4 @@ Acknowledgements
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
 .. _Visual Studio Code: https://code.visualstudio.com/
 .. _gedi: https://github.com/isamert/gedi
+.. _Eric IDE: http://eric-ide.python-projects.org

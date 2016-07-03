@@ -66,7 +66,9 @@ Gedit:
 
 - gedi_
 
-.. _other-software:
+Eric IDE:
+
+- `Eric IDE`_ (Available as a plugin)
 
 Web Debugger:
 
@@ -109,3 +111,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
 .. _gedi: https://github.com/isamert/gedi
+.. _Eric IDE: http://eric-ide.python-projects.org
