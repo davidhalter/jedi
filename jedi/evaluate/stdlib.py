@@ -5,6 +5,9 @@ understand them with Jedi.
 To add a new implementation, create a function and add it to the
 ``_implemented`` dict at the bottom of this module.
 
+Note that this module exists only to implement very specific functionality in
+the standard library. The usual way to understand the standard library is the
+compiled module that returns the types for C-builtins.
 """
 import collections
 import re
@@ -198,7 +201,10 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             else:
                 _, nodes = list(arguments.unpack())[1]
                 for node in nodes:
-                    analysis.add(evaluator, 'type-error-isinstance', node)
+                    message = 'TypeError: isinstance() arg 2 must be a ' \
+                              'class, type, or tuple of classes and types, ' \
+                              'not %s.' % cls_or_tup
+                    analysis.add(evaluator, 'type-error-isinstance', node, message)
 
     return set(compiled.create(evaluator, x) for x in bool_results)
 

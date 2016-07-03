@@ -56,11 +56,11 @@ class CompiledObject(Base):
 
     @CheckAttribute
     def py__class__(self):
-        return create(self._evaluator, self.obj.__class__, parent=self.parent)
+        return create(self._evaluator, self.obj.__class__)
 
     @CheckAttribute
     def py__mro__(self):
-        return tuple(create(self._evaluator, cls, self.parent) for cls in self.obj.__mro__)
+        return tuple(create(self._evaluator, cls) for cls in self.obj.__mro__)
 
     @CheckAttribute
     def py__bases__(self):
@@ -495,7 +495,7 @@ def compiled_objects_cache(attribute_name):
         def wrapper(evaluator, obj, parent=None, module=None):
             cache = getattr(evaluator, attribute_name)
             # Do a very cheap form of caching here.
-            key = id(obj)
+            key = id(obj), id(parent)
             try:
                 return cache[key][0]
             except KeyError:
@@ -519,10 +519,14 @@ def create(evaluator, obj, parent=None, module=None):
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
-    if parent is None and not inspect.ismodule(obj):
-        parent = create(evaluator, _builtins)
+    if inspect.ismodule(obj):
+        if parent is not None:
+            # Modules don't have parents, be careful with caching: recurse.
+            return create(evaluator, obj)
+    else:
+        if parent is None and obj != _builtins:
+            return create(evaluator, obj, create(evaluator, _builtins))
 
-    if not inspect.ismodule(obj):
         faked = fake.get_faked(module and module.obj, obj)
         if faked is not None:
             faked.parent = parent
