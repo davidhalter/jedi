@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.10.0 (unreleased)
++++++++++++++++++++
+
+- Fix failure when ``module_path`` wasn't available in ``jedi.evaluate.imports.Importer._do_import``.
+
 0.9.0 (2015-04-10)
 ++++++++++++++++++
 
