@@ -98,7 +98,6 @@ class Parser(object):
     def __init__(self, grammar, source, start_symbol='file_input',
                  tokenizer=None, start_parsing=True):
         # Todo Remove start_parsing (with False)
-        start_number = grammar.symbol2number[start_symbol]
 
         self._used_names = {}
         self._scope_names_stack = [{}]
@@ -114,11 +113,6 @@ class Parser(object):
             source += '\n'
             self._added_newline = True
 
-        self.pgen_parser = PgenParser(
-            grammar, self.convert_node, self.convert_leaf,
-            self.error_recovery, start_number
-        )
-
         self._start_symbol = start_symbol
         self._grammar = grammar
 
@@ -133,7 +127,16 @@ class Parser(object):
         if self._parsed is not None:
             return self._parsed
 
-        self._parsed = self.pgen_parser.parse(tokenizer)
+        start_number = self._grammar.symbol2number[self._start_symbol]
+        pgen_parser = PgenParser(
+            self._grammar, self.convert_node, self.convert_leaf,
+            self.error_recovery, start_number
+        )
+
+        try:
+            self._parsed = pgen_parser.parse(tokenizer)
+        finally:
+            self.stack = pgen_parser.stack
 
         if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's

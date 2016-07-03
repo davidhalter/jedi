@@ -4,6 +4,7 @@ Helpers for the API
 import re
 from collections import namedtuple
 
+from jedi._compatibility import u
 from jedi.evaluate.helpers import call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize, token
@@ -52,7 +53,7 @@ def get_stack_at_position(grammar, code_lines, module, pos):
     user_stmt = module.get_statement_for_position(pos)
 
     if user_stmt is not None and user_stmt.type in ('indent', 'dedent'):
-        code = ''
+        code = u('')
     else:
         if user_stmt is None:
             user_stmt = module.get_leaf_for_position(pos, include_prefixes=True)
@@ -72,7 +73,7 @@ def get_stack_at_position(grammar, code_lines, module, pos):
         code = _get_code(code_lines, user_stmt.start_pos, pos)
         if code == ';':
             # ; cannot be parsed.
-            code = ''
+            code = u('')
 
         # Remove whitespace at the end. Necessary, because the tokenizer will parse
         # an error token (there's no new line at the end in our case). This doesn't
@@ -99,7 +100,7 @@ def get_stack_at_position(grammar, code_lines, module, pos):
     try:
         p.parse(tokenizer=tokenize_without_endmarker(code))
     except EndMarkerReached:
-        return Stack(p.pgen_parser.stack)
+        return Stack(p.stack)
 
 
 class Stack(list):

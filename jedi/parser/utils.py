@@ -6,10 +6,7 @@ import json
 import hashlib
 import gc
 import shutil
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
+import pickle
 
 from jedi import settings
 from jedi import debug

@@ -8,7 +8,7 @@ import os
 import inspect
 import types
 
-from jedi._compatibility import is_py3, builtins, unicode
+from jedi._compatibility import is_py3, builtins, unicode, is_py34
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
@@ -36,10 +36,11 @@ NOT_CLASS_TYPES = (
 
 if is_py3:
     NOT_CLASS_TYPES += (
-        types.DynamicClassAttribute,
         types.MappingProxyType,
         types.SimpleNamespace
     )
+    if is_py34:
+        NOT_CLASS_TYPES += (types.DynamicClassAttribute,)
 
 
 def _load_faked_module(module):
