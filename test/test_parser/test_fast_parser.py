@@ -478,5 +478,5 @@ def test_round_trip():
         """hahaha"""
     func''')
 
-    f = FastParser(load_grammar(), source)
+    f = FastParser(load_grammar(), u(source))
     assert f.get_parsed_node().get_code() == source

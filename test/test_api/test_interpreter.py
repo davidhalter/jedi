@@ -41,12 +41,12 @@ def test_builtin_details():
 
 
 def test_nested_resolve():
-    class X():
+    class XX():
         def x():
             pass
 
-    cls = get_completion('X', locals())
-    func = get_completion('X.x', locals())
+    cls = get_completion('XX', locals())
+    func = get_completion('XX.x', locals())
     assert func.start_pos == (cls.start_pos[0] + 1, 12)
 
 
