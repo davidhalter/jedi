@@ -7,7 +7,7 @@ Fallback to callee definition when definition not found.
 """Parenthesis closed at next line."""
 
 # Ignore these definitions for a little while, not sure if we really want them.
-# python <= 2.7
+# python <= 2.5
 
 #? isinstance
 isinstance(

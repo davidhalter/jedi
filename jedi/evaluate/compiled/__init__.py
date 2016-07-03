@@ -104,9 +104,6 @@ class CompiledObject(Base):
         return _parse_function_doc(self.doc)
 
     def api_type(self):
-        if fake.is_class_instance(self.obj):
-            return 'instance'
-
         obj = self.obj
         if inspect.isclass(obj):
             return 'class'
@@ -115,7 +112,8 @@ class CompiledObject(Base):
         elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
                 or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
             return 'function'
-        raise NotImplementedError
+        # Everything else...
+        return 'instance'
 
     @property
     def type(self):
@@ -190,8 +188,11 @@ class CompiledObject(Base):
 
     @property
     def name(self):
-        # might not exist sometimes (raises AttributeError)
-        return FakeName(self._get_class().__name__, self)
+        try:
+            name = self._get_class().__name__
+        except AttributeError:
+            name = repr(self.obj)
+        return FakeName(name, self)
 
     def _execute_function(self, params):
         if self.type != 'funcdef':
