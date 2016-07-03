@@ -47,6 +47,10 @@ b
 class Employee:
     pass
 
+# The typing library is not installable for Python 2.6, therefore ignore the
+# following tests.
+# python > 2.6
+
 from typing import List
 x = []   # type: List[Employee]
 #? Employee()
