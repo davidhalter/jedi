@@ -20,7 +20,7 @@ make it work.
 General Features
 ----------------
 
-- python 2.6+ and 3.2+ support
+- python 2.6+ and 3.3+ support
 - ignores syntax errors and wrong indentation
 - can deal with complex module / function / class structures
 - virtualenv support
