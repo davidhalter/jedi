@@ -386,3 +386,18 @@ recursion1([1,2])[0]
 for x in [1] + ['']:
     #? int() str()
     x
+
+# -----------------
+# For loops with attribute assignment.
+# -----------------
+def test_func():
+    x = 'asdf'
+    for x.something in [6,7,8]:
+        pass
+    #? str()
+    x
+
+    for x.something, b in [[6, 6.0]]:
+        pass
+    #? str()
+    x

@@ -377,6 +377,10 @@ class Name(Leaf):
                                    self.start_pos[0], self.start_pos[1])
 
     def is_definition(self):
+        if self.parent.type in ('power', 'atom_expr'):
+            # In `self.x = 3` self is not a definition, but x is.
+            return False
+
         stmt = self.get_definition()
         if stmt.type in ('funcdef', 'classdef', 'file_input', 'param'):
             return self == stmt.name

@@ -819,7 +819,6 @@ def create_index_types(evaluator, index):
     Handles slices in subscript nodes.
     """
     if tree.is_node(index, 'subscript'):  # subscript is a slice operation.
-        start, stop, step = None, None, None
         result = []
         for el in index.children:
             if el == ':':
