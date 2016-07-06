@@ -952,23 +952,28 @@ def _create_params(parent, argslist_list):
 
     if first.type in ('name', 'tfpdef'):
         if check_python2_nested_param(first):
-            return []
+            return [first]
         else:
             return [Param([first], parent)]
+    elif first == '*':
+        return [first]
     else:  # argslist is a `typedargslist` or a `varargslist`.
         children = first.children
-        params = []
+        new_children = []
         start = 0
         # Start with offset 1, because the end is higher.
         for end, child in enumerate(children + [None], 1):
             if child is None or child == ',':
-                new_children = children[start:end]
-                if new_children:  # Could as well be comma and then end.
-                    if check_python2_nested_param(new_children[0]):
-                        continue
-                    params.append(Param(new_children, parent))
+                param_children = children[start:end]
+                if param_children:  # Could as well be comma and then end.
+                    if check_python2_nested_param(param_children[0]):
+                        new_children += param_children
+                    elif param_children[0] == '*' and param_children[1] == ',':
+                        new_children += param_children
+                    else:
+                        new_children.append(Param(param_children, parent))
                     start = end
-        return params
+        return new_children
 
 
 class Function(ClassOrFunc):
@@ -995,8 +1000,7 @@ class Function(ClassOrFunc):
 
     @property
     def params(self):
-        # Contents of parameter lit minus the leading <Operator: (> and the trailing <Operator: )>.
-        return self.children[2].children[1:-1]
+        return [p for p in self.children[2].children if p.type == 'param']
 
     @property
     def name(self):
