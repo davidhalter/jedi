@@ -3,6 +3,7 @@ Used only for REPL Completion.
 """
 
 import inspect
+import os
 
 from jedi import common
 from jedi.parser.fast import FastParser
@@ -105,7 +106,8 @@ def find_syntax_node_name(evaluator, python_object):
     except TypeError:
         # The type might not be known (e.g. class_with_dict.__weakref__)
         return None
-    if path is None:
+    if path is None or not os.path.exists(path):
+        # The path might not exist or be e.g. <stdin>.
         return None
 
     module = _load_module(evaluator, path, python_object)

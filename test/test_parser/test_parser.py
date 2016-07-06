@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import sys
+from textwrap import dedent
 
 import jedi
 from jedi._compatibility import u, is_py3
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
-from textwrap import dedent
 
 
 def test_user_statement_on_import():
