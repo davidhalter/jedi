@@ -346,6 +346,11 @@ class Importer(object):
         else:
             module = _load_module(self._evaluator, module_path, source, sys_path)
 
+        if module is None:
+            # The file might raise an ImportError e.g. and therefore not be
+            # importable.
+            return set()
+
         self._evaluator.modules[module_name] = module
         return set([module])
 
