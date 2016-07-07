@@ -232,10 +232,19 @@ class Parser(object):
         endmarker = self._parsed.children[-1]
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
-        if endmarker.prefix.endswith('\n'):
-            endmarker.prefix = endmarker.prefix[:-1]
-            last_line = re.sub('.*\n', '', endmarker.prefix)
-            endmarker._start_pos = endmarker._start_pos[0] - 1, len(last_line)
+        prefix = endmarker.prefix
+        if prefix.endswith('\n'):
+            endmarker.prefix = prefix = prefix[:-1]
+            last_end = 0
+            if '\n' not in prefix:
+                # Basically if the last line doesn't end with a newline. we
+                # have to add the previous line's end_position.
+                try:
+                    last_end = endmarker.get_previous_leaf().end_pos[1]
+                except IndexError:
+                    pass
+            last_line = re.sub('.*\n', '', prefix)
+            endmarker._start_pos = endmarker._start_pos[0] - 1, last_end + len(last_line)
         else:
             try:
                 newline = endmarker.get_previous_leaf()
@@ -251,6 +260,7 @@ class Parser(object):
                         # will be no previous leaf. So just ignore it.
                         break
                 elif newline.value != '\n':
+                    # TODO REMOVE, error recovery was simplified.
                     # This may happen if error correction strikes and removes
                     # a whole statement including '\n'.
                     break

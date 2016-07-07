@@ -103,3 +103,5 @@ def test_end_newlines():
     test('a\n#comment', (2, 8))
     test('a#comment', (1, 9))
     test('def a():\n pass', (2, 5))
+
+    test('def a(', (1, 6))

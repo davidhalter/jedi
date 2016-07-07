@@ -369,3 +369,11 @@ def test_different_caller():
 
     assert_signature('(str)(', 'str', 0)
     assert_signature('(str)()', 'str', 0, column=len('(str)('))
+
+
+def test_in_function():
+    code = dedent('''\
+    class X():
+        @property
+        def func(''')
+    assert not Script(code).call_signatures()
