@@ -176,16 +176,16 @@ import datetime as
 
 call = ''
 invalid = .call
-#?
+#? 
 invalid
 
 invalid = call?.call
-#?
+#? str()
 invalid
 
 # comma
 invalid = ,call
-#?
+#? str()
 invalid
 
 

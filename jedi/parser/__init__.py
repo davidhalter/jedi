@@ -350,21 +350,6 @@ class ParserWithRecovery(Parser):
                 stack[-1][2][1].append(error_leaf)
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
-        def clear_names(children):
-            for c in children:
-                try:
-                    clear_names(c.children)
-                except AttributeError:
-                    if isinstance(c, pt.Name):
-                        try:
-                            self._scope_names_stack[-1][c.value].remove(c)
-                            self._used_names[c.value].remove(c)
-                        except ValueError:
-                            pass  # This may happen with CompFor.
-
-        for dfa, state, node in stack[start_index:]:
-            clear_names(children=node[1])
-
         failed_stack = []
         found = False
         all_nodes = []

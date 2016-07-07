@@ -3,10 +3,10 @@ Renaming tests. This means search for usages.
 I always leave a little bit of space to add room for additions, because the
 results always contain position informations.
 """
-#< 4 (0,4), (3,0), (5,0), (17,0)
+#< 4 (0,4), (3,0), (5,0), (17,0), (12,4), (14,5), (15,0)
 def abc(): pass
 
-#< 0 (-3,4), (0,0), (2,0), (14,0)
+#< 0 (-3,4), (0,0), (2,0), (14,0), (9,4), (11,5), (12,0)
 abc.d.a.bsaasd.abc.d
 
 abc
@@ -20,7 +20,7 @@ if 1:
 else:
     (abc) = 
 abc = 
-#< (-17,4), (-14,0), (-12,0), (0,0)
+#< (-17,4), (-14,0), (-12,0), (0,0), (-2,0), (-3,5), (-5,4)
 abc
 
 abc = 5
