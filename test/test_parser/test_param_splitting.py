@@ -23,12 +23,12 @@ def assert_params(param_string, **wanted_dct):
 
 
 def test_split_params_with_separation_star():
-    assert_params('x, y=1, *, z=3', x=None, y='1', z='3')
-    assert_params('*, x', x=None)
-    assert_params('*')
+    assert_params(u'x, y=1, *, z=3', x=None, y='1', z='3')
+    assert_params(u'*, x', x=None)
+    assert_params(u'*')
 
 
 def test_split_params_with_stars():
-    assert_params('x, *args', x=None, args=None)
-    assert_params('**kwargs', kwargs=None)
-    assert_params('*args, **kwargs', args=None, kwargs=None)
+    assert_params(u'x, *args', x=None, args=None)
+    assert_params(u'**kwargs', kwargs=None)
+    assert_params(u'*args, **kwargs', args=None, kwargs=None)

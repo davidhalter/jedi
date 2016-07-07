@@ -216,5 +216,5 @@ def test_backslash_dos_style():
 
 
 def test_started_lambda_stmt():
-    p = ParserWithRecovery(load_grammar(), 'lambda a, b: a i')
+    p = ParserWithRecovery(load_grammar(), u'lambda a, b: a i')
     assert p.get_parsed_node().children[0].type == 'error_node'
