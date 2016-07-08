@@ -3,6 +3,7 @@ Helpers for the API
 """
 import re
 from collections import namedtuple
+from textwrap import dedent
 
 from jedi._compatibility import u
 from jedi.evaluate.helpers import call_of_leaf
@@ -28,9 +29,6 @@ def get_on_completion_name(lines, position):
 
 
 def _get_code(code_lines, start_pos, end_pos):
-    """
-    :param code_start_pos: is where the code starts.
-    """
     # Get relevant lines.
     lines = code_lines[start_pos[0] - 1:end_pos[0]]
     # Remove the parts at the end of the line.
@@ -70,7 +68,15 @@ def get_stack_at_position(grammar, code_lines, module, pos):
             # impossible.
             raise OnErrorLeaf(user_stmt)
 
-        code = _get_code(code_lines, user_stmt.start_pos, pos)
+        start_pos = user_stmt.start_pos
+        if user_stmt.first_leaf() == '@':
+            # TODO this once again proves that just using user_stmt.get_code
+            #      would probably be nicer than _get_code.
+            # Remove the indent to have a statement that is aligned (properties
+            # on the same line as function)
+            start_pos = start_pos[0], 0
+
+        code = _get_code(code_lines, start_pos, pos)
         if code == ';':
             # ; cannot be parsed.
             code = u('')
@@ -78,7 +84,9 @@ def get_stack_at_position(grammar, code_lines, module, pos):
         # Remove whitespace at the end. Necessary, because the tokenizer will parse
         # an error token (there's no new line at the end in our case). This doesn't
         # alter any truth about the valid tokens at that position.
-        code = code.strip('\t ')
+        code = code.rstrip('\t ')
+        # Remove as many indents from **all** code lines as possible.
+        code = dedent(code)
 
     class EndMarkerReached(Exception):
         pass

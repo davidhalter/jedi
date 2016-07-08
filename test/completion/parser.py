@@ -1,5 +1,5 @@
 """
-Issues with the parser not the completion engine should be here.
+Issues with the parser and not the type inference should be part of this file.
 """
 
 class IndentIssues():
@@ -34,3 +34,10 @@ complete to definition.
 definition = 0
 #? ['definition']
 str(def
+
+
+# It might be hard to determine the context
+class Foo(object):
+    @property
+    #? ['str']
+    def bar(str
