@@ -355,7 +355,11 @@ class Importer(object):
         return set([module])
 
     def _generate_name(self, name):
-        return helpers.FakeName(name, parent=self.module)
+        # Create a pseudo import to be able to follow them.
+        name = helpers.FakeName(name)
+        imp = helpers.FakeImport(name, parent=self.module)
+        name.parent = imp
+        return name
 
     def _get_module_names(self, search_path=None):
         """
