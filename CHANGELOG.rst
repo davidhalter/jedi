@@ -3,6 +3,13 @@
 Changelog
 ---------
 
+0.10.0 (2016-06-)
++++++++++++++++++
+
+- Basic type inference for ``yield from`` and ``star unpacking``.
+- PEP 484 support (most of the important features of it). Thanks Claude! (@reinhrst)
+- Again a lot of internal changes.
+
 0.9.0 (2015-04-10)
 ++++++++++++++++++
 

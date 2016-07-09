@@ -34,8 +34,8 @@ Supported Python Features
 |jedi| supports many of the widely used Python features:
 
 - builtins
-- multiple returns or yields
-- tuple assignments / array indexing / dictionary indexing
+- returns, yields, yield from
+- tuple assignments / array indexing / dictionary indexing / star unpacking
 - with-statement / exception handling
 - ``*args`` / ``**kwargs``
 - decorators / lambdas / closures
