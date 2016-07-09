@@ -18,17 +18,17 @@ def test_goto_definition_on_import():
 def test_complete_on_empty_import():
     assert Script("from datetime import").completions()[0].name == 'import'
     # should just list the files in the directory
-    assert 10 < len(Script("from .", path='').completions()) < 30
+    assert 10 < len(Script("from .", path='whatever.py').completions()) < 30
 
     # Global import
-    assert len(Script("from . import", 1, 5, '').completions()) > 30
+    assert len(Script("from . import", 1, 5, 'whatever.py').completions()) > 30
     # relative import
-    assert 10 < len(Script("from . import", 1, 6, '').completions()) < 30
+    assert 10 < len(Script("from . import", 1, 6, 'whatever.py').completions()) < 30
 
     # Global import
-    assert len(Script("from . import classes", 1, 5, '').completions()) > 30
+    assert len(Script("from . import classes", 1, 5, 'whatever.py').completions()) > 30
     # relative import
-    assert 10 < len(Script("from . import classes", 1, 6, '').completions()) < 30
+    assert 10 < len(Script("from . import classes", 1, 6, 'whatever.py').completions()) < 30
 
     wanted = set(['ImportError', 'import', 'ImportWarning'])
     assert set([c.name for c in Script("import").completions()]) == wanted

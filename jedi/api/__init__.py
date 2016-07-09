@@ -100,9 +100,11 @@ class Script(object):
             encoding = source_encoding
 
         self._orig_path = path
-        self.path = None if path is None else os.path.abspath(path)
+        # An empty path (also empty string) should always result in no path.
+        self.path = os.path.abspath(path) if path else None
 
         if source is None:
+            # TODO add a better warning than the traceback!
             with open(path) as f:
                 source = f.read()
 
@@ -131,8 +133,8 @@ class Script(object):
 
     def _get_module(self):
         cache.invalidate_star_import_cache(self._path)
-        parser = FastParser(self._grammar, self._source, self._path)
-        save_parser(self._path, parser, pickling=False)
+        parser = FastParser(self._grammar, self._source, self.path)
+        save_parser(self.path, parser, pickling=False)
 
         module = self._evaluator.wrap(parser.module)
         imports.add_module(self._evaluator, unicode(module.name), module)

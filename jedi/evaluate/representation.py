@@ -852,7 +852,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
     def _get_init_directory(self):
         for suffix, _, _ in imp.get_suffixes():
             ending = '__init__' + suffix
-            if self.py__file__().endswith(ending):
+            py__file__ = self.py__file__()
+            if py__file__ is not None and py__file__.endswith(ending):
                 # Remove the ending, including the separator.
                 return self.py__file__()[:-len(ending) - 1]
         return None

@@ -201,20 +201,21 @@ class Importer(object):
                 base = []
             if level > len(base):
                 path = module.py__file__()
-                import_path = list(import_path)
-                for i in range(level):
-                    path = os.path.dirname(path)
-                dir_name = os.path.basename(path)
-                # This is not the proper way to do relative imports. However, since
-                # Jedi cannot be sure about the entry point, we just calculate an
-                # absolute path here.
-                if dir_name:
-                    import_path.insert(0, dir_name)
-                else:
-                    _add_error(self._evaluator, import_path[-1])
-                    import_path = []
-                    # TODO add import error.
-                    debug.warning('Attempted relative import beyond top-level package.')
+                if path is not None:
+                    import_path = list(import_path)
+                    for i in range(level):
+                        path = os.path.dirname(path)
+                    dir_name = os.path.basename(path)
+                    # This is not the proper way to do relative imports. However, since
+                    # Jedi cannot be sure about the entry point, we just calculate an
+                    # absolute path here.
+                    if dir_name:
+                        import_path.insert(0, dir_name)
+                    else:
+                        _add_error(self._evaluator, import_path[-1])
+                        import_path = []
+                        # TODO add import error.
+                        debug.warning('Attempted relative import beyond top-level package.')
             else:
                 # Here we basically rewrite the level to 0.
                 import_path = tuple(base) + import_path
