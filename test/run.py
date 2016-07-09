@@ -240,8 +240,8 @@ def skip_python_version(line):
         '==': 'eq',
         '<=': 'le',
         '>=': 'ge',
-        '<': 'gk',
-        '>': 'lt',
+        '<': 'lt',
+        '>': 'gt',
     }
     # check for python minimal version number
     match = re.match(r" *# *python *([<>]=?|==) *(\d+(?:\.\d+)?)$", line)

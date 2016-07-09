@@ -677,11 +677,24 @@ class FunctionExecution(Executed):
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
             else:
-                types |= self._evaluator.eval_element(r.children[1])
+                if check_yields:
+                    types |= iterable.unite(self._eval_yield(r))
+                else:
+                    types |= self._evaluator.eval_element(r.children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
         return types
+
+    def _eval_yield(self, yield_expr):
+        element = yield_expr.children[1]
+        if element.type == 'yield_arg':
+            # It must be a yield from.
+            yield_from_types = self._evaluator.eval_element(element.children[1])
+            for result in iterable.py__iter__(self._evaluator, yield_from_types, element):
+                yield result
+        else:
+            yield self._evaluator.eval_element(element)
 
     # TODO add execution_recursion_decorator?!
     def get_yield_types(self):
@@ -716,7 +729,8 @@ class FunctionExecution(Executed):
             if for_stmt is None:
                 # No for_stmt, just normal yields.
                 for yield_ in yields:
-                    yield evaluator.eval_element(yield_.children[1])
+                    for result in self._eval_yield(yield_):
+                        yield result
             else:
                 input_node = for_stmt.get_input_node()
                 for_types = evaluator.eval_element(input_node)
@@ -725,7 +739,8 @@ class FunctionExecution(Executed):
                     dct = {str(for_stmt.children[1]): index_types}
                     evaluator.predefined_if_name_dict_dict[for_stmt] = dct
                     for yield_in_same_for_stmt in yields:
-                        yield evaluator.eval_element(yield_in_same_for_stmt.children[1])
+                        for result in self._eval_yield(yield_in_same_for_stmt):
+                            yield result
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def names_dicts(self, search_global):
