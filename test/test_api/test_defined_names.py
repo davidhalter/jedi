@@ -2,19 +2,19 @@
 Tests for `api.defined_names`.
 """
 
-import textwrap
+from textwrap import dedent
 
-from jedi import api
+from jedi import defined_names, names
 from ..helpers import TestCase
 
 
 class TestDefinedNames(TestCase):
-    def assert_definition_names(self, definitions, names):
-        assert [d.name for d in definitions] == names
+    def assert_definition_names(self, definitions, names_):
+        assert [d.name for d in definitions] == names_
 
-    def check_defined_names(self, source, names):
-        definitions = api.names(textwrap.dedent(source))
-        self.assert_definition_names(definitions, names)
+    def check_defined_names(self, source, names_):
+        definitions = names(dedent(source))
+        self.assert_definition_names(definitions, names_)
         return definitions
 
     def test_get_definitions_flat(self):
@@ -76,7 +76,17 @@ class TestDefinedNames(TestCase):
 
 def test_follow_imports():
     # github issue #344
-    imp = api.defined_names('import datetime')[0]
+    imp = defined_names('import datetime')[0]
     assert imp.name == 'datetime'
     datetime_names = [str(d.name) for d in imp.defined_names()]
     assert 'timedelta' in datetime_names
+
+
+def test_names_twice():
+    source = dedent('''
+    def lol():
+        pass
+    ''')
+
+    defs = names(source=source)
+    assert defs[0].defined_names() == []

@@ -58,6 +58,9 @@ def filter_definition_names(names, origin, position=None):
     Filter names that are actual definitions in a scope. Names that are just
     used will be ignored.
     """
+    if not names:
+        return []
+
     # Just calculate the scope from the first
     stmt = names[0].get_definition()
     scope = stmt.get_parent_scope()
