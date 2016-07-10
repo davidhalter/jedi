@@ -1487,7 +1487,7 @@ def _defined_names(current):
     if is_node(current, 'testlist_star_expr', 'testlist_comp', 'exprlist'):
         for child in current.children[::2]:
             names += _defined_names(child)
-    elif is_node(current, 'atom'):
+    elif is_node(current, 'atom', 'star_expr'):
         names += _defined_names(current.children[1])
     elif is_node(current, 'power', 'atom_expr'):
         if current.children[-2] != '**':  # Just if there's no operation

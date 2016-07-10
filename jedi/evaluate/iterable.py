@@ -533,6 +533,9 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
         # This is something that is not yet supported, would also be difficult
         # to write into a dict.
         return {}
+    elif exprlist.type == 'star_expr':  # `a, *b, c = x` type unpackings
+        # Currently we're not supporting them.
+        return {}
     raise NotImplementedError
 
 

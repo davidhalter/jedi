@@ -401,3 +401,30 @@ def test_func():
         pass
     #? str()
     x
+
+
+# -----------------
+# PEP 3132 Extended Iterable Unpacking (star unpacking)
+# -----------------
+
+a, *b, c = [1, 'b', list, dict]
+#? int()
+a
+#? str()
+b
+#? list
+c
+
+# Not valid syntax
+a, *b, *c = [1, 'd', list]
+#? int()
+a
+#? str()
+b
+#? list
+c
+
+lc = [x for a, *x in [(1, '', 1.0)]]
+
+#?
+lc[0][0]
