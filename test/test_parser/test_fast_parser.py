@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+import pytest
+
 import jedi
 from jedi._compatibility import u
 from jedi import cache
@@ -482,6 +484,7 @@ def test_round_trip():
     assert f.get_parsed_node().get_code() == source
 
 
+@pytest.mark.xfail()
 def test_parentheses_in_string():
     code = dedent('''
     def x():
