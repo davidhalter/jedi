@@ -196,7 +196,7 @@ class ParserNode(object):
 
         return self.parser.module.children[0].start_pos[1]
 
-    def add_node(self, node, line_offset, indent):
+    def add_node(self, node, start_line, indent):
         """
         Adding a node means adding a node that was either just parsed or one
         that can be reused.
@@ -207,12 +207,12 @@ class ParserNode(object):
         if (self._indent >= indent or not self._is_class_or_def) and \
                 not self.is_root_node():
             self.close()
-            return self.parent.add_node(node, line_offset, indent)
+            return self.parent.add_node(node, start_line, indent)
 
         # Changing the line offsets is very important, because if they don't
         # fit, all the start_pos values will be wrong.
         m = node.parser.module
-        node.parser.position_modifier.line = line_offset
+        node.parser.position_modifier.line = start_line - 1
         self._fast_module.modules.append(m)
         node.parent = self
 
@@ -386,7 +386,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             source += '\n'
             added_newline = True
 
-        next_line_offset = line_offset = 0
+        next_code_part_end_line = code_part_end_line = 1
         start = 0
         nodes = list(self.root_node.all_sub_nodes())
         # Now we can reset the node, because we have all the old nodes.
@@ -395,31 +395,35 @@ class FastParser(use_metaclass(CachedFastParser)):
         last_end_line = 1
 
         for code_part in self._split_parts(source):
-            next_line_offset += code_part.count('\n')
+            next_code_part_end_line += code_part.count('\n')
             # If the last code part parsed isn't equal to the current end_pos,
             # we know that the parser went further (`def` start in a
             # docstring). So just parse the next part.
-            if line_offset + 1 == last_end_line:
-                self._parse_part(code_part, source[start:], line_offset, nodes)
+            if code_part_end_line == last_end_line:
+                self._parse_part(code_part, source[start:], code_part_end_line, nodes)
             else:
+                self.number_of_misses += 1
                 # Means that some lines where not fully parsed. Parse it now.
                 # This is a very rare case. Should only happens with very
                 # strange code bits.
-                self.number_of_misses += 1
-                while last_end_line < next_line_offset + 1:
-                    line_offset = last_end_line - 1
+                while last_end_line < next_code_part_end_line:
+                    code_part_end_line = last_end_line
                     # We could calculate the src in a more complicated way to
                     # make caching here possible as well. However, this is
                     # complicated and error-prone. Since this is not very often
                     # called - just ignore it.
-                    src = ''.join(self._lines[line_offset:])
-                    self._parse_part(code_part, src, line_offset, nodes)
+                    src = ''.join(self._lines[code_part_end_line - 1:])
+                    self._parse_part(code_part, src, code_part_end_line, nodes)
                     last_end_line = self.current_node.parser.module.end_pos[0]
-
+                debug.dbg("While parsing %s, starting with line %s wasn't included in split.",
+                          self.module_path, code_part_end_line)
+                #assert code_part_end_line > last_end_line
+                # This means that the parser parsed faster than the last given
+                # `code_part`.
                 debug.dbg('While parsing %s, line %s slowed down the fast parser.',
-                          self.module_path, line_offset + 1)
+                          self.module_path, code_part_end_line)
 
-            line_offset = next_line_offset
+            code_part_end_line = next_code_part_end_line
             start += len(code_part)
 
             last_end_line = self.current_node.parser.module.end_pos[0]
@@ -437,7 +441,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                   % (self.module_path, self.number_parsers_used,
                      self.number_of_splits))
 
-    def _parse_part(self, source, parser_code, line_offset, nodes):
+    def _parse_part(self, source, parser_code, code_part_end_line, nodes):
         """
         Side effect: Alters the list of nodes.
         """
@@ -453,15 +457,15 @@ class FastParser(use_metaclass(CachedFastParser)):
             self.number_parsers_used += 1
             p = ParserWithRecovery(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
 
-            end = line_offset + p.module.end_pos[0]
-            used_lines = self._lines[line_offset:end - 1]
+            end = code_part_end_line - 1 + p.module.end_pos[0]
+            used_lines = self._lines[code_part_end_line - 1:end - 1]
             code_part_actually_used = ''.join(used_lines)
 
             node = ParserNode(self.module, p, code_part_actually_used)
 
         indent = len(parser_code) - len(parser_code.lstrip('\t '))
 
-        self.current_node.add_node(node, line_offset, indent)
+        self.current_node.add_node(node, code_part_end_line, indent)
         self.current_node = node
 
 

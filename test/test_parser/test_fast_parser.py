@@ -480,3 +480,14 @@ def test_round_trip():
 
     f = FastParser(load_grammar(), u(source))
     assert f.get_parsed_node().get_code() == source
+
+
+def test_parentheses_in_string():
+    code = dedent('''
+    def x():
+        '('
+
+    import abc
+
+    abc.''')
+    check_fp(code, 2, 1, 1)
