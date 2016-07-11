@@ -102,7 +102,12 @@ def call_of_leaf(leaf, cut_own_trailer=False):
     power.children[cut:] = []
 
     if power.type == 'error_node':
-        transformed = tree.Node('power', power.children)
+        start = index
+        while True:
+            start -= 1
+            if power.children[start].type != 'trailer':
+                break
+        transformed = tree.Node('power', power.children[start:])
         transformed.parent = power.parent
         return transformed
 

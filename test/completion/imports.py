@@ -49,6 +49,8 @@ def scope_nested():
 
     #? float()
     import_tree.pkg.mod1.a
+    #? ['a', '__name__', '__package__', '__file__', '__doc__']
+    a = import_tree.pkg.mod1.
 
     import import_tree.random
     #? set
