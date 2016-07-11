@@ -890,7 +890,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
                         # modules on sys_path or whatever the search_path is.
                         paths = set()
                         for s in search_path:
-                            other = os.path.join(s, unicode(self.name))
+                            other = os.path.join(s, unicode(self.py__name__()).replace('.', '/'))
+
                             if os.path.isdir(other):
                                 paths.add(other)
                         return list(paths)
