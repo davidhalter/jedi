@@ -30,6 +30,14 @@ if 2:
     ass
 
 # -----------------
+# invalid arguments
+# -----------------
+
+if isinstance(wrong, str()):
+    #?
+    wrong
+
+# -----------------
 # in functions
 # -----------------
 
