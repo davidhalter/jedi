@@ -516,7 +516,7 @@ class Evaluator(object):
                 ))
 
         scope = name.get_parent_scope()
-        if tree.is_node(name.parent, 'trailer'):
+        if tree.is_node(name.parent, 'trailer') and name.parent.children[0] == '.':
             call = helpers.call_of_leaf(name, cut_own_trailer=True)
             types = self.eval_element(call)
             return resolve_implicit_imports(iterable.unite(
