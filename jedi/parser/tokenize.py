@@ -303,8 +303,14 @@ def generate_tokens(readline, use_exact_op_types=False):
                 elif token in ')]}':
                     paren_level -= 1
 
+                try:
+                    # This check is needed in any case to check if it's a valid
+                    # operator or just some random unicode character.
+                    exact_type = opmap[token]
+                except KeyError:
+                    exact_type = typ = ERRORTOKEN
                 if use_exact_op_types:
-                    typ = opmap[token]
+                    typ = exact_type
                 else:
                     typ = OP
                 yield TokenInfo(typ, token, spos, prefix)
