@@ -218,7 +218,7 @@ class Importer(object):
                         debug.warning('Attempted relative import beyond top-level package.')
             else:
                 # Here we basically rewrite the level to 0.
-                import_path = tuple(base) + import_path
+                import_path = tuple(base) + tuple(import_path)
         self.import_path = import_path
 
     @property
