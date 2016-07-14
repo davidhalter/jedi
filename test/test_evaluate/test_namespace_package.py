@@ -51,3 +51,15 @@ def test_namespace_package():
                 completion = c
         solution = "statement: foo = '%s'" % solution
         assert completion.description == solution
+
+
+def test_nested_namespace_package():
+    CODE = 'from nested_namespaces.namespace.pkg import CONST'
+
+    sys_path = [dirname(__file__)]
+
+    script = jedi.Script(sys_path=sys_path, source=CODE, line=1, column=45)
+
+    result = script.goto_definitions()
+
+    assert len(result) == 1
