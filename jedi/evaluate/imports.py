@@ -294,9 +294,6 @@ class Importer(object):
                 return self._evaluator.find_types(base, 'path')
 
             try:
-                # It's possible that by giving it always the sys path (and not
-                # the __path__ attribute of the parent, we get wrong results
-                # and nested namespace packages don't work.  But I'm not sure.
                 paths = base.py__path__(sys_path)
             except AttributeError:
                 # The module is not a package.
