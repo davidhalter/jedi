@@ -821,7 +821,11 @@ def create_index_types(evaluator, index):
     """
     Handles slices in subscript nodes.
     """
-    if tree.is_node(index, 'subscript'):  # subscript is a slice operation.
+    if index == ':':
+        # Like array[:]
+        return set([Slice(evaluator, None, None, None)])
+    elif tree.is_node(index, 'subscript'):  # subscript is a slice operation.
+        # Like array[:3]
         result = []
         for el in index.children:
             if el == ':':
@@ -835,4 +839,6 @@ def create_index_types(evaluator, index):
         result += [None] * (3 - len(result))
 
         return set([Slice(evaluator, *result)])
+
+    # No slices
     return evaluator.eval_element(index)

@@ -378,7 +378,7 @@ class Evaluator(object):
                 pass
             else:
                 if comp_for == ':':
-                    # Dict comprehensions have it at the 3rd index.
+                    # Dict comprehensions have a colon at the 3rd index.
                     try:
                         comp_for = c[1].children[3]
                     except IndexError:
