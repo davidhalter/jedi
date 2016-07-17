@@ -26,6 +26,9 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
 
 
+MAX_PARAM_SEARCHES = 10
+
+
 class ParamListener(object):
     """
     This listener is used to get the params for a function.
@@ -52,9 +55,6 @@ def search_params(evaluator, param):
     is.
     """
     if not settings.dynamic_params:
-        return set()
-
-    if evaluator.dynamic_params_depth == settings.max_dynamic_params_depth:
         return set()
 
     evaluator.dynamic_params_depth += 1
@@ -122,6 +122,12 @@ def search_function_call(evaluator, func):
         for mod in imports.get_modules_containing_name(evaluator, [current_module], func_name):
             for name, trailer in get_possible_nodes(mod, func_name):
                 i += 1
+
+                # This is a simple way to stop Jedi's dynamic param recursion
+                # from going wild: The deeper Jedi's in the recursin, the less
+                # code should be evaluated.
+                if i * evaluator.dynamic_params_depth > MAX_PARAM_SEARCHES:
+                    return listener.param_possibilities
 
                 for typ in evaluator.goto_definitions(name):
                     undecorated = undecorate(typ)

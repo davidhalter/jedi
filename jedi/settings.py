@@ -208,12 +208,6 @@ max_executions = 250
 A maximum amount of time, the completion may use.
 """
 
-max_dynamic_params_depth = 3
-"""
-A maximum amount of a recursive search function calls, when the type of a
-parameter is needed.
-"""
-
 scale_call_signatures = 0.1
 """
 Because call_signatures is normally used on every single key hit, it has
