@@ -664,6 +664,9 @@ class ErrorNode(BaseNode):
     __slots__ = ()
     type = 'error_node'
 
+    def nodes_to_execute(self, last_added=False):
+        return []
+
 
 class ErrorLeaf(LeafWithNewLines):
     """
