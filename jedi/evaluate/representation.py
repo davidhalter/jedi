@@ -553,8 +553,10 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 # Create param array.
                 if isinstance(f, Function):
                     old_func = f  # TODO this is just hacky. change.
-                else:
+                elif f.type == 'funcdef':
                     old_func = Function(self._evaluator, f, is_decorated=True)
+                else:
+                    old_func = f
 
                 wrappers = self._evaluator.execute_evaluated(decorator, old_func)
                 if not len(wrappers):
