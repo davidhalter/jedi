@@ -538,7 +538,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 if trailer:
                     # Create a trailer and evaluate it.
                     trailer = tree.Node('trailer', trailer)
-                    # TODO WTF WHY IS THIS CHANGING PARENTS
                     trailer.parent = dec
                     dec_results = self._evaluator.eval_trailer(dec_results, trailer)
 
