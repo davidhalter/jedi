@@ -89,6 +89,7 @@ class Evaluator(object):
         self.mixed_cache = {}  # see `evaluate.compiled.mixed.create()`
         self.analysis = []
         self.predefined_if_name_dict_dict = {}
+        self.dynamic_params_depth = 0
         self.is_analysis = False
 
         if sys_path is None:

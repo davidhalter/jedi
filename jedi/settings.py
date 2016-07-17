@@ -63,6 +63,7 @@ definitely worse in some cases. But a completion should also be fast.
 .. autodata:: max_function_recursion_level
 .. autodata:: max_executions_without_builtins
 .. autodata:: max_executions
+.. autodata:: max_dynamic_params_depth
 .. autodata:: scale_call_signatures
 
 
@@ -205,6 +206,12 @@ max_executions_without_builtins = 200
 max_executions = 250
 """
 A maximum amount of time, the completion may use.
+"""
+
+max_dynamic_params_depth = 3
+"""
+A maximum amount of a recursive search function calls, when the type of a
+parameter is needed.
 """
 
 scale_call_signatures = 0.1

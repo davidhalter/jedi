@@ -52,17 +52,24 @@ def search_params(evaluator, param):
     is.
     """
     if not settings.dynamic_params:
-        return []
+        return set()
 
-    func = param.get_parent_until(tree.Function)
-    debug.dbg('Dynamic param search for %s in %s.', param, str(func.name), color='MAGENTA')
-    # Compare the param names.
-    names = [n for n in search_function_call(evaluator, func)
-             if n.value == param.name.value]
-    # Evaluate the ExecutedParams to types.
-    result = set(chain.from_iterable(n.parent.eval(evaluator) for n in names))
-    debug.dbg('Dynamic param result %s', result, color='MAGENTA')
-    return result
+    if evaluator.dynamic_params_depth == settings.max_dynamic_params_depth:
+        return set()
+
+    evaluator.dynamic_params_depth += 1
+    try:
+        func = param.get_parent_until(tree.Function)
+        debug.dbg('Dynamic param search for %s in %s.', param, str(func.name), color='MAGENTA')
+        # Compare the param names.
+        names = [n for n in search_function_call(evaluator, func)
+                 if n.value == param.name.value]
+        # Evaluate the ExecutedParams to types.
+        result = set(chain.from_iterable(n.parent.eval(evaluator) for n in names))
+        debug.dbg('Dynamic param result %s', result, color='MAGENTA')
+        return result
+    finally:
+        evaluator.dynamic_params_depth -= 1
 
 
 @memoize_default([], evaluator_is_first_arg=True)

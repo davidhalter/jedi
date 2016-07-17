@@ -696,7 +696,7 @@ class FunctionExecution(Executed):
         else:
             yield self._evaluator.eval_element(element)
 
-    # TODO add execution_recursion_decorator?!
+    @recursion.execution_recursion_decorator
     def get_yield_types(self):
         yields = self.yields
         stopAt = tree.ForStmt, tree.WhileStmt, FunctionExecution, tree.IfStmt

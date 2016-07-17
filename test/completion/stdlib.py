@@ -212,3 +212,12 @@ class B(object):
 cls = random.choice([A, B])
 #? ['say', 'shout']
 cls().s
+
+# -----------------
+# random
+# -----------------
+
+import zipfile
+z = zipfile.ZipFile("foo")
+#? ['upper']
+z.read('name').upper
