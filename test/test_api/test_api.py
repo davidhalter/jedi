@@ -85,7 +85,6 @@ def test_completion_on_hex_literals():
     # (invalid statements).
     assert api.Script('0b2.').completions() == []
     _check_number('0b1.', 'int')  # binary
-    _check_number('0o7.', 'int')  # octal
 
     _check_number('0x2e.', 'int')
     _check_number('0xE7.', 'int')

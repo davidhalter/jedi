@@ -9,7 +9,7 @@ test_grammar.py files from both Python 2 and Python 3.
 from textwrap import dedent
 
 
-from jedi._compatibility import unicode
+from jedi._compatibility import unicode, is_py3
 from jedi.parser import Parser, load_grammar, ParseError
 import pytest
 
@@ -216,7 +216,11 @@ class TestSetLiteral(GrammarTest):
 
 class TestNumericLiterals(GrammarTest):
     def test_new_octal_notation(self):
-        parse("""0o7777777777777""")
+        code = """0o7777777777777"""
+        if is_py3:
+            parse(code)
+        else:
+            self.invalid_syntax(code)
         self.invalid_syntax("""0o7324528887""")
 
     def test_new_binary_notation(self):
