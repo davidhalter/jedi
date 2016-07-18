@@ -140,7 +140,7 @@ class Evaluator(object):
         scopes = f.scopes(search_global)
         if is_goto:
             return f.filter_name(scopes)
-        return f.find(scopes, search_global)
+        return f.find(scopes, attribute_lookup=not search_global)
 
     #@memoize_default(default=[], evaluator_is_first_arg=True)
     #@recursion.recursion_decorator

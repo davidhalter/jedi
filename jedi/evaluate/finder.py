@@ -90,27 +90,31 @@ class NameFinder(object):
         self._found_predefined_if_name = None
 
     @debug.increase_indent
-    def find(self, scopes, search_global=False):
+    def find(self, scopes, attribute_lookup):
+        """
+        :params bool attribute_lookup: Tell to logic if we're accessing the
+            attribute or the contents of e.g. a function.
+        """
         # TODO rename scopes to names_dicts
 
         names = self.filter_name(scopes)
         if self._found_predefined_if_name is not None:
             return self._found_predefined_if_name
 
-        types = self._names_to_types(names, search_global)
+        types = self._names_to_types(names, attribute_lookup)
 
         if not names and not types \
-                and not (isinstance(self.name_str, tree.Name)
-                         and isinstance(self.name_str.parent.parent, tree.Param)):
+                and not (isinstance(self.name_str, tree.Name) and
+                         isinstance(self.name_str.parent.parent, tree.Param)):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove?
-                if search_global:
+                if attribute_lookup:
+                    analysis.add_attribute_error(self._evaluator,
+                                                 self.scope, self.name_str)
+                else:
                     message = ("NameError: name '%s' is not defined."
                                % self.name_str)
                     analysis.add(self._evaluator, 'name-error', self.name_str,
                                  message)
-                else:
-                    analysis.add_attribute_error(self._evaluator,
-                                                 self.scope, self.name_str)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
         return types
@@ -267,7 +271,7 @@ class NameFinder(object):
                 result = inst.execute_subscope_by_name('__getattribute__', name)
         return result
 
-    def _names_to_types(self, names, search_global):
+    def _names_to_types(self, names, attribute_lookup):
         types = set()
 
         # Add isinstance and other if/assert knowledge.
@@ -287,7 +291,7 @@ class NameFinder(object):
 
         for name in names:
             new_types = _name_to_types(self._evaluator, name, self.scope)
-            if isinstance(self.scope, (er.Class, er.Instance)) and not search_global:
+            if isinstance(self.scope, (er.Class, er.Instance)) and attribute_lookup:
                 types |= set(self._resolve_descriptors(name, new_types))
             else:
                 types |= set(new_types)
@@ -316,8 +320,17 @@ class NameFinder(object):
         return result
 
 
+def _get_global_stmt_scopes(evaluator, global_stmt, name):
+    global_stmt_scope = global_stmt.get_parent_scope()
+    module = global_stmt_scope.get_parent_until()
+    for used_name in module.used_names[str(name)]:
+        if used_name.parent.type == 'global_stmt':
+            yield evaluator.wrap(used_name.get_parent_scope())
+
+
 @memoize_default(set(), evaluator_is_first_arg=True)
 def _name_to_types(evaluator, name, scope):
+    types = []
     typ = name.get_definition()
     if typ.isinstance(tree.ForStmt):
         types = pep0484.find_type_from_comment_hint_for(evaluator, typ, name)
@@ -339,14 +352,14 @@ def _name_to_types(evaluator, name, scope):
         types = evaluator.eval_element(typ.node_from_name(name))
     elif isinstance(typ, tree.Import):
         types = imports.ImportWrapper(evaluator, name).follow()
-    elif isinstance(typ, tree.GlobalStmt):
-        # TODO theoretically we shouldn't be using search_global here, it
-        # doesn't make sense, because it's a local search (for that name)!
-        # However, globals are not that important and resolving them doesn't
-        # guarantee correctness in any way, because we don't check for when
-        # something is executed.
-        types = evaluator.find_types(typ.get_parent_scope(), str(name),
-                                     search_global=True)
+    elif typ.type == 'global_stmt':
+        for s in _get_global_stmt_scopes(evaluator, typ, name):
+            finder = NameFinder(evaluator, s, str(name))
+            names_dicts = finder.scopes(search_global=True)
+            # For global_stmt lookups, we only need the first possible scope,
+            # which means the function itself.
+            names_dicts = [next(names_dicts)]
+            types += finder.find(names_dicts, attribute_lookup=False)
     elif isinstance(typ, tree.TryStmt):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to

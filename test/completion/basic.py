@@ -165,6 +165,17 @@ def global_define():
 #? int()
 global_var_in_func
 
+
+def funct1():
+    # From issue #610
+    global global_dict_var
+    global_dict_var = dict()
+def funct2():
+    global global_dict_var
+    #? dict()
+    global_dict_var
+
+
 # -----------------
 # within docstrs
 # -----------------

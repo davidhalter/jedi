@@ -26,7 +26,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
 
 
-MAX_PARAM_SEARCHES = 10
+MAX_PARAM_SEARCHES = 20
 
 
 class ParamListener(object):
