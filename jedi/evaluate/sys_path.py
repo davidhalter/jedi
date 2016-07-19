@@ -192,6 +192,7 @@ def sys_path_with_modifications(evaluator, module):
     buildout_script_paths = set()
 
     result = _check_module(evaluator, module)
+    result.append(curdir)
     result += _detect_django_path(module.path)
     for buildout_script in _get_buildout_scripts(module.path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script):
