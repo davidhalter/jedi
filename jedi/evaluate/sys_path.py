@@ -186,6 +186,7 @@ def sys_path_with_modifications(evaluator, module):
         return list(evaluator.sys_path)
 
     curdir = os.path.abspath(os.curdir)
+    #TODO why do we need a chdir?
     with common.ignored(OSError):
         os.chdir(os.path.dirname(module.path))
 
