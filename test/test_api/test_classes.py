@@ -333,3 +333,19 @@ class TestGotoAssignments(TestCase):
         assert len(ass) == 1
         assert ass[0].name == 'json'
         assert ass[0].type == 'module'
+
+
+def test_added_equals_to_params():
+    def run(rest_source):
+        source = dedent("""
+        def foo(bar):
+            pass
+        """)
+        results = Script(source + rest_source).completions()
+        assert len(results) == 1
+        return results[0]
+
+    assert run('foo(bar').name_with_symbols == 'bar='
+    assert run('foo(bar').complete == '='
+    assert run('foo(bar').name_with_symbols == 'bar'
+    assert run('    bar').complete == ''
