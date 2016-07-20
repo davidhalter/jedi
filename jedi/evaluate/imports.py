@@ -507,7 +507,9 @@ def get_modules_containing_name(evaluator, mods, name):
         paths = set(settings.additional_dynamic_modules)
         for p in mod_paths:
             if p is not None:
-                d = os.path.dirname(p)
+                # We need abspath, because the seetings paths might not already
+                # have been converted to absolute paths.
+                d = os.path.dirname(os.path.abspath(p))
                 for entry in os.listdir(d):
                     if entry not in mod_paths:
                         if entry.endswith('.py'):
