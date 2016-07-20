@@ -338,7 +338,7 @@ class TestGotoAssignments(TestCase):
 def test_added_equals_to_params():
     def run(rest_source):
         source = dedent("""
-        def foo(bar):
+        def foo(bar, baz):
             pass
         """)
         results = Script(source + rest_source).completions()
@@ -347,5 +347,8 @@ def test_added_equals_to_params():
 
     assert run('foo(bar').name_with_symbols == 'bar='
     assert run('foo(bar').complete == '='
-    assert run('foo(bar').name_with_symbols == 'bar'
+    assert run('foo(bar, baz').complete == '='
+    assert run('    bar').name_with_symbols == 'bar'
     assert run('    bar').complete == ''
+    x = run('foo(bar=isins').name_with_symbols
+    assert x == 'isinstance'
