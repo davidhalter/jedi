@@ -118,13 +118,13 @@ class Completion:
                 grammar, self._code_lines, self._module, self._position
             )
         except helpers.OnErrorLeaf as e:
+            self.stack = None
             if e.error_leaf.value == '.':
                 # After ErrorLeaf's that are dots, we will not do any
                 # completions since this probably just confuses the user.
                 return []
             # If we don't have a context, just use global completion.
 
-            self.stack = None
             return self._global_completions()
 
         allowed_keywords, allowed_tokens = \

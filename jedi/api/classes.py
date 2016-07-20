@@ -370,7 +370,7 @@ class Completion(BaseDefinition):
         super(Completion, self).__init__(evaluator, name)
 
         self._like_name_length = like_name_length
-        self.stack = stack
+        self._stack = stack
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
@@ -382,9 +382,8 @@ class Completion(BaseDefinition):
                 and self.type == 'Function':
             append = '('
 
-        if self.stack is not None:
-            node_names = list(self.stack.get_node_names(self._evaluator.grammar))
-            print(node_names)
+        if isinstance(self._definition, tree.Param) and self._stack is not None:
+            node_names = list(self._stack.get_node_names(self._evaluator.grammar))
             if 'trailer' in node_names and 'argument' not in node_names:
                 append += '='
 
