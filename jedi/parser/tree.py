@@ -14,8 +14,8 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 :attr:`parsing.Parser.module` holds an instance of :class:`Module`:
 
 >>> from jedi._compatibility import u
->>> from jedi.parser import Parser, load_grammar
->>> parser = Parser(load_grammar(), u('import os'), 'example.py')
+>>> from jedi.parser import ParserWithRecovery, load_grammar
+>>> parser = ParserWithRecovery(load_grammar(), u('import os'), 'example.py')
 >>> submodule = parser.module
 >>> submodule
 <Module: example.py@1-1>
@@ -27,16 +27,22 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 [<ImportName: import os@1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
+
+For static analysis purposes there exists a method called
+``nodes_to_execute`` on all nodes and leaves. It's documented in the static
+anaylsis documentation.
 """
 import os
 import re
 from inspect import cleandoc
 from itertools import chain
 import textwrap
+import abc
 
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
-from jedi import cache
+from jedi.parser import token
+from jedi.parser.utils import underscore_memoization
 
 
 def is_node(node, *symbol_names):
@@ -140,9 +146,130 @@ class Base(object):
             scope = scope.parent
         return scope
 
+    def get_definition(self):
+        scope = self
+        while scope.parent is not None:
+            parent = scope.parent
+            if scope.isinstance(Node, Name) and parent.type != 'simple_stmt':
+                if scope.type == 'testlist_comp':
+                    try:
+                        if isinstance(scope.children[1], CompFor):
+                            return scope.children[1]
+                    except IndexError:
+                        pass
+                scope = parent
+            else:
+                break
+        return scope
+
+    def assignment_indexes(self):
+        """
+        Returns an array of tuple(int, node) of the indexes that are used in
+        tuple assignments.
+
+        For example if the name is ``y`` in the following code::
+
+            x, (y, z) = 2, ''
+
+        would result in ``[(1, xyz_node), (0, yz_node)]``.
+        """
+        indexes = []
+        node = self.parent
+        compare = self
+        while node is not None:
+            if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
+                for i, child in enumerate(node.children):
+                    if child == compare:
+                        indexes.insert(0, (int(i / 2), node))
+                        break
+                else:
+                    raise LookupError("Couldn't find the assignment.")
+            elif isinstance(node, (ExprStmt, CompFor)):
+                break
+
+            compare = node
+            node = node.parent
+        return indexes
+
     def is_scope(self):
         # Default is not being a scope. Just inherit from Scope.
         return False
+
+    @abc.abstractmethod
+    def nodes_to_execute(self, last_added=False):
+        raise NotImplementedError()
+
+    def get_next_sibling(self):
+        """
+        The node immediately following the invocant in their parent's children
+        list. If the invocant does not have a next sibling, it is None
+        """
+        # Can't use index(); we need to test by identity
+        for i, child in enumerate(self.parent.children):
+            if child is self:
+                try:
+                    return self.parent.children[i + 1]
+                except IndexError:
+                    return None
+
+    def get_previous_sibling(self):
+        """
+        The node/leaf immediately preceding the invocant in their parent's
+        children list. If the invocant does not have a previous sibling, it is
+        None.
+        """
+        # Can't use index(); we need to test by identity
+        for i, child in enumerate(self.parent.children):
+            if child is self:
+                if i == 0:
+                    return None
+                return self.parent.children[i - 1]
+
+    def get_previous_leaf(self):
+        """
+        Returns the previous leaf in the parser tree.
+        Raises an IndexError if it's the first element.
+        """
+        node = self
+        while True:
+            c = node.parent.children
+            i = c.index(node)
+            if i == 0:
+                node = node.parent
+                if node.parent is None:
+                    raise IndexError('Cannot access the previous element of the first one.')
+            else:
+                node = c[i - 1]
+                break
+
+        while True:
+            try:
+                node = node.children[-1]
+            except AttributeError:  # A Leaf doesn't have children.
+                return node
+
+    def get_next_leaf(self):
+        """
+        Returns the previous leaf in the parser tree.
+        Raises an IndexError if it's the last element.
+        """
+        node = self
+        while True:
+            c = node.parent.children
+            i = c.index(node)
+            if i == len(c) - 1:
+                node = node.parent
+                if node.parent is None:
+                    raise IndexError('Cannot access the next element of the last one.')
+            else:
+                node = c[i + 1]
+                break
+
+        while True:
+            try:
+                node = node.children[0]
+            except AttributeError:  # A Leaf doesn't have children.
+                return node
 
 
 class Leaf(Base):
@@ -163,6 +290,12 @@ class Leaf(Base):
     def start_pos(self, value):
         self._start_pos = value[0] - self.position_modifier.line, value[1]
 
+    def get_start_pos_of_prefix(self):
+        try:
+            return self.get_previous_leaf().end_pos
+        except IndexError:
+            return 1, 0  # It's the first leaf.
+
     @property
     def end_pos(self):
         return (self._start_pos[0] + self.position_modifier.line,
@@ -172,56 +305,19 @@ class Leaf(Base):
         self._start_pos = (self._start_pos[0] + line_offset,
                            self._start_pos[1] + column_offset)
 
-    def get_previous(self):
-        """
-        Returns the previous leaf in the parser tree.
-        """
-        node = self
-        while True:
-            c = node.parent.children
-            i = c.index(self)
-            if i == 0:
-                node = node.parent
-                if node.parent is None:
-                    raise IndexError('Cannot access the previous element of the first one.')
-            else:
-                node = c[i - 1]
-                break
+    def first_leaf(self):
+        return self
 
-        while True:
-            try:
-                node = node.children[-1]
-            except AttributeError:  # A Leaf doesn't have children.
-                return node
+    def get_code(self, normalized=False, include_prefix=True):
+        if normalized:
+            return self.value
+        if include_prefix:
+            return self.prefix + self.value
+        else:
+            return self.value
 
-    def get_code(self):
-        return self.prefix + self.value
-
-    def next_sibling(self):
-        """
-        The node immediately following the invocant in their parent's children
-        list. If the invocant does not have a next sibling, it is None
-        """
-        # Can't use index(); we need to test by identity
-        for i, child in enumerate(self.parent.children):
-            if child is self:
-                try:
-                    return self.parent.children[i + 1]
-                except IndexError:
-                    return None
-
-    def prev_sibling(self):
-        """
-        The node/leaf immediately preceding the invocant in their parent's
-        children list. If the invocant does not have a previous sibling, it is
-        None.
-        """
-        # Can't use index(); we need to test by identity
-        for i, child in enumerate(self.parent.children):
-            if child is self:
-                if i == 0:
-                    return None
-                return self.parent.children[i - 1]
+    def nodes_to_execute(self, last_added=False):
+        return []
 
     @utf8_repr
     def __repr__(self):
@@ -247,11 +343,19 @@ class LeafWithNewLines(Leaf):
             end_pos_col = len(lines[-1])
         return end_pos_line, end_pos_col
 
+    @utf8_repr
+    def __repr__(self):
+        return "<%s: %r>" % (type(self).__name__, self.value)
+
 
 class Whitespace(LeafWithNewLines):
     """Contains NEWLINE and ENDMARKER tokens."""
     __slots__ = ()
     type = 'whitespace'
+
+    @utf8_repr
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, repr(self.value))
 
 
 class Name(Leaf):
@@ -272,63 +376,26 @@ class Name(Leaf):
         return "<%s: %s@%s,%s>" % (type(self).__name__, self.value,
                                    self.start_pos[0], self.start_pos[1])
 
-    def get_definition(self):
-        scope = self
-        while scope.parent is not None:
-            parent = scope.parent
-            if scope.isinstance(Node, Name) and parent.type != 'simple_stmt':
-                if scope.type == 'testlist_comp':
-                    try:
-                        if isinstance(scope.children[1], CompFor):
-                            return scope.children[1]
-                    except IndexError:
-                        pass
-                scope = parent
-            else:
-                break
-        return scope
-
     def is_definition(self):
+        if self.parent.type in ('power', 'atom_expr'):
+            # In `self.x = 3` self is not a definition, but x is.
+            return False
+
         stmt = self.get_definition()
         if stmt.type in ('funcdef', 'classdef', 'file_input', 'param'):
             return self == stmt.name
         elif stmt.type == 'for_stmt':
             return self.start_pos < stmt.children[2].start_pos
         elif stmt.type == 'try_stmt':
-            return self.prev_sibling() == 'as'
+            return self.get_previous_sibling() == 'as'
         else:
             return stmt.type in ('expr_stmt', 'import_name', 'import_from',
                                  'comp_for', 'with_stmt') \
                 and self in stmt.get_defined_names()
 
-    def assignment_indexes(self):
-        """
-        Returns an array of ints of the indexes that are used in tuple
-        assignments.
-
-        For example if the name is ``y`` in the following code::
-
-            x, (y, z) = 2, ''
-
-        would result in ``[1, 0]``.
-        """
-        indexes = []
-        node = self.parent
-        compare = self
-        while node is not None:
-            if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
-                for i, child in enumerate(node.children):
-                    if child == compare:
-                        indexes.insert(0, int(i / 2))
-                        break
-                else:
-                    raise LookupError("Couldn't find the assignment.")
-            elif isinstance(node, (ExprStmt, CompFor)):
-                break
-
-            compare = node
-            node = node.parent
-        return indexes
+    def nodes_to_execute(self, last_added=False):
+        if last_added is False:
+            yield self
 
 
 class Literal(LeafWithNewLines):
@@ -345,6 +412,16 @@ class Number(Literal):
 
 class String(Literal):
     type = 'string'
+    __slots__ = ()
+
+
+class Indent(Leaf):
+    type = 'indent'
+    __slots__ = ()
+
+
+class Dedent(Leaf):
+    type = 'indent'
     __slots__ = ()
 
 
@@ -424,12 +501,20 @@ class BaseNode(Base):
     def start_pos(self):
         return self.children[0].start_pos
 
+    def get_start_pos_of_prefix(self):
+        return self.children[0].get_start_pos_of_prefix()
+
     @property
     def end_pos(self):
         return self.children[-1].end_pos
 
-    def get_code(self):
-        return "".join(c.get_code() for c in self.children)
+    def get_code(self, normalized=False, include_prefix=True):
+        # TODO implement normalized (depending on context).
+        if include_prefix:
+            return "".join(c.get_code(normalized) for c in self.children)
+        else:
+            first = self.children[0].get_code(include_prefix=False)
+            return first + "".join(c.get_code(normalized) for c in self.children[1:])
 
     @Python3Method
     def name_for_position(self, position):
@@ -441,6 +526,21 @@ class BaseNode(Base):
                 result = c.name_for_position(position)
                 if result is not None:
                     return result
+        return None
+
+    def get_leaf_for_position(self, position, include_prefixes=False):
+        for c in self.children:
+            if include_prefixes:
+                start_pos = c.get_start_pos_of_prefix()
+            else:
+                start_pos = c.start_pos
+
+            if start_pos <= position <= c.end_pos:
+                try:
+                    return c.get_leaf_for_position(position, include_prefixes)
+                except AttributeError:
+                    return c
+
         return None
 
     @Python3Method
@@ -463,9 +563,54 @@ class BaseNode(Base):
         except AttributeError:
             return self.children[0]
 
+    def get_next_leaf(self):
+        """
+        Raises an IndexError if it's the last node. (Would be the module)
+        """
+        c = self.parent.children
+        index = c.index(self)
+        if index == len(c) - 1:
+            # TODO WTF? recursion?
+            return self.get_next_leaf()
+        else:
+            return c[index + 1]
+
+    def last_leaf(self):
+        try:
+            return self.children[-1].last_leaf()
+        except AttributeError:
+            return self.children[-1]
+
+    def get_following_comment_same_line(self):
+        """
+        returns (as string) any comment that appears on the same line,
+        after the node, including the #
+        """
+        try:
+            if self.isinstance(ForStmt):
+                whitespace = self.children[5].first_leaf().prefix
+            elif self.isinstance(WithStmt):
+                whitespace = self.children[3].first_leaf().prefix
+            else:
+                whitespace = self.last_leaf().get_next_leaf().prefix
+        except AttributeError:
+            return None
+        except ValueError:
+            # TODO in some particular cases, the tree doesn't seem to be linked
+            # correctly
+            return None
+        if "#" not in whitespace:
+            return None
+        comment = whitespace[whitespace.index("#"):]
+        if "\r" in comment:
+            comment = comment[:comment.index("\r")]
+        if "\n" in comment:
+            comment = comment[:comment.index("\n")]
+        return comment
+
     @utf8_repr
     def __repr__(self):
-        code = self.get_code().replace('\n', ' ')
+        code = self.get_code().replace('\n', ' ').strip()
         if not is_py3:
             code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
@@ -475,6 +620,13 @@ class BaseNode(Base):
 class Node(BaseNode):
     """Concrete implementation for interior nodes."""
     __slots__ = ('type',)
+
+    _IGNORE_EXECUTE_NODES = set([
+        'suite', 'subscriptlist', 'subscript', 'simple_stmt', 'sliceop',
+        'testlist_comp', 'dictorsetmaker', 'trailer', 'decorators',
+        'decorated', 'arglist', 'argument', 'exprlist', 'testlist',
+        'testlist_safe', 'testlist1'
+    ])
 
     def __init__(self, type, children):
         """
@@ -488,8 +640,48 @@ class Node(BaseNode):
         super(Node, self).__init__(children)
         self.type = type
 
+    def nodes_to_execute(self, last_added=False):
+        """
+        For static analysis.
+        """
+        result = []
+        if self.type not in Node._IGNORE_EXECUTE_NODES and not last_added:
+            result.append(self)
+            last_added = True
+
+        for child in self.children:
+            result += child.nodes_to_execute(last_added)
+        return result
+
     def __repr__(self):
         return "%s(%s, %r)" % (self.__class__.__name__, self.type, self.children)
+
+
+class ErrorNode(BaseNode):
+    """
+    TODO doc
+    """
+    __slots__ = ()
+    type = 'error_node'
+
+    def nodes_to_execute(self, last_added=False):
+        return []
+
+
+class ErrorLeaf(LeafWithNewLines):
+    """
+    TODO doc
+    """
+    __slots__ = ('original_type')
+    type = 'error_leaf'
+
+    def __init__(self, position_modifier, original_type, value, start_pos, prefix=''):
+        super(ErrorLeaf, self).__init__(position_modifier, value, start_pos, prefix)
+        self.original_type = original_type
+
+    def __repr__(self):
+        token_type = token.tok_name[self.original_type]
+        return "<%s: %s, %s)>" % (type(self).__name__, token_type, self.start_pos)
 
 
 class IsScopeMeta(type):
@@ -587,8 +779,7 @@ class Module(Scope):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'global_names', 'used_names', '_name',
-                 'error_statement_stacks')
+    __slots__ = ('path', 'global_names', 'used_names', '_name')
     type = 'file_input'
 
     def __init__(self, children):
@@ -604,7 +795,7 @@ class Module(Scope):
         self.path = None  # Set later.
 
     @property
-    @cache.underscore_memoization
+    @underscore_memoization
     def name(self):
         """ This is used for the goto functions. """
         if self.path is None:
@@ -637,10 +828,24 @@ class Module(Scope):
                         return True
         return False
 
+    def nodes_to_execute(self, last_added=False):
+        # Yield itself, class needs to be executed for decorator checks.
+        result = []
+        for child in self.children:
+            result += child.nodes_to_execute()
+        return result
+
 
 class Decorator(BaseNode):
     type = 'decorator'
     __slots__ = ()
+
+    def nodes_to_execute(self, last_added=False):
+        if self.children[-2] == ')':
+            node = self.children[-3]
+            if node != '(':
+                return node.nodes_to_execute()
+        return []
 
 
 class ClassOrFunc(Scope):
@@ -699,6 +904,34 @@ class Class(ClassOrFunc):
                     sub.get_call_signature(func_name=self.name), docstr)
         return docstr
 
+    def nodes_to_execute(self, last_added=False):
+        # Yield itself, class needs to be executed for decorator checks.
+        yield self
+        # Super arguments.
+        arglist = self.get_super_arglist()
+        try:
+            children = arglist.children
+        except AttributeError:
+            if arglist is not None:
+                for node_to_execute in arglist.nodes_to_execute():
+                    yield node_to_execute
+        else:
+            for argument in children:
+                if argument.type == 'argument':
+                    # metaclass= or list comprehension or */**
+                    raise NotImplementedError('Metaclasses not implemented')
+                else:
+                    for node_to_execute in argument.nodes_to_execute():
+                        yield node_to_execute
+
+        # care for the class suite:
+        for node in self.children[self.children.index(':'):]:
+            # This could be easier without the fast parser. But we need to find
+            # the position of the colon, because everything after it can be a
+            # part of the class, not just its suite.
+            for node_to_execute in node.nodes_to_execute():
+                yield node_to_execute
+
 
 def _create_params(parent, argslist_list):
     """
@@ -726,23 +959,28 @@ def _create_params(parent, argslist_list):
 
     if first.type in ('name', 'tfpdef'):
         if check_python2_nested_param(first):
-            return []
+            return [first]
         else:
             return [Param([first], parent)]
+    elif first == '*':
+        return [first]
     else:  # argslist is a `typedargslist` or a `varargslist`.
         children = first.children
-        params = []
+        new_children = []
         start = 0
         # Start with offset 1, because the end is higher.
         for end, child in enumerate(children + [None], 1):
             if child is None or child == ',':
-                new_children = children[start:end]
-                if new_children:  # Could as well be comma and then end.
-                    if check_python2_nested_param(new_children[0]):
-                        continue
-                    params.append(Param(new_children, parent))
+                param_children = children[start:end]
+                if param_children:  # Could as well be comma and then end.
+                    if check_python2_nested_param(param_children[0]):
+                        new_children += param_children
+                    elif param_children[0] == '*' and param_children[1] == ',':
+                        new_children += param_children
+                    else:
+                        new_children.append(Param(param_children, parent))
                     start = end
-        return params
+        return new_children
 
 
 class Function(ClassOrFunc):
@@ -769,8 +1007,7 @@ class Function(ClassOrFunc):
 
     @property
     def params(self):
-        # Contents of parameter lit minus the leading <Operator: (> and the trailing <Operator: )>.
-        return self.children[2].children[1:-1]
+        return [p for p in self.children[2].children if p.type == 'param']
 
     @property
     def name(self):
@@ -786,7 +1023,10 @@ class Function(ClassOrFunc):
 
     def annotation(self):
         try:
-            return self.children[6]  # 6th element: def foo(...) -> bar
+            if self.children[3] == "->":
+                return self.children[4]
+            assert self.children[3] == ":"
+            return None
         except IndexError:
             return None
 
@@ -807,12 +1047,27 @@ class Function(ClassOrFunc):
 
     def _get_paramlist_code(self):
         return self.children[2].get_code()
-    
+
     @property
     def doc(self):
         """ Return a document string including call signature. """
         docstr = self.raw_doc
         return '%s\n\n%s' % (self.get_call_signature(), docstr)
+
+    def nodes_to_execute(self, last_added=False):
+        # Yield itself, functions needs to be executed for decorator checks.
+        yield self
+        for param in self.params:
+            if param.default is not None:
+                yield param.default
+        # care for the function suite:
+        for node in self.children[4:]:
+            # This could be easier without the fast parser. The fast parser
+            # allows that the 4th position is empty or that there's even a
+            # fifth element (another function/class). So just scan everything
+            # after colon.
+            for node_to_execute in node.nodes_to_execute():
+                yield node_to_execute
 
 
 class Lambda(Function):
@@ -842,7 +1097,7 @@ class Lambda(Function):
 
     def _get_paramlist_code(self):
         return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'
-    
+
     @property
     def params(self):
         return self.children[1:-2]
@@ -850,9 +1105,21 @@ class Lambda(Function):
     def is_generator(self):
         return False
 
+    def annotation(self):
+        # lambda functions do not support annotations
+        return None
+
     @property
     def yields(self):
         return []
+
+    def nodes_to_execute(self, last_added=False):
+        for param in self.params:
+            if param.default is not None:
+                yield param.default
+        # Care for the lambda test (last child):
+        for node_to_execute in self.children[-1].nodes_to_execute():
+            yield node_to_execute
 
     def __repr__(self):
         return "<%s@%s>" % (self.__class__.__name__, self.start_pos)
@@ -860,6 +1127,11 @@ class Lambda(Function):
 
 class Flow(BaseNode):
     __slots__ = ()
+
+    def nodes_to_execute(self, last_added=False):
+        for child in self.children:
+            for node_to_execute in child.nodes_to_execute():
+                yield node_to_execute
 
 
 class IfStmt(Flow):
@@ -880,9 +1152,20 @@ class IfStmt(Flow):
                 yield self.children[i + 1]
 
     def node_in_which_check_node(self, node):
+        """
+        Returns the check node (see function above) that a node is contained
+        in. However if it the node is in the check node itself and not in the
+        suite return None.
+        """
+        start_pos = node.start_pos
         for check_node in reversed(list(self.check_nodes())):
-            if check_node.start_pos < node.start_pos:
-                return check_node
+            if check_node.start_pos < start_pos:
+                if start_pos < check_node.end_pos:
+                    return None
+                    # In this case the node is within the check_node itself,
+                    # not in the suite
+                else:
+                    return check_node
 
     def node_after_else(self, node):
         """
@@ -905,6 +1188,21 @@ class ForStmt(Flow):
     type = 'for_stmt'
     __slots__ = ()
 
+    def get_input_node(self):
+        """
+        Returns the input node ``y`` from: ``for x in y:``.
+        """
+        return self.children[3]
+
+    def defines_one_name(self):
+        """
+        Returns True if only one name is returned: ``for x in y``.
+        Returns False if the for loop is more complicated: ``for x, z in y``.
+
+        :returns: bool
+        """
+        return self.children[1].type == 'name'
+
 
 class TryStmt(Flow):
     type = 'try_stmt'
@@ -920,6 +1218,16 @@ class TryStmt(Flow):
                 yield node.children[1]
             elif node == 'except':
                 yield None
+
+    def nodes_to_execute(self, last_added=False):
+        result = []
+        for child in self.children[2::3]:
+            result += child.nodes_to_execute()
+        for child in self.children[0::3]:
+            if child.type == 'except_clause':
+                # Add the test node and ignore the `as NAME` definition.
+                result += child.children[1].nodes_to_execute()
+        return result
 
 
 class WithStmt(Flow):
@@ -940,6 +1248,16 @@ class WithStmt(Flow):
             node = node.parent
             if is_node(node, 'with_item'):
                 return node.children[0]
+
+    def nodes_to_execute(self, last_added=False):
+        result = []
+        for child in self.children[1::2]:
+            if child.type == 'with_item':
+                # Just ignore the `as EXPR` part - at least for now, because
+                # most times it's just a name.
+                child = child.children[0]
+            result += child.nodes_to_execute()
+        return result
 
 
 class Import(BaseNode):
@@ -962,6 +1280,14 @@ class Import(BaseNode):
 
     def is_star_import(self):
         return self.children[-1] == '*'
+
+    def nodes_to_execute(self, last_added=False):
+        """
+        `nodes_to_execute` works a bit different for imports, because the names
+        itself cannot directly get resolved (except on itself).
+        """
+        # TODO couldn't we return the names? Would be nicer.
+        return [self]
 
 
 class ImportFrom(Import):
@@ -1087,17 +1413,33 @@ class ImportName(Import):
 class KeywordStatement(BaseNode):
     """
     For the following statements: `assert`, `del`, `global`, `nonlocal`,
-    `raise`, `return`, `yield`, `pass`, `continue`, `break`, `return`, `yield`.
+    `raise`, `return`, `yield`, `return`, `yield`.
+
+    `pass`, `continue` and `break` are not in there, because they are just
+    simple keywords and the parser reduces it to a keyword.
     """
     __slots__ = ()
+
+    @property
+    def type(self):
+        """
+        Keyword statements start with the keyword and end with `_stmt`. You can
+        crosscheck this with the Python grammar.
+        """
+        return '%s_stmt' % self.keyword
 
     @property
     def keyword(self):
         return self.children[0].value
 
+    def nodes_to_execute(self, last_added=False):
+        result = []
+        for child in self.children:
+            result += child.nodes_to_execute()
+        return result
+
 
 class AssertStmt(KeywordStatement):
-    type = 'assert_stmt'
     __slots__ = ()
 
     def assertion(self):
@@ -1105,7 +1447,6 @@ class AssertStmt(KeywordStatement):
 
 
 class GlobalStmt(KeywordStatement):
-    type = 'global_stmt'
     __slots__ = ()
 
     def get_defined_names(self):
@@ -1114,15 +1455,30 @@ class GlobalStmt(KeywordStatement):
     def get_global_names(self):
         return self.children[1::2]
 
+    def nodes_to_execute(self, last_added=False):
+        """
+        The global keyword allows to define any name. Even if it doesn't
+        exist.
+        """
+        return []
+
 
 class ReturnStmt(KeywordStatement):
-    type = 'return_stmt'
     __slots__ = ()
 
 
 class YieldExpr(BaseNode):
-    type = 'yield_expr'
     __slots__ = ()
+
+    @property
+    def type(self):
+        return 'yield_expr'
+
+    def nodes_to_execute(self, last_added=False):
+        if len(self.children) > 1:
+            return self.children[1].nodes_to_execute()
+        else:
+            return []
 
 
 def _defined_names(current):
@@ -1134,9 +1490,9 @@ def _defined_names(current):
     if is_node(current, 'testlist_star_expr', 'testlist_comp', 'exprlist'):
         for child in current.children[::2]:
             names += _defined_names(child)
-    elif is_node(current, 'atom'):
+    elif is_node(current, 'atom', 'star_expr'):
         names += _defined_names(current.children[1])
-    elif is_node(current, 'power'):
+    elif is_node(current, 'power', 'atom_expr'):
         if current.children[-2] != '**':  # Just if there's no operation
             trailer = current.children[-1]
             if trailer.children[0] == '.':
@@ -1168,6 +1524,14 @@ class ExprStmt(BaseNode, DocstringMixin):
         except IndexError:
             return None
 
+    def nodes_to_execute(self, last_added=False):
+        # I think evaluating the statement (and possibly returned arrays),
+        # should be enough for static analysis.
+        result = [self]
+        for child in self.children:
+            result += child.nodes_to_execute(last_added=True)
+        return result
+
 
 class Param(BaseNode):
     """
@@ -1198,8 +1562,14 @@ class Param(BaseNode):
             return None
 
     def annotation(self):
-        # Generate from tfpdef.
-        raise NotImplementedError
+        tfpdef = self._tfpdef()
+        if is_node(tfpdef, 'tfpdef'):
+            assert tfpdef.children[1] == ":"
+            assert len(tfpdef.children) == 3
+            annotation = tfpdef.children[2]
+            return annotation
+        else:
+            return None
 
     def _tfpdef(self):
         """
@@ -1232,6 +1602,16 @@ class CompFor(BaseNode):
     type = 'comp_for'
     __slots__ = ()
 
+    def get_comp_fors(self):
+        yield self
+        last = self.children[-1]
+        while True:
+            if isinstance(last, CompFor):
+                yield last
+            elif not is_node(last, 'comp_if'):
+                break
+            last = last.children[-1]
+
     def is_scope(self):
         return True
 
@@ -1248,3 +1628,16 @@ class CompFor(BaseNode):
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
+
+    def nodes_to_execute(self, last_added=False):
+        last = self.children[-1]
+        if last.type == 'comp_if':
+            for node in last.children[-1].nodes_to_execute():
+                yield node
+            last = self.children[-2]
+        elif last.type == 'comp_for':
+            for node in last.nodes_to_execute():
+                yield node
+            last = self.children[-2]
+        for node in last.nodes_to_execute():
+            yield node

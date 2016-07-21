@@ -10,8 +10,8 @@ import os
 import sys
 
 from jedi import Interpreter
-from jedi.api.helpers import completion_parts
-from jedi.parser.user_context import UserContext
+from jedi.api.helpers import get_on_completion_name
+from jedi import common
 
 
 def setup_readline(namespace_module=__main__):
@@ -72,9 +72,10 @@ def setup_readline(namespace_module=__main__):
                 try:
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                    path = UserContext(text, (1, len(text))).get_path_until_cursor()
-                    path, dot, like = completion_parts(path)
-                    before = text[:len(text) - len(like)]
+                    lines = common.splitlines(text)
+                    position = (len(lines), len(lines[-1]))
+                    name = get_on_completion_name(lines, position)
+                    before = text[:len(text) - len(name)]
                     completions = interpreter.completions()
                 finally:
                     sys.path.pop(0)
@@ -88,7 +89,7 @@ def setup_readline(namespace_module=__main__):
     try:
         import readline
     except ImportError:
-        print("Module readline not available.")
+        print("Jedi: Module readline not available.")
     else:
         readline.set_completer(JediRL().complete)
         readline.parse_and_bind("tab: complete")

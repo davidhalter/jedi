@@ -26,7 +26,8 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
         new_children = []
         for child in obj.children:
             typ = child.type
-            if typ in ('whitespace', 'operator', 'keyword', 'number', 'string'):
+            if typ in ('whitespace', 'operator', 'keyword', 'number', 'string',
+                       'indent', 'dedent', 'error_leaf'):
                 # At the moment we're not actually copying those primitive
                 # elements, because there's really no need to. The parents are
                 # obviously wrong, but that's not an issue.
@@ -55,23 +56,18 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
                     new_names_dict[string] = [new_elements[n] for n in names]
         return new_obj
 
-    if obj.type == 'name':
+    if isinstance(obj, tree.BaseNode):
+        new_obj = copy_node(obj)
+    else:
         # Special case of a Name object.
         new_elements[obj] = new_obj = copy.copy(obj)
-        if parent is not None:
-            new_obj.parent = parent
-    elif isinstance(obj, tree.BaseNode):
-        new_obj = copy_node(obj)
-        if parent is not None:
-            for child in new_obj.children:
-                if isinstance(child, (tree.Name, tree.BaseNode)):
-                    child.parent = parent
-    else:  # String literals and so on.
-        new_obj = obj  # Good enough, don't need to copy anything.
+
+    if parent is not None:
+        new_obj.parent = parent
     return new_obj
 
 
-def call_of_name(name, cut_own_trailer=False):
+def call_of_leaf(leaf, cut_own_trailer=False):
     """
     Creates a "call" node that consist of all ``trailer`` and ``power``
     objects.  E.g. if you call it with ``append``::
@@ -81,28 +77,53 @@ def call_of_name(name, cut_own_trailer=False):
     You would get a node with the content ``list([]).append`` back.
 
     This generates a copy of the original ast node.
+
+    If you're using the leaf, e.g. the bracket `)` it will return ``list([])``.
+
+    # TODO remove cut_own_trailer option, since its always used with it. Just
+    #      ignore it, It's not what we want anyway. Or document it better?
     """
-    par = name
-    if tree.is_node(par.parent, 'trailer'):
-        par = par.parent
+    trailer = leaf.parent
+    # The leaf may not be the last or first child, because there exist three
+    # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
+    # we should not match anything more than x.
+    if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
+        if trailer.type == 'atom':
+            return trailer
+        return leaf
 
-    power = par.parent
-    if tree.is_node(power, 'power') and power.children[0] != name \
-            and not (power.children[-2] == '**' and
-                     name.start_pos > power.children[-1].start_pos):
-        par = power
-        # Now the name must be part of a trailer
-        index = par.children.index(name.parent)
-        if index != len(par.children) - 1 or cut_own_trailer:
-            # Now we have to cut the other trailers away.
-            par = deep_ast_copy(par)
-            if not cut_own_trailer:
-                # Normally we would remove just the stuff after the index, but
-                # if the option is set remove the index as well. (for goto)
-                index = index + 1
-            par.children[index:] = []
+    power = trailer.parent
+    index = power.children.index(trailer)
+    power = deep_ast_copy(power)
+    if cut_own_trailer:
+        cut = index
+    else:
+        cut = index + 1
+    power.children[cut:] = []
 
-    return par
+    if power.type == 'error_node':
+        start = index
+        while True:
+            start -= 1
+            if power.children[start].type != 'trailer':
+                break
+        transformed = tree.Node('power', power.children[start:])
+        transformed.parent = power.parent
+        return transformed
+
+    return power
+
+
+def get_names_of_node(node):
+    try:
+        children = node.children
+    except AttributeError:
+        if node.type == 'name':
+            return [node]
+        else:
+            return []
+    else:
+        return list(chain.from_iterable(get_names_of_node(c) for c in children))
 
 
 def get_module_names(module, all_scopes):

@@ -7,6 +7,7 @@ from textwrap import dedent
 from jedi import api
 from jedi._compatibility import is_py3
 from pytest import raises
+from jedi.parser import utils
 
 
 def test_preload_modules():
@@ -16,16 +17,15 @@ def test_preload_modules():
         for i in modules:
             assert [i in k for k in parser_cache.keys() if k is not None]
 
-    from jedi import cache
-    temp_cache, cache.parser_cache = cache.parser_cache, {}
-    parser_cache = cache.parser_cache
+    temp_cache, utils.parser_cache = utils.parser_cache, {}
+    parser_cache = utils.parser_cache
 
     api.preload_module('sys')
     check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
     api.preload_module('json', 'token')
     check_loaded('json', 'token')
 
-    cache.parser_cache = temp_cache
+    utils.parser_cache = temp_cache
 
 
 def test_empty_script():
@@ -62,7 +62,8 @@ def _check_number(source, result='float'):
 
 def test_completion_on_number_literals():
     # No completions on an int literal (is a float).
-    assert api.Script('1.').completions() == []
+    assert [c.name for c in api.Script('1.').completions()] \
+        == ['and', 'if', 'in', 'is', 'not', 'or']
 
     # Multiple points after an int literal basically mean that there's a float
     # and a call after that.
@@ -84,7 +85,6 @@ def test_completion_on_hex_literals():
     # (invalid statements).
     assert api.Script('0b2.').completions() == []
     _check_number('0b1.', 'int')  # binary
-    _check_number('0o7.', 'int')  # octal
 
     _check_number('0x2e.', 'int')
     _check_number('0xE7.', 'int')

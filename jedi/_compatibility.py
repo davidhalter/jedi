@@ -13,6 +13,8 @@ except ImportError:
 
 is_py3 = sys.version_info[0] >= 3
 is_py33 = is_py3 and sys.version_info.minor >= 3
+is_py34 = is_py3 and sys.version_info.minor >= 4
+is_py35 = is_py3 and sys.version_info.minor >= 5
 is_py26 = not is_py3 and sys.version_info[1] < 7
 
 
@@ -25,7 +27,7 @@ def find_module_py33(string, path=None):
         except ValueError as e:
             # See #491. Importlib might raise a ValueError, to avoid this, we
             # just raise an ImportError to fix the issue.
-            raise ImportError("Originally ValueError: " + str(e))
+            raise ImportError("Originally  " + repr(e))
 
     if loader is None:
         raise ImportError("Couldn't find a loader for {0}".format(string))

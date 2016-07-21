@@ -30,6 +30,12 @@ b = math
 #! ['b = math']
 b
 
+#! 18 ['foo = 10']
+foo = 10;print(foo)
+
+# -----------------
+# classes
+# -----------------
 class C(object):
     def b(self):
         #! ['b = math']

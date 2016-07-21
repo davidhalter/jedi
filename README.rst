@@ -30,19 +30,23 @@ implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
 which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
 It's really easy.
 
-Jedi can currently be used with the following editors:
+Jedi can currently be used with the following editors/projects:
 
-- Vim (jedi-vim_, YouCompleteMe_)
-- Emacs (Jedi.el_, elpy_, anaconda-mode_, ycmd_)
+- Vim (jedi-vim_, YouCompleteMe_, deoplete-jedi_)
+- Emacs (Jedi.el_, company-mode_, elpy_, anaconda-mode_, ycmd_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
-- SynWrite_
 - TextMate_ (Not sure if it's actually working)
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
-
-And it powers the following projects:
-
+- Atom_ (autocomplete-python_)
+- SourceLair_
+- `GNOME Builder`_ (with support for GObject Introspection)
+- `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
+- Gedit (gedi_)
 - wdb_ - Web Debugger
+- `Eric IDE`_ (Available as a plugin)
+
+and many more!
 
 
 Here are some pictures taken from jedi-vim_:
@@ -91,11 +95,11 @@ understands, see: `Features
 <https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
 caveats can be found on the same page.
 
-You can run Jedi on cPython 2.6, 2.7, 3.2, 3.3 or 3.4, but it should also
+You can run Jedi on cPython 2.6, 2.7, 3.3, 3.4 or 3.5 but it should also
 understand/parse code older than those versions.
 
 Tips on how to use Jedi efficiently can be found `here
-<https://jedi.readthedocs.org/en/latest/docs/recipes.html>`_.
+<https://jedi.readthedocs.org/en/latest/docs/features.html#recipes>`_.
 
 API
 ---
@@ -173,15 +177,34 @@ For more detailed information visit the `testing documentation
 <https://jedi.readthedocs.org/en/latest/docs/testing.html>`_
 
 
+Acknowledgements
+================
+
+- Takafumi Arakaki (@tkf) for creating a solid test environment and a lot of
+  other things.
+- Danilo Bargen (@dbrgn) for general housekeeping and being a good friend :).
+- Guido van Rossum (@gvanrossum) for creating the parser generator pgen2
+  (originally used in lib2to3).
+
+
+
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
+.. _company-mode: https://github.com/syohex/emacs-company-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
 .. _anaconda-mode: https://github.com/proofit404/anaconda-mode
 .. _ycmd: https://github.com/abingham/emacs-ycmd
 .. _sublimejedi: https://github.com/srusskih/SublimeJEDI
 .. _anaconda: https://github.com/DamnWidget/anaconda
-.. _SynWrite: http://uvviewsoft.com/synjedi/
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _Kate: http://kate-editor.org
+.. _Atom: https://atom.io/
+.. _autocomplete-python: https://atom.io/packages/autocomplete-python
+.. _SourceLair: https://www.sourcelair.com
+.. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
+.. _Visual Studio Code: https://code.visualstudio.com/
+.. _gedi: https://github.com/isamert/gedi
+.. _Eric IDE: http://eric-ide.python-projects.org

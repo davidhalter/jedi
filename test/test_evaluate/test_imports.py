@@ -56,6 +56,13 @@ def test_not_importable_file():
     assert not jedi.Script(src, path='example.py').completions()
 
 
+def test_import_unique():
+    src = "import os; os.path"
+    defs = jedi.Script(src, path='example.py').goto_definitions()
+    defs = [d._definition for d in defs]
+    assert len(defs) == len(set(defs))
+
+
 def test_cache_works_with_sys_path_param(tmpdir):
     foo_path = tmpdir.join('foo')
     bar_path = tmpdir.join('bar')
@@ -70,3 +77,15 @@ def test_cache_works_with_sys_path_param(tmpdir):
 
     assert 'bar' in [c.name for c in bar_completions]
     assert 'foo' not in [c.name for c in bar_completions]
+
+
+def test_import_completion_docstring():
+    import abc
+    s = jedi.Script('"""test"""\nimport ab')
+    completions = s.completions()
+    assert len(completions) == 1
+    assert completions[0].docstring(fast=False) == abc.__doc__
+
+    # However for performance reasons not all modules are loaded and the
+    # docstring is empty in this case.
+    assert completions[0].docstring() == ''

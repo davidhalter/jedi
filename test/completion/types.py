@@ -79,6 +79,18 @@ dic2.popitem
 #? int()
 dic2['asdf']
 
+d = {'a': 3, 1.0: list}
+
+#? int() list
+d.values()[0]
+##? int() list
+dict(d).values()[0]
+
+#? str()
+d.items()[0][0]
+#? int()
+d.items()[0][1]
+
 # -----------------
 # set
 # -----------------

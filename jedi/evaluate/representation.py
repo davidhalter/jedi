@@ -17,13 +17,18 @@ and others. Here's a list:
 ====================================== ========================================
 **Method**                             **Description**
 -------------------------------------- ----------------------------------------
-py__call__(evaluator, params: Array)   On callable objects, returns types.
+py__call__(params: Array)              On callable objects, returns types.
 py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
-py__bases__(evaluator)                 Returns a list of base classes.
-py__mro__(evaluator)                   Returns a list of classes (the mro).
-py__getattribute__(evaluator, name)    Returns a list of attribute values. The
-                                       name can be str or Name.
+py__bases__()                          Returns a list of base classes.
+py__mro__()                            Returns a list of classes (the mro).
+py__iter__()                           Returns a generator of a set of types.
+py__class__()                          Returns the class of an instance.
+py__getitem__(index: int/str)          Returns a a set of types of the index.
+                                       Can raise an IndexError/KeyError.
+py__file__()                           Only on modules.
+py__package__()                        Only on modules. For the import system.
+py__path__()                           Only on modules. For the import system.
 ====================================== ========================================
 
 __
@@ -34,16 +39,18 @@ import imp
 import re
 from itertools import chain
 
-from jedi._compatibility import use_metaclass, unicode, Python3Method
+from jedi._compatibility import use_metaclass, unicode, Python3Method, is_py3
 from jedi.parser import tree
 from jedi import debug
 from jedi import common
 from jedi.cache import underscore_memoization, cache_star_import
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
 from jedi.evaluate import compiled
+from jedi.evaluate.compiled import mixed
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
+from jedi.evaluate import pep0484
 from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
@@ -83,7 +90,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         self.is_generated = is_generated
 
         if base.name.get_code() in ['list', 'set'] \
-                and compiled.builtin == base.get_parent_until():
+                and evaluator.BUILTINS == base.get_parent_until():
             # compare the module path with the builtin name.
             self.var_args = iterable.check_array_instances(evaluator, self)
         elif not is_generated:
@@ -96,10 +103,13 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             else:
                 evaluator.execute(method, self.var_args)
 
+    def is_class(self):
+        return False
+
     @property
     def py__call__(self):
-        def actual(evaluator, params):
-            return evaluator.execute(method, params)
+        def actual(params):
+            return self._evaluator.execute(method, params)
 
         try:
             method = self.get_subscope_by_name('__call__')
@@ -109,7 +119,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
         return actual
 
-    def py__class__(self, evaluator):
+    def py__class__(self):
         return self.base
 
     def py__bool__(self):
@@ -153,8 +163,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     sub = self._get_method_execution(sub)
             for name_list in sub.names_dict.values():
                 for name in name_list:
-                    if name.value == self_name and name.prev_sibling() is None:
-                        trailer = name.next_sibling()
+                    if name.value == self_name and name.get_previous_sibling() is None:
+                        trailer = name.get_next_sibling()
                         if tree.is_node(trailer, 'trailer') \
                                 and len(trailer.children) == 2 \
                                 and trailer.children[0] == '.':
@@ -176,17 +186,18 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        args = [obj, obj.base] if isinstance(obj, Instance) else [compiled.none_obj, obj]
+        none_obj = compiled.create(self._evaluator, None)
+        args = [obj, obj.base] if isinstance(obj, Instance) else [none_obj, obj]
         try:
             return self.execute_subscope_by_name('__get__', *args)
         except KeyError:
-            return [self]
+            return set([self])
 
     @memoize_default()
     def names_dicts(self, search_global):
         yield self._self_names_dict()
 
-        for s in self.base.py__mro__(self._evaluator)[1:]:
+        for s in self.base.py__mro__()[1:]:
             if not isinstance(s, compiled.CompiledObject):
                 # Compiled objects don't have `self.` names.
                 for inst in self._evaluator.execute(s):
@@ -195,21 +206,35 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         for names_dict in self.base.names_dicts(search_global=False, is_instance=True):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
-    def get_index_types(self, evaluator, index_array):
-        indexes = iterable.create_indexes_or_slices(self._evaluator, index_array)
-        if any([isinstance(i, iterable.Slice) for i in indexes]):
-            # Slice support in Jedi is very marginal, at the moment, so just
-            # ignore them in case of __getitem__.
-            # TODO support slices in a more general way.
-            indexes = []
-
+    def py__getitem__(self, index):
         try:
             method = self.get_subscope_by_name('__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
-            return []
+            return set()
         else:
-            return self._evaluator.execute(method, [iterable.AlreadyEvaluated(indexes)])
+            index_obj = compiled.create(self._evaluator, index)
+            return self._evaluator.execute_evaluated(method, index_obj)
+
+    def py__iter__(self):
+        try:
+            method = self.get_subscope_by_name('__iter__')
+        except KeyError:
+            debug.warning('No __iter__ on %s.' % self)
+            return
+        else:
+            iters = self._evaluator.execute(method)
+            for generator in iters:
+                if isinstance(generator, Instance):
+                    # `__next__` logic.
+                    name = '__next__' if is_py3 else 'next'
+                    try:
+                        yield generator.execute_subscope_by_name(name)
+                    except KeyError:
+                        debug.warning('Instance has no __next__ function in %s.', generator)
+                else:
+                    for typ in generator.py__iter__():
+                        yield typ
 
     @property
     @underscore_memoization
@@ -228,8 +253,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         dec = ''
         if self.decorates is not None:
             dec = " decorates " + repr(self.decorates)
-        return "<e%s of %s(%s)%s>" % (type(self).__name__, self.base,
-                                      self.var_args, dec)
+        return "<%s of %s(%s)%s>" % (type(self).__name__, self.base,
+                                     self.var_args, dec)
 
 
 class LazyInstanceDict(object):
@@ -355,13 +380,13 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
         """
         return self.var.is_scope()
 
-    def py__call__(self, evaluator, params):
+    def py__call__(self, params):
         if isinstance(self.var, compiled.CompiledObject):
             # This check is a bit strange, but CompiledObject itself is a bit
             # more complicated than we would it actually like to be.
-            return self.var.py__call__(evaluator, params)
+            return self.var.py__call__(params)
         else:
-            return Function.py__call__(self, evaluator, params)
+            return Function.py__call__(self, params)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
@@ -398,7 +423,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         self.base = base
 
     @memoize_default(default=())
-    def py__mro__(self, evaluator):
+    def py__mro__(self):
         def add(cls):
             if cls not in mro:
                 mro.append(cls)
@@ -406,7 +431,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         mro = [self]
         # TODO Do a proper mro resolution. Currently we are just listing
         # classes. However, it's a complicated algorithm.
-        for cls in self.py__bases__(self._evaluator):
+        for cls in self.py__bases__():
             # TODO detect for TypeError: duplicate base class str,
             # e.g.  `class X(str, str): pass`
             try:
@@ -426,24 +451,24 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
                 pass
             else:
                 add(cls)
-                for cls_new in mro_method(evaluator):
+                for cls_new in mro_method():
                     add(cls_new)
         return tuple(mro)
 
     @memoize_default(default=())
-    def py__bases__(self, evaluator):
+    def py__bases__(self):
         arglist = self.base.get_super_arglist()
         if arglist:
             args = param.Arguments(self._evaluator, arglist)
             return list(chain.from_iterable(args.eval_args()))
         else:
-            return [compiled.object_obj]
+            return [compiled.create(self._evaluator, object)]
 
-    def py__call__(self, evaluator, params):
-        return [Instance(evaluator, self, params)]
+    def py__call__(self, params):
+        return set([Instance(self._evaluator, self, params)])
 
-    def py__getattribute__(self, name):
-        return self._evaluator.find_types(self, name)
+    def py__class__(self):
+        return compiled.create(self._evaluator, type)
 
     @property
     def params(self):
@@ -453,7 +478,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         if search_global:
             yield self.names_dict
         else:
-            for scope in self.py__mro__(self._evaluator):
+            for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
                     yield scope.names_dicts(False, is_instance)[0]
                 else:
@@ -463,7 +488,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         return True
 
     def get_subscope_by_name(self, name):
-        for s in self.py__mro__(self._evaluator):
+        for s in self.py__mro__():
             for sub in reversed(s.subscopes):
                 if sub.name.value == name:
                         return sub
@@ -527,8 +552,10 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 # Create param array.
                 if isinstance(f, Function):
                     old_func = f  # TODO this is just hacky. change.
-                else:
+                elif f.type == 'funcdef':
                     old_func = Function(self._evaluator, f, is_decorated=True)
+                else:
+                    old_func = f
 
                 wrappers = self._evaluator.execute_evaluated(decorator, old_func)
                 if not len(wrappers):
@@ -538,7 +565,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                     # TODO resolve issue with multiple wrappers -> multiple types
                     debug.warning('multiple wrappers found %s %s',
                                   self.base_func, wrappers)
-                f = wrappers[0]
+                f = list(wrappers)[0]
                 if isinstance(f, (Instance, Function)):
                     f.decorates = self
 
@@ -549,15 +576,33 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         if search_global:
             yield self.names_dict
         else:
-            for names_dict in compiled.magic_function_class.names_dicts(False):
+            scope = compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
+            for names_dict in scope.names_dicts(False):
                 yield names_dict
 
     @Python3Method
-    def py__call__(self, evaluator, params):
+    def py__call__(self, params):
         if self.base.is_generator():
-            return [iterable.Generator(evaluator, self, params)]
+            return set([iterable.Generator(self._evaluator, self, params)])
         else:
-            return FunctionExecution(evaluator, self, params).get_return_types()
+            return FunctionExecution(self._evaluator, self, params).get_return_types()
+
+    @memoize_default()
+    def py__annotations__(self):
+        parser_func = self.base
+        return_annotation = parser_func.annotation()
+        if return_annotation:
+            dct = {'return': return_annotation}
+        else:
+            dct = {}
+        for function_param in parser_func.params:
+            param_annotation = function_param.annotation()
+            if param_annotation is not None:
+                dct[function_param.name.value] = param_annotation
+        return dct
+
+    def py__class__(self):
+        return compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)
@@ -588,11 +633,22 @@ class FunctionExecution(Executed):
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         self._copy_dict = {}
-        new_func = helpers.deep_ast_copy(base.base_func, self, self._copy_dict)
-        self.children = new_func.children
-        self.names_dict = new_func.names_dict
+        funcdef = base.base_func
+        if isinstance(funcdef, mixed.MixedObject):
+            # The extra information in mixed is not needed anymore. We can just
+            # unpack it and give it the tree object.
+            funcdef = funcdef.definition
 
-    @memoize_default(default=())
+        # Just overwrite the old version. We don't need it anymore.
+        funcdef = helpers.deep_ast_copy(funcdef, new_elements=self._copy_dict)
+        for child in funcdef.children:
+            if child.type not in ('operator', 'keyword'):
+                # Not all nodes are properly copied by deep_ast_copy.
+                child.parent = self
+        self.children = funcdef.children
+        self.names_dict = funcdef.names_dict
+
+    @memoize_default(default=set())
     @recursion.execution_recursion_decorator
     def get_return_types(self, check_yields=False):
         func = self.base
@@ -607,25 +663,86 @@ class FunctionExecution(Executed):
             # If we do have listeners, that means that there's not a regular
             # execution ongoing. In this case Jedi is interested in the
             # inserted params, not in the actual execution of the function.
-            return []
+            return set()
 
         if check_yields:
-            types = []
+            types = set()
             returns = self.yields
         else:
             returns = self.returns
-            types = list(docstrings.find_return_types(self._evaluator, func))
+            types = set(docstrings.find_return_types(self._evaluator, func))
+            types |= set(pep0484.find_return_types(self._evaluator, func))
 
         for r in returns:
             check = flow_analysis.break_check(self._evaluator, self, r)
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
             else:
-                types += self._evaluator.eval_element(r.children[1])
+                if check_yields:
+                    types |= iterable.unite(self._eval_yield(r))
+                else:
+                    types |= self._evaluator.eval_element(r.children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
         return types
+
+    def _eval_yield(self, yield_expr):
+        element = yield_expr.children[1]
+        if element.type == 'yield_arg':
+            # It must be a yield from.
+            yield_from_types = self._evaluator.eval_element(element.children[1])
+            for result in iterable.py__iter__(self._evaluator, yield_from_types, element):
+                yield result
+        else:
+            yield self._evaluator.eval_element(element)
+
+    @recursion.execution_recursion_decorator
+    def get_yield_types(self):
+        yields = self.yields
+        stopAt = tree.ForStmt, tree.WhileStmt, FunctionExecution, tree.IfStmt
+        for_parents = [(x, x.get_parent_until((stopAt))) for x in yields]
+
+        # Calculate if the yields are placed within the same for loop.
+        yields_order = []
+        last_for_stmt = None
+        for yield_, for_stmt in for_parents:
+            # For really simple for loops we can predict the order. Otherwise
+            # we just ignore it.
+            parent = for_stmt.parent
+            if parent.type == 'suite':
+                parent = parent.parent
+            if for_stmt.type == 'for_stmt' and parent == self \
+                    and for_stmt.defines_one_name():  # Simplicity for now.
+                if for_stmt == last_for_stmt:
+                    yields_order[-1][1].append(yield_)
+                else:
+                    yields_order.append((for_stmt, [yield_]))
+            elif for_stmt == self:
+                yields_order.append((None, [yield_]))
+            else:
+                yield self.get_return_types(check_yields=True)
+                return
+            last_for_stmt = for_stmt
+
+        evaluator = self._evaluator
+        for for_stmt, yields in yields_order:
+            if for_stmt is None:
+                # No for_stmt, just normal yields.
+                for yield_ in yields:
+                    for result in self._eval_yield(yield_):
+                        yield result
+            else:
+                input_node = for_stmt.get_input_node()
+                for_types = evaluator.eval_element(input_node)
+                ordered = iterable.py__iter__(evaluator, for_types, input_node)
+                for index_types in ordered:
+                    dct = {str(for_stmt.children[1]): index_types}
+                    evaluator.predefined_if_name_dict_dict[for_stmt] = dct
+                    for yield_in_same_for_stmt in yields:
+                        for result in self._eval_yield(yield_in_same_for_stmt):
+                            yield result
+                    del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def names_dicts(self, search_global):
         yield self.names_dict
@@ -646,50 +763,28 @@ class FunctionExecution(Executed):
     def name_for_position(self, position):
         return tree.Function.name_for_position(self, position)
 
-    def _copy_list(self, lst):
-        """
-        Copies a list attribute of a parser Function. Copying is very
-        expensive, because it is something like `copy.deepcopy`. However, these
-        copied objects can be used for the executions, as if they were in the
-        execution.
-        """
-        objects = []
-        for element in lst:
-            self._scope_copy(element.parent)
-            copied = helpers.deep_ast_copy(element, self._copy_dict)
-            objects.append(copied)
-        return objects
-
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', 'name', 'type']:
             raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
         return getattr(self.base, name)
 
-    def _scope_copy(self, scope):
-        raise NotImplementedError
-        """ Copies a scope (e.g. `if foo:`) in an execution """
-        if scope != self.base.base_func:
-            # Just make sure the parents been copied.
-            self._scope_copy(scope.parent)
-            helpers.deep_ast_copy(scope, self._copy_dict)
-
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def returns(self):
         return tree.Scope._search_in_scope(self, tree.ReturnStmt)
 
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def yields(self):
         return tree.Scope._search_in_scope(self, tree.YieldExpr)
 
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def statements(self):
         return tree.Scope._search_in_scope(self, tree.ExprStmt)
 
     @common.safe_property
-    @memoize_default([])
+    @memoize_default()
     def subscopes(self):
         return tree.Scope._search_in_scope(self, tree.Scope)
 
@@ -742,7 +837,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
     @memoize_default()
     def _module_attributes_dict(self):
         def parent_callback():
-            return self._evaluator.execute(compiled.create(self._evaluator, str))[0]
+            # Create a string type object (without a defined string in it):
+            return list(self._evaluator.execute(compiled.create(self._evaluator, str)))[0]
 
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
@@ -757,7 +853,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
     def _get_init_directory(self):
         for suffix, _, _ in imp.get_suffixes():
             ending = '__init__' + suffix
-            if self.py__file__().endswith(ending):
+            py__file__ = self.py__file__()
+            if py__file__ is not None and py__file__.endswith(ending):
                 # Remove the ending, including the separator.
                 return self.py__file__()[:-len(ending) - 1]
         return None
@@ -849,6 +946,9 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         #    names.append(helpers.FakeName('path', parent=self))
 
         return names
+
+    def py__class__(self):
+        return compiled.get_special_object(self._evaluator, 'MODULE_CLASS')
 
     def __getattr__(self, name):
         return getattr(self._module, name)

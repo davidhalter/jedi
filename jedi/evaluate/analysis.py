@@ -5,19 +5,25 @@ from jedi import debug
 from jedi.parser import tree
 from jedi.evaluate.compiled import CompiledObject
 
+from jedi.common import unite
+
 
 CODES = {
     'attribute-error': (1, AttributeError, 'Potential AttributeError.'),
     'name-error': (2, NameError, 'Potential NameError.'),
     'import-error': (3, ImportError, 'Potential ImportError.'),
-    'type-error-generator': (4, TypeError, "TypeError: 'generator' object is not subscriptable."),
-    'type-error-too-many-arguments': (5, TypeError, None),
-    'type-error-too-few-arguments': (6, TypeError, None),
-    'type-error-keyword-argument': (7, TypeError, None),
-    'type-error-multiple-values': (8, TypeError, None),
-    'type-error-star-star': (9, TypeError, None),
-    'type-error-star': (10, TypeError, None),
-    'type-error-operation': (11, TypeError, None),
+    'type-error-too-many-arguments': (4, TypeError, None),
+    'type-error-too-few-arguments': (5, TypeError, None),
+    'type-error-keyword-argument': (6, TypeError, None),
+    'type-error-multiple-values': (7, TypeError, None),
+    'type-error-star-star': (8, TypeError, None),
+    'type-error-star': (9, TypeError, None),
+    'type-error-operation': (10, TypeError, None),
+    'type-error-not-iterable': (11, TypeError, None),
+    'type-error-isinstance': (12, TypeError, None),
+    'type-error-not-subscriptable': (13, TypeError, None),
+    'value-error-too-many-values': (14, ValueError, None),
+    'value-error-too-few-values': (15, ValueError, None),
 }
 
 
@@ -158,8 +164,8 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
                     from jedi.evaluate import iterable
                     if isinstance(cls, iterable.Array) and cls.type == 'tuple':
                         # multiple exceptions
-                        for c in cls.values():
-                            if check_match(c, exception):
+                        for typ in unite(cls.py__iter__()):
+                            if check_match(typ, exception):
                                 return True
                     else:
                         if check_match(cls, exception):
@@ -168,7 +174,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
     def check_hasattr(node, suite):
         try:
             assert suite.start_pos <= jedi_obj.start_pos < suite.end_pos
-            assert node.type == 'power'
+            assert node.type in ('power', 'atom_expr')
             base = node.children[0]
             assert base.type == 'name' and base.value == 'hasattr'
             trailer = node.children[1]
@@ -183,7 +189,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             # Check name
             key, values = args[1]
             assert len(values) == 1
-            names = evaluator.eval_element(values[0])
+            names = list(evaluator.eval_element(values[0]))
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
             assert names[0].obj == str(payload[1])
 
@@ -208,95 +214,3 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
         obj = obj.parent
 
     return False
-
-
-def get_module_statements(module):
-    """
-    Returns the statements used in a module. All these statements should be
-    evaluated to check for potential exceptions.
-    """
-    def check_children(node):
-        try:
-            children = node.children
-        except AttributeError:
-            return []
-        else:
-            nodes = []
-            for child in children:
-                nodes += check_children(child)
-                if child.type == 'trailer':
-                    c = child.children
-                    if c[0] == '(' and c[1] != ')':
-                        if c[1].type != 'arglist':
-                            if c[1].type == 'argument':
-                                nodes.append(c[1].children[-1])
-                            else:
-                                nodes.append(c[1])
-                        else:
-                            for argument in c[1].children:
-                                if argument.type == 'argument':
-                                    nodes.append(argument.children[-1])
-                                elif argument.type != 'operator':
-                                    nodes.append(argument)
-            return nodes
-
-    def add_nodes(nodes):
-        new = set()
-        for node in nodes:
-            if isinstance(node, tree.Flow):
-                children = node.children
-                if node.type == 'for_stmt':
-                    children = children[2:]  # Don't want to include the names.
-                # Pick the suite/simple_stmt.
-                new |= add_nodes(children)
-            elif node.type in ('simple_stmt', 'suite'):
-                new |= add_nodes(node.children)
-            elif node.type in ('return_stmt', 'yield_expr'):
-                try:
-                    new.add(node.children[1])
-                except IndexError:
-                    pass
-            elif node.type not in ('whitespace', 'operator', 'keyword',
-                                   'parameters', 'decorated', 'except_clause') \
-                    and not isinstance(node, (tree.ClassOrFunc, tree.Import)):
-                new.add(node)
-
-                try:
-                    children = node.children
-                except AttributeError:
-                    pass
-                else:
-                    for next_node in children:
-                        new.update(check_children(node))
-                        if next_node.type != 'keyword' and node.type != 'expr_stmt':
-                            new.add(node)
-        return new
-
-    nodes = set()
-    import_names = set()
-    decorated_funcs = []
-    for scope in module.walk():
-        for imp in set(scope.imports):
-            import_names |= set(imp.get_defined_names())
-            if imp.is_nested():
-                import_names |= set(path[-1] for path in imp.paths())
-
-        children = scope.children
-        if isinstance(scope, tree.ClassOrFunc):
-            children = children[2:]  # We don't want to include the class name.
-        nodes |= add_nodes(children)
-
-        for flow in scope.flows:
-            if flow.type == 'for_stmt':
-                nodes.add(flow.children[3])
-            elif flow.type == 'try_stmt':
-                nodes.update(e for e in flow.except_clauses() if e is not None)
-
-        try:
-            decorators = scope.get_decorators()
-        except AttributeError:
-            pass
-        else:
-            if decorators:
-                decorated_funcs.append(scope)
-    return nodes, import_names, decorated_funcs

@@ -178,6 +178,23 @@ nested_default(a=1.0)[1]
 #? str()
 nested_default(a=1.0, b='')[1]
 
+# Defaults should only work if they are defined before - not after.
+def default_function(a=default):
+    #?
+    return a
+
+#?
+default_function()
+
+default = int()
+
+def default_function(a=default):
+    #? int()
+    return a
+
+#? int()
+default_function()
+
 
 # -----------------
 # closures
@@ -185,8 +202,9 @@ nested_default(a=1.0, b='')[1]
 def a():
     l = 3
     def func_b():
-        #? str()
         l = ''
+        #? str()
+        l
     #? ['func_b']
     func_b
     #? int()
@@ -327,6 +345,15 @@ exe[3]
 #? set
 exe[3]['c']
 
+
+def kwargs_iteration(**kwargs):
+    return kwargs
+
+for x in kwargs_iteration(d=3):
+    #? float()
+    {'d': 1.0, 'c': '1'}[x]
+
+
 # -----------------
 # nested *args
 # -----------------
@@ -342,12 +369,12 @@ def nested_args2(*args, **kwargs):
 #? int()
 nested_args('', 1, 1.0, list)
 #? []
-nested_args('')
+nested_args('').
 
 #? int()
 nested_args2('', 1, 1.0)
 #? []
-nested_args2('')
+nested_args2('').
 
 # -----------------
 # nested **kwargs
@@ -371,9 +398,9 @@ nested_kw(a=3.0, b=1)
 #? int()
 nested_kw(b=1, a=r"")
 #? []
-nested_kw(1, '')
+nested_kw(1, '').
 #? []
-nested_kw(a='')
+nested_kw(a='').
 
 #? int()
 nested_kw2(b=1)
@@ -382,9 +409,9 @@ nested_kw2(b=1, c=1.0)
 #? int()
 nested_kw2(c=1.0, b=1)
 #? []
-nested_kw2('')
+nested_kw2('').
 #? []
-nested_kw2(a='')
+nested_kw2(a='').
 #? []
 nested_kw2('', b=1).
 
@@ -404,14 +431,14 @@ nested_both('', b=1, c=1.0, list)
 nested_both('', c=1.0, b=1, list)
 
 #? []
-nested_both('')
+nested_both('').
 
 #? int()
 nested_both2('', b=1, c=1.0)
 #? int()
 nested_both2('', c=1.0, b=1)
 #? []
-nested_both2('')
+nested_both2('').
 
 # -----------------
 # nested *args/**kwargs with a default arg
@@ -438,7 +465,7 @@ nested_def2('', b=1, c=1.0)[1]
 #? int()
 nested_def2('', c=1.0, b=1)[1]
 #? []
-nested_def2('')[1]
+nested_def2('')[1].
 
 # -----------------
 # magic methods

@@ -5,11 +5,11 @@ from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
 from jedi.parser import tree
-from jedi.parser import Parser
+from jedi.parser import ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
-from jedi import cache
+from jedi.parser.utils import load_parser, save_parser
 
 
 def get_venv_path(venv):
@@ -99,7 +99,8 @@ def _paths_from_assignment(evaluator, expr_stmt):
     for assignee, operator in zip(expr_stmt.children[::2], expr_stmt.children[1::2]):
         try:
             assert operator in ['=', '+=']
-            assert tree.is_node(assignee, 'power') and len(assignee.children) > 1
+            assert tree.is_node(assignee, 'power', 'atom_expr') and \
+                len(assignee.children) > 1
             c = assignee.children
             assert c[0].type == 'name' and c[0].value == 'sys'
             trailer = c[1]
@@ -118,11 +119,13 @@ def _paths_from_assignment(evaluator, expr_stmt):
         except AssertionError:
             continue
 
-        from jedi.evaluate.iterable import get_iterator_types
+        from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
-        for val in get_iterator_types(evaluator.eval_statement(expr_stmt)):
-            if is_string(val):
-                yield val.obj
+        types = evaluator.eval_element(expr_stmt)
+        for types in py__iter__(evaluator, types, expr_stmt):
+            for typ in types:
+                if is_string(typ):
+                    yield typ.obj
 
 
 def _paths_from_list_modifications(module_path, trailer1, trailer2):
@@ -150,7 +153,7 @@ def _check_module(evaluator, module):
     def get_sys_path_powers(names):
         for name in names:
             power = name.parent.parent
-            if tree.is_node(power, 'power'):
+            if tree.is_node(power, 'power', 'atom_expr'):
                 c = power.children
                 if isinstance(c[0], tree.Name) and c[0].value == 'sys' \
                         and tree.is_node(c[1], 'trailer'):
@@ -183,6 +186,7 @@ def sys_path_with_modifications(evaluator, module):
         return list(evaluator.sys_path)
 
     curdir = os.path.abspath(os.curdir)
+    #TODO why do we need a chdir?
     with common.ignored(OSError):
         os.chdir(os.path.dirname(module.path))
 
@@ -207,11 +211,11 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
             debug.dbg('Error trying to read buildout_script: %s', buildout_script)
             return
 
-        p = Parser(evaluator.grammar, source, buildout_script)
-        cache.save_parser(buildout_script, p)
+        p = ParserWithRecovery(evaluator.grammar, source, buildout_script)
+        save_parser(buildout_script, p)
         return p.module
 
-    cached = cache.load_parser(buildout_script)
+    cached = load_parser(buildout_script)
     module = cached and cached.module or load(buildout_script)
     if not module:
         return
@@ -271,8 +275,8 @@ def _get_buildout_scripts(module_path):
                 firstline = f.readline()
                 if firstline.startswith('#!') and 'python' in firstline:
                     extra_module_paths.append(filepath)
-        except IOError as e:
-            # either permission error or race cond. because file got deleted
+        except (UnicodeDecodeError, IOError) as e:
+            # Probably a binary file; permission error or race cond. because file got deleted
             # ignore
             debug.warning(unicode(e))
             continue

@@ -87,7 +87,7 @@ from os import path
 # should not return a function, because `a` is a function above
 def f(b, a): return a
 #? []
-f(b=3)
+f(b=3).
 
 # -----------------
 # closure

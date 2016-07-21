@@ -6,14 +6,42 @@ mixing in Python code, the autocompletion should work much better for builtins.
 
 import os
 import inspect
+import types
 
-from jedi._compatibility import is_py3, builtins, unicode
+from jedi._compatibility import is_py3, builtins, unicode, is_py34
 from jedi.cache import memoize_function
-from jedi.parser import Parser, load_grammar
+from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
 
 modules = {}
+
+
+MethodDescriptorType = type(str.replace)
+# These are not considered classes and access is granted even though they have
+# a __class__ attribute.
+NOT_CLASS_TYPES = (
+    types.BuiltinFunctionType,
+    types.CodeType,
+    types.FrameType,
+    types.FunctionType,
+    types.GeneratorType,
+    types.GetSetDescriptorType,
+    types.LambdaType,
+    types.MemberDescriptorType,
+    types.MethodType,
+    types.ModuleType,
+    types.TracebackType,
+    MethodDescriptorType
+)
+
+if is_py3:
+    NOT_CLASS_TYPES += (
+        types.MappingProxyType,
+        types.SimpleNamespace
+    )
+    if is_py34:
+        NOT_CLASS_TYPES += (types.DynamicClassAttribute,)
 
 
 def _load_faked_module(module):
@@ -31,8 +59,8 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        grammar = load_grammar('grammar3.4')
-        module = Parser(grammar, unicode(source), module_name).module
+        grammar = load_grammar(version='3.4')
+        module = ParserWithRecovery(grammar, unicode(source), module_name).module
         modules[module_name] = module
 
         if module_name == 'builtins' and not is_py3:
@@ -65,7 +93,15 @@ def get_module(obj):
         # Unfortunately in some cases like `int` there's no __module__
         return builtins
     else:
-        return __import__(imp_plz)
+        if imp_plz is None:
+            # Happens for example in `(_ for _ in []).send.__module__`.
+            return builtins
+        else:
+            try:
+                return __import__(imp_plz)
+            except ImportError:
+                # __module__ can be something arbitrary that doesn't exist.
+                return builtins
 
 
 def _faked(module, obj, name):
@@ -75,7 +111,7 @@ def _faked(module, obj, name):
 
     faked_mod = _load_faked_module(module)
     if faked_mod is None:
-        return
+        return None
 
     # Having the module as a `parser.representation.module`, we need to scan
     # for methods.
@@ -84,23 +120,32 @@ def _faked(module, obj, name):
             return search_scope(faked_mod, obj.__name__)
         elif not inspect.isclass(obj):
             # object is a method or descriptor
-            cls = search_scope(faked_mod, obj.__objclass__.__name__)
-            if cls is None:
-                return
-            return search_scope(cls, obj.__name__)
+            try:
+                objclass = obj.__objclass__
+            except AttributeError:
+                return None
+            else:
+                cls = search_scope(faked_mod, objclass.__name__)
+                if cls is None:
+                    return None
+                return search_scope(cls, obj.__name__)
     else:
         if obj == module:
             return search_scope(faked_mod, name)
         else:
-            cls = search_scope(faked_mod, obj.__name__)
+            try:
+                cls_name = obj.__name__
+            except AttributeError:
+                return None
+            cls = search_scope(faked_mod, cls_name)
             if cls is None:
-                return
+                return None
             return search_scope(cls, name)
 
 
 @memoize_function
 def get_faked(module, obj, name=None):
-    obj = obj.__class__ if is_class_instance(obj) else obj
+    obj = type(obj) if is_class_instance(obj) else obj
     result = _faked(module, obj, name)
     if result is None or isinstance(result, pt.Class):
         # We're not interested in classes. What we want is functions.
@@ -119,7 +164,9 @@ def get_faked(module, obj, name=None):
 
 def is_class_instance(obj):
     """Like inspect.* methods."""
-    return not (inspect.isclass(obj) or inspect.ismodule(obj)
-                or inspect.isbuiltin(obj) or inspect.ismethod(obj)
-                or inspect.ismethoddescriptor(obj) or inspect.iscode(obj)
-                or inspect.isgenerator(obj))
+    try:
+        cls = obj.__class__
+    except AttributeError:
+        return False
+    else:
+        return cls != type and not issubclass(cls, NOT_CLASS_TYPES)

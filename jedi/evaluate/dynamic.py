@@ -26,6 +26,9 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
 
 
+MAX_PARAM_SEARCHES = 20
+
+
 class ParamListener(object):
     """
     This listener is used to get the params for a function.
@@ -52,17 +55,21 @@ def search_params(evaluator, param):
     is.
     """
     if not settings.dynamic_params:
-        return []
+        return set()
 
-    func = param.get_parent_until(tree.Function)
-    debug.dbg('Dynamic param search for %s in %s.', param, str(func.name))
-    # Compare the param names.
-    names = [n for n in search_function_call(evaluator, func)
-             if n.value == param.name.value]
-    # Evaluate the ExecutedParams to types.
-    result = list(chain.from_iterable(n.parent.eval(evaluator) for n in names))
-    debug.dbg('Dynamic param result %s', result)
-    return result
+    evaluator.dynamic_params_depth += 1
+    try:
+        func = param.get_parent_until(tree.Function)
+        debug.dbg('Dynamic param search for %s in %s.', param, str(func.name), color='MAGENTA')
+        # Compare the param names.
+        names = [n for n in search_function_call(evaluator, func)
+                 if n.value == param.name.value]
+        # Evaluate the ExecutedParams to types.
+        result = set(chain.from_iterable(n.parent.eval(evaluator) for n in names))
+        debug.dbg('Dynamic param result %s', result, color='MAGENTA')
+        return result
+    finally:
+        evaluator.dynamic_params_depth -= 1
 
 
 @memoize_default([], evaluator_is_first_arg=True)
@@ -72,52 +79,29 @@ def search_function_call(evaluator, func):
     """
     from jedi.evaluate import representation as er
 
-    def get_params_for_module(module):
-        """
-        Returns the values of a param, or an empty array.
-        """
-        @memoize_default([], evaluator_is_first_arg=True)
-        def get_posibilities(evaluator, module, func_name):
+    def get_possible_nodes(module, func_name):
             try:
                 names = module.used_names[func_name]
             except KeyError:
-                return []
+                return
 
             for name in names:
-                parent = name.parent
-                if tree.is_node(parent, 'trailer'):
-                    parent = parent.parent
+                bracket = name.get_next_leaf()
+                trailer = bracket.parent
+                if trailer.type == 'trailer' and bracket == '(':
+                    yield name, trailer
 
-                trailer = None
-                if tree.is_node(parent, 'power'):
-                    for t in parent.children[1:]:
-                        if t == '**':
-                            break
-                        if t.start_pos > name.start_pos and t.children[0] == '(':
-                            trailer = t
-                            break
-                if trailer is not None:
-                    types = evaluator.goto_definition(name)
-
-                    # We have to remove decorators, because they are not the
-                    # "original" functions, this way we can easily compare.
-                    # At the same time we also have to remove InstanceElements.
-                    undec = []
-                    for escope in types:
-                        if escope.isinstance(er.Function, er.Instance) \
-                                and escope.decorates is not None:
-                            undec.append(escope.decorates)
-                        elif isinstance(escope, er.InstanceElement):
-                            undec.append(escope.var)
-                        else:
-                            undec.append(escope)
-
-                    if evaluator.wrap(compare) in undec:
-                        # Only if we have the correct function we execute
-                        # it, otherwise just ignore it.
-                        evaluator.eval_trailer(types, trailer)
-            return listener.param_possibilities
-        return get_posibilities(evaluator, module, func_name)
+    def undecorate(typ):
+        # We have to remove decorators, because they are not the
+        # "original" functions, this way we can easily compare.
+        # At the same time we also have to remove InstanceElements.
+        if typ.isinstance(er.Function, er.Instance) \
+                and typ.decorates is not None:
+            return typ.decorates
+        elif isinstance(typ, er.InstanceElement):
+            return typ.var
+        else:
+            return typ
 
     current_module = func.get_parent_until()
     func_name = unicode(func.name)
@@ -134,13 +118,32 @@ def search_function_call(evaluator, func):
 
     try:
         result = []
-        # This is like backtracking: Get the first possible result.
+        i = 0
         for mod in imports.get_modules_containing_name(evaluator, [current_module], func_name):
-            result = get_params_for_module(mod)
+            for name, trailer in get_possible_nodes(mod, func_name):
+                i += 1
+
+                # This is a simple way to stop Jedi's dynamic param recursion
+                # from going wild: The deeper Jedi's in the recursin, the less
+                # code should be evaluated.
+                if i * evaluator.dynamic_params_depth > MAX_PARAM_SEARCHES:
+                    return listener.param_possibilities
+
+                for typ in evaluator.goto_definitions(name):
+                    undecorated = undecorate(typ)
+                    if evaluator.wrap(compare) == undecorated:
+                        # Only if we have the correct function we execute
+                        # it, otherwise just ignore it.
+                        evaluator.eval_trailer([typ], trailer)
+
+            result = listener.param_possibilities
+
+            # If there are results after processing a module, we're probably
+            # good to process.
             if result:
-                break
+                return result
     finally:
         # cleanup: remove the listener; important: should not stick.
         func.listeners.remove(listener)
 
-    return result
+    return set()

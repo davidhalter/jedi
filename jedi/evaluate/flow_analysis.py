@@ -45,7 +45,8 @@ def break_check(evaluator, base_scope, stmt, origin_scope=None):
         if element_scope == origin_scope:
             return REACHABLE
         origin_scope = origin_scope.parent
-    return _break_check(evaluator, stmt, base_scope, element_scope)
+    x = _break_check(evaluator, stmt, base_scope, element_scope)
+    return x
 
 
 def _break_check(evaluator, stmt, base_scope, element_scope):
@@ -62,7 +63,8 @@ def _break_check(evaluator, stmt, base_scope, element_scope):
             reachable = reachable.invert()
         else:
             node = element_scope.node_in_which_check_node(stmt)
-            reachable = _check_if(evaluator, node)
+            if node is not None:
+                reachable = _check_if(evaluator, node)
     elif isinstance(element_scope, (tree.TryStmt, tree.WhileStmt)):
         return UNSURE
 
@@ -70,9 +72,14 @@ def _break_check(evaluator, stmt, base_scope, element_scope):
     if reachable in (UNREACHABLE, UNSURE):
         return reachable
 
+    if element_scope.type == 'file_input':
+        # The definition is in another module and therefore just return what we
+        # have generated.
+        return reachable
     if base_scope != element_scope and base_scope != element_scope.parent:
         return reachable & _break_check(evaluator, stmt, base_scope, element_scope.parent)
-    return reachable
+    else:
+        return reachable
 
 
 def _check_if(evaluator, node):

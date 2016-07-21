@@ -21,6 +21,7 @@ Vim:
 
 - jedi-vim_
 - YouCompleteMe_
+- deoplete-jedi_
 
 Emacs:
 
@@ -47,14 +48,33 @@ Kate:
   <https://projects.kde.org/projects/kde/applications/kate/repository/entry/addons/kate/pate/src/plugins/python_autocomplete_jedi.py?rev=KDE%2F4.13>`__,
   you have to enable it, though.
 
+Atom:
 
-.. _other-software:
+- autocomplete-python_
 
-Other Software Using Jedi
--------------------------
+SourceLair:
 
-- wdb_ - Web Debugger
+- SourceLair_
 
+GNOME Builder:
+
+- `GNOME Builder`_ `supports it natively
+  <https://git.gnome.org/browse/gnome-builder/tree/plugins/jedi>`__,
+  and is enabled by default.
+
+Gedit:
+
+- gedi_
+
+Eric IDE:
+
+- `Eric IDE`_ (Available as a plugin)
+
+Web Debugger:
+
+- wdb_
+
+and many more!
 
 .. _repl-completion:
 
@@ -77,6 +97,7 @@ Using a custom ``$HOME/.pythonrc.py``
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
 .. _anaconda-mode: https://github.com/proofit404/anaconda-mode
@@ -86,3 +107,8 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _kate: http://kate-editor.org/
+.. _autocomplete-python: https://atom.io/packages/autocomplete-python
+.. _SourceLair: https://www.sourcelair.com
+.. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
+.. _gedi: https://github.com/isamert/gedi
+.. _Eric IDE: http://eric-ide.python-projects.org

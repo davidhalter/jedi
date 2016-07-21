@@ -22,7 +22,7 @@ def gen_ret(value):
 next(gen_ret(1))
 
 #? []
-next(gen_ret())
+next(gen_ret()).
 
 # generators evaluate to true if cast by bool.
 a = ''
@@ -42,7 +42,7 @@ def get(param):
         yield ""
 
 #? []
-get()[0]
+get()[0].
 
 # -----------------
 # __iter__
@@ -131,6 +131,18 @@ def simple():
         yield ""
 
 a, b = simple()
+#? int() str()
+a
+# For now this is ok.
+#?
+b
+
+
+def simple2():
+    yield 1
+    yield ""
+
+a, b = simple2()
 #? int()
 a
 #? str()
@@ -163,3 +175,25 @@ gen().send()
 
 #? 
 gen()()
+
+# -----------------
+# yield from
+# -----------------
+
+# python >= 3.3
+
+def yield_from():
+    yield from iter([1])
+
+#? int()
+next(yield_from())
+
+def yield_from_multiple():
+    yield from iter([1])
+    yield str()
+
+x, y = yield_from_multiple()
+#? int()
+x
+#? str()
+y

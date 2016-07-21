@@ -49,6 +49,8 @@ def scope_nested():
 
     #? float()
     import_tree.pkg.mod1.a
+    #? ['a', '__name__', '__package__', '__file__', '__doc__']
+    a = import_tree.pkg.mod1.
 
     import import_tree.random
     #? set
@@ -75,6 +77,7 @@ def scope_from_import_variable():
     without the use of ``sys.modules`` modifications (e.g. ``os.path`` see also
     github issue #213 for clarification.
     """
+    a = 3
     #? 
     from import_tree.mod2.fake import a
     #? 

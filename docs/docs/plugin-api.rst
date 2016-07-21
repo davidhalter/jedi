@@ -47,14 +47,14 @@ Completions:
    >>> script = jedi.Script(source, 1, 19, '')
    >>> script
    <jedi.api.Script object at 0x2121b10>
-   >>> completions = script.complete()
+   >>> completions = script.completions()
    >>> completions
    [<Completion: load>, <Completion: loads>]
    >>> completions[1]
    <Completion: loads>
    >>> completions[1].complete
    'oads'
-   >>> completions[1].word
+   >>> completions[1].name
    'loads'
 
 Definitions / Goto:

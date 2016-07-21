@@ -3,6 +3,14 @@
 Changelog
 ---------
 
+0.10.0 (2016-06-)
++++++++++++++++++
+
+- Actual semantic completions for the complete Python syntax.
+- Basic type inference for ``yield from`` PEP 380.
+- PEP 484 support (most of the important features of it). Thanks Claude! (@reinhrst)
+- Again a lot of internal changes.
+
 0.9.0 (2015-04-10)
 ++++++++++++++++++
 

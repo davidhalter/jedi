@@ -6,8 +6,10 @@ import pytest
 from . import helpers
 from . import run
 from . import refactor
+
 import jedi
 from jedi.evaluate.analysis import Warning
+from jedi import settings
 
 
 def pytest_addoption(parser):
@@ -88,10 +90,14 @@ class StaticAnalysisCase(object):
     The tests also start with `#!`, like the goto_definition tests.
     """
     def __init__(self, path):
-        self.skip = False
         self._path = path
         with open(path) as f:
             self._source = f.read()
+
+        self.skip = False
+        for line in self._source.splitlines():
+            self.skip = self.skip or run.skip_python_version(line)
+
 
     def collect_comparison(self):
         cases = []
@@ -121,5 +127,4 @@ def isolated_jedi_cache(monkeypatch, tmpdir):
     Same as `clean_jedi_cache`, but create the temporary directory for
     each test case (scope='function').
     """
-    from jedi import settings
     monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))

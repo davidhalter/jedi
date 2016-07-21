@@ -36,6 +36,45 @@ next(open(''))
 tuple.__itemsize__
 
 # -----------------
+# type() calls with one parameter
+# -----------------
+#? int
+type(1)
+#? int
+type(int())
+#? type
+type(int)
+#? type
+type(type)
+#? list
+type([])
+
+def x():
+    yield 1
+generator = type(x())
+#? generator
+type(x for x in [])
+#? type(x)
+type(lambda: x)
+
+import math
+import os
+#? type(os)
+type(math)
+class X(): pass
+#? type
+type(X)
+
+# -----------------
+# enumerate
+# -----------------
+for i, j in enumerate(["as", "ad"]):
+    #? int()
+    i
+    #? str()
+    j
+
+# -----------------
 # re
 # -----------------
 import re
@@ -173,3 +212,13 @@ class B(object):
 cls = random.choice([A, B])
 #? ['say', 'shout']
 cls().s
+
+# -----------------
+# random
+# -----------------
+
+import zipfile
+z = zipfile.ZipFile("foo")
+# It's too slow. So we don't run it at the moment.
+##? ['upper']
+z.read('name').upper

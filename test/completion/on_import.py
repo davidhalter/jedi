@@ -63,9 +63,13 @@ import datetime.date
 
 #? 21 ['import']
 from import_tree.pkg import pkg
+#? 49 ['a', '__name__', '__doc__', '__file__', '__package__']
+from import_tree.pkg.mod1 import not_existant,    # whitespace before
+#? ['a', '__name__', '__doc__', '__file__', '__package__']
+from import_tree.pkg.mod1 import not_existant, 
 #? 22 ['mod1']
 from import_tree.pkg. import mod1
-#? 17 ['mod1', 'mod2', 'random', 'pkg', 'rename1', 'rename2', 'recurse_class1', 'recurse_class2', 'invisible_pkg']
+#? 17 ['mod1', 'mod2', 'random', 'pkg', 'rename1', 'rename2', 'recurse_class1', 'recurse_class2', 'invisible_pkg', 'flow_import']
 from import_tree. import pkg
 
 #? 18 ['pkg']

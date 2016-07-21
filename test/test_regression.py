@@ -15,7 +15,7 @@ from jedi._compatibility import u
 from jedi import Script
 from jedi import api
 from jedi.evaluate import imports
-from jedi.parser import Parser, load_grammar
+from jedi.parser import ParserWithRecovery, load_grammar
 
 #jedi.set_debug_function()
 
@@ -102,7 +102,7 @@ class TestRegression(TestCase):
     def test_end_pos_line(self):
         # jedi issue #150
         s = u("x()\nx( )\nx(  )\nx (  )")
-        parser = Parser(load_grammar(), s)
+        parser = ParserWithRecovery(load_grammar(), s)
         for i, s in enumerate(parser.module.statements):
             assert s.end_pos == (i + 1, i + 3)
 
@@ -146,7 +146,7 @@ class TestRegression(TestCase):
         x = 0
         a = \
           [1, 2, 3, 4, 5, 6, 7, 8, 9, (x)]  # <-- here
-        """, '(x)]  # <-- here', [])
+        """, '(x)]  # <-- here', ['int'])
 
     def test_generator(self):
         # Did have some problems with the usage of generator completions this

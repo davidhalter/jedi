@@ -83,6 +83,9 @@ TestClass.var_local.
 
 #? int()
 TestClass().ret(1)
+# Should not return int(), because we want the type before `.ret(1)`.
+#? 11 TestClass()
+TestClass().ret(1)
 #? int()
 inst.ret(1)
 
@@ -130,6 +133,8 @@ A().addition
 #? 8 int()
 A().addition = None
 #? 8 int()
+A(1).addition = None
+#? 1 A
 A(1).addition = None
 a = A()
 #? 8 int()
@@ -238,7 +243,10 @@ class V:
 V(1).b()
 #? int()
 V(1).c()
-#? []
+#?
+V(1).d()
+# Only keywords should be possible to complete.
+#? ['is', 'in', 'not', 'and', 'or', 'if']
 V(1).d()
 
 

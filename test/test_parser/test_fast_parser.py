@@ -1,10 +1,13 @@
 from textwrap import dedent
 
+import pytest
+
 import jedi
 from jedi._compatibility import u
 from jedi import cache
 from jedi.parser import load_grammar
 from jedi.parser.fast import FastParser
+from jedi.parser.utils import save_parser
 
 
 def test_add_to_end():
@@ -38,7 +41,7 @@ def test_class_in_docstr():
     Regression test for a problem with classes in docstrings.
     """
     a = '"\nclasses\n"'
-    jedi.Script(a, 1, 0)._parser
+    jedi.Script(a, 1, 0)._get_module()
 
     b = a + '\nimport os'
     assert jedi.Script(b, 4, 8).goto_assignments()
@@ -75,16 +78,17 @@ def test_split_parts():
     test('a\n\n', 'def b(): pass\n', 'c\n')
     test('a\n', 'def b():\n pass\n', 'c\n')
 
+    test('from x\\\n')
+    test('a\n\\\n')
+
 
 def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
     if number_of_splits is None:
         number_of_splits = number_parsers_used
 
     p = FastParser(load_grammar(), u(src))
-    cache.save_parser(None, p, pickling=False)
+    save_parser(None, p, pickling=False)
 
-    # TODO Don't change get_code, the whole thing should be the same.
-    # -> Need to refactor the parser first, though.
     assert src == p.module.get_code()
     assert p.number_of_splits == number_of_splits
     assert p.number_parsers_used == number_parsers_used
@@ -329,7 +333,7 @@ def test_wrong_indentation():
          b
         a
     """)
-    check_fp(src, 1)
+    #check_fp(src, 1)
 
     src = dedent("""\
     def complex():
@@ -346,13 +350,15 @@ def test_wrong_indentation():
 
 def test_open_parentheses():
     func = 'def func():\n a'
-    p = FastParser(load_grammar(), u('isinstance(\n\n' + func))
-    # As you can see, the isinstance call cannot be seen anymore after
-    # get_code, because it isn't valid code.
-    assert p.module.get_code() == '\n\n' + func
+    code = u('isinstance(\n\n' + func)
+    p = FastParser(load_grammar(), code)
+    # As you can see, the part that was failing is still there in the get_code
+    # call. It is not relevant for evaluation, but still available as an
+    # ErrorNode.
+    assert p.module.get_code() == code
     assert p.number_of_splits == 2
     assert p.number_parsers_used == 2
-    cache.save_parser(None, p, pickling=False)
+    save_parser(None, p, pickling=False)
 
     # Now with a correct parser it should work perfectly well.
     check_fp('isinstance()\n' + func, 1, 2)
@@ -420,6 +426,16 @@ def test_fake_parentheses():
     check_fp(src, 3, 2, 1)
 
 
+def test_additional_indent():
+    source = dedent('''\
+    int(
+      def x():
+          pass
+    ''')
+
+    check_fp(source, 2)
+
+
 def test_incomplete_function():
     source = '''return ImportErr'''
 
@@ -437,4 +453,44 @@ def test_string_literals():
     """)
 
     script = jedi.Script(dedent(source))
+    script._get_module().end_pos == (6, 0)
     assert script.completions()
+
+
+def test_decorator_string_issue():
+    """
+    Test case from #589
+    """
+    source = dedent('''\
+    """
+      @"""
+    def bla():
+      pass
+
+    bla.''')
+
+    s = jedi.Script(source)
+    assert s.completions()
+    assert s._get_module().get_code() == source
+
+
+def test_round_trip():
+    source = dedent('''
+    def x():
+        """hahaha"""
+    func''')
+
+    f = FastParser(load_grammar(), u(source))
+    assert f.get_parsed_node().get_code() == source
+
+
+@pytest.mark.xfail()
+def test_parentheses_in_string():
+    code = dedent('''
+    def x():
+        '('
+
+    import abc
+
+    abc.''')
+    check_fp(code, 2, 1, 1)

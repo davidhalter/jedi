@@ -20,9 +20,8 @@ import re
 
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
-from jedi.parser import token
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
-                               STRING, OP, ERRORTOKEN)
+                               STRING)
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
@@ -35,43 +34,28 @@ STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
 _loaded_grammars = {}
 
 
-def load_grammar(file='grammar3.4'):
+class ParseError(Exception):
+    """
+    Signals you that the code you fed the Parser was not correct Python code.
+    """
+
+
+def load_grammar(version='3.4'):
     # For now we only support two different Python syntax versions: The latest
     # Python 3 and Python 2. This may change.
-    if file.startswith('grammar3'):
-        file = 'grammar3.4'
-    else:
-        file = 'grammar2.7'
+    if version in ('3.2', '3.3'):
+        version = '3.4'
+    elif version == '2.6':
+        version = '2.7'
+
+    file = 'grammar' + version + '.txt'
 
     global _loaded_grammars
-    path = os.path.join(os.path.dirname(__file__), file) + '.txt'
+    path = os.path.join(os.path.dirname(__file__), file)
     try:
         return _loaded_grammars[path]
     except KeyError:
         return _loaded_grammars.setdefault(path, generate_grammar(path))
-
-
-class ErrorStatement(object):
-    def __init__(self, stack, next_token, position_modifier, next_start_pos):
-        self.stack = stack
-        self._position_modifier = position_modifier
-        self.next_token = next_token
-        self._next_start_pos = next_start_pos
-
-    @property
-    def next_start_pos(self):
-        s = self._next_start_pos
-        return s[0] + self._position_modifier.line, s[1]
-
-    @property
-    def first_pos(self):
-        first_type, nodes = self.stack[0]
-        return nodes[0].start_pos
-
-    @property
-    def first_type(self):
-        first_type, nodes = self.stack[0]
-        return first_type
 
 
 class ParserSyntaxError(object):
@@ -81,91 +65,96 @@ class ParserSyntaxError(object):
 
 
 class Parser(object):
-    """
-    This class is used to parse a Python file, it then divides them into a
-    class structure of different scopes.
+    AST_MAPPING = {
+        'expr_stmt': pt.ExprStmt,
+        'classdef': pt.Class,
+        'funcdef': pt.Function,
+        'file_input': pt.Module,
+        'import_name': pt.ImportName,
+        'import_from': pt.ImportFrom,
+        'break_stmt': pt.KeywordStatement,
+        'continue_stmt': pt.KeywordStatement,
+        'return_stmt': pt.ReturnStmt,
+        'raise_stmt': pt.KeywordStatement,
+        'yield_expr': pt.YieldExpr,
+        'del_stmt': pt.KeywordStatement,
+        'pass_stmt': pt.KeywordStatement,
+        'global_stmt': pt.GlobalStmt,
+        'nonlocal_stmt': pt.KeywordStatement,
+        'print_stmt': pt.KeywordStatement,
+        'assert_stmt': pt.AssertStmt,
+        'if_stmt': pt.IfStmt,
+        'with_stmt': pt.WithStmt,
+        'for_stmt': pt.ForStmt,
+        'while_stmt': pt.WhileStmt,
+        'try_stmt': pt.TryStmt,
+        'comp_for': pt.CompFor,
+        'decorator': pt.Decorator,
+        'lambdef': pt.Lambda,
+        'old_lambdef': pt.Lambda,
+        'lambdef_nocond': pt.Lambda,
+    }
 
-    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
-    :param source: The codebase for the parser. Must be unicode.
-    :param module_path: The path of the module in the file system, may be None.
-    :type module_path: str
-    :param top_module: Use this module as a parent instead of `self.module`.
-    """
-    def __init__(self, grammar, source, module_path=None, tokenizer=None):
-        self._ast_mapping = {
-            'expr_stmt': pt.ExprStmt,
-            'classdef': pt.Class,
-            'funcdef': pt.Function,
-            'file_input': pt.Module,
-            'import_name': pt.ImportName,
-            'import_from': pt.ImportFrom,
-            'break_stmt': pt.KeywordStatement,
-            'continue_stmt': pt.KeywordStatement,
-            'return_stmt': pt.ReturnStmt,
-            'raise_stmt': pt.KeywordStatement,
-            'yield_expr': pt.YieldExpr,
-            'del_stmt': pt.KeywordStatement,
-            'pass_stmt': pt.KeywordStatement,
-            'global_stmt': pt.GlobalStmt,
-            'nonlocal_stmt': pt.KeywordStatement,
-            'assert_stmt': pt.AssertStmt,
-            'if_stmt': pt.IfStmt,
-            'with_stmt': pt.WithStmt,
-            'for_stmt': pt.ForStmt,
-            'while_stmt': pt.WhileStmt,
-            'try_stmt': pt.TryStmt,
-            'comp_for': pt.CompFor,
-            'decorator': pt.Decorator,
-            'lambdef': pt.Lambda,
-            'old_lambdef': pt.Lambda,
-            'lambdef_nocond': pt.Lambda,
-        }
+    def __init__(self, grammar, source, start_symbol='file_input',
+                 tokenizer=None, start_parsing=True):
+        # Todo Remove start_parsing (with False)
 
-        self.syntax_errors = []
-
-        self._global_names = []
-        self._omit_dedent_list = []
-        self._indent_counter = 0
-        self._last_failed_start_pos = (0, 0)
-
-        # TODO do print absolute import detection here.
-        #try:
-        #    del python_grammar_no_print_statement.keywords["print"]
-        #except KeyError:
-        #    pass  # Doesn't exist in the Python 3 grammar.
-
-        #if self.options["print_function"]:
-        #    python_grammar = pygram.python_grammar_no_print_statement
-        #else:
         self._used_names = {}
         self._scope_names_stack = [{}]
-        self._error_statement_stacks = []
-
-        added_newline = False
-        # The Python grammar needs a newline at the end of each statement.
-        if not source.endswith('\n'):
-            source += '\n'
-            added_newline = True
+        self._last_failed_start_pos = (0, 0)
+        self._global_names = []
 
         # For the fast parser.
         self.position_modifier = pt.PositionModifier()
-        p = PgenParser(grammar, self.convert_node, self.convert_leaf,
-                       self.error_recovery)
-        tokenizer = tokenizer or tokenize.source_tokens(source)
-        self.module = p.parse(self._tokenize(tokenizer))
-        if self.module.type != 'file_input':
+
+        self._added_newline = False
+        # The Python grammar needs a newline at the end of each statement.
+        if not source.endswith('\n') and start_symbol == 'file_input':
+            source += '\n'
+            self._added_newline = True
+
+        self._start_symbol = start_symbol
+        self._grammar = grammar
+
+        self._parsed = None
+
+        if start_parsing:
+            if tokenizer is None:
+                tokenizer = tokenize.source_tokens(source, use_exact_op_types=True)
+            self.parse(tokenizer)
+
+    def parse(self, tokenizer):
+        if self._parsed is not None:
+            return self._parsed
+
+        start_number = self._grammar.symbol2number[self._start_symbol]
+        pgen_parser = PgenParser(
+            self._grammar, self.convert_node, self.convert_leaf,
+            self.error_recovery, start_number
+        )
+
+        try:
+            self._parsed = pgen_parser.parse(tokenizer)
+        finally:
+            self.stack = pgen_parser.stack
+
+        if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's
             # not what we want, we want a module, so we add it here:
-            self.module = self.convert_node(grammar,
-                                            grammar.symbol2number['file_input'],
-                                            [self.module])
+            self._parsed = self.convert_node(self._grammar,
+                                             self._grammar.symbol2number['file_input'],
+                                             [self._parsed])
 
-        if added_newline:
+        if self._added_newline:
             self.remove_last_newline()
-        self.module.used_names = self._used_names
-        self.module.path = module_path
-        self.module.global_names = self._global_names
-        self.module.error_statement_stacks = self._error_statement_stacks
+
+    def get_parsed_node(self):
+        # TODO rename to get_root_node
+        return self._parsed
+
+    def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
+                       add_token_callback):
+        raise ParseError
 
     def convert_node(self, grammar, type, children):
         """
@@ -177,7 +166,7 @@ class Parser(object):
         """
         symbol = grammar.number2symbol[type]
         try:
-            new_node = self._ast_mapping[symbol](children)
+            new_node = Parser.AST_MAPPING[symbol](children)
         except KeyError:
             new_node = pt.Node(symbol, children)
 
@@ -206,7 +195,7 @@ class Parser(object):
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
-        #print('leaf', value, pytree.type_repr(type))
+        # print('leaf', repr(value), token.tok_name[type])
         if type == tokenize.NAME:
             if value in grammar.keywords:
                 if value in ('def', 'class', 'lambda'):
@@ -227,127 +216,12 @@ class Parser(object):
             return pt.Number(self.position_modifier, value, start_pos, prefix)
         elif type in (NEWLINE, ENDMARKER):
             return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
+        elif type == INDENT:
+            return pt.Indent(self.position_modifier, value, start_pos, prefix)
+        elif type == DEDENT:
+            return pt.Dedent(self.position_modifier, value, start_pos, prefix)
         else:
             return pt.Operator(self.position_modifier, value, start_pos, prefix)
-
-    def error_recovery(self, grammar, stack, typ, value, start_pos, prefix,
-                       add_token_callback):
-        """
-        This parser is written in a dynamic way, meaning that this parser
-        allows using different grammars (even non-Python). However, error
-        recovery is purely written for Python.
-        """
-        def current_suite(stack):
-            # For now just discard everything that is not a suite or
-            # file_input, if we detect an error.
-            for index, (dfa, state, (typ, nodes)) in reversed(list(enumerate(stack))):
-                # `suite` can sometimes be only simple_stmt, not stmt.
-                symbol = grammar.number2symbol[typ]
-                if symbol == 'file_input':
-                    break
-                elif symbol == 'suite' and len(nodes) > 1:
-                    # suites without an indent in them get discarded.
-                    break
-                elif symbol == 'simple_stmt' and len(nodes) > 1:
-                    # simple_stmt can just be turned into a Node, if there are
-                    # enough statements. Ignore the rest after that.
-                    break
-            return index, symbol, nodes
-
-        index, symbol, nodes = current_suite(stack)
-        if symbol == 'simple_stmt':
-            index -= 2
-            (_, _, (typ, suite_nodes)) = stack[index]
-            symbol = grammar.number2symbol[typ]
-            suite_nodes.append(pt.Node(symbol, list(nodes)))
-            # Remove
-            nodes[:] = []
-            nodes = suite_nodes
-            stack[index]
-
-        #print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
-        self._stack_removal(grammar, stack, index + 1, value, start_pos)
-        if typ == INDENT:
-            # For every deleted INDENT we have to delete a DEDENT as well.
-            # Otherwise the parser will get into trouble and DEDENT too early.
-            self._omit_dedent_list.append(self._indent_counter)
-
-        if value in ('import', 'from', 'class', 'def', 'try', 'while', 'return'):
-            # Those can always be new statements.
-            add_token_callback(typ, value, prefix, start_pos)
-        elif typ == DEDENT and symbol == 'suite':
-            # Close the current suite, with DEDENT.
-            # Note that this may cause some suites to not contain any
-            # statements at all. This is contrary to valid Python syntax. We
-            # keep incomplete suites in Jedi to be able to complete param names
-            # or `with ... as foo` names. If we want to use this parser for
-            # syntax checks, we have to check in a separate turn if suites
-            # contain statements or not. However, a second check is necessary
-            # anyway (compile.c does that for Python), because Python's grammar
-            # doesn't stop you from defining `continue` in a module, etc.
-            add_token_callback(typ, value, prefix, start_pos)
-
-    def _stack_removal(self, grammar, stack, start_index, value, start_pos):
-        def clear_names(children):
-            for c in children:
-                try:
-                    clear_names(c.children)
-                except AttributeError:
-                    if isinstance(c, pt.Name):
-                        try:
-                            self._scope_names_stack[-1][c.value].remove(c)
-                            self._used_names[c.value].remove(c)
-                        except ValueError:
-                            pass  # This may happen with CompFor.
-
-        for dfa, state, node in stack[start_index:]:
-            clear_names(children=node[1])
-
-        failed_stack = []
-        found = False
-        for dfa, state, (typ, nodes) in stack[start_index:]:
-            if nodes:
-                found = True
-            if found:
-                symbol = grammar.number2symbol[typ]
-                failed_stack.append((symbol, nodes))
-            if nodes and nodes[0] in ('def', 'class', 'lambda'):
-                self._scope_names_stack.pop()
-        if failed_stack:
-            err = ErrorStatement(failed_stack, value, self.position_modifier, start_pos)
-            self._error_statement_stacks.append(err)
-
-        self._last_failed_start_pos = start_pos
-
-        stack[start_index:] = []
-
-    def _tokenize(self, tokenizer):
-        for typ, value, start_pos, prefix in tokenizer:
-            #print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
-            if typ == DEDENT:
-                # We need to count indents, because if we just omit any DEDENT,
-                # we might omit them in the wrong place.
-                o = self._omit_dedent_list
-                if o and o[-1] == self._indent_counter:
-                    o.pop()
-                    continue
-
-                self._indent_counter -= 1
-            elif typ == INDENT:
-                self._indent_counter += 1
-            elif typ == ERRORTOKEN:
-                self._add_syntax_error('Strange token', start_pos)
-                continue
-
-            if typ == OP:
-                typ = token.opmap[value]
-            yield typ, value, prefix, start_pos
-
-    def _add_syntax_error(self, message, position):
-        self.syntax_errors.append(ParserSyntaxError(message, position))
-
-    def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.module)
 
     def remove_last_newline(self):
         """
@@ -355,28 +229,38 @@ class Parser(object):
         with start_pos, we would need to check the position_modifier as well
         (which is accounted for in the start_pos property).
         """
-        endmarker = self.module.children[-1]
+        endmarker = self._parsed.children[-1]
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
-        if endmarker.prefix.endswith('\n'):
-            endmarker.prefix = endmarker.prefix[:-1]
-            last_line = re.sub('.*\n', '', endmarker.prefix)
-            endmarker._start_pos = endmarker._start_pos[0] - 1, len(last_line)
+        prefix = endmarker.prefix
+        if prefix.endswith('\n'):
+            endmarker.prefix = prefix = prefix[:-1]
+            last_end = 0
+            if '\n' not in prefix:
+                # Basically if the last line doesn't end with a newline. we
+                # have to add the previous line's end_position.
+                try:
+                    last_end = endmarker.get_previous_leaf().end_pos[1]
+                except IndexError:
+                    pass
+            last_line = re.sub('.*\n', '', prefix)
+            endmarker._start_pos = endmarker._start_pos[0] - 1, last_end + len(last_line)
         else:
             try:
-                newline = endmarker.get_previous()
+                newline = endmarker.get_previous_leaf()
             except IndexError:
                 return  # This means that the parser is empty.
             while True:
                 if newline.value == '':
                     # Must be a DEDENT, just continue.
                     try:
-                        newline = newline.get_previous()
+                        newline = newline.get_previous_leaf()
                     except IndexError:
                         # If there's a statement that fails to be parsed, there
                         # will be no previous leaf. So just ignore it.
                         break
                 elif newline.value != '\n':
+                    # TODO REMOVE, error recovery was simplified.
                     # This may happen if error correction strikes and removes
                     # a whole statement including '\n'.
                     break
@@ -391,3 +275,127 @@ class Parser(object):
                     else:
                         endmarker._start_pos = newline._start_pos
                     break
+
+
+class ParserWithRecovery(Parser):
+    """
+    This class is used to parse a Python file, it then divides them into a
+    class structure of different scopes.
+
+    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
+    :param source: The codebase for the parser. Must be unicode.
+    :param module_path: The path of the module in the file system, may be None.
+    :type module_path: str
+    """
+    def __init__(self, grammar, source, module_path=None, tokenizer=None):
+        self.syntax_errors = []
+
+        self._omit_dedent_list = []
+        self._indent_counter = 0
+
+        # TODO do print absolute import detection here.
+        # try:
+        #     del python_grammar_no_print_statement.keywords["print"]
+        # except KeyError:
+        #     pass  # Doesn't exist in the Python 3 grammar.
+
+        # if self.options["print_function"]:
+        #     python_grammar = pygram.python_grammar_no_print_statement
+        # else:
+        super(ParserWithRecovery, self).__init__(grammar, source, tokenizer=tokenizer)
+
+        self.module = self._parsed
+        self.module.used_names = self._used_names
+        self.module.path = module_path
+        self.module.global_names = self._global_names
+
+    def parse(self, tokenizer):
+        return super(ParserWithRecovery, self).parse(self._tokenize(self._tokenize(tokenizer)))
+
+    def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
+                       add_token_callback):
+        """
+        This parser is written in a dynamic way, meaning that this parser
+        allows using different grammars (even non-Python). However, error
+        recovery is purely written for Python.
+        """
+        def current_suite(stack):
+            # For now just discard everything that is not a suite or
+            # file_input, if we detect an error.
+            for index, (dfa, state, (type_, nodes)) in reversed(list(enumerate(stack))):
+                # `suite` can sometimes be only simple_stmt, not stmt.
+                symbol = grammar.number2symbol[type_]
+                if symbol == 'file_input':
+                    break
+                elif symbol == 'suite' and len(nodes) > 1:
+                    # suites without an indent in them get discarded.
+                    break
+                elif symbol == 'simple_stmt' and len(nodes) > 1:
+                    # simple_stmt can just be turned into a Node, if there are
+                    # enough statements. Ignore the rest after that.
+                    break
+            return index, symbol, nodes
+
+        index, symbol, nodes = current_suite(stack)
+        if symbol == 'simple_stmt':
+            index -= 2
+            (_, _, (type_, suite_nodes)) = stack[index]
+            symbol = grammar.number2symbol[type_]
+            suite_nodes.append(pt.Node(symbol, list(nodes)))
+            # Remove
+            nodes[:] = []
+            nodes = suite_nodes
+            stack[index]
+
+        # print('err', token.tok_name[typ], repr(value), start_pos, len(stack), index)
+        if self._stack_removal(grammar, stack, arcs, index + 1, value, start_pos):
+            add_token_callback(typ, value, start_pos, prefix)
+        else:
+            if typ == INDENT:
+                # For every deleted INDENT we have to delete a DEDENT as well.
+                # Otherwise the parser will get into trouble and DEDENT too early.
+                self._omit_dedent_list.append(self._indent_counter)
+            else:
+                error_leaf = pt.ErrorLeaf(self.position_modifier, typ, value, start_pos, prefix)
+                stack[-1][2][1].append(error_leaf)
+
+    def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
+        failed_stack = []
+        found = False
+        all_nodes = []
+        for dfa, state, (typ, nodes) in stack[start_index:]:
+            if nodes:
+                found = True
+            if found:
+                symbol = grammar.number2symbol[typ]
+                failed_stack.append((symbol, nodes))
+                all_nodes += nodes
+            if nodes and nodes[0] in ('def', 'class', 'lambda'):
+                self._scope_names_stack.pop()
+        if failed_stack:
+            stack[start_index - 1][2][1].append(pt.ErrorNode(all_nodes))
+
+        self._last_failed_start_pos = start_pos
+
+        stack[start_index:] = []
+        return failed_stack
+
+    def _tokenize(self, tokenizer):
+        for typ, value, start_pos, prefix in tokenizer:
+            # print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
+            if typ == DEDENT:
+                # We need to count indents, because if we just omit any DEDENT,
+                # we might omit them in the wrong place.
+                o = self._omit_dedent_list
+                if o and o[-1] == self._indent_counter:
+                    o.pop()
+                    continue
+
+                self._indent_counter -= 1
+            elif typ == INDENT:
+                self._indent_counter += 1
+
+            yield typ, value, start_pos, prefix
+
+    def __repr__(self):
+        return "<%s: %s>" % (type(self).__name__, self.module)

@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import sys
+from textwrap import dedent
 
 import jedi
 from jedi._compatibility import u, is_py3
-from jedi.parser import Parser, load_grammar
-from jedi.parser.user_context import UserContextParser
+from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
-from textwrap import dedent
 
 
 def test_user_statement_on_import():
@@ -15,15 +14,16 @@ def test_user_statement_on_import():
           "    time)")
 
     for pos in [(2, 1), (2, 4)]:
-        p = UserContextParser(load_grammar(), s, None, pos, None, lambda x: 1).user_stmt()
-        assert isinstance(p, pt.Import)
-        assert [str(n) for n in p.get_defined_names()] == ['time']
+        p = ParserWithRecovery(load_grammar(), s)
+        stmt = p.module.get_statement_for_position(pos)
+        assert isinstance(stmt, pt.Import)
+        assert [str(n) for n in stmt.get_defined_names()] == ['time']
 
 
 class TestCallAndName():
     def get_call(self, source):
         # Get the simple_stmt and then the first one.
-        simple_stmt = Parser(load_grammar(), u(source)).module.children[0]
+        simple_stmt = ParserWithRecovery(load_grammar(), u(source)).module.children[0]
         return simple_stmt.children[0]
 
     def test_name_and_call_positions(self):
@@ -58,7 +58,7 @@ class TestCallAndName():
 
 class TestSubscopes():
     def get_sub(self, source):
-        return Parser(load_grammar(), u(source)).module.subscopes[0]
+        return ParserWithRecovery(load_grammar(), u(source)).module.subscopes[0]
 
     def test_subscope_names(self):
         name = self.get_sub('class Foo: pass').name
@@ -74,7 +74,7 @@ class TestSubscopes():
 
 class TestImports():
     def get_import(self, source):
-        return Parser(load_grammar(), source).module.imports[0]
+        return ParserWithRecovery(load_grammar(), source).module.imports[0]
 
     def test_import_names(self):
         imp = self.get_import(u('import math\n'))
@@ -89,13 +89,13 @@ class TestImports():
 
 
 def test_module():
-    module = Parser(load_grammar(), u('asdf'), 'example.py').module
+    module = ParserWithRecovery(load_grammar(), u('asdf'), 'example.py').module
     name = module.name
     assert str(name) == 'example'
     assert name.start_pos == (1, 0)
     assert name.end_pos == (1, 7)
 
-    module = Parser(load_grammar(), u('asdf')).module
+    module = ParserWithRecovery(load_grammar(), u('asdf')).module
     name = module.name
     assert str(name) == ''
     assert name.start_pos == (1, 0)
@@ -108,7 +108,7 @@ def test_end_pos():
                  def func():
                      y = None
                  '''))
-    parser = Parser(load_grammar(), s)
+    parser = ParserWithRecovery(load_grammar(), s)
     scope = parser.module.subscopes[0]
     assert scope.start_pos == (3, 0)
     assert scope.end_pos == (5, 0)
@@ -121,7 +121,7 @@ def test_carriage_return_statements():
         # this is a namespace package
     '''))
     source = source.replace('\n', '\r\n')
-    stmt = Parser(load_grammar(), source).module.statements[0]
+    stmt = ParserWithRecovery(load_grammar(), source).module.statements[0]
     assert '#' not in stmt.get_code()
 
 
@@ -129,7 +129,7 @@ def test_incomplete_list_comprehension():
     """ Shouldn't raise an error, same bug as #418. """
     # With the old parser this actually returned a statement. With the new
     # parser only valid statements generate one.
-    assert Parser(load_grammar(), u('(1 for def')).module.statements == []
+    assert ParserWithRecovery(load_grammar(), u('(1 for def')).module.statements == []
 
 
 def test_hex_values_in_docstring():
@@ -141,7 +141,7 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    doc = Parser(load_grammar(), dedent(u(source))).module.subscopes[0].raw_doc
+    doc = ParserWithRecovery(load_grammar(), dedent(u(source))).module.subscopes[0].raw_doc
     if is_py3:
         assert doc == '\xff'
     else:
@@ -160,9 +160,9 @@ def test_error_correction_with():
 
 
 def test_newline_positions():
-    endmarker = Parser(load_grammar(), u('a\n')).module.children[-1]
+    endmarker = ParserWithRecovery(load_grammar(), u('a\n')).module.children[-1]
     assert endmarker.end_pos == (2, 0)
-    new_line = endmarker.get_previous()
+    new_line = endmarker.get_previous_leaf()
     assert new_line.start_pos == (1, 1)
     assert new_line.end_pos == (2, 0)
 
@@ -174,7 +174,7 @@ def test_end_pos_error_correction():
     end_pos, even if something breaks in the parser (error correction).
     """
     s = u('def x():\n .')
-    m = Parser(load_grammar(), s).module
+    m = ParserWithRecovery(load_grammar(), s).module
     func = m.children[0]
     assert func.type == 'funcdef'
     # This is not exactly correct, but ok, because it doesn't make a difference
@@ -190,8 +190,8 @@ def test_param_splitting():
     """
     def check(src, result):
         # Python 2 tuple params should be ignored for now.
-        grammar = load_grammar('grammar%s.%s' % sys.version_info[:2])
-        m = Parser(grammar, u(src)).module
+        grammar = load_grammar('%s.%s' % sys.version_info[:2])
+        m = ParserWithRecovery(grammar, u(src)).module
         if is_py3:
             assert not m.subscopes
         else:
@@ -211,5 +211,28 @@ def test_unicode_string():
 
 def test_backslash_dos_style():
     grammar = load_grammar()
-    m = Parser(grammar, u('\\\r\n')).module
+    m = ParserWithRecovery(grammar, u('\\\r\n')).module
     assert m
+
+
+def test_started_lambda_stmt():
+    p = ParserWithRecovery(load_grammar(), u'lambda a, b: a i')
+    assert p.get_parsed_node().children[0].type == 'error_node'
+
+
+def test_python2_octal():
+    parser = ParserWithRecovery(load_grammar(), u'0660')
+    first = parser.get_parsed_node().children[0]
+    if is_py3:
+        assert first.type == 'error_node'
+    else:
+        assert first.children[0].type == 'number'
+
+
+def test_python3_octal():
+    parser = ParserWithRecovery(load_grammar(), u'0o660')
+    module = parser.get_parsed_node()
+    if is_py3:
+        assert module.children[0].children[0].type == 'number'
+    else:
+        assert module.children[0].type == 'error_node'

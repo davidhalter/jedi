@@ -18,8 +18,12 @@ how this parsing engine works.
 from jedi.parser import tokenize
 
 
-class ParseError(Exception):
-    """Exception to signal the parser is stuck."""
+class InternalParseError(Exception):
+    """
+    Exception to signal the parser is stuck and error recovery didn't help.
+    Basically this shouldn't happen. It's a sign that something is really
+    wrong.
+    """
 
     def __init__(self, msg, type, value, start_pos):
         Exception.__init__(self, "%s: type=%r, value=%r, start_pos=%r" %
@@ -30,6 +34,21 @@ class ParseError(Exception):
         self.start_pos = start_pos
 
 
+def token_to_ilabel(grammar, type_, value):
+    # Map from token to label
+    if type_ == tokenize.NAME:
+        # Check for reserved words (keywords)
+        try:
+            return grammar.keywords[value]
+        except KeyError:
+            pass
+
+    try:
+        return grammar.tokens[type_]
+    except KeyError:
+        return None
+
+
 class PgenParser(object):
     """Parser engine.
 
@@ -38,7 +57,7 @@ class PgenParser(object):
     p = Parser(grammar, [converter])  # create instance
     p.setup([start])                  # prepare for parsing
     <for each input token>:
-        if p.addtoken(...):           # parse a token; may raise ParseError
+        if p.addtoken(...):           # parse a token
             break
     root = p.rootnode                 # root of abstract syntax tree
 
@@ -53,14 +72,14 @@ class PgenParser(object):
 
     Parsing is complete when addtoken() returns True; the root of the
     abstract syntax tree can then be retrieved from the rootnode
-    instance variable.  When a syntax error occurs, addtoken() raises
-    the ParseError exception.  There is no error recovery; the parser
-    cannot be used after a syntax error was reported (but it can be
-    reinitialized by calling setup()).
+    instance variable.  When a syntax error occurs, error_recovery()
+    is called. There is no error recovery; the parser cannot be used
+    after a syntax error was reported (but it can be reinitialized by
+    calling setup()).
 
     """
 
-    def __init__(self, grammar, convert_node, convert_leaf, error_recovery):
+    def __init__(self, grammar, convert_node, convert_leaf, error_recovery, start):
         """Constructor.
 
         The grammar argument is a grammar.Grammar instance; see the
@@ -90,8 +109,6 @@ class PgenParser(object):
         self.convert_node = convert_node
         self.convert_leaf = convert_leaf
 
-        # Prepare for parsing.
-        start = self.grammar.start
         # Each stack entry is a tuple: (dfa, state, node).
         # A node is a tuple: (type, children),
         # where children is a list of nodes or None
@@ -102,29 +119,20 @@ class PgenParser(object):
         self.error_recovery = error_recovery
 
     def parse(self, tokenizer):
-        for type, value, prefix, start_pos in tokenizer:
-            if self.addtoken(type, value, prefix, start_pos):
+        for type_, value, start_pos, prefix in tokenizer:
+            if self.addtoken(type_, value, start_pos, prefix):
                 break
         else:
             # We never broke out -- EOF is too soon -- Unfinished statement.
-            self.error_recovery(self.grammar, self.stack, type, value,
-                                start_pos, prefix, self.addtoken)
-            # Add the ENDMARKER again.
-            if not self.addtoken(type, value, prefix, start_pos):
-                raise ParseError("incomplete input", type, value, start_pos)
+            # However, the error recovery might have added the token again, if
+            # the stack is empty, we're fine.
+            if self.stack:
+                raise InternalParseError("incomplete input", type_, value, start_pos)
         return self.rootnode
 
-    def addtoken(self, type, value, prefix, start_pos):
+    def addtoken(self, type_, value, start_pos, prefix):
         """Add a token; return True if this is the end of the program."""
-        # Map from token to label
-        if type == tokenize.NAME:
-            # Check for reserved words (keywords)
-            try:
-                ilabel = self.grammar.keywords[value]
-            except KeyError:
-                ilabel = self.grammar.tokens[type]
-        else:
-            ilabel = self.grammar.tokens[type]
+        ilabel = token_to_ilabel(self.grammar, type_, value)
 
         # Loop until the token is shifted; may raise exceptions
         while True:
@@ -138,7 +146,7 @@ class PgenParser(object):
                     # Look it up in the list of labels
                     assert t < 256
                     # Shift a token; we're done with it
-                    self.shift(type, value, newstate, prefix, start_pos)
+                    self.shift(type_, value, newstate, prefix, start_pos)
                     # Pop while we are in an accept-only state
                     state = newstate
                     while states[state] == [(0, state)]:
@@ -164,36 +172,36 @@ class PgenParser(object):
                     self.pop()
                     if not self.stack:
                         # Done parsing, but another token is input
-                        raise ParseError("too much input", type, value, start_pos)
+                        raise InternalParseError("too much input", type_, value, start_pos)
                 else:
-                    self.error_recovery(self.grammar, self.stack, type,
+                    self.error_recovery(self.grammar, self.stack, arcs, type_,
                                         value, start_pos, prefix, self.addtoken)
                     break
 
-    def shift(self, type, value, newstate, prefix, start_pos):
+    def shift(self, type_, value, newstate, prefix, start_pos):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = self.convert_leaf(self.grammar, type, value, prefix, start_pos)
+        newnode = self.convert_leaf(self.grammar, type_, value, prefix, start_pos)
         node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 
-    def push(self, type, newdfa, newstate):
+    def push(self, type_, newdfa, newstate):
         """Push a nonterminal.  (Internal)"""
         dfa, state, node = self.stack[-1]
-        newnode = (type, [])
+        newnode = (type_, [])
         self.stack[-1] = (dfa, newstate, node)
         self.stack.append((newdfa, 0, newnode))
 
     def pop(self):
         """Pop a nonterminal.  (Internal)"""
-        popdfa, popstate, (type, children) = self.stack.pop()
+        popdfa, popstate, (type_, children) = self.stack.pop()
         # If there's exactly one child, return that child instead of creating a
         # new node.  We still create expr_stmt and file_input though, because a
         # lot of Jedi depends on its logic.
         if len(children) == 1:
             newnode = children[0]
         else:
-            newnode = self.convert_node(self.grammar, type, children)
+            newnode = self.convert_node(self.grammar, type_, children)
 
         try:
             # Equal to:

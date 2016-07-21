@@ -20,12 +20,12 @@ make it work.
 General Features
 ----------------
 
-- python 2.6+ and 3.2+ support
+- python 2.6+ and 3.3+ support
 - ignores syntax errors and wrong indentation
 - can deal with complex module / function / class structures
 - virtualenv support
-- can infer function arguments from sphinx, epydoc and basic numpydoc docstrings
-  (:ref:`type hinting <type-hinting>`)
+- can infer function arguments from sphinx, epydoc and basic numpydoc docstrings,
+  and PEP0484-style type hints (:ref:`type hinting <type-hinting>`)
 
 
 Supported Python Features
@@ -34,8 +34,8 @@ Supported Python Features
 |jedi| supports many of the widely used Python features:
 
 - builtins
-- multiple returns or yields
-- tuple assignments / array indexing / dictionary indexing
+- returns, yields, yield from
+- tuple assignments / array indexing / dictionary indexing / star unpacking
 - with-statement / exception handling
 - ``*args`` / ``**kwargs``
 - decorators / lambdas / closures
@@ -64,6 +64,7 @@ Not yet implemented:
 
 - manipulations of instances outside the instance variables without using
   methods
+- implicit namespace packages (Python 3.3+, `PEP 420 <https://www.python.org/dev/peps/pep-0420/>`_)
 
 Will probably never be implemented:
 
@@ -125,7 +126,49 @@ Type Hinting
 
 If |jedi| cannot detect the type of a function argument correctly (due to the
 dynamic nature of Python), you can help it by hinting the type using
-one of the following docstring syntax styles:
+one of the following docstring/annotation syntax styles:
+
+**PEP-0484 style**
+
+https://www.python.org/dev/peps/pep-0484/
+
+function annotations (python 3 only; python 2 function annotations with
+comments in planned but not yet implemented)
+
+::
+
+    def myfunction(node: ProgramNode, foo: str) -> None:
+        """Do something with a ``node``.
+
+        """
+        node.| # complete here
+
+
+assignment, for-loop and with-statement type hints (all python versions).
+Note that the type hints must be on the same line as the statement
+
+::
+
+    x = foo()  # type: int
+    x, y = 2, 3  # type: typing.Optional[int], typing.Union[int, str] # typing module is mostly supported
+    for key, value in foo.items():  # type: str, Employee  # note that Employee must be in scope
+        pass
+    with foo() as f:  # type: int
+        print(f + 3)
+
+Most of the features in PEP-0484 are supported including the typing module
+(for python < 3.5 you have to do ``pip install typing`` to use these),
+and forward references.
+
+Things that are missing (and this is not an exhaustive list; some of these
+are planned, others might be hard to implement and provide little worth):
+
+- annotating functions with comments: https://www.python.org/dev/peps/pep-0484/#suggested-syntax-for-python-2-7-and-straddling-code
+- understanding ``typing.cast()``
+- stub files: https://www.python.org/dev/peps/pep-0484/#stub-files
+- ``typing.Callable``
+- ``typing.TypeVar``
+- User defined generic types: https://www.python.org/dev/peps/pep-0484/#user-defined-generic-types
 
 **Sphinx style**
 

@@ -1,6 +1,5 @@
 *~
-*.swp
-*.swo
+*.sw?
 *.pyc
 .ropeproject
 .tox

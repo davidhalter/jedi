@@ -5,6 +5,64 @@ Tests of ``jedi.api.Interpreter``.
 from ..helpers import TestCase
 import jedi
 from jedi._compatibility import is_py33
+from jedi.evaluate.compiled import mixed
+
+class _GlobalNameSpace():
+    class SideEffectContainer():
+        pass
+
+
+def get_completion(source, namespace):
+    i = jedi.Interpreter(source, [namespace])
+    completions = i.completions()
+    assert len(completions) == 1
+    return completions[0]
+
+
+def test_builtin_details():
+    import keyword
+
+    class EmptyClass:
+        pass
+
+    variable = EmptyClass()
+
+    def func():
+        pass
+
+    cls = get_completion('EmptyClass', locals())
+    var = get_completion('variable', locals())
+    f = get_completion('func', locals())
+    m = get_completion('keyword', locals())
+    assert cls.type == 'class'
+    assert var.type == 'instance'
+    assert f.type == 'function'
+    assert m.type == 'module'
+
+
+def test_nested_resolve():
+    class XX():
+        def x():
+            pass
+
+    cls = get_completion('XX', locals())
+    func = get_completion('XX.x', locals())
+    assert func.start_pos == (cls.start_pos[0] + 1, 12)
+
+
+def test_side_effect_completion():
+    """
+    In the repl it's possible to cause side effects that are not documented in
+    Python code, however we want references to Python code as well. Therefore
+    we need some mixed kind of magic for tests.
+    """
+    _GlobalNameSpace.SideEffectContainer.foo = 1
+    side_effect = get_completion('SideEffectContainer', _GlobalNameSpace.__dict__)
+
+    # It's a class that contains MixedObject.
+    assert isinstance(side_effect._definition.base, mixed.MixedObject)
+    foo = get_completion('SideEffectContainer.foo', _GlobalNameSpace.__dict__)
+    assert foo.name == 'foo'
 
 
 class TestInterpreterAPI(TestCase):
@@ -17,19 +75,19 @@ class TestInterpreterAPI(TestCase):
 
     def test_complete_raw_function(self):
         from os.path import join
-        self.check_interpreter_complete('join().up',
+        self.check_interpreter_complete('join("").up',
                                         locals(),
                                         ['upper'])
 
     def test_complete_raw_function_different_name(self):
         from os.path import join as pjoin
-        self.check_interpreter_complete('pjoin().up',
+        self.check_interpreter_complete('pjoin("").up',
                                         locals(),
                                         ['upper'])
 
     def test_complete_raw_module(self):
         import os
-        self.check_interpreter_complete('os.path.join().up',
+        self.check_interpreter_complete('os.path.join("a").up',
                                         locals(),
                                         ['upper'])
 

@@ -8,9 +8,9 @@ from itertools import chain
 
 from jedi._compatibility import use_metaclass
 from jedi import settings
-from jedi.parser import Parser
+from jedi.parser import ParserWithRecovery
 from jedi.parser import tree
-from jedi import cache
+from jedi.parser.utils import underscore_memoization, parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (source_tokens, NEWLINE,
                                   ENDMARKER, INDENT, DEDENT)
@@ -36,7 +36,7 @@ class FastModule(tree.Module):
             pass  # It was never used.
 
     @property
-    @cache.underscore_memoization
+    @underscore_memoization
     def used_names(self):
         return MergedNamesDict([m.used_names for m in self.modules])
 
@@ -45,21 +45,22 @@ class FastModule(tree.Module):
         return [name for m in self.modules for name in m.global_names]
 
     @property
-    def error_statement_stacks(self):
-        return [e for m in self.modules for e in m.error_statement_stacks]
+    def error_statements(self):
+        return [e for m in self.modules for e in m.error_statements]
 
     def __repr__(self):
         return "<fast.%s: %s@%s-%s>" % (type(self).__name__, self.name,
                                         self.start_pos[0], self.end_pos[0])
 
-    # To avoid issues with with the `parser.Parser`, we need setters that do
-    # nothing, because if pickle comes along and sets those values.
+    # To avoid issues with with the `parser.ParserWithRecovery`, we need
+    # setters that do nothing, because if pickle comes along and sets those
+    # values.
     @global_names.setter
     def global_names(self, value):
         pass
 
-    @error_statement_stacks.setter
-    def error_statement_stacks(self, value):
+    @error_statements.setter
+    def error_statements(self, value):
         pass
 
     @used_names.setter
@@ -99,10 +100,10 @@ class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, grammar, source, module_path=None):
         if not settings.fast_parser:
-            return Parser(grammar, source, module_path)
+            return ParserWithRecovery(grammar, source, module_path)
 
-        pi = cache.parser_cache.get(module_path, None)
-        if pi is None or isinstance(pi.parser, Parser):
+        pi = parser_cache.get(module_path, None)
+        if pi is None or isinstance(pi.parser, ParserWithRecovery):
             p = super(CachedFastParser, self).__call__(grammar, source, module_path)
         else:
             p = pi.parser  # pi is a `cache.ParserCacheItem`
@@ -123,13 +124,20 @@ class ParserNode(object):
         try:
             # With fast_parser we have either 1 subscope or only statements.
             self._content_scope = parser.module.subscopes[0]
+            # A parsed node's content will be in the first indent, because
+            # everything that's parsed is within this subscope.
+            self._is_class_or_def = True
         except IndexError:
             self._content_scope = parser.module
+            self._is_class_or_def = False
         else:
             self._rewrite_last_newline()
 
         # We need to be able to reset the original children of a parser.
         self._old_children = list(self._content_scope.children)
+
+    def is_root_node(self):
+        return self.parent is None
 
     def _rewrite_last_newline(self):
         """
@@ -181,25 +189,30 @@ class ParserNode(object):
             dcts.insert(0, self._content_scope.names_dict)
             self._content_scope.names_dict = MergedNamesDict(dcts)
 
-    def parent_until_indent(self, indent=None):
-        if (indent is None or self._indent >= indent) and self.parent is not None:
-            self.close()
-            return self.parent.parent_until_indent(indent)
-        return self
-
     @property
     def _indent(self):
-        if not self.parent:
+        if self.is_root_node():
             return 0
 
         return self.parser.module.children[0].start_pos[1]
 
-    def add_node(self, node, line_offset):
-        """Adding a node means adding a node that was already added earlier"""
+    def add_node(self, node, start_line, indent):
+        """
+        Adding a node means adding a node that was either just parsed or one
+        that can be reused.
+        """
+        # Content that is not a subscope can never be part of the current node,
+        # because it's basically a sister node, that sits next to it and not
+        # within it.
+        if (self._indent >= indent or not self._is_class_or_def) and \
+                not self.is_root_node():
+            self.close()
+            return self.parent.add_node(node, start_line, indent)
+
         # Changing the line offsets is very important, because if they don't
         # fit, all the start_pos values will be wrong.
         m = node.parser.module
-        node.parser.position_modifier.line = line_offset
+        node.parser.position_modifier.line = start_line - 1
         self._fast_module.modules.append(m)
         node.parent = self
 
@@ -223,7 +236,7 @@ class ParserNode(object):
             for y in n.all_sub_nodes():
                 yield y
 
-    @cache.underscore_memoization  # Should only happen once!
+    @underscore_memoization  # Should only happen once!
     def remove_last_newline(self):
         self.parser.remove_last_newline()
 
@@ -244,11 +257,15 @@ class FastParser(use_metaclass(CachedFastParser)):
 
     def _reset_caches(self):
         self.module = FastModule(self.module_path)
-        self.current_node = ParserNode(self.module, self, '')
+        self.root_node = self.current_node = ParserNode(self.module, self, '')
+
+    def get_parsed_node(self):
+        return self.module
 
     def update(self, source):
-        # For testing purposes: It is important that the number of parsers used
-        # can be minimized. With these variables we can test against that.
+        # Variables for testing purposes: It is important that the number of
+        # parsers used can be minimized. With these variables we can test
+        # against that.
         self.number_parsers_used = 0
         self.number_of_splits = 0
         self.number_of_misses = 0
@@ -312,13 +329,13 @@ class FastParser(use_metaclass(CachedFastParser)):
                 current_lines.append(l)  # Just ignore comments and blank lines
                 continue
 
-            if new_indent:
+            if new_indent and not parentheses_level:
                 if indent > indent_list[-2]:
                     # Set the actual indent, not just the random old indent + 1.
                     indent_list[-1] = indent
                 new_indent = False
 
-            while indent <= indent_list[-2]:  # -> dedent
+            while indent < indent_list[-1]:  # -> dedent
                 indent_list.pop()
                 # This automatically resets the flow_indent if there was a
                 # dedent or a flow just on one line (with one simple_stmt).
@@ -348,10 +365,13 @@ class FastParser(use_metaclass(CachedFastParser)):
                     is_decorator = False
 
             parentheses_level = \
-                max(0, (l.count('(') + l.count('[') + l.count('{')
-                        - l.count(')') - l.count(']') - l.count('}')))
+                max(0, (l.count('(') + l.count('[') + l.count('{') -
+                        l.count(')') - l.count(']') - l.count('}')))
 
             current_lines.append(l)
+
+        if previous_line is not None:
+            current_lines.append(previous_line)
         if current_lines:
             yield gen_part()
 
@@ -366,41 +386,44 @@ class FastParser(use_metaclass(CachedFastParser)):
             source += '\n'
             added_newline = True
 
-        next_line_offset = line_offset = 0
+        next_code_part_end_line = code_part_end_line = 1
         start = 0
-        nodes = list(self.current_node.all_sub_nodes())
+        nodes = list(self.root_node.all_sub_nodes())
         # Now we can reset the node, because we have all the old nodes.
-        self.current_node.reset_node()
+        self.root_node.reset_node()
+        self.current_node = self.root_node
         last_end_line = 1
 
         for code_part in self._split_parts(source):
-            next_line_offset += code_part.count('\n')
+            next_code_part_end_line += code_part.count('\n')
             # If the last code part parsed isn't equal to the current end_pos,
             # we know that the parser went further (`def` start in a
             # docstring). So just parse the next part.
-            if line_offset + 1 == last_end_line:
-                self.current_node = self._get_node(code_part, source[start:],
-                                                   line_offset, nodes)
+            if code_part_end_line == last_end_line:
+                self._parse_part(code_part, source[start:], code_part_end_line, nodes)
             else:
+                self.number_of_misses += 1
                 # Means that some lines where not fully parsed. Parse it now.
                 # This is a very rare case. Should only happens with very
                 # strange code bits.
-                self.number_of_misses += 1
-                while last_end_line < next_line_offset + 1:
-                    line_offset = last_end_line - 1
+                while last_end_line < next_code_part_end_line:
+                    code_part_end_line = last_end_line
                     # We could calculate the src in a more complicated way to
                     # make caching here possible as well. However, this is
                     # complicated and error-prone. Since this is not very often
                     # called - just ignore it.
-                    src = ''.join(self._lines[line_offset:])
-                    self.current_node = self._get_node(code_part, src,
-                                                       line_offset, nodes)
+                    src = ''.join(self._lines[code_part_end_line - 1:])
+                    self._parse_part(code_part, src, code_part_end_line, nodes)
                     last_end_line = self.current_node.parser.module.end_pos[0]
-
+                debug.dbg("While parsing %s, starting with line %s wasn't included in split.",
+                          self.module_path, code_part_end_line)
+                #assert code_part_end_line > last_end_line
+                # This means that the parser parsed faster than the last given
+                # `code_part`.
                 debug.dbg('While parsing %s, line %s slowed down the fast parser.',
-                          self.module_path, line_offset + 1)
+                          self.module_path, code_part_end_line)
 
-            line_offset = next_line_offset
+            code_part_end_line = next_code_part_end_line
             start += len(code_part)
 
             last_end_line = self.current_node.parser.module.end_pos[0]
@@ -409,39 +432,41 @@ class FastParser(use_metaclass(CachedFastParser)):
             self.current_node.remove_last_newline()
 
         # Now that the for loop is finished, we still want to close all nodes.
-        self.current_node = self.current_node.parent_until_indent()
-        self.current_node.close()
+        node = self.current_node
+        while node is not None:
+            node.close()
+            node = node.parent
 
         debug.dbg('Parsed %s, with %s parsers in %s splits.'
                   % (self.module_path, self.number_parsers_used,
                      self.number_of_splits))
 
-    def _get_node(self, source, parser_code, line_offset, nodes):
+    def _parse_part(self, source, parser_code, code_part_end_line, nodes):
         """
         Side effect: Alters the list of nodes.
         """
-        indent = len(source) - len(source.lstrip('\t '))
-        self.current_node = self.current_node.parent_until_indent(indent)
-
         h = hash(source)
         for index, node in enumerate(nodes):
             if node.hash == h and node.source == source:
                 node.reset_node()
                 nodes.remove(node)
+                parser_code = source
                 break
         else:
             tokenizer = FastTokenizer(parser_code)
             self.number_parsers_used += 1
-            p = Parser(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
+            p = ParserWithRecovery(self._grammar, parser_code, self.module_path, tokenizer=tokenizer)
 
-            end = line_offset + p.module.end_pos[0]
-            used_lines = self._lines[line_offset:end - 1]
+            end = code_part_end_line - 1 + p.module.end_pos[0]
+            used_lines = self._lines[code_part_end_line - 1:end - 1]
             code_part_actually_used = ''.join(used_lines)
 
             node = ParserNode(self.module, p, code_part_actually_used)
 
-        self.current_node.add_node(node, line_offset)
-        return node
+        indent = len(parser_code) - len(parser_code.lstrip('\t '))
+
+        self.current_node.add_node(node, code_part_end_line, indent)
+        self.current_node = node
 
 
 class FastTokenizer(object):
@@ -450,7 +475,7 @@ class FastTokenizer(object):
     """
     def __init__(self, source):
         self.source = source
-        self._gen = source_tokens(source)
+        self._gen = source_tokens(source, use_exact_op_types=True)
         self._closed = False
 
         # fast parser options
@@ -501,19 +526,22 @@ class FastTokenizer(object):
                 self._closed = True
             return current
 
-        if value in ('def', 'class') and self._parentheses_level \
-                and re.search(r'\n[ \t]*\Z', prefix):
+        previous_type = self.previous[0]
+        if value in ('def', 'class') and self._parentheses_level:
             # Account for the fact that an open parentheses before a function
             # will reset the parentheses counter, but new lines before will
             # still be ignored. So check the prefix.
 
             # TODO what about flow parentheses counter resets in the tokenizer?
             self._parentheses_level = 0
-            return self._close()
+            # We need to simulate a newline before the indent, because the
+            # open parentheses ignored them.
+            if re.search('\n\s*', prefix):
+                previous_type = NEWLINE
 
         # Parentheses ignore the indentation rules. The other three stand for
         # new lines.
-        if self.previous[0] in (NEWLINE, INDENT, DEDENT) \
+        if previous_type in (NEWLINE, INDENT, DEDENT) \
                 and not self._parentheses_level and typ not in (INDENT, DEDENT):
             if not self._in_flow:
                 if value in FLOWS:
