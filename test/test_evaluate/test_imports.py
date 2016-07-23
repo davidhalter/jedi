@@ -4,7 +4,7 @@ import sys
 import pytest
 
 import jedi
-from jedi._compatibility import find_module_py33
+from jedi._compatibility import find_module_py33, find_module
 from ..helpers import cwd_at
 
 
@@ -12,6 +12,44 @@ from ..helpers import cwd_at
 def test_find_module_py33():
     """Needs to work like the old find_module."""
     assert find_module_py33('_io') == (None, '_io', False)
+
+
+def test_find_module_package():
+    file, path, is_package = find_module('json')
+    assert file is None
+    assert path.endswith('json')
+    assert is_package is True
+
+
+def test_find_module_not_package():
+    file, path, is_package = find_module('io')
+    assert file is not None
+    assert path.endswith('io.py')
+    assert is_package is False
+
+
+def test_find_module_package_zipped():
+    if 'zipped_imports/pkg.zip' not in sys.path:
+      sys.path.append(os.path.join(os.path.dirname(__file__),
+                      'zipped_imports/pkg.zip'))
+    file, path, is_package = find_module('pkg')
+    assert file is not None
+    assert path.endswith('pkg.zip')
+    assert is_package is True
+    assert len(jedi.Script('import pkg; pkg.mod', 1, 19).completions()) == 1
+
+
+@pytest.mark.skipif('sys.version_info < (2,7)')
+def test_find_module_not_package_zipped():
+    if 'zipped_imports/not_pkg.zip' not in sys.path:
+      sys.path.append(os.path.join(os.path.dirname(__file__),
+                      'zipped_imports/not_pkg.zip'))
+    file, path, is_package = find_module('not_pkg')
+    assert file is not None
+    assert path.endswith('not_pkg.zip')
+    assert is_package is False
+    assert len(
+      jedi.Script('import not_pkg; not_pkg.val', 1, 27).completions()) == 1
 
 
 @cwd_at('test/test_evaluate/not_in_sys_path/pkg')
