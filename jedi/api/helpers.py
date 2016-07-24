@@ -20,23 +20,16 @@ def sorted_definitions(defs):
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
-def get_on_completion_name(module, position):
+def get_on_completion_name(module, lines, position):
     leaf = module.get_leaf_for_position(position)
     if leaf is None:
         return ''
-    elif leaf.type == 'string':
+    elif leaf.type in ('string', 'error_leaf'):
         # Completions inside strings are a bit special, we need to parse the
         # string.
-        lines = leaf.value.splitlines()
-        start_pos = leaf.start_pos
-        difference = position[0] - start_pos[0]
-        if difference == 0:
-            indent = start_pos[1]
-        else:
-            indent = 0
-        line = lines[difference][:position[1] - indent]
+        line = lines[position[0] - 1]
         # The first step of completions is to get the name
-        return re.search(r'(?!\d)\w+$|$', line).group(0)
+        return re.search(r'(?!\d)\w+$|$', line[:position[1]]).group(0)
     elif leaf.type not in ('name', 'keyword'):
         return ''
 
@@ -129,7 +122,6 @@ def get_stack_at_position(grammar, code_lines, module, pos):
     safeword = 'XXX_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
     # Remove as many indents from **all** code lines as possible.
     code = dedent(code + safeword)
-    print(repr(code))
 
     p = parser.Parser(grammar, code, start_parsing=False)
     try:

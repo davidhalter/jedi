@@ -80,7 +80,7 @@ class Completion:
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
-        self._like_name = helpers.get_on_completion_name(module, position)
+        self._like_name = helpers.get_on_completion_name(module, code_lines, position)
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._position = position[0], position[1] - len(self._like_name)
