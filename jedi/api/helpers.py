@@ -20,12 +20,12 @@ def sorted_definitions(defs):
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
-def get_on_completion_name(lines, position):
-    line = lines[position[0] - 1]
-    # The first step of completions is to get the name
-    return re.search(
-        r'(?!\d)\w+$|$', line[:position[1]]
-    ).group(0)
+def get_on_completion_name(module, position):
+    leaf = module.get_leaf_for_position(position)
+    if leaf is None or leaf.type not in ('name', 'keyword'):
+        return ''
+
+    return leaf.value[:position[1] - leaf.start_pos[1]]
 
 
 def _get_code(code_lines, start_pos, end_pos):
@@ -44,59 +44,63 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
+def _get_code_for_stack(code_lines, module, position):
+    leaf = module.get_leaf_for_position(position, include_prefixes=True)
+    # It might happen that we're on whitespace or on a comment. This means
+    # that we would not get the right leaf.
+    if leaf.start_pos >= position:
+        try:
+            leaf = leaf.get_previous_leaf()
+        except IndexError:
+            return u('')  # At the beginning of the file.
+    is_after_newline = leaf.type == 'whitespace'
+    while leaf.type == 'whitespace':
+        try:
+            leaf = leaf.get_previous_leaf()
+        except IndexError:
+            return u('')
+
+    if leaf.type in ('indent', 'dedent'):
+        return u('')
+    elif leaf.type == 'error_leaf' or leaf.type == 'string':
+        # Error leafs cannot be parsed, completion in strings is also
+        # impossible.
+        raise OnErrorLeaf(leaf)
+    else:
+        if leaf == ';':
+            user_stmt = leaf.parent
+        else:
+            user_stmt = leaf.get_definition()
+        if user_stmt.parent.type == 'simple_stmt':
+            user_stmt = user_stmt.parent
+
+        if is_after_newline:
+            if user_stmt.start_pos[1] > position[1]:
+                # This means that it's actually a dedent and that means that we
+                # start without context (part of a suite).
+                return u('')
+
+        # This is basically getting the relevant lines.
+        code = _get_code(code_lines, user_stmt.get_start_pos_of_prefix(), position)
+        if code.startswith('pass'):
+            import pdb; pdb.set_trace()
+
+        return code
+
+
 def get_stack_at_position(grammar, code_lines, module, pos):
     """
     Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
     """
-    user_stmt = module.get_statement_for_position(pos)
-
-    if user_stmt is not None and user_stmt.type in ('indent', 'dedent'):
-        code = u('')
-    else:
-        if user_stmt is None:
-            user_stmt = module.get_leaf_for_position(pos, include_prefixes=True)
-        if pos <= user_stmt.start_pos:
-            try:
-                leaf = user_stmt.get_previous_leaf()
-            except IndexError:
-                pass
-            else:
-                user_stmt = module.get_statement_for_position(leaf.start_pos)
-
-        if user_stmt.type == 'error_leaf' or user_stmt.type == 'string':
-            # Error leafs cannot be parsed, completion in strings is also
-            # impossible.
-            raise OnErrorLeaf(user_stmt)
-
-        start_pos = user_stmt.start_pos
-        if user_stmt.first_leaf() == '@':
-            # TODO this once again proves that just using user_stmt.get_code
-            #      would probably be nicer than _get_code.
-            # Remove the indent to have a statement that is aligned (properties
-            # on the same line as function)
-            start_pos = start_pos[0], 0
-
-        code = _get_code(code_lines, start_pos, pos)
-        if code == ';':
-            # ; cannot be parsed.
-            code = u('')
-
-        # Remove whitespace at the end. Necessary, because the tokenizer will parse
-        # an error token (there's no new line at the end in our case). This doesn't
-        # alter any truth about the valid tokens at that position.
-        code = code.rstrip('\t ')
-        # Remove as many indents from **all** code lines as possible.
-        code = dedent(code)
-
     class EndMarkerReached(Exception):
         pass
 
     def tokenize_without_endmarker(code):
         tokens = tokenize.source_tokens(code, use_exact_op_types=True)
         for token_ in tokens:
-            if token_[0] == token.ENDMARKER:
+            if token_.string == safeword:
                 raise EndMarkerReached()
-            elif token_[0] == token.DEDENT:
+            elif token_.type == token.DEDENT and False:
                 # Ignore those. Error statements should not contain them, if
                 # they do it's for cases where an indentation happens and
                 # before the endmarker we still see them.
@@ -104,11 +108,20 @@ def get_stack_at_position(grammar, code_lines, module, pos):
             else:
                 yield token_
 
+    code = _get_code_for_stack(code_lines, module, pos)
+    # We use a word to tell Jedi when we have reached the start of the
+    # completion.
+    safeword = 'XXX_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
+    # Remove as many indents from **all** code lines as possible.
+    code = dedent(code + safeword)
+    print(repr(code))
+
     p = parser.Parser(grammar, code, start_parsing=False)
     try:
         p.parse(tokenizer=tokenize_without_endmarker(code))
     except EndMarkerReached:
         return Stack(p.stack)
+    raise SystemError("This really shouldn't happen. There's a bug in Jedi.")
 
 
 class Stack(list):

@@ -147,10 +147,12 @@ class Base(object):
         return scope
 
     def get_definition(self):
+        if self.type in ('whitespace', 'dedent', 'indent'):
+            raise ValueError('Cannot get the indentation of whitespace or indentation.')
         scope = self
         while scope.parent is not None:
             parent = scope.parent
-            if scope.isinstance(Node, Name) and parent.type != 'simple_stmt':
+            if scope.isinstance(Node, Leaf) and parent.type != 'simple_stmt':
                 if scope.type == 'testlist_comp':
                     try:
                         if isinstance(scope.children[1], CompFor):
@@ -292,7 +294,11 @@ class Leaf(Base):
 
     def get_start_pos_of_prefix(self):
         try:
-            return self.get_previous_leaf().end_pos
+            previous_leaf = self
+            while True:
+                previous_leaf = previous_leaf.get_previous_leaf()
+                if previous_leaf.type not in ('indent', 'dedent'):
+                    return previous_leaf.end_pos
         except IndexError:
             return 1, 0  # It's the first leaf.
 
