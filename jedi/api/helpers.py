@@ -22,7 +22,22 @@ def sorted_definitions(defs):
 
 def get_on_completion_name(module, position):
     leaf = module.get_leaf_for_position(position)
-    if leaf is None or leaf.type not in ('name', 'keyword'):
+    if leaf is None:
+        return ''
+    elif leaf.type == 'string':
+        # Completions inside strings are a bit special, we need to parse the
+        # string.
+        lines = leaf.value.splitlines()
+        start_pos = leaf.start_pos
+        difference = position[0] - start_pos[0]
+        if difference == 0:
+            indent = start_pos[1]
+        else:
+            indent = 0
+        line = lines[difference][:position[1] - indent]
+        # The first step of completions is to get the name
+        return re.search(r'(?!\d)\w+$|$', line).group(0)
+    elif leaf.type not in ('name', 'keyword'):
         return ''
 
     return leaf.value[:position[1] - leaf.start_pos[1]]
