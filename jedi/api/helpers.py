@@ -53,8 +53,8 @@ def _get_code_for_stack(code_lines, module, position):
             leaf = leaf.get_previous_leaf()
         except IndexError:
             return u('')  # At the beginning of the file.
-    is_after_newline = leaf.type == 'whitespace'
-    while leaf.type == 'whitespace':
+    is_after_newline = leaf.type == 'newline'
+    while leaf.type == 'newline':
         try:
             leaf = leaf.get_previous_leaf()
         except IndexError:

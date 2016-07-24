@@ -214,12 +214,14 @@ class Parser(object):
             return pt.String(self.position_modifier, value, start_pos, prefix)
         elif type == NUMBER:
             return pt.Number(self.position_modifier, value, start_pos, prefix)
-        elif type in (NEWLINE, ENDMARKER):
-            return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
+        elif type == NEWLINE:
+            return pt.Newline(self.position_modifier, value, start_pos, prefix)
         elif type == INDENT:
             return pt.Indent(self.position_modifier, value, start_pos, prefix)
         elif type == DEDENT:
             return pt.Dedent(self.position_modifier, value, start_pos, prefix)
+        elif type == ENDMARKER:
+            return pt.EndMarker(self.position_modifier, value, start_pos, prefix)
         else:
             return pt.Operator(self.position_modifier, value, start_pos, prefix)
 

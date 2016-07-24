@@ -147,7 +147,7 @@ class Base(object):
         return scope
 
     def get_definition(self):
-        if self.type in ('whitespace', 'dedent', 'indent'):
+        if self.type in ('newline', 'dedent', 'indent', 'endmarker'):
             raise ValueError('Cannot get the indentation of whitespace or indentation.')
         scope = self
         while scope.parent is not None:
@@ -354,10 +354,15 @@ class LeafWithNewLines(Leaf):
         return "<%s: %r>" % (type(self).__name__, self.value)
 
 
-class Whitespace(LeafWithNewLines):
+class EndMarker(Leaf):
+    __slots__ = ()
+    type = 'endmarker'
+
+
+class Newline(LeafWithNewLines):
     """Contains NEWLINE and ENDMARKER tokens."""
     __slots__ = ()
-    type = 'whitespace'
+    type = 'newline'
 
     @utf8_repr
     def __repr__(self):
