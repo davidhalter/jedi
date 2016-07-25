@@ -432,7 +432,7 @@ class Indent(Leaf):
 
 
 class Dedent(Leaf):
-    type = 'indent'
+    type = 'dedent'
     __slots__ = ()
 
 

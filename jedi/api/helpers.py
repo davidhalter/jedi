@@ -51,8 +51,20 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
-def _is_in_comment(leaf, position):
+def _is_on_comment(leaf, position):
     # We might be on a comment.
+    if leaf.type == 'endmarker':
+        try:
+            dedent = leaf.get_previous_leaf()
+            if dedent.type == 'dedent' and dedent.prefix:
+                # TODO This is needed because the fast parser uses multiple
+                # endmarker tokens within a file which is obviously ugly.
+                # This is so ugly that I'm not even commenting how it exactly
+                # happens, but let me tell you that I want to get rid of it.
+                leaf = dedent
+        except IndexError:
+            pass
+
     comment_lines = common.splitlines(leaf.prefix)
     difference = leaf.start_pos[0] - position[0]
     prefix_start_pos = leaf.get_start_pos_of_prefix()
@@ -71,7 +83,7 @@ def _get_code_for_stack(code_lines, module, position):
     # It might happen that we're on whitespace or on a comment. This means
     # that we would not get the right leaf.
     if leaf.start_pos >= position:
-        if _is_in_comment(leaf, position):
+        if _is_on_comment(leaf, position):
             return u('')
 
         # If we're not on a comment simply get the previous leaf and proceed.
