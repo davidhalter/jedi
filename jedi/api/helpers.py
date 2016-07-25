@@ -10,6 +10,7 @@ from jedi.evaluate.helpers import call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize, token
 from jedi.cache import time_cache
+from jedi import common
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
@@ -22,11 +23,9 @@ def sorted_definitions(defs):
 
 def get_on_completion_name(module, lines, position):
     leaf = module.get_leaf_for_position(position)
-    if leaf is None:
-        return ''
-    elif leaf.type in ('string', 'error_leaf'):
+    if leaf is None or leaf.type in ('string', 'error_leaf'):
         # Completions inside strings are a bit special, we need to parse the
-        # string.
+        # string. The same is true for comments and error_leafs.
         line = lines[position[0] - 1]
         # The first step of completions is to get the name
         return re.search(r'(?!\d)\w+$|$', line[:position[1]]).group(0)
@@ -52,15 +51,35 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
+def _is_in_comment(leaf, position):
+    # We might be on a comment.
+    comment_lines = common.splitlines(leaf.prefix)
+    difference = leaf.start_pos[0] - position[0]
+    prefix_start_pos = leaf.get_start_pos_of_prefix()
+    if difference == 0:
+        indent = leaf.start_pos[1]
+    elif position[0] == prefix_start_pos[0]:
+        indent = prefix_start_pos[1]
+    else:
+        indent = 0
+    line = comment_lines[-difference - 1][:position[1] - indent]
+    return '#' in line
+
+
 def _get_code_for_stack(code_lines, module, position):
     leaf = module.get_leaf_for_position(position, include_prefixes=True)
     # It might happen that we're on whitespace or on a comment. This means
     # that we would not get the right leaf.
     if leaf.start_pos >= position:
+        if _is_in_comment(leaf, position):
+            return u('')
+
+        # If we're not on a comment simply get the previous leaf and proceed.
         try:
             leaf = leaf.get_previous_leaf()
         except IndexError:
             return u('')  # At the beginning of the file.
+
     is_after_newline = leaf.type == 'newline'
     while leaf.type == 'newline':
         try:
@@ -89,11 +108,7 @@ def _get_code_for_stack(code_lines, module, position):
                 return u('')
 
         # This is basically getting the relevant lines.
-        code = _get_code(code_lines, user_stmt.get_start_pos_of_prefix(), position)
-        if code.startswith('pass'):
-            import pdb; pdb.set_trace()
-
-        return code
+        return _get_code(code_lines, user_stmt.get_start_pos_of_prefix(), position)
 
 
 def get_stack_at_position(grammar, code_lines, module, pos):

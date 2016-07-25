@@ -550,6 +550,10 @@ class BaseNode(Base):
                 try:
                     return c.get_leaf_for_position(position, include_prefixes)
                 except AttributeError:
+                    while c.type in ('indent', 'dedent'):
+                        # We'd rather not have indents and dedents as a leaf,
+                        # because they don't contain indentation information.
+                        c = c.get_next_leaf()
                     return c
 
         return None
