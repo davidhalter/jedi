@@ -676,7 +676,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             # Arguments([AlreadyEvaluated([_ArrayInstance])]) inside
             # Yeah... I know... It's complicated ;-)
             node = list(element.var_args.argument_node[0])[0].var_args.trailer
-        if isinstance(node, er.InstanceElement):
+        if isinstance(node, er.InstanceElement) or node is None:
             return node
         return node.get_parent_until(er.FunctionExecution)
 
@@ -777,6 +777,8 @@ class _ArrayInstance(IterableWrapper):
                 yield types
 
         module = self.var_args.get_parent_until()
+        if module is None:
+            return
         is_list = str(self.instance.name) == 'list'
         additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
         if additions:

@@ -311,6 +311,17 @@ for i in 0, 2:
     #? int() str()
     GetItemWithList()[i]
 
+
+# With super
+class SuperYeah(list):
+    def __getitem__(self, index):
+        return super()[index]
+
+#?
+SuperYeah([1])[0]
+#?
+SuperYeah()[0]
+
 # -----------------
 # conversions
 # -----------------
