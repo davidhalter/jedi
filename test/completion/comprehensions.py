@@ -172,5 +172,3 @@ def x():
     #? 22
     [a for a in h if hio]
     if hio: pass
-
-

@@ -183,7 +183,6 @@ class Comprehension(IterableWrapper):
         last_comp = list(comp_for.get_comp_fors())[-1]
         return helpers.deep_ast_copy(self._get_comprehension().children[index], parent=last_comp)
 
-    @memoize_default()
     def _iterate(self):
         def nested(comp_fors):
             comp_for = comp_fors[0]

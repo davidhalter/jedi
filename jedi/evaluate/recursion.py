@@ -15,7 +15,6 @@ from jedi.evaluate import iterable
 def recursion_decorator(func):
     def run(evaluator, stmt, *args, **kwargs):
         rec_detect = evaluator.recursion_detector
-        # print stmt, len(self.node_statements())
         if rec_detect.push_stmt(stmt):
             return set()
         else:
