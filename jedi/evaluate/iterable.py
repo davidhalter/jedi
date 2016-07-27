@@ -30,6 +30,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
+from jedi import common
 
 
 class IterableWrapper(tree.Base):
@@ -183,32 +184,34 @@ class Comprehension(IterableWrapper):
         last_comp = list(comp_for.get_comp_fors())[-1]
         return helpers.deep_ast_copy(self._get_comprehension().children[index], parent=last_comp)
 
-    def _iterate(self):
-        def nested(comp_fors):
-            comp_for = comp_fors[0]
-            input_node = comp_for.children[3]
-            input_types = evaluator.eval_element(input_node)
-
-            iterated = py__iter__(evaluator, input_types, input_node)
-            exprlist = comp_for.children[1]
-            for types in iterated:
-                evaluator.predefined_if_name_dict_dict[comp_for] = \
-                    unpack_tuple_to_dict(evaluator, types, exprlist)
-                try:
-                    for result in nested(comp_fors[1:]):
-                        yield result
-                except IndexError:
-                    iterated = evaluator.eval_element(self._eval_node())
-                    if self.type == 'dict':
-                        yield iterated, evaluator.eval_element(self._eval_node(2))
-                    else:
-                        yield iterated
-                finally:
-                    del evaluator.predefined_if_name_dict_dict[comp_for]
-
+    def _nested(self, comp_fors):
         evaluator = self._evaluator
-        comp_fors = list(self._get_comp_for().get_comp_fors())
-        for result in nested(comp_fors):
+        comp_for = comp_fors[0]
+        input_node = comp_for.children[3]
+        input_types = evaluator.eval_element(input_node)
+
+        iterated = py__iter__(evaluator, input_types, input_node)
+        exprlist = comp_for.children[1]
+        for i, types in enumerate(iterated):
+            evaluator.predefined_if_name_dict_dict[comp_for] = \
+                unpack_tuple_to_dict(evaluator, types, exprlist)
+            try:
+                for result in self._nested(comp_fors[1:]):
+                    yield result
+            except IndexError:
+                iterated = evaluator.eval_element(self._eval_node())
+                if self.type == 'dict':
+                    yield iterated, evaluator.eval_element(self._eval_node(2))
+                else:
+                    yield iterated
+            finally:
+                del evaluator.predefined_if_name_dict_dict[comp_for]
+
+    @memoize_default(default=[])
+    @common.to_list
+    def _iterate(self):
+        comp_fors = tuple(self._get_comp_for().get_comp_fors())
+        for result in self._nested(comp_fors):
             yield result
 
     def py__iter__(self):

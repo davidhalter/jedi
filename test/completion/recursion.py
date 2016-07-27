@@ -37,3 +37,15 @@ def recursion1(foo):
 
 #? int()
 recursion1([1,2])[0]
+
+
+class FooListComp():
+    def __init__(self):
+        self.recursive = [1]
+
+    def annoying(self):
+        self.recursive = [x for x in self.recursive]
+
+
+#? int()
+FooListComp().recursive[0]

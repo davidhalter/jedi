@@ -158,3 +158,9 @@ def splitlines(string):
 def unite(iterable):
     """Turns a two dimensional array into a one dimensional."""
     return set(chain.from_iterable(iterable))
+
+
+def to_list(func):
+    def wrapper(*args, **kwargs):
+        return list(func(*args, **kwargs))
+    return wrapper
