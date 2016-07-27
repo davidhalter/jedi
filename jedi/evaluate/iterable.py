@@ -251,7 +251,7 @@ class ArrayMixin(object):
     @register_builtin_method('values', type='dict')
     def _imitate_values(self):
         items = self.dict_values()
-        return create_evaluated_sequence_set(self._evaluator, items, type='list')
+        return create_evaluated_sequence_set(self._evaluator, items, sequence_type='list')
         #return set([FakeSequence(self._evaluator, [AlreadyEvaluated(items)], 'tuple')])
 
     @register_builtin_method('items', type='dict')
@@ -259,7 +259,7 @@ class ArrayMixin(object):
         items = [set([FakeSequence(self._evaluator, (k, v), 'tuple')])
                  for k, v in self._items()]
 
-        return create_evaluated_sequence_set(self._evaluator, *items, type='list')
+        return create_evaluated_sequence_set(self._evaluator, *items, sequence_type='list')
 
 
 class ListComprehension(Comprehension, ArrayMixin):
@@ -267,7 +267,14 @@ class ListComprehension(Comprehension, ArrayMixin):
 
     def py__getitem__(self, index):
         all_types = list(self.py__iter__())
-        return all_types[index]
+        result = all_types[index]
+        if isinstance(index, slice):
+            return create_evaluated_sequence_set(
+                self._evaluator,
+                unite(result),
+                sequence_type='list'
+            )
+        return result
 
 
 class SetComprehension(Comprehension, ArrayMixin):
@@ -302,9 +309,7 @@ class DictComprehension(Comprehension, ArrayMixin):
                     (AlreadyEvaluated(keys), AlreadyEvaluated(values)), 'tuple')
                     for keys, values in self._iterate())
 
-        return create_evaluated_sequence_set(self._evaluator, items, type='list')
-
-
+        return create_evaluated_sequence_set(self._evaluator, items, sequence_type='list')
 
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
@@ -445,7 +450,10 @@ def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
     ``sequence_type`` is a named argument, that doesn't work in Python2. For backwards
     compatibility reasons, we're now using kwargs.
     """
-    sequence_type = kwargs.get('sequence_type')
+    sequence_type = kwargs['sequence_type']
+    del kwargs['sequence_type']
+    assert not kwargs
+
     sets = tuple(AlreadyEvaluated(types) for types in types_order)
     return set([FakeSequence(evaluator, sets, sequence_type)])
 

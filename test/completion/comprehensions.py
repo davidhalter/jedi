@@ -172,3 +172,12 @@ def x():
     #? 22
     [a for a in h if hio]
     if hio: pass
+
+# -----------------
+# slices
+# -----------------
+
+#? list()
+foo = [x for x in [1, '']][:1]
+#? int()
+foo[0]
