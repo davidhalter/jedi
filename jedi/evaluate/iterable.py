@@ -739,11 +739,12 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                     # Check for recursion. Possible by using 'extend' in
                     # combination with function calls.
                     continue
-                if compare_array in evaluator.eval_element(power):
-                    # The arrays match. Now add the results
-                    added_types |= check_additions(execution_trailer.children[1], add_name)
-
-                evaluator.recursion_detector.pop_stmt()
+                try:
+                    if compare_array in evaluator.eval_element(power):
+                        # The arrays match. Now add the results
+                        added_types |= check_additions(execution_trailer.children[1], add_name)
+                finally:
+                    evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     debug.dbg('Dynamic array result %s' % added_types, color='MAGENTA')

@@ -68,56 +68,49 @@ class ImportWrapper(tree.Base):
 
     @memoize_default()
     def follow(self, is_goto=False):
-        if self._evaluator.recursion_detector.push_stmt(self._import):
-            # check recursion
-            return set()
-
+        module = self._evaluator.wrap(self._import.get_parent_until())
+        import_path = self._import.path_for_name(self._name)
+        from_import_name = None
         try:
-            module = self._evaluator.wrap(self._import.get_parent_until())
-            import_path = self._import.path_for_name(self._name)
-            from_import_name = None
-            try:
-                from_names = self._import.get_from_names()
-            except AttributeError:
-                # Is an import_name
-                pass
-            else:
-                if len(from_names) + 1 == len(import_path):
-                    # We have to fetch the from_names part first and then check
-                    # if from_names exists in the modules.
-                    from_import_name = import_path[-1]
-                    import_path = from_names
+            from_names = self._import.get_from_names()
+        except AttributeError:
+            # Is an import_name
+            pass
+        else:
+            if len(from_names) + 1 == len(import_path):
+                # We have to fetch the from_names part first and then check
+                # if from_names exists in the modules.
+                from_import_name = import_path[-1]
+                import_path = from_names
 
-            importer = Importer(self._evaluator, tuple(import_path),
-                                module, self._import.level)
+        importer = Importer(self._evaluator, tuple(import_path),
+                            module, self._import.level)
 
-            types = importer.follow()
+        types = importer.follow()
 
-            #if self._import.is_nested() and not self.nested_resolve:
-            #    scopes = [NestedImportModule(module, self._import)]
+        #if self._import.is_nested() and not self.nested_resolve:
+        #    scopes = [NestedImportModule(module, self._import)]
 
-            if from_import_name is not None:
-                types = set(chain.from_iterable(
-                    self._evaluator.find_types(t, unicode(from_import_name),
-                                               is_goto=is_goto)
-                    for t in types))
+        if from_import_name is not None:
+            types = set(chain.from_iterable(
+                self._evaluator.find_types(t, unicode(from_import_name),
+                                           is_goto=is_goto)
+                for t in types))
 
-                if not types:
-                    path = import_path + [from_import_name]
-                    importer = Importer(self._evaluator, tuple(path),
-                                        module, self._import.level)
-                    types = importer.follow()
-                    # goto only accepts `Name`
-                    if is_goto:
-                        types = set(s.name for s in types)
-            else:
+            if not types:
+                path = import_path + [from_import_name]
+                importer = Importer(self._evaluator, tuple(path),
+                                    module, self._import.level)
+                types = importer.follow()
                 # goto only accepts `Name`
                 if is_goto:
                     types = set(s.name for s in types)
+        else:
+            # goto only accepts `Name`
+            if is_goto:
+                types = set(s.name for s in types)
 
-            debug.dbg('after import: %s', types)
-        finally:
-            self._evaluator.recursion_detector.pop_stmt()
+        debug.dbg('after import: %s', types)
         return types
 
 
