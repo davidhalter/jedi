@@ -380,20 +380,6 @@ for i in set(a for a in [1]):
 
 
 # -----------------
-# Recursions
-# -----------------
-
-def to_list(iterable):
-    return list(set(iterable))
-
-
-def recursion1(foo):
-    return to_list(to_list(foo)) + recursion1(foo)
-
-#? int()
-recursion1([1,2])[0]
-
-# -----------------
 # Merged Arrays
 # -----------------
 

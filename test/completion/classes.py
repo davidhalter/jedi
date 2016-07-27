@@ -295,34 +295,6 @@ class A():
 A().b()
 
 # -----------------
-# recursions
-# -----------------
-def Recursion():
-    def recurse(self):
-        self.a = self.a
-        self.b = self.b.recurse()
-
-#?
-Recursion().a
-
-#?
-Recursion().b
-
-
-class X():
-    def __init__(self):
-        self.recursive = [1, 3]
-
-    def annoying(self):
-        self.recursive = [self.recursive[0]]
-
-    def recurse(self):
-        self.recursive = [self.recursive[1]]
-
-#? int()
-X().recursive[0]
-
-# -----------------
 # ducktyping
 # -----------------
 
