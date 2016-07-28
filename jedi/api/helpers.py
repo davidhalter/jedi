@@ -135,22 +135,18 @@ def get_stack_at_position(grammar, code_lines, module, pos):
         for token_ in tokens:
             if token_.string == safeword:
                 raise EndMarkerReached()
-            elif token_.type == token.DEDENT and False:
-                # Ignore those. Error statements should not contain them, if
-                # they do it's for cases where an indentation happens and
-                # before the endmarker we still see them.
-                pass
             else:
                 yield token_
 
     code = _get_code_for_stack(code_lines, module, pos)
     # We use a word to tell Jedi when we have reached the start of the
     # completion.
-    safeword = 'XXX_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
+    # Use Z as a prefix because it's not part of a number suffix.
+    safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
     # Remove as many indents from **all** code lines as possible.
-    code = dedent(code + safeword)
+    code = code + safeword
 
-    p = parser.Parser(grammar, code, start_parsing=False)
+    p = parser.ParserWithRecovery(grammar, code, start_parsing=False)
     try:
         p.parse(tokenizer=tokenize_without_endmarker(code))
     except EndMarkerReached:
