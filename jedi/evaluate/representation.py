@@ -472,7 +472,10 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     @property
     def params(self):
-        return self.get_subscope_by_name('__init__').params
+        try:
+            return self.get_subscope_by_name('__init__').params
+        except KeyError:
+            return []  # object.__init__
 
     def names_dicts(self, search_global, is_instance=False):
         if search_global:
@@ -491,7 +494,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         for s in self.py__mro__():
             for sub in reversed(s.subscopes):
                 if sub.name.value == name:
-                        return sub
+                    return sub
         raise KeyError("Couldn't find subscope.")
 
     def __getattr__(self, name):
