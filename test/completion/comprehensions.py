@@ -181,3 +181,20 @@ def x():
 foo = [x for x in [1, '']][:1]
 #? int()
 foo[0]
+
+# -----------------
+# In class
+# -----------------
+
+class X():
+    def __init__(self, bar):
+        self.bar = bar
+
+    def foo(self):
+        x = [a for a in self.bar][0]
+        #? int()
+        x
+        return x
+
+#? int()
+X([1]).foo()

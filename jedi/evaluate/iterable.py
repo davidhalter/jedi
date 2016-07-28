@@ -181,8 +181,15 @@ class Comprehension(IterableWrapper):
         """
         comp_for = self._get_comp_for()
         # For nested comprehensions we need to search the last one.
+        from jedi.evaluate.representation import InstanceElement
+        node = self._get_comprehension().children[index]
+        if isinstance(node, InstanceElement):
+            # This seems to be a strange case that I haven't found a way to
+            # write tests against. However since it's my new goal to get rid of
+            # InstanceElement anyway, I don't care.
+            node = node.var
         last_comp = list(comp_for.get_comp_fors())[-1]
-        return helpers.deep_ast_copy(self._get_comprehension().children[index], parent=last_comp)
+        return helpers.deep_ast_copy(node, parent=last_comp)
 
     def _nested(self, comp_fors):
         evaluator = self._evaluator
@@ -453,8 +460,7 @@ def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
     ``sequence_type`` is a named argument, that doesn't work in Python2. For backwards
     compatibility reasons, we're now using kwargs.
     """
-    sequence_type = kwargs['sequence_type']
-    del kwargs['sequence_type']
+    sequence_type = kwargs.pop('sequence_type')
     assert not kwargs
 
     sets = tuple(AlreadyEvaluated(types) for types in types_order)
