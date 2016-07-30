@@ -214,12 +214,14 @@ class Parser(object):
             return pt.String(self.position_modifier, value, start_pos, prefix)
         elif type == NUMBER:
             return pt.Number(self.position_modifier, value, start_pos, prefix)
-        elif type in (NEWLINE, ENDMARKER):
-            return pt.Whitespace(self.position_modifier, value, start_pos, prefix)
+        elif type == NEWLINE:
+            return pt.Newline(self.position_modifier, value, start_pos, prefix)
         elif type == INDENT:
             return pt.Indent(self.position_modifier, value, start_pos, prefix)
         elif type == DEDENT:
             return pt.Dedent(self.position_modifier, value, start_pos, prefix)
+        elif type == ENDMARKER:
+            return pt.EndMarker(self.position_modifier, value, start_pos, prefix)
         else:
             return pt.Operator(self.position_modifier, value, start_pos, prefix)
 
@@ -287,7 +289,8 @@ class ParserWithRecovery(Parser):
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
     """
-    def __init__(self, grammar, source, module_path=None, tokenizer=None):
+    def __init__(self, grammar, source, module_path=None, tokenizer=None,
+                 start_parsing=True):
         self.syntax_errors = []
 
         self._omit_dedent_list = []
@@ -302,12 +305,16 @@ class ParserWithRecovery(Parser):
         # if self.options["print_function"]:
         #     python_grammar = pygram.python_grammar_no_print_statement
         # else:
-        super(ParserWithRecovery, self).__init__(grammar, source, tokenizer=tokenizer)
-
-        self.module = self._parsed
-        self.module.used_names = self._used_names
-        self.module.path = module_path
-        self.module.global_names = self._global_names
+        super(ParserWithRecovery, self).__init__(
+            grammar, source,
+            tokenizer=tokenizer,
+            start_parsing=start_parsing
+        )
+        if start_parsing:
+            self.module = self._parsed
+            self.module.used_names = self._used_names
+            self.module.path = module_path
+            self.module.global_names = self._global_names
 
     def parse(self, tokenizer):
         return super(ParserWithRecovery, self).parse(self._tokenize(self._tokenize(tokenizer)))

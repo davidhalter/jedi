@@ -91,7 +91,7 @@ def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
 
     module_path = jedi_obj.get_parent_until().path
     instance = typ(name, module_path, jedi_obj.start_pos, message)
-    debug.warning(str(instance))
+    debug.warning(str(instance), format=False)
     evaluator.analysis.append(instance)
 
 

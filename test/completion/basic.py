@@ -190,6 +190,16 @@ def a():
 #?
 # str literals in comment """ upper
 
+def completion_in_comment():
+    #? ['Exception']
+    # might fail because the comment is not a leaf: Exception
+    pass
+
+some_word
+#? ['Exception']
+# Very simple comment completion: Exception
+# Commment after it
+
 # -----------------
 # magic methods
 # -----------------

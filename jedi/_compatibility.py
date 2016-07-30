@@ -6,6 +6,7 @@ import sys
 import imp
 import os
 import re
+import pkgutil
 try:
     import importlib
 except ImportError:
@@ -16,6 +17,18 @@ is_py33 = is_py3 and sys.version_info.minor >= 3
 is_py34 = is_py3 and sys.version_info.minor >= 4
 is_py35 = is_py3 and sys.version_info.minor >= 5
 is_py26 = not is_py3 and sys.version_info[1] < 7
+
+
+class DummyFile(object):
+    def __init__(self, loader, string):
+        self.loader = loader
+        self.string = string
+
+    def read(self):
+        return self.loader.get_source(self.string)
+
+    def close(self):
+        del self.loader
 
 
 def find_module_py33(string, path=None):
@@ -35,30 +48,73 @@ def find_module_py33(string, path=None):
     try:
         is_package = loader.is_package(string)
         if is_package:
-            module_path = os.path.dirname(loader.path)
-            module_file = None
+            if hasattr(loader, 'path'):
+                module_path = os.path.dirname(loader.path)
+            else:
+                # At least zipimporter does not have path attribute
+                module_path = os.path.dirname(loader.get_filename(string))
+            if hasattr(loader, 'archive'):
+                module_file = DummyFile(loader, string)
+            else:
+                module_file = None
         else:
             module_path = loader.get_filename(string)
-            module_file = open(module_path, 'rb')
+            module_file = DummyFile(loader, string)
     except AttributeError:
         # ExtensionLoader has not attribute get_filename, instead it has a
         # path attribute that we can use to retrieve the module path
         try:
             module_path = loader.path
-            module_file = open(loader.path, 'rb')
+            module_file = DummyFile(loader, string)
         except AttributeError:
             module_path = string
             module_file = None
         finally:
             is_package = False
 
+    if hasattr(loader, 'archive'):
+        module_path = loader.archive
+
     return module_file, module_path, is_package
 
 
 def find_module_pre_py33(string, path=None):
-    module_file, module_path, description = imp.find_module(string, path)
-    module_type = description[2]
-    return module_file, module_path, module_type is imp.PKG_DIRECTORY
+    try:
+        module_file, module_path, description = imp.find_module(string, path)
+        module_type = description[2]
+        return module_file, module_path, module_type is imp.PKG_DIRECTORY
+    except ImportError:
+        pass
+
+    if path is None:
+        path = sys.path
+    for item in path:
+        loader = pkgutil.get_importer(item)
+        if loader:
+            try:
+                loader = loader.find_module(string)
+                if loader:
+                    is_package = loader.is_package(string)
+                    is_archive = hasattr(loader, 'archive')
+                    try:
+                        module_path = loader.get_filename(string)
+                    except AttributeError:
+                        # fallback for py26
+                        try:
+                            module_path = loader._get_filename(string)
+                        except AttributeError:
+                            continue
+                    if is_package:
+                        module_path = os.path.dirname(module_path)
+                    if is_archive:
+                        module_path = loader.archive
+                    file = None
+                    if not is_package or is_archive:
+                        file = DummyFile(loader, string)
+                    return (file, module_path, is_package)
+            except ImportError:
+                pass
+    raise ImportError("No module named {0}".format(string))
 
 
 find_module = find_module_py33 if is_py33 else find_module_pre_py33

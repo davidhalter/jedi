@@ -38,5 +38,7 @@ Sid Shanker (@squidarth) <sid.p.shanker@gmail.com>
 Reinoud Elhorst (@reinhrst)
 Guido van Rossum (@gvanrossum) <guido@python.org>
 Dmytro Sadovnychyi (@sadovnychyi) <jedi@dmit.ro>
+Cristi Burcă (@scribu)
+
 
 Note: (@user) means a github user name.

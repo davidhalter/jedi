@@ -86,14 +86,9 @@ def increase_indent(func):
 
 def dbg(message, *args, **kwargs):
     """ Looks at the stack, to see if a debug message should be printed. """
-    if kwargs:
-        # Python 2 compatibility, because it doesn't understand default args
-        # after *args.
-        color = kwargs.get('color')
-        if color is None:
-            raise TypeError("debug.dbg doesn't support more named arguments than color")
-    else:
-        color = 'GREEN'
+    # Python 2 compatibility, because it doesn't understand default args
+    color = kwargs.pop('color', 'GREEN')
+    assert color
 
     if debug_function and enable_notice:
         frm = inspect.stack()[1]
@@ -104,10 +99,15 @@ def dbg(message, *args, **kwargs):
             debug_function(color, i + 'dbg: ' + message % tuple(u(repr(a)) for a in args))
 
 
-def warning(message, *args):
+def warning(message, *args, **kwargs):
+    format = kwargs.pop('format', True)
+    assert not kwargs
+
     if debug_function and enable_warning:
         i = ' ' * _debug_indent
-        debug_function('RED', i + 'warning: ' + message % tuple(u(repr(a)) for a in args))
+        if format:
+            message = message % tuple(u(repr(a)) for a in args)
+        debug_function('RED', i + 'warning: ' + message)
 
 
 def speed(name):

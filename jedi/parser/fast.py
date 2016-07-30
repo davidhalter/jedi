@@ -120,6 +120,10 @@ class ParserNode(object):
         self.source = source
         self.hash = hash(source)
         self.parser = parser
+        if source:
+            self._end_pos = parser.module.end_pos
+        else:
+            self._end_pos = 1, 0
 
         try:
             # With fast_parser we have either 1 subscope or only statements.
@@ -162,6 +166,10 @@ class ParserNode(object):
             # There's no module yet.
             return '<%s: empty>' % type(self).__name__
 
+    @property
+    def end_pos(self):
+        return self._end_pos[0] + self.parser.position_modifier.line, self._end_pos[1]
+
     def reset_node(self):
         """
         Removes changes that were applied in this class.
@@ -188,6 +196,10 @@ class ParserNode(object):
             # Need to insert the own node as well.
             dcts.insert(0, self._content_scope.names_dict)
             self._content_scope.names_dict = MergedNamesDict(dcts)
+            endmarker = self.parser.get_parsed_node().children[-1]
+            assert endmarker.type == 'endmarker'
+            last_parser = self._node_children[-1].parser
+            endmarker.start_pos = last_parser.get_parsed_node().end_pos
 
     @property
     def _indent(self):
@@ -414,7 +426,7 @@ class FastParser(use_metaclass(CachedFastParser)):
                     # called - just ignore it.
                     src = ''.join(self._lines[code_part_end_line - 1:])
                     self._parse_part(code_part, src, code_part_end_line, nodes)
-                    last_end_line = self.current_node.parser.module.end_pos[0]
+                    last_end_line = self.current_node.end_pos[0]
                 debug.dbg("While parsing %s, starting with line %s wasn't included in split.",
                           self.module_path, code_part_end_line)
                 #assert code_part_end_line > last_end_line
@@ -426,7 +438,7 @@ class FastParser(use_metaclass(CachedFastParser)):
             code_part_end_line = next_code_part_end_line
             start += len(code_part)
 
-            last_end_line = self.current_node.parser.module.end_pos[0]
+            last_end_line = self.current_node.end_pos[0]
 
         if added_newline:
             self.current_node.remove_last_newline()

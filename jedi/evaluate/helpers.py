@@ -26,8 +26,8 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
         new_children = []
         for child in obj.children:
             typ = child.type
-            if typ in ('whitespace', 'operator', 'keyword', 'number', 'string',
-                       'indent', 'dedent', 'error_leaf'):
+            if typ in ('newline', 'operator', 'keyword', 'number', 'string',
+                       'indent', 'dedent', 'endmarker', 'error_leaf'):
                 # At the moment we're not actually copying those primitive
                 # elements, because there's really no need to. The parents are
                 # obviously wrong, but that's not an issue.

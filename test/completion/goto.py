@@ -102,6 +102,13 @@ def f(t=None):
     #! 9 ['t=None']
     t = t or 1
 
+
+class X():
+    pass
+
+#! 3 []
+X(foo=x)
+
 # -----------------
 # imports
 # -----------------

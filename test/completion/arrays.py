@@ -311,6 +311,17 @@ for i in 0, 2:
     #? int() str()
     GetItemWithList()[i]
 
+
+# With super
+class SuperYeah(list):
+    def __getitem__(self, index):
+        return super()[index]
+
+#?
+SuperYeah([1])[0]
+#?
+SuperYeah()[0]
+
 # -----------------
 # conversions
 # -----------------
@@ -367,20 +378,6 @@ for i in set(a for a in [1]):
     #? int()
     i
 
-
-# -----------------
-# Recursions
-# -----------------
-
-def to_list(iterable):
-    return list(set(iterable))
-
-
-def recursion1(foo):
-    return to_list(to_list(foo)) + recursion1(foo)
-
-#? int()
-recursion1([1,2])[0]
 
 # -----------------
 # Merged Arrays

@@ -147,10 +147,12 @@ class Base(object):
         return scope
 
     def get_definition(self):
+        if self.type in ('newline', 'dedent', 'indent', 'endmarker'):
+            raise ValueError('Cannot get the indentation of whitespace or indentation.')
         scope = self
         while scope.parent is not None:
             parent = scope.parent
-            if scope.isinstance(Node, Name) and parent.type != 'simple_stmt':
+            if scope.isinstance(Node, Leaf) and parent.type != 'simple_stmt':
                 if scope.type == 'testlist_comp':
                     try:
                         if isinstance(scope.children[1], CompFor):
@@ -292,7 +294,11 @@ class Leaf(Base):
 
     def get_start_pos_of_prefix(self):
         try:
-            return self.get_previous_leaf().end_pos
+            previous_leaf = self
+            while True:
+                previous_leaf = previous_leaf.get_previous_leaf()
+                if previous_leaf.type not in ('indent', 'dedent'):
+                    return previous_leaf.end_pos
         except IndexError:
             return 1, 0  # It's the first leaf.
 
@@ -348,10 +354,15 @@ class LeafWithNewLines(Leaf):
         return "<%s: %r>" % (type(self).__name__, self.value)
 
 
-class Whitespace(LeafWithNewLines):
+class EndMarker(Leaf):
+    __slots__ = ()
+    type = 'endmarker'
+
+
+class Newline(LeafWithNewLines):
     """Contains NEWLINE and ENDMARKER tokens."""
     __slots__ = ()
-    type = 'whitespace'
+    type = 'newline'
 
     @utf8_repr
     def __repr__(self):
@@ -421,7 +432,7 @@ class Indent(Leaf):
 
 
 class Dedent(Leaf):
-    type = 'indent'
+    type = 'dedent'
     __slots__ = ()
 
 
@@ -539,6 +550,10 @@ class BaseNode(Base):
                 try:
                     return c.get_leaf_for_position(position, include_prefixes)
                 except AttributeError:
+                    while c.type in ('indent', 'dedent'):
+                        # We'd rather not have indents and dedents as a leaf,
+                        # because they don't contain indentation information.
+                        c = c.get_next_leaf()
                     return c
 
         return None

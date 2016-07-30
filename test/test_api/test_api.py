@@ -83,7 +83,7 @@ def test_completion_on_hex_literals():
     _check_number('0x1.', 'int')  # hexdecimal
     # Completing binary literals doesn't work if they are not actually binary
     # (invalid statements).
-    assert api.Script('0b2.').completions() == []
+    assert api.Script('0b2.b').completions() == []
     _check_number('0b1.', 'int')  # binary
 
     _check_number('0x2e.', 'int')
@@ -98,8 +98,10 @@ def test_completion_on_complex_literals():
     _check_number('1j.', 'complex')
     _check_number('44.j.', 'complex')
     _check_number('4.0j.', 'complex')
-    # No dot no completion
-    assert api.Script('4j').completions() == []
+    # No dot no completion - I thought, but 4j is actually a literall after
+    # which a keyword like or is allowed. Good times, haha!
+    assert (set([c.name for c in api.Script('4j').completions()]) ==
+            set(['if', 'and', 'in', 'is', 'not', 'or']))
 
 
 def test_goto_assignments_on_non_name():

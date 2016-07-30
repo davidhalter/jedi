@@ -30,6 +30,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
+from jedi import common
 
 
 class IterableWrapper(tree.Base):
@@ -180,36 +181,44 @@ class Comprehension(IterableWrapper):
         """
         comp_for = self._get_comp_for()
         # For nested comprehensions we need to search the last one.
+        from jedi.evaluate.representation import InstanceElement
+        node = self._get_comprehension().children[index]
+        if isinstance(node, InstanceElement):
+            # This seems to be a strange case that I haven't found a way to
+            # write tests against. However since it's my new goal to get rid of
+            # InstanceElement anyway, I don't care.
+            node = node.var
         last_comp = list(comp_for.get_comp_fors())[-1]
-        return helpers.deep_ast_copy(self._get_comprehension().children[index], parent=last_comp)
+        return helpers.deep_ast_copy(node, parent=last_comp)
 
-    @memoize_default()
-    def _iterate(self):
-        def nested(comp_fors):
-            comp_for = comp_fors[0]
-            input_node = comp_for.children[3]
-            input_types = evaluator.eval_element(input_node)
-
-            iterated = py__iter__(evaluator, input_types, input_node)
-            exprlist = comp_for.children[1]
-            for types in iterated:
-                evaluator.predefined_if_name_dict_dict[comp_for] = \
-                    unpack_tuple_to_dict(evaluator, types, exprlist)
-                try:
-                    for result in nested(comp_fors[1:]):
-                        yield result
-                except IndexError:
-                    iterated = evaluator.eval_element(self._eval_node())
-                    if self.type == 'dict':
-                        yield iterated, evaluator.eval_element(self._eval_node(2))
-                    else:
-                        yield iterated
-                finally:
-                    del evaluator.predefined_if_name_dict_dict[comp_for]
-
+    def _nested(self, comp_fors):
         evaluator = self._evaluator
-        comp_fors = list(self._get_comp_for().get_comp_fors())
-        for result in nested(comp_fors):
+        comp_for = comp_fors[0]
+        input_node = comp_for.children[3]
+        input_types = evaluator.eval_element(input_node)
+
+        iterated = py__iter__(evaluator, input_types, input_node)
+        exprlist = comp_for.children[1]
+        for i, types in enumerate(iterated):
+            evaluator.predefined_if_name_dict_dict[comp_for] = \
+                unpack_tuple_to_dict(evaluator, types, exprlist)
+            try:
+                for result in self._nested(comp_fors[1:]):
+                    yield result
+            except IndexError:
+                iterated = evaluator.eval_element(self._eval_node())
+                if self.type == 'dict':
+                    yield iterated, evaluator.eval_element(self._eval_node(2))
+                else:
+                    yield iterated
+            finally:
+                del evaluator.predefined_if_name_dict_dict[comp_for]
+
+    @memoize_default(default=[])
+    @common.to_list
+    def _iterate(self):
+        comp_fors = tuple(self._get_comp_for().get_comp_fors())
+        for result in self._nested(comp_fors):
             yield result
 
     def py__iter__(self):
@@ -252,7 +261,7 @@ class ArrayMixin(object):
     @register_builtin_method('values', type='dict')
     def _imitate_values(self):
         items = self.dict_values()
-        return create_evaluated_sequence_set(self._evaluator, items, type='list')
+        return create_evaluated_sequence_set(self._evaluator, items, sequence_type='list')
         #return set([FakeSequence(self._evaluator, [AlreadyEvaluated(items)], 'tuple')])
 
     @register_builtin_method('items', type='dict')
@@ -260,7 +269,7 @@ class ArrayMixin(object):
         items = [set([FakeSequence(self._evaluator, (k, v), 'tuple')])
                  for k, v in self._items()]
 
-        return create_evaluated_sequence_set(self._evaluator, *items, type='list')
+        return create_evaluated_sequence_set(self._evaluator, *items, sequence_type='list')
 
 
 class ListComprehension(Comprehension, ArrayMixin):
@@ -268,7 +277,14 @@ class ListComprehension(Comprehension, ArrayMixin):
 
     def py__getitem__(self, index):
         all_types = list(self.py__iter__())
-        return all_types[index]
+        result = all_types[index]
+        if isinstance(index, slice):
+            return create_evaluated_sequence_set(
+                self._evaluator,
+                unite(result),
+                sequence_type='list'
+            )
+        return result
 
 
 class SetComprehension(Comprehension, ArrayMixin):
@@ -303,9 +319,7 @@ class DictComprehension(Comprehension, ArrayMixin):
                     (AlreadyEvaluated(keys), AlreadyEvaluated(values)), 'tuple')
                     for keys, values in self._iterate())
 
-        return create_evaluated_sequence_set(self._evaluator, items, type='list')
-
-
+        return create_evaluated_sequence_set(self._evaluator, items, sequence_type='list')
 
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
@@ -446,7 +460,9 @@ def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
     ``sequence_type`` is a named argument, that doesn't work in Python2. For backwards
     compatibility reasons, we're now using kwargs.
     """
-    sequence_type = kwargs.get('sequence_type')
+    sequence_type = kwargs.pop('sequence_type')
+    assert not kwargs
+
     sets = tuple(AlreadyEvaluated(types) for types in types_order)
     return set([FakeSequence(evaluator, sets, sequence_type)])
 
@@ -676,7 +692,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
             # Arguments([AlreadyEvaluated([_ArrayInstance])]) inside
             # Yeah... I know... It's complicated ;-)
             node = list(element.var_args.argument_node[0])[0].var_args.trailer
-        if isinstance(node, er.InstanceElement):
+        if isinstance(node, er.InstanceElement) or node is None:
             return node
         return node.get_parent_until(er.FunctionExecution)
 
@@ -729,11 +745,12 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                     # Check for recursion. Possible by using 'extend' in
                     # combination with function calls.
                     continue
-                if compare_array in evaluator.eval_element(power):
-                    # The arrays match. Now add the results
-                    added_types |= check_additions(execution_trailer.children[1], add_name)
-
-                evaluator.recursion_detector.pop_stmt()
+                try:
+                    if compare_array in evaluator.eval_element(power):
+                        # The arrays match. Now add the results
+                        added_types |= check_additions(execution_trailer.children[1], add_name)
+                finally:
+                    evaluator.recursion_detector.pop_stmt()
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     debug.dbg('Dynamic array result %s' % added_types, color='MAGENTA')
@@ -777,6 +794,8 @@ class _ArrayInstance(IterableWrapper):
                 yield types
 
         module = self.var_args.get_parent_until()
+        if module is None:
+            return
         is_list = str(self.instance.name) == 'list'
         additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
         if additions:

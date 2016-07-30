@@ -275,7 +275,7 @@ class Evaluator(object):
                 return self._eval_element_not_cached(element)
         return self._eval_element_cached(element)
 
-    @memoize_default(evaluator_is_first_arg=True)
+    @memoize_default(default=set(), evaluator_is_first_arg=True)
     def _eval_element_cached(self, element):
         return self._eval_element_not_cached(element)
 

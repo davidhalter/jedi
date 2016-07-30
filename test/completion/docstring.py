@@ -177,3 +177,44 @@ d = ''
 """ bsdf """
 #? str()
 d.upper()
+
+# -----------------
+# class docstrings
+# -----------------
+
+class InInit():
+    def __init__(self, foo):
+        """
+        :type foo: str
+        """
+        #? str()
+        foo
+
+
+class InClass():
+    """
+    :type foo: str
+    """
+    def __init__(self, foo):
+        #? str()
+        foo
+
+
+class InBoth():
+    """
+    :type foo: str
+    """
+    def __init__(self, foo):
+        """
+        :type foo: int
+        """
+        #? str() int()
+        foo
+
+
+def __init__(foo):
+    """
+    :type foo: str
+    """
+    #? str()
+    foo
