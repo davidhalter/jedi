@@ -806,9 +806,10 @@ class GlobalName(helpers.FakeName):
 
 
 class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
-    def __init__(self, evaluator, module):
+    def __init__(self, evaluator, module, parent_module=None):
         self._evaluator = evaluator
         self.base = self._module = module
+        self._parent_module = parent_module
 
     def names_dicts(self, search_global):
         yield self.base.names_dict
@@ -854,6 +855,10 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         return helpers.FakeName(unicode(self.base.name), self, (1, 0))
 
     def _get_init_directory(self):
+        """
+        :return: The path to the directory of a package. None in case it's not
+                 a package.
+        """
         for suffix, _, _ in imp.get_suffixes():
             ending = '__init__' + suffix
             py__file__ = self.py__file__()
@@ -884,6 +889,30 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         else:
             return self.py__name__()
 
+    def _py__path__(self):
+        if self._parent_module is None:
+            search_path = self._evaluator.sys_path
+        else:
+            search_path = self._parent_module.py__path__()
+        init_path = self.py__file__()
+        if os.path.basename(init_path) == '__init__.py':
+            with open(init_path, 'rb') as f:
+                content = common.source_to_unicode(f.read())
+                # these are strings that need to be used for namespace packages,
+                # the first one is ``pkgutil``, the second ``pkg_resources``.
+                options = ('declare_namespace(__name__)', 'extend_path(__path__')
+                if options[0] in content or options[1] in content:
+                    # It is a namespace, now try to find the rest of the
+                    # modules on sys_path or whatever the search_path is.
+                    paths = set()
+                    for s in search_path:
+                        other = os.path.join(s, unicode(self.name))
+                        if os.path.isdir(other):
+                            paths.add(other)
+                    return list(paths)
+        # Default to this.
+        return [self._get_init_directory()]
+
     @property
     def py__path__(self):
         """
@@ -896,33 +925,12 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         is a list of paths (strings).
         Raises an AttributeError if the module is not a package.
         """
-        def return_value(search_path):
-            init_path = self.py__file__()
-            if os.path.basename(init_path) == '__init__.py':
-
-                with open(init_path, 'rb') as f:
-                    content = common.source_to_unicode(f.read())
-                    # these are strings that need to be used for namespace packages,
-                    # the first one is ``pkgutil``, the second ``pkg_resources``.
-                    options = ('declare_namespace(__name__)', 'extend_path(__path__')
-                    if options[0] in content or options[1] in content:
-                        # It is a namespace, now try to find the rest of the
-                        # modules on sys_path or whatever the search_path is.
-                        paths = set()
-                        for s in search_path:
-                            other = os.path.join(s, unicode(self.name))
-                            if os.path.isdir(other):
-                                paths.add(other)
-                        return list(paths)
-            # Default to this.
-            return [path]
-
         path = self._get_init_directory()
 
         if path is None:
             raise AttributeError('Only packages have __path__ attributes.')
         else:
-            return return_value
+            return self._py__path__
 
     @memoize_default()
     def _sub_modules_dict(self):

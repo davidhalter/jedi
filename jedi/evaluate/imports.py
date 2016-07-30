@@ -278,20 +278,17 @@ class Importer(object):
             # We can take the first element, because only the os special
             # case yields multiple modules, which is not important for
             # further imports.
-            base = list(bases)[0]
+            parent_module = list(bases)[0]
 
             # This is a huge exception, we follow a nested import
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
             if [str(i) for i in import_path] == ['os', 'path']:
-                return self._evaluator.find_types(base, 'path')
+                return self._evaluator.find_types(parent_module, 'path')
 
             try:
-                # It's possible that by giving it always the sys path (and not
-                # the __path__ attribute of the parent, we get wrong results
-                # and nested namespace packages don't work.  But I'm not sure.
-                paths = base.py__path__(sys_path)
+                paths = parent_module.py__path__()
             except AttributeError:
                 # The module is not a package.
                 _add_error(self._evaluator, import_path[-1])
@@ -311,6 +308,7 @@ class Importer(object):
                     _add_error(self._evaluator, import_path[-1])
                     return set()
         else:
+            parent_module = None
             try:
                 debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
                 # Override the sys.path. It works only good that way.
@@ -341,7 +339,7 @@ class Importer(object):
         if module_file is None and not module_path.endswith(('.py', '.zip', '.egg')):
             module = compiled.load_module(self._evaluator, module_path)
         else:
-            module = _load_module(self._evaluator, module_path, source, sys_path)
+            module = _load_module(self._evaluator, module_path, source, sys_path, parent_module)
 
         if module is None:
             # The file might raise an ImportError e.g. and therefore not be
@@ -404,7 +402,7 @@ class Importer(object):
 
                 # namespace packages
                 if isinstance(scope, tree.Module) and scope.path.endswith('__init__.py'):
-                    paths = scope.py__path__(self.sys_path_with_modifications())
+                    paths = scope.py__path__()
                     names += self._get_module_names(paths)
 
                 if only_modules:
@@ -437,7 +435,7 @@ class Importer(object):
         return names
 
 
-def _load_module(evaluator, path=None, source=None, sys_path=None):
+def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module=None):
     def load(source):
         dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith(('.py', '.zip', '.egg')) \
@@ -450,7 +448,8 @@ def _load_module(evaluator, path=None, source=None, sys_path=None):
         p = path
         p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
         save_parser(path, p)
-        return p.module
+        from jedi.evaluate.representation import ModuleWrapper
+        return ModuleWrapper(evaluator, p.module, parent_module)
 
     if sys_path is None:
         sys_path = evaluator.sys_path
