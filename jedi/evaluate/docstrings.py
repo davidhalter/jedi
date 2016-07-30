@@ -21,6 +21,7 @@ from textwrap import dedent
 
 from jedi.evaluate.cache import memoize_default
 from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser.tree import Class
 from jedi.common import indent_block
 from jedi.evaluate.iterable import Array, FakeSequence, AlreadyEvaluated
 
@@ -174,13 +175,21 @@ def _execute_array_values(evaluator, array):
 
 @memoize_default(None, evaluator_is_first_arg=True)
 def follow_param(evaluator, param):
+    def eval_docstring(docstring):
+        return set(
+            [p for param_str in _search_param_in_docstr(docstring, str(param.name))
+                for p in _evaluate_for_statement_string(evaluator, param_str, module)]
+        )
     func = param.parent_function
+    module = param.get_parent_until()
 
-    return set(
-        [p for param_str in _search_param_in_docstr(func.raw_doc,
-                                                    str(param.name))
-            for p in _evaluate_for_statement_string(evaluator, param_str,
-                                                    param.get_parent_until())])
+    types = eval_docstring(func.raw_doc)
+    if func.name.value == '__init__':
+        cls = func.get_parent_until(Class)
+        if cls.type == 'classdef':
+            types |= eval_docstring(cls.raw_doc)
+
+    return types
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
