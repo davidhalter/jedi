@@ -39,6 +39,7 @@ Reinoud Elhorst (@reinhrst)
 Guido van Rossum (@gvanrossum) <guido@python.org>
 Dmytro Sadovnychyi (@sadovnychyi) <jedi@dmit.ro>
 Cristi Burcă (@scribu)
+bstaint (@bstaint)
 
 
 Note: (@user) means a github user name.
