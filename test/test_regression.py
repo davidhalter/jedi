@@ -157,6 +157,29 @@ class TestRegression(TestCase):
             "abc()."
         assert Script(s).completions()
 
+    def test_fake_subnodes(self):
+        """
+        Test the number of subnodes of a fake object.
+
+        There was a bug where the number of child nodes would grow on every
+        call to :func:``jedi.evaluate.compiled.fake.get_faked``.
+
+        See Github PR#649 and isseu #591.
+        """
+        def get_str_completion(values):
+            for c in values:
+                if c.name == 'str':
+                    return c
+        limit = None
+        for i in range(2):
+            completions = Script('').completions()
+            c = get_str_completion(completions)
+            n = len(c._definition.subscopes[0].children[-1].children)
+            if i == 0:
+                limit = n
+            else:
+                assert n == limit
+
     def test_source_to_unicode_unicode_text(self):
         source = (
             b"# vim: fileencoding=utf-8\n"

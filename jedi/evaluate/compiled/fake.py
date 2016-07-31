@@ -9,6 +9,7 @@ import inspect
 import types
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
+from jedi.cache import memoize_function
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
 from jedi.evaluate.helpers import FakeName
@@ -142,6 +143,7 @@ def _faked(module, obj, name):
             return search_scope(cls, name)
 
 
+@memoize_function
 def get_faked(module, obj, name=None):
     obj = type(obj) if is_class_instance(obj) else obj
     result = _faked(module, obj, name)
