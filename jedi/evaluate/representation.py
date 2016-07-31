@@ -579,7 +579,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         if search_global:
             yield self.names_dict
         else:
-            scope = compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
+            scope = self.py__class__()
             for names_dict in scope.names_dicts(False):
                 yield names_dict
 
@@ -605,7 +605,13 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
         return dct
 
     def py__class__(self):
-        return compiled.get_special_object(self._evaluator, 'FUNCTION_CLASS')
+        # This differentiation is only necessary for Python2. Python3 does not
+        # use a different method class.
+        if isinstance(self.base.get_parent_scope(), tree.Class):
+            name = 'METHOD_CLASS'
+        else:
+            name = 'FUNCTION_CLASS'
+        return compiled.get_special_object(self._evaluator, name)
 
     def __getattr__(self, name):
         return getattr(self.base_func, name)

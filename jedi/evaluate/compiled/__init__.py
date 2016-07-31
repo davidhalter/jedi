@@ -476,6 +476,7 @@ def _a_generator(foo):
 
 _SPECIAL_OBJECTS = {
     'FUNCTION_CLASS': type(load_module),
+    'METHOD_CLASS': type(CompiledObject.is_class),
     'MODULE_CLASS': type(os),
     'GENERATOR_OBJECT': _a_generator(1.0),
     'BUILTINS': _builtins,

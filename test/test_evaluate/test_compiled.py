@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 from jedi._compatibility import builtins, is_py3
 from jedi.parser import load_grammar
 from jedi.parser.tree import Function
@@ -67,3 +69,18 @@ def test_string_literals():
     else:
         assert typ('b""') == 'str'
         assert typ('u""') == 'unicode'
+
+
+def test_method_completion():
+    code = dedent('''
+    class Foo:
+        def bar(self):
+            pass
+
+    foo = Foo()
+    foo.bar.__func__''')
+    if is_py3:
+        result = []
+    else:
+        result = ['__func__']
+    assert [c.name for c in Script(code).completions()] == result
