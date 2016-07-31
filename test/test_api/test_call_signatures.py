@@ -377,3 +377,13 @@ def test_in_function():
         @property
         def func(''')
     assert not Script(code).call_signatures()
+
+
+def test_lambda_params():
+    code = dedent('''\
+    my_lambda = lambda x: x+1
+    my_lambda(1)''')
+    sig, = Script(code, column=11).call_signatures()
+    assert sig.index == 0
+    assert sig.name == '<lambda>'
+    assert [p.name for p in sig.params] == ['x']

@@ -29,3 +29,7 @@ multiple(foo, bar)
 
 #? ['bar']
 multiple(foo, bar
+
+my_lambda = lambda lambda_param: lambda_param + 1
+#? 22 ['lambda_param']
+my_lambda(lambda_param)
