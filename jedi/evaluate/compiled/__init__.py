@@ -222,10 +222,12 @@ class CompiledObject(Base):
         module = self.get_parent_until()
         faked_subscopes = []
         for name in dir(self.obj):
-            f = fake.get_faked(module.obj, self.obj, name)
-            if f:
-                f.parent = self
-                faked_subscopes.append(f)
+            try:
+                faked_subscopes.append(
+                    fake.get_faked(module.obj, self.obj, parent=self, name=name)
+                )
+            except fake.FakeDoesNotExist:
+                pass
         return faked_subscopes
 
     def is_scope(self):
@@ -445,16 +447,15 @@ def _parse_function_doc(doc):
 
 
 def _create_from_name(evaluator, module, parent, name):
-    faked = fake.get_faked(module.obj, parent.obj, name)
-    # only functions are necessary.
-    if faked is not None:
-        faked.parent = parent
-        return faked
+    try:
+        return fake.get_faked(module.obj, parent.obj, parent=parent, name=name)
+    except fake.FakeDoesNotExist:
+        pass
 
     try:
         obj = getattr(parent.obj, name)
     except AttributeError:
-        # happens e.g. in properties of
+        # Happens e.g. in properties of
         # PyQt4.QtGui.QStyleOptionComboBox.currentText
         # -> just set it to None
         obj = None
@@ -527,9 +528,9 @@ def create(evaluator, obj, parent=None, module=None):
         if parent is None and obj != _builtins:
             return create(evaluator, obj, create(evaluator, _builtins))
 
-        faked = fake.get_faked(module and module.obj, obj)
-        if faked is not None:
-            faked.parent = parent
-            return faked
+        try:
+            return fake.get_faked(module and module.obj, obj, parent=parent)
+        except fake.FakeDoesNotExist:
+            pass
 
     return CompiledObject(evaluator, obj, parent)
