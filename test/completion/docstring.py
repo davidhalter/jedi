@@ -218,3 +218,18 @@ def __init__(foo):
     """
     #? str()
     foo
+
+
+# -----------------
+# Renamed imports (#507)
+# -----------------
+
+import datetime
+from datetime import datetime as datetime_imported
+
+def import_issues(foo):
+    """
+    @type foo: datetime_imported
+    """
+    #? datetime.datetime()
+    foo
