@@ -123,8 +123,8 @@ class CompiledObject(Base):
             return 'classdef'
         elif inspect.ismodule(cls):
             return 'file_input'
-        elif inspect.isbuiltin(cls) or inspect.ismethod(cls) \
-                or inspect.ismethoddescriptor(cls):
+        elif inspect.isbuiltin(cls) or inspect.ismethod(cls) or \
+                inspect.ismethoddescriptor(cls):
             return 'funcdef'
 
     @underscore_memoization
@@ -137,7 +137,8 @@ class CompiledObject(Base):
         return self
 
     def _get_class(self):
-        if not fake.is_class_instance(self.obj):
+        if not fake.is_class_instance(self.obj) or \
+                inspect.ismethoddescriptor(self.obj):  # slots
             return self.obj
 
         try:

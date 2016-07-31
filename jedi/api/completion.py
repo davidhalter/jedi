@@ -157,6 +157,12 @@ class Completion:
             elif nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
+                leaf = self._module.get_leaf_for_position(self._position)
+                cls = leaf.get_parent_until(tree.Class)
+                if isinstance(cls, (tree.Class, tree.Function)):
+                    # Complete the methods that are defined in the super classes.
+                    cls = self._evaluator.wrap(cls)
+                    return list(self._get_class_context_completions(cls))
                 return []
             elif symbol_names[-1] == 'trailer' and nodes[-1] == '.':
                 dot = self._module.get_leaf_for_position(self._position)
@@ -229,3 +235,16 @@ class Completion:
         names = [str(n) for n in names]
         i = imports.Importer(self._evaluator, names, self._module, level)
         return i.completion_names(self._evaluator, only_modules=only_modules)
+
+    def _get_class_context_completions(self, cls):
+        """
+        Autocomplete inherited methods when overriding in child class.
+        """
+        names_dicts = cls.names_dicts(search_global=False, is_instance=True)
+        # The first dict is the dictionary of class itself.
+        next(names_dicts)
+        for names_dict in names_dicts:
+            for values in names_dict.values():
+                for value in values:
+                    if value.parent.type == 'funcdef':
+                        yield value
