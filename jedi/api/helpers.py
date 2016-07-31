@@ -3,12 +3,11 @@ Helpers for the API
 """
 import re
 from collections import namedtuple
-from textwrap import dedent
 
 from jedi._compatibility import u
 from jedi.evaluate.helpers import call_of_leaf
 from jedi import parser
-from jedi.parser import tokenize, token
+from jedi.parser import tokenize
 from jedi.cache import time_cache
 from jedi import common
 
@@ -279,7 +278,7 @@ def get_call_signature_details(module, position):
             # makes it feel strange to have a call signature.
             return None
 
-        for n in node.children:
+        for n in node.children[::-1]:
             if n.start_pos < position and n.type == 'error_node':
                 result = _get_call_signature_details_from_error_node(n, position)
                 if result is not None:

@@ -345,12 +345,20 @@ class BaseDefinition(object):
                 params = followed.params
         elif followed.isinstance(er.compiled.CompiledObject):
             params = followed.params
-        else:
+        elif isinstance(followed, er.Class):
             try:
                 sub = followed.get_subscope_by_name('__init__')
                 params = sub.params[1:]  # ignore self
             except KeyError:
                 return []
+        elif isinstance(followed, er.Instance):
+            try:
+                sub = followed.get_subscope_by_name('__call__')
+                params = sub.params[1:]  # ignore self
+            except KeyError:
+                return []
+        else:
+            return []
         return [_Param(self._evaluator, p.name) for p in params]
 
     def parent(self):

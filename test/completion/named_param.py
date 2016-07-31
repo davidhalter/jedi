@@ -33,3 +33,16 @@ multiple(foo, bar
 my_lambda = lambda lambda_param: lambda_param + 1
 #? 22 ['lambda_param']
 my_lambda(lambda_param)
+
+# __call__
+class Test(object):
+    def __init__(self, hello_other):
+        pass
+
+    def __call__(self, hello):
+        pass
+
+#? 12 ['hello']
+Test()(hello=)
+#? 11 []
+Test()(self=)
