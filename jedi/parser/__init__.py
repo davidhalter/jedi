@@ -113,6 +113,7 @@ class Parser(object):
             source += '\n'
             self._added_newline = True
 
+        self.source = source
         self._start_symbol = start_symbol
         self._grammar = grammar
 

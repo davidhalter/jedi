@@ -145,3 +145,22 @@ def test_goto_definition_not_multiple():
 def test_usage_description():
     descs = [u.description for u in api.Script("foo = ''; foo").usages()]
     assert set(descs) == set(["foo = ''", 'foo'])
+
+
+def test_get_line_code():
+    def get_line_code(source, line=None, **kwargs):
+        return api.Script(source, line=line).completions()[0].get_line_code(**kwargs)
+
+    # On builtin
+    assert get_line_code('') == ''
+
+    # On custom code
+    line = '    foo'
+    assert get_line_code('def foo():\n%s' % line) == line
+
+    # With before/after
+    line = '    foo'
+    source = 'def foo():\n%s\nother_line' % line
+    assert get_line_code(source, line=2) == line
+    assert get_line_code(source, line=2, after=1) == line + '\nother_line'
+    assert get_line_code(source, line=2, after=1, before=1) == source

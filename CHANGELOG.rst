@@ -9,6 +9,7 @@ Changelog
 - Actual semantic completions for the complete Python syntax.
 - Basic type inference for ``yield from`` PEP 380.
 - PEP 484 support (most of the important features of it). Thanks Claude! (@reinhrst)
+- Added ``get_line_code`` to ``Definition`` and ``Completion`` objects.
 - Again a lot of internal changes.
 
 0.9.0 (2015-04-10)

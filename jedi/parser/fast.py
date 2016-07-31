@@ -282,6 +282,7 @@ class FastParser(use_metaclass(CachedFastParser)):
         self.number_of_splits = 0
         self.number_of_misses = 0
         self.module.reset_caches()
+        self.source = source
         try:
             self._parse(source)
         except:

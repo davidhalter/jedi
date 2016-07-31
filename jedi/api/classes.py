@@ -11,6 +11,7 @@ from jedi._compatibility import unicode, use_metaclass
 from jedi import settings
 from jedi import common
 from jedi.parser import tree
+from jedi.parser.utils import load_parser
 from jedi.evaluate.cache import memoize_default, CachedMetaClass
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
@@ -359,6 +360,27 @@ class BaseDefinition(object):
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
+
+    def get_line_code(self, before=0, after=0):
+        """
+        Returns the line of code where this object was defined.
+
+        :param before: Add n lines before the current line to the output.
+        :param after: Add n lines after the current line to the output.
+
+        :return str: Returns the line(s) of code or an empty string if it's a
+                     builtin.
+        """
+        if self.in_builtin_module():
+            return ''
+
+        path = self._definition.get_parent_until().path
+        parser = load_parser(path)
+        lines = common.splitlines(parser.source)
+
+        line_nr = self._name.start_pos[0]
+        start_line_nr = line_nr - before
+        return '\n'.join(lines[start_line_nr:line_nr + after + 1])
 
 
 class Completion(BaseDefinition):
