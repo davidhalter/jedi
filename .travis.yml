@@ -17,7 +17,7 @@ matrix:
         - env: TOXENV=pypy
 python: 3.5
 install:
-    - pip install --quiet tox 'virtualenv<14.0.0' 'pip<8.0.0'
+    - pip install --quiet tox
 script:
     - tox
 after_script:
