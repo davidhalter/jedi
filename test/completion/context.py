@@ -1,4 +1,8 @@
-class X():
+class Base():
+    myfoobar = 3
+
+
+class X(Base):
     def func(self, foo):
         pass
 
@@ -20,3 +24,9 @@ class Y(X):
 
     #? []
     def mro
+
+    #? ['myfoobar']
+    myfoobar
+
+#? []
+myfoobar
