@@ -168,12 +168,12 @@ class JustAClass:
     def a(self):
         return 1
 
-#? ['__closure__']
-JustAClass().a.__closure__
+#? ['__call__']
+JustAClass().a.__call__
 #? int()
 JustAClass().a()
-#? ['__closure__']
-JustAClass.a.__closure__
+#? ['__call__']
+JustAClass.a.__call__
 #? int()
 JustAClass.a()
 
