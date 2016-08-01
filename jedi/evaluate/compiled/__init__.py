@@ -343,7 +343,9 @@ def dotted_from_fs_path(fs_path, sys_path):
     # - Window
     # X:\path\to\lib-dynload/datetime.pyd => datetime
     module_path = fs_path[len(path):].lstrip(os.path.sep).lstrip('/')
-    return _path_re.sub('', module_path).replace(os.path.sep, '.')
+    # - Window
+    # Replace like X:\path\to\something/foo/bar.py
+    return _path_re.sub('', module_path).replace(os.path.sep, '.').replace('/', '.')
 
 
 def load_module(evaluator, path=None, name=None):
