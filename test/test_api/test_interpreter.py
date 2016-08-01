@@ -148,3 +148,12 @@ class TestInterpreterAPI(TestCase):
         foo = Foo()
         self.check_interpreter_complete('foo.bar', locals(), ['bar'])
         self.check_interpreter_complete('foo.bar.baz', locals(), [])
+
+    def test_param_completion(self):
+        def foo(bar):
+            pass
+
+        lambd = lambda x: 3
+
+        self.check_interpreter_complete('foo(bar', locals(), ['bar'])
+        self.check_interpreter_complete('lambd(x', locals(), ['x'])

@@ -118,11 +118,11 @@ def find_syntax_node_name(evaluator, python_object):
         # be something like ``email.utils``).
         return module
 
-    try:
-        names = module.used_names[python_object.__name__]
-    except NameError:
-        return None
+    name_str = python_object.__name__
+    if name_str == '<lambda>':
+        return None  # It's too hard to find lambdas.
 
+    names = module.used_names[name_str]
     names = [n for n in names if n.is_definition()]
 
     try:
