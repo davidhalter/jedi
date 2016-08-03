@@ -153,8 +153,8 @@ class TestInterpreterAPI(TestCase):
         def foo(bar):
             pass
 
-        lambd = lambda x: 3
+        lambd = lambda xyz: 3
 
         self.check_interpreter_complete('foo(bar', locals(), ['bar'])
         # TODO we're not yet using the Python3.5 inspect.signature, yet.
-        assert not jedi.Interpreter('lambd(x', [locals()]).completions()
+        assert not jedi.Interpreter('lambd(xyz', [locals()]).completions()

@@ -196,7 +196,7 @@ class Script(object):
         # the API.
         return helpers.sorted_definitions(set(defs))
 
-    def goto_assignments(self):
+    def goto_assignments(self, follow_imports=False):
         """
         Return the first definition found. Imports and statements aren't
         followed. Multiple objects may be returned, because Python itself is a
@@ -205,9 +205,22 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        results = self._goto()
-        d = [classes.Definition(self._evaluator, d) for d in set(results)]
-        return helpers.sorted_definitions(d)
+        def filter_follow_imports(names):
+            for name in names:
+                definition = name.get_definition()
+                if definition.type in ('import_name', 'import_from'):
+                    imp = imports.ImportWrapper(self._evaluator, name)
+                    for name in filter_follow_imports(imp.follow(is_goto=True)):
+                        yield name
+                else:
+                    yield name
+
+        names = self._goto()
+        if follow_imports:
+            names = filter_follow_imports(names)
+
+        defs = [classes.Definition(self._evaluator, d) for d in set(names)]
+        return helpers.sorted_definitions(defs)
 
     def _goto(self):
         """

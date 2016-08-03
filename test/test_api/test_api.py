@@ -164,3 +164,16 @@ def test_get_line_code():
     assert get_line_code(source, line=2) == line
     assert get_line_code(source, line=2, after=1) == line + '\nother_line'
     assert get_line_code(source, line=2, after=1, before=1) == source
+
+
+def test_goto_assignments_follow_imports():
+    code = dedent("""
+    import inspect
+    inspect.isfunction""")
+    definition, = api.Script(code, column=0).goto_assignments(follow_imports=True)
+    assert 'inspect.py' in definition.module_path
+    assert definition.start_pos == (1, 0)
+
+    definition, = api.Script(code).goto_assignments(follow_imports=True)
+    assert 'inspect.py' in definition.module_path
+    assert definition.start_pos > (1, 0)

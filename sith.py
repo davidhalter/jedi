@@ -118,7 +118,11 @@ class TestCase(object):
         try:
             with open(self.path) as f:
                 self.script = jedi.Script(f.read(), self.line, self.column, self.path)
-            self.objects = getattr(self.script, self.operation)()
+            kwargs = {}
+            if self.operation == 'goto_assignments':
+                kwargs['follow_imports'] = random.choice([False, True])
+
+            self.objects = getattr(self.script, self.operation)(**kwargs)
             if print_result:
                 print("{path}: Line {line} column {column}".format(**self.__dict__))
                 self.show_location(self.line, self.column)
