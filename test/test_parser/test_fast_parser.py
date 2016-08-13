@@ -24,6 +24,7 @@ def test_add_to_end():
     class Two(Abc):
         def h(self):
             self
+
     """)      # ^ here is the first completion
 
     b = "    def g(self):\n" \

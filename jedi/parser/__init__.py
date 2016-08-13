@@ -107,13 +107,13 @@ class Parser(object):
         # For the fast parser.
         self.position_modifier = pt.PositionModifier()
 
+        self.source = source
         self._added_newline = False
         # The Python grammar needs a newline at the end of each statement.
         if not source.endswith('\n') and start_symbol == 'file_input':
             source += '\n'
             self._added_newline = True
 
-        self.source = source
         self._start_symbol = start_symbol
         self._grammar = grammar
 
@@ -129,15 +129,12 @@ class Parser(object):
             return self._parsed
 
         start_number = self._grammar.symbol2number[self._start_symbol]
-        pgen_parser = PgenParser(
+        self.pgen_parser = PgenParser(
             self._grammar, self.convert_node, self.convert_leaf,
             self.error_recovery, start_number
         )
 
-        try:
-            self._parsed = pgen_parser.parse(tokenizer)
-        finally:
-            self.stack = pgen_parser.stack
+        self._parsed = self.pgen_parser.parse(tokenizer)
 
         if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's
@@ -148,9 +145,15 @@ class Parser(object):
 
         if self._added_newline:
             self.remove_last_newline()
+        # The stack is empty now, we don't need it anymore.
+        del self.pgen_parser
+        return self._parsed
 
     def get_parsed_node(self):
-        # TODO rename to get_root_node
+        # TODO remove in favor of get_root_node
+        return self._parsed
+
+    def get_root_node(self):
         return self._parsed
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
