@@ -198,8 +198,8 @@ class Script(object):
 
     def goto_assignments(self, follow_imports=False):
         """
-        Return the first definition found. Imports and statements aren't
-        followed. Multiple objects may be returned, because Python itself is a
+        Return the first definition found, while optionally following imports.
+        Multiple objects may be returned, because Python itself is a
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
