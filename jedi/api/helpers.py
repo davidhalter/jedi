@@ -149,7 +149,7 @@ def get_stack_at_position(grammar, code_lines, module, pos):
     try:
         p.parse(tokenizer=tokenize_without_endmarker(code))
     except EndMarkerReached:
-        return Stack(p.stack)
+        return Stack(p.pgen_parser.stack)
     raise SystemError("This really shouldn't happen. There's a bug in Jedi.")
 
 
