@@ -3,8 +3,6 @@ Basically a parser that is faster, because it tries to parse only parts and if
 anything changes, it only reparses the changed parts. But because it's not
 finished (and still not working as I want), I won't document it any further.
 """
-import re
-from itertools import chain
 import copy
 import difflib
 
@@ -13,7 +11,7 @@ from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
 from jedi.parser import tree
-from jedi.parser.utils import underscore_memoization, parser_cache
+from jedi.parser.utils import parser_cache
 from jedi.parser import tokenize
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE,
@@ -38,6 +36,8 @@ class FastParser(use_metaclass(CachedFastParser)):
 
 
 class DiffParser():
+    endmarker = ENDMARKER
+
     def __init__(self, parser):
         self._parser = parser
         self._module = parser.get_root_node()
@@ -47,6 +47,13 @@ class DiffParser():
         self._insert_count = 0
 
         self._parsed_until_line = 0
+        self._reset_module()
+
+    def _reset_module(self):
+        # TODO get rid of _module.global_names in evaluator.
+        self._module.global_names = []
+        self._module.used_names = {}
+        self._module.names_dict = {}
 
     def update(self, lines_new):
         '''
@@ -69,6 +76,7 @@ class DiffParser():
 
         self._old_children = self._module.children
         self._new_children = []
+        self._temp_module = tree.Module(self._new_children)
         self._prefix = ''
 
         lines_old = splitlines(self._parser.source, keepends=True)
@@ -89,6 +97,7 @@ class DiffParser():
                 self._delete_count += 1  # For statistics
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
+        # TODO update namesdict!!! and module global_names, used_names
         while until_line_new > self._parsed_until_line:
             parsed_until_line_old = self._parsed_until_line - line_offset
             line_stmt = self._get_old_line_stmt(parsed_until_line_old + 1)
@@ -114,6 +123,7 @@ class DiffParser():
                     self._insert_nodes(nodes)
                 # TODO remove dedent at end
                 self._update_positions(nodes, line_offset)
+                self._post_parser_updates()
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we escape, even if we're not at the end. The
                 # rest will be parsed.
@@ -129,7 +139,7 @@ class DiffParser():
                 # Is a leaf
                 node.start_pos = node.start_pos[0] + line_offset, node.start_pos[1]
             else:
-                self._update_positions(children)
+                self._update_positions(children, line_offset)
         if line_offset == 0:
             return
 
@@ -143,26 +153,45 @@ class DiffParser():
         self._parse(until_line_new)
 
     def _insert_nodes(self, nodes):
+        endmarker = nodes[-1]
+        if endmarker == self.endmarker:
+            first_leaf = nodes[0].first_leaf()
+            first_leaf.prefix = self._prefix + first_leaf.prefix
+            self._prefix = endmarker.prefix
+
+            nodes = nodes[:-1]
+
+        self.endmarker
         before_node = self._get_before_insertion_node()
-        line_indentation = nodes[0].start_pos[1]
-        while True:
-            p_children = before_node.parent.children
-            indentation = p_children[0].start_pos[1]
+        if before_node is None:  # Everything is empty.
+            self._new_children += nodes
+        else:
+            line_indentation = nodes[0].start_pos[1]
+            while True:
+                p_children = before_node.parent.children
+                indentation = p_children[0].start_pos[1]
 
-            if line_indentation < indentation:  # Dedent
-                # We might be at the most outer layer: modules. We
-                # don't want to depend on the first statement
-                # having the right indentation.
-                if before_node.parent is not None:
-                    # TODO add dedent
-                    before_node = before_node.parent
-                    continue
+                if line_indentation < indentation:  # Dedent
+                    # We might be at the most outer layer: modules. We
+                    # don't want to depend on the first statement
+                    # having the right indentation.
+                    if before_node.parent is not None:
+                        # TODO add dedent
+                        before_node = before_node.parent
+                        continue
 
-            # TODO check if the indentation is lower than the last statement
-            # and add a dedent error leaf.
-            # TODO do the same for indent error leafs.
-            p_children += nodes
-            break
+                # TODO check if the indentation is lower than the last statement
+                # and add a dedent error leaf.
+                # TODO do the same for indent error leafs.
+                p_children += nodes
+                break
+        last_leaf = self._temp_module.last_leaf()
+        if last_leaf.value == '\n':
+            # Newlines end on the next line, which means that they would cover
+            # the next line. That line is not fully parsed at this point.
+            self._parsed_until_line = last_leaf.end_pos[0] - 1
+        else:
+            self._parsed_until_line = last_leaf.end_pos[0]
 
     def _divide_node(self, node, until_line):
         """
@@ -218,7 +247,7 @@ class DiffParser():
 
     def _get_old_line_stmt(self, old_line):
         leaf = self._module.get_leaf_for_position((old_line, 0), include_prefixes=True)
-        if leaf.get_start_pos_with_prefix()[0] == old_line:
+        if leaf.get_start_pos_of_prefix()[0] == old_line:
             return leaf.get_definition()
         # Must be on the same line. Otherwise we need to parse that bit.
         return None
@@ -231,13 +260,7 @@ class DiffParser():
         while until_line > self._parsed_until_line:
             node = self._parse_scope_node(until_line)
             nodes = self._get_children_nodes(node)
-            if nodes:
-                self._insert_nodes(nodes)
-
-                first_leaf = nodes[0].first_leaf()
-                first_leaf.prefix = self._prefix + first_leaf.prefix
-                self._prefix = ''
-            self._prefix += node.children[-1].prefix
+            self._insert_nodes(nodes)
 
             before_node = self._get_before_insertion_node()
             if before_node is None:
@@ -247,14 +270,13 @@ class DiffParser():
                 before_node.parent.children += node.children
 
     def _get_children_nodes(self, node):
-        nodes = node.children[:-1]
-        if nodes:  # More than an error leaf
-            first_element = nodes[0]
-            if first_element.type == 'error_leaf' and \
-                    first_element.original_type == 'indent':
-                assert nodes[-1].type == 'dedent'
-                # This means that the start and end leaf
-                nodes = nodes[1:-1]
+        nodes = node.children
+        first_element = nodes[0]
+        if first_element.type == 'error_leaf' and \
+                first_element.original_type == 'indent':
+            assert nodes[-1].type == 'dedent'
+            # This means that the start and end leaf
+            nodes = nodes[1:-2] + [nodes[-1]]
 
         return nodes
 
@@ -273,6 +295,9 @@ class DiffParser():
             start_parsing=False
         )
         return self._parser.parse(tokenizer=tokenizer)
+
+    def _post_parser_updates(self, parser):
+        pass
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True
@@ -298,9 +323,9 @@ class DiffParser():
                     break
             elif typ == 'newline' and start_pos[0] >= until_line:
                 yield tokenize.TokenInfo(typ, string, start_pos, prefix)
-                x = self._parser.pgen_parser.stack
                 # Check if the parser is actually in a valid suite state.
                 if 1:
+                    x = self._parser.pgen_parser.stack
                     # TODO check if the parser is in a flow, and let it pass if
                     # so.
                     import pdb; pdb.set_trace()
