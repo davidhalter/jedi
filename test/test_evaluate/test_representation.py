@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from jedi import Script
+from jedi import Script, names
 
 
 def get_definition_and_evaluator(source):
@@ -34,3 +34,17 @@ def test_class_mro():
     cls, evaluator = get_definition_and_evaluator(s)
     mro = cls.py__mro__()
     assert [str(c.name) for c in mro] == ['X', 'object']
+
+
+def test_instance_defined_names():
+    """
+    At one point, defined_names() would fail for instances
+    """
+    s = """
+    class X(object):
+        def func():
+            pass
+    x = X()
+    """
+    n = names(s)[1].defined_names()
+    assert n[0].name == 'func'

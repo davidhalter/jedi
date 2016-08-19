@@ -244,7 +244,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'get_imports', 'type',
-                        'doc', 'raw_doc']:
+                        'doc', 'raw_doc', 'names_dict']:
             raise AttributeError("Instance %s: Don't touch this (%s)!"
                                  % (self, name))
         return getattr(self.base, name)
