@@ -54,6 +54,19 @@ def is_node(node, *symbol_names):
         return type in symbol_names
 
 
+def search_ancestor(node, node_type_or_types):
+    if not isinstance(node_type_or_types, (list, tuple)):
+        node_type_or_types = (node_type_or_types,)
+
+    node = node.parent
+    while node.type not in node_type_or_types:
+        try:
+            node = node.parent
+        except AttributeError:
+            return None
+    return node
+
+
 class PositionModifier(object):
     """A start_pos modifier for the fast parser."""
     def __init__(self):

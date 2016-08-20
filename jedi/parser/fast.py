@@ -10,7 +10,7 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
-from jedi.parser import tree
+from jedi.parser.tree import Module, search_ancestor
 from jedi.parser.utils import parser_cache
 from jedi.parser import tokenize
 from jedi import debug
@@ -35,8 +35,13 @@ class FastParser(use_metaclass(CachedFastParser)):
     pass
 
 
+def _merge_names_dicts(base_dict, other_dict):
+    for key, names in other_dict.items():
+        base_dict.setdefault(key, []).extend(names)
+
+
 class DiffParser():
-    endmarker = ENDMARKER
+    endmarker_type = 'endmarker'
 
     def __init__(self, parser):
         self._parser = parser
@@ -76,7 +81,7 @@ class DiffParser():
 
         self._old_children = self._module.children
         self._new_children = []
-        self._temp_module = tree.Module(self._new_children)
+        self._temp_module = Module(self._new_children)
         self._prefix = ''
 
         lines_old = splitlines(self._parser.source, keepends=True)
@@ -123,7 +128,6 @@ class DiffParser():
                     self._insert_nodes(nodes)
                 # TODO remove dedent at end
                 self._update_positions(nodes, line_offset)
-                self._post_parser_updates()
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we escape, even if we're not at the end. The
                 # rest will be parsed.
@@ -154,17 +158,17 @@ class DiffParser():
 
     def _insert_nodes(self, nodes):
         endmarker = nodes[-1]
-        if endmarker == self.endmarker:
+        if endmarker.type == self.endmarker_type:
             first_leaf = nodes[0].first_leaf()
             first_leaf.prefix = self._prefix + first_leaf.prefix
             self._prefix = endmarker.prefix
 
             nodes = nodes[:-1]
 
-        self.endmarker
         before_node = self._get_before_insertion_node()
         if before_node is None:  # Everything is empty.
             self._new_children += nodes
+            parent = self._temp_module
         else:
             line_indentation = nodes[0].start_pos[1]
             while True:
@@ -177,13 +181,17 @@ class DiffParser():
                     # having the right indentation.
                     if before_node.parent is not None:
                         # TODO add dedent
-                        before_node = before_node.parent
+                        before_node = search_ancestor(
+                            before_node.parent,
+                            ('suite', 'file_input')
+                        )
                         continue
 
                 # TODO check if the indentation is lower than the last statement
                 # and add a dedent error leaf.
                 # TODO do the same for indent error leafs.
                 p_children += nodes
+                parent = before_node.parent
                 break
         last_leaf = self._temp_module.last_leaf()
         if last_leaf.value == '\n':
@@ -192,6 +200,31 @@ class DiffParser():
             self._parsed_until_line = last_leaf.end_pos[0] - 1
         else:
             self._parsed_until_line = last_leaf.end_pos[0]
+        return parent
+
+    def _update_names_dict(self, parent_node, nodes):
+        assert parent_node.type in ('suite', 'file_input')
+        if parent_node.type == 'suite':
+            parent_node = parent_node.parent
+
+        names_dict = parent_node.names_dict
+
+        def scan(nodes):
+            for node in nodes:
+                if node.type in ('classdef', 'funcdef'):
+                    scan([node.children[1]])
+                    continue
+                try:
+                    scan(node.children)
+                except AttributeError:
+                    if node.type == 'name':
+                        names_dict.setdefault(node.value, []).append(node)
+
+        scan(nodes)
+
+    def _merge_parsed_node(self, parent_node, parsed_node):
+        _merge_names_dicts(parent_node.names_dict, parsed_node.names_dict)
+        _merge_names_dicts(self._temp_module, parsed_node.used_names)
 
     def _divide_node(self, node, until_line):
         """
@@ -260,14 +293,9 @@ class DiffParser():
         while until_line > self._parsed_until_line:
             node = self._parse_scope_node(until_line)
             nodes = self._get_children_nodes(node)
-            self._insert_nodes(nodes)
+            parent = self._insert_nodes(nodes)
 
-            before_node = self._get_before_insertion_node()
-            if before_node is None:
-                # The start of the file.
-                self._new_children += node.children
-            else:
-                before_node.parent.children += node.children
+            self._merge_parsed_node(parent, node)
 
     def _get_children_nodes(self, node):
         nodes = node.children
