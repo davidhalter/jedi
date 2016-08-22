@@ -52,12 +52,12 @@ class DiffParser():
         self._insert_count = 0
 
         self._parsed_until_line = 0
+        self._copied_ranges = []
         self._reset_module()
 
     def _reset_module(self):
-        # TODO get rid of _module.global_names in evaluator.
+        # TODO get rid of _module.global_names in evaluator. It's getting ignored here.
         self._module.global_names = []
-        self._module.used_names = {}
         self._module.names_dict = {}
 
     def update(self, lines_new):
@@ -100,6 +100,9 @@ class DiffParser():
             else:
                 assert operation == 'delete'
                 self._delete_count += 1  # For statistics
+
+        self._post_parse()
+        self._module.used_names = self._temp_module.used_names
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
         # TODO update namesdict!!! and module global_names, used_names
@@ -224,7 +227,7 @@ class DiffParser():
 
     def _merge_parsed_node(self, parent_node, parsed_node):
         _merge_names_dicts(parent_node.names_dict, parsed_node.names_dict)
-        _merge_names_dicts(self._temp_module, parsed_node.used_names)
+        _merge_names_dicts(self._temp_module.used_names, parsed_node.used_names)
 
     def _divide_node(self, node, until_line):
         """
@@ -324,8 +327,17 @@ class DiffParser():
         )
         return self._parser.parse(tokenizer=tokenizer)
 
-    def _post_parser_updates(self, parser):
-        pass
+    def _post_parse(self):
+        # Add the used names from the old parser to the new one.
+        copied_line_numbers = set()
+        for l1, l2 in self._copied_ranges:
+            copied_line_numbers.update(range(l1, l2 + 1))
+
+        new_used_names = self._temp_module.used_names
+        for key, names in self._module.used_names.items():
+            for name in names:
+                if name.start_pos[0] in copied_line_numbers:
+                    new_used_names.setdefault(key, []).add(name)
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True
