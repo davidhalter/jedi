@@ -299,6 +299,7 @@ class ParserWithRecovery(Parser):
 
         self._omit_dedent_list = []
         self._indent_counter = 0
+        self._module_path = module_path
 
         # TODO do print absolute import detection here.
         # try:
@@ -314,14 +315,14 @@ class ParserWithRecovery(Parser):
             tokenizer=tokenizer,
             start_parsing=start_parsing
         )
-        if start_parsing:
-            self.module = self._parsed
-            self.module.used_names = self._used_names
-            self.module.path = module_path
-            self.module.global_names = self._global_names
 
     def parse(self, tokenizer):
-        return super(ParserWithRecovery, self).parse(self._tokenize(self._tokenize(tokenizer)))
+        root_node = super(ParserWithRecovery, self).parse(self._tokenize(self._tokenize(tokenizer)))
+        self.module = root_node
+        self.module.used_names = self._used_names
+        self.module.path = self._module_path
+        self.module.global_names = self._global_names
+        return root_node
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):

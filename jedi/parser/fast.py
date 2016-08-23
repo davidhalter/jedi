@@ -82,6 +82,8 @@ class DiffParser():
         self._old_children = self._module.children
         self._new_children = []
         self._temp_module = Module(self._new_children)
+        self._temp_module.names_dict = {}
+        self._temp_module.used_names = {}
         self._prefix = ''
 
         lines_old = splitlines(self._parser.source, keepends=True)
@@ -103,9 +105,14 @@ class DiffParser():
 
         self._post_parse()
         self._module.used_names = self._temp_module.used_names
+        self._module.children = self._new_children
+        # TODO insert endmarker
+
+    def _insert(self, until_line_new):
+        self._insert_count += 1
+        self._parse(until_line_new)
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
-        # TODO update namesdict!!! and module global_names, used_names
         while until_line_new > self._parsed_until_line:
             parsed_until_line_old = self._parsed_until_line - line_offset
             line_stmt = self._get_old_line_stmt(parsed_until_line_old + 1)
@@ -128,7 +135,8 @@ class DiffParser():
                         nodes.append(node)
 
                 if nodes:
-                    self._insert_nodes(nodes)
+                    parent = self._insert_nodes(nodes)
+                    self._update_names_dict(parent, nodes)
                 # TODO remove dedent at end
                 self._update_positions(nodes, line_offset)
                 # We have copied as much as possible (but definitely not too
@@ -155,20 +163,28 @@ class DiffParser():
         while True:
             return node
 
-    def _insert(self, until_line_new):
-        self._insert_count += 1
-        self._parse(until_line_new)
-
     def _insert_nodes(self, nodes):
-        endmarker = nodes[-1]
-        if endmarker.type == self.endmarker_type:
+        # Needs to be done before resetting the parsed
+        before_node = self._get_before_insertion_node()
+
+        last_leaf = nodes[-1].last_leaf()
+        if last_leaf.value == '\n':
+            # Newlines end on the next line, which means that they would cover
+            # the next line. That line is not fully parsed at this point.
+            self._parsed_until_line = last_leaf.end_pos[0] - 1
+        else:
+            self._parsed_until_line = last_leaf.end_pos[0]
+
+        if last_leaf.type == self.endmarker_type:
             first_leaf = nodes[0].first_leaf()
             first_leaf.prefix = self._prefix + first_leaf.prefix
-            self._prefix = endmarker.prefix
+            self._prefix = last_leaf.prefix
 
             nodes = nodes[:-1]
+            if not nodes:
+                return self._module
 
-        before_node = self._get_before_insertion_node()
+        # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
             self._new_children += nodes
             parent = self._temp_module
@@ -196,13 +212,10 @@ class DiffParser():
                 p_children += nodes
                 parent = before_node.parent
                 break
-        last_leaf = self._temp_module.last_leaf()
-        if last_leaf.value == '\n':
-            # Newlines end on the next line, which means that they would cover
-            # the next line. That line is not fully parsed at this point.
-            self._parsed_until_line = last_leaf.end_pos[0] - 1
-        else:
-            self._parsed_until_line = last_leaf.end_pos[0]
+
+        # Reset the parents
+        for node in nodes:
+            node.parent = parent
         return parent
 
     def _update_names_dict(self, parent_node, nodes):
@@ -260,6 +273,8 @@ class DiffParser():
             return None
 
         line = self._parsed_until_line + 1
+        leaf = self._module.last_leaf()
+        '''
         print(line)
         leaf = self._module.get_leaf_for_position((line, 0), include_prefixes=False)
         while leaf.type != 'newline':
@@ -269,6 +284,7 @@ class DiffParser():
                 # TODO
                 raise NotImplementedError
 
+'''
         node = leaf
         while True:
             parent = node.parent
@@ -297,7 +313,6 @@ class DiffParser():
             node = self._parse_scope_node(until_line)
             nodes = self._get_children_nodes(node)
             parent = self._insert_nodes(nodes)
-
             self._merge_parsed_node(parent, node)
 
     def _get_children_nodes(self, node):

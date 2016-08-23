@@ -327,6 +327,9 @@ class Leaf(Base):
     def first_leaf(self):
         return self
 
+    def last_leaf(self):
+        return self
+
     def get_code(self, normalized=False, include_prefix=True):
         if normalized:
             return self.value

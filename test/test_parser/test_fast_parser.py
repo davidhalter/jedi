@@ -22,12 +22,12 @@ def test_add_to_end():
             self.x = 3
 
     class Two(Abc):
-        def h(self):
+        def g(self):
             self
 
     """)      # ^ here is the first completion
 
-    b = "    def g(self):\n" \
+    b = "    def h(self):\n" \
         "        self."
     assert jedi.Script(a, 8, 12, 'example.py').completions()
     assert jedi.Script(a + b, path='example.py').completions()
