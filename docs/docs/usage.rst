@@ -50,7 +50,7 @@ Kate:
 
 Visual Studio Code:
 
-- Python_
+- `Python Extension`_
 
 Atom:
 
@@ -116,4 +116,4 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
 .. _gedi: https://github.com/isamert/gedi
 .. _Eric IDE: http://eric-ide.python-projects.org
-.. _Python: https://marketplace.visualstudio.com/items?itemName=donjayamanne.python
+.. _Python Extension: https://marketplace.visualstudio.com/items?itemName=donjayamanne.python
