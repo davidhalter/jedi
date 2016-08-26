@@ -16,7 +16,7 @@ def test_add_to_end():
     help of caches, this is an example that didn't work.
     """
 
-    a = dedent("""
+    a = dedent("""\
     class Abc():
         def abc(self):
             self.x = 3
@@ -24,16 +24,15 @@ def test_add_to_end():
     class Two(Abc):
         def g(self):
             self
-
     """)      # ^ here is the first completion
 
     b = "    def h(self):\n" \
         "        self."
-    assert jedi.Script(a, 8, 12, 'example.py').completions()
+    assert jedi.Script(a, 7, 12, 'example.py').completions()
     assert jedi.Script(a + b, path='example.py').completions()
 
     a = a[:-1] + '.\n'
-    assert jedi.Script(a, 8, 13, 'example.py').completions()
+    assert jedi.Script(a, 7, 13, 'example.py').completions()
     assert jedi.Script(a + b, path='example.py').completions()
 
 

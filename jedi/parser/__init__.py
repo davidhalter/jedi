@@ -317,7 +317,7 @@ class ParserWithRecovery(Parser):
         )
 
     def parse(self, tokenizer):
-        root_node = super(ParserWithRecovery, self).parse(self._tokenize(self._tokenize(tokenizer)))
+        root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokenizer))
         self.module = root_node
         self.module.used_names = self._used_names
         self.module.path = self._module_path

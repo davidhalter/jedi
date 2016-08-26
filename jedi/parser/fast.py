@@ -88,17 +88,17 @@ class DiffParser():
 
         lines_old = splitlines(self._parser.source, keepends=True)
         sm = difflib.SequenceMatcher(None, lines_old, lines_new)
-        print(lines_old, lines_new)
+        print(len(lines_old), len(lines_new), lines_old, lines_new)
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
-            print(operation)
+            print(operation, i1, i2, j1, j2)
             if operation == 'equal':
                 line_offset = j1 - i1
-                self._copy_from_old_parser(line_offset, i2 + 1, j2 + 1)
+                self._copy_from_old_parser(line_offset, i2 + 1, j2)
             elif operation == 'replace':
                 self._delete_count += 1
-                self._insert(j2 + 1)
+                self._insert(j2)
             elif operation == 'insert':
-                self._insert(j2 + 1)
+                self._insert(j2)
             else:
                 assert operation == 'delete'
                 self._delete_count += 1  # For statistics
@@ -107,6 +107,7 @@ class DiffParser():
         self._module.used_names = self._temp_module.used_names
         self._module.children = self._new_children
         # TODO insert endmarker
+        print(self._module.get_code())
 
     def _insert(self, until_line_new):
         self._insert_count += 1
@@ -135,6 +136,7 @@ class DiffParser():
                         nodes.append(node)
 
                 if nodes:
+                    print('COPY', until_line_new)
                     parent = self._insert_nodes(nodes)
                     self._update_names_dict(parent, nodes)
                 # TODO remove dedent at end
@@ -164,18 +166,33 @@ class DiffParser():
             return node
 
     def _insert_nodes(self, nodes):
+        """
+        Returns the scope that a node is a part of.
+        """
         # Needs to be done before resetting the parsed
         before_node = self._get_before_insertion_node()
 
         last_leaf = nodes[-1].last_leaf()
-        if last_leaf.value == '\n':
+        is_endmarker = last_leaf.type == self.endmarker_type
+        last_non_endmarker = last_leaf
+        if is_endmarker:
+            try:
+                last_non_endmarker = last_leaf.get_previous_leaf()
+            except IndexError:
+                # If the parsed part is empty, nevermind and continue with the
+                # endmarker.
+                pass
+
+        print(last_non_endmarker)
+        if last_non_endmarker.type in ('newline', 'dedent'):
             # Newlines end on the next line, which means that they would cover
             # the next line. That line is not fully parsed at this point.
             self._parsed_until_line = last_leaf.end_pos[0] - 1
         else:
             self._parsed_until_line = last_leaf.end_pos[0]
+        print('parsed_until', last_leaf.end_pos, self._parsed_until_line)
 
-        if last_leaf.type == self.endmarker_type:
+        if is_endmarker:
             first_leaf = nodes[0].first_leaf()
             first_leaf.prefix = self._prefix + first_leaf.prefix
             self._prefix = last_leaf.prefix
@@ -183,16 +200,22 @@ class DiffParser():
             nodes = nodes[:-1]
             if not nodes:
                 return self._module
+        print("X", nodes)
 
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
             self._new_children += nodes
-            parent = self._temp_module
+            parent = self._module
         else:
+            assert nodes[0].type != 'newline'
             line_indentation = nodes[0].start_pos[1]
             while True:
                 p_children = before_node.parent.children
-                indentation = p_children[0].start_pos[1]
+                if before_node.parent.type == 'suite':
+                    # A suite starts with NEWLINE, INDENT, ...
+                    indentation = p_children[2].start_pos[1]
+                else:
+                    indentation = p_children[0].start_pos[1]
 
                 if line_indentation < indentation:  # Dedent
                     # We might be at the most outer layer: modules. We
@@ -209,6 +232,8 @@ class DiffParser():
                 # TODO check if the indentation is lower than the last statement
                 # and add a dedent error leaf.
                 # TODO do the same for indent error leafs.
+                print('before_node', before_node)
+                print(nodes)
                 p_children += nodes
                 parent = before_node.parent
                 break
@@ -216,14 +241,32 @@ class DiffParser():
         # Reset the parents
         for node in nodes:
             node.parent = parent
+        if parent.type == 'suite':
+            return parent.parent
         return parent
 
-    def _update_names_dict(self, parent_node, nodes):
-        assert parent_node.type in ('suite', 'file_input')
-        if parent_node.type == 'suite':
-            parent_node = parent_node.parent
+    def _get_before_insertion_node(self):
+        if not self._new_children:
+            return None
 
-        names_dict = parent_node.names_dict
+        line = self._parsed_until_line + 1
+        leaf = self._temp_module.last_leaf()
+        node = leaf
+        while True:
+            parent = node.parent
+            print('get_ins', parent)
+            if parent.type in ('suite', 'file_input'):
+                print('get_ins', node)
+                print('get_ins', line, node.end_pos)
+                assert node.end_pos[0] <= line
+                assert node.end_pos[1] == 0
+                return node
+            node = parent
+
+    def _update_names_dict(self, scope_node, nodes):
+        assert scope_node.type in ('suite', 'file_input')
+
+        names_dict = scope_node.names_dict
 
         def scan(nodes):
             for node in nodes:
@@ -238,8 +281,8 @@ class DiffParser():
 
         scan(nodes)
 
-    def _merge_parsed_node(self, parent_node, parsed_node):
-        _merge_names_dicts(parent_node.names_dict, parsed_node.names_dict)
+    def _merge_parsed_node(self, scope_node, parsed_node):
+        _merge_names_dicts(scope_node.names_dict, parsed_node.names_dict)
         _merge_names_dicts(self._temp_module.used_names, parsed_node.used_names)
 
     def _divide_node(self, node, until_line):
@@ -268,35 +311,6 @@ class DiffParser():
                 break
         return new_node
 
-    def _get_before_insertion_node(self):
-        if not self._new_children:
-            return None
-
-        line = self._parsed_until_line + 1
-        leaf = self._module.last_leaf()
-        '''
-        print(line)
-        leaf = self._module.get_leaf_for_position((line, 0), include_prefixes=False)
-        while leaf.type != 'newline':
-            try:
-                leaf = leaf.get_previous_leaf()
-            except IndexError:
-                # TODO
-                raise NotImplementedError
-
-'''
-        node = leaf
-        while True:
-            parent = node.parent
-            print(parent)
-            if parent.type in ('suite', 'file_input'):
-                print(node)
-                print(line, node.end_pos)
-                assert node.end_pos[0] <= line
-                assert node.end_pos[1] == 0
-                return node
-            node = parent
-
     def _get_old_line_stmt(self, old_line):
         leaf = self._module.get_leaf_for_position((old_line, 0), include_prefixes=True)
         if leaf.get_start_pos_of_prefix()[0] == old_line:
@@ -314,6 +328,9 @@ class DiffParser():
             nodes = self._get_children_nodes(node)
             parent = self._insert_nodes(nodes)
             self._merge_parsed_node(parent, node)
+            #if until_line - 1 == len(self._lines_new):
+                # We are done in any case. This is special case, because the l
+                #return
 
     def _get_children_nodes(self, node):
         nodes = node.children
@@ -327,9 +344,11 @@ class DiffParser():
         return nodes
 
     def _parse_scope_node(self, until_line):
+        print('PARSE', until_line, self._parsed_until_line)
         # TODO speed up, shouldn't copy the whole list all the time.
         # memoryview?
-        lines_after = self._lines_new[self._parsed_until_line + 1:]
+        lines_after = self._lines_new[self._parsed_until_line:]
+        print('x', self._parsed_until_line, lines_after, until_line)
         tokenizer = self._diff_tokenize(
             lines_after,
             until_line,
@@ -362,7 +381,7 @@ class DiffParser():
         tokens = generate_tokens(lambda: next(l, ''))
         for typ, string, start_pos, prefix in tokens:
             start_pos = start_pos[0] + line_offset, start_pos[1]
-            if typ == 'indent':
+            if typ == tokenize.INDENT:
                 indent_count += 1
                 if is_first_token:
                     omited_first_indent = True
@@ -370,13 +389,13 @@ class DiffParser():
                     # we only parse part of the file. These indents would only
                     # get parsed as error leafs, which doesn't make any sense.
                     continue
-            elif typ == 'dedent':
+            elif typ == tokenize.DEDENT:
                 indent_count -= 1
                 if omited_first_indent and indent_count == 0:
                     # We are done here, only thing that can come now is an
                     # endmarker or another dedented code block.
                     break
-            elif typ == 'newline' and start_pos[0] >= until_line:
+            elif typ == tokenize.NEWLINE and start_pos[0] >= until_line:
                 yield tokenize.TokenInfo(typ, string, start_pos, prefix)
                 # Check if the parser is actually in a valid suite state.
                 if 1:
@@ -388,6 +407,7 @@ class DiffParser():
 
             is_first_token = False
 
+            print('tok', typ, string, start_pos)
             yield tokenize.TokenInfo(typ, string, start_pos, prefix)
 
         typ, string, start_pos, prefix = next(tokens)
