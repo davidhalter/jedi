@@ -10,12 +10,12 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
-from jedi.parser.tree import Module, search_ancestor
+from jedi.parser.tree import Module, search_ancestor, EndMarker
 from jedi.parser.utils import parser_cache
 from jedi.parser import tokenize
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE,
-                                  ENDMARKER, INDENT, DEDENT)
+                                  ENDMARKER, INDENT, DEDENT, tok_name)
 
 
 class CachedFastParser(type):
@@ -38,6 +38,17 @@ class FastParser(use_metaclass(CachedFastParser)):
 def _merge_names_dicts(base_dict, other_dict):
     for key, names in other_dict.items():
         base_dict.setdefault(key, []).extend(names)
+
+
+def suite_or_file_input_is_valid(parser):
+    stack = parser.pgen_parser.stack
+    for dfa, newstate, (symbol_number, nodes) in reversed(stack):
+        if symbol_number == parser._grammar.symbol2number['suite']:
+            # If we don't have ondes already, the suite is not valid.
+            return bool(nodes)
+    # Not reaching a suite means that we're dealing with file_input levels
+    # where there's no need for a valid statement in it. It can also be empty.
+    return True
 
 
 class DiffParser():
@@ -77,6 +88,13 @@ class DiffParser():
             - Set parsed_until_line
         '''
         self._lines_new = lines_new
+        self._added_newline = False
+        # The Python grammar needs a newline at the end of a file.
+        if lines_new[-1] != '':
+            lines_new[-1] += '\n'
+            lines_new.append('')
+            self._added_newline = True
+
         self._reset()
 
         self._old_children = self._module.children
@@ -90,7 +108,11 @@ class DiffParser():
         sm = difflib.SequenceMatcher(None, lines_old, lines_new)
         print(len(lines_old), len(lines_new), lines_old, lines_new)
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
-            print(operation, i1, i2, j1, j2)
+            print('\t\t', operation, i1, i2, j1, j2)
+            if j2 == len(lines_new):
+                # The empty part after the last newline is not relevant.
+                j2 -= 1
+
             if operation == 'equal':
                 line_offset = j1 - i1
                 self._copy_from_old_parser(line_offset, i2 + 1, j2)
@@ -108,6 +130,9 @@ class DiffParser():
         self._module.children = self._new_children
         # TODO insert endmarker
         print(self._module.get_code())
+        if self._added_newline:
+            self._parser.remove_last_newline()
+        self._parser.source = ''.join(lines_new)
 
     def _insert(self, until_line_new):
         self._insert_count += 1
@@ -128,7 +153,7 @@ class DiffParser():
                 nodes = []
                 for node in p_children[index:]:
                     if until_line_old < node.end_pos[0]:
-                        divided_node = self._divide_node(node)
+                        divided_node = self._divide_node(node, until_line_new)
                         if divided_node is not None:
                             nodes.append(divided_node)
                         break
@@ -183,7 +208,6 @@ class DiffParser():
                 # endmarker.
                 pass
 
-        print(last_non_endmarker)
         if last_non_endmarker.type in ('newline', 'dedent'):
             # Newlines end on the next line, which means that they would cover
             # the next line. That line is not fully parsed at this point.
@@ -200,7 +224,7 @@ class DiffParser():
             nodes = nodes[:-1]
             if not nodes:
                 return self._module
-        print("X", nodes)
+        print("insert_nodes", nodes)
 
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
@@ -344,7 +368,7 @@ class DiffParser():
         return nodes
 
     def _parse_scope_node(self, until_line):
-        print('PARSE', until_line, self._parsed_until_line)
+        print('PARSE', self._parsed_until_line, until_line)
         # TODO speed up, shouldn't copy the whole list all the time.
         # memoryview?
         lines_after = self._lines_new[self._parsed_until_line:]
@@ -354,12 +378,12 @@ class DiffParser():
             until_line,
             line_offset=self._parsed_until_line
         )
-        self._parser = ParserWithRecovery(
+        self._active_parser = ParserWithRecovery(
             self._parser._grammar,
             source='\n',
             start_parsing=False
         )
-        return self._parser.parse(tokenizer=tokenizer)
+        return self._active_parser.parse(tokenizer=tokenizer)
 
     def _post_parse(self):
         # Add the used names from the old parser to the new one.
@@ -373,41 +397,51 @@ class DiffParser():
                 if name.start_pos[0] in copied_line_numbers:
                     new_used_names.setdefault(key, []).add(name)
 
+        # Add an endmarker.
+        last_leaf = self._temp_module.last_leaf()
+        while last_leaf.type == 'dedent':
+            last_leaf = last_leaf.get_previous_leaf()
+        endmarker = EndMarker(self._parser.position_modifier, '', last_leaf.end_pos, self._prefix)
+        endmarker.parent = self._module
+        self._new_children.append(endmarker)
+
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True
-        omited_first_indent = False
-        indent_count = 0
+        omitted_first_indent = False
+        indents = []
         l = iter(lines)
-        tokens = generate_tokens(lambda: next(l, ''))
+        tokens = generate_tokens(lambda: next(l, ''), use_exact_op_types=True)
         for typ, string, start_pos, prefix in tokens:
             start_pos = start_pos[0] + line_offset, start_pos[1]
             if typ == tokenize.INDENT:
-                indent_count += 1
+                indents.append(start_pos[1])
                 if is_first_token:
-                    omited_first_indent = True
+                    omitted_first_indent = True
                     # We want to get rid of indents that are only here because
                     # we only parse part of the file. These indents would only
                     # get parsed as error leafs, which doesn't make any sense.
+                    is_first_token = False
                     continue
-            elif typ == tokenize.DEDENT:
-                indent_count -= 1
-                if omited_first_indent and indent_count == 0:
+            is_first_token = False
+
+            if typ == tokenize.DEDENT:
+                indents.pop()
+                if omitted_first_indent and not indents:
                     # We are done here, only thing that can come now is an
                     # endmarker or another dedented code block.
                     break
             elif typ == tokenize.NEWLINE and start_pos[0] >= until_line:
                 yield tokenize.TokenInfo(typ, string, start_pos, prefix)
                 # Check if the parser is actually in a valid suite state.
-                if 1:
-                    x = self._parser.pgen_parser.stack
-                    # TODO check if the parser is in a flow, and let it pass if
-                    # so.
-                    import pdb; pdb.set_trace()
+                if suite_or_file_input_is_valid(self._active_parser):
+                    while len(indents) > int(omitted_first_indent):
+                        indent_pos = start_pos[0] + 1, indents.pop()
+                        yield tokenize.TokenInfo(tokenize.DEDENT, '', indent_pos, '')
                     break
+                else:
+                    continue
 
-            is_first_token = False
-
-            print('tok', typ, string, start_pos)
+            print('tok', tok_name[typ], repr(string), start_pos)
             yield tokenize.TokenInfo(typ, string, start_pos, prefix)
 
         typ, string, start_pos, prefix = next(tokens)
