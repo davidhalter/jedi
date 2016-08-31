@@ -27,7 +27,8 @@ class CachedFastParser(type):
 
         parser = pi.parser
         d = DiffParser(parser)
-        d.update(splitlines(source, keepends=True))
+        new_lines = splitlines(source, keepends=True)
+        parser.module = parser._parsed = d.update(new_lines)
         return parser
 
 
@@ -56,7 +57,7 @@ class DiffParser():
 
     def __init__(self, parser):
         self._parser = parser
-        self._module = parser.get_root_node()
+        self._old_module = parser.get_root_node()
 
     def _reset(self):
         self._delete_count = 0
@@ -64,12 +65,15 @@ class DiffParser():
 
         self._parsed_until_line = 0
         self._copied_ranges = []
-        self._reset_module()
 
-    def _reset_module(self):
-        # TODO get rid of _module.global_names in evaluator. It's getting ignored here.
-        self._module.global_names = []
-        self._module.names_dict = {}
+        self._old_children = self._old_module.children
+        self._new_children = []
+        self._new_module = Module(self._new_children)
+        # TODO get rid of Module.global_names in evaluator. It's getting ignored here.
+        self._new_module.path = self._old_module.path
+        self._new_module.names_dict = {}
+        self._new_module.used_names = {}
+        self._prefix = ''
 
     def update(self, lines_new):
         '''
@@ -86,6 +90,8 @@ class DiffParser():
               much more.
         Always:
             - Set parsed_until_line
+
+        Returns the new module node.
         '''
         self._lines_new = lines_new
         self._added_newline = False
@@ -96,13 +102,6 @@ class DiffParser():
             self._added_newline = True
 
         self._reset()
-
-        self._old_children = self._module.children
-        self._new_children = []
-        self._temp_module = Module(self._new_children)
-        self._temp_module.names_dict = {}
-        self._temp_module.used_names = {}
-        self._prefix = ''
 
         lines_old = splitlines(self._parser.source, keepends=True)
         sm = difflib.SequenceMatcher(None, lines_old, lines_new)
@@ -126,12 +125,12 @@ class DiffParser():
                 self._delete_count += 1  # For statistics
 
         self._post_parse()
-        self._module.used_names = self._temp_module.used_names
-        self._module.children = self._new_children
         # TODO insert endmarker
         if self._added_newline:
             self._parser.remove_last_newline()
         self._parser.source = ''.join(lines_new)
+        self._old_module = self._new_module
+        return self._new_module
 
     def _insert(self, until_line_new):
         self._insert_count += 1
@@ -222,13 +221,13 @@ class DiffParser():
 
             nodes = nodes[:-1]
             if not nodes:
-                return self._module
+                return self._new_module
         print("insert_nodes", nodes)
 
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
             self._new_children += nodes
-            parent = self._module
+            parent = self._new_module
         else:
             assert nodes[0].type != 'newline'
             line_indentation = nodes[0].start_pos[1]
@@ -263,6 +262,7 @@ class DiffParser():
 
         # Reset the parents
         for node in nodes:
+            print('reset', node)
             node.parent = parent
         if parent.type == 'suite':
             return parent.parent
@@ -273,7 +273,7 @@ class DiffParser():
             return None
 
         line = self._parsed_until_line + 1
-        leaf = self._temp_module.last_leaf()
+        leaf = self._new_module.last_leaf()
         node = leaf
         while True:
             parent = node.parent
@@ -306,7 +306,7 @@ class DiffParser():
 
     def _merge_parsed_node(self, scope_node, parsed_node):
         _merge_names_dicts(scope_node.names_dict, parsed_node.names_dict)
-        _merge_names_dicts(self._temp_module.used_names, parsed_node.used_names)
+        _merge_names_dicts(self._new_module.used_names, parsed_node.used_names)
 
     def _divide_node(self, node, until_line):
         """
@@ -328,13 +328,18 @@ class DiffParser():
                 divided_node = self._divide_node(child_node, until_line)
                 new_suite.children = new_suite.children[:i]
                 if divided_node is not None:
-                    divided_node.parent = new_suite
                     new_suite.children.append(divided_node)
+                if len(new_suite.children) < 3:
+                    # A suite only with newline and indent is not valid.
+                    return None
+
+                for child in new_suite.children:
+                    child.parent = new_suite
                 break
         return new_node
 
     def _get_old_line_stmt(self, old_line):
-        leaf = self._module.get_leaf_for_position((old_line, 0), include_prefixes=True)
+        leaf = self._old_module.get_leaf_for_position((old_line, 0), include_prefixes=True)
         if leaf.get_start_pos_of_prefix()[0] == old_line:
             return leaf.get_definition()
         # Must be on the same line. Otherwise we need to parse that bit.
@@ -389,18 +394,18 @@ class DiffParser():
         for l1, l2 in self._copied_ranges:
             copied_line_numbers.update(range(l1, l2 + 1))
 
-        new_used_names = self._temp_module.used_names
-        for key, names in self._module.used_names.items():
+        new_used_names = self._new_module.used_names
+        for key, names in self._old_module.used_names.items():
             for name in names:
                 if name.start_pos[0] in copied_line_numbers:
                     new_used_names.setdefault(key, []).add(name)
 
         # Add an endmarker.
-        last_leaf = self._temp_module.last_leaf()
+        last_leaf = self._new_module.last_leaf()
         while last_leaf.type == 'dedent':
             last_leaf = last_leaf.get_previous_leaf()
         endmarker = EndMarker(self._parser.position_modifier, '', last_leaf.end_pos, self._prefix)
-        endmarker.parent = self._module
+        endmarker.parent = self._new_module
         self._new_children.append(endmarker)
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
