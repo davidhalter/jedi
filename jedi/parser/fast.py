@@ -129,7 +129,6 @@ class DiffParser():
         self._module.used_names = self._temp_module.used_names
         self._module.children = self._new_children
         # TODO insert endmarker
-        print(self._module.get_code())
         if self._added_newline:
             self._parser.remove_last_newline()
         self._parser.source = ''.join(lines_new)
@@ -327,11 +326,10 @@ class DiffParser():
         for i, child_node in enumerate(new_suite.children):
             if child_node.end_pos[1] > until_line:
                 divided_node = self._divide_node(child_node, until_line)
+                new_suite.children = new_suite.children[:i]
                 if divided_node is not None:
-                    new_suite.children[i] = divided_node
-                    new_suite.children[i + 1:] = []
-                else:
-                    new_suite.children[i:] = []
+                    divided_node.parent = new_suite
+                    new_suite.children.append(divided_node)
                 break
         return new_node
 
