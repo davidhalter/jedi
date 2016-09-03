@@ -86,6 +86,7 @@ def memoize_method(method):
             return dct[key]
         except KeyError:
             result = method(self, *args, **kwargs)
+            # TODO THIS IS FUNDAMENTALLY WRONG, METHOD SHOULD BE INCLUDED.
             dct[key] = result
             return result
     return wrapper

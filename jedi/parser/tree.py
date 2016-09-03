@@ -712,7 +712,8 @@ class ErrorLeaf(LeafWithNewLines):
 
     def __repr__(self):
         token_type = token.tok_name[self.original_type]
-        return "<%s: %s, %s)>" % (type(self).__name__, token_type, self.start_pos)
+        return "<%s: %s:%s, %s)>" % \
+            (type(self).__name__, token_type, repr(self.value), self.start_pos)
 
 
 class IsScopeMeta(type):

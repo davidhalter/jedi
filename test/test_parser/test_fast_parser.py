@@ -1,7 +1,5 @@
 from textwrap import dedent
 
-import pytest
-
 import jedi
 from jedi._compatibility import u
 from jedi import cache

@@ -41,7 +41,7 @@ def test_class_in_docstr():
     assert jedi.Script(b, 4, 8).goto_assignments()
 
 
-def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
+def check_p(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
     if number_of_splits is None:
         number_of_splits = number_parsers_used
 
@@ -49,9 +49,6 @@ def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0
     save_parser(None, p, pickling=False)
 
     assert src == p.module.get_code()
-    assert p.number_of_splits == number_of_splits
-    assert p.number_parsers_used == number_parsers_used
-    assert p.number_of_misses == number_of_misses
     return p.module
 
 
@@ -68,7 +65,7 @@ def test_if():
     ''')
 
     # Two parsers needed, one for pass and one for the function.
-    check_fp(src, 2)
+    check_p(src, 2)
     assert [d.name for d in jedi.Script(src, 8, 6).goto_definitions()] == ['int']
 
 
@@ -80,7 +77,7 @@ def test_for():
     for a1 in 1,"":
         a1
     """)
-    check_fp(src, 1)
+    check_p(src, 1)
 
 
 def test_class_with_class_var():
@@ -91,7 +88,7 @@ def test_class_with_class_var():
             self.foo = 4
     pass
     """)
-    check_fp(src, 3)
+    check_p(src, 3)
 
 
 def test_func_with_if():
@@ -105,7 +102,7 @@ def test_func_with_if():
             else:
                 return a
     """)
-    check_fp(src, 1)
+    check_p(src, 1)
 
 
 def test_decorator():
@@ -115,7 +112,7 @@ def test_decorator():
         def dec(self, a):
             return a
     """)
-    check_fp(src, 2)
+    check_p(src, 2)
 
 
 def test_nested_funcs():
@@ -125,7 +122,7 @@ def test_nested_funcs():
             return func(*args, **kwargs)
         return wrapper
     """)
-    check_fp(src, 3)
+    check_p(src, 3)
 
 
 def test_class_and_if():
@@ -142,7 +139,7 @@ def test_class_and_if():
 
     # COMMENT
     a_func()""")
-    check_fp(src, 5, 5)
+    check_p(src, 5, 5)
     assert [d.name for d in jedi.Script(src).goto_definitions()] == ['int']
 
 
@@ -154,7 +151,7 @@ def test_multi_line_params():
 
     foo = 1
     """)
-    check_fp(src, 2)
+    check_p(src, 2)
 
 
 def test_class_func_if():
@@ -168,7 +165,7 @@ def test_class_func_if():
 
     pass
     """)
-    check_fp(src, 3)
+    check_p(src, 3)
 
 
 def test_multi_line_for():
@@ -179,7 +176,7 @@ def test_multi_line_for():
 
     pass
     """)
-    check_fp(src, 1)
+    check_p(src, 1)
 
 
 def test_wrong_indentation():
@@ -189,7 +186,7 @@ def test_wrong_indentation():
          b
         a
     """)
-    #check_fp(src, 1)
+    #check_p(src, 1)
 
     src = dedent("""\
     def complex():
@@ -201,7 +198,7 @@ def test_wrong_indentation():
         def other():
             pass
     """)
-    check_fp(src, 3)
+    check_p(src, 3)
 
 
 def test_strange_parentheses():
@@ -212,7 +209,7 @@ def test_strange_parentheses():
         def x():
             pass
     """)
-    check_fp(src, 2)
+    check_p(src, 2)
 
 
 def test_fake_parentheses():
@@ -230,7 +227,7 @@ def test_fake_parentheses():
         def z():
             pass
     """)
-    check_fp(src, 3, 2, 1)
+    check_p(src, 3, 2, 1)
 
 
 def test_additional_indent():
@@ -240,7 +237,7 @@ def test_additional_indent():
           pass
     ''')
 
-    check_fp(source, 2)
+    check_p(source, 2)
 
 
 def test_incomplete_function():
@@ -299,4 +296,4 @@ def test_parentheses_in_string():
     import abc
 
     abc.''')
-    check_fp(code, 2, 1, 1)
+    check_p(code, 2, 1, 1)
