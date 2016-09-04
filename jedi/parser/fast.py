@@ -115,7 +115,7 @@ class DiffParser():
 
             if operation == 'equal':
                 line_offset = j1 - i1
-                self._copy_from_old_parser(line_offset, i2 + 1, j2)
+                self._copy_from_old_parser(line_offset, i2, j2)
             elif operation == 'replace':
                 self._delete_count += 1
                 self._insert(j2)
@@ -149,11 +149,13 @@ class DiffParser():
                 # statements again (not e.g. lines within parentheses).
                 self._parse(self._parsed_until_line + 1)
             else:
+                print('copy', line_stmt.end_pos, parsed_until_line_old,
+                until_line_old, line_stmt)
                 p_children = line_stmt.parent.children
                 index = p_children.index(line_stmt)
                 nodes = []
                 for node in p_children[index:]:
-                    if until_line_old < node.end_pos[0]:
+                    if node.end_pos[0] > until_line_old:
                         divided_node = self._divide_node(node, until_line_new)
                         if divided_node is not None:
                             nodes.append(divided_node)
@@ -220,7 +222,6 @@ class DiffParser():
             self._parsed_until_line = last_leaf.end_pos[0]
         print('parsed_until', last_leaf.end_pos, self._parsed_until_line)
 
-        print('x', repr(self._prefix))
         first_leaf = nodes[0].first_leaf()
         first_leaf.prefix = self._prefix + first_leaf.prefix
         self._prefix = ''
@@ -389,7 +390,7 @@ class DiffParser():
         # TODO speed up, shouldn't copy the whole list all the time.
         # memoryview?
         lines_after = self._lines_new[self._parsed_until_line:]
-        print('x', self._parsed_until_line, lines_after, until_line)
+        print('parse_content', self._parsed_until_line, lines_after, until_line)
         tokenizer = self._diff_tokenize(
             lines_after,
             until_line,
@@ -446,6 +447,7 @@ class DiffParser():
                 if omitted_first_indent and not indents:
                     # We are done here, only thing that can come now is an
                     # endmarker or another dedented code block.
+                    yield tokenize.TokenInfo(tokenize.ENDMARKER, '', start_pos, '')
                     break
             elif typ == tokenize.NEWLINE and start_pos[0] >= until_line:
                 yield tokenize.TokenInfo(typ, string, start_pos, prefix)
