@@ -333,18 +333,19 @@ class DiffParser():
 
         new_node = copy.copy(node)
         new_node.children[-1] = new_suite = copy.copy(suite)
-        for i, child_node in enumerate(new_suite.children):
-            if child_node.end_pos[1] > until_line:
-                divided_node = self._divide_node(child_node, until_line)
+        for child in new_node.children:
+            child.parent = new_node
+        for i, child in enumerate(new_suite.children):
+            child.parent = new_suite
+            if child.end_pos[1] > until_line:
+                divided_node = self._divide_node(child, until_line)
                 new_suite.children = new_suite.children[:i]
                 if divided_node is not None:
                     new_suite.children.append(divided_node)
+                    divided_node.parent = new_suite
                 if len(new_suite.children) < 3:
                     # A suite only with newline and indent is not valid.
                     return None
-
-                for child in new_suite.children:
-                    child.parent = new_suite
                 break
         return new_node
 
