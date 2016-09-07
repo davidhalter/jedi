@@ -328,6 +328,8 @@ class Leaf(Base):
         return self
 
     def last_leaf(self):
+        if self.type == 'dedent':
+            return self.get_previous_leaf()
         return self
 
     def get_code(self, normalized=False, include_prefix=True):
@@ -607,10 +609,7 @@ class BaseNode(Base):
             return c[index + 1]
 
     def last_leaf(self):
-        try:
-            return self.children[-1].last_leaf()
-        except AttributeError:
-            return self.children[-1]
+        return self.children[-1].last_leaf()
 
     def get_following_comment_same_line(self):
         """

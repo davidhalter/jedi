@@ -1,10 +1,14 @@
 from textwrap import dedent
 
+import pytest
+
 import jedi
 from jedi._compatibility import u
+from jedi.common import splitlines
 from jedi import cache
 from jedi.parser import load_grammar
-from jedi.parser.fast import FastParser
+from jedi.parser.fast import FastParser, DiffParser
+from jedi.parser import ParserWithRecovery
 from jedi.parser.utils import save_parser
 
 
@@ -34,59 +38,49 @@ def test_add_to_end():
     assert jedi.Script(a + b, path='example.py').completions()
 
 
-def test_split_parts():
-    cache.parser_cache.pop(None, None)
+class Differ(object):
+    def __init__(self):
+        self._first_use = True
 
-    def splits(source):
-        class Mock(FastParser):
-            def __init__(self, *args):
-                self.number_of_splits = 0
+    def initialize(self, source):
+        grammar = load_grammar()
+        self.parser = ParserWithRecovery(grammar, source)
 
-        return tuple(FastParser._split_parts(Mock(None, None), source))
-
-    def test(*parts):
-        assert splits(''.join(parts)) == parts
-
-    test('a\n\n', 'def b(): pass\n', 'c\n')
-    test('a\n', 'def b():\n pass\n', 'c\n')
-
-    test('from x\\\n')
-    test('a\n\\\n')
-
-
-def check_fp(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
-    if number_of_splits is None:
-        number_of_splits = number_parsers_used
-
-    p = FastParser(load_grammar(), u(src))
-    save_parser(None, p, pickling=False)
-
-    assert src == p.module.get_code()
-    assert p.number_of_splits == number_of_splits
-    assert p.number_parsers_used == number_parsers_used
-    assert p.number_of_misses == number_of_misses
-    return p.module
+    def parse(self, source, copies=0, parsers=0):
+        lines = splitlines(source, keepends=True)
+        diff_parser = DiffParser(self.parser)
+        new_module = diff_parser.update(lines)
+        assert source == new_module.get_code()
+        assert diff_parser._copy_count == copies
+        assert diff_parser._parser_count == parsers
+        self.parser.module = new_module
+        return new_module
 
 
-def test_change_and_undo():
+@pytest.fixture()
+def differ():
+    return Differ()
+
+
+def test_change_and_undo(differ):
     # Empty the parser cache for the path None.
     cache.parser_cache.pop(None, None)
     func_before = 'def func():\n    pass\n'
     # Parse the function and a.
-    check_fp(func_before + 'a', 2)
+    differ.initialize(func_before + 'a')
     # Parse just b.
-    check_fp(func_before + 'b', 1, 2)
+    differ.parse(func_before + 'b', copies=1, parsers=1)
     # b has changed to a again, so parse that.
-    check_fp(func_before + 'a', 1, 2)
+    differ.parse(func_before + 'a', copies=1, parsers=1)
     # Same as before no parsers should be used.
-    check_fp(func_before + 'a', 0, 2)
+    differ.parse(func_before + 'a', copies=1)
 
     # Getting rid of an old parser: Still no parsers used.
-    check_fp('a', 0, 1)
-    # Now the file has completely change and we need to parse.
-    check_fp('b', 1, 1)
+    differ.parse('a', copies=1)
+    # Now the file has completely changed and we need to parse.
+    differ.parse('b', parsers=1)
     # And again.
-    check_fp('a', 1, 1)
+    differ.parse('a', parsers=1)
 
 
 def test_positions():
