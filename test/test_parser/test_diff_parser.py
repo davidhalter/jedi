@@ -45,6 +45,7 @@ class Differ(object):
     def initialize(self, source):
         grammar = load_grammar()
         self.parser = ParserWithRecovery(grammar, source)
+        return self.parser.module
 
     def parse(self, source, copies=0, parsers=0):
         lines = splitlines(source, keepends=True)
@@ -83,18 +84,25 @@ def test_change_and_undo(differ):
     differ.parse('a', parsers=1)
 
 
-def test_positions():
+def test_positions(differ):
     # Empty the parser cache for the path None.
     cache.parser_cache.pop(None, None)
 
     func_before = 'class A:\n pass\n'
-    m = check_fp(func_before + 'a', 2)
+    m = differ.initialize(func_before + 'a')
     assert m.start_pos == (1, 0)
     assert m.end_pos == (3, 1)
 
-    m = check_fp('a', 0, 1)
+    m = differ.parse('a', copies=1)
     assert m.start_pos == (1, 0)
     assert m.end_pos == (1, 1)
+
+    m = differ.parse('a\n\n', parsers=1)
+    assert m.end_pos == (3, 0)
+    m = differ.parse('a\n\n ', copies=1, parsers=1)
+    assert m.end_pos == (3, 1)
+    m = differ.parse('a ', parsers=1)
+    assert m.end_pos == (1, 2)
 
 
 def test_if_simple():

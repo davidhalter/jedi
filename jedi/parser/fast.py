@@ -94,12 +94,13 @@ class DiffParser(object):
 
         Returns the new module node.
         '''
-        self._lines_new = lines_new
+        self._parser_lines_new = lines_new
         self._added_newline = False
-        if self._lines_new[-1] != '':
+        if lines_new[-1] != '':
             # The Python grammar needs a newline at the end of a file, but for
             # everything else we keep working with lines_new here.
-            self._lines_new[-1] += '\n'
+            self._parser_lines_new = list(lines_new)
+            self._parser_lines_new[-1] += '\n'
             self._added_newline = True
 
         self._reset()
@@ -381,7 +382,7 @@ class DiffParser(object):
             nodes = self._get_children_nodes(node)
             parent = self._insert_nodes(nodes)
             self._merge_parsed_node(parent, node)
-            #if until_line - 1 == len(self._lines_new):
+            #if until_line - 1 == len(self._parser_lines_new):
                 # We are done in any case. This is special case, because the l
                 #return
 
@@ -401,7 +402,7 @@ class DiffParser(object):
         print('PARSE', self._parsed_until_line, until_line)
         # TODO speed up, shouldn't copy the whole list all the time.
         # memoryview?
-        lines_after = self._lines_new[self._parsed_until_line:]
+        lines_after = self._parser_lines_new[self._parsed_until_line:]
         print('parse_content', self._parsed_until_line, lines_after, until_line)
         tokenizer = self._diff_tokenize(
             lines_after,
@@ -431,7 +432,17 @@ class DiffParser(object):
         last_leaf = self._new_module.last_leaf()
         while last_leaf.type == 'dedent':
             last_leaf = last_leaf.get_previous_leaf()
-        endmarker = EndMarker(self._parser.position_modifier, '', last_leaf.end_pos, self._prefix)
+
+        end_pos = list(last_leaf.end_pos)
+        lines = splitlines(self._prefix)
+        assert len(lines) > 0
+        if len(lines) == 1:
+            end_pos[1] += len(lines[0])
+        else:
+            end_pos[0] += len(lines) - 1
+            end_pos[1] = len(lines[-1])
+
+        endmarker = EndMarker(self._parser.position_modifier, '', tuple(end_pos), self._prefix)
         endmarker.parent = self._new_module
         self._new_children.append(endmarker)
 
