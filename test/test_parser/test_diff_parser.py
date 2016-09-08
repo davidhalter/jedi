@@ -55,6 +55,7 @@ class Differ(object):
         assert diff_parser._copy_count == copies
         assert diff_parser._parser_count == parsers
         self.parser.module = new_module
+        self.parser._parsed = new_module
         return new_module
 
 
