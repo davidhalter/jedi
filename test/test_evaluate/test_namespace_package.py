@@ -21,6 +21,7 @@ def test_namespace_package(Script):
         'from pkg.ns1_folder import foo': 'ns1_folder!',
         'from pkg.ns1_file import foo': 'ns1_file!',
         'from pkg import foo': 'ns1!',
+        'from pkg.nested.ns1_nested_file import foo': 'ns1_nested_file!',
     }
     for source, solution in tests.items():
         ass = script_with_path(source).goto_assignments()
