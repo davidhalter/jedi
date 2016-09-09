@@ -106,13 +106,13 @@ def test_positions(differ):
     assert m.end_pos == (1, 2)
 
 
-def test_if_simple():
+def test_if_simple(differ):
     src = dedent('''\
     if 1:
         a = 3
     ''')
-    check_fp(src + 'a', 1)
-    check_fp(src + "else:\n    a = ''\na", 1)
+    differ.initialize(src + 'a')
+    differ.parse(src + "else:\n    a = ''\na", copies=1, parsers=1)
 
 
 def test_func_with_for_and_comment():
