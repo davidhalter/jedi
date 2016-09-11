@@ -42,9 +42,14 @@ def _merge_names_dicts(base_dict, other_dict):
 
 
 def _flows_finished(grammar, stack):
-    for dfa, newstate, (symbol_number, nodes) in reversed(stack):
-        print('symbol', grammar.number2symbol[symbol_number], nodes)
-        #if symbol_number == symbol2number['suite']:
+    """
+    if, while, for and try might not be finished, because another part might
+    still be parsed.
+    """
+    for dfa, newstate, (symbol_number, nodes) in stack:
+        if grammar.number2symbol[symbol_number] in ('if_stmt', 'while_stmt',
+                                                    'for_stmt', 'try_stmt'):
+            return False
     return True
 
 
@@ -479,8 +484,7 @@ class DiffParser(object):
 
             if typ == tokenize.DEDENT:
                 indents.pop()
-                if omitted_first_indent and not indents and \
-                        _flows_finished(self._grammar, stack):
+                if omitted_first_indent and not indents:
                     # We are done here, only thing that can come now is an
                     # endmarker or another dedented code block.
                     yield tokenize.TokenInfo(tokenize.ENDMARKER, '', start_pos, '')

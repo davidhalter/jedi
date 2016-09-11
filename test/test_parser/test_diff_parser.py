@@ -60,7 +60,7 @@ class Differ(object):
         self.parser = ParserWithRecovery(grammar, source)
         return self.parser.module
 
-    def parse(self, source, copies=0, parsers=0):
+    def parse(self, source, copies=0, parsers=0, allow_error_leafs=False):
         lines = splitlines(source, keepends=True)
         diff_parser = DiffParser(self.parser)
         new_module = diff_parser.update(lines)
@@ -69,7 +69,8 @@ class Differ(object):
         assert diff_parser._parser_count == parsers
         self.parser.module = new_module
         self.parser._parsed = new_module
-        assert not _check_error_leafs(new_module)
+        if not allow_error_leafs:
+            assert not _check_error_leafs(new_module)
         return new_module
 
 
@@ -125,8 +126,13 @@ def test_if_simple(differ):
     if 1:
         a = 3
     ''')
+    else_ = "else:\n    a = ''\n"
+
     differ.initialize(src + 'a')
-    differ.parse(src + "else:\n    a = ''\na", copies=1, parsers=1)
+    differ.parse(src + else_ + "a", copies=0, parsers=1)
+
+    differ.parse(else_, parsers=1, allow_error_leafs=True)
+    differ.parse(src + else_, parsers=1)
 
 
 def test_func_with_for_and_comment():
