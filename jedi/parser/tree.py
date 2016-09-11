@@ -147,7 +147,7 @@ class Base(object):
         return scope
 
     def get_definition(self):
-        if self.type in ('newline', 'dedent', 'indent', 'endmarker'):
+        if self.type in ('newline', 'endmarker'):
             raise ValueError('Cannot get the indentation of whitespace or indentation.')
         scope = self
         while scope.parent is not None:
@@ -294,11 +294,7 @@ class Leaf(Base):
 
     def get_start_pos_of_prefix(self):
         try:
-            previous_leaf = self
-            while True:
-                previous_leaf = previous_leaf.get_previous_leaf()
-                if previous_leaf.type not in ('indent', 'dedent'):
-                    return previous_leaf.end_pos
+            return self.get_previous_leaf().end_pos
         except IndexError:
             return 1, 0  # It's the first leaf.
 
@@ -426,16 +422,6 @@ class String(Literal):
     __slots__ = ()
 
 
-class Indent(Leaf):
-    type = 'indent'
-    __slots__ = ()
-
-
-class Dedent(Leaf):
-    type = 'dedent'
-    __slots__ = ()
-
-
 class Operator(Leaf):
     type = 'operator'
     __slots__ = ()
@@ -550,10 +536,6 @@ class BaseNode(Base):
                 try:
                     return c.get_leaf_for_position(position, include_prefixes)
                 except AttributeError:
-                    while c.type in ('indent', 'dedent'):
-                        # We'd rather not have indents and dedents as a leaf,
-                        # because they don't contain indentation information.
-                        c = c.get_next_leaf()
                     return c
 
         return None

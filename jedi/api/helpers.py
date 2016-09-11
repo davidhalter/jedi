@@ -51,19 +51,6 @@ class OnErrorLeaf(Exception):
 
 
 def _is_on_comment(leaf, position):
-    # We might be on a comment.
-    if leaf.type == 'endmarker':
-        try:
-            dedent = leaf.get_previous_leaf()
-            if dedent.type == 'dedent' and dedent.prefix:
-                # TODO This is needed because the fast parser uses multiple
-                # endmarker tokens within a file which is obviously ugly.
-                # This is so ugly that I'm not even commenting how it exactly
-                # happens, but let me tell you that I want to get rid of it.
-                leaf = dedent
-        except IndexError:
-            pass
-
     comment_lines = common.splitlines(leaf.prefix)
     difference = leaf.start_pos[0] - position[0]
     prefix_start_pos = leaf.get_start_pos_of_prefix()
@@ -98,9 +85,7 @@ def _get_code_for_stack(code_lines, module, position):
         except IndexError:
             return u('')
 
-    if leaf.type in ('indent', 'dedent'):
-        return u('')
-    elif leaf.type == 'error_leaf' or leaf.type == 'string':
+    if leaf.type == 'error_leaf' or leaf.type == 'string':
         if leaf.start_pos[0] < position[0]:
             # On a different line, we just begin anew.
             return u('')
@@ -146,7 +131,6 @@ def get_stack_at_position(grammar, code_lines, module, pos):
     # completion.
     # Use Z as a prefix because it's not part of a number suffix.
     safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
-    # Remove as many indents from **all** code lines as possible.
     code = code + safeword
 
     p = parser.ParserWithRecovery(grammar, code, start_parsing=False)
