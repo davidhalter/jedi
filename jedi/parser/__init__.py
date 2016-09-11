@@ -172,6 +172,12 @@ class Parser(object):
         try:
             new_node = Parser.AST_MAPPING[symbol](children)
         except KeyError:
+            if symbol == 'suite':
+                # We don't want the INDENT/DEDENT in our parser tree. Those
+                # leaves are just cancer. They are virtual leaves and not real
+                # ones and therefore have pseudo start/end positions and no
+                # prefixes. Just ignore them.
+                children = [children[0]] + children[2:-1]
             new_node = pt.Node(symbol, children)
 
         # We need to check raw_node always, because the same node can be
@@ -220,10 +226,6 @@ class Parser(object):
             return pt.Number(self.position_modifier, value, start_pos, prefix)
         elif type == NEWLINE:
             return pt.Newline(self.position_modifier, value, start_pos, prefix)
-        elif type == INDENT:
-            return pt.Indent(self.position_modifier, value, start_pos, prefix)
-        elif type == DEDENT:
-            return pt.Dedent(self.position_modifier, value, start_pos, prefix)
         elif type == ENDMARKER:
             return pt.EndMarker(self.position_modifier, value, start_pos, prefix)
         else:
