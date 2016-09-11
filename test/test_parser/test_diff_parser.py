@@ -38,6 +38,19 @@ def test_add_to_end():
     assert jedi.Script(a + b, path='example.py').completions()
 
 
+def _check_error_leafs(node):
+    try:
+        children = node.children
+    except AttributeError:
+        if node.type == 'error_leaf':
+            return True
+    else:
+        for child in children:
+            if _check_error_leafs(child):
+                return True
+    return False
+
+
 class Differ(object):
     def __init__(self):
         self._first_use = True
@@ -56,6 +69,7 @@ class Differ(object):
         assert diff_parser._parser_count == parsers
         self.parser.module = new_module
         self.parser._parsed = new_module
+        assert not _check_error_leafs(new_module)
         return new_module
 
 

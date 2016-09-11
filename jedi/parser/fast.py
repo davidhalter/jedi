@@ -41,10 +41,19 @@ def _merge_names_dicts(base_dict, other_dict):
         base_dict.setdefault(key, []).extend(names)
 
 
-def suite_or_file_input_is_valid(parser):
-    stack = parser.pgen_parser.stack
+def _flows_finished(grammar, stack):
     for dfa, newstate, (symbol_number, nodes) in reversed(stack):
-        if symbol_number == parser._grammar.symbol2number['suite']:
+        print('symbol', grammar.number2symbol[symbol_number], nodes)
+        #if symbol_number == symbol2number['suite']:
+    return True
+
+
+def suite_or_file_input_is_valid(grammar, stack):
+    if not _flows_finished(grammar, stack):
+        return False
+
+    for dfa, newstate, (symbol_number, nodes) in reversed(stack):
+        if symbol_number == grammar.symbol2number['suite']:
             # If we don't have nodes already, the suite is not valid.
             return bool(nodes)
     # Not reaching a suite means that we're dealing with file_input levels
@@ -52,11 +61,20 @@ def suite_or_file_input_is_valid(parser):
     return True
 
 
+def _is_flow_node(node):
+    try:
+        value = node.children[0].value
+    except AttributeError:
+        return False
+    return value in ('if', 'for', 'while', 'try')
+
+
 class DiffParser(object):
     endmarker_type = 'endmarker'
 
     def __init__(self, parser):
         self._parser = parser
+        self._grammar = self._parser._grammar
         self._old_module = parser.get_root_node()
 
     def _reset(self):
@@ -152,6 +170,7 @@ class DiffParser(object):
                 p_children = line_stmt.parent.children
                 index = p_children.index(line_stmt)
                 nodes = []
+                print(p_children)
                 for node in p_children[index:]:
                     last_leaf = node.last_leaf()
                     if last_leaf.type == 'newline':
@@ -169,12 +188,16 @@ class DiffParser(object):
                     else:
                         nodes.append(node)
 
+                if nodes and _is_flow_node(nodes[-1]):
+                    # If we just copy flows at the end, they might be continued
+                    # after the copy limit (in the new parser).
+                    nodes.pop()
+
                 if nodes:
                     print('COPY', until_line_new)
                     self._copy_count += 1
                     parent = self._insert_nodes(nodes)
                     self._update_names_dict(parent, nodes)
-                # TODO remove dedent at end
                 self._update_positions(nodes, line_offset)
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we escape, even if we're not at the end. The
@@ -211,22 +234,19 @@ class DiffParser(object):
         is_endmarker = last_leaf.type == self.endmarker_type
         last_non_endmarker = last_leaf
         if is_endmarker:
-            try:
-                last_non_endmarker = last_leaf.get_previous_leaf()
-            except IndexError:
-                # If the parsed part is empty, nevermind and continue with the
-                # endmarker.
-                pass
-
-        while last_non_endmarker.type == 'dedent':
-            last_non_endmarker = last_non_endmarker.get_previous_leaf()
-        if last_non_endmarker.type == 'newline':
-            # Newlines end on the next line, which means that they would cover
-            # the next line. That line is not fully parsed at this point.
             self._parsed_until_line = last_leaf.start_pos[0]
+            if last_leaf.prefix.endswith('\n') or \
+                    not last_leaf.prefix and last_leaf.get_previous_leaf().type == 'newline':
+                self._parsed_until_line -= 1
         else:
-            self._parsed_until_line = last_leaf.end_pos[0]
-        print('parsed_until', last_leaf.end_pos, self._parsed_until_line)
+
+            if last_non_endmarker.type == 'newline':
+                # Newlines end on the next line, which means that they would cover
+                # the next line. That line is not fully parsed at this point.
+                self._parsed_until_line = last_leaf.start_pos[0]
+            else:
+                self._parsed_until_line = last_leaf.end_pos[0]
+        debug.dbg('set parsed_until %s', self._parsed_until_line)
 
         first_leaf = nodes[0].first_leaf()
         first_leaf.prefix = self._prefix + first_leaf.prefix
@@ -250,8 +270,8 @@ class DiffParser(object):
             while True:
                 p_children = new_parent.children
                 if new_parent.type == 'suite':
-                    # A suite starts with NEWLINE, INDENT, ...
-                    indentation = p_children[2].start_pos[1]
+                    # A suite starts with NEWLINE, ...
+                    indentation = p_children[1].start_pos[1]
                 else:
                     indentation = p_children[0].start_pos[1]
 
@@ -260,7 +280,6 @@ class DiffParser(object):
                     # don't want to depend on the first statement
                     # having the right indentation.
                     if new_parent.parent is not None:
-                        # TODO add dedent
                         new_parent = search_ancestor(
                             new_parent,
                             ('suite', 'file_input')
@@ -288,10 +307,7 @@ class DiffParser(object):
             return None
 
         line = self._parsed_until_line + 1
-        leaf = self._new_module.last_leaf()
-        while leaf.type == 'dedent':
-            leaf = leaf.get_previous_leaf()
-        node = leaf
+        node = self._new_module.last_leaf()
         while True:
             parent = node.parent
             print('get_ins', parent)
@@ -360,8 +376,6 @@ class DiffParser(object):
         leaf = self._old_module.get_leaf_for_position((old_line, 0), include_prefixes=True)
         if leaf.type == 'newline':
             leaf = leaf.get_next_leaf()
-        while leaf.type == 'dedent':
-            leaf = leaf.get_next_leaf()
         if leaf.get_start_pos_of_prefix()[0] == old_line:
             node = leaf
             # TODO use leaf.get_definition one day when that one is working
@@ -410,7 +424,7 @@ class DiffParser(object):
             line_offset=self._parsed_until_line
         )
         self._active_parser = ParserWithRecovery(
-            self._parser._grammar,
+            self._grammar,
             source='\n',
             start_parsing=False
         )
@@ -430,9 +444,6 @@ class DiffParser(object):
 
         # Add an endmarker.
         last_leaf = self._new_module.last_leaf()
-        while last_leaf.type == 'dedent':
-            last_leaf = last_leaf.get_previous_leaf()
-
         end_pos = list(last_leaf.end_pos)
         lines = splitlines(self._prefix)
         assert len(lines) > 0
@@ -452,6 +463,7 @@ class DiffParser(object):
         indents = []
         l = iter(lines)
         tokens = generate_tokens(lambda: next(l, ''), use_exact_op_types=True)
+        stack = self._active_parser.pgen_parser.stack
         for typ, string, start_pos, prefix in tokens:
             start_pos = start_pos[0] + line_offset, start_pos[1]
             if typ == INDENT:
@@ -467,7 +479,8 @@ class DiffParser(object):
 
             if typ == tokenize.DEDENT:
                 indents.pop()
-                if omitted_first_indent and not indents:
+                if omitted_first_indent and not indents and \
+                        _flows_finished(self._grammar, stack):
                     # We are done here, only thing that can come now is an
                     # endmarker or another dedented code block.
                     yield tokenize.TokenInfo(tokenize.ENDMARKER, '', start_pos, '')
@@ -475,7 +488,7 @@ class DiffParser(object):
             elif typ == NEWLINE and start_pos[0] >= until_line:
                 yield tokenize.TokenInfo(typ, string, start_pos, prefix)
                 # Check if the parser is actually in a valid suite state.
-                if suite_or_file_input_is_valid(self._active_parser):
+                if suite_or_file_input_is_valid(self._grammar, stack):
                     start_pos = start_pos[0] + 1, 0
                     while len(indents) > int(omitted_first_indent):
                         indents.pop()
