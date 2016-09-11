@@ -101,6 +101,10 @@ def _get_code_for_stack(code_lines, module, position):
     if leaf.type in ('indent', 'dedent'):
         return u('')
     elif leaf.type == 'error_leaf' or leaf.type == 'string':
+        if leaf.start_pos[0] < position[0]:
+            # On a different line, we just begin anew.
+            return u('')
+
         # Error leafs cannot be parsed, completion in strings is also
         # impossible.
         raise OnErrorLeaf(leaf)
@@ -266,9 +270,14 @@ def _get_call_signature_details_from_error_node(node, position):
 
 def get_call_signature_details(module, position):
     leaf = module.get_leaf_for_position(position, include_prefixes=True)
+    if leaf.start_pos >= position:
+        # Whitespace / comments after the leaf count towards the previous leaf.
+        leaf = leaf.get_previous_leaf()
+
     if leaf == ')':
         if leaf.end_pos == position:
             leaf = leaf.get_next_leaf()
+
     # Now that we know where we are in the syntax tree, we start to look at
     # parents for possible function definitions.
     node = leaf.parent

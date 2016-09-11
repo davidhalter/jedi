@@ -74,7 +74,7 @@ class DocstringMixin(object):
         elif isinstance(self, ClassOrFunc):
             node = self.children[self.children.index(':') + 1]
             if is_node(node, 'suite'):  # Normally a suite
-                node = node.children[2]  # -> NEWLINE INDENT stmt
+                node = node.children[1]  # -> NEWLINE stmt
         else:  # ExprStmt
             simple_stmt = self.parent
             c = simple_stmt.parent.children

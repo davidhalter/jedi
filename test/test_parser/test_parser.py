@@ -177,9 +177,7 @@ def test_end_pos_error_correction():
     m = ParserWithRecovery(load_grammar(), s).module
     func = m.children[0]
     assert func.type == 'funcdef'
-    # This is not exactly correct, but ok, because it doesn't make a difference
-    # at all. We just want to make sure that the module end_pos is correct!
-    assert func.end_pos == (3, 0)
+    assert func.end_pos == (2, 2)
     assert m.end_pos == (2, 2)
 
 
