@@ -185,7 +185,7 @@ class DiffParser(object):
 
                     print('test', last_line, until_line_old, node)
                     if last_line > until_line_old:
-                        divided_node = self._divide_node(node, until_line_new)
+                        divided_node = self._divide_node(node, until_line_old)
                         print('divided', divided_node)
                         if divided_node is not None:
                             nodes.append(divided_node)
@@ -199,7 +199,7 @@ class DiffParser(object):
                     nodes.pop()
 
                 if nodes:
-                    print('COPY', until_line_new)
+                    print('COPY', until_line_new, nodes)
                     self._copy_count += 1
                     parent = self._insert_nodes(nodes)
                     self._update_names_dict(parent, nodes)
@@ -210,6 +210,21 @@ class DiffParser(object):
                 # Might not reach until the end, because there's a statement
                 # that is not finished.
                 break
+
+    def _get_old_line_stmt(self, old_line):
+        leaf = self._old_module.get_leaf_for_position((old_line, 0), include_prefixes=True)
+
+        if leaf.type == 'newline':
+            leaf = leaf.get_next_leaf()
+        if leaf.get_start_pos_of_prefix()[0] == old_line:
+            node = leaf
+            # TODO use leaf.get_definition one day when that one is working
+            # well.
+            while node.parent.type not in ('file_input', 'suite'):
+                node = node.parent
+            return node
+        # Must be on the same line. Otherwise we need to parse that bit.
+        return None
 
     def _update_positions(self, nodes, line_offset):
         for node in nodes:
@@ -365,7 +380,7 @@ class DiffParser(object):
             child.parent = new_node
         for i, child in enumerate(new_suite.children):
             child.parent = new_suite
-            if child.end_pos[1] > until_line:
+            if child.end_pos[0] > until_line:
                 divided_node = self._divide_node(child, until_line)
                 new_suite.children = new_suite.children[:i]
                 if divided_node is not None:
@@ -376,20 +391,6 @@ class DiffParser(object):
                     return None
                 break
         return new_node
-
-    def _get_old_line_stmt(self, old_line):
-        leaf = self._old_module.get_leaf_for_position((old_line, 0), include_prefixes=True)
-        if leaf.type == 'newline':
-            leaf = leaf.get_next_leaf()
-        if leaf.get_start_pos_of_prefix()[0] == old_line:
-            node = leaf
-            # TODO use leaf.get_definition one day when that one is working
-            # well.
-            while node.parent.type not in ('file_input', 'suite'):
-                node = node.parent
-            return node
-        # Must be on the same line. Otherwise we need to parse that bit.
-        return None
 
     def _parse(self, until_line):
         """
