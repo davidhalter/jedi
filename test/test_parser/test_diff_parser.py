@@ -135,7 +135,7 @@ def test_if_simple(differ):
     differ.parse(src + else_, parsers=1)
 
 
-def test_func_with_for_and_comment():
+def test_func_with_for_and_comment(differ):
     # The first newline is important, leave it. It should not trigger another
     # parser split.
     src = dedent("""\
@@ -147,25 +147,20 @@ def test_func_with_for_and_comment():
     for a in [1]:
         # COMMENT
         a""")
-    check_fp(src, 2)
-    # We don't need to parse the for loop, but we need to parse the other two,
-    # because the split is in a different place.
-    check_fp('a\n' + src, 2, 3)
+    differ.initialize(src)
+    differ.parse('a\n' + src, copies=1, parsers=1)
 
 
-def test_one_statement_func():
+def test_one_statement_func(differ):
     src = dedent("""\
     first
     def func(): a
     """)
-    check_fp(src + 'second', 3)
-    # Empty the parser cache, because we're not interested in modifications
-    # here.
-    cache.parser_cache.pop(None, None)
-    check_fp(src + 'def second():\n a', 3)
+    differ.initialize(src + 'second')
+    differ.parse(src + 'def second():\n a', parsers=1, copies=1)
 
 
-def test_for_on_one_line():
+def test_for_on_one_line(differ):
     src = dedent("""\
     foo = 1
     for x in foo: pass
@@ -173,7 +168,7 @@ def test_for_on_one_line():
     def hi():
         pass
     """)
-    check_fp(src, 2)
+    differ.initialize(src)
 
     src = dedent("""\
     def hi():
@@ -182,7 +177,7 @@ def test_for_on_one_line():
 
     pass
     """)
-    check_fp(src, 2)
+    differ.parse(src, parsers=2)
 
     src = dedent("""\
     def hi():
@@ -191,33 +186,25 @@ def test_for_on_one_line():
         def nested():
             pass
     """)
-    check_fp(src, 2)
+    differ.parse(src, parsers=1, copies=1)
 
 
-def test_open_parentheses():
+def test_open_parentheses(differ):
     func = 'def func():\n a'
     code = u('isinstance(\n\n' + func)
-    p = FastParser(load_grammar(), code)
-    # As you can see, the part that was failing is still there in the get_code
-    # call. It is not relevant for evaluation, but still available as an
-    # ErrorNode.
-    assert p.module.get_code() == code
-    assert p.number_of_splits == 2
-    assert p.number_parsers_used == 2
-    save_parser(None, p, pickling=False)
+    differ.initialize(code)
 
-    # Now with a correct parser it should work perfectly well.
-    check_fp('isinstance()\n' + func, 1, 2)
+    differ.parse('isinstance(\n' + func, copies=1, parsers=1)
 
 
-def test_backslash():
+def test_backslash(differ):
     src = dedent(r"""
     a = 1\
         if 1 else 2
     def x():
         pass
     """)
-    check_fp(src, 2)
+    differ.initialize(src)
 
     src = dedent(r"""
     def x():
@@ -226,9 +213,7 @@ def test_backslash():
         def y():
             pass
     """)
-    # The dangling if leads to not splitting where we theoretically could
-    # split.
-    check_fp(src, 2)
+    differ.parse(src, parsers=2)
 
     src = dedent(r"""
     def first():
@@ -239,4 +224,4 @@ def test_backslash():
     def second():
         pass
     """)
-    check_fp(src, 2)
+    differ.parse(src, parsers=2)
