@@ -133,7 +133,7 @@ class DiffParser(object):
         sm = difflib.SequenceMatcher(None, lines_old, lines_new)
         print(len(lines_old), line_length, lines_old, lines_new)
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
-            print('\t\t', operation, i1, i2, j1, j2)
+            debug.dbg('diff %s old[%s:%s] new[%s:%s]', operation, i1, i2, j1, j2)
             if j2 == line_length + int(self._added_newline):
                 # The empty part after the last newline is not relevant.
                 j2 -= 1
@@ -175,7 +175,6 @@ class DiffParser(object):
                 p_children = line_stmt.parent.children
                 index = p_children.index(line_stmt)
                 nodes = []
-                print(p_children)
                 for node in p_children[index:]:
                     last_leaf = node.last_leaf()
                     if last_leaf.type == 'newline':
@@ -193,7 +192,16 @@ class DiffParser(object):
                     else:
                         nodes.append(node)
 
-                if nodes and _is_flow_node(nodes[-1]):
+                removed_last = False
+                while nodes and nodes[-1].type in ('error_leaf', 'error_node'):
+                    # Error leafs/nodes don't have a defined start/end. Error
+                    # nodes might not end with a newline (e.g. if there's an
+                    # open `(`). Therefore ignore all of them unless they are
+                    # succeeded with valid parser state.
+                    nodes.pop()
+                    removed_last = True
+
+                if not removed_last and nodes and _is_flow_node(nodes[-1]):
                     # If we just copy flows at the end, they might be continued
                     # after the copy limit (in the new parser).
                     nodes.pop()
@@ -375,21 +383,29 @@ class DiffParser(object):
             return None
 
         new_node = copy.copy(node)
-        new_node.children[-1] = new_suite = copy.copy(suite)
-        for child in new_node.children:
-            child.parent = new_node
+        new_suite = copy.copy(suite)
         for i, child in enumerate(new_suite.children):
-            child.parent = new_suite
             if child.end_pos[0] > until_line:
                 divided_node = self._divide_node(child, until_line)
-                new_suite.children = new_suite.children[:i]
+                new_suite_children = new_suite.children[:i]
                 if divided_node is not None:
-                    new_suite.children.append(divided_node)
-                    divided_node.parent = new_suite
-                if len(new_suite.children) < 3:
+                    new_suite_children.append(divided_node)
+                if len(new_suite_children) < 2:
                     # A suite only with newline and indent is not valid.
                     return None
                 break
+        else:
+            raise ValueError("Should always exit over break, otherwise we "
+                             "don't even have to call divide_node")
+
+        # And now set the correct parents
+        for child in new_suite_children:
+            child.parent = new_suite
+        new_suite.children = new_suite_children
+        for child in new_node.children:
+            child.parent = new_node
+        new_node.children = list(new_node.children)
+        new_node.children[-1] = new_suite
         return new_node
 
     def _parse(self, until_line):
