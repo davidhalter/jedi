@@ -133,7 +133,9 @@ class DiffParser(object):
         sm = difflib.SequenceMatcher(None, lines_old, lines_new)
         print(len(lines_old), line_length, lines_old, lines_new)
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
-            debug.dbg('diff %s old[%s:%s] new[%s:%s]', operation, i1, i2, j1, j2)
+            debug.dbg('diff %s old[%s:%s] new[%s:%s]',
+                      operation, i1 + 1, i2, j1 + 1, j2)
+
             if j2 == line_length + int(self._added_newline):
                 # The empty part after the last newline is not relevant.
                 j2 -= 1
@@ -209,14 +211,19 @@ class DiffParser(object):
                 if nodes:
                     print('COPY', until_line_new, nodes)
                     self._copy_count += 1
+                    debug.dbg(
+                        'diff actuall copy %s to %s',
+                        nodes[0].start_pos[0],
+                        nodes[-1].end_pos[0]
+                    )
                     parent = self._insert_nodes(nodes)
                     self._update_names_dict(parent, nodes)
-                self._update_positions(nodes, line_offset)
+                    self._update_positions(nodes, line_offset)
                 # We have copied as much as possible (but definitely not too
-                # much). Therefore we escape, even if we're not at the end. The
-                # rest will be parsed.
-                # Might not reach until the end, because there's a statement
+                # much). Therefore we just parse the rest.
+                # We might not reach the end, because there's a statement
                 # that is not finished.
+                self._parse(until_line_new)
                 break
 
     def _get_old_line_stmt(self, old_line):

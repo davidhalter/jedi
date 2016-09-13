@@ -3,6 +3,7 @@ from textwrap import dedent
 import pytest
 
 import jedi
+from jedi import debug
 from jedi._compatibility import u
 from jedi.common import splitlines
 from jedi import cache
@@ -56,11 +57,13 @@ class Differ(object):
         self._first_use = True
 
     def initialize(self, source):
+        debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
         self.parser = ParserWithRecovery(grammar, source)
         return self.parser.module
 
     def parse(self, source, copies=0, parsers=0, allow_error_leafs=False):
+        debug.dbg('differ: parse copies=%s parsers=%s', copies, parsers, color='YELLOW')
         lines = splitlines(source, keepends=True)
         diff_parser = DiffParser(self.parser)
         new_module = diff_parser.update(lines)
@@ -182,11 +185,14 @@ def test_for_on_one_line(differ):
     src = dedent("""\
     def hi():
         for x in foo: pass
+        pass
 
         def nested():
             pass
     """)
-    differ.parse(src, parsers=1, copies=1)
+    # The second parser is for parsing the `def nested()` which is an `equal`
+    # operation in the SequenceMatcher.
+    differ.parse(src, parsers=2, copies=1)
 
 
 def test_open_parentheses(differ):
