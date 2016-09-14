@@ -58,9 +58,9 @@ def suite_or_file_input_is_valid(grammar, stack):
         return False
 
     for dfa, newstate, (symbol_number, nodes) in reversed(stack):
-        if symbol_number == grammar.symbol2number['suite']:
-            # If we don't have nodes already, the suite is not valid.
-            return bool(nodes)
+        if grammar.number2symbol[symbol_number] == 'suite':
+            # If only newline is in the suite, the suite is not valid, yet.
+            return len(nodes) > 1
     # Not reaching a suite means that we're dealing with file_input levels
     # where there's no need for a valid statement in it. It can also be empty.
     return True

@@ -200,7 +200,7 @@ def test_for_on_one_line(differ):
     """)
     # The second parser is for parsing the `def nested()` which is an `equal`
     # operation in the SequenceMatcher.
-    differ.parse(src, parsers=2, copies=1)
+    differ.parse(src, parsers=1, copies=1)
 
 
 def test_open_parentheses(differ):
@@ -208,7 +208,7 @@ def test_open_parentheses(differ):
     code = u('isinstance(\n\n' + func)
     differ.initialize(code)
 
-    differ.parse('isinstance(\n' + func, copies=1, parsers=1)
+    differ.parse('isinstance(\n' + func, parsers=1, allow_error_leafs=True)
 
 
 def test_backslash(differ):
@@ -238,4 +238,4 @@ def test_backslash(differ):
     def second():
         pass
     """)
-    differ.parse(src, parsers=2)
+    differ.parse(src, parsers=1)
