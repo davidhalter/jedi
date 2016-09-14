@@ -39,15 +39,17 @@ def test_add_to_end():
     assert jedi.Script(a + b, path='example.py').completions()
 
 
-def _check_error_leafs(node):
+def _check_error_leaves_nodes(node):
+    if node.type in ('error_leaf', 'error_node'):
+        return True
+
     try:
         children = node.children
     except AttributeError:
-        if node.type == 'error_leaf':
-            return True
+        pass
     else:
         for child in children:
-            if _check_error_leafs(child):
+            if _check_error_leaves_nodes(child):
                 return True
     return False
 
@@ -73,7 +75,7 @@ class Differ(object):
         self.parser.module = new_module
         self.parser._parsed = new_module
         if not allow_error_leafs:
-            assert not _check_error_leafs(new_module)
+            assert not _check_error_leaves_nodes(new_module)
         return new_module
 
 
@@ -92,15 +94,21 @@ def test_change_and_undo(differ):
     differ.parse(func_before + 'b', copies=1, parsers=1)
     # b has changed to a again, so parse that.
     differ.parse(func_before + 'a', copies=1, parsers=1)
-    # Same as before no parsers should be used.
-    differ.parse(func_before + 'a', copies=1)
+    # Same as before parsers should be used at the end, because it doesn't end
+    # with newlines and that leads to complications.
+    differ.parse(func_before + 'a', copies=1, parsers=1)
+
+    # Now that we have a newline at the end, everything is easier in Python
+    # syntax, we can parse once and then get a copy.
+    differ.parse(func_before + 'a\n', copies=1, parsers=1)
+    differ.parse(func_before + 'a\n', copies=1)
 
     # Getting rid of an old parser: Still no parsers used.
-    differ.parse('a', copies=1)
+    differ.parse('a\n', copies=1)
     # Now the file has completely changed and we need to parse.
-    differ.parse('b', parsers=1)
+    differ.parse('b\n', parsers=1)
     # And again.
-    differ.parse('a', parsers=1)
+    differ.parse('a\n', parsers=1)
 
 
 def test_positions(differ):
@@ -112,7 +120,7 @@ def test_positions(differ):
     assert m.start_pos == (1, 0)
     assert m.end_pos == (3, 1)
 
-    m = differ.parse('a', copies=1)
+    m = differ.parse('a', parsers=1)
     assert m.start_pos == (1, 0)
     assert m.end_pos == (1, 1)
 
@@ -151,7 +159,7 @@ def test_func_with_for_and_comment(differ):
         # COMMENT
         a""")
     differ.initialize(src)
-    differ.parse('a\n' + src, copies=1, parsers=1)
+    differ.parse('a\n' + src, copies=1, parsers=2)
 
 
 def test_one_statement_func(differ):

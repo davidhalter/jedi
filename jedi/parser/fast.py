@@ -130,7 +130,7 @@ class DiffParser(object):
 
         line_length = len(lines_new)
         lines_old = splitlines(self._parser.source, keepends=True)
-        sm = difflib.SequenceMatcher(None, lines_old, lines_new)
+        sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
         print(len(lines_old), line_length, lines_old, lines_new)
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
             debug.dbg('diff %s old[%s:%s] new[%s:%s]',
@@ -212,13 +212,13 @@ class DiffParser(object):
                     print('COPY', until_line_new, nodes)
                     self._copy_count += 1
                     debug.dbg(
-                        'diff actuall copy %s to %s',
+                        'diff actually copy %s to %s',
                         nodes[0].start_pos[0],
-                        nodes[-1].end_pos[0]
+                        nodes[-1].end_pos
                     )
+                    self._update_positions(nodes, line_offset)
                     parent = self._insert_nodes(nodes)
                     self._update_names_dict(parent, nodes)
-                    self._update_positions(nodes, line_offset)
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we just parse the rest.
                 # We might not reach the end, because there's a statement
@@ -267,15 +267,13 @@ class DiffParser(object):
 
         last_leaf = nodes[-1].last_leaf()
         is_endmarker = last_leaf.type == self.endmarker_type
-        last_non_endmarker = last_leaf
         if is_endmarker:
             self._parsed_until_line = last_leaf.start_pos[0]
             if last_leaf.prefix.endswith('\n') or \
                     not last_leaf.prefix and last_leaf.get_previous_leaf().type == 'newline':
                 self._parsed_until_line -= 1
         else:
-
-            if last_non_endmarker.type == 'newline':
+            if last_leaf.type == 'newline':
                 # Newlines end on the next line, which means that they would cover
                 # the next line. That line is not fully parsed at this point.
                 self._parsed_until_line = last_leaf.start_pos[0]
@@ -425,9 +423,6 @@ class DiffParser(object):
             nodes = self._get_children_nodes(node)
             parent = self._insert_nodes(nodes)
             self._merge_parsed_node(parent, node)
-            #if until_line - 1 == len(self._parser_lines_new):
-                # We are done in any case. This is special case, because the l
-                #return
 
     def _get_children_nodes(self, node):
         nodes = node.children
