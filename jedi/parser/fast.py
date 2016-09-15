@@ -184,7 +184,6 @@ class DiffParser(object):
                     else:
                         last_line = last_leaf.end_pos[0]
 
-                    print('test', last_line, until_line_old, node)
                     if last_line > until_line_old:
                         divided_node = self._divide_node(node, until_line_old)
                         print('divided', divided_node)

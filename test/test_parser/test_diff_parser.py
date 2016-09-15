@@ -55,16 +55,13 @@ def _check_error_leaves_nodes(node):
 
 
 class Differ(object):
-    def __init__(self):
-        self._first_use = True
-
     def initialize(self, source):
         debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
         self.parser = ParserWithRecovery(grammar, source)
         return self.parser.module
 
-    def parse(self, source, copies=0, parsers=0, allow_error_leafs=False):
+    def parse(self, source, copies=0, parsers=0, expect_error_leafs=False):
         debug.dbg('differ: parse copies=%s parsers=%s', copies, parsers, color='YELLOW')
         lines = splitlines(source, keepends=True)
         diff_parser = DiffParser(self.parser)
@@ -74,8 +71,7 @@ class Differ(object):
         assert diff_parser._parser_count == parsers
         self.parser.module = new_module
         self.parser._parsed = new_module
-        if not allow_error_leafs:
-            assert not _check_error_leaves_nodes(new_module)
+        assert expect_error_leafs == _check_error_leaves_nodes(new_module)
         return new_module
 
 
@@ -142,7 +138,7 @@ def test_if_simple(differ):
     differ.initialize(src + 'a')
     differ.parse(src + else_ + "a", copies=0, parsers=1)
 
-    differ.parse(else_, parsers=1, allow_error_leafs=True)
+    differ.parse(else_, parsers=1, expect_error_leafs=True)
     differ.parse(src + else_, parsers=1)
 
 
@@ -205,10 +201,17 @@ def test_for_on_one_line(differ):
 
 def test_open_parentheses(differ):
     func = 'def func():\n a'
-    code = u('isinstance(\n\n' + func)
+    code = 'isinstance(\n\n' + func
+    new_code = 'isinstance(\n' + func
     differ.initialize(code)
 
-    differ.parse('isinstance(\n' + func, parsers=1, allow_error_leafs=True)
+    differ.parse(new_code, parsers=1, expect_error_leafs=True)
+
+    new_code = 'a = 1\n' + new_code
+    differ.parse(new_code, parsers=2, expect_error_leafs=True)
+
+    differ.initialize(new_code)
+    differ.parse('isinstance()\n' + func, parsers=2, copies=0)
 
 
 def test_backslash(differ):
