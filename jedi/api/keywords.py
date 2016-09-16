@@ -8,8 +8,13 @@ from jedi.parser.tree import Leaf
 try:
     from pydoc_data import topics as pydoc_topics
 except ImportError:
-    # Python 2.6
-    import pydoc_topics
+    # Python 2
+    try:
+        import pydoc_topics
+    except ImportError:
+        # This is for Python 3 embeddable version, which dont have
+        # pydoc_data module in its file python3x.zip.
+        pydoc_topics = None
 
 if is_py3:
     if is_py35:
@@ -99,6 +104,9 @@ def imitate_pydoc(string):
     It's not possible to get the pydoc's without starting the annoying pager
     stuff.
     """
+    if pydoc_topics is None:
+        return ''
+
     # str needed because of possible unicode stuff in py2k (pydoc doesn't work
     # with unicode strings)
     string = str(string)
