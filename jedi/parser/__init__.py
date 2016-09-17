@@ -104,9 +104,6 @@ class Parser(object):
         self._last_failed_start_pos = (0, 0)
         self._global_names = []
 
-        # For the fast parser.
-        self.position_modifier = pt.PositionModifier()
-
         self.source = source
         self._added_newline = False
         # The Python grammar needs a newline at the end of each statement.
@@ -211,9 +208,9 @@ class Parser(object):
                 if value in ('def', 'class', 'lambda'):
                     self._scope_names_stack.append({})
 
-                return pt.Keyword(self.position_modifier, value, start_pos, prefix)
+                return pt.Keyword(value, start_pos, prefix)
             else:
-                name = pt.Name(self.position_modifier, value, start_pos, prefix)
+                name = pt.Name(value, start_pos, prefix)
                 # Keep a listing of all used names
                 arr = self._used_names.setdefault(name.value, [])
                 arr.append(name)
@@ -221,22 +218,17 @@ class Parser(object):
                 arr.append(name)
                 return name
         elif type == STRING:
-            return pt.String(self.position_modifier, value, start_pos, prefix)
+            return pt.String(value, start_pos, prefix)
         elif type == NUMBER:
-            return pt.Number(self.position_modifier, value, start_pos, prefix)
+            return pt.Number(value, start_pos, prefix)
         elif type == NEWLINE:
-            return pt.Newline(self.position_modifier, value, start_pos, prefix)
+            return pt.Newline(value, start_pos, prefix)
         elif type == ENDMARKER:
-            return pt.EndMarker(self.position_modifier, value, start_pos, prefix)
+            return pt.EndMarker(value, start_pos, prefix)
         else:
-            return pt.Operator(self.position_modifier, value, start_pos, prefix)
+            return pt.Operator(value, start_pos, prefix)
 
     def remove_last_newline(self):
-        """
-        In all of this we need to work with _start_pos, because if we worked
-        with start_pos, we would need to check the position_modifier as well
-        (which is accounted for in the start_pos property).
-        """
         endmarker = self._parsed.children[-1]
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.
@@ -252,7 +244,7 @@ class Parser(object):
                 except IndexError:
                     pass
             last_line = re.sub('.*\n', '', prefix)
-            endmarker._start_pos = endmarker._start_pos[0] - 1, last_end + len(last_line)
+            endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
         else:
             try:
                 newline = endmarker.get_previous_leaf()
@@ -274,14 +266,15 @@ class Parser(object):
                     break
                 else:
                     newline.value = ''
-                    if self._last_failed_start_pos > newline._start_pos:
+                    if self._last_failed_start_pos > newline.start_pos:
                         # It may be the case that there was a syntax error in a
                         # function. In that case error correction removes the
                         # right newline. So we use the previously assigned
                         # _last_failed_start_pos variable to account for that.
-                        endmarker._start_pos = self._last_failed_start_pos
+                        endmarker.start_pos = self._last_failed_start_pos
+                        raise NotImplementedError
                     else:
-                        endmarker._start_pos = newline._start_pos
+                        endmarker.start_pos = newline.start_pos
                     break
 
 
@@ -370,7 +363,7 @@ class ParserWithRecovery(Parser):
                 # Otherwise the parser will get into trouble and DEDENT too early.
                 self._omit_dedent_list.append(self._indent_counter)
             else:
-                error_leaf = pt.ErrorLeaf(self.position_modifier, typ, value, start_pos, prefix)
+                error_leaf = pt.ErrorLeaf(typ, value, start_pos, prefix)
                 stack[-1][2][1].append(error_leaf)
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):

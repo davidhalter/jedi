@@ -169,8 +169,8 @@ class DiffParser(object):
             line_stmt = self._get_old_line_stmt(parsed_until_line_old + 1)
             if line_stmt is None:
                 # Parse 1 line at least. We don't need more, because we just
-                # want to get into a state where the old parser has starting
-                # statements again (not e.g. lines within parentheses).
+                # want to get into a state where the old parser has statements
+                # again that can be copied (e.g. not lines within parentheses).
                 self._parse(self._parsed_until_line + 1)
             else:
                 print('copy', line_stmt.end_pos, parsed_until_line_old, until_line_old, line_stmt)
@@ -476,7 +476,7 @@ class DiffParser(object):
             end_pos[0] += len(lines) - 1
             end_pos[1] = len(lines[-1])
 
-        endmarker = EndMarker(self._parser.position_modifier, '', tuple(end_pos), self._prefix)
+        endmarker = EndMarker('', tuple(end_pos), self._prefix)
         endmarker.parent = self._new_module
         self._new_children.append(endmarker)
 

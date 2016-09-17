@@ -180,8 +180,8 @@ def _get_faked(module, obj, name=None):
         # contain it).
         doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
         suite = result.children[-1]
-        string = pt.String(pt.zero_position_modifier, doc, (0, 0), '')
-        new_line = pt.Newline(pt.zero_position_modifier, '\n', (0, 0))
+        string = pt.String(doc, (0, 0), '')
+        new_line = pt.Newline('\n', (0, 0))
         docstr_node = pt.Node('simple_stmt', [string, new_line])
         suite.children.insert(1, docstr_node)
         return result

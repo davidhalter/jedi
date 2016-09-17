@@ -200,7 +200,7 @@ def test_for_on_one_line(differ):
 
 
 def test_open_parentheses(differ):
-    func = 'def func():\n a'
+    func = 'def func():\n a\n'
     code = 'isinstance(\n\n' + func
     new_code = 'isinstance(\n' + func
     differ.initialize(code)
@@ -208,10 +208,13 @@ def test_open_parentheses(differ):
     differ.parse(new_code, parsers=1, expect_error_leafs=True)
 
     new_code = 'a = 1\n' + new_code
-    differ.parse(new_code, parsers=2, expect_error_leafs=True)
+    differ.parse(new_code, copies=1, parsers=1, expect_error_leafs=True)
 
-    differ.initialize(new_code)
-    differ.parse('isinstance()\n' + func, parsers=2, copies=0)
+    func += 'def other_func():\n pass\n'
+    differ.initialize('isinstance(\n' + func)
+    # Cannot copy all, because the prefix of the function is once a newline and
+    # once not.
+    differ.parse('isinstance()\n' + func, parsers=2, copies=1)
 
 
 def test_backslash(differ):

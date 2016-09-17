@@ -80,6 +80,11 @@ class MixedName(compiled.CompiledName):
         # This means a start_pos that doesn't exist (compiled objects).
         return (0, 0)
 
+    @start_pos.setter
+    def start_pos(self, value):
+        # Ignore the __init__'s start_pos setter call.
+        pass
+
 
 class LazyMixedNamesDict(compiled.LazyNamesDict):
     name_class = MixedName

@@ -118,6 +118,7 @@ from io import StringIO
 from functools import reduce
 
 import jedi
+from jedi import debug
 from jedi._compatibility import unicode, is_py3
 from jedi.parser import Parser, load_grammar
 from jedi.api.classes import Definition
@@ -186,7 +187,7 @@ class IntegrationTestCase(object):
             for match in re.finditer('(?:[^ ]+)', correct):
                 string = match.group(0)
                 parser = Parser(load_grammar(), string, start_symbol='eval_input')
-                parser.position_modifier.line = self.line_nr
+                parser.get_root_node().move(self.line_nr)
                 element = parser.get_parsed_node()
                 element.parent = jedi.api.completion.get_user_scope(
                     script._get_module(),
@@ -198,6 +199,7 @@ class IntegrationTestCase(object):
                                     % (match.string, self.line_nr - 1))
 
                 should_be |= set(Definition(evaluator, r) for r in results)
+            debug.dbg('Finished getting types', color='YELLOW')
 
             # Because the objects have different ids, `repr`, then compare.
             should = set(comparison(r) for r in should_be)

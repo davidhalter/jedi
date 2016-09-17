@@ -73,9 +73,6 @@ class PositionModifier(object):
         self.line = 0
 
 
-zero_position_modifier = PositionModifier()
-
-
 class DocstringMixin(object):
     __slots__ = ()
 
@@ -288,22 +285,22 @@ class Base(object):
 
 
 class Leaf(Base):
-    __slots__ = ('position_modifier', 'value', 'parent', '_start_pos', 'prefix')
+    __slots__ = ('value', 'parent', 'line', 'indent', 'prefix')
 
-    def __init__(self, position_modifier, value, start_pos, prefix=''):
-        self.position_modifier = position_modifier
+    def __init__(self, value, start_pos, prefix=''):
         self.value = value
-        self._start_pos = start_pos
+        self.start_pos = start_pos
         self.prefix = prefix
         self.parent = None
 
     @property
     def start_pos(self):
-        return self._start_pos[0] + self.position_modifier.line, self._start_pos[1]
+        return self.line, self.indent
 
     @start_pos.setter
     def start_pos(self, value):
-        self._start_pos = value[0] - self.position_modifier.line, value[1]
+        self.line = value[0]
+        self.indent = value[1]
 
     def get_start_pos_of_prefix(self):
         try:
@@ -313,12 +310,10 @@ class Leaf(Base):
 
     @property
     def end_pos(self):
-        return (self._start_pos[0] + self.position_modifier.line,
-                self._start_pos[1] + len(self.value))
+        return self.line, self.indent + len(self.value)
 
-    def move(self, line_offset, column_offset):
-        self._start_pos = (self._start_pos[0] + line_offset,
-                           self._start_pos[1] + column_offset)
+    def move(self, line_offset):
+        self.line += line_offset
 
     def first_leaf(self):
         return self
@@ -353,15 +348,14 @@ class LeafWithNewLines(Leaf):
         Literals and whitespace end_pos are more complicated than normal
         end_pos, because the containing newlines may change the indexes.
         """
-        end_pos_line, end_pos_col = self.start_pos
         lines = self.value.split('\n')
-        end_pos_line += len(lines) - 1
+        end_pos_line = self.line + len(lines) - 1
         # Check for multiline token
-        if self.start_pos[0] == end_pos_line:
-            end_pos_col += len(lines[-1])
+        if self.line == end_pos_line:
+            end_pos_indent = self.indent + len(lines[-1])
         else:
-            end_pos_col = len(lines[-1])
-        return end_pos_line, end_pos_col
+            end_pos_indent = len(lines[-1])
+        return end_pos_line, end_pos_indent
 
     @utf8_repr
     def __repr__(self):
@@ -399,7 +393,7 @@ class Name(Leaf):
 
     def __repr__(self):
         return "<%s: %s@%s,%s>" % (type(self).__name__, self.value,
-                                   self.start_pos[0], self.start_pos[1])
+                                   self.line, self.indent)
 
     def is_definition(self):
         if self.parent.type in ('power', 'atom_expr'):
@@ -505,12 +499,12 @@ class BaseNode(Base):
         self.children = children
         self.parent = None
 
-    def move(self, line_offset, column_offset):
+    def move(self, line_offset):
         """
         Move the Node's start_pos.
         """
         for c in self.children:
-            c.move(line_offset, column_offset)
+            c.move(line_offset)
 
     @property
     def start_pos(self):
@@ -687,8 +681,8 @@ class ErrorLeaf(LeafWithNewLines):
     __slots__ = ('original_type')
     type = 'error_leaf'
 
-    def __init__(self, position_modifier, original_type, value, start_pos, prefix=''):
-        super(ErrorLeaf, self).__init__(position_modifier, value, start_pos, prefix)
+    def __init__(self, original_type, value, start_pos, prefix=''):
+        super(ErrorLeaf, self).__init__(value, start_pos, prefix)
         self.original_type = original_type
 
     def __repr__(self):
@@ -820,7 +814,7 @@ class Module(Scope):
             string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
         # Positions are not real, but a module starts at (1, 0)
         p = (1, 0)
-        name = Name(zero_position_modifier, string, p)
+        name = Name(string, p)
         name.parent = self
         return name
 
@@ -1106,7 +1100,7 @@ class Lambda(Function):
     @property
     def name(self):
         # Borrow the position of the <Keyword: lambda> AST node.
-        return Name(self.children[0].position_modifier, '<lambda>', self.children[0].start_pos)
+        return Name('<lambda>', self.children[0].start_pos)
 
     def _get_paramlist_code(self):
         return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'

@@ -172,7 +172,7 @@ class FakeName(tree.Name):
         In case is_definition is defined (not None), that bool value will be
         returned.
         """
-        super(FakeName, self).__init__(tree.zero_position_modifier, name_str, start_pos)
+        super(FakeName, self).__init__(name_str, start_pos)
         self.parent = parent
         self._is_definition = is_definition
 

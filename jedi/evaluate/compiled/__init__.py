@@ -10,7 +10,7 @@ from functools import partial
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
-from jedi.parser.tree import Param, Base, Operator, zero_position_modifier
+from jedi.parser.tree import Param, Base, Operator
 from jedi.evaluate.helpers import FakeName
 from . import fake
 
@@ -89,7 +89,7 @@ class CompiledObject(Base):
         for p in tokens:
             parts = [FakeName(part) for part in p.strip().split('=')]
             if len(parts) > 1:
-                parts.insert(1, Operator(zero_position_modifier, '=', (0, 0)))
+                parts.insert(1, Operator('=', (0, 0)))
             params.append(Param(parts, self))
         return params
 

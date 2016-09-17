@@ -64,15 +64,15 @@ def _fix_forward_reference(evaluator, node):
         try:
             p = Parser(load_grammar(), _compatibility.unicode(evaled_node.obj),
                        start_symbol='eval_input')
-            newnode = p.get_parsed_node()
+            new_node = p.get_parsed_node()
         except ParseError:
             debug.warning('Annotation not parsed: %s' % evaled_node.obj)
             return node
         else:
             module = node.get_parent_until()
-            p.position_modifier.line = module.end_pos[0]
-            newnode.parent = module
-            return newnode
+            new_node.move(module.end_pos[0])
+            new_node.parent = module
+            return new_node
     else:
         return node
 
@@ -188,7 +188,6 @@ def _find_type_from_comment_hint(evaluator, node, varlist, name):
     if not match:
         return []
     annotation = tree.String(
-        tree.zero_position_modifier,
         repr(str(match.group(1).strip())),
         node.start_pos)
     annotation.parent = node.parent
