@@ -101,7 +101,6 @@ class Parser(object):
 
         self._used_names = {}
         self._scope_names_stack = [{}]
-        self._last_failed_start_pos = (0, 0)
         self._global_names = []
 
         self.source = source
@@ -266,16 +265,7 @@ class Parser(object):
                     break
                 else:
                     newline.value = ''
-                    if self._last_failed_start_pos > newline.start_pos:
-                        # It may be the case that there was a syntax error in a
-                        # function. In that case error correction removes the
-                        # right newline. So we use the previously assigned
-                        # _last_failed_start_pos variable to account for that.
-                        endmarker.start_pos = self._last_failed_start_pos
-                        raise NotImplementedError
-                    else:
-                        endmarker.start_pos = newline.start_pos
-                    break
+                    endmarker.start_pos = newline.start_pos
 
 
 class ParserWithRecovery(Parser):
@@ -381,8 +371,6 @@ class ParserWithRecovery(Parser):
                 self._scope_names_stack.pop()
         if failed_stack:
             stack[start_index - 1][2][1].append(pt.ErrorNode(all_nodes))
-
-        self._last_failed_start_pos = start_pos
 
         stack[start_index:] = []
         return failed_stack
