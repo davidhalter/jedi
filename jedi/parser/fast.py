@@ -131,7 +131,7 @@ class DiffParser(object):
         line_length = len(lines_new)
         lines_old = splitlines(self._parser.source, keepends=True)
         sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
-        print(len(lines_old), line_length, lines_old, lines_new)
+        print('line_lengths, old: %s, new: %s' % (len(lines_old), line_length))
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
             debug.dbg('diff %s old[%s:%s] new[%s:%s]',
                       operation, i1 + 1, i2, j1 + 1, j2)
@@ -208,7 +208,7 @@ class DiffParser(object):
                     nodes.pop()
 
                 if nodes:
-                    print('COPY', until_line_new, nodes)
+                    print('COPY', until_line_new, 'node_length', len(nodes))
                     self._copy_count += 1
                     debug.dbg(
                         'diff actually copy %s to %s',
@@ -289,7 +289,7 @@ class DiffParser(object):
             nodes = nodes[:-1]
             if not nodes:
                 return self._new_module
-        print("insert_nodes", nodes)
+        print("insert_nodes", len(nodes))
 
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
@@ -327,7 +327,6 @@ class DiffParser(object):
 
         # Reset the parents
         for node in nodes:
-            print('reset', node)
             node.parent = new_parent
         if new_parent.type == 'suite':
             return new_parent.get_parent_scope()
