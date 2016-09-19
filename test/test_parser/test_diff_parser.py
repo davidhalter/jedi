@@ -54,6 +54,20 @@ def _check_error_leaves_nodes(node):
     return False
 
 
+def _assert_valid_graph(node):
+    """
+    Checks if the parent/children relationship is correct.
+    """
+    try:
+        children = node.children
+    except AttributeError:
+        return
+
+    for child in children:
+        assert child.parent == node
+        _assert_valid_graph(child)
+
+
 class Differ(object):
     def initialize(self, source):
         debug.dbg('differ: initialize', color='YELLOW')
@@ -71,7 +85,9 @@ class Differ(object):
         assert diff_parser._parser_count == parsers
         self.parser.module = new_module
         self.parser._parsed = new_module
+
         assert expect_error_leafs == _check_error_leaves_nodes(new_module)
+        _assert_valid_graph(new_module)
         return new_module
 
 
