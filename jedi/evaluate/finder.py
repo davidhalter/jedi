@@ -36,7 +36,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
 
 
-def filter_after_position(names, position):
+def filter_after_position(names, position, origin=None):
     """
     Removes all names after a certain position. If position is None, just
     returns the names list.
@@ -47,8 +47,13 @@ def filter_after_position(names, position):
     names_new = []
     for n in names:
         # Filter positions and also allow list comprehensions and lambdas.
-        if n.start_pos[0] is not None and n.start_pos < position \
-                or isinstance(n.get_definition(), (tree.CompFor, tree.Lambda)):
+        if n.start_pos[0] is not None and n.start_pos < position:
+            names_new.append(n)
+        elif isinstance(n.get_definition(), (tree.CompFor, tree.Lambda)):
+            if origin is not None and origin.get_definition() != n.get_definition():
+                # This is extremely hacky. A transition that we have to use
+                # until we get rid of names_dicts.
+                continue
             names_new.append(n)
     return names_new
 
@@ -67,7 +72,7 @@ def filter_definition_names(names, origin, position=None):
 
     if not (isinstance(scope, er.FunctionExecution) and
             isinstance(scope.base, er.LambdaWrapper)):
-        names = filter_after_position(names, position)
+        names = filter_after_position(names, position, origin)
     names = [name for name in names if name.is_definition()]
 
     # Private name mangling (compile.c) disallows access on names
