@@ -131,6 +131,7 @@ class Script(object):
         self._evaluator = Evaluator(self._grammar, sys_path=sys_path)
         debug.speed('init')
 
+    @cache.memoize_method
     def _get_module(self):
         cache.invalidate_star_import_cache(self._path)
         parser = FastParser(self._grammar, self._source, self.path)

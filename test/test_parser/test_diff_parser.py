@@ -31,12 +31,18 @@ def test_add_to_end():
 
     b = "    def h(self):\n" \
         "        self."
-    assert jedi.Script(a, 7, 12, 'example.py').completions()
-    assert jedi.Script(a + b, path='example.py').completions()
+
+    def complete(code, line=None, column=None):
+        script = jedi.Script(code, line, column, 'example.py')
+        assert script.completions()
+        _assert_valid_graph(script._get_module())
+
+    complete(a, 7, 12)
+    complete(a + b)
 
     a = a[:-1] + '.\n'
-    assert jedi.Script(a, 7, 13, 'example.py').completions()
-    assert jedi.Script(a + b, path='example.py').completions()
+    complete(a, 7, 13)
+    complete(a + b)
 
 
 def _check_error_leaves_nodes(node):
