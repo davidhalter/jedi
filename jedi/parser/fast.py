@@ -41,6 +41,18 @@ def _merge_names_dicts(base_dict, other_dict):
         base_dict.setdefault(key, []).extend(names)
 
 
+def _get_last_line(node_or_leaf):
+    last_leaf = node_or_leaf.last_leaf()
+    if last_leaf.type == 'error_leaf':
+        typ = tokenize.tok_name[last_leaf.original_type].lower()
+    else:
+        typ = last_leaf.type
+    if typ == 'newline':
+        return last_leaf.start_pos[0]
+    else:
+        return last_leaf.end_pos[0]
+
+
 def _flows_finished(grammar, stack):
     """
     if, while, for and try might not be finished, because another part might
@@ -178,15 +190,10 @@ class DiffParser(object):
                 index = p_children.index(line_stmt)
                 nodes = []
                 for node in p_children[index:]:
-                    last_leaf = node.last_leaf()
-                    if last_leaf.type == 'newline':
-                        last_line = last_leaf.start_pos[0]
-                    else:
-                        last_line = last_leaf.end_pos[0]
+                    last_line = _get_last_line(node)
 
                     if last_line > until_line_old:
                         divided_node = self._divide_node(node, until_line_old)
-                        print('divided', divided_node)
                         if divided_node is not None:
                             nodes.append(divided_node)
                         break
@@ -388,7 +395,7 @@ class DiffParser(object):
         new_node = copy.copy(node)
         new_suite = copy.copy(suite)
         for i, child in enumerate(new_suite.children):
-            if child.end_pos[0] > until_line:
+            if _get_last_line(child) > until_line:
                 divided_node = self._divide_node(child, until_line)
                 new_suite_children = new_suite.children[:i]
                 if divided_node is not None:
