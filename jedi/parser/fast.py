@@ -173,6 +173,7 @@ class DiffParser(object):
         self._old_module = self._new_module
 
         assert self._new_module.end_pos[0] == line_length
+
         return self._new_module
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
@@ -225,6 +226,9 @@ class DiffParser(object):
                     self._update_positions(nodes, line_offset)
                     parent = self._insert_nodes(nodes)
                     self._update_names_dict(parent, nodes)
+                    self._copied_ranges.append(
+                        (nodes[0].start_pos[0], _get_last_line(nodes[-1]))
+                    )
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we just parse the rest.
                 # We might not reach the end, because there's a statement
@@ -469,7 +473,7 @@ class DiffParser(object):
         for key, names in self._old_module.used_names.items():
             for name in names:
                 if name.start_pos[0] in copied_line_numbers:
-                    new_used_names.setdefault(key, []).add(name)
+                    new_used_names.setdefault(key, []).append(name)
 
         # Add an endmarker.
         last_leaf = self._new_module.last_leaf()

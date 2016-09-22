@@ -58,6 +58,13 @@ def filter_after_position(names, position, origin=None):
     return names_new
 
 
+def is_comprehension_name(name, origin):
+    definition = name.get_definition()
+    # TODO This is really hacky. It just compares the two definitions. This
+    # fails tests and is in general just a temporary way.
+    return definition.type == 'comp_for' and origin.get_definition().type != definition.type
+
+
 def filter_definition_names(names, origin, position=None):
     """
     Filter names that are actual definitions in a scope. Names that are just
@@ -73,7 +80,8 @@ def filter_definition_names(names, origin, position=None):
     if not (isinstance(scope, er.FunctionExecution) and
             isinstance(scope.base, er.LambdaWrapper)):
         names = filter_after_position(names, position, origin)
-    names = [name for name in names if name.is_definition()]
+    names = [name for name in names
+             if name.is_definition() and not is_comprehension_name(name, origin)]
 
     # Private name mangling (compile.c) disallows access on names
     # preceeded by two underscores `__` if used outside of the class. Names

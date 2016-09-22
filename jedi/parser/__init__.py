@@ -193,11 +193,6 @@ class Parser(object):
                 arr = self._scope_names_stack[-1].setdefault(n.value, [])
                 arr.append(n)
             new_node.names_dict = scope_names
-        elif isinstance(new_node, pt.CompFor):
-            # The name definitions of comprehenions shouldn't be part of the
-            # current scope. They are part of the comprehension scope.
-            for n in new_node.get_defined_names():
-                self._scope_names_stack[-1][n.value].remove(n)
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
