@@ -267,3 +267,9 @@ def test_backslash(differ):
         pass
     """)
     differ.parse(src, parsers=1)
+
+
+def test_full_copy(differ):
+    code = 'def foo(bar, baz):\n pass\n bar'
+    differ.initialize(code)
+    differ.parse(code, copies=1, parsers=1)

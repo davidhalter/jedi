@@ -143,7 +143,7 @@ class DiffParser(object):
         line_length = len(lines_new)
         lines_old = splitlines(self._parser.source, keepends=True)
         sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
-        print('line_lengths, old: %s, new: %s' % (len(lines_old), line_length))
+        debug.dbg('diff: line_lengths old: %s, new: %s' % (len(lines_old), line_length))
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
             debug.dbg('diff %s old[%s:%s] new[%s:%s]',
                       operation, i1 + 1, i2, j1 + 1, j2)
@@ -186,7 +186,6 @@ class DiffParser(object):
                 # again that can be copied (e.g. not lines within parentheses).
                 self._parse(self._parsed_until_line + 1)
             else:
-                print('copy', line_stmt.end_pos, parsed_until_line_old, until_line_old, line_stmt)
                 p_children = line_stmt.parent.children
                 index = p_children.index(line_stmt)
                 nodes = []
@@ -216,19 +215,14 @@ class DiffParser(object):
                     nodes.pop()
 
                 if nodes:
-                    print('COPY', until_line_new, 'node_length', len(nodes))
                     self._copy_count += 1
-                    debug.dbg(
-                        'diff actually copy %s to %s',
-                        nodes[0].start_pos[0],
-                        nodes[-1].end_pos
-                    )
+                    from_ = nodes[0].start_pos[0]
+                    to = _get_last_line(nodes[-1])
+                    debug.dbg('diff actually copy %s to %s', from_, to)
                     self._update_positions(nodes, line_offset)
                     parent = self._insert_nodes(nodes)
                     self._update_names_dict(parent, nodes)
-                    self._copied_ranges.append(
-                        (nodes[0].start_pos[0], _get_last_line(nodes[-1]))
-                    )
+                    self._copied_ranges.append((from_, to))
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we just parse the rest.
                 # We might not reach the end, because there's a statement
@@ -300,7 +294,6 @@ class DiffParser(object):
             nodes = nodes[:-1]
             if not nodes:
                 return self._new_module
-        print("insert_nodes", len(nodes))
 
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
@@ -352,10 +345,7 @@ class DiffParser(object):
         node = self._new_module.last_leaf()
         while True:
             parent = node.parent
-            print('get_ins', parent)
             if parent.type in ('suite', 'file_input'):
-                print('get_ins', node)
-                print('get_ins', line, node.end_pos)
                 assert node.end_pos[0] <= line
                 assert node.end_pos[1] == 0
                 return node
@@ -416,10 +406,11 @@ class DiffParser(object):
         for child in new_suite_children:
             child.parent = new_suite
         new_suite.children = new_suite_children
-        for child in new_node.children:
-            child.parent = new_node
+
         new_node.children = list(new_node.children)
         new_node.children[-1] = new_suite
+        for child in new_node.children:
+            child.parent = new_node
         return new_node
 
     def _parse(self, until_line):
@@ -446,11 +437,10 @@ class DiffParser(object):
 
     def _parse_scope_node(self, until_line):
         self._parser_count += 1
-        print('PARSE', self._parsed_until_line, until_line)
         # TODO speed up, shouldn't copy the whole list all the time.
         # memoryview?
         lines_after = self._parser_lines_new[self._parsed_until_line:]
-        print('parse_content', self._parsed_until_line, lines_after, until_line)
+        #print('parse_content', self._parsed_until_line, lines_after, until_line)
         tokenizer = self._diff_tokenize(
             lines_after,
             until_line,
@@ -476,8 +466,11 @@ class DiffParser(object):
                     new_used_names.setdefault(key, []).append(name)
 
         # Add an endmarker.
-        last_leaf = self._new_module.last_leaf()
-        end_pos = list(last_leaf.end_pos)
+        try:
+            last_leaf = self._new_module.last_leaf()
+            end_pos = list(last_leaf.end_pos)
+        except IndexError:
+            end_pos = [1, 0]
         lines = splitlines(self._prefix)
         assert len(lines) > 0
         if len(lines) == 1:
@@ -531,5 +524,4 @@ class DiffParser(object):
                 else:
                     continue
 
-            print('tok', tok_name[typ], repr(string), start_pos)
             yield tokenize.TokenInfo(typ, string, start_pos, prefix)
