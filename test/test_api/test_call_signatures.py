@@ -21,6 +21,15 @@ def assert_signature(source, expected_name, expected_index=0, line=None, column=
         return signatures[0]
 
 
+def assert_signature_string(source, line, column, expected_string):
+    signatures = Script(source, line, column).call_signatures()
+
+    assert len(signatures) <= 1
+
+    if signatures:
+        assert signatures[0].call_signature == expected_string
+
+
 class TestCallSignatures(TestCase):
     def _run_simple(self, source, name, index=0, column=None, line=1):
         assert_signature(source, name, index, line, column)
@@ -218,6 +227,13 @@ class TestCallSignatures(TestCase):
             return '.'.join()''')
 
         assert_signature(source, 'join', 0, column=len("    return '.'.join("))
+        
+    def test_call_signature_string(self):
+        source = dedent('''
+        def foo(par1, par2=None, par3=['test']):
+            return''')
+        
+        assert_signature_string(source, 1, 0, "foo(par1, par2=None, par3=['test'])")
 
 
 class TestParams(TestCase):
