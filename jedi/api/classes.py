@@ -717,6 +717,9 @@ class CallSignature(Definition):
         """
         return self._executable.get_parent_until()
 
+    def call_signature(self, max_width):
+        return _Help(self._definition).call_signature(max_width)
+
     def __repr__(self):
         return '<%s: %s index %s>' % (type(self).__name__, self._name,
                                       self.index)
@@ -745,6 +748,12 @@ class _Help(object):
     """
     def __init__(self, definition):
         self._name = definition
+
+    def call_signature(self, max_width):
+        try:
+            return self._name.get_call_signature(max_width)
+        except AttributeError:
+            return ''
 
     def full(self):
         try:
