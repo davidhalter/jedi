@@ -27,7 +27,10 @@ def assert_signature_string(source, line, column, expected_string):
     assert len(signatures) <= 1
 
     if signatures:
-        assert signatures[0].call_signature == expected_string
+        assert signatures[0].call_signature(4000) == expected_string
+    else:
+        assert False, \
+            'There are no signatures, but `%s` expected.' % expected_string
 
 
 class TestCallSignatures(TestCase):
@@ -231,9 +234,11 @@ class TestCallSignatures(TestCase):
     def test_call_signature_string(self):
         source = dedent('''
         def foo(par1, par2=None, par3=['test']):
-            return''')
+            return
+        foo()
+        ''')
         
-        assert_signature_string(source, 1, 0, "foo(par1, par2=None, par3=['test'])")
+        assert_signature_string(source, 4, len('foo('), "foo(par1, par2=None, par3=['test'])")
 
 
 class TestParams(TestCase):
