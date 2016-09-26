@@ -127,7 +127,11 @@ def find_syntax_node_name(evaluator, python_object):
     if name_str == '<lambda>':
         return None  # It's too hard to find lambdas.
 
-    names = module.used_names[name_str]
+    # Doesn't always work (e.g. os.stat_result)
+    try:
+        names = module.used_names[name_str]
+    except KeyError:
+        return None
     names = [n for n in names if n.is_definition()]
 
     try:
