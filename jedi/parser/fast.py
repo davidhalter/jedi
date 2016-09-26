@@ -4,6 +4,7 @@ anything changes, it only reparses the changed parts. But because it's not
 finished (and still not working as I want), I won't document it any further.
 """
 import copy
+import re
 import difflib
 
 from jedi._compatibility import use_metaclass
@@ -14,7 +15,7 @@ from jedi.parser.tree import Module, search_ancestor, EndMarker
 from jedi.parser.utils import parser_cache
 from jedi.parser import tokenize
 from jedi import debug
-from jedi.parser.tokenize import (generate_tokens, NEWLINE,
+from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
                                   ENDMARKER, INDENT, DEDENT, tok_name)
 
 
@@ -44,7 +45,7 @@ def _merge_names_dicts(base_dict, other_dict):
 def _get_last_line(node_or_leaf):
     last_leaf = node_or_leaf.last_leaf()
     if last_leaf.type == 'error_leaf':
-        typ = tokenize.tok_name[last_leaf.original_type].lower()
+        typ = tok_name[last_leaf.original_type].lower()
     else:
         typ = last_leaf.type
     if typ == 'newline':
@@ -503,25 +504,30 @@ class DiffParser(object):
                     continue
             is_first_token = False
 
-            if typ == tokenize.DEDENT:
+            if typ == DEDENT:
                 indents.pop()
                 if omitted_first_indent and not indents:
                     # We are done here, only thing that can come now is an
                     # endmarker or another dedented code block.
-                    yield tokenize.TokenInfo(tokenize.ENDMARKER, '', start_pos, '')
+                    typ, string, start_pos, prefix = next(tokens)
+                    if '\n' in prefix:
+                        prefix = re.sub(r'(<=\n)[^\n]+$', '', prefix)
+                    else:
+                        prefix = ''
+                    yield TokenInfo(ENDMARKER, '', (start_pos[0] + line_offset, 0), prefix)
                     break
             elif typ == NEWLINE and start_pos[0] >= until_line:
-                yield tokenize.TokenInfo(typ, string, start_pos, prefix)
+                yield TokenInfo(typ, string, start_pos, prefix)
                 # Check if the parser is actually in a valid suite state.
                 if suite_or_file_input_is_valid(self._grammar, stack):
                     start_pos = start_pos[0] + 1, 0
                     while len(indents) > int(omitted_first_indent):
                         indents.pop()
-                        yield tokenize.TokenInfo(DEDENT, '', start_pos, '')
+                        yield TokenInfo(DEDENT, '', start_pos, '')
 
-                    yield tokenize.TokenInfo(ENDMARKER, '', start_pos, '')
+                    yield TokenInfo(ENDMARKER, '', start_pos, '')
                     break
                 else:
                     continue
 
-            yield tokenize.TokenInfo(typ, string, start_pos, prefix)
+            yield TokenInfo(typ, string, start_pos, prefix)

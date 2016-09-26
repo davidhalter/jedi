@@ -81,7 +81,7 @@ class Differ(object):
         self.parser = ParserWithRecovery(grammar, source)
         return self.parser.module
 
-    def parse(self, source, copies=0, parsers=0, expect_error_leafs=False):
+    def parse(self, source, copies=0, parsers=0, expect_error_leaves=False):
         debug.dbg('differ: parse copies=%s parsers=%s', copies, parsers, color='YELLOW')
         lines = splitlines(source, keepends=True)
         diff_parser = DiffParser(self.parser)
@@ -92,7 +92,7 @@ class Differ(object):
         self.parser.module = new_module
         self.parser._parsed = new_module
 
-        assert expect_error_leafs == _check_error_leaves_nodes(new_module)
+        assert expect_error_leaves == _check_error_leaves_nodes(new_module)
         _assert_valid_graph(new_module)
         return new_module
 
@@ -160,7 +160,7 @@ def test_if_simple(differ):
     differ.initialize(src + 'a')
     differ.parse(src + else_ + "a", copies=0, parsers=1)
 
-    differ.parse(else_, parsers=1, expect_error_leafs=True)
+    differ.parse(else_, parsers=1, expect_error_leaves=True)
     differ.parse(src + else_, parsers=1)
 
 
@@ -227,10 +227,10 @@ def test_open_parentheses(differ):
     new_code = 'isinstance(\n' + func
     differ.initialize(code)
 
-    differ.parse(new_code, parsers=1, expect_error_leafs=True)
+    differ.parse(new_code, parsers=1, expect_error_leaves=True)
 
     new_code = 'a = 1\n' + new_code
-    differ.parse(new_code, copies=1, parsers=1, expect_error_leafs=True)
+    differ.parse(new_code, copies=1, parsers=1, expect_error_leaves=True)
 
     func += 'def other_func():\n pass\n'
     differ.initialize('isinstance(\n' + func)
@@ -280,8 +280,7 @@ def test_wrong_whitespace(differ):
     hello
     '''
     differ.initialize(code)
-    # Need to parsers, because the code is not dedented.
-    differ.parse(code + 'bar\n    ', parsers=2, copies=1)
+    differ.parse(code + 'bar\n    ', parsers=1, copies=1)
 
-    code += """abc(\nif 1:\npass\n    """
-    differ.parse(code, parsers=2, copies=1)
+    code += """abc(\npass\n    """
+    differ.parse(code, parsers=1, copies=1, expect_error_leaves=True)

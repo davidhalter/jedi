@@ -19,6 +19,7 @@ from io import StringIO
 from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, opmap,
                                NAME, OP, ERRORTOKEN, NEWLINE, INDENT, DEDENT)
 from jedi._compatibility import is_py3
+from jedi.common import splitlines
 
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
@@ -165,6 +166,14 @@ class TokenInfo(namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])):
             return opmap[self.string]
         else:
             return self.type
+
+    @property
+    def end_pos(self):
+        lines = splitlines(self.string)
+        if len(lines) > 1:
+            return self.start_pos[0] + len(lines) - 1, 0
+        else:
+            return self.start_pos[0], self.start_pos[1] + len(self.string)
 
 
 def source_tokens(source, use_exact_op_types=False):
