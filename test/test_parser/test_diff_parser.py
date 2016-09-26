@@ -273,3 +273,15 @@ def test_full_copy(differ):
     code = 'def foo(bar, baz):\n pass\n bar'
     differ.initialize(code)
     differ.parse(code, copies=1, parsers=1)
+
+
+def test_wrong_whitespace(differ):
+    code = '''
+    hello
+    '''
+    differ.initialize(code)
+    # Need to parsers, because the code is not dedented.
+    differ.parse(code + 'bar\n    ', parsers=2, copies=1)
+
+    code += """abc(\nif 1:\npass\n    """
+    differ.parse(code, parsers=2, copies=1)
