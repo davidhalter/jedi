@@ -125,6 +125,12 @@ class Base(object):
     def isinstance(self, *cls):
         return isinstance(self, cls)
 
+    def get_root_node(self):
+        scope = self
+        while scope.parent is not None:
+            scope = scope.parent
+        return scope
+
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
                          include_current=True):

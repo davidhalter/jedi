@@ -55,6 +55,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
+from jedi.evaluate.filters import ParserTreeFilter
 
 
 class Executed(tree.Base):
@@ -205,6 +206,11 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
         for names_dict in self.base.names_dicts(search_global=False, is_instance=True):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
+
+    def get_filters(self, search_global):
+        raise NotImplementedError
+        yield self._self_names_dict()
+        yield ParserTreeFilter(self.base)
 
     def py__getitem__(self, index):
         try:
@@ -486,6 +492,16 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
                 else:
                     yield scope.names_dict
 
+    def get_filters(self, search_global):
+        if search_global:
+            yield ParserTreeFilter(self.base)
+        else:
+            for scope in self.py__mro__():
+                if isinstance(scope, compiled.CompiledObject):
+                    raise NotImplementedError
+                else:
+                    yield ParserTreeFilter(self.base)
+
     def is_class(self):
         return True
 
@@ -581,6 +597,14 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             scope = self.py__class__()
             for names_dict in scope.names_dicts(False):
                 yield names_dict
+
+    def get_filters(self, search_global):
+        if search_global:
+            yield ParserTreeFilter(self.base)
+        else:
+            scope = self.py__class__()
+            for filter in scope.get_filters(search_global=False):
+                yield filter
 
     @Python3Method
     def py__call__(self, params):
@@ -752,8 +776,8 @@ class FunctionExecution(Executed):
                             yield result
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
-    def names_dicts(self, search_global):
-        yield self.names_dict
+    def get_filters(self, search_global):
+        yield ParserTreeFilter(self.base)
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
@@ -825,6 +849,19 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
 
         yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
         yield self._sub_modules_dict()
+
+    def get_filters(self, search_global):
+        yield ParserTreeFilter(self._module)
+        # TODO 
+        '''
+        yield self._module_attributes_dict()
+
+        for star_module in self.star_imports():
+            yield star_module.names_dict
+
+        yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
+        yield self._sub_modules_dict()
+        '''
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
