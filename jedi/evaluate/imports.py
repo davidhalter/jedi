@@ -457,6 +457,8 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
     cached = load_parser(path)
     module = load(source) if cached is None else cached.module
     module = evaluator.wrap(module)
+    if not module._parent_module:
+        module._parent_module = parent_module
     return module
 
 
