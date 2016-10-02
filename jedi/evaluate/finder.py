@@ -34,6 +34,7 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.filters import ParserTreeFilter
 
 
 def filter_after_position(names, position, origin=None):
@@ -238,6 +239,14 @@ class NameFinder(object):
         `names_dicts`), until a name fits.
         """
         names = []
+        for filter in get_global_filters(self._evaluator, self.scope):
+            names = filter.get(self.name_str, self.position)
+            if names:
+                break
+        debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
+                  self.scope, names, self.position)
+        return names
+
         for names_dict, position in names_dicts:
             names = self.names_dict_lookup(names_dict, position)
             if names:
@@ -365,6 +374,8 @@ def _name_to_types(evaluator, name, scope):
         types = evaluator.eval_element(typ.node_from_name(name))
     elif isinstance(typ, tree.Import):
         types = imports.ImportWrapper(evaluator, name).follow()
+    elif typ.isinstance(tree.Function, tree.Class):
+        types = [evaluator.wrap(typ)]
     elif typ.type == 'global_stmt':
         for s in _get_global_stmt_scopes(evaluator, typ, name):
             finder = NameFinder(evaluator, s, str(name))
@@ -608,6 +619,20 @@ def global_names_dict_generator(evaluator, scope, position):
     # Add builtins to the global scope.
     for names_dict in evaluator.BUILTINS.names_dicts(True):
         yield names_dict, None
+
+
+def get_global_filters(evaluator, context):
+    """
+    Returns all filters in order of priority for name resolution.
+    """
+    while context is not None:
+        for filter in context.get_filters(search_global=True):
+            yield filter
+        context = evaluator.wrap(context.get_parent_scope())
+
+    # Add builtins to the global scope.
+    for filter in evaluator.BUILTINS.get_filters(search_global=True):
+        yield filter
 
 
 def check_tuple_assignments(evaluator, types, name):

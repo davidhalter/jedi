@@ -55,7 +55,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
-from jedi.evaluate.filters import ParserTreeFilter
+from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter
 
 
 class Executed(tree.Base):
@@ -665,7 +665,7 @@ class FunctionExecution(Executed):
     def __init__(self, evaluator, base, *args, **kwargs):
         super(FunctionExecution, self).__init__(evaluator, base, *args, **kwargs)
         self._copy_dict = {}
-        funcdef = base.base_func
+        self._original_function = funcdef = base.base_func
         if isinstance(funcdef, mixed.MixedObject):
             # The extra information in mixed is not needed anymore. We can just
             # unpack it and give it the tree object.
@@ -777,7 +777,7 @@ class FunctionExecution(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global):
-        yield ParserTreeFilter(self.base)
+        yield FunctionExecutionFilter(self._original_function, self.base.base_func)
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):

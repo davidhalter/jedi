@@ -12,6 +12,7 @@ from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.parser.tree import Param, Base, Operator
 from jedi.evaluate.helpers import FakeName
+from jedi.evaluate.filters import AbstractFilter
 from . import fake
 
 
@@ -156,6 +157,9 @@ class CompiledObject(Base):
     def names_dicts(self, search_global, is_instance=False):
         return self._names_dict_ensure_one_dict(is_instance)
 
+    def get_filters(self, search_global, is_instance=False):
+        yield self._ensure_one_filter(is_instance)
+
     @memoize_method
     def _names_dict_ensure_one_dict(self, is_instance):
         """
@@ -163,6 +167,14 @@ class CompiledObject(Base):
         there's only one `object`.
         """
         return [LazyNamesDict(self._evaluator, self, is_instance)]
+
+    @memoize_method
+    def _ensure_one_filter(self, is_instance):
+        """
+        search_global shouldn't change the fact that there's one dict, this way
+        there's only one `object`.
+        """
+        return CompiledObjectFilter(self._evaluator, self, is_instance)
 
     def get_subscope_by_name(self, name):
         if name in dir(self.obj):
@@ -297,6 +309,50 @@ class LazyNamesDict(object):
         return [self.name_class(self._evaluator, self._compiled_obj, name)]
 
     def values(self):
+        obj = self._compiled_obj.obj
+
+        values = []
+        for name in dir(obj):
+            try:
+                values.append(self[name])
+            except KeyError:
+                # The dir function can be wrong.
+                pass
+
+        is_instance = self._is_instance or fake.is_class_instance(obj)
+        # ``dir`` doesn't include the type names.
+        if not inspect.ismodule(obj) and obj != type and not is_instance:
+            values += create(self._evaluator, type).names_dict.values()
+        return values
+
+
+class CompiledObjectFilter(AbstractFilter):
+    """
+    A names_dict instance for compiled objects, resembles the parser.tree.
+    """
+    name_class = CompiledName
+
+    def __init__(self, evaluator, compiled_obj, is_instance=False):
+        self._evaluator = evaluator
+        self._compiled_obj = compiled_obj
+        self._is_instance = is_instance
+
+    @memoize_method
+    def get(self, name, until_position=None):
+        name = str(name)
+        try:
+            getattr(self._compiled_obj.obj, name)
+        except AttributeError:
+            return []
+        except Exception:
+            # This is a bit ugly. We're basically returning this to make
+            # lookups possible without having the actual attribute. However
+            # this makes proper completion possible.
+            return [FakeName(name, create(self._evaluator, None), is_definition=True)]
+        return [self.name_class(self._evaluator, self._compiled_obj, name)]
+
+    def values(self, until_position=None):
+        raise NotImplementedError
         obj = self._compiled_obj.obj
 
         values = []
