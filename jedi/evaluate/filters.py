@@ -4,6 +4,8 @@ are needed for name resolution.
 """
 from abc import abstractmethod
 
+from jedi.parser.tree import search_ancestor
+
 
 def filter_scope_names(names, scope, until_position=None, name=None):
     return names
@@ -48,11 +50,15 @@ class ParserTreeFilter(AbstractFilter):
 
 
 class FunctionExecutionFilter(ParserTreeFilter):
-    def __init__(self, parser_scope, executed_function):
+    def __init__(self, parser_scope, executed_function, param_by_name):
         super(FunctionExecutionFilter, self).__init__(parser_scope)
         self._executed_function = executed_function
+        self._param_by_name = param_by_name
 
     def _filter(self, names, until_position):
-        result = super(FunctionExecutionFilter, self)._filter(names, until_position)
+        names = super(FunctionExecutionFilter, self)._filter(names, until_position)
 
-        return [self._executed_function.name_for_position(name.start_pos) for name in result]
+        names = [self._executed_function.name_for_position(name.start_pos) for name in names]
+        names = [self._param_by_name(str(name)) if search_ancestor(name, 'param') else name
+                 for name in names]
+        return names

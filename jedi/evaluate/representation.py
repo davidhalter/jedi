@@ -679,6 +679,7 @@ class FunctionExecution(Executed):
                 child.parent = self
         self.children = funcdef.children
         self.names_dict = funcdef.names_dict
+        self._copied_funcdef = funcdef
 
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator
@@ -777,7 +778,8 @@ class FunctionExecution(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global):
-        yield FunctionExecutionFilter(self._original_function, self.base.base_func)
+        yield FunctionExecutionFilter(self._original_function,
+                                      self._copied_funcdef, self.param_by_name)
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
