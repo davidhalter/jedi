@@ -114,36 +114,39 @@ def _faked(module, obj, name):
 
     faked_mod = _load_faked_module(module)
     if faked_mod is None:
-        return None
+        return None, None
+
+    module.used_names = faked_mod.used_names
 
     # Having the module as a `parser.representation.module`, we need to scan
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj):
-            return search_scope(faked_mod, obj.__name__)
+            return search_scope(faked_mod, obj.__name__), faked_mod
         elif not inspect.isclass(obj):
             # object is a method or descriptor
             try:
                 objclass = obj.__objclass__
             except AttributeError:
-                return None
+                return None, None
             else:
                 cls = search_scope(faked_mod, objclass.__name__)
                 if cls is None:
-                    return None
-                return search_scope(cls, obj.__name__)
+                    return None, None
+                return search_scope(cls, obj.__name__), faked_mod
     else:
         if obj == module:
-            return search_scope(faked_mod, name)
+            return search_scope(faked_mod, name), faked_mod
         else:
             try:
                 cls_name = obj.__name__
             except AttributeError:
-                return None
+                return None, None
             cls = search_scope(faked_mod, cls_name)
             if cls is None:
-                return None
-            return search_scope(cls, name)
+                return None, None
+            return search_scope(cls, name), faked_mod
+    return None, None
 
 
 def memoize_faked(obj):
@@ -171,7 +174,7 @@ def memoize_faked(obj):
 @memoize_faked
 def _get_faked(module, obj, name=None):
     obj = type(obj) if is_class_instance(obj) else obj
-    result = _faked(module, obj, name)
+    result, fake_module = _faked(module, obj, name)
     if result is None or isinstance(result, pt.Class):
         # We're not interested in classes. What we want is functions.
         raise FakeDoesNotExist
@@ -184,12 +187,13 @@ def _get_faked(module, obj, name=None):
         new_line = pt.Newline('\n', (0, 0))
         docstr_node = pt.Node('simple_stmt', [string, new_line])
         suite.children.insert(1, docstr_node)
-        return result
+        return result, fake_module
 
 
 def get_faked(module, obj, name=None, parent=None):
-    faked = _get_faked(module, obj, name)
+    faked, fake_module = _get_faked(module and module.obj, obj, name)
     faked.parent = parent
+    module.used_names = fake_module.used_names
     return faked
 
 

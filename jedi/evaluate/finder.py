@@ -34,7 +34,7 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.cache import memoize_default
-from jedi.evaluate.filters import ParserTreeFilter
+from jedi.evaluate.filters import get_global_filters
 
 
 def filter_after_position(names, position, origin=None):
@@ -104,14 +104,14 @@ class NameFinder(object):
         self._found_predefined_if_name = None
 
     @debug.increase_indent
-    def find(self, scopes, attribute_lookup):
+    def find(self, filters, attribute_lookup):
         """
         :params bool attribute_lookup: Tell to logic if we're accessing the
             attribute or the contents of e.g. a function.
         """
         # TODO rename scopes to names_dicts
 
-        names = self.filter_name(scopes)
+        names = self.filter_name(filters)
         if self._found_predefined_if_name is not None:
             return self._found_predefined_if_name
 
@@ -133,11 +133,11 @@ class NameFinder(object):
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
         return types
 
-    def scopes(self, search_global=False):
+    def get_filters(self, search_global=False):
         if search_global:
-            return global_names_dict_generator(self._evaluator, self.scope, self.position)
+            return get_global_filters(self._evaluator, self.scope, self.position)
         else:
-            return ((n, None) for n in self.scope.names_dicts(search_global))
+            return self.scope.get_filters(search_global, self.position)
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(scope, el):
@@ -233,25 +233,16 @@ class NameFinder(object):
             return [get_param(name_scope, n) for n in last_names]
         return last_names
 
-    def filter_name(self, names_dicts):
+    def filter_name(self, filters):
         """
         Searches names that are defined in a scope (the different
         `names_dicts`), until a name fits.
         """
         names = []
-        for filter in get_global_filters(self._evaluator, self.scope):
-            names = filter.get(self.name_str, self.position)
+        for filter in filters:
+            names = filter.get(self.name_str)
             if names:
                 break
-        debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
-                  self.scope, names, self.position)
-        return names
-
-        for names_dict, position in names_dicts:
-            names = self.names_dict_lookup(names_dict, position)
-            if names:
-                break
-
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
                   self.scope, names, self.position)
         return list(self._clean_names(names))
@@ -619,20 +610,6 @@ def global_names_dict_generator(evaluator, scope, position):
     # Add builtins to the global scope.
     for names_dict in evaluator.BUILTINS.names_dicts(True):
         yield names_dict, None
-
-
-def get_global_filters(evaluator, context):
-    """
-    Returns all filters in order of priority for name resolution.
-    """
-    while context is not None:
-        for filter in context.get_filters(search_global=True):
-            yield filter
-        context = evaluator.wrap(context.get_parent_scope())
-
-    # Add builtins to the global scope.
-    for filter in evaluator.BUILTINS.get_filters(search_global=True):
-        yield filter
 
 
 def check_tuple_assignments(evaluator, types, name):

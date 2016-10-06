@@ -137,10 +137,10 @@ class Evaluator(object):
         :return: List of Names. Their parents are the types.
         """
         f = finder.NameFinder(self, scope, name_str, position)
-        scopes = f.scopes(search_global)
+        filters = f.get_filters(search_global)
         if is_goto:
-            return f.filter_name(scopes)
-        return f.find(scopes, attribute_lookup=not search_global)
+            return f.filter_name(filters)
+        return f.find(filters, attribute_lookup=not search_global)
 
     #@memoize_default(default=[], evaluator_is_first_arg=True)
     #@recursion.recursion_decorator

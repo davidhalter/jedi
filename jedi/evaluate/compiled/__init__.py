@@ -157,7 +157,7 @@ class CompiledObject(Base):
     def names_dicts(self, search_global, is_instance=False):
         return self._names_dict_ensure_one_dict(is_instance)
 
-    def get_filters(self, search_global, is_instance=False):
+    def get_filters(self, search_global, is_instance=False, until_position=None):
         yield self._ensure_one_filter(is_instance)
 
     @memoize_method
@@ -237,7 +237,7 @@ class CompiledObject(Base):
         for name in dir(self.obj):
             try:
                 faked_subscopes.append(
-                    fake.get_faked(module.obj, self.obj, parent=self, name=name)
+                    fake.get_faked(module, self.obj, parent=self, name=name)
                 )
             except fake.FakeDoesNotExist:
                 pass
@@ -332,13 +332,14 @@ class CompiledObjectFilter(AbstractFilter):
     """
     name_class = CompiledName
 
-    def __init__(self, evaluator, compiled_obj, is_instance=False):
+    def __init__(self, evaluator, compiled_obj, origin_scope, is_instance=False):
+        super(CompiledObjectFilter, self).__init__(origin_scope)
         self._evaluator = evaluator
         self._compiled_obj = compiled_obj
         self._is_instance = is_instance
 
     @memoize_method
-    def get(self, name, until_position=None):
+    def get(self, name):
         name = str(name)
         try:
             getattr(self._compiled_obj.obj, name)
@@ -351,7 +352,7 @@ class CompiledObjectFilter(AbstractFilter):
             return [FakeName(name, create(self._evaluator, None), is_definition=True)]
         return [self.name_class(self._evaluator, self._compiled_obj, name)]
 
-    def values(self, until_position=None):
+    def values(self):
         raise NotImplementedError
         obj = self._compiled_obj.obj
 
@@ -511,7 +512,7 @@ def _parse_function_doc(doc):
 
 def _create_from_name(evaluator, module, parent, name):
     try:
-        return fake.get_faked(module.obj, parent.obj, parent=parent, name=name)
+        return fake.get_faked(module, parent.obj, parent=parent, name=name)
     except fake.FakeDoesNotExist:
         pass
 
@@ -593,7 +594,7 @@ def create(evaluator, obj, parent=None, module=None):
             return create(evaluator, obj, create(evaluator, _builtins))
 
         try:
-            return fake.get_faked(module and module.obj, obj, parent=parent)
+            return fake.get_faked(module, obj, parent=parent)
         except fake.FakeDoesNotExist:
             pass
 

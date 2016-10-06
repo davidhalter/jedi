@@ -207,10 +207,14 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         for names_dict in self.base.names_dicts(search_global=False, is_instance=True):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
-    def get_filters(self, search_global):
-        raise NotImplementedError
-        yield self._self_names_dict()
-        yield ParserTreeFilter(self.base)
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        #for s in self.base.py__mro__():
+            #yield self._self_names_dict()
+        for cls in self.base.py__mro__():
+            if isinstance(cls, compiled.CompiledObject):
+                yield CompiledInstanceClassFilter(self._evaluator, self, cls, origin_scope)
+            else:
+                yield InstanceClassFilter(self._evaluator, self, cls.base, origin_scope)
 
     def py__getitem__(self, index):
         try:
@@ -261,6 +265,37 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             dec = " decorates " + repr(self.decorates)
         return "<%s of %s(%s)%s>" % (type(self).__name__, self.base,
                                      self.var_args, dec)
+
+
+class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
+    def __init__(self, evaluator, instance, compiled_object, origin_scope):
+        super(CompiledInstanceClassFilter, self).__init__(
+            evaluator,
+            compiled_object,
+            is_instance=True,
+            origin_scope=origin_scope
+        )
+        self._instance = instance
+
+    def _filter(self, names):
+        names = super(CompiledInstanceClassFilter, self)._filter(names)
+        return [get_instance_el(self._evaluator, self._instance, name, True)
+                for name in names]
+
+
+class InstanceClassFilter(ParserTreeFilter):
+    def __init__(self, evaluator, instance, parser_scope, origin_scope):
+        super(InstanceClassFilter, self).__init__(
+            parser_scope,
+            origin_scope=origin_scope
+        )
+        self._evaluator = evaluator
+        self._instance = instance
+
+    def _filter(self, names):
+        names = super(InstanceClassFilter, self)._filter(names)
+        return [get_instance_el(self._evaluator, self._instance, name, True)
+                for name in names]
 
 
 class LazyInstanceDict(object):
@@ -492,9 +527,9 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
                 else:
                     yield scope.names_dict
 
-    def get_filters(self, search_global):
+    def get_filters(self, search_global, until_position=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self.base)
+            yield ParserTreeFilter(self.base, until_position)
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
@@ -598,9 +633,9 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             for names_dict in scope.names_dicts(False):
                 yield names_dict
 
-    def get_filters(self, search_global):
+    def get_filters(self, search_global, until_position=None):
         if search_global:
-            yield ParserTreeFilter(self.base)
+            yield ParserTreeFilter(self.base, until_position)
         else:
             scope = self.py__class__()
             for filter in scope.get_filters(search_global=False):
@@ -777,9 +812,11 @@ class FunctionExecution(Executed):
                             yield result
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
-    def get_filters(self, search_global):
+    def get_filters(self, search_global, until_position=None):
         yield FunctionExecutionFilter(self._original_function,
-                                      self._copied_funcdef, self.param_by_name)
+                                      self._copied_funcdef,
+                                      self.param_by_name,
+                                      until_position)
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
@@ -852,8 +889,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
         yield self._sub_modules_dict()
 
-    def get_filters(self, search_global):
-        yield ParserTreeFilter(self._module)
+    def get_filters(self, search_global, until_position=None):
+        yield ParserTreeFilter(self._module, until_position)
         # TODO 
         '''
         yield self._module_attributes_dict()
