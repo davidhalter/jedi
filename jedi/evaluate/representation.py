@@ -55,7 +55,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
-from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter
+from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, GlobalNameFilter
 
 
 class Executed(tree.Base):
@@ -208,8 +208,12 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             yield LazyInstanceDict(self._evaluator, self, names_dict)
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        #for s in self.base.py__mro__():
-            #yield self._self_names_dict()
+        for cls in self.base.py__mro__():
+            if isinstance(cls, compiled.CompiledObject):
+                yield SelfNameFilter(self._evaluator, self, cls, origin_scope)
+            else:
+                yield SelfNameFilter(self._evaluator, self, cls.base, origin_scope)
+
         for cls in self.base.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
                 yield CompiledInstanceClassFilter(self._evaluator, self, cls, origin_scope)
@@ -286,16 +290,31 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
 class InstanceClassFilter(ParserTreeFilter):
     def __init__(self, evaluator, instance, parser_scope, origin_scope):
         super(InstanceClassFilter, self).__init__(
-            parser_scope,
+            evaluator=evaluator,
+            parser_scope=parser_scope,
             origin_scope=origin_scope
         )
-        self._evaluator = evaluator
         self._instance = instance
 
     def _filter(self, names):
         names = super(InstanceClassFilter, self)._filter(names)
         return [get_instance_el(self._evaluator, self._instance, name, True)
                 for name in names]
+
+
+class SelfNameFilter(InstanceClassFilter):
+    def _filter(self, names):
+        names = self._filter_self_names(names)
+        return list(self._check_flows(names))
+
+    def _filter_self_names(self, names):
+        for name in names:
+            trailer = name.parent
+            if tree.is_node(trailer, 'trailer') \
+                    and len(trailer.children) == 2 \
+                    and trailer.children[0] == '.':
+                if name.is_definition():
+                    yield get_instance_el(self._evaluator, self._instance, name)
 
 
 class LazyInstanceDict(object):
@@ -360,6 +379,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
+                or not isinstance(self.instance.base, tree.Class) \
                 or isinstance(par, tree.Class) \
                 and par == self.instance.base.base:
             par = self.instance
@@ -529,13 +549,13 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     def get_filters(self, search_global, until_position=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self.base, until_position)
+            yield ParserTreeFilter(self._evaluator, self.base, until_position)
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
                     raise NotImplementedError
                 else:
-                    yield ParserTreeFilter(self.base)
+                    yield ParserTreeFilter(self._evaluator, self.base)
 
     def is_class(self):
         return True
@@ -635,7 +655,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
     def get_filters(self, search_global, until_position=None):
         if search_global:
-            yield ParserTreeFilter(self.base, until_position)
+            yield ParserTreeFilter(self._evaluator, self.base, until_position)
         else:
             scope = self.py__class__()
             for filter in scope.get_filters(search_global=False):
@@ -813,7 +833,7 @@ class FunctionExecution(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global, until_position=None):
-        yield FunctionExecutionFilter(self._original_function,
+        yield FunctionExecutionFilter(self._evaluator, self._original_function,
                                       self._copied_funcdef,
                                       self.param_by_name,
                                       until_position)
@@ -890,7 +910,8 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         yield self._sub_modules_dict()
 
     def get_filters(self, search_global, until_position=None):
-        yield ParserTreeFilter(self._module, until_position)
+        yield ParserTreeFilter(self._evaluator, self._module, until_position)
+        yield GlobalNameFilter(self._module)
         # TODO 
         '''
         yield self._module_attributes_dict()

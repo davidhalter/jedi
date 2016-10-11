@@ -370,7 +370,7 @@ def _name_to_types(evaluator, name, scope):
     elif typ.type == 'global_stmt':
         for s in _get_global_stmt_scopes(evaluator, typ, name):
             finder = NameFinder(evaluator, s, str(name))
-            names_dicts = finder.scopes(search_global=True)
+            names_dicts = finder.get_filters(search_global=True)
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             names_dicts = [next(names_dicts)]
