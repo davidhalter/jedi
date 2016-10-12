@@ -554,7 +554,8 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
-                    raise NotImplementedError
+                    for filter in scope.get_filters():
+                        yield filter
                 else:
                     yield ParserTreeFilter(self._evaluator, self.base)
 

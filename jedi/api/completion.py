@@ -1,5 +1,3 @@
-from itertools import chain
-
 from jedi.parser import token
 from jedi.parser import tree
 from jedi import debug
@@ -10,7 +8,6 @@ from jedi.evaluate import imports
 from jedi.api import keywords
 from jedi.evaluate import compiled
 from jedi.evaluate.helpers import call_of_leaf
-from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
 from jedi.evaluate.filters import get_global_filters
 
 
@@ -198,13 +195,8 @@ class Completion:
         completion_names = []
         debug.dbg('trailer completion scopes: %s', scopes)
         for s in scopes:
-            names = []
-            for names_dict in s.names_dicts(search_global=False):
-                names += chain.from_iterable(names_dict.values())
-
-            completion_names += filter_definition_names(
-                names, self._module.get_statement_for_position(self._position)
-            )
+            for filter in s.get_filters(search_global=False):
+                completion_names += filter.values()
         return completion_names
 
     def _parse_dotted_names(self, nodes):

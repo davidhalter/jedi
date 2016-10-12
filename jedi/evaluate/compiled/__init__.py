@@ -157,7 +157,7 @@ class CompiledObject(Base):
     def names_dicts(self, search_global, is_instance=False):
         return self._names_dict_ensure_one_dict(is_instance)
 
-    def get_filters(self, search_global, is_instance=False, until_position=None):
+    def get_filters(self, search_global=False, is_instance=False, until_position=None):
         yield self._ensure_one_filter(is_instance)
 
     @memoize_method
