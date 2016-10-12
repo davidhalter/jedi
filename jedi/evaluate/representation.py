@@ -217,7 +217,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
         for cls in self.base.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
-                yield CompiledInstanceClassFilter(self._evaluator, self, cls, origin_scope)
+                yield CompiledInstanceClassFilter(self._evaluator, self, cls)
             else:
                 yield InstanceClassFilter(self._evaluator, self, cls.base, origin_scope)
 
@@ -273,12 +273,11 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
 
 
 class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
-    def __init__(self, evaluator, instance, compiled_object, origin_scope):
+    def __init__(self, evaluator, instance, compiled_object):
         super(CompiledInstanceClassFilter, self).__init__(
             evaluator,
             compiled_object,
             is_instance=True,
-            origin_scope=origin_scope
         )
         self._instance = instance
 
@@ -302,11 +301,18 @@ class InstanceClassFilter(ParserTreeFilter):
         return [get_instance_el(self._evaluator, self._instance, name, True)
                 for name in names]
 
+    def _check_flows(self, names):
+        return names
+
 
 class SelfNameFilter(InstanceClassFilter):
     def _filter(self, names):
         names = self._filter_self_names(names)
-        return list(self._check_flows(names))
+        if isinstance(self._parser_scope, compiled.CompiledObject):
+            # This would be for builtin skeletons, which are not yet supported.
+            return []
+        start, end = self._parser_scope.start_pos, self._parser_scope.end_pos
+        return [n for n in names if start < n.start_pos < end]
 
     def _filter_self_names(self, names):
         for name in names:
