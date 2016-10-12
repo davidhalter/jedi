@@ -554,10 +554,10 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
-                    for filter in scope.get_filters():
+                    for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ParserTreeFilter(self._evaluator, self.base)
+                    yield ParserTreeFilter(self._evaluator, scope.base)
 
     def is_class(self):
         return True

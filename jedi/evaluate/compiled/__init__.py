@@ -332,8 +332,8 @@ class CompiledObjectFilter(AbstractFilter):
     """
     name_class = CompiledName
 
-    def __init__(self, evaluator, compiled_obj, origin_scope, is_instance=False):
-        super(CompiledObjectFilter, self).__init__(origin_scope)
+    def __init__(self, evaluator, compiled_obj, is_instance=False):
+        super(CompiledObjectFilter, self).__init__(None)
         self._evaluator = evaluator
         self._compiled_obj = compiled_obj
         self._is_instance = is_instance

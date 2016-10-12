@@ -234,11 +234,10 @@ class Completion:
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
-        names_dicts = cls.names_dicts(search_global=False, is_instance=True)
+        filters = cls.get_filters(search_global=False, is_instance=True)
         # The first dict is the dictionary of class itself.
-        next(names_dicts)
-        for names_dict in names_dicts:
-            for values in names_dict.values():
-                for value in values:
-                    if (value.parent.type == 'funcdef') == is_function:
-                        yield value
+        next(filters)
+        for filter in filters:
+            for name in filter.values():
+                if (name.parent.type == 'funcdef') == is_function:
+                    yield name
