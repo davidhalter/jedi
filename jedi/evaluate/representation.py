@@ -55,7 +55,8 @@ from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
-from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, GlobalNameFilter
+from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
+    GlobalNameFilter, DictFilter
 
 
 class Executed(tree.Base):
@@ -912,15 +913,12 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
     def get_filters(self, search_global, until_position=None):
         yield ParserTreeFilter(self._evaluator, self._module, until_position)
         yield GlobalNameFilter(self._module)
+        yield DictFilter(self._sub_modules_dict())
+        yield DictFilter(self._module_attributes_dict())
         # TODO 
         '''
-        yield self._module_attributes_dict()
-
         for star_module in self.star_imports():
             yield star_module.names_dict
-
-        yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
-        yield self._sub_modules_dict()
         '''
 
     # I'm not sure if the star import cache is really that effective anymore
@@ -948,7 +946,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
 
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
-        return dict((n, [helpers.LazyName(n, parent_callback, is_definition=True)])
+        return dict((n, helpers.LazyName(n, parent_callback, is_definition=True))
                     for n in names)
 
     @property
@@ -1049,7 +1047,7 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
                 # It's obviously a relative import to the current module.
                 imp = helpers.FakeImport(fake_n, self, level=1)
                 fake_n.parent = imp
-                names[name] = [fake_n]
+                names[name] = fake_n
 
         # TODO add something like this in the future, its cleaner than the
         #   import hacks.

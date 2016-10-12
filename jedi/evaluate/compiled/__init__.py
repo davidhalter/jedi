@@ -353,22 +353,18 @@ class CompiledObjectFilter(AbstractFilter):
         return [self.name_class(self._evaluator, self._compiled_obj, name)]
 
     def values(self):
-        raise NotImplementedError
         obj = self._compiled_obj.obj
 
-        values = []
+        names = []
         for name in dir(obj):
-            try:
-                values.append(self[name])
-            except KeyError:
-                # The dir function can be wrong.
-                pass
+            names += self.get(name)
 
         is_instance = self._is_instance or fake.is_class_instance(obj)
         # ``dir`` doesn't include the type names.
         if not inspect.ismodule(obj) and obj != type and not is_instance:
-            values += create(self._evaluator, type).names_dict.values()
-        return values
+            for filter in create(self._evaluator, type).get_filters():
+                names += filter.values()
+        return names
 
 
 def dotted_from_fs_path(fs_path, sys_path):

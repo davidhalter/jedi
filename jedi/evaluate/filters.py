@@ -44,7 +44,8 @@ class AbstractUsedNamesFilter(AbstractFilter):
         return list(self._filter(names))
 
     def values(self):
-        return self._filter(self._used_names.values())
+        names = [name for name_list in self._used_names.values() for name in name_list]
+        return self._filter(names)
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
@@ -103,6 +104,23 @@ class GlobalNameFilter(AbstractUsedNamesFilter):
         for name in names:
             if name.parent.type == 'global_stmt':
                 yield name
+
+
+class DictFilter(AbstractFilter):
+    def __init__(self, dct, origin_scope=None):
+        super(DictFilter, self).__init__(origin_scope)
+        self._dct = dct
+
+    def get(self, name):
+        try:
+            leaf_name = self._dct[str(name)]
+        except KeyError:
+            return []
+
+        return list(self._filter([leaf_name]))
+
+    def values(self):
+        return self._filter(self._dct.values())
 
 
 def get_global_filters(evaluator, context, until_position):

@@ -11,6 +11,7 @@ from jedi.api import keywords
 from jedi.evaluate import compiled
 from jedi.evaluate.helpers import call_of_leaf
 from jedi.evaluate.finder import global_names_dict_generator, filter_definition_names
+from jedi.evaluate.filters import get_global_filters
 
 
 def get_call_signature_param_names(call_signatures):
@@ -182,19 +183,14 @@ class Completion:
             scope = scope.get_parent_scope()
         scope = self._evaluator.wrap(scope)
         debug.dbg('global completion scope: %s', scope)
-        names_dicts = global_names_dict_generator(
+        filters = get_global_filters(
             self._evaluator,
             scope,
             self._position
         )
         completion_names = []
-        for names_dict, pos in names_dicts:
-            names = list(chain.from_iterable(names_dict.values()))
-            if not names:
-                continue
-            completion_names += filter_definition_names(
-                names, self._module.get_statement_for_position(self._position), pos
-            )
+        for filter in filters:
+            completion_names += filter.values()
         return completion_names
 
     def _trailer_completions(self, atom_expr):
