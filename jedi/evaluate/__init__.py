@@ -446,7 +446,9 @@ class Evaluator(object):
         def_ = name.get_definition()
         is_simple_name = name.parent.type not in ('power', 'trailer')
         if is_simple_name:
-            if name.parent.type in ('file_input', 'classdef', 'funcdef'):
+            if name.parent.type == 'classdef' and name.parent.name == name:
+                return [self.wrap(name.parent)]
+            if name.parent.type in ('file_input', 'funcdef'):
                 return [self.wrap(name.parent)]
             if def_.type == 'expr_stmt' and name in def_.get_defined_names():
                 return self.eval_statement(def_, name)
