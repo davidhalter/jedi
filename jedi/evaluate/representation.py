@@ -91,6 +91,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         # (No var_args) used.
         self.is_generated = is_generated
 
+        self._init_execution = None
         if base.name.get_code() in ['list', 'set'] \
                 and evaluator.BUILTINS == base.get_parent_until():
             # compare the module path with the builtin name.
@@ -103,7 +104,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             except KeyError:
                 pass
             else:
-                evaluator.execute(method, self.var_args)
+                self._init_execution = evaluator.execute(method, self.var_args)
 
     def is_class(self):
         return False
@@ -129,8 +130,11 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         return None
 
     @memoize_default()
-    def _get_method_execution(self, func):
-        func = get_instance_el(self._evaluator, self, func, True)
+    def _get_init_execution(self):
+        try:
+            func = self.get_subscope_by_name('__init__')
+        except KeyError:
+            return None
         return FunctionExecution(self._evaluator, func, self.var_args)
 
     def _get_func_self_name(self, func):
@@ -162,7 +166,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                     # __init__ decorators should generally just be ignored,
                     # because to follow them and their self variables is too
                     # complicated.
-                    sub = self._get_method_execution(sub)
+                    sub = self._get_init_execution()
             for name_list in sub.names_dict.values():
                 for name in name_list:
                     if name.value == self_name and name.get_previous_sibling() is None:
@@ -321,6 +325,11 @@ class SelfNameFilter(InstanceClassFilter):
                     and len(trailer.children) == 2 \
                     and trailer.children[0] == '.':
                 if name.is_definition():
+                    init_execution = self._instance._get_init_execution()
+                    # Hopefully we can somehow change this.
+                    if init_execution is not None and \
+                            init_execution.start_pos < name.start_pos < init_execution.end_pos:
+                        name = init_execution.name_for_position(name.start_pos)
                     yield get_instance_el(self._evaluator, self._instance, name)
 
 
@@ -386,7 +395,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
     def parent(self):
         par = self.var.parent
         if isinstance(par, Class) and par == self.instance.base \
-                or not isinstance(self.instance.base, tree.Class) \
+                or not isinstance(self.instance.base, (tree.Class, Class)) \
                 or isinstance(par, tree.Class) \
                 and par == self.instance.base.base:
             par = self.instance

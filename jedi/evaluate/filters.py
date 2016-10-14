@@ -44,8 +44,8 @@ class AbstractUsedNamesFilter(AbstractFilter):
         return list(self._filter(names))
 
     def values(self):
-        names = [name for name_list in self._used_names.values() for name in name_list]
-        return self._filter(names)
+        return [name for name_list in self._used_names.values()
+                for name in self._filter(name_list)]
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
@@ -127,11 +127,16 @@ def get_global_filters(evaluator, context, until_position):
     """
     Returns all filters in order of priority for name resolution.
     """
+    in_func = False
     while context is not None:
-        for filter in context.get_filters(search_global=True, until_position=until_position):
-            yield filter
-        if context.type == 'funcdef':
-            until_position = None
+        if not (context.type == 'classdef' and in_func):
+            # Names in methods cannot be resolved within the class.
+            for filter in context.get_filters(search_global=True, until_position=until_position):
+                yield filter
+            if context.type == 'funcdef':
+                # The position should be reset if the current scope is a function.
+                until_position = None
+                in_func = True
 
         node = context.get_parent_scope()
         context = evaluator.wrap(node)
