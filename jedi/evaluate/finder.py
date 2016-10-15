@@ -134,10 +134,15 @@ class NameFinder(object):
         return types
 
     def get_filters(self, search_global=False):
-        if search_global:
-            return get_global_filters(self._evaluator, self.scope, self.position)
+        if isinstance(self.name_str, tree.Name):
+            origin_scope = self.name_str.get_parent_until(tree.Scope, reverse=True)
         else:
-            return self.scope.get_filters(search_global, self.position)
+            origin_scope = None
+
+        if search_global:
+            return get_global_filters(self._evaluator, self.scope, self.position, origin_scope)
+        else:
+            return self.scope.get_filters(search_global, self.position, origin_scope=origin_scope)
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(scope, el):

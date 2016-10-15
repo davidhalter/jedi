@@ -384,10 +384,33 @@ class PrivateVar():
         self.__var
         #? ['__var']
         self.__var
+
+    def __private_func(self):
+        return 1
+
+    def wrap_private(self):
+        return self.__private_func()
 #? []
 PrivateVar().__var
 #?
 PrivateVar().__var
+#? []
+PrivateVar().__private_func
+#? int()
+PrivateVar().wrap_private()
+
+
+class PrivateSub(PrivateVar):
+    def test(self):
+        #? []
+        self.__var
+
+    def wrap_private(self):
+        #? []
+        self.__var
+
+#? []
+PrivateSub().__var
 
 # -----------------
 # super

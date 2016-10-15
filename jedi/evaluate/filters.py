@@ -123,7 +123,7 @@ class DictFilter(AbstractFilter):
         return self._filter(self._dct.values())
 
 
-def get_global_filters(evaluator, context, until_position):
+def get_global_filters(evaluator, context, until_position, origin_scope):
     """
     Returns all filters in order of priority for name resolution.
     """
@@ -131,7 +131,10 @@ def get_global_filters(evaluator, context, until_position):
     while context is not None:
         if not (context.type == 'classdef' and in_func):
             # Names in methods cannot be resolved within the class.
-            for filter in context.get_filters(search_global=True, until_position=until_position):
+            for filter in context.get_filters(
+                    search_global=True,
+                    until_position=until_position,
+                    origin_scope=origin_scope):
                 yield filter
             if context.type == 'funcdef':
                 # The position should be reset if the current scope is a function.

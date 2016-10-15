@@ -183,7 +183,8 @@ class Completion:
         filters = get_global_filters(
             self._evaluator,
             scope,
-            self._position
+            self._position,
+            origin_scope=scope
         )
         completion_names = []
         for filter in filters:
@@ -191,11 +192,12 @@ class Completion:
         return completion_names
 
     def _trailer_completions(self, atom_expr):
+        user_scope = get_user_scope(self._module, self._position)
         scopes = self._evaluator.eval_element(atom_expr)
         completion_names = []
         debug.dbg('trailer completion scopes: %s', scopes)
         for s in scopes:
-            for filter in s.get_filters(search_global=False):
+            for filter in s.get_filters(search_global=False, origin_scope=user_scope):
                 completion_names += filter.values()
         return completion_names
 

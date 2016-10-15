@@ -300,10 +300,22 @@ class InstanceClassFilter(ParserTreeFilter):
         )
         self._instance = instance
 
+    def _equals_origin_scope(self):
+        node = self._origin_scope
+        while node is not None:
+            if node == self._parser_scope or node == self._instance:
+                return True
+            node = node.get_parent_scope()
+        return False
+
+    def _access_possible(self, name):
+        return not name.value.startswith('__') or name.value.endswith('__') \
+            or self._equals_origin_scope()
+
     def _filter(self, names):
         names = super(InstanceClassFilter, self)._filter(names)
         return [get_instance_el(self._evaluator, self._instance, name, True)
-                for name in names]
+                for name in names if self._access_possible(name)]
 
     def _check_flows(self, names):
         return names
@@ -324,7 +336,7 @@ class SelfNameFilter(InstanceClassFilter):
             if tree.is_node(trailer, 'trailer') \
                     and len(trailer.children) == 2 \
                     and trailer.children[0] == '.':
-                if name.is_definition():
+                if name.is_definition() and self._access_possible(name):
                     init_execution = self._instance._get_init_execution()
                     # Hopefully we can somehow change this.
                     if init_execution is not None and \
@@ -563,16 +575,16 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
                 else:
                     yield scope.names_dict
 
-    def get_filters(self, search_global, until_position=None, is_instance=False):
+    def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self._evaluator, self.base, until_position)
+            yield ParserTreeFilter(self._evaluator, self.base, until_position, origin_scope=origin_scope)
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
                     for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ParserTreeFilter(self._evaluator, scope.base)
+                    yield ParserTreeFilter(self._evaluator, scope.base, origin_scope=origin_scope)
 
     def is_class(self):
         return True
@@ -670,12 +682,12 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
             for names_dict in scope.names_dicts(False):
                 yield names_dict
 
-    def get_filters(self, search_global, until_position=None):
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
-            yield ParserTreeFilter(self._evaluator, self.base, until_position)
+            yield ParserTreeFilter(self._evaluator, self.base, until_position, origin_scope=origin_scope)
         else:
             scope = self.py__class__()
-            for filter in scope.get_filters(search_global=False):
+            for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
                 yield filter
 
     @Python3Method
@@ -849,11 +861,12 @@ class FunctionExecution(Executed):
                             yield result
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
-    def get_filters(self, search_global, until_position=None):
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield FunctionExecutionFilter(self._evaluator, self._original_function,
                                       self._copied_funcdef,
                                       self.param_by_name,
-                                      until_position)
+                                      until_position,
+                                      origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
@@ -926,8 +939,13 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
         yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
         yield self._sub_modules_dict()
 
-    def get_filters(self, search_global, until_position=None):
-        yield ParserTreeFilter(self._evaluator, self._module, until_position)
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        yield ParserTreeFilter(
+            self._evaluator,
+            self._module,
+            until_position,
+            origin_scope=origin_scope
+        )
         yield GlobalNameFilter(self._module)
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
