@@ -242,8 +242,16 @@ class ArrayMixin(object):
         # builtins only have one class -> [0]
         scopes = self._evaluator.execute_evaluated(scope, self)
         names_dicts = list(scopes)[0].names_dicts(search_global)
-        #yield names_dicts[0]
         yield self._get_names_dict(names_dicts[1])
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        # `array.type` is a string with the type, e.g. 'list'.
+        scope = compiled.builtin_from_name(self._evaluator, self.type)
+        for typ in self._evaluator.execute_evaluated(scope, self):
+            for filter in scope.get_filters():
+                yield filter
+                # TODO this should be used.
+                #yield DictFilter(self._get_names_dict(names_dicts[1]))
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.

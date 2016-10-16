@@ -116,7 +116,7 @@ def _faked(module, obj, name):
     if faked_mod is None:
         return None, None
 
-    # Having the module as a `parser.representation.module`, we need to scan
+    # Having the module as a `parser.tree.Module`, we need to scan
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj):
