@@ -31,6 +31,7 @@ from jedi.evaluate.cache import CachedMetaClass, memoize_default
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
 from jedi import common
+from jedi.evaluate.filters import DictFilter
 
 
 class IterableWrapper(tree.Base):
@@ -56,10 +57,10 @@ class IterableWrapper(tree.Base):
                 try:
                     method = builtin_methods[name_str, self.type]
                 except KeyError:
-                    dct[name_str] = [name]
+                    dct[name_str] = name
                 else:
                     parent = BuiltinMethod(self, method, name.parent)
-                    dct[name_str] = [helpers.FakeName(name_str, parent, is_definition=True)]
+                    dct[name_str] = helpers.FakeName(name_str, parent, is_definition=True)
         return dct
 
 
@@ -110,6 +111,10 @@ class GeneratorMixin(object):
     def names_dicts(self, search_global=False):  # is always False
         gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
         yield self._get_names_dict(gen_obj.names_dict)
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
+        yield DictFilter(self._get_names_dict(gen_obj.names_dict))
 
     def py__bool__(self):
         return True

@@ -116,8 +116,6 @@ def _faked(module, obj, name):
     if faked_mod is None:
         return None, None
 
-    module.used_names = faked_mod.used_names
-
     # Having the module as a `parser.representation.module`, we need to scan
     # for methods.
     if name is None:
@@ -193,7 +191,8 @@ def _get_faked(module, obj, name=None):
 def get_faked(module, obj, name=None, parent=None):
     faked, fake_module = _get_faked(module and module.obj, obj, name)
     faked.parent = parent
-    module.used_names = fake_module.used_names
+    if module is not None:
+        module.used_names = fake_module.used_names
     return faked
 
 
