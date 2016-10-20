@@ -9,6 +9,44 @@ from jedi.evaluate import flow_analysis
 from jedi.common import to_list
 
 
+class AbstractNameDefinition(object):
+    start_pos = None
+
+    @property
+    @abstractmethod
+    def string_name(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def infer(self):
+        raise NotImplementedError
+
+
+class TreeNameDefinition(AbstractNameDefinition):
+    def __init__(self, parent_context, name):
+        self.parent_context = parent_context
+        self._name = name
+
+    def get_parent_flow_context(self):
+        return self.parent_context
+
+    @property
+    def string_name(self):
+        return self._name.value
+
+    @property
+    def start_pos(self):
+        return self._name.start_pos
+
+    def infer(self):
+        # Refactor this, should probably be here.
+        from jedi.evaluate.finder import _name_to_types
+        return _name_to_types(self.parent_context._evaluator, self.parent_context, self._name, None)
+
+    def __repr__(self):
+        return '%s: %s@%s' % (type(self).__name__, self.string_name, self.start_pos)
+
+
 class AbstractFilter(object):
     _until_position = None
 
@@ -30,10 +68,11 @@ class AbstractFilter(object):
 
 
 class AbstractUsedNamesFilter(AbstractFilter):
-    def __init__(self, parser_scope, origin_scope=None):
+    def __init__(self, context, parser_scope, origin_scope=None):
         super(AbstractUsedNamesFilter, self).__init__(origin_scope)
         self._parser_scope = parser_scope
         self._used_names = self._parser_scope.get_root_node().used_names
+        self._context = context
 
     def get(self, name):
         try:
@@ -41,16 +80,19 @@ class AbstractUsedNamesFilter(AbstractFilter):
         except KeyError:
             return []
 
-        return list(self._filter(names))
+        return self._convert_to_names(self._filter(names))
+
+    def _convert_to_names(self, names):
+        return [TreeNameDefinition(self._context, name) for name in names]
 
     def values(self):
-        return [name for name_list in self._used_names.values()
-                for name in self._filter(name_list)]
+        return self._convert_to_names(name for name_list in self._used_names.values()
+                                      for name in self._filter(name_list))
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
-    def __init__(self, evaluator, parser_scope, until_position=None, origin_scope=None):
-        super(ParserTreeFilter, self).__init__(parser_scope, origin_scope)
+    def __init__(self, evaluator, context, parser_scope, until_position=None, origin_scope=None):
+        super(ParserTreeFilter, self).__init__(context, parser_scope, origin_scope)
         self._until_position = until_position
         self._evaluator = evaluator
 
@@ -65,8 +107,9 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
             stmt = name.get_definition()
             name_scope = self._evaluator.wrap(stmt.get_parent_scope())
-            check = flow_analysis.break_check(self._evaluator, name_scope,
-                                              stmt, self._origin_scope)
+            check = flow_analysis.UNSURE
+            #check = flow_analysis.break_check(self._evaluator, name_scope,
+            #                                  stmt, self._origin_scope)
             if check is not flow_analysis.UNREACHABLE:
                 yield name
 
@@ -75,7 +118,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
 
 class FunctionExecutionFilter(ParserTreeFilter):
-    def __init__(self, evaluator, parser_scope, executed_function, param_by_name,
+    def __init__(self, evaluator, context, parser_scope, executed_function, param_by_name,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
             evaluator,
@@ -96,8 +139,8 @@ class FunctionExecutionFilter(ParserTreeFilter):
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):
-    def __init__(self, parser_scope, origin_scope=None):
-        super(GlobalNameFilter, self).__init__(parser_scope)
+    def __init__(self, context, parser_scope, origin_scope=None):
+        super(GlobalNameFilter, self).__init__(context, parser_scope)
 
     @to_list
     def _filter(self, names):
@@ -141,7 +184,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
                 until_position = None
                 in_func = True
 
-        node = context.get_parent_scope()
+        node = context.parent_context
         context = evaluator.wrap(node)
 
     # Add builtins to the global scope.

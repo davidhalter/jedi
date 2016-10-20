@@ -271,15 +271,10 @@ class CompiledName(FakeName):
     def is_definition(self):
         return True
 
-    @property
     @underscore_memoization
-    def parent(self):
+    def infer(self):
         module = self._compiled_obj.get_parent_until()
-        return _create_from_name(self._evaluator, module, self._compiled_obj, self.name)
-
-    @parent.setter
-    def parent(self, value):
-        pass  # Just ignore this, FakeName tries to overwrite the parent attribute.
+        return [_create_from_name(self._evaluator, module, self._compiled_obj, self.name)]
 
 
 class LazyNamesDict(object):

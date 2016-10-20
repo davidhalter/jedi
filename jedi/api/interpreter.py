@@ -5,7 +5,7 @@ import copy
 
 from jedi.cache import underscore_memoization
 from jedi.evaluate import helpers
-from jedi.evaluate.representation import ModuleWrapper
+from jedi.evaluate.representation import ModuleContext
 from jedi.evaluate.compiled import mixed
 
 
@@ -18,7 +18,7 @@ class MixedModule(object):
         self._namespaces = namespaces
 
         self._namespace_objects = [type('jedi_namespace', (), n) for n in namespaces]
-        self._wrapped_module = ModuleWrapper(evaluator, parser_module)
+        self._wrapped_module = ModuleContext(evaluator, parser_module)
         # Usually we are dealing with very small code sizes when it comes to
         # interpreter modules. In this case we just copy the whole syntax tree
         # to be able to modify it.

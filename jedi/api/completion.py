@@ -29,6 +29,7 @@ def get_call_signature_param_names(call_signatures):
 def filter_names(evaluator, completion_names, stack, like_name):
     comp_dct = {}
     for name in set(completion_names):
+        print(name)
         if settings.case_insensitive_completion \
                 and str(name).lower().startswith(like_name.lower()) \
                 or str(name).startswith(like_name):
@@ -193,11 +194,11 @@ class Completion:
 
     def _trailer_completions(self, atom_expr):
         user_scope = get_user_scope(self._module, self._position)
-        scopes = self._evaluator.eval_element(atom_expr)
+        contexts = self._evaluator.eval_element(self._evaluator.create_context(atom_expr), atom_expr)
         completion_names = []
-        debug.dbg('trailer completion scopes: %s', scopes)
-        for s in scopes:
-            for filter in s.get_filters(search_global=False, origin_scope=user_scope):
+        debug.dbg('trailer completion contexts: %s', contexts)
+        for context in contexts:
+            for filter in context.get_filters(search_global=False, origin_scope=user_scope):
                 completion_names += filter.values()
         return completion_names
 

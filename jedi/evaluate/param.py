@@ -30,7 +30,7 @@ def try_iter_content(types, depth=0):
 
 
 class Arguments(tree.Base):
-    def __init__(self, evaluator, argument_node, trailer=None):
+    def __init__(self, evaluator, context, argument_node, trailer=None):
         """
         The argument_node is either a parser node or a list of evaluated
         objects. Those evaluated objects may be lists of evaluated objects
@@ -39,6 +39,7 @@ class Arguments(tree.Base):
         :param argument_node: May be an argument_node or a list of nodes.
         """
         self.argument_node = argument_node
+        self._context = context
         self._evaluator = evaluator
         self.trailer = trailer  # Can be None, e.g. in a class definition.
 
@@ -73,7 +74,7 @@ class Arguments(tree.Base):
                 element = self.argument_node[0]
                 from jedi.evaluate.iterable import AlreadyEvaluated
                 if isinstance(element, AlreadyEvaluated):
-                    element = list(self._evaluator.eval_element(element))[0]
+                    element = list(self._evaluator.eval_element(self._context, element))[0]
             except IndexError:
                 return None
             else:
@@ -93,14 +94,14 @@ class Arguments(tree.Base):
         named_args = []
         for stars, el in self._split():
             if stars == 1:
-                arrays = self._evaluator.eval_element(el)
+                arrays = self._evaluator.eval_element(self._context, el)
                 iterators = [_iterate_star_args(self._evaluator, a, el, func)
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
                     yield None, [v for v in values if v is not None]
             elif stars == 2:
-                arrays = self._evaluator.eval_element(el)
+                arrays = self._evaluator.eval_element(self._context, el)
                 dicts = [_star_star_dict(self._evaluator, a, el, func)
                          for a in arrays]
                 for dct in dicts:
@@ -155,7 +156,7 @@ class Arguments(tree.Base):
                 debug.warning('TypeError: %s expected at least %s arguments, got %s',
                               name, len(arguments), i)
                 raise ValueError
-            values = set(chain.from_iterable(self._evaluator.eval_element(el)
+            values = set(chain.from_iterable(self._evaluator.eval_element(self._context, el)
                                              for el in va_values))
             if not values and not optional:
                 # For the stdlib we always want values. If we don't get them,
@@ -172,7 +173,7 @@ class Arguments(tree.Base):
     def eval_args(self):
         # TODO this method doesn't work with named args and a lot of other
         # things. Use unpack.
-        return [self._evaluator.eval_element(el) for stars, el in self._split()]
+        return [self._evaluator.eval_element(self._context, el) for stars, el in self._split()]
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.argument_node)
@@ -191,7 +192,7 @@ class Arguments(tree.Base):
         """
         for key, element_values in self.unpack():
             for element in element_values:
-                types = self._evaluator.eval_element(element)
+                types = self._evaluator.eval_element(self._context, element)
                 try_iter_content(types)
 
 

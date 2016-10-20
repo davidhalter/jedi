@@ -59,6 +59,21 @@ from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter
 
 
+class Context(object):
+    def __init__(self, evaluator, parent_context=None):
+        self._evaluator = evaluator
+        self.parent_context = parent_context
+
+    def get_parent_flow_context(self):
+        return self.parent_context
+
+
+class FlowContext(Context):
+    def get_parent_flow_context(self):
+        if 1:
+            return self.parent_context
+
+
 class Executed(tree.Base):
     """
     An instance is also an executable - because __init__ is called
@@ -152,7 +167,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         # This loop adds the names of the self object, copies them and removes
         # the self.
         for sub in self.base.subscopes:
-            if isinstance(sub, tree.Class):
+            if isinstance(sub, tree.ClassContext):
                 continue
             # Get the self name, if there's one.
             self_name = self._get_func_self_name(sub)
@@ -292,18 +307,18 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
 
 
 class InstanceClassFilter(ParserTreeFilter):
-    def __init__(self, evaluator, instance, parser_scope, origin_scope):
+    def __init__(self, evaluator, context, parser_scope, origin_scope):
         super(InstanceClassFilter, self).__init__(
             evaluator=evaluator,
+            context=context,
             parser_scope=parser_scope,
             origin_scope=origin_scope
         )
-        self._instance = instance
 
     def _equals_origin_scope(self):
         node = self._origin_scope
         while node is not None:
-            if node == self._parser_scope or node == self._instance:
+            if node == self._parser_scope or node == self._context:
                 return True
             node = node.get_parent_scope()
         return False
@@ -314,7 +329,7 @@ class InstanceClassFilter(ParserTreeFilter):
 
     def _filter(self, names):
         names = super(InstanceClassFilter, self)._filter(names)
-        return [get_instance_el(self._evaluator, self._instance, name, True)
+        return [get_instance_el(self._evaluator, self._context, name, True)
                 for name in names if self._access_possible(name)]
 
     def _check_flows(self, names):
@@ -337,12 +352,12 @@ class SelfNameFilter(InstanceClassFilter):
                     and len(trailer.children) == 2 \
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name):
-                    init_execution = self._instance._get_init_execution()
+                    init_execution = self._context._get_init_execution()
                     # Hopefully we can somehow change this.
                     if init_execution is not None and \
                             init_execution.start_pos < name.start_pos < init_execution.end_pos:
                         name = init_execution.name_for_position(name.start_pos)
-                    yield get_instance_el(self._evaluator, self._instance, name)
+                    yield get_instance_el(self._evaluator, self._context, name)
 
 
 class LazyInstanceDict(object):
@@ -406,8 +421,8 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
     @memoize_default()
     def parent(self):
         par = self.var.parent
-        if isinstance(par, Class) and par == self.instance.base \
-                or not isinstance(self.instance.base, (tree.Class, Class)) \
+        if isinstance(par, ClassContext) and par == self.instance.base \
+                or not isinstance(self.instance.base, (tree.Class, ClassContext)) \
                 or isinstance(par, tree.Class) \
                 and par == self.instance.base.base:
             par = self.instance
@@ -501,13 +516,13 @@ class Wrapper(tree.Base):
         return helpers.FakeName(unicode(name), self, name.start_pos)
 
 
-class Class(use_metaclass(CachedMetaClass, Wrapper)):
+class ClassContext(use_metaclass(CachedMetaClass, Context, Wrapper)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
-    def __init__(self, evaluator, base):
-        self._evaluator = evaluator
+    def __init__(self, evaluator, base, parent_context):
+        super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
         self.base = base
 
     @memoize_default(default=())
@@ -547,7 +562,7 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
     def py__bases__(self):
         arglist = self.base.get_super_arglist()
         if arglist:
-            args = param.Arguments(self._evaluator, arglist)
+            args = param.Arguments(self._evaluator, self, arglist)
             return list(chain.from_iterable(args.eval_args()))
         else:
             return [compiled.create(self._evaluator, object)]
@@ -577,14 +592,14 @@ class Class(use_metaclass(CachedMetaClass, Wrapper)):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self._evaluator, self.base, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(self._evaluator, self, self.base, until_position, origin_scope=origin_scope)
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
                     for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ParserTreeFilter(self._evaluator, scope.base, origin_scope=origin_scope)
+                    yield ParserTreeFilter(self._evaluator, self, scope.base, origin_scope=origin_scope)
 
     def is_class(self):
         return True
@@ -684,7 +699,7 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
-            yield ParserTreeFilter(self._evaluator, self.base, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(self._evaluator, self, self.base, until_position, origin_scope=origin_scope)
         else:
             scope = self.py__class__()
             for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
@@ -862,7 +877,7 @@ class FunctionExecution(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield FunctionExecutionFilter(self._evaluator, self._original_function,
+        yield FunctionExecutionFilter(self._evaluator, self, self._original_function,
                                       self._copied_funcdef,
                                       self.param_by_name,
                                       until_position,
@@ -923,7 +938,9 @@ class GlobalName(helpers.FakeName):
                                          name.start_pos, is_definition=True)
 
 
-class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
+class ModuleContext(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
+    parent_context = None
+
     def __init__(self, evaluator, module, parent_module=None):
         self._evaluator = evaluator
         self.base = self._module = module
@@ -942,11 +959,12 @@ class ModuleWrapper(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
             self._evaluator,
+            self,
             self._module,
             until_position,
             origin_scope=origin_scope
         )
-        yield GlobalNameFilter(self._module)
+        yield GlobalNameFilter(self, self._module)
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         # TODO 

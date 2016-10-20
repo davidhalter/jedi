@@ -179,7 +179,7 @@ class NameFinder(object):
                 last_names.append(name)
                 continue
 
-            if isinstance(stmt, er.ModuleWrapper):
+            if isinstance(stmt, er.ModuleContext):
                 # In case of REPL completion, we can infer modules names that
                 # don't really have a definition (because they are really just
                 # namespaces). In this case we can just add it.
@@ -258,17 +258,19 @@ class NameFinder(object):
         wrapper parents. We don't want to see AST classes out in the
         evaluation, so remove them already here!
         """
-        for n in names:
-            definition = n.parent
-            if isinstance(definition, (compiled.CompiledObject,
-                iterable.BuiltinMethod)):
-                # TODO this if should really be removed by changing the type of
-                #      those classes.
-                yield n
-            elif definition.type in ('funcdef', 'classdef', 'file_input'):
-                yield self._evaluator.wrap(definition).name
-            else:
-                yield n
+
+        return names
+        #for n in names:
+        #    definition = n.parent
+        #    if isinstance(definition, (compiled.CompiledObject,
+        #        iterable.BuiltinMethod)):
+        #        # TODO this if should really be removed by changing the type of
+        #        #      those classes.
+        #        yield n
+        #    elif definition.type in ('funcdef', 'classdef', 'file_input'):
+        #        yield self._evaluator.wrap(definition).name
+        #    else:
+        #        yield n
 
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
@@ -308,8 +310,8 @@ class NameFinder(object):
                     return n
 
         for name in names:
-            new_types = _name_to_types(self._evaluator, name, self.scope)
-            if isinstance(self.scope, (er.Class, er.Instance)) and attribute_lookup:
+            new_types = name.infer()
+            if isinstance(self.scope, (er.ClassContext, er.Instance)) and attribute_lookup:
                 types |= set(self._resolve_descriptors(name, new_types))
             else:
                 types |= set(new_types)
@@ -347,7 +349,7 @@ def _get_global_stmt_scopes(evaluator, global_stmt, name):
 
 
 @memoize_default(set(), evaluator_is_first_arg=True)
-def _name_to_types(evaluator, name, scope):
+def _name_to_types(evaluator, context, name, scope):
     types = []
     typ = name.get_definition()
     if typ.isinstance(tree.ForStmt):
@@ -365,7 +367,7 @@ def _name_to_types(evaluator, name, scope):
     elif isinstance(typ, tree.Param):
         types = _eval_param(evaluator, typ, scope)
     elif typ.isinstance(tree.ExprStmt):
-        types = _remove_statements(evaluator, typ, name)
+        types = _remove_statements(evaluator, context, typ, name)
     elif typ.isinstance(tree.WithStmt):
         types = evaluator.eval_element(typ.node_from_name(name))
     elif isinstance(typ, tree.Import):
@@ -393,7 +395,7 @@ def _name_to_types(evaluator, name, scope):
     return types
 
 
-def _remove_statements(evaluator, stmt, name):
+def _remove_statements(evaluator, context, stmt, name):
     """
     This is the part where statements are being stripped.
 
@@ -415,7 +417,7 @@ def _remove_statements(evaluator, stmt, name):
         pep0484.find_type_from_comment_hint_assign(evaluator, stmt, name)
     if pep0484types:
         return pep0484types
-    types |= evaluator.eval_statement(stmt, seek_name=name)
+    types |= evaluator.eval_statement(context, stmt, seek_name=name)
 
     if check_instance is not None:
         # class renames

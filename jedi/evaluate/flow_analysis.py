@@ -33,6 +33,7 @@ UNSURE = Status(None, 'unsure')
 
 
 def break_check(evaluator, base_scope, stmt, origin_scope=None):
+    raise NotImplementedError
     element_scope = evaluator.wrap(stmt.get_parent_scope(include_flows=True))
     # Direct parents get resolved, we filter scopes that are separate branches.
     # This makes sense for autocompletion and static analysis. For actual

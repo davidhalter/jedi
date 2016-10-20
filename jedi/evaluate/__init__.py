@@ -109,20 +109,20 @@ class Evaluator(object):
         self.recursion_detector = recursion.RecursionDetector(self)
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def wrap(self, element):
+    def wrap(self, element, parent_context=None):
         if isinstance(element, (er.Wrapper, er.InstanceElement,
-            er.ModuleWrapper, er.FunctionExecution, er.Instance, compiled.CompiledObject)) or element is None:
+            er.ModuleContext, er.FunctionExecution, er.Instance, compiled.CompiledObject)) or element is None:
             # TODO this is so ugly, please refactor.
             return element
 
         if element.type == 'classdef':
-            return er.Class(self, element)
+            return er.ClassContext(self, element, parent_context)
         elif element.type == 'funcdef':
             return er.Function(self, element)
         elif element.type == 'lambda':
             return er.LambdaWrapper(self, element)
         elif element.type == 'file_input':
-            return er.ModuleWrapper(self, element)
+            return er.ModuleContext(self, element)
         else:
             return element
 
@@ -145,7 +145,7 @@ class Evaluator(object):
     #@memoize_default(default=[], evaluator_is_first_arg=True)
     #@recursion.recursion_decorator
     @debug.increase_indent
-    def eval_statement(self, stmt, seek_name=None):
+    def eval_statement(self, context, stmt, seek_name=None):
         """
         The starting point of the completion. A statement always owns a call
         list, which are the calls, that a statement does. In case multiple
@@ -156,7 +156,7 @@ class Evaluator(object):
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         rhs = stmt.get_rhs()
-        types = self.eval_element(rhs)
+        types = self.eval_element(context, rhs)
 
         if seek_name:
             types = finder.check_tuple_assignments(self, types, seek_name)
@@ -177,13 +177,13 @@ class Evaluator(object):
                 # only in for loops without clutter, because they are
                 # predictable. Also only do it, if the variable is not a tuple.
                 node = for_stmt.get_input_node()
-                for_iterables = self.eval_element(node)
+                for_iterables = self.eval_element(context, node)
                 ordered = list(iterable.py__iter__(self, for_iterables, node))
 
                 for index_types in ordered:
                     dct = {str(for_stmt.children[1]): index_types}
                     self.predefined_if_name_dict_dict[for_stmt] = dct
-                    t = self.eval_element(rhs)
+                    t = self.eval_element(context, rhs)
                     left = precedence.calculate(self, left, operator, t)
                 types = left
                 if ordered:
@@ -196,11 +196,11 @@ class Evaluator(object):
         debug.dbg('eval_statement result %s', types)
         return types
 
-    def eval_element(self, element):
+    def eval_element(self, context, element):
         if isinstance(element, iterable.AlreadyEvaluated):
             return set(element)
         elif isinstance(element, iterable.MergedNodes):
-            return iterable.unite(self.eval_element(e) for e in element)
+            return iterable.unite(self.eval_element(context, e) for e in element)
 
         if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
         predefined_if_name_dict = self.predefined_if_name_dict_dict.get(if_stmt)
@@ -249,21 +249,21 @@ class Evaluator(object):
                 for name_dict in name_dicts:
                     self.predefined_if_name_dict_dict[if_stmt] = name_dict
                     try:
-                        result |= self._eval_element_not_cached(element)
+                        result |= self._eval_element_not_cached(context, element)
                     finally:
                         del self.predefined_if_name_dict_dict[if_stmt]
                 return result
             else:
-                return self._eval_element_if_evaluated(element)
-                return self._eval_element_cached(element)
+                return self._eval_element_if_evaluated(context, element)
+                return self._eval_element_cached(context, element)
         else:
             if predefined_if_name_dict:
-                return self._eval_element_not_cached(element)
+                return self._eval_element_not_cached(context, element)
             else:
-                return self._eval_element_if_evaluated(element)
-                return self._eval_element_cached(element)
+                return self._eval_element_if_evaluated(context, element)
+                return self._eval_element_cached(context, element)
 
-    def _eval_element_if_evaluated(self, element):
+    def _eval_element_if_evaluated(self, context, element):
         """
         TODO This function is temporary: Merge with eval_element.
         """
@@ -272,19 +272,19 @@ class Evaluator(object):
             parent = parent.parent
             predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
             if predefined_if_name_dict is not None:
-                return self._eval_element_not_cached(element)
-        return self._eval_element_cached(element)
+                return self._eval_element_not_cached(context, element)
+        return self._eval_element_cached(context, element)
 
     @memoize_default(default=set(), evaluator_is_first_arg=True)
-    def _eval_element_cached(self, element):
-        return self._eval_element_not_cached(element)
+    def _eval_element_cached(self, context, element):
+        return self._eval_element_not_cached(context, element)
 
     @debug.increase_indent
-    def _eval_element_not_cached(self, element):
+    def _eval_element_not_cached(self, context, element):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         types = set()
         if isinstance(element, (tree.Name, tree.Literal)) or tree.is_node(element, 'atom'):
-            types = self._eval_atom(element)
+            types = self._eval_atom(context, element)
         elif isinstance(element, tree.Keyword):
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
@@ -295,12 +295,12 @@ class Evaluator(object):
         elif element.isinstance(er.LambdaWrapper):
             types = set([element])  # TODO this is no real evaluation.
         elif element.type == 'expr_stmt':
-            types = self.eval_statement(element)
+            types = self.eval_statement(context, element)
         elif element.type in ('power', 'atom_expr'):
-            types = self._eval_atom(element.children[0])
+            types = self._eval_atom(context, element.children[0])
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
-                    right = self.eval_element(element.children[2])
+                    right = self.eval_element(context, element.children[2])
                     types = set(precedence.calculate(self, types, trailer, right))
                     break
                 types = self.eval_trailer(types, trailer)
@@ -308,31 +308,31 @@ class Evaluator(object):
             # The implicit tuple in statements.
             types = set([iterable.ImplicitTuple(self, element)])
         elif element.type in ('not_test', 'factor'):
-            types = self.eval_element(element.children[-1])
+            types = self.eval_element(context, element.children[-1])
             for operator in element.children[:-1]:
                 types = set(precedence.factor_calculate(self, types, operator))
         elif element.type == 'test':
             # `x if foo else y` case.
-            types = (self.eval_element(element.children[0]) |
-                     self.eval_element(element.children[-1]))
+            types = (self.eval_element(context, element.children[0]) |
+                     self.eval_element(context, element.children[-1]))
         elif element.type == 'operator':
             # Must be an ellipsis, other operators are not evaluated.
             assert element.value == '...'
             types = set([compiled.create(self, Ellipsis)])
         elif element.type == 'dotted_name':
-            types = self._eval_atom(element.children[0])
+            types = self._eval_atom(context, element.children[0])
             for next_name in element.children[2::2]:
                 types = set(chain.from_iterable(self.find_types(typ, next_name)
                                                 for typ in types))
             types = types
         elif element.type == 'eval_input':
-            types = self._eval_element_not_cached(element.children[0])
+            types = self._eval_element_not_cached(context, element.children[0])
         else:
             types = precedence.calculate_children(self, element.children)
         debug.dbg('eval_element result %s', types)
         return types
 
-    def _eval_atom(self, atom):
+    def _eval_atom(self, context, atom):
         """
         Basically to process ``atom`` nodes. The parser sometimes doesn't
         generate the node (because it has just one child). In that case an atom
@@ -442,25 +442,25 @@ class Evaluator(object):
             debug.dbg('execute result: %s in %s', types, obj)
             return types
 
-    def goto_definitions(self, name):
+    def goto_definitions(self, context, name):
         def_ = name.get_definition()
         is_simple_name = name.parent.type not in ('power', 'trailer')
         if is_simple_name:
             if name.parent.type in ('file_input', 'classdef', 'funcdef'):
                 return [self.wrap(name.parent)]
             if def_.type == 'expr_stmt' and name in def_.get_defined_names():
-                return self.eval_statement(def_, name)
+                return self.eval_statement(context, def_, name)
             elif def_.type == 'for_stmt':
-                container_types = self.eval_element(def_.children[3])
+                container_types = self.eval_element(context, def_.children[3])
                 for_types = iterable.py__iter__types(self, container_types, def_.children[3])
                 return finder.check_tuple_assignments(self, for_types, name)
             elif def_.type in ('import_from', 'import_name'):
                 return imports.ImportWrapper(self, name).follow()
 
         call = helpers.call_of_leaf(name)
-        return self.eval_element(call)
+        return self.eval_element(context, call)
 
-    def goto(self, name):
+    def goto(self, context, name):
         def resolve_implicit_imports(names):
             for name in names:
                 if isinstance(name.parent, helpers.FakeImport):
@@ -480,13 +480,13 @@ class Evaluator(object):
                 trailer = trailer.parent
             if trailer.type != 'classdef':
                 if trailer.type == 'decorator':
-                    types = self.eval_element(trailer.children[1])
+                    types = self.eval_element(context, trailer.children[1])
                 else:
                     i = trailer.parent.children.index(trailer)
                     to_evaluate = trailer.parent.children[:i]
-                    types = self.eval_element(to_evaluate[0])
+                    types = self.eval_element(context, to_evaluate[0])
                     for trailer in to_evaluate[1:]:
-                        types = self.eval_trailer(types, trailer)
+                        types = self.eval_trailer(context, types, trailer)
                 param_names = []
                 for typ in types:
                     try:
@@ -511,7 +511,7 @@ class Evaluator(object):
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
                 new_dotted.children[index - 1:] = []
-                types = self.eval_element(new_dotted)
+                types = self.eval_element(context, new_dotted)
                 return resolve_implicit_imports(iterable.unite(
                     self.find_types(typ, name, is_goto=True) for typ in types
                 ))
@@ -519,7 +519,7 @@ class Evaluator(object):
         scope = name.get_parent_scope()
         if tree.is_node(par, 'trailer') and par.children[0] == '.':
             call = helpers.call_of_leaf(name, cut_own_trailer=True)
-            types = self.eval_element(call)
+            types = self.eval_element(context, call)
             return resolve_implicit_imports(iterable.unite(
                 self.find_types(typ, name, is_goto=True) for typ in types
             ))
@@ -530,3 +530,9 @@ class Evaluator(object):
                 stmt = name
             return self.find_types(scope, name, stmt.start_pos,
                                    search_global=True, is_goto=True)
+
+    def create_context(self, node):
+        scope = node.get_parent_scope()
+        if scope.get_parent_scope() is not None:
+            raise NotImplementedError
+        return self.wrap(scope)
