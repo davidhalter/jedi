@@ -12,7 +12,7 @@ from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.parser.tree import Param, Base, Operator
 from jedi.evaluate.helpers import FakeName
-from jedi.evaluate.filters import AbstractFilter
+from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition
 from . import fake
 
 
@@ -254,19 +254,18 @@ class CompiledObject(Base):
         return []  # Builtins don't have imports
 
 
-class CompiledName(FakeName):
+class CompiledName(AbstractNameDefinition):
     def __init__(self, evaluator, compiled_obj, name):
-        super(CompiledName, self).__init__(name)
         self._evaluator = evaluator
         self._compiled_obj = compiled_obj
-        self.name = name
+        self.string_name = name
 
     def __repr__(self):
         try:
             name = self._compiled_obj.name  # __name__ is not defined all the time
         except AttributeError:
             name = None
-        return '<%s: (%s).%s>' % (type(self).__name__, name, self.name)
+        return '<%s: (%s).%s>' % (type(self).__name__, name, self.string_name)
 
     def is_definition(self):
         return True
@@ -274,7 +273,7 @@ class CompiledName(FakeName):
     @underscore_memoization
     def infer(self):
         module = self._compiled_obj.get_parent_until()
-        return [_create_from_name(self._evaluator, module, self._compiled_obj, self.name)]
+        return [_create_from_name(self._evaluator, module, self._compiled_obj, self.string_name)]
 
 
 class LazyNamesDict(object):

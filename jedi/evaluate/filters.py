@@ -11,11 +11,7 @@ from jedi.common import to_list
 
 class AbstractNameDefinition(object):
     start_pos = None
-
-    @property
-    @abstractmethod
-    def string_name(self):
-        raise NotImplementedError
+    string_name = None
 
     @abstractmethod
     def infer(self):
@@ -44,7 +40,7 @@ class TreeNameDefinition(AbstractNameDefinition):
         return _name_to_types(self.parent_context._evaluator, self.parent_context, self._name, None)
 
     def __repr__(self):
-        return '%s: %s@%s' % (type(self).__name__, self.string_name, self.start_pos)
+        return '<%s: %s@%s>' % (type(self).__name__, self.string_name, self.start_pos)
 
 
 class AbstractFilter(object):
@@ -122,6 +118,7 @@ class FunctionExecutionFilter(ParserTreeFilter):
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
             evaluator,
+            context,
             parser_scope,
             until_position,
             origin_scope

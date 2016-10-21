@@ -67,6 +67,13 @@ class Context(object):
     def get_parent_flow_context(self):
         return self.parent_context
 
+    def get_root_context(self):
+        context = self
+        while True:
+            if context.parent_context is None:
+                return context
+            context = context.parent_context
+
 
 class FlowContext(Context):
     def get_parent_flow_context(self):
@@ -74,7 +81,7 @@ class FlowContext(Context):
             return self.parent_context
 
 
-class Executed(tree.Base):
+class Executed(Context, tree.Base):
     """
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of a parser node or a list.
@@ -279,8 +286,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'get_imports', 'type',
                         'doc', 'raw_doc']:
-            raise AttributeError("Instance %s: Don't touch this (%s)!"
-                                 % (self, name))
+            return super(Instance, self).__getattribute__(name)
         return getattr(self.base, name)
 
     def __repr__(self):
@@ -615,7 +621,7 @@ class ClassContext(use_metaclass(CachedMetaClass, Context, Wrapper)):
         if name not in ['start_pos', 'end_pos', 'parent', 'raw_doc',
                         'doc', 'get_imports', 'get_parent_until', 'get_code',
                         'subscopes', 'names_dict', 'type']:
-            raise AttributeError("Don't touch this: %s of %s !" % (name, self))
+            return super(ClassContext, self).__getattribute__(name)
         return getattr(self.base, name)
 
     def __repr__(self):
@@ -901,7 +907,7 @@ class FunctionExecution(Executed):
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'end_pos', 'imports', 'name', 'type']:
-            raise AttributeError('Tried to access %s: %s. Why?' % (name, self))
+            return super(FunctionExecution, self).__getattribute__(name)
         return getattr(self.base, name)
 
     @common.safe_property

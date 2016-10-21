@@ -28,16 +28,12 @@ def get_call_signature_param_names(call_signatures):
 
 def filter_names(evaluator, completion_names, stack, like_name):
     comp_dct = {}
-    for name in set(completion_names):
-        print(name)
+    for name in completion_names:
         if settings.case_insensitive_completion \
-                and str(name).lower().startswith(like_name.lower()) \
-                or str(name).startswith(like_name):
+                and name.string_name.lower().startswith(like_name.lower()) \
+                or name.string_name.startswith(like_name):
 
-            if isinstance(name.parent, (tree.Function, tree.Class)):
-                # TODO I think this is a hack. It should be an
-                #   er.Function/er.Class before that.
-                name = evaluator.wrap(name.parent).name
+            print(name, name.infer())
             new = classes.Completion(
                 evaluator,
                 name,

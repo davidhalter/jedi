@@ -63,11 +63,11 @@ class BaseDefinition(object):
         """
         An instance of :class:`jedi.parser.reprsentation.Name` subclass.
         """
-        self._definition = evaluator.wrap(self._name.get_definition())
-        self.is_keyword = isinstance(self._definition, keywords.Keyword)
+        #self._definition = list(self._name.infer())[0]
+        #self.is_keyword = isinstance(self._definition, keywords.Keyword)
 
         # generate a path to the definition
-        self._module = name.get_parent_until()
+        self._module = name.parent_context.get_root_context()
         if self.in_builtin_module():
             self.module_path = None
         else:
@@ -508,6 +508,8 @@ class Completion(BaseDefinition):
     def _follow_statements_imports(self):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
+        return self._name.infer()
+        # TODO REMOVE
         definition = self._definition
         if definition.isinstance(tree.Import):
             i = imports.ImportWrapper(self._evaluator, self._name)
