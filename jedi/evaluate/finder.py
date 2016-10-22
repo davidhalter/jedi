@@ -295,19 +295,19 @@ class NameFinder(object):
         types = set()
 
         # Add isinstance and other if/assert knowledge.
-        if isinstance(self.name_str, tree.Name):
-            # Ignore FunctionExecution parents for now.
-            flow_scope = self.name_str
-            until = flow_scope.get_parent_until(er.FunctionExecution)
-            while not isinstance(until, er.FunctionExecution):
-                flow_scope = flow_scope.get_parent_scope(include_flows=True)
-                if flow_scope is None:
-                    break
-                # TODO check if result is in scope -> no evaluation necessary
-                n = check_flow_information(self._evaluator, flow_scope,
-                                           self.name_str, self.position)
-                if n:
-                    return n
+        #if isinstance(self.name_str, tree.Name):
+            ## Ignore FunctionExecution parents for now.
+            #flow_scope = self.name_str
+            #until = flow_scope.get_parent_until(er.FunctionExecution)
+            #while not isinstance(until, er.FunctionExecution):
+                #flow_scope = flow_scope.get_parent_scope(include_flows=True)
+                #if flow_scope is None:
+                    #break
+                ## TODO check if result is in scope -> no evaluation necessary
+                #n = check_flow_information(self._evaluator, flow_scope,
+                                           #self.name_str, self.position)
+                #if n:
+                    #return n
 
         for name in names:
             new_types = name.infer()

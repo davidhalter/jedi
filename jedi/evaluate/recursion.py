@@ -92,6 +92,7 @@ class _RecursionNode(object):
 
 
 def execution_recursion_decorator(func):
+    return func # TODO remove
     def run(execution, **kwargs):
         detector = execution._evaluator.execution_recursion_detector
         if detector.push_execution(execution):
@@ -130,9 +131,6 @@ class ExecutionRecursionDetector(object):
         self.recursion_level -= 1
 
     def push_execution(self, execution):
-        self.execution_funcs.add(execution.base)
-        self.parent_execution_funcs.append(execution.base)
-        return True  # Remove
         in_par_execution_funcs = execution.base in self.parent_execution_funcs
         in_execution_funcs = execution.base in self.execution_funcs
         self.recursion_level += 1

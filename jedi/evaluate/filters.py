@@ -56,6 +56,15 @@ class TreeNameDefinition(ContextName):
         return _name_to_types(self.parent_context._evaluator, self.parent_context, self.name, None)
 
 
+class ParamName(ContextName):
+    def __init__(self, parent_context, name):
+        self.parent_context = parent_context
+        self.name = name
+
+    def infer(self):
+        return set()
+
+
 class AbstractFilter(object):
     _until_position = None
 
@@ -89,9 +98,9 @@ class AbstractUsedNamesFilter(AbstractFilter):
         except KeyError:
             return []
 
-        return self._convert_to_names(self._filter(names))
+        return self._convert_names(self._filter(names))
 
-    def _convert_to_names(self, names):
+    def _convert_names(self, names):
         return [TreeNameDefinition(self._context, name) for name in names]
 
     def values(self):
@@ -127,7 +136,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
 
 class FunctionExecutionFilter(ParserTreeFilter):
-    def __init__(self, evaluator, context, parser_scope, executed_function, param_by_name,
+    def __init__(self, evaluator, context, parser_scope, param_by_name,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
             evaluator,
@@ -136,16 +145,15 @@ class FunctionExecutionFilter(ParserTreeFilter):
             until_position,
             origin_scope
         )
-        self._executed_function = executed_function
-        self._param_by_name = param_by_name
 
-    def _filter(self, names):
-        names = super(FunctionExecutionFilter, self)._filter(names)
-
-        names = [self._executed_function.name_for_position(name.start_pos) for name in names]
-        names = [self._param_by_name(str(name)) if search_ancestor(name, 'param') else name
-                 for name in names]
-        return names
+    def _convert_names(self, names):
+        for name in names:
+            param = search_ancestor(name, 'param')
+            if param:
+                #yield self.context._param_by_name(str(name))
+                yield ParamName(self._context, name)
+            else:
+                yield TreeNameDefinition(self._context, name)
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):

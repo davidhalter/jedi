@@ -77,6 +77,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import helpers
+from jedi.evaluate.context import Context
 
 
 class Evaluator(object):
@@ -110,8 +111,7 @@ class Evaluator(object):
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
     def wrap(self, element, parent_context):
-        if isinstance(element, (er.Wrapper, er.InstanceElement,
-            er.ModuleContext, er.FunctionExecution, er.Instance, compiled.CompiledObject)) or element is None:
+        if isinstance(element, Context) or element is None:
             # TODO this is so ugly, please refactor.
             return element
 
@@ -328,7 +328,7 @@ class Evaluator(object):
         elif element.type == 'eval_input':
             types = self._eval_element_not_cached(context, element.children[0])
         else:
-            types = precedence.calculate_children(self, element.children)
+            types = precedence.calculate_children(self, context, element.children)
         debug.dbg('eval_element result %s', types)
         return types
 
@@ -341,13 +341,13 @@ class Evaluator(object):
         if isinstance(atom, tree.Name):
             # This is the first global lookup.
             stmt = atom.get_definition()
-            if isinstance(context, er.FunctionExecution):
-                # Adjust scope: If the name is not in the suite, it's a param
-                # default or annotation and will be resolved as part of the
-                # parent scope.
-                colon = scope.children.index(':')
-                if atom.start_pos < scope.children[colon + 1].start_pos:
-                    scope = scope.get_parent_scope()
+            #if isinstance(context, er.FunctionExecution):
+                ## Adjust scope: If the name is not in the suite, it's a param
+                ## default or annotation and will be resolved as part of the
+                ## parent scope.
+                #colon = scope.children.index(':')
+                #if atom.start_pos < scope.children[colon + 1].start_pos:
+                    ##scope = scope.get_parent_scope()
             if isinstance(stmt, tree.CompFor):
                 stmt = stmt.get_parent_until((tree.ClassOrFunc, tree.ExprStmt))
             if stmt.type != 'expr_stmt':

@@ -57,24 +57,20 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName
-from jedi.evaluate.context import Context
+from jedi.evaluate.context import TreeContext
 
 
-class Executed(Context):
+class Executed(TreeContext):
     """
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of a parser node or a list.
     """
-    def __init__(self, evaluator, parent_context, base, var_args):
+    def __init__(self, evaluator, parent_context, var_args):
         super(Executed, self).__init__(evaluator, parent_context=parent_context)
-        self.base = base
         self.var_args = var_args
 
     def is_scope(self):
         return True
-
-    def get_parent_until(self, *args, **kwargs):
-        return tree.Base.get_parent_until(self, *args, **kwargs)
 
 
 class Instance(use_metaclass(CachedMetaClass, Executed)):
@@ -132,7 +128,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             func = self.get_subscope_by_name('__init__')
         except KeyError:
             return None
-        return FunctionExecution(self._evaluator, self, func, self.var_args)
+        return FunctionExecutionContext(self._evaluator, self, func, self.var_args)
 
     def _get_func_self_name(self, func):
         """
@@ -257,12 +253,6 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     def name(self):
         return ContextName(self, self.base.name)
 
-    def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'get_imports', 'type',
-                        'doc', 'raw_doc']:
-            return super(Instance, self).__getattribute__(name)
-        return getattr(self.base, name)
-
     def __repr__(self):
         dec = ''
         if self.decorates is not None:
@@ -380,7 +370,7 @@ def get_instance_el(evaluator, instance, var, is_class_var=False):
         return InstanceName(var, parent)
     elif var.type != 'funcdef' \
             and isinstance(var, (Instance, compiled.CompiledObject, tree.Leaf,
-                           tree.Module, FunctionExecution)):
+                           tree.Module, FunctionExecutionContext)):
         return var
 
     var = evaluator.wrap(var)
@@ -451,9 +441,6 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
         return get_instance_el(self._evaluator, self.instance, self.var[index],
                                self.is_class_var)
 
-    def __getattr__(self, name):
-        return getattr(self.var, name)
-
     def isinstance(self, *cls):
         return isinstance(self.var, cls)
 
@@ -496,7 +483,7 @@ class Wrapper(tree.Base):
         return ContextName(self, name)
 
 
-class ClassContext(use_metaclass(CachedMetaClass, Context, Wrapper)):
+class ClassContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -602,7 +589,7 @@ class ClassContext(use_metaclass(CachedMetaClass, Context, Wrapper)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(CachedMetaClass, Context, Wrapper)):
+class Function(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -690,21 +677,12 @@ class Function(use_metaclass(CachedMetaClass, Context, Wrapper)):
         if self.base.is_generator():
             return set([iterable.Generator(self._evaluator, self, params)])
         else:
-            return FunctionExecution(self._evaluator, self.parent_context, self, params).get_return_types()
-
-    @memoize_default()
-    def py__annotations__(self):
-        parser_func = self.base
-        return_annotation = parser_func.annotation()
-        if return_annotation:
-            dct = {'return': return_annotation}
-        else:
-            dct = {}
-        for function_param in parser_func.params:
-            param_annotation = function_param.annotation()
-            if param_annotation is not None:
-                dct[function_param.name.value] = param_annotation
-        return dct
+            return FunctionExecutionContext(
+                self._evaluator,
+                self.parent_context,
+                self.base,
+                params
+            ).get_return_types()
 
     def py__class__(self):
         # This differentiation is only necessary for Python2. Python3 does not
@@ -714,9 +692,6 @@ class Function(use_metaclass(CachedMetaClass, Context, Wrapper)):
         else:
             name = 'FUNCTION_CLASS'
         return compiled.get_special_object(self._evaluator, name)
-
-    def __getattr__(self, name):
-        return getattr(self.base_func, name)
 
     def __repr__(self):
         dec = ''
@@ -730,7 +705,7 @@ class LambdaWrapper(Function):
         return self
 
 
-class FunctionExecution(Executed):
+class FunctionExecutionContext(Executed):
     """
     This class is used to evaluate functions and their returns.
 
@@ -741,10 +716,9 @@ class FunctionExecution(Executed):
     """
     type = 'funcdef'
 
-    def __init__(self, evaluator, parent_context, base, var_args):
-        super(FunctionExecution, self).__init__(evaluator, parent_context, base, var_args)
-        self._copy_dict = {}
-        self._original_function = funcdef = base
+    def __init__(self, evaluator, parent_context, funcdef, var_args):
+        super(FunctionExecutionContext, self).__init__(evaluator, parent_context, var_args)
+        self._funcdef = funcdef
         if isinstance(funcdef, mixed.MixedObject):
             # The extra information in mixed is not needed anymore. We can just
             # unpack it and give it the tree object.
@@ -763,11 +737,11 @@ class FunctionExecution(Executed):
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator
     def get_return_types(self, check_yields=False):
-        func = self.base
-
-        if func.isinstance(LambdaWrapper):
+        funcdef = self._funcdef
+        if funcdef.type in ('lambdef', 'lambdef_nocond'):
             return self._evaluator.eval_element(self.children[-1])
 
+        """
         if func.listeners:
             # Feed the listeners, with the params.
             for listener in func.listeners:
@@ -776,16 +750,19 @@ class FunctionExecution(Executed):
             # execution ongoing. In this case Jedi is interested in the
             # inserted params, not in the actual execution of the function.
             return set()
+"""
 
         if check_yields:
             types = set()
-            returns = self.yields
+            returns = funcdef.yields
         else:
-            returns = self.returns
-            types = set(docstrings.find_return_types(self._evaluator, func))
-            types |= set(pep0484.find_return_types(self._evaluator, func))
+            returns = funcdef.returns
+            types = set(docstrings.find_return_types(self._evaluator, funcdef))
+            types |= set(pep0484.find_return_types(self._evaluator, funcdef))
 
         for r in returns:
+            types |= self.eval_node(r.children[1])
+            continue # TODO REMOVE
             check = flow_analysis.break_check(self._evaluator, self, r)
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
@@ -793,26 +770,26 @@ class FunctionExecution(Executed):
                 if check_yields:
                     types |= iterable.unite(self._eval_yield(r))
                 else:
-                    types |= self._evaluator.eval_element(r.children[1])
+                    types |= self.eval_node(r.children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
         return types
 
     def _eval_yield(self, yield_expr):
-        element = yield_expr.children[1]
-        if element.type == 'yield_arg':
+        node = yield_expr.children[1]
+        if node.type == 'yield_arg':
             # It must be a yield from.
-            yield_from_types = self._evaluator.eval_element(element.children[1])
-            for result in iterable.py__iter__(self._evaluator, yield_from_types, element):
+            yield_from_types = self.eval_node(node)
+            for result in iterable.py__iter__(self._evaluator, yield_from_types, node):
                 yield result
         else:
-            yield self._evaluator.eval_element(element)
+            yield self.eval_node(node)
 
     @recursion.execution_recursion_decorator
     def get_yield_types(self):
         yields = self.yields
-        stopAt = tree.ForStmt, tree.WhileStmt, FunctionExecution, tree.IfStmt
+        stopAt = tree.ForStmt, tree.WhileStmt, tree.IfStmt
         for_parents = [(x, x.get_parent_until((stopAt))) for x in yields]
 
         # Calculate if the yields are placed within the same for loop.
@@ -857,55 +834,20 @@ class FunctionExecution(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield FunctionExecutionFilter(self._evaluator, self, self._original_function,
-                                      self._copied_funcdef,
+        yield FunctionExecutionFilter(self._evaluator, self, self._funcdef,
                                       self.param_by_name,
                                       until_position,
                                       origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
     def _get_params(self):
-        """
-        This returns the params for an TODO and is injected as a
-        'hack' into the tree.Function class.
-        This needs to be here, because Instance can have __init__ functions,
-        which act the same way as normal functions.
-        """
-        return param.get_params(self._evaluator, self.base, self.var_args)
+        return param.get_params(self._evaluator, self._funcdef, self.var_args)
 
     def param_by_name(self, name):
         return [n for n in self._get_params() if str(n) == name][0]
 
-    def name_for_position(self, position):
-        return tree.Function.name_for_position(self, position)
-
-    def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'imports', 'name', 'type']:
-            return super(FunctionExecution, self).__getattribute__(name)
-        return getattr(self.base, name)
-
-    @common.safe_property
-    @memoize_default()
-    def returns(self):
-        return tree.Scope._search_in_scope(self, tree.ReturnStmt)
-
-    @common.safe_property
-    @memoize_default()
-    def yields(self):
-        return tree.Scope._search_in_scope(self, tree.YieldExpr)
-
-    @common.safe_property
-    @memoize_default()
-    def statements(self):
-        return tree.Scope._search_in_scope(self, tree.ExprStmt)
-
-    @common.safe_property
-    @memoize_default()
-    def subscopes(self):
-        return tree.Scope._search_in_scope(self, tree.Scope)
-
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.base)
+        return "<%s of %s>" % (type(self).__name__, self._funcdef)
 
 
 class GlobalName(helpers.FakeName):
@@ -919,7 +861,7 @@ class GlobalName(helpers.FakeName):
                                          name.start_pos, is_definition=True)
 
 
-class ModuleContext(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
+class ModuleContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
     parent_context = None
 
     def __init__(self, evaluator, module, parent_module=None):
@@ -1094,9 +1036,6 @@ class ModuleContext(use_metaclass(CachedMetaClass, tree.Module, Wrapper)):
 
     def py__class__(self):
         return compiled.get_special_object(self._evaluator, 'MODULE_CLASS')
-
-    def __getattr__(self, name):
-        return getattr(self._module, name)
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self._module)

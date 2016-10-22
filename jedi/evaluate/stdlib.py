@@ -37,8 +37,8 @@ def execute(evaluator, obj, arguments):
     else:
         if obj.parent_context == evaluator.BUILTINS:
             module_name = 'builtins'
-        elif isinstance(obj.parent, tree.Module):
-            module_name = str(obj.parent.name)
+        elif isinstance(obj.parent_context, er.ModuleContext):
+            module_name = obj.parent_context.name.string_name
         else:
             module_name = ''
 

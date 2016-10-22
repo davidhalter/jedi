@@ -30,19 +30,19 @@ def literals_to_types(evaluator, result):
         if is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = builtin_from_name(evaluator, typ.name.value)
+            cls = builtin_from_name(evaluator, typ.name.string_name)
             new_result |= evaluator.execute(cls)
         else:
             new_result.add(typ)
     return new_result
 
 
-def calculate_children(evaluator, children):
+def calculate_children(evaluator, context, children):
     """
     Calculate a list of children with operators.
     """
     iterator = iter(children)
-    types = evaluator.eval_element(next(iterator))
+    types = context.eval_node(next(iterator))
     for operator in iterator:
         right = next(iterator)
         if tree.is_node(operator, 'comp_op'):  # not in / is not
@@ -53,14 +53,14 @@ def calculate_children(evaluator, children):
             left_bools = set([left.py__bool__() for left in types])
             if left_bools == set([True]):
                 if operator == 'and':
-                    types = evaluator.eval_element(right)
+                    types = context.eval_node(right)
             elif left_bools == set([False]):
                 if operator != 'and':
-                    types = evaluator.eval_element(right)
+                    types = context.eval_node(right)
             # Otherwise continue, because of uncertainty.
         else:
             types = calculate(evaluator, types, operator,
-                              evaluator.eval_element(right))
+                              context.eval_node(right))
     debug.dbg('calculate_children types %s', types)
     return types
 

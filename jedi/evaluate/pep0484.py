@@ -83,9 +83,22 @@ def follow_param(evaluator, param):
     return _evaluate_for_annotation(evaluator, annotation)
 
 
+def py__annotations__(funcdef):
+    return_annotation = funcdef.annotation()
+    if return_annotation:
+        dct = {'return': return_annotation}
+    else:
+        dct = {}
+    for function_param in funcdef.params:
+        param_annotation = function_param.annotation()
+        if param_annotation is not None:
+            dct[function_param.name.value] = param_annotation
+    return dct
+
+
 @memoize_default(None, evaluator_is_first_arg=True)
 def find_return_types(evaluator, func):
-    annotation = func.py__annotations__().get("return", None)
+    annotation = py__annotations__(func).get("return", None)
     return _evaluate_for_annotation(evaluator, annotation)
 
 
