@@ -137,7 +137,7 @@ class Script(object):
         parser = FastParser(self._grammar, self._source, self.path)
         save_parser(self.path, parser, pickling=False)
 
-        module = self._evaluator.wrap(parser.module)
+        module = self._evaluator.wrap(parser.module, parent_context=None)
         imports.add_module(self._evaluator, unicode(module.name), module)
         return parser.module
 
@@ -188,7 +188,9 @@ class Script(object):
             leaf = self._get_module().get_leaf_for_position(self._pos)
             if leaf is None:
                 return []
-        definitions = helpers.evaluate_goto_definition(self._evaluator, leaf)
+
+        context = self._evaluator.create_context(leaf)
+        definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
 
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
@@ -299,9 +301,11 @@ class Script(object):
         if call_signature_details is None:
             return []
 
+        context = self._evaluator.create_context(call_signature_details.bracket_leaf)
         with common.scale_speed_settings(settings.scale_call_signatures):
             definitions = helpers.cache_call_signatures(
                 self._evaluator,
+                context,
                 call_signature_details.bracket_leaf,
                 self._code_lines,
                 self._pos

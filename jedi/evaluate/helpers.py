@@ -1,6 +1,7 @@
 import copy
 from itertools import chain
 
+from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.parser import tree
 
 
@@ -172,6 +173,7 @@ class FakeName(tree.Name):
         In case is_definition is defined (not None), that bool value will be
         returned.
         """
+        raise NotImplementedError
         super(FakeName, self).__init__(name_str, start_pos)
         self.parent = parent
         self._is_definition = is_definition
@@ -186,15 +188,11 @@ class FakeName(tree.Name):
             return self._is_definition
 
 
-class LazyName(FakeName):
+class LazyName(AbstractNameDefinition):
     def __init__(self, name, parent_callback, is_definition=None):
-        super(LazyName, self).__init__(name, is_definition=is_definition)
+        # TODO remove is_definition
+        self.string_name = name
         self._parent_callback = parent_callback
 
-    @property
-    def parent(self):
+    def infer(self):
         return self._parent_callback()
-
-    @parent.setter
-    def parent(self, value):
-        pass  # Do nothing, super classes can try to set the parent.

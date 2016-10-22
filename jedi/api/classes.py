@@ -65,6 +65,7 @@ class BaseDefinition(object):
         """
         #self._definition = list(self._name.infer())[0]
         #self.is_keyword = isinstance(self._definition, keywords.Keyword)
+        self._definition = None
 
         # generate a path to the definition
         self._module = name.parent_context.get_root_context()
@@ -83,7 +84,7 @@ class BaseDefinition(object):
 
         :rtype: str or None
         """
-        return unicode(self._name)
+        return self._name.string_name
 
     @property
     def start_pos(self):
@@ -198,7 +199,7 @@ class BaseDefinition(object):
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
         json
         """
-        return str(self._module.name)
+        return self._module.name.string_name
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
@@ -417,7 +418,7 @@ class Completion(BaseDefinition):
             if 'trailer' in node_names and 'argument' not in node_names:
                 append += '='
 
-        name = str(self._name)
+        name = self._name.string_name
         if like_name:
             name = name[self._like_name_length:]
         return name + append
@@ -450,7 +451,8 @@ class Completion(BaseDefinition):
     def description(self):
         """Provide a description of the completion object."""
         if self._definition is None:
-            return ''
+            return self._name.string_name
+
         t = self.type
         if t == 'statement' or t == 'import':
             desc = self._definition.get_code()
@@ -577,7 +579,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             d = typ + ' ' + d.name.get_code()
         elif isinstance(d, iterable.Array):
             d = 'class ' + d.type
-        elif isinstance(d, (tree.Class, er.Class, er.Instance)):
+        elif isinstance(d, (tree.Class, er.ClassContext, er.Instance)):
             d = 'class ' + unicode(d.name)
         elif isinstance(d, (er.Function, tree.Function)):
             d = 'def ' + unicode(d.name)
@@ -589,6 +591,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             if d.endswith(','):
                 d = d[:-1]  # Remove the comma.
         else:  # ExprStmt
+            return self._name.string_name
             try:
                 first_leaf = d.first_leaf()
             except AttributeError:

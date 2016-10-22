@@ -189,16 +189,19 @@ class IntegrationTestCase(object):
                 parser = Parser(load_grammar(), string, start_symbol='eval_input')
                 parser.get_root_node().move(self.line_nr)
                 element = parser.get_parsed_node()
+                module = script._get_module()
+                # TODO remove
                 element.parent = jedi.api.completion.get_user_scope(
-                    script._get_module(),
+                    module,
                     (self.line_nr, self.column)
                 )
-                results = evaluator.eval_element(element)
+                module_context = evaluator.wrap(module, parent_context=None)
+                results = evaluator.eval_element(module_context, element)
                 if not results:
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))
 
-                should_be |= set(Definition(evaluator, r) for r in results)
+                should_be |= set(Definition(evaluator, r.name) for r in results)
             debug.dbg('Finished getting types', color='YELLOW')
 
             # Because the objects have different ids, `repr`, then compare.

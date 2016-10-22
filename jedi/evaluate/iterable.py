@@ -777,7 +777,7 @@ def check_array_instances(evaluator, instance):
 
     ai = _ArrayInstance(evaluator, instance)
     from jedi.evaluate import param
-    return param.Arguments(evaluator, [AlreadyEvaluated([ai])])
+    return param.Arguments(evaluator, instance, [AlreadyEvaluated([ai])])
 
 
 class _ArrayInstance(IterableWrapper):

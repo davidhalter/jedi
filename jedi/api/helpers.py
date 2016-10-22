@@ -192,7 +192,7 @@ def get_possible_completion_types(grammar, stack):
     return keywords, grammar_labels
 
 
-def evaluate_goto_definition(evaluator, leaf):
+def evaluate_goto_definition(evaluator, context, leaf):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
@@ -207,7 +207,7 @@ def evaluate_goto_definition(evaluator, leaf):
 
     if node is None:
         return []
-    return evaluator.eval_element(node)
+    return evaluator.eval_element(context, node)
 
 
 CallSignatureDetails = namedtuple(
@@ -288,7 +288,7 @@ def get_call_signature_details(module, position):
 
 
 @time_cache("call_signatures_validity")
-def cache_call_signatures(evaluator, bracket_leaf, code_lines, user_pos):
+def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
     index = user_pos[0] - 1
 
@@ -304,5 +304,6 @@ def cache_call_signatures(evaluator, bracket_leaf, code_lines, user_pos):
         yield (module_path, before_bracket, bracket_leaf.start_pos)
     yield evaluate_goto_definition(
         evaluator,
+        context,
         bracket_leaf.get_previous_leaf()
     )

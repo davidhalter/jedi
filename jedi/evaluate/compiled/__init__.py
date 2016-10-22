@@ -10,9 +10,10 @@ from functools import partial
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
-from jedi.parser.tree import Param, Base, Operator
+from jedi.parser.tree import Param, Operator
 from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition
+from jedi.evaluate.context import Context
 from . import fake
 
 
@@ -36,22 +37,27 @@ class CheckAttribute(object):
         return partial(self.func, instance)
 
 
-class CompiledObject(Base):
+class CompiledObject(Context):
     # comply with the parser
     start_pos = 0, 0
     path = None  # modules have this attribute - set it to None.
     used_names = {}  # To be consistent with modules.
 
-    def __init__(self, evaluator, obj, parent=None):
+    def __init__(self, evaluator, obj, parent_context=None):
         self._evaluator = evaluator
         self.obj = obj
-        self.parent = parent
+        self.parent_context = parent_context
+
+    def get_root_node(self):
+        # To make things a bit easier with filters we add this method here.
+        return self.get_root_context()
 
     @CheckAttribute
     def py__call__(self, params):
         if inspect.isclass(self.obj):
             from jedi.evaluate.representation import Instance
-            return set([Instance(self._evaluator, self, params)])
+            return set([self])
+            return set([Instance(self._evaluator, self.parent_context, self, params)])
         else:
             return set(self._execute_function(params))
 
@@ -206,7 +212,7 @@ class CompiledObject(Base):
             name = self._get_class().__name__
         except AttributeError:
             name = repr(self.obj)
-        return FakeName(name, self)
+        return CompiledContextName(self, name)
 
     def _execute_function(self, params):
         if self.type != 'funcdef':
@@ -267,13 +273,19 @@ class CompiledName(AbstractNameDefinition):
             name = None
         return '<%s: (%s).%s>' % (type(self).__name__, name, self.string_name)
 
-    def is_definition(self):
-        return True
-
     @underscore_memoization
     def infer(self):
-        module = self._compiled_obj.get_parent_until()
+        module = self._compiled_obj.get_root_context()
         return [_create_from_name(self._evaluator, module, self._compiled_obj, self.string_name)]
+
+
+class CompiledContextName(AbstractNameDefinition):
+    def __init__(self, parent_context, name):
+        self.string_name = name
+        self.parent_context = parent_context
+
+    def infer(self):
+        return [self.parent_context]
 
 
 class LazyNamesDict(object):

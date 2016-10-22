@@ -130,6 +130,9 @@ class ExecutionRecursionDetector(object):
         self.recursion_level -= 1
 
     def push_execution(self, execution):
+        self.execution_funcs.add(execution.base)
+        self.parent_execution_funcs.append(execution.base)
+        return True  # Remove
         in_par_execution_funcs = execution.base in self.parent_execution_funcs
         in_execution_funcs = execution.base in self.execution_funcs
         self.recursion_level += 1

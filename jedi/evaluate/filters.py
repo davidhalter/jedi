@@ -12,35 +12,48 @@ from jedi.common import to_list
 class AbstractNameDefinition(object):
     start_pos = None
     string_name = None
+    parent_context = None
 
     @abstractmethod
     def infer(self):
         raise NotImplementedError
 
+    def get_root_context(self):
+        if self.parent_context is None:
+            return self
+        return self.parent_context.get_root_context()
 
-class TreeNameDefinition(AbstractNameDefinition):
+    def __repr__(self):
+        if self.start_pos is None:
+            return '<%s: %s>' % (type(self).__name__, self.string_name)
+        return '<%s: %s@%s>' % (type(self).__name__, self.string_name, self.start_pos)
+
+
+class ContextName(AbstractNameDefinition):
     def __init__(self, parent_context, name):
         self.parent_context = parent_context
-        self._name = name
-
-    def get_parent_flow_context(self):
-        return self.parent_context
+        self.name = name
 
     @property
     def string_name(self):
-        return self._name.value
+        return self.name.value
 
     @property
     def start_pos(self):
-        return self._name.start_pos
+        return self.name.start_pos
+
+    def infer(self):
+        return [self.parent_context]
+
+
+class TreeNameDefinition(ContextName):
+    def get_parent_flow_context(self):
+        return self.parent_context
 
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.evaluate.finder import _name_to_types
-        return _name_to_types(self.parent_context._evaluator, self.parent_context, self._name, None)
-
-    def __repr__(self):
-        return '<%s: %s@%s>' % (type(self).__name__, self.string_name, self.start_pos)
+        return _name_to_types(self.parent_context._evaluator, self.parent_context, self.name, None)
 
 
 class AbstractFilter(object):
@@ -102,8 +115,8 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
             stmt = name.get_definition()
-            name_scope = self._evaluator.wrap(stmt.get_parent_scope())
             check = flow_analysis.UNSURE
+            #name_scope = self._evaluator.wrap(stmt.get_parent_scope())
             #check = flow_analysis.break_check(self._evaluator, name_scope,
             #                                  stmt, self._origin_scope)
             if check is not flow_analysis.UNREACHABLE:
@@ -181,8 +194,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
                 until_position = None
                 in_func = True
 
-        node = context.parent_context
-        context = evaluator.wrap(node)
+        context = context.parent_context
 
     # Add builtins to the global scope.
     for filter in evaluator.BUILTINS.get_filters(search_global=True):

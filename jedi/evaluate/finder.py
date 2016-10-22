@@ -95,10 +95,10 @@ def filter_definition_names(names, origin, position=None):
 
 
 class NameFinder(object):
-    def __init__(self, evaluator, scope, name_str, position=None):
+    def __init__(self, evaluator, context, name_str, position=None):
         self._evaluator = evaluator
         # Make sure that it's not just a syntax tree node.
-        self.scope = evaluator.wrap(scope)
+        self.context = context
         self.name_str = name_str
         self.position = position
         self._found_predefined_if_name = None
@@ -123,7 +123,7 @@ class NameFinder(object):
             if not isinstance(self.name_str, (str, unicode)):  # TODO Remove?
                 if attribute_lookup:
                     analysis.add_attribute_error(self._evaluator,
-                                                 self.scope, self.name_str)
+                                                 self.context, self.name_str)
                 else:
                     message = ("NameError: name '%s' is not defined."
                                % self.name_str)
@@ -140,9 +140,9 @@ class NameFinder(object):
             origin_scope = None
 
         if search_global:
-            return get_global_filters(self._evaluator, self.scope, self.position, origin_scope)
+            return get_global_filters(self._evaluator, self.context, self.position, origin_scope)
         else:
-            return self.scope.get_filters(search_global, self.position, origin_scope=origin_scope)
+            return self.context.get_filters(search_global, self.position, origin_scope=origin_scope)
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(scope, el):
@@ -167,7 +167,7 @@ class NameFinder(object):
             stmt = name.get_definition()
             name_scope = self._evaluator.wrap(stmt.get_parent_scope())
 
-            if isinstance(self.scope, er.Instance) and not isinstance(name_scope, er.Instance):
+            if isinstance(self.context, er.Instance) and not isinstance(name_scope, er.Instance):
                 # Instances should not be checked for positioning, because we
                 # don't know in which order the functions are called.
                 last_names.append(name)
@@ -210,7 +210,7 @@ class NameFinder(object):
                                 # deliver types.
                                 self._found_predefined_if_name = types
                             else:
-                                check = flow_analysis.break_check(self._evaluator, self.scope,
+                                check = flow_analysis.break_check(self._evaluator, self.context,
                                                                   origin_scope)
                                 if check is flow_analysis.UNREACHABLE:
                                     self._found_predefined_if_name = set()
@@ -249,7 +249,7 @@ class NameFinder(object):
             if names:
                 break
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
-                  self.scope, names, self.position)
+                  self.context, names, self.position)
         return list(self._clean_names(names))
 
     def _clean_names(self, names):
@@ -311,13 +311,13 @@ class NameFinder(object):
 
         for name in names:
             new_types = name.infer()
-            if isinstance(self.scope, (er.ClassContext, er.Instance)) and attribute_lookup:
+            if isinstance(self.context, (er.ClassContext, er.Instance)) and attribute_lookup:
                 types |= set(self._resolve_descriptors(name, new_types))
             else:
                 types |= set(new_types)
-        if not names and isinstance(self.scope, er.Instance):
+        if not names and isinstance(self.context, er.Instance):
             # handling __getattr__ / __getattribute__
-            return self._check_getattr(self.scope)
+            return self._check_getattr(self.context)
 
         return types
 
@@ -336,7 +336,7 @@ class NameFinder(object):
             except AttributeError:
                 result.add(r)
             else:
-                result |= desc_return(self.scope)
+                result |= desc_return(self.context)
         return result
 
 
@@ -365,7 +365,7 @@ def _name_to_types(evaluator, context, name, scope):
         for_types = iterable.py__iter__types(evaluator, container_types, typ.children[3])
         types = check_tuple_assignments(evaluator, for_types, name)
     elif isinstance(typ, tree.Param):
-        types = _eval_param(evaluator, typ, scope)
+        types = _eval_param(evaluator, context, typ, scope)
     elif typ.isinstance(tree.ExprStmt):
         types = _remove_statements(evaluator, context, typ, name)
     elif typ.isinstance(tree.WithStmt):
@@ -373,7 +373,7 @@ def _name_to_types(evaluator, context, name, scope):
     elif isinstance(typ, tree.Import):
         types = imports.ImportWrapper(evaluator, name).follow()
     elif typ.isinstance(tree.Function, tree.Class):
-        types = [evaluator.wrap(typ)]
+        types = [evaluator.wrap(typ, parent_context=context)]
     elif typ.type == 'global_stmt':
         for s in _get_global_stmt_scopes(evaluator, typ, name):
             finder = NameFinder(evaluator, s, str(name))
@@ -427,7 +427,7 @@ def _remove_statements(evaluator, context, stmt, name):
     return types
 
 
-def _eval_param(evaluator, param, scope):
+def _eval_param(evaluator, context, param, scope):
     res_new = set()
     func = param.get_parent_scope()
 
@@ -441,8 +441,9 @@ def _eval_param(evaluator, param, scope):
         if isinstance(scope, er.InstanceElement):
             res_new.add(scope.instance)
         else:
-            inst = er.Instance(evaluator, evaluator.wrap(cls),
-                               Arguments(evaluator, ()), is_generated=True)
+            inst = er.Instance(evaluator, context.parent_context.parent_context, context.parent_context,
+                               Arguments(evaluator, context, ()),
+                               is_generated=True)
             res_new.add(inst)
         return res_new
 

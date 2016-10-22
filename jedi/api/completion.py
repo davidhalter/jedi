@@ -33,7 +33,6 @@ def filter_names(evaluator, completion_names, stack, like_name):
                 and name.string_name.lower().startswith(like_name.lower()) \
                 or name.string_name.startswith(like_name):
 
-            print(name, name.infer())
             new = classes.Completion(
                 evaluator,
                 name,
@@ -71,7 +70,7 @@ def get_user_scope(module, position):
 class Completion:
     def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
-        self._module = evaluator.wrap(module)
+        self._module = evaluator.wrap(module, parent_context=None)
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
@@ -175,7 +174,7 @@ class Completion:
         scope = get_user_scope(self._module, self._position)
         if not scope.is_scope():  # Might be a flow (if/while/etc).
             scope = scope.get_parent_scope()
-        scope = self._evaluator.wrap(scope)
+        scope = self._evaluator.create_context(scope)
         debug.dbg('global completion scope: %s', scope)
         filters = get_global_filters(
             self._evaluator,
@@ -222,6 +221,7 @@ class Completion:
         """
         Autocomplete inherited methods when overriding in child class.
         """
+        return
         leaf = self._module.get_leaf_for_position(self._position, include_prefixes=True)
         cls = leaf.get_parent_until(tree.Class)
         if isinstance(cls, (tree.Class, tree.Function)):

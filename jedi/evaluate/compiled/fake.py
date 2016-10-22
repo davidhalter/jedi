@@ -11,7 +11,6 @@ import types
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser import tree as pt
-from jedi.evaluate.helpers import FakeName
 
 modules = {}
 
@@ -69,14 +68,14 @@ def _load_faked_module(module):
         if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
             # -> Rename the python2 version (`look at fake/builtins.pym`).
-            open_func = search_scope(module, 'open')
-            open_func.children[1] = FakeName('open_python3')
-            open_func = search_scope(module, 'open_python2')
-            open_func.children[1] = FakeName('open')
+            open_func = _search_scope(module, 'open')
+            open_func.children[1].value = 'open_python3'
+            open_func = _search_scope(module, 'open_python2')
+            open_func.children[1].value = 'open'
         return module
 
 
-def search_scope(scope, obj_name):
+def _search_scope(scope, obj_name):
     for s in scope.subscopes:
         if str(s.name) == obj_name:
             return s
@@ -120,7 +119,7 @@ def _faked(module, obj, name):
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj):
-            return search_scope(faked_mod, obj.__name__), faked_mod
+            return _search_scope(faked_mod, obj.__name__), faked_mod
         elif not inspect.isclass(obj):
             # object is a method or descriptor
             try:
@@ -128,22 +127,22 @@ def _faked(module, obj, name):
             except AttributeError:
                 return None, None
             else:
-                cls = search_scope(faked_mod, objclass.__name__)
+                cls = _search_scope(faked_mod, objclass.__name__)
                 if cls is None:
                     return None, None
-                return search_scope(cls, obj.__name__), faked_mod
+                return _search_scope(cls, obj.__name__), faked_mod
     else:
         if obj == module:
-            return search_scope(faked_mod, name), faked_mod
+            return _search_scope(faked_mod, name), faked_mod
         else:
             try:
                 cls_name = obj.__name__
             except AttributeError:
                 return None, None
-            cls = search_scope(faked_mod, cls_name)
+            cls = _search_scope(faked_mod, cls_name)
             if cls is None:
                 return None, None
-            return search_scope(cls, name), faked_mod
+            return _search_scope(cls, name), faked_mod
     return None, None
 
 

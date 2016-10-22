@@ -109,7 +109,7 @@ class Evaluator(object):
         self.recursion_detector = recursion.RecursionDetector(self)
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def wrap(self, element, parent_context=None):
+    def wrap(self, element, parent_context):
         if isinstance(element, (er.Wrapper, er.InstanceElement,
             er.ModuleContext, er.FunctionExecution, er.Instance, compiled.CompiledObject)) or element is None:
             # TODO this is so ugly, please refactor.
@@ -118,7 +118,7 @@ class Evaluator(object):
         if element.type == 'classdef':
             return er.ClassContext(self, element, parent_context)
         elif element.type == 'funcdef':
-            return er.Function(self, element)
+            return er.Function(self, parent_context, element)
         elif element.type == 'lambda':
             return er.LambdaWrapper(self, element)
         elif element.type == 'file_input':
@@ -126,7 +126,7 @@ class Evaluator(object):
         else:
             return element
 
-    def find_types(self, scope, name_str, position=None, search_global=False,
+    def find_types(self, context, name_str, position=None, search_global=False,
                    is_goto=False):
         """
         This is the search function. The most important part to debug.
@@ -136,7 +136,7 @@ class Evaluator(object):
         :param position: Position of the last statement -> tuple of line, column
         :return: List of Names. Their parents are the types.
         """
-        f = finder.NameFinder(self, scope, name_str, position)
+        f = finder.NameFinder(self, context, name_str, position)
         filters = f.get_filters(search_global)
         if is_goto:
             return f.filter_name(filters)
@@ -341,8 +341,7 @@ class Evaluator(object):
         if isinstance(atom, tree.Name):
             # This is the first global lookup.
             stmt = atom.get_definition()
-            scope = stmt.get_parent_until(tree.IsScope, include_current=True)
-            if isinstance(scope, (tree.Function, er.FunctionExecution)):
+            if isinstance(context, er.FunctionExecution):
                 # Adjust scope: If the name is not in the suite, it's a param
                 # default or annotation and will be resolved as part of the
                 # parent scope.
@@ -355,7 +354,7 @@ class Evaluator(object):
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
                 stmt = atom
-            return self.find_types(scope, atom, stmt.start_pos, search_global=True)
+            return self.find_types(context, atom, stmt.start_pos, search_global=True)
         elif isinstance(atom, tree.Literal):
             return set([compiled.create(self, atom.eval())])
         else:
@@ -421,7 +420,7 @@ class Evaluator(object):
         if self.is_analysis:
             arguments.eval_all()
 
-        if obj.isinstance(er.Function):
+        if isinstance(obj, er.Function):
             obj = obj.get_decorated_func()
 
         debug.dbg('execute: %s %s', obj, arguments)
@@ -532,7 +531,15 @@ class Evaluator(object):
                                    search_global=True, is_goto=True)
 
     def create_context(self, node):
-        scope = node.get_parent_scope()
-        if scope.get_parent_scope() is not None:
-            raise NotImplementedError
-        return self.wrap(scope)
+        def from_scope(scope):
+            parent_context = None
+            parent_scope = scope.get_parent_scope()
+            if parent_scope is not None:
+                parent_context = from_scope(parent_scope)
+            return self.wrap(scope, parent_context=parent_context)
+
+        if node.is_scope():
+            scope = node
+        else:
+            scope = node.get_parent_scope()
+        return from_scope(scope)

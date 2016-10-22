@@ -35,7 +35,7 @@ def execute(evaluator, obj, arguments):
     except AttributeError:
         pass
     else:
-        if obj.parent == evaluator.BUILTINS:
+        if obj.parent_context == evaluator.BUILTINS:
             module_name = 'builtins'
         elif isinstance(obj.parent, tree.Module):
             module_name = str(obj.parent.name)
