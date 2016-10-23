@@ -27,14 +27,13 @@ def get_venv_path(venv):
 def _get_sys_path_with_egglinks(sys_path):
     """Find all paths including those referenced by egg-links.
 
-    Egg-link-referenced directories are inserted into path immediately after
+    Egg-link-referenced directories are inserted into path immediately before
     the directory on which their links were found.  Such directories are not
     taken into consideration by normal import mechanism, but they are traversed
     when doing pkg_resources.require.
     """
     result = []
     for p in sys_path:
-        result.append(p)
         # pkg_resources does not define a specific order for egg-link files
         # using os.listdir to enumerate them, we're sorting them to have
         # reproducible tests.
@@ -47,6 +46,7 @@ def _get_sys_path_with_egglinks(sys_path):
                         # pkg_resources package only interprets the first
                         # non-empty line in egg-link files.
                         break
+        result.append(p)
     return result
 
 
