@@ -442,7 +442,7 @@ def _eval_param(evaluator, context, param, scope):
             res_new.add(scope.instance)
         else:
             inst = er.Instance(evaluator, context.parent_context.parent_context, context.parent_context,
-                               Arguments(evaluator, context, ()),
+                               Arguments(evaluator, context),
                                is_generated=True)
             res_new.add(inst)
         return res_new

@@ -71,6 +71,9 @@ class KeywordName(AbstractNameDefinition):
         self.string_name = name
         self.parent_context = evaluator.BUILTINS
 
+    def eval(self):
+        return set()
+
 
 class Keyword(object):
     type = 'completion_keyword'

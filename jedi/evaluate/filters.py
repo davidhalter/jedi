@@ -9,7 +9,7 @@ from jedi.evaluate import flow_analysis
 from jedi.common import to_list
 
 
-class AbstractNameDefinition(object):
+class AbstractNameDefinition():
     start_pos = None
     string_name = None
     parent_context = None
@@ -108,8 +108,8 @@ class AbstractUsedNamesFilter(AbstractFilter):
         return [TreeNameDefinition(self._context, name) for name in names]
 
     def values(self):
-        return self._convert_to_names(name for name_list in self._used_names.values()
-                                      for name in self._filter(name_list))
+        return self._convert_names(name for name_list in self._used_names.values()
+                                   for name in self._filter(name_list))
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
@@ -150,6 +150,7 @@ class FunctionExecutionFilter(ParserTreeFilter):
             origin_scope
         )
 
+    @to_list
     def _convert_names(self, names):
         for name in names:
             param = search_ancestor(name, 'param')

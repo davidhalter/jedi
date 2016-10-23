@@ -55,9 +55,8 @@ class CompiledObject(Context):
     @CheckAttribute
     def py__call__(self, params):
         if inspect.isclass(self.obj):
-            from jedi.evaluate.representation import Instance
-            return set([self])
-            return set([Instance(self._evaluator, self.parent_context, self, params)])
+            from jedi.evaluate.instance import CompiledInstance
+            return set([CompiledInstance(self._evaluator, self.parent_context, self, params)])
         else:
             return set(self._execute_function(params))
 
@@ -261,22 +260,22 @@ class CompiledObject(Context):
 
 
 class CompiledName(AbstractNameDefinition):
-    def __init__(self, evaluator, compiled_obj, name):
+    def __init__(self, evaluator, parent_context, name):
         self._evaluator = evaluator
-        self._compiled_obj = compiled_obj
+        self.parent_context = parent_context
         self.string_name = name
 
     def __repr__(self):
         try:
-            name = self._compiled_obj.name  # __name__ is not defined all the time
+            name = self.parent_context.name  # __name__ is not defined all the time
         except AttributeError:
             name = None
         return '<%s: (%s).%s>' % (type(self).__name__, name, self.string_name)
 
     @underscore_memoization
     def infer(self):
-        module = self._compiled_obj.get_root_context()
-        return [_create_from_name(self._evaluator, module, self._compiled_obj, self.string_name)]
+        module = self.parent_context.get_root_context()
+        return [_create_from_name(self._evaluator, module, self.parent_context, self.string_name)]
 
 
 class CompiledContextName(AbstractNameDefinition):

@@ -68,13 +68,14 @@ def get_user_scope(module, position):
 
 
 class Completion:
-    def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
+    def __init__(self, evaluator, module_node, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
-        self._module = evaluator.wrap(module, parent_context=None)
+        self._module_node = module_node
+        self._module = evaluator.wrap(module_node, parent_context=None)
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
-        self._like_name = helpers.get_on_completion_name(module, code_lines, position)
+        self._like_name = helpers.get_on_completion_name(module_node, code_lines, position)
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._position = position[0], position[1] - len(self._like_name)
@@ -109,7 +110,7 @@ class Completion:
 
         try:
             self.stack = helpers.get_stack_at_position(
-                grammar, self._code_lines, self._module, self._position
+                grammar, self._code_lines, self._module_node, self._position
             )
         except helpers.OnErrorLeaf as e:
             self.stack = None
@@ -153,7 +154,7 @@ class Completion:
                 # Also true for defining names as a class or function.
                 return list(self._get_class_context_completions(is_function=True))
             elif symbol_names[-1] == 'trailer' and nodes[-1] == '.':
-                dot = self._module.get_leaf_for_position(self._position)
+                dot = self._module_node.get_leaf_for_position(self._position)
                 atom_expr = call_of_leaf(dot.get_previous_leaf())
                 completion_names += self._trailer_completions(atom_expr)
             else:
@@ -171,7 +172,7 @@ class Completion:
             yield keywords.keyword(self._evaluator, k).name
 
     def _global_completions(self):
-        scope = get_user_scope(self._module, self._position)
+        scope = get_user_scope(self._module_node, self._position)
         if not scope.is_scope():  # Might be a flow (if/while/etc).
             scope = scope.get_parent_scope()
         scope = self._evaluator.create_context(scope)
@@ -188,7 +189,7 @@ class Completion:
         return completion_names
 
     def _trailer_completions(self, atom_expr):
-        user_scope = get_user_scope(self._module, self._position)
+        user_scope = get_user_scope(self._module_node, self._position)
         contexts = self._evaluator.eval_element(self._evaluator.create_context(atom_expr), atom_expr)
         completion_names = []
         debug.dbg('trailer completion contexts: %s', contexts)
@@ -222,7 +223,7 @@ class Completion:
         Autocomplete inherited methods when overriding in child class.
         """
         return
-        leaf = self._module.get_leaf_for_position(self._position, include_prefixes=True)
+        leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         cls = leaf.get_parent_until(tree.Class)
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.

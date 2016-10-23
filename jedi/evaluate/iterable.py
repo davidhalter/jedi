@@ -680,7 +680,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
         return set()
 
     def check_additions(arglist, add_name):
-        params = list(param.Arguments(evaluator, arglist).unpack())
+        params = list(param.Arguments(evaluator, context, arglist).unpack())
         result = set()
         if add_name in ['insert']:
             params = params[1:]

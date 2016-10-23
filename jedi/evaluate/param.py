@@ -28,7 +28,7 @@ def try_iter_content(types, depth=0):
 
 
 class Arguments(tree.Base):
-    def __init__(self, evaluator, context, argument_node, trailer):
+    def __init__(self, evaluator, context, argument_node, trailer=None):
         """
         The argument_node is either a parser node or a list of evaluated
         objects. Those evaluated objects may be lists of evaluated objects
