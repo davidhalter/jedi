@@ -62,7 +62,11 @@ class ParamName(ContextName):
         self.name = name
 
     def infer(self):
-        return set()
+        return self._get_param().infer(self.parent_context._evaluator)
+
+    def _get_param(self):
+        params = self.parent_context.get_params()
+        return [p for p in params if p.string_name == self.string_name][0]
 
 
 class AbstractFilter(object):
@@ -136,7 +140,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
 
 class FunctionExecutionFilter(ParserTreeFilter):
-    def __init__(self, evaluator, context, parser_scope, param_by_name,
+    def __init__(self, evaluator, context, parser_scope,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
             evaluator,
@@ -150,7 +154,6 @@ class FunctionExecutionFilter(ParserTreeFilter):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                #yield self.context._param_by_name(str(name))
                 yield ParamName(self._context, name)
             else:
                 yield TreeNameDefinition(self._context, name)

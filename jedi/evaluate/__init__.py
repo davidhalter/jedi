@@ -303,7 +303,7 @@ class Evaluator(object):
                     right = self.eval_element(context, element.children[2])
                     types = set(precedence.calculate(self, types, trailer, right))
                     break
-                types = self.eval_trailer(types, trailer)
+                types = self.eval_trailer(context, types, trailer)
         elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
             types = set([iterable.ImplicitTuple(self, element)])
@@ -388,7 +388,7 @@ class Evaluator(object):
                     return set([iterable.Comprehension.from_atom(self, atom)])
             return set([iterable.Array(self, atom)])
 
-    def eval_trailer(self, types, trailer):
+    def eval_trailer(self, context, types, trailer):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
             node = ()
@@ -402,7 +402,8 @@ class Evaluator(object):
                 if trailer_op == '.':
                     new_types |= self.find_types(typ, node)
                 elif trailer_op == '(':
-                    new_types |= self.execute(typ, node, trailer)
+                    arguments = param.Arguments(self, context, node, trailer)
+                    new_types |= self.execute(typ, arguments)
         return new_types
 
     def execute_evaluated(self, obj, *args):
@@ -413,9 +414,9 @@ class Evaluator(object):
         return self.execute(obj, args)
 
     @debug.increase_indent
-    def execute(self, obj, arguments=(), trailer=None):
+    def execute(self, obj, arguments=None):
         if not isinstance(arguments, param.Arguments):
-            arguments = param.Arguments(self, arguments, trailer)
+            arguments = param.Arguments(self, arguments)
 
         if self.is_analysis:
             arguments.eval_all()

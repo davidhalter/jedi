@@ -8,8 +8,6 @@ from jedi.parser import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
-from jedi.evaluate.helpers import FakeName
-from jedi.cache import underscore_memoization
 
 
 def try_iter_content(types, depth=0):
@@ -30,7 +28,7 @@ def try_iter_content(types, depth=0):
 
 
 class Arguments(tree.Base):
-    def __init__(self, evaluator, context, argument_node, trailer=None):
+    def __init__(self, evaluator, context, argument_node, trailer):
         """
         The argument_node is either a parser node or a list of evaluated
         objects. Those evaluated objects may be lists of evaluated objects
@@ -202,22 +200,20 @@ class ExecutedParam(tree.Param):
         self._original_param = original_param
         self.var_args = var_args
         self._values = values
+        self.string_name = self._original_param.name.value
 
-    def eval(self, evaluator):
+    def infer(self, evaluator):
         types = set()
         for v in self._values:
-            types |= evaluator.eval_element(v)
+            # TODO this context selection seems wrong. Fix it once we change
+            # the way executed params work.
+            types |= evaluator.eval_element(self.var_args._context, v)
         return types
 
     @property
     def position_nr(self):
         # Need to use the original logic here, because it uses the parent.
         return self._original_param.position_nr
-
-    @property
-    @underscore_memoization
-    def name(self):
-        return FakeName(str(self._original_param.name), self, self.start_pos)
 
     def __getattr__(self, name):
         return getattr(self._original_param, name)
@@ -249,7 +245,7 @@ def _get_calling_var_args(evaluator, var_args):
 
 
 def get_params(evaluator, func, var_args):
-    param_names = []
+    result_params = []
     param_dict = {}
     for param in func.params:
         param_dict[str(param.name)] = param
@@ -279,7 +275,7 @@ def get_params(evaluator, func, var_args):
             except KeyError:
                 non_matching_keys[key] = va_values
             else:
-                param_names.append(ExecutedParam(key_param, var_args, va_values).name)
+                result_params.append(ExecutedParam(key_param, var_args, va_values))
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -291,7 +287,7 @@ def get_params(evaluator, func, var_args):
                                  calling_va, message=m)
             else:
                 try:
-                    keys_used[k] = param_names[-1]
+                    keys_used[k] = result_params[-1]
                 except IndexError:
                     # TODO this is wrong stupid and whatever.
                     pass
@@ -331,8 +327,8 @@ def get_params(evaluator, func, var_args):
 
         # Now add to result if it's not one of the previously covered cases.
         if (not keys_only or param.stars == 2):
-            param_names.append(ExecutedParam(param, var_args, values).name)
-            keys_used[unicode(param.name)] = param_names[-1]
+            result_params.append(ExecutedParam(param, var_args, values))
+            keys_used[unicode(param.name)] = result_params[-1]
 
     if keys_only:
         # All arguments should be handed over to the next function. It's not
@@ -341,10 +337,10 @@ def get_params(evaluator, func, var_args):
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
             values = [] if param.default is None else [param.default]
-            param_names.append(ExecutedParam(param, var_args, values).name)
+            result_params.append(ExecutedParam(param, var_args, values))
 
-            if not (non_matching_keys or had_multiple_value_error
-                    or param.stars or param.default):
+            if not (non_matching_keys or had_multiple_value_error or
+                    param.stars or param.default):
                 # add a warning only if there's not another one.
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
@@ -382,7 +378,7 @@ def get_params(evaluator, func, var_args):
                         continue
             analysis.add(evaluator, 'type-error-too-many-arguments',
                          v, message=m)
-    return param_names
+    return result_params
 
 
 def _iterate_star_args(evaluator, array, input_node, func=None):

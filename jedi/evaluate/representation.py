@@ -835,16 +835,12 @@ class FunctionExecutionContext(Executed):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield FunctionExecutionFilter(self._evaluator, self, self._funcdef,
-                                      self.param_by_name,
                                       until_position,
                                       origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
-    def _get_params(self):
+    def get_params(self):
         return param.get_params(self._evaluator, self._funcdef, self.var_args)
-
-    def param_by_name(self, name):
-        return [n for n in self._get_params() if str(n) == name][0]
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._funcdef)
