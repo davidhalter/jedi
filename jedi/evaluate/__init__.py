@@ -219,7 +219,7 @@ class Evaluator(object):
                 str_element_names = [str(e) for e in element_names]
                 if any(str(i) in str_element_names for i in if_names):
                     for if_name in if_names:
-                        definitions = self.goto_definitions(if_name)
+                        definitions = self.goto_definitions(context, if_name)
                         # Every name that has multiple different definitions
                         # causes the complexity to rise. The complexity should
                         # never fall below 1.

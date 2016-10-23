@@ -9,7 +9,6 @@ count the function calls.
 """
 from jedi import debug
 from jedi import settings
-from jedi.evaluate import iterable
 
 
 def recursion_decorator(func):
@@ -92,7 +91,6 @@ class _RecursionNode(object):
 
 
 def execution_recursion_decorator(func):
-    return func # TODO remove
     def run(execution, **kwargs):
         detector = execution._evaluator.execution_recursion_detector
         if detector.push_execution(execution):
@@ -131,19 +129,17 @@ class ExecutionRecursionDetector(object):
         self.recursion_level -= 1
 
     def push_execution(self, execution):
-        in_par_execution_funcs = execution.base in self.parent_execution_funcs
-        in_execution_funcs = execution.base in self.execution_funcs
+        in_par_execution_funcs = execution.funcdef in self.parent_execution_funcs
+        in_execution_funcs = execution.funcdef in self.execution_funcs
         self.recursion_level += 1
         self.execution_count += 1
-        self.execution_funcs.add(execution.base)
-        self.parent_execution_funcs.append(execution.base)
+        self.execution_funcs.add(execution.funcdef)
+        self.parent_execution_funcs.append(execution.funcdef)
 
         if self.execution_count > settings.max_executions:
             return True
 
-        if isinstance(execution.base, (iterable.Array, iterable.Generator)):
-            return False
-        module = execution.get_parent_until()
+        module = execution.get_root_context()
         if module == self._evaluator.BUILTINS:
             return False
 

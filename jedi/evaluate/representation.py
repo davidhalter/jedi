@@ -643,11 +643,9 @@ class FunctionExecutionContext(Executed):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
-    type = 'funcdef'
-
     def __init__(self, evaluator, parent_context, funcdef, var_args):
         super(FunctionExecutionContext, self).__init__(evaluator, parent_context, var_args)
-        self._funcdef = funcdef
+        self.funcdef = funcdef
         if isinstance(funcdef, mixed.MixedObject):
             # The extra information in mixed is not needed anymore. We can just
             # unpack it and give it the tree object.
@@ -666,7 +664,7 @@ class FunctionExecutionContext(Executed):
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator
     def get_return_types(self, check_yields=False):
-        funcdef = self._funcdef
+        funcdef = self.funcdef
         if funcdef.type in ('lambdef', 'lambdef_nocond'):
             return self._evaluator.eval_element(self.children[-1])
 
@@ -763,16 +761,16 @@ class FunctionExecutionContext(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield FunctionExecutionFilter(self._evaluator, self, self._funcdef,
+        yield FunctionExecutionFilter(self._evaluator, self, self.funcdef,
                                       until_position,
                                       origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
-        return param.get_params(self._evaluator, self._funcdef, self.var_args)
+        return param.get_params(self._evaluator, self.funcdef, self.var_args)
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self._funcdef)
+        return "<%s of %s>" % (type(self).__name__, self.funcdef)
 
 
 class GlobalName(helpers.FakeName):
