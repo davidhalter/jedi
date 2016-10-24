@@ -23,7 +23,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser.tree import Class
 from jedi.common import indent_block
-from jedi.evaluate.iterable import Array, FakeSequence, AlreadyEvaluated
+from jedi.evaluate.iterable import ArrayLiteralContext, FakeSequence, AlreadyEvaluated
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -163,7 +163,7 @@ def _execute_array_values(evaluator, array):
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
     """
-    if isinstance(array, Array):
+    if isinstance(array, ArrayLiteralContext):
         values = []
         for types in array.py__iter__():
             objects = set(chain.from_iterable(_execute_array_values(evaluator, typ) for typ in types))

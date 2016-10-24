@@ -192,6 +192,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     """
     Returns all filters in order of priority for name resolution.
     """
+    from jedi.evaluate.representation import FunctionExecutionContext
     in_func = False
     while context is not None:
         if not (context.type == 'classdef' and in_func):
@@ -201,7 +202,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
                     until_position=until_position,
                     origin_scope=origin_scope):
                 yield filter
-            if context.type == 'funcdef':
+            if isinstance(context, FunctionExecutionContext):
                 # The position should be reset if the current scope is a function.
                 until_position = None
                 in_func = True

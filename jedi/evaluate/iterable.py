@@ -32,6 +32,12 @@ from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
 from jedi import common
 from jedi.evaluate.filters import DictFilter
+from jedi.evaluate.context import Context
+
+
+class AbstractArrayContext(Context):
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        raise NotImplementedError
 
 
 class IterableWrapper(tree.Base):
@@ -40,6 +46,7 @@ class IterableWrapper(tree.Base):
 
     @memoize_default()
     def _get_names_dict(self, names_dict):
+        raise NotImplementedError
         builtin_methods = {}
         for cls in reversed(type(self).mro()):
             try:
@@ -339,26 +346,27 @@ class GeneratorComprehension(Comprehension, GeneratorMixin):
     pass
 
 
-class Array(IterableWrapper, ArrayMixin):
+class ArrayLiteralContext(AbstractArrayContext, ArrayMixin):
     mapping = {'(': 'tuple',
                '[': 'list',
                '{': 'dict'}
 
-    def __init__(self, evaluator, atom):
-        self._evaluator = evaluator
+    def __init__(self, evaluator, parent_context, atom):
+        super(ArrayLiteralContext, self).__init__(evaluator, parent_context)
         self.atom = atom
-        self.type = Array.mapping[atom.children[0]]
+        self._array_type = ArrayLiteralContext.mapping[atom.children[0]]
         """The builtin name of the array (list, set, tuple or dict)."""
 
         c = self.atom.children
         array_node = c[1]
-        if self.type == 'dict' and array_node != '}' \
-                and (not hasattr(array_node, 'children')
-                     or ':' not in array_node.children):
-            self.type = 'set'
+        if self._array_type == 'dict' and array_node != '}' \
+                and (not hasattr(array_node, 'children') or ':' not in array_node.children):
+            self._array_type = 'set'
 
     @property
     def name(self):
+        raise NotImplementedError
+        #return compiled.CompiledContextName(
         return helpers.FakeName(self.type, parent=self)
 
     def py__getitem__(self, index):
@@ -375,7 +383,7 @@ class Array(IterableWrapper, ArrayMixin):
         if isinstance(index, slice):
             return set([self])
         else:
-            return self._evaluator.eval_element(self._items()[index])
+            return self.parent_context.eval_node(self._items()[index])
 
     def __getattr__(self, name):
         if name not in ['start_pos', 'get_only_subelement', 'parent',
@@ -440,7 +448,7 @@ class Array(IterableWrapper, ArrayMixin):
         return "<%s of %s>" % (type(self).__name__, self.atom)
 
 
-class _FakeArray(Array):
+class _FakeArray(ArrayLiteralContext):
     def __init__(self, evaluator, container, type):
         self.type = type
         self._evaluator = evaluator
@@ -595,8 +603,8 @@ def py__iter__types(evaluator, types, node=None):
     return unite(py__iter__(evaluator, types, node))
 
 
-def py__getitem__(evaluator, types, trailer):
-    from jedi.evaluate.representation import Class
+def py__getitem__(evaluator, context, types, trailer):
+    from jedi.evaluate.representation import ClassContext
     result = set()
 
     trailer_op, node, trailer_cl = trailer.children
@@ -606,7 +614,7 @@ def py__getitem__(evaluator, types, trailer):
     # special case: PEP0484 typing module, see
     # https://github.com/davidhalter/jedi/issues/663
     for typ in list(types):
-        if isinstance(typ, Class):
+        if isinstance(typ, ClassContext):
             typing_module_types = \
                 pep0484.get_types_for_typing_module(evaluator, typ, node)
             if typing_module_types is not None:
@@ -617,7 +625,7 @@ def py__getitem__(evaluator, types, trailer):
         # all consumed by special cases
         return result
 
-    for index in create_index_types(evaluator, node):
+    for index in create_index_types(evaluator, context, node):
         if isinstance(index, (compiled.CompiledObject, Slice)):
             index = index.obj
 
@@ -849,7 +857,7 @@ class Slice(object):
             return slice(None, None, None)
 
 
-def create_index_types(evaluator, index):
+def create_index_types(evaluator, context, index):
     """
     Handles slices in subscript nodes.
     """
@@ -873,4 +881,4 @@ def create_index_types(evaluator, index):
         return set([Slice(evaluator, *result)])
 
     # No slices
-    return evaluator.eval_element(index)
+    return context.eval_node(index)

@@ -153,7 +153,7 @@ class BaseDefinition(object):
 
         if isinstance(stripped, (compiled.CompiledObject, mixed.MixedObject)):
             return stripped.api_type()
-        elif isinstance(stripped, iterable.Array):
+        elif isinstance(stripped, iterable.ArrayLiteralContext):
             return 'instance'
         elif isinstance(stripped, tree.Import):
             return 'import'
@@ -577,7 +577,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             if typ == 'instance':
                 typ = 'class'  # The description should be similar to Py objects.
             d = typ + ' ' + d.name.get_code()
-        elif isinstance(d, iterable.Array):
+        elif isinstance(d, iterable.ArrayLiteralContext):
             d = 'class ' + d.type
         elif isinstance(d, (tree.Class, er.ClassContext, er.Instance)):
             d = 'class ' + unicode(d.name)

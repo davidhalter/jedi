@@ -386,7 +386,7 @@ class Evaluator(object):
 
                 if comp_for.type == 'comp_for':
                     return set([iterable.Comprehension.from_atom(self, atom)])
-            return set([iterable.Array(self, atom)])
+            return set([iterable.ArrayLiteralContext(self, context, atom)])
 
     def eval_trailer(self, context, types, trailer):
         trailer_op, node = trailer.children[:2]
@@ -395,7 +395,7 @@ class Evaluator(object):
 
         new_types = set()
         if trailer_op == '[':
-            new_types |= iterable.py__getitem__(self, types, trailer)
+            new_types |= iterable.py__getitem__(self, context, types, trailer)
         else:
             for typ in types:
                 debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
