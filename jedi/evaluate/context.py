@@ -23,9 +23,10 @@ class Context(object):
         Execute a function with already executed arguments.
         """
         from jedi.evaluate.iterable import AlreadyEvaluated
+        from jedi.evaluate.param import Arguments
         # TODO UGLY
         args = [AlreadyEvaluated([arg]) for arg in args]
-        return self.execute(args)
+        return self.execute(Arguments(self._evaluator, self, args))
 
 
 class TreeContext(Context):

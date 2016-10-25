@@ -32,7 +32,7 @@ class AbstractNameDefinition():
         return unite(context.execute(arguments) for context in self.infer())
 
     def execute_evaluated(self, *args, **kwargs):
-        return unite(context.execute(*args, **kwargs) for context in self.infer())
+        return unite(context.execute_evaluated(*args, **kwargs) for context in self.infer())
 
 
 class ContextName(AbstractNameDefinition):
