@@ -581,7 +581,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
             d = 'class ' + d.type
         elif isinstance(d, (tree.Class, er.ClassContext, er.Instance)):
             d = 'class ' + unicode(d.name)
-        elif isinstance(d, (er.Function, tree.Function)):
+        elif isinstance(d, (er.FunctionContext, tree.Function)):
             d = 'def ' + unicode(d.name)
         elif isinstance(d, tree.Module):
             # only show module name

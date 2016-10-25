@@ -172,12 +172,13 @@ def memoize_faked(obj):
 def _get_faked(module, obj, name=None):
     obj = type(obj) if is_class_instance(obj) else obj
     result, fake_module = _faked(module, obj, name)
-    if result is None or isinstance(result, pt.Class):
+    if result is None or result.type == 'classdef':
         # We're not interested in classes. What we want is functions.
         raise FakeDoesNotExist
     else:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
+        assert result.type == 'funcdef'
         doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
         suite = result.children[-1]
         string = pt.String(doc, (0, 0), '')
@@ -187,12 +188,12 @@ def _get_faked(module, obj, name=None):
         return result, fake_module
 
 
-def get_faked(module, obj, name=None, parent=None):
+def get_faked(evaluator, module, obj, name=None, parent_context=None):
     faked, fake_module = _get_faked(module and module.obj, obj, name)
-    faked.parent = parent
     if module is not None:
         module.used_names = fake_module.used_names
-    return faked
+    from jedi.evaluate.representation import FunctionContext
+    return FunctionContext(evaluator, parent_context, faked)
 
 
 def is_class_instance(obj):

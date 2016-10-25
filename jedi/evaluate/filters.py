@@ -6,7 +6,7 @@ from abc import abstractmethod
 
 from jedi.parser.tree import search_ancestor
 from jedi.evaluate import flow_analysis
-from jedi.common import to_list
+from jedi.common import to_list, unite
 
 
 class AbstractNameDefinition():
@@ -27,6 +27,12 @@ class AbstractNameDefinition():
         if self.start_pos is None:
             return '<%s: %s>' % (type(self).__name__, self.string_name)
         return '<%s: %s@%s>' % (type(self).__name__, self.string_name, self.start_pos)
+
+    def execute(self, arguments):
+        return unite(context.execute(arguments) for context in self.infer())
+
+    def execute_evaluated(self, *args, **kwargs):
+        return unite(context.execute(*args, **kwargs) for context in self.infer())
 
 
 class ContextName(AbstractNameDefinition):

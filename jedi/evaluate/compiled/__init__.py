@@ -238,12 +238,13 @@ class CompiledObject(Context):
         Returns only the faked scopes - the other ones are not important for
         internal analysis.
         """
+        raise NotImplementedError
         module = self.get_parent_until()
         faked_subscopes = []
         for name in dir(self.obj):
             try:
                 faked_subscopes.append(
-                    fake.get_faked(module, self.obj, parent=self, name=name)
+                    fake.get_faked(self._evaluator, module, self.obj, parent=self, name=name)
                 )
             except fake.FakeDoesNotExist:
                 pass
@@ -512,20 +513,21 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def _create_from_name(evaluator, module, parent, name):
+def _create_from_name(evaluator, module, compiled_object, name):
+    obj = compiled_object.obj
     try:
-        return fake.get_faked(module, parent.obj, parent=parent, name=name)
+        return fake.get_faked(evaluator, module, obj, parent_context=compiled_object, name=name)
     except fake.FakeDoesNotExist:
         pass
 
     try:
-        obj = getattr(parent.obj, name)
+        obj = getattr(obj, name)
     except AttributeError:
         # Happens e.g. in properties of
         # PyQt4.QtGui.QStyleOptionComboBox.currentText
         # -> just set it to None
         obj = None
-    return create(evaluator, obj, parent)
+    return create(evaluator, obj, parent_context=compiled_object)
 
 
 def builtin_from_name(evaluator, string):
@@ -550,7 +552,7 @@ _SPECIAL_OBJECTS = {
 
 def get_special_object(evaluator, identifier):
     obj = _SPECIAL_OBJECTS[identifier]
-    return create(evaluator, obj, parent=create(evaluator, _builtins))
+    return create(evaluator, obj, parent_context=create(evaluator, _builtins))
 
 
 def compiled_objects_cache(attribute_name):
@@ -560,21 +562,21 @@ def compiled_objects_cache(attribute_name):
         Caching the id has the advantage that an object doesn't need to be
         hashable.
         """
-        def wrapper(evaluator, obj, parent=None, module=None):
+        def wrapper(evaluator, obj, parent_context=None, module=None):
             cache = getattr(evaluator, attribute_name)
             # Do a very cheap form of caching here.
-            key = id(obj), id(parent)
+            key = id(obj), id(parent_context)
             try:
                 return cache[key][0]
             except KeyError:
                 # TODO this whole decorator looks way too ugly and this if
                 # doesn't make it better. Find a more generic solution.
-                if parent or module:
-                    result = func(evaluator, obj, parent, module)
+                if parent_context or module:
+                    result = func(evaluator, obj, parent_context, module)
                 else:
                     result = func(evaluator, obj)
                 # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent, module
+                cache[key] = result, obj, parent_context, module
                 return result
         return wrapper
 
@@ -582,22 +584,22 @@ def compiled_objects_cache(attribute_name):
 
 
 @compiled_objects_cache('compiled_cache')
-def create(evaluator, obj, parent=None, module=None):
+def create(evaluator, obj, parent_context=None, module=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
     if inspect.ismodule(obj):
-        if parent is not None:
+        if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
     else:
-        if parent is None and obj != _builtins:
+        if parent_context is None and obj != _builtins:
             return create(evaluator, obj, create(evaluator, _builtins))
 
         try:
-            return fake.get_faked(module, obj, parent=parent)
+            return fake.get_faked(evaluator, module, obj, parent_context=parent_context)
         except fake.FakeDoesNotExist:
             pass
 
-    return CompiledObject(evaluator, obj, parent)
+    return CompiledObject(evaluator, obj, parent_context)

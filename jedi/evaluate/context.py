@@ -18,6 +18,15 @@ class Context(object):
     def execute(self, arguments=None):
         return self._evaluator.execute(self, arguments)
 
+    def execute_evaluated(self, *args):
+        """
+        Execute a function with already executed arguments.
+        """
+        from jedi.evaluate.iterable import AlreadyEvaluated
+        # TODO UGLY
+        args = [AlreadyEvaluated([arg]) for arg in args]
+        return self.execute(args)
+
 
 class TreeContext(Context):
     def eval_node(self, node):

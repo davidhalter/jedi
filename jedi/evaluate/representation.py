@@ -385,7 +385,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
             # more complicated than we would it actually like to be.
             return self.var.py__call__(params)
         else:
-            return Function.py__call__(self, params)
+            return FunctionContext.py__call__(self, params)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.var)
@@ -518,13 +518,13 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class Function(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
+class FunctionContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
     def __init__(self, evaluator, parent_context, func, is_decorated=False):
         """ This should not be called directly """
-        super(Function, self).__init__(evaluator, parent_context)
+        super(FunctionContext, self).__init__(evaluator, parent_context)
         self.base = self.base_func = func
         self.is_decorated = is_decorated
         # A property that is set by the decorator resolution.
@@ -563,10 +563,10 @@ class Function(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
                                   self.base_func, dec_results)
 
                 # Create param array.
-                if isinstance(f, Function):
+                if isinstance(f, FunctionContext):
                     old_func = f  # TODO this is just hacky. change.
                 elif f.type == 'funcdef':
-                    old_func = Function(self._evaluator, f, is_decorated=True)
+                    old_func = FunctionContext(self._evaluator, f, is_decorated=True)
                 else:
                     old_func = f
 
@@ -579,7 +579,7 @@ class Function(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
                     debug.warning('multiple wrappers found %s %s',
                                   self.base_func, wrappers)
                 f = list(wrappers)[0]
-                if isinstance(f, (Instance, Function)):
+                if isinstance(f, (Instance, FunctionContext)):
                     f.decorates = self
 
                 debug.dbg('decorator end %s', f)
@@ -629,7 +629,7 @@ class Function(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
         return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
 
 
-class LambdaWrapper(Function):
+class LambdaWrapper(FunctionContext):
     def get_decorated_func(self):
         return self
 

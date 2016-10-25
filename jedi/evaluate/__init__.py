@@ -118,7 +118,7 @@ class Evaluator(object):
         if element.type == 'classdef':
             return er.ClassContext(self, element, parent_context)
         elif element.type == 'funcdef':
-            return er.Function(self, parent_context, element)
+            return er.FunctionContext(self, parent_context, element)
         elif element.type == 'lambda':
             return er.LambdaWrapper(self, element)
         elif element.type == 'file_input':
@@ -306,7 +306,7 @@ class Evaluator(object):
                 types = self.eval_trailer(context, types, trailer)
         elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
-            types = set([iterable.ImplicitTuple(self, element)])
+            types = set([iterable.ArrayLiteralContext(self, context, element)])
         elif element.type in ('not_test', 'factor'):
             types = self.eval_element(context, element.children[-1])
             for operator in element.children[:-1]:
@@ -406,13 +406,6 @@ class Evaluator(object):
                     new_types |= self.execute(typ, arguments)
         return new_types
 
-    def execute_evaluated(self, obj, *args):
-        """
-        Execute a function with already executed arguments.
-        """
-        args = [iterable.AlreadyEvaluated([arg]) for arg in args]
-        return self.execute(obj, args)
-
     @debug.increase_indent
     def execute(self, obj, arguments=None):
         if not isinstance(arguments, param.Arguments):
@@ -422,7 +415,7 @@ class Evaluator(object):
         if self.is_analysis:
             arguments.eval_all()
 
-        if isinstance(obj, er.Function):
+        if isinstance(obj, er.FunctionContext):
             obj = obj.get_decorated_func()
 
         debug.dbg('execute: %s %s', obj, arguments)

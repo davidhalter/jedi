@@ -39,6 +39,12 @@ class AbstractArrayContext(Context):
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         raise NotImplementedError
 
+    @property
+    def name(self):
+        raise NotImplementedError
+        #return compiled.CompiledContextName(
+        return helpers.FakeName(self.type, parent=self)
+
 
 class IterableWrapper(tree.Base):
     def is_class(self):
@@ -354,20 +360,18 @@ class ArrayLiteralContext(AbstractArrayContext, ArrayMixin):
     def __init__(self, evaluator, parent_context, atom):
         super(ArrayLiteralContext, self).__init__(evaluator, parent_context)
         self.atom = atom
-        self._array_type = ArrayLiteralContext.mapping[atom.children[0]]
-        """The builtin name of the array (list, set, tuple or dict)."""
+
+        if self.atom.type in ('testlist_star_expr', 'testlist'):
+            self._array_type = 'tuple'
+        else:
+            self._array_type = ArrayLiteralContext.mapping[atom.children[0]]
+            """The builtin name of the array (list, set, tuple or dict)."""
 
         c = self.atom.children
         array_node = c[1]
         if self._array_type == 'dict' and array_node != '}' \
                 and (not hasattr(array_node, 'children') or ':' not in array_node.children):
             self._array_type = 'set'
-
-    @property
-    def name(self):
-        raise NotImplementedError
-        #return compiled.CompiledContextName(
-        return helpers.FakeName(self.type, parent=self)
 
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
@@ -423,6 +427,10 @@ class ArrayLiteralContext(AbstractArrayContext, ArrayMixin):
 
     def _items(self):
         c = self.atom.children
+
+        if self.atom.type in ('testlist_star_expr', 'testlist'):
+            return c[::2]
+
         array_node = c[1]
         if array_node in (']', '}', ')'):
             return []  # Direct closing bracket, doesn't contain items.
@@ -458,6 +466,7 @@ class _FakeArray(ArrayLiteralContext):
 class ImplicitTuple(_FakeArray):
     def __init__(self, evaluator, testlist):
         super(ImplicitTuple, self).__init__(evaluator, testlist, 'tuple')
+        raise NotImplementedError
         self._testlist = testlist
 
     def _items(self):

@@ -1,5 +1,6 @@
 from abc import abstractproperty
 
+from jedi.common import unite
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParserTreeFilter, ContextName
@@ -45,11 +46,8 @@ class AbstractInstanceContext(Context):
             raise AttributeError
 
         def execute(arguments):
-            contexts = set()
-            for name in names:
-                for context in name.infer():
-                    context.execute(arguments)
-            return contexts
+            return unite(name.execute(arguments) for name in names)
+
         return execute
 
     def py__class__(self):
@@ -103,13 +101,13 @@ class AbstractInstanceContext(Context):
 
     def py__getitem__(self, index):
         try:
-            method = self.get_subscope_by_name('__getitem__')
+            names = self._get_function_slot_names('__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return set()
         else:
             index_obj = compiled.create(self._evaluator, index)
-            return self._evaluator.execute_evaluated(method, index_obj)
+            return unite(name.execute_evaluated(index_obj) for name in names)
 
     def py__iter__(self):
         try:
