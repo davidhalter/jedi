@@ -689,8 +689,7 @@ class FunctionExecutionContext(Executed):
 
         for r in returns:
             types |= self.eval_node(r.children[1])
-            continue # TODO REMOVE
-            check = flow_analysis.break_check(self._evaluator, self, r)
+            check = flow_analysis.reachability_check(self, funcdef, r)
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
             else:

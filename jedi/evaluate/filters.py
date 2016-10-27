@@ -133,11 +133,9 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
-            stmt = name.get_definition()
-            check = flow_analysis.UNSURE
-            #name_scope = self._evaluator.wrap(stmt.get_parent_scope())
-            #check = flow_analysis.break_check(self._evaluator, name_scope,
-            #                                  stmt, self._origin_scope)
+            check = flow_analysis.reachability_check(
+                self._context, self._parser_scope, name, self._origin_scope
+            )
             if check is not flow_analysis.UNREACHABLE:
                 yield name
 

@@ -210,7 +210,7 @@ class NameFinder(object):
                                 # deliver types.
                                 self._found_predefined_if_name = types
                             else:
-                                check = flow_analysis.break_check(self._evaluator, self.context,
+                                check = flow_analysis.reachability_check(self._context, self.context,
                                                                   origin_scope)
                                 if check is flow_analysis.UNREACHABLE:
                                     self._found_predefined_if_name = set()
@@ -225,7 +225,7 @@ class NameFinder(object):
             if isinstance(stmt.parent, compiled.CompiledObject):
                 # TODO seriously? this is stupid.
                 continue
-            check = flow_analysis.break_check(self._evaluator, name_scope,
+            check = flow_analysis.reachability_check(self._context, name_scope,
                                               stmt, origin_scope)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
