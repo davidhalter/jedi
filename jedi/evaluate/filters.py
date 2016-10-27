@@ -25,8 +25,8 @@ class AbstractNameDefinition():
 
     def __repr__(self):
         if self.start_pos is None:
-            return '<%s: %s>' % (type(self).__name__, self.string_name)
-        return '<%s: %s@%s>' % (type(self).__name__, self.string_name, self.start_pos)
+            return '<%s: %s>' % (self.__class__.__name__, self.string_name)
+        return '<%s: %s@%s>' % (self.__class__.__name__, self.string_name, self.start_pos)
 
     def execute(self, arguments):
         return unite(context.execute(arguments) for context in self.infer())

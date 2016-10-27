@@ -35,7 +35,7 @@ from jedi.evaluate.filters import DictFilter
 from jedi.evaluate.context import Context
 
 
-class AbstractArrayContext(Context):
+class AbstractSequence(Context):
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         raise NotImplementedError
 
@@ -152,6 +152,7 @@ class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin))
         return f.get_yield_types()
 
     def __getattr__(self, name):
+        raise NotImplementedError
         if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
                         'doc', 'docstr', 'get_parent_until',
                         'get_code', 'subscopes']:
@@ -288,7 +289,6 @@ class ArrayMixin(object):
     def _imitate_values(self):
         items = self.dict_values()
         return create_evaluated_sequence_set(self._evaluator, items, sequence_type='list')
-        #return set([FakeSequence(self._evaluator, [AlreadyEvaluated(items)], 'tuple')])
 
     @register_builtin_method('items', type='dict')
     def _imitate_items(self):
@@ -352,7 +352,7 @@ class GeneratorComprehension(Comprehension, GeneratorMixin):
     pass
 
 
-class ArrayLiteralContext(AbstractArrayContext, ArrayMixin):
+class ArrayLiteralContext(AbstractSequence, ArrayMixin):
     mapping = {'(': 'tuple',
                '[': 'list',
                '{': 'dict'}
@@ -390,6 +390,7 @@ class ArrayLiteralContext(AbstractArrayContext, ArrayMixin):
             return self.parent_context.eval_node(self._items()[index])
 
     def __getattr__(self, name):
+        raise NotImplementedError
         if name not in ['start_pos', 'get_only_subelement', 'parent',
                         'get_parent_until', 'items']:
             raise AttributeError('Strange access on %s: %s.' % (self, name))
@@ -474,15 +475,28 @@ class ImplicitTuple(_FakeArray):
 
 
 class FakeSequence(_FakeArray):
-    def __init__(self, evaluator, sequence_values, type):
+    def __init__(self, evaluator, type, context_sets):
         """
         type should be one of "tuple", "list"
         """
-        super(FakeSequence, self).__init__(evaluator, sequence_values, type)
-        self._sequence_values = sequence_values
+        super(FakeSequence, self).__init__(evaluator, context_sets, type)
+        self._context_sets = context_sets
+
+    def _resolve(self, context_set):
+        for x in context_set:
+            try:
+                infer = x.infer
+            except AttributeError:
+                yield x
+            else:
+                for value in infer():
+                    yield value
 
     def _items(self):
-        return self._sequence_values
+        return self._context_sets
+
+    def py__getitem__(self, index):
+        return set(self._resolve(self._context_sets[index]))
 
 
 def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
@@ -499,12 +513,17 @@ def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
 
 class AlreadyEvaluated(frozenset):
     """A simple container to add already evaluated objects to an array."""
+    def __init__(self, *args, **kwargs):
+        raise DeprecationWarning
+
     def get_code(self, normalized=False):
         # For debugging purposes.
         return str(self)
 
 
 class MergedNodes(frozenset):
+    def __init__(self, *args, **kwargs):
+        raise DeprecationWarning
     pass
 
 

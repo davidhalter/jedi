@@ -18,15 +18,12 @@ class Context(object):
     def execute(self, arguments=None):
         return self._evaluator.execute(self, arguments)
 
-    def execute_evaluated(self, *args):
+    def execute_evaluated(self, *value_list):
         """
         Execute a function with already executed arguments.
         """
-        from jedi.evaluate.iterable import AlreadyEvaluated
-        from jedi.evaluate.param import Arguments
-        # TODO UGLY
-        args = [AlreadyEvaluated([arg]) for arg in args]
-        return self.execute(Arguments(self._evaluator, self, args))
+        from jedi.evaluate.param import ValueArguments
+        return self.execute(ValueArguments(value_list))
 
 
 class TreeContext(Context):

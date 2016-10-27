@@ -767,7 +767,7 @@ class FunctionExecutionContext(Executed):
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
-        return param.get_params(self._evaluator, self.funcdef, self.var_args)
+        return param.get_params(self._evaluator, self.parent_context, self.funcdef, self.var_args)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.funcdef)

@@ -8,6 +8,7 @@ from jedi.parser import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
+from jedi.evaluate.context import Context
 
 
 def try_iter_content(types, depth=0):
@@ -27,7 +28,66 @@ def try_iter_content(types, depth=0):
                 try_iter_content(iter_types, depth + 1)
 
 
-class Arguments(tree.Base):
+class AbstractArguments(tree.Base):
+    def get_parent_until(self, *args, **kwargs):
+        raise DeprecationWarning
+        if self.trailer is None:
+            try:
+                element = self.argument_node[0]
+                if isinstance(element, iterable.AlreadyEvaluated):
+                    element = list(self._evaluator.eval_element(self._context, element))[0]
+            except IndexError:
+                return None
+            else:
+                return element.get_parent_until(*args, **kwargs)
+        else:
+            return self.trailer.get_parent_until(*args, **kwargs)
+
+    def eval_argument_clinic(self, arguments):
+        """Uses a list with argument clinic information (see PEP 436)."""
+        raise DeprecationWarning('not sure if we really deprecate it')
+        iterator = self.unpack()
+        for i, (name, optional, allow_kwargs) in enumerate(arguments):
+            key, va_values = next(iterator, (None, []))
+            if key is not None:
+                raise NotImplementedError
+            if not va_values and not optional:
+                debug.warning('TypeError: %s expected at least %s arguments, got %s',
+                              name, len(arguments), i)
+                raise ValueError
+            values = set(chain.from_iterable(self._evaluator.eval_element(self._context, el)
+                                             for el in va_values))
+            if not values and not optional:
+                # For the stdlib we always want values. If we don't get them,
+                # that's ok, maybe something is too hard to resolve, however,
+                # we will not proceed with the evaluation of that function.
+                debug.warning('argument_clinic "%s" not resolvable.', name)
+                raise ValueError
+            yield values
+
+    def scope(self):
+        raise DeprecationWarning
+        # Returns the scope in which the arguments are used.
+        return (self.trailer or self.argument_node).get_parent_until(tree.IsScope)
+
+    def eval_args(self):
+        # TODO this method doesn't work with named args and a lot of other
+        # things. Use unpack.
+        raise DeprecationWarning
+        return [self._evaluator.eval_element(self._context, el) for stars, el in self._split()]
+
+    def eval_all(self, func=None):
+        """
+        Evaluates all arguments as a support for static analysis
+        (normally Jedi).
+        """
+        for key, element_values in self.unpack():
+            for element in element_values:
+                types = self._evaluator.eval_element(self._context, element)
+                try_iter_content(types)
+
+
+class TreeArguments(AbstractArguments):
     def __init__(self, evaluator, context, argument_node, trailer=None):
         """
         The argument_node is either a parser node or a list of evaluated
@@ -66,32 +126,11 @@ class Arguments(tree.Base):
                 else:
                     yield 0, child
 
-    def get_parent_until(self, *args, **kwargs):
-        if self.trailer is None:
-            try:
-                element = self.argument_node[0]
-                from jedi.evaluate.iterable import AlreadyEvaluated
-                if isinstance(element, AlreadyEvaluated):
-                    element = list(self._evaluator.eval_element(self._context, element))[0]
-            except IndexError:
-                return None
-            else:
-                return element.get_parent_until(*args, **kwargs)
-        else:
-            return self.trailer.get_parent_until(*args, **kwargs)
-
-    def as_tuple(self):
-        for stars, argument in self._split():
-            if tree.is_node(argument, 'argument'):
-                argument, default = argument.children[::2]
-            else:
-                default = None
-            yield argument, default, stars
-
     def unpack(self, func=None):
         named_args = []
         for stars, el in self._split():
             if stars == 1:
+                raise NotImplementedError
                 arrays = self._evaluator.eval_element(self._context, el)
                 iterators = [_iterate_star_args(self._evaluator, a, el, func)
                              for a in arrays]
@@ -99,124 +138,100 @@ class Arguments(tree.Base):
                 for values in list(zip_longest(*iterators)):
                     yield None, [v for v in values if v is not None]
             elif stars == 2:
+                raise NotImplementedError
                 arrays = self._evaluator.eval_element(self._context, el)
                 dicts = [_star_star_dict(self._evaluator, a, el, func)
                          for a in arrays]
                 for dct in dicts:
                     for key, values in dct.items():
-                        yield key, values
+                        yield key, LazyContext(*values)
             else:
                 if tree.is_node(el, 'argument'):
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
-                        named_args.append((c[0].value, (c[2],)))
+                        named_args.append((c[0].value, LazyContext(self._context, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         comp = iterable.GeneratorComprehension(
                             self._evaluator, self.argument_node.parent)
-                        yield None, (iterable.AlreadyEvaluated([comp]),)
-                elif isinstance(el, (list, tuple)):
-                    yield None, el
+                        yield None, KnownContext(comp)
                 else:
-                    yield None, (el,)
+                    yield None, LazyContext(self._context, el)
 
         # Reordering var_args is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
-        for key_arg in named_args:
-            yield key_arg
+        for named_arg in named_args:
+            yield named_arg
 
-    def _reorder_var_args(var_args):
-        named_index = None
-        new_args = []
-        for i, stmt in enumerate(var_args):
-            if isinstance(stmt, tree.ExprStmt):
-                if named_index is None and stmt.assignment_details:
-                    named_index = i
-
-                if named_index is not None:
-                    expression_list = stmt.expression_list()
-                    if expression_list and expression_list[0] == '*':
-                        new_args.insert(named_index, stmt)
-                        named_index += 1
-                        continue
-
-            new_args.append(stmt)
-        return new_args
-
-    def eval_argument_clinic(self, arguments):
-        """Uses a list with argument clinic information (see PEP 436)."""
-        iterator = self.unpack()
-        for i, (name, optional, allow_kwargs) in enumerate(arguments):
-            key, va_values = next(iterator, (None, []))
-            if key is not None:
-                raise NotImplementedError
-            if not va_values and not optional:
-                debug.warning('TypeError: %s expected at least %s arguments, got %s',
-                              name, len(arguments), i)
-                raise ValueError
-            values = set(chain.from_iterable(self._evaluator.eval_element(self._context, el)
-                                             for el in va_values))
-            if not values and not optional:
-                # For the stdlib we always want values. If we don't get them,
-                # that's ok, maybe something is too hard to resolve, however,
-                # we will not proceed with the evaluation of that function.
-                debug.warning('argument_clinic "%s" not resolvable.', name)
-                raise ValueError
-            yield values
-
-    def scope(self):
-        # Returns the scope in which the arguments are used.
-        return (self.trailer or self.argument_node).get_parent_until(tree.IsScope)
-
-    def eval_args(self):
-        # TODO this method doesn't work with named args and a lot of other
-        # things. Use unpack.
-        return [self._evaluator.eval_element(self._context, el) for stars, el in self._split()]
+    def as_tuple(self):
+        raise DeprecationWarning
+        for stars, argument in self._split():
+            if tree.is_node(argument, 'argument'):
+                argument, default = argument.children[::2]
+            else:
+                default = None
+            yield argument, default, stars
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.argument_node)
 
     def get_calling_var_args(self):
-        if tree.is_node(self.argument_node, 'arglist', 'argument') \
-                or self.argument_node == () and self.trailer is not None:
-            return _get_calling_var_args(self._evaluator, self)
-        else:
-            return None
-
-    def eval_all(self, func=None):
-        """
-        Evaluates all arguments as a support for static analysis
-        (normally Jedi).
-        """
-        for key, element_values in self.unpack():
-            for element in element_values:
-                types = self._evaluator.eval_element(self._context, element)
-                try_iter_content(types)
+        return _get_calling_var_args(self._evaluator, self)
 
 
-class ExecutedParam(tree.Param):
+class KnownContext(object):
+    def __init__(self, value):
+        self._value = value
+
+    def infer(self):
+        return set([self._value])
+
+
+class UnknownContext(object):
+    def infer(self):
+        return set()
+
+
+class LazyContext(object):
+    def __init__(self, context, node):
+        self._context = context
+        self._node = node
+
+    def infer(self):
+        return self._context.eval_node(self._node)
+
+
+class ValueArguments(AbstractArguments):
+    def __init__(self, value_list):
+        self._value_list = value_list
+
+    def unpack(self, func=None):
+        for value in self._value_list:
+            yield None, KnownContext(value)
+
+    def get_calling_var_args(self):
+        return None
+
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, self._value_list)
+
+
+class ExecutedParam(object):
     """Fake a param and give it values."""
-    def __init__(self, original_param, var_args, values):
+    def __init__(self, original_param, var_args, lazy_context):
+        assert not isinstance(lazy_context, (tuple, list))
         self._original_param = original_param
         self.var_args = var_args
-        self._values = values
+        self._lazy_context = lazy_context
         self.string_name = self._original_param.name.value
 
     def infer(self, evaluator):
-        types = set()
-        for v in self._values:
-            # TODO this context selection seems wrong. Fix it once we change
-            # the way executed params work.
-            types |= evaluator.eval_element(self.var_args._context, v)
-        return types
+        return self._lazy_context.infer()
 
     @property
     def position_nr(self):
         # Need to use the original logic here, because it uses the parent.
         return self._original_param.position_nr
-
-    def __getattr__(self, name):
-        return getattr(self._original_param, name)
 
 
 def _get_calling_var_args(evaluator, var_args):
@@ -244,7 +259,7 @@ def _get_calling_var_args(evaluator, var_args):
     return var_args.argument_node or var_args.trailer
 
 
-def get_params(evaluator, func, var_args):
+def get_params(evaluator, parent_context, func, var_args):
     result_params = []
     param_dict = {}
     for param in func.params:
@@ -252,8 +267,9 @@ def get_params(evaluator, func, var_args):
     unpacked_va = list(var_args.unpack(func))
     from jedi.evaluate.representation import InstanceElement
     if isinstance(func, InstanceElement):
+        raise DeprecationWarning
         # Include self at this place.
-        unpacked_va.insert(0, (None, [iterable.AlreadyEvaluated([func.instance])]))
+        unpacked_va.insert(0, (None, [func.instance]))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
@@ -265,17 +281,17 @@ def get_params(evaluator, func, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        default = [] if param.default is None else [param.default]
-        key, va_values = next(var_arg_iterator, (None, default))
+        default = None if param.default is None else LazyContext(parent_context, param.default)
+        key, argument = next(var_arg_iterator, (None, default))
         while key is not None:
             keys_only = True
             k = unicode(key)
             try:
                 key_param = param_dict[unicode(key)]
             except KeyError:
-                non_matching_keys[key] = va_values
+                non_matching_keys[key] = argument
             else:
-                result_params.append(ExecutedParam(key_param, var_args, va_values))
+                result_params.append(ExecutedParam(key_param, var_args, argument))
 
             if k in keys_used:
                 had_multiple_value_error = True
@@ -291,43 +307,43 @@ def get_params(evaluator, func, var_args):
                 except IndexError:
                     # TODO this is wrong stupid and whatever.
                     pass
-            key, va_values = next(var_arg_iterator, (None, ()))
+            key, argument = next(var_arg_iterator, (None, None))
 
-        values = []
         if param.stars == 1:
             # *args param
-            lst_values = [iterable.MergedNodes(va_values)] if va_values else []
-            for key, va_values in var_arg_iterator:
-                # Iterate until a key argument is found.
-                if key:
-                    var_arg_iterator.push_back((key, va_values))
-                    break
-                if va_values:
-                    lst_values.append(iterable.MergedNodes(va_values))
-            seq = iterable.FakeSequence(evaluator, lst_values, 'tuple')
-            values = [iterable.AlreadyEvaluated([seq])]
+            values_list = []
+            if argument is not None:
+                values_list.append([argument])
+                for key, argument in var_arg_iterator:
+                    # Iterate until a key argument is found.
+                    if key:
+                        var_arg_iterator.push_back((key, argument))
+                        break
+                    values_list.append([argument])
+            seq = iterable.FakeSequence(evaluator, 'tuple', values_list)
+            result_arg = KnownContext(seq)
         elif param.stars == 2:
             # **kwargs param
             dct = iterable.FakeDict(evaluator, dict(non_matching_keys))
-            values = [iterable.AlreadyEvaluated([dct])]
+            result_arg = KnownContext(dct)
             non_matching_keys = {}
         else:
             # normal param
-            if va_values:
-                values = va_values
-            else:
+            if argument is not None:
                 # No value: Return an empty container
-                values = []
+                result_arg = UnknownContext()
                 if not keys_only:
                     calling_va = var_args.get_calling_var_args()
                     if calling_va is not None:
                         m = _error_argument_count(func, len(unpacked_va))
                         analysis.add(evaluator, 'type-error-too-few-arguments',
                                      calling_va, message=m)
+            else:
+                result_arg = argument
 
         # Now add to result if it's not one of the previously covered cases.
         if (not keys_only or param.stars == 2):
-            result_params.append(ExecutedParam(param, var_args, values))
+            result_params.append(ExecutedParam(param, var_args, result_arg))
             keys_used[unicode(param.name)] = result_params[-1]
 
     if keys_only:
@@ -336,8 +352,8 @@ def get_params(evaluator, func, var_args):
         # there's nothing to find for certain names.
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
-            values = [] if param.default is None else [param.default]
-            result_params.append(ExecutedParam(param, var_args, values))
+            result_arg = UnknownContext() if param.default is None else LazyContext(param.default)
+            result_params.append(ExecutedParam(param, var_args, result_arg))
 
             if not (non_matching_keys or had_multiple_value_error or
                     param.stars or param.default):
@@ -348,11 +364,10 @@ def get_params(evaluator, func, var_args):
                     analysis.add(evaluator, 'type-error-too-few-arguments',
                                  calling_va, message=m)
 
-    for key, va_values in non_matching_keys.items():
+    for key, argument in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
             % (func.name, key)
-        for value in va_values:
-            analysis.add(evaluator, 'type-error-keyword-argument', value.parent, message=m)
+        analysis.add(evaluator, 'type-error-keyword-argument', argument.whatever, message=m)
 
     remaining_params = list(var_arg_iterator)
     if remaining_params:
@@ -383,7 +398,7 @@ def get_params(evaluator, func, var_args):
 
 def _iterate_star_args(evaluator, array, input_node, func=None):
     from jedi.evaluate.representation import Instance
-    if isinstance(array, iterable.Array):
+    if isinstance(array, iterable.AbstractSequence):
         # TODO ._items is not the call we want here. Replace in the future.
         for node in array._items():
             yield node

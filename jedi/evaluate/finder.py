@@ -470,7 +470,7 @@ def _eval_param(evaluator, context, param, scope):
                 typ = list(evaluator.find_types(evaluator.BUILTINS, t))[0]
                 res_new = evaluator.execute(typ)
         if param.default:
-            res_new |= evaluator.eval_element(param.default)
+            res_new |= evaluator.eval_element(context, param.default)
         return res_new
 
 

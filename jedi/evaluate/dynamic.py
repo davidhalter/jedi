@@ -95,6 +95,8 @@ def search_function_call(evaluator, func):
         # We have to remove decorators, because they are not the
         # "original" functions, this way we can easily compare.
         # At the same time we also have to remove InstanceElements.
+        return typ
+        # TODO remove
         if typ.isinstance(er.Function, er.Instance) \
                 and typ.decorates is not None:
             return typ.decorates
@@ -129,9 +131,11 @@ def search_function_call(evaluator, func):
                 if i * evaluator.dynamic_params_depth > MAX_PARAM_SEARCHES:
                     return listener.param_possibilities
 
-                for typ in evaluator.goto_definitions(name):
+                context = evaluator.create_context(name)
+                for typ in evaluator.goto_definitions(context, name):
                     undecorated = undecorate(typ)
-                    if evaluator.wrap(compare) == undecorated:
+                    # TODO really?
+                    if evaluator.wrap(context, compare) == undecorated:
                         # Only if we have the correct function we execute
                         # it, otherwise just ignore it.
                         evaluator.eval_trailer([typ], trailer)

@@ -197,11 +197,6 @@ class Evaluator(object):
         return types
 
     def eval_element(self, context, element):
-        if isinstance(element, iterable.AlreadyEvaluated):
-            return set(element)
-        elif isinstance(element, iterable.MergedNodes):
-            return iterable.unite(self.eval_element(context, e) for e in element)
-
         if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
         predefined_if_name_dict = self.predefined_if_name_dict_dict.get(if_stmt)
         if predefined_if_name_dict is None and isinstance(if_stmt, tree.IfStmt):
@@ -402,13 +397,13 @@ class Evaluator(object):
                 if trailer_op == '.':
                     new_types |= self.find_types(typ, node)
                 elif trailer_op == '(':
-                    arguments = param.Arguments(self, context, node, trailer)
+                    arguments = param.TreeArguments(self, context, node, trailer)
                     new_types |= self.execute(typ, arguments)
         return new_types
 
     @debug.increase_indent
     def execute(self, obj, arguments=None):
-        if not isinstance(arguments, param.Arguments):
+        if not isinstance(arguments, param.AbstractArguments):
             raise NotImplementedError
             arguments = param.Arguments(self, arguments)
 
