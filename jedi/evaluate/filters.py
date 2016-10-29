@@ -68,7 +68,7 @@ class ParamName(ContextName):
         self.name = name
 
     def infer(self):
-        return self._get_param().infer(self.parent_context._evaluator)
+        return self._get_param().infer()
 
     def _get_param(self):
         params = self.parent_context.get_params()

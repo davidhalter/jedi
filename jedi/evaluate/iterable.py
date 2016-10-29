@@ -41,9 +41,7 @@ class AbstractSequence(Context):
 
     @property
     def name(self):
-        raise NotImplementedError
-        #return compiled.CompiledContextName(
-        return helpers.FakeName(self.type, parent=self)
+        return compiled.CompiledContextName(self, self.type)
 
 
 class IterableWrapper(tree.Base):
@@ -137,19 +135,15 @@ class GeneratorMixin(object):
         return gen_obj.py__class__()
 
 
-class Generator(use_metaclass(CachedMetaClass, IterableWrapper, GeneratorMixin)):
+class Generator(Context, GeneratorMixin):
     """Handling of `yield` functions."""
 
-    def __init__(self, evaluator, func, var_args):
-        super(Generator, self).__init__()
-        self._evaluator = evaluator
-        self.func = func
-        self.var_args = var_args
+    def __init__(self, evaluator, func_execution_context):
+        super(Generator, self).__init__(evaluator)
+        self._func_execution_context = func_execution_context
 
     def py__iter__(self):
-        from jedi.evaluate.representation import FunctionExecution
-        f = FunctionExecution(self._evaluator, self.func, self.var_args)
-        return f.get_yield_types()
+        return self._func_execution_context.get_yield_values()
 
     def __getattr__(self, name):
         raise NotImplementedError
@@ -389,13 +383,6 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
         else:
             return self.parent_context.eval_node(self._items()[index])
 
-    def __getattr__(self, name):
-        raise NotImplementedError
-        if name not in ['start_pos', 'get_only_subelement', 'parent',
-                        'get_parent_until', 'items']:
-            raise AttributeError('Strange access on %s: %s.' % (self, name))
-        return getattr(self.atom, name)
-
     # @memoize_default()
     def py__iter__(self):
         """
@@ -413,7 +400,7 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
                 yield types
         else:
             for value in self._items():
-                yield self._evaluator.eval_element(value)
+                yield self.parent_context.eval_node(value)
 
             additions = check_array_additions(self._evaluator, self)
             if additions:

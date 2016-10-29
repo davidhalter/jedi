@@ -603,15 +603,16 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
 
     @Python3Method
     def py__call__(self, params):
+        function_execution = FunctionExecutionContext(
+            self._evaluator,
+            self.parent_context,
+            self.base,
+            params
+        )
         if self.base.is_generator():
-            return set([iterable.Generator(self._evaluator, self, params)])
+            return set([iterable.Generator(self._evaluator, function_execution)])
         else:
-            return FunctionExecutionContext(
-                self._evaluator,
-                self.parent_context,
-                self.base,
-                params
-            ).get_return_types()
+            return function_execution.get_return_values()
 
     def py__class__(self):
         # This differentiation is only necessary for Python2. Python3 does not
@@ -663,7 +664,7 @@ class FunctionExecutionContext(Executed):
 
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator
-    def get_return_types(self, check_yields=False):
+    def get_return_values(self, check_yields=False):
         funcdef = self.funcdef
         if funcdef.type in ('lambdef', 'lambdef_nocond'):
             return self._evaluator.eval_element(self.children[-1])
@@ -713,8 +714,8 @@ class FunctionExecutionContext(Executed):
             yield self.eval_node(node)
 
     @recursion.execution_recursion_decorator
-    def get_yield_types(self):
-        yields = self.yields
+    def get_yield_values(self):
+        yields = self.funcdef.yields
         stopAt = tree.ForStmt, tree.WhileStmt, tree.IfStmt
         for_parents = [(x, x.get_parent_until((stopAt))) for x in yields]
 
@@ -736,7 +737,7 @@ class FunctionExecutionContext(Executed):
             elif for_stmt == self:
                 yields_order.append((None, [yield_]))
             else:
-                yield self.get_return_types(check_yields=True)
+                yield self.get_return_values(check_yields=True)
                 return
             last_for_stmt = for_stmt
 

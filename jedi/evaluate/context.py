@@ -25,12 +25,12 @@ class Context(object):
         from jedi.evaluate.param import ValueArguments
         return self.execute(ValueArguments(value_list))
 
-
-class TreeContext(Context):
     def eval_node(self, node):
         return self._evaluator.eval_element(self, node)
 
 
+class TreeContext(Context):
+    pass
 class FlowContext(TreeContext):
     def get_parent_flow_context(self):
         if 1:

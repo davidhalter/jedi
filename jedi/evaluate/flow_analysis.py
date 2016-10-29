@@ -41,10 +41,10 @@ def reachability_check(context, context_scope, node, origin_scope=None):
     # e.g. `if 0:` would cause all name lookup within the flow make
     # unaccessible. This is not a "problem" in Python, because the code is
     # never called. In Jedi though, we still want to infer types.
-    while origin_scope is not None:
-        if flow_scope == origin_scope:
-            return REACHABLE
-        origin_scope = origin_scope.parent
+    #while origin_scope is not None:
+        #if flow_scope == origin_scope:
+            #return REACHABLE
+        #origin_scope = origin_scope.parent
 
     return _break_check(context, context_scope, flow_scope, node)
 

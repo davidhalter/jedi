@@ -8,7 +8,6 @@ from jedi.parser import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
-from jedi.evaluate.context import Context
 
 
 def try_iter_content(types, depth=0):
@@ -130,21 +129,19 @@ class TreeArguments(AbstractArguments):
         named_args = []
         for stars, el in self._split():
             if stars == 1:
-                raise NotImplementedError
                 arrays = self._evaluator.eval_element(self._context, el)
                 iterators = [_iterate_star_args(self._evaluator, a, el, func)
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
-                    yield None, [v for v in values if v is not None]
+                    yield None, MergedLazyContexts(values)
             elif stars == 2:
-                raise NotImplementedError
                 arrays = self._evaluator.eval_element(self._context, el)
                 dicts = [_star_star_dict(self._evaluator, a, el, func)
                          for a in arrays]
                 for dct in dicts:
                     for key, values in dct.items():
-                        yield key, LazyContext(*values)
+                        yield key, values
             else:
                 if tree.is_node(el, 'argument'):
                     c = el.children
@@ -187,6 +184,14 @@ class KnownContext(object):
         return set([self._value])
 
 
+class KnownContexts(object):
+    def __init__(self, values):
+        self._values = values
+
+    def infer(self):
+        return self._values
+
+
 class UnknownContext(object):
     def infer(self):
         return set()
@@ -199,6 +204,14 @@ class LazyContext(object):
 
     def infer(self):
         return self._context.eval_node(self._node)
+
+
+class MergedLazyContexts(object):
+    def __init__(self, lazy_contexts):
+        self._lazy_contexts = lazy_contexts
+
+    def infer(self):
+        return common.unite(l.infer() for l in self._lazy_contexts)
 
 
 class ValueArguments(AbstractArguments):
@@ -225,7 +238,7 @@ class ExecutedParam(object):
         self._lazy_context = lazy_context
         self.string_name = self._original_param.name.value
 
-    def infer(self, evaluator):
+    def infer(self):
         return self._lazy_context.infer()
 
     @property
@@ -238,6 +251,7 @@ def _get_calling_var_args(evaluator, var_args):
     old_var_args = None
     while var_args != old_var_args:
         old_var_args = var_args
+        continue#TODO REMOVE
         for name, default, stars in reversed(list(var_args.as_tuple())):
             if not stars or not isinstance(name, tree.Name):
                 continue
@@ -329,7 +343,7 @@ def get_params(evaluator, parent_context, func, var_args):
             non_matching_keys = {}
         else:
             # normal param
-            if argument is not None:
+            if argument is None:
                 # No value: Return an empty container
                 result_arg = UnknownContext()
                 if not keys_only:
@@ -352,7 +366,8 @@ def get_params(evaluator, parent_context, func, var_args):
         # there's nothing to find for certain names.
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
-            result_arg = UnknownContext() if param.default is None else LazyContext(param.default)
+            result_arg = (UnknownContext() if param.default is None else
+                          LazyContext(parent_context, param.default))
             result_params.append(ExecutedParam(param, var_args, result_arg))
 
             if not (non_matching_keys or had_multiple_value_error or
@@ -399,12 +414,13 @@ def get_params(evaluator, parent_context, func, var_args):
 def _iterate_star_args(evaluator, array, input_node, func=None):
     from jedi.evaluate.representation import Instance
     if isinstance(array, iterable.AbstractSequence):
+        raise DeprecationWarning('_items? seriously?')
         # TODO ._items is not the call we want here. Replace in the future.
         for node in array._items():
             yield node
     elif isinstance(array, iterable.Generator):
         for types in array.py__iter__():
-            yield iterable.AlreadyEvaluated(types)
+            yield KnownContexts(types)
     elif isinstance(array, Instance) and array.name.get_code() == 'tuple':
         debug.warning('Ignored a tuple *args input %s' % array)
     else:

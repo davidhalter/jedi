@@ -360,8 +360,8 @@ def _name_to_types(evaluator, context, name, scope):
         types = pep0484.find_type_from_comment_hint_with(evaluator, typ, name)
         if types:
             return types
-    if typ.isinstance(tree.ForStmt, tree.CompFor):
-        container_types = evaluator.eval_element(typ.children[3])
+    if typ.type in ('for_stmt', 'comp_for'):
+        container_types = context.eval_node(typ.children[3])
         for_types = iterable.py__iter__types(evaluator, container_types, typ.children[3])
         types = check_tuple_assignments(evaluator, for_types, name)
     elif isinstance(typ, tree.Param):
