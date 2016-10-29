@@ -32,16 +32,18 @@ from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
 from jedi import common
 from jedi.evaluate.filters import DictFilter
-from jedi.evaluate.context import Context
+from jedi.evaluate import context
 
 
-class AbstractSequence(Context):
+class AbstractSequence(context.Context):
+    _array_type = None
+
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         raise NotImplementedError
 
     @property
     def name(self):
-        return compiled.CompiledContextName(self, self.type)
+        return compiled.CompiledContextName(self, self._array_type)
 
 
 class IterableWrapper(tree.Base):
@@ -135,7 +137,7 @@ class GeneratorMixin(object):
         return gen_obj.py__class__()
 
 
-class Generator(Context, GeneratorMixin):
+class Generator(context.Context, GeneratorMixin):
     """Handling of `yield` functions."""
 
     def __init__(self, evaluator, func_execution_context):
@@ -145,17 +147,8 @@ class Generator(Context, GeneratorMixin):
     def py__iter__(self):
         return self._func_execution_context.get_yield_values()
 
-    def __getattr__(self, name):
-        raise NotImplementedError
-        if name not in ['start_pos', 'end_pos', 'parent', 'get_imports',
-                        'doc', 'docstr', 'get_parent_until',
-                        'get_code', 'subscopes']:
-            raise AttributeError("Accessing %s of %s is not allowed."
-                                 % (self, name))
-        return getattr(self.func, name)
-
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.func)
+        return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
 class Comprehension(IterableWrapper):
@@ -235,6 +228,7 @@ class Comprehension(IterableWrapper):
             yield result
 
     def py__iter__(self):
+        raise NotImplementedError
         return self._iterate()
 
     def __repr__(self):
@@ -319,6 +313,7 @@ class DictComprehension(Comprehension, ArrayMixin):
         return self._get_comprehension().children[3]
 
     def py__iter__(self):
+        raise NotImplementedError
         for keys, values in self._iterate():
             yield keys
 
@@ -351,9 +346,10 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
                '[': 'list',
                '{': 'dict'}
 
-    def __init__(self, evaluator, parent_context, atom):
-        super(ArrayLiteralContext, self).__init__(evaluator, parent_context)
+    def __init__(self, evaluator, defining_context, atom):
+        super(ArrayLiteralContext, self).__init__(evaluator, evaluator.BUILTINS)
         self.atom = atom
+        self._defining_context = defining_context
 
         if self.atom.type in ('testlist_star_expr', 'testlist'):
             self._array_type = 'tuple'
@@ -381,7 +377,7 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
         if isinstance(index, slice):
             return set([self])
         else:
-            return self.parent_context.eval_node(self._items()[index])
+            return self._defining_context.eval_node(self._items()[index])
 
     # @memoize_default()
     def py__iter__(self):
@@ -399,8 +395,8 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
             for _ in types:
                 yield types
         else:
-            for value in self._items():
-                yield self.parent_context.eval_node(value)
+            for node in self._items():
+                yield context.LazyTreeContext(self._defining_context, node)
 
             additions = check_array_additions(self._evaluator, self)
             if additions:
@@ -520,6 +516,7 @@ class FakeDict(_FakeArray):
         self._dct = dct
 
     def py__iter__(self):
+        raise NotImplementedError
         yield set(compiled.create(self._evaluator, key) for key in self._dct)
 
     def py__getitem__(self, index):
@@ -537,6 +534,7 @@ class MergedArray(_FakeArray):
         self._arrays = arrays
 
     def py__iter__(self):
+        raise NotImplementedError
         for array in self._arrays:
             for types in array.py__iter__():
                 yield types
@@ -603,11 +601,9 @@ def py__iter__(evaluator, types, node=None):
                              message="TypeError: '%s' object is not iterable" % typ)
         else:
             type_iters.append(iter_method())
-            #for result in iter_method():
-                #yield result
 
-    for t in zip_longest(*type_iters, fillvalue=set()):
-        yield unite(t)
+    for lazy_contexts in zip_longest(*type_iters, fillvalue=set()):
+        yield context.get_merged_lazy_context(lazy_contexts)
 
 
 def py__iter__types(evaluator, types, node=None):
@@ -615,7 +611,7 @@ def py__iter__types(evaluator, types, node=None):
     Calls `py__iter__`, but ignores the ordering in the end and just returns
     all types that it contains.
     """
-    return unite(py__iter__(evaluator, types, node))
+    return unite(lazy_context.infer() for lazy_context in py__iter__(evaluator, types, node))
 
 
 def py__getitem__(evaluator, context, types, trailer):
@@ -820,6 +816,7 @@ class _ArrayInstance(IterableWrapper):
         self.var_args = instance.var_args
 
     def py__iter__(self):
+        raise NotImplementedError
         try:
             _, first_nodes = next(self.var_args.unpack())
         except StopIteration:

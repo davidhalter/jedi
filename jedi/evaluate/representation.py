@@ -57,11 +57,11 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName
-from jedi.evaluate.context import TreeContext
+from jedi.evaluate import context
 from jedi.evaluate.instance import TreeInstance
 
 
-class Executed(TreeContext):
+class Executed(context.TreeContext):
     """
     An instance is also an executable - because __init__ is called
     :param var_args: The param input array, consist of a parser node or a list.
@@ -412,7 +412,7 @@ class Wrapper(tree.Base):
         return ContextName(self, name)
 
 
-class ClassContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
+class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -518,7 +518,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
         return "<e%s of %s>" % (type(self).__name__, self.base)
 
 
-class FunctionContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
+class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -689,18 +689,19 @@ class FunctionExecutionContext(Executed):
             types |= set(pep0484.find_return_types(self._evaluator, funcdef))
 
         for r in returns:
-            types |= self.eval_node(r.children[1])
             check = flow_analysis.reachability_check(self, funcdef, r)
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
             else:
                 if check_yields:
-                    types |= iterable.unite(self._eval_yield(r))
+                    types |= set(self._eval_yield(r))
                 else:
                     types |= self.eval_node(r.children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
+        if check_yields:
+            return context.get_merged_lazy_context(list(types))
         return types
 
     def _eval_yield(self, yield_expr):
@@ -708,10 +709,10 @@ class FunctionExecutionContext(Executed):
         if node.type == 'yield_arg':
             # It must be a yield from.
             yield_from_types = self.eval_node(node)
-            for result in iterable.py__iter__(self._evaluator, yield_from_types, node):
-                yield result
+            for lazy_context in iterable.py__iter__(self._evaluator, yield_from_types, node):
+                yield lazy_context
         else:
-            yield self.eval_node(node)
+            yield context.LazyTreeContext(self, node)
 
     @recursion.execution_recursion_decorator
     def get_yield_values(self):
@@ -784,7 +785,7 @@ class GlobalName(helpers.FakeName):
                                          name.start_pos, is_definition=True)
 
 
-class ModuleContext(use_metaclass(CachedMetaClass, TreeContext, Wrapper)):
+class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     parent_context = None
 
     def __init__(self, evaluator, module, parent_module=None):

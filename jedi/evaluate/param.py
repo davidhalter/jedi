@@ -8,6 +8,7 @@ from jedi.parser import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import precedence
+from jedi.evaluate import context
 
 
 def try_iter_content(types, depth=0):
@@ -134,7 +135,7 @@ class TreeArguments(AbstractArguments):
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
-                    yield None, MergedLazyContexts(values)
+                    yield None, context.get_merged_lazy_context(values)
             elif stars == 2:
                 arrays = self._evaluator.eval_element(self._context, el)
                 dicts = [_star_star_dict(self._evaluator, a, el, func)
@@ -146,14 +147,14 @@ class TreeArguments(AbstractArguments):
                 if tree.is_node(el, 'argument'):
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
-                        named_args.append((c[0].value, LazyContext(self._context, c[2]),))
+                        named_args.append((c[0].value, context.LazyTreeContext(self._context, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         comp = iterable.GeneratorComprehension(
                             self._evaluator, self.argument_node.parent)
-                        yield None, KnownContext(comp)
+                        yield None, context.LazyKnownContext(comp)
                 else:
-                    yield None, LazyContext(self._context, el)
+                    yield None, context.LazyTreeContext(self._context, el)
 
         # Reordering var_args is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
@@ -176,51 +177,13 @@ class TreeArguments(AbstractArguments):
         return _get_calling_var_args(self._evaluator, self)
 
 
-class KnownContext(object):
-    def __init__(self, value):
-        self._value = value
-
-    def infer(self):
-        return set([self._value])
-
-
-class KnownContexts(object):
-    def __init__(self, values):
-        self._values = values
-
-    def infer(self):
-        return self._values
-
-
-class UnknownContext(object):
-    def infer(self):
-        return set()
-
-
-class LazyContext(object):
-    def __init__(self, context, node):
-        self._context = context
-        self._node = node
-
-    def infer(self):
-        return self._context.eval_node(self._node)
-
-
-class MergedLazyContexts(object):
-    def __init__(self, lazy_contexts):
-        self._lazy_contexts = lazy_contexts
-
-    def infer(self):
-        return common.unite(l.infer() for l in self._lazy_contexts)
-
-
 class ValueArguments(AbstractArguments):
     def __init__(self, value_list):
         self._value_list = value_list
 
     def unpack(self, func=None):
         for value in self._value_list:
-            yield None, KnownContext(value)
+            yield None, context.LazyKnownContext(value)
 
     def get_calling_var_args(self):
         return None
@@ -295,7 +258,10 @@ def get_params(evaluator, parent_context, func, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        default = None if param.default is None else LazyContext(parent_context, param.default)
+        default = None
+        if param.default is not None:
+            default = context.LazyTreeContext(parent_context, param.default)
+
         key, argument = next(var_arg_iterator, (None, default))
         while key is not None:
             keys_only = True
@@ -335,17 +301,17 @@ def get_params(evaluator, parent_context, func, var_args):
                         break
                     values_list.append([argument])
             seq = iterable.FakeSequence(evaluator, 'tuple', values_list)
-            result_arg = KnownContext(seq)
+            result_arg = context.LazyKnownContext(seq)
         elif param.stars == 2:
             # **kwargs param
             dct = iterable.FakeDict(evaluator, dict(non_matching_keys))
-            result_arg = KnownContext(dct)
+            result_arg = context.LazyKnownContext(dct)
             non_matching_keys = {}
         else:
             # normal param
             if argument is None:
                 # No value: Return an empty container
-                result_arg = UnknownContext()
+                result_arg = context.LazyUnknownContext()
                 if not keys_only:
                     calling_va = var_args.get_calling_var_args()
                     if calling_va is not None:
@@ -366,8 +332,8 @@ def get_params(evaluator, parent_context, func, var_args):
         # there's nothing to find for certain names.
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
-            result_arg = (UnknownContext() if param.default is None else
-                          LazyContext(parent_context, param.default))
+            result_arg = (context.LazyUnknownContext() if param.default is None else
+                          context.LazyTreeContext(parent_context, param.default))
             result_params.append(ExecutedParam(param, var_args, result_arg))
 
             if not (non_matching_keys or had_multiple_value_error or
@@ -412,22 +378,17 @@ def get_params(evaluator, parent_context, func, var_args):
 
 
 def _iterate_star_args(evaluator, array, input_node, func=None):
-    from jedi.evaluate.representation import Instance
-    if isinstance(array, iterable.AbstractSequence):
-        raise DeprecationWarning('_items? seriously?')
-        # TODO ._items is not the call we want here. Replace in the future.
-        for node in array._items():
-            yield node
-    elif isinstance(array, iterable.Generator):
-        for types in array.py__iter__():
-            yield KnownContexts(types)
-    elif isinstance(array, Instance) and array.name.get_code() == 'tuple':
-        debug.warning('Ignored a tuple *args input %s' % array)
-    else:
+    try:
+        iter_ = array.py__iter__
+    except AttributeError:
         if func is not None:
+            # TODO this func should not be needed.
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
                 % (func.name.value, array)
             analysis.add(evaluator, 'type-error-star', input_node, message=m)
+    else:
+        for lazy_context in iter_():
+            yield lazy_context
 
 
 def _star_star_dict(evaluator, array, input_node, func):
