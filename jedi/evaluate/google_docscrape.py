@@ -40,7 +40,7 @@ def parse_google_retblock(lines):
 
 
 def parse_google_argblock(lines):
-    """
+    r"""
     Args:
         lines (str): the unindented lines from an Args docstring section
 
@@ -50,26 +50,26 @@ def parse_google_argblock(lines):
         http://www.sphinx-doc.org/en/stable/ext/example_google.html#example-google
 
     Example:
-        >>> from jedi.evaluate.docstrings import parse_google_argblock
+        >>> from jedi.evaluate.google_docscrape import *  # NOQA
         >>> # Test various ways that arglines can be written
         >>> line_list = [
-        >>>     'foo1 (int): a description',
-        >>>     'foo2: a description\n    with a newline',
-        >>>     'foo3 (int or str): a description',
-        >>>     'foo4 (int or threading.Thread): a description',
-        >>>     #
-        >>>     # this is sphynx-like typing style
-        >>>     'param1 (:obj:`str`, optional): ',
-        >>>     'param2 (:obj:`list` of :obj:`str`):',
-        >>>     #
-        >>>     # the Type[type] syntax is defined by the python typeing module
-        >>>     'attr1 (Optional[int]): Description of `attr1`.',
-        >>>     'attr2 (List[str]): Description of `attr2`.',
-        >>>     'attr3 (Dict[str, str]): Description of `attr3`.',
-        >>> ]
+        ...     'foo1 (int): a description',
+        ...     'foo2: a description\n    with a newline',
+        ...     'foo3 (int or str): a description',
+        ...     'foo4 (int or threading.Thread): a description',
+        ...     #
+        ...     # this is sphynx-like typing style
+        ...     'param1 (:obj:`str`, optional): ',
+        ...     'param2 (:obj:`list` of :obj:`str`):',
+        ...     #
+        ...     # the Type[type] syntax is defined by the python typeing module
+        ...     'attr1 (Optional[int]): Description of `attr1`.',
+        ...     'attr2 (List[str]): Description of `attr2`.',
+        ...     'attr3 (Dict[str, str]): Description of `attr3`.',
+        ... ]
         >>> lines = '\n'.join(line_list)
         >>> argdict_list = list(parse_google_argblock(lines))
-        >>> print('argdict_list = %s' % (ut.repr4(argdict_list),))
+        >>> # print('argdict_list = %s' % (argdict_list),)
         >>> assert len(argdict_list) == len(line_list)
     """
     name_pat = r'(?P<name>[A-Za-z_][A-Za-z0-9_]*)'
@@ -89,7 +89,7 @@ def parse_google_argblock(lines):
 
 
 def split_google_docblocks(docstr):
-    """
+    r"""
     Args:
         docstr (str): a docstring
 
@@ -98,12 +98,11 @@ def split_google_docblocks(docstr):
             tag and the second item is the bock corresponding to that tag.
 
     Example:
-        >>> from jedi.evaluate.docstrings import *  # NOQA
-        >>> from jedi.evaluate.docstrings import split_google_docblocks
+        >>> from jedi.evaluate.google_docscrape import *  # NOQA
         >>> docstr = split_google_docblocks.__doc__
         >>> groups = split_google_docblocks(docstr)
-        >>> result = ('groups = %s' % (ut.repr2(groups),))
-        >>> print(result)
+        >>> #print('groups = %s' % (groups,))
+        >>> assert len(groups) == 3
     """
     import re
     import textwrap

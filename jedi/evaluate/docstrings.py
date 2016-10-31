@@ -83,7 +83,7 @@ def _search_param_in_googledocstr(docstr, param_str):
 
 
 def _search_param_in_docstr(docstr, param_str):
-    """
+    r"""
     Search `docstr` for type(-s) of `param_str`.
 
     >>> from jedi.evaluate.docstrings import _search_param_in_docstr
