@@ -363,12 +363,12 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
 
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
-        if self.type == 'dict':
+        if self.array_type == 'dict':
             for key, value in self._items():
-                for k in self._evaluator.eval_element(key):
+                for k in self._defining_context.eval_node(key):
                     if isinstance(k, compiled.CompiledObject) \
                             and index == k.obj:
-                        return self._evaluator.eval_element(value)
+                        return self._defining_context.eval_node(value)
             raise KeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
@@ -377,18 +377,16 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
         else:
             return self._defining_context.eval_node(self._items()[index])
 
-    # @memoize_default()
     def py__iter__(self):
         """
         While values returns the possible values for any array field, this
         function returns the value for a certain index.
         """
-        if self.type == 'dict':
-            raise NotImplementedError
+        if self.array_type == 'dict':
             # Get keys.
             types = set()
             for k, _ in self._items():
-                types |= self._evaluator.eval_element(k)
+                types |= self._defining_context.eval_node(k)
             # We don't know which dict index comes first, therefore always
             # yield all the types.
             for _ in types:
@@ -524,8 +522,8 @@ class FakeDict(_FakeArray):
         self._dct = dct
 
     def py__iter__(self):
-        raise NotImplementedError
-        yield set(compiled.create(self._evaluator, key) for key in self._dct)
+        for key in self._dct:
+            yield context.LazyKnownContext(compiled.create(self._evaluator, key))
 
     def py__getitem__(self, index):
         return self._dct[index].infer()

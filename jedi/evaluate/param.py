@@ -355,7 +355,8 @@ def get_params(evaluator, parent_context, func, var_args):
         # Just report an error for the first param that is not needed (like
         # cPython).
         first_key, first_values = remaining_params[0]
-        for v in first_values:
+        # TODO REENABLE
+        for v in []:#first_values:
             if first_key is not None:
                 # Is a keyword argument, return the whole thing instead of just
                 # the value node.
