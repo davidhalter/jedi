@@ -105,6 +105,19 @@ class TestDocstring(unittest.TestCase):
         assert '__init__' in names
         assert 'mro' not in names  # Exists only for types.
 
+    def test_googlestyle_docstring(self):
+        s = dedent('''
+        def foobar(x, y):
+            """
+            Args:
+                x (int):
+                y (str):
+            """
+            y.''')
+        names = [c.name for c in jedi.Script(s).completions()]
+        assert 'isupper' in names
+        assert 'capitalize' in names
+
     @unittest.skipIf(numpydoc_unavailable, 'numpydoc module is unavailable')
     def test_numpydoc_docstring(self):
         s = dedent('''

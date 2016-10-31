@@ -1,11 +1,13 @@
 """
 Docstrings are another source of information for functions and classes.
 :mod:`jedi.evaluate.dynamic` tries to find all executions of functions, while
-the docstring parsing is much easier. There are two different types of
+the docstring parsing is much easier. There are three different types of
 docstrings that |jedi| understands:
 
 - `Sphinx <http://sphinx-doc.org/markup/desc.html#info-field-lists>`_
 - `Epydoc <http://epydoc.sourceforge.net/manual-fields.html>`_
+- `Google <https://google.github.io/styleguide/pyguide.html>`_
+
 
 For example, the sphinx annotation ``:type foo: str`` clearly states that the
 type of ``foo`` is ``str``.
@@ -63,10 +65,29 @@ else:
         return []
 
 
+from jedi.evaluate.google_docscrape import parse_google_args
+
+def _search_param_in_googledocstr(docstr, param_str):
+    """
+    typestr
+    """
+    found = None
+    for garg in parse_google_args(docstr):
+        if garg['name'] == param_str:
+            # TODO: parse multiple / complex / optional types
+            typestr = garg['type']
+            found = [typestr]
+            break
+    return found
+
+
+
 def _search_param_in_docstr(docstr, param_str):
     """
     Search `docstr` for type(-s) of `param_str`.
 
+    >>> from jedi.evaluate.docstrings import _search_param_in_docstr
+    >>> from jedi.evaluate.docstrings import _search_param_in_googledocstr
     >>> _search_param_in_docstr(':type param: int', 'param')
     ['int']
     >>> _search_param_in_docstr('@type param: int', 'param')
@@ -78,9 +99,13 @@ def _search_param_in_docstr(docstr, param_str):
     False
     >>> _search_param_in_docstr(':param int param: some description', 'param')
     ['int']
+    >>> _search_param_in_docstr('Args:\n    param (int): some description', 'param')
+    ['int']
 
     """
     # look at #40 to see definitions of those params
+
+    # Check for Sphinx/Epydoc params
     patterns = [re.compile(p % re.escape(param_str))
                 for p in DOCSTRING_PARAM_PATTERNS]
     for pattern in patterns:
@@ -88,6 +113,12 @@ def _search_param_in_docstr(docstr, param_str):
         if match:
             return [_strip_rst_role(match.group(1))]
 
+    # Check for google style params
+    found = _search_param_in_googledocstr(docstr, param_str)
+    if found is not None:
+        return found
+
+    # Check for numpy style params
     return (_search_param_in_numpydocstr(docstr, param_str) or
             [])
 
@@ -175,15 +206,44 @@ def _execute_array_values(evaluator, array):
 
 @memoize_default(None, evaluator_is_first_arg=True)
 def follow_param(evaluator, param):
-    def eval_docstring(docstring):
+    """
+    Args:
+        evaluator (jedi.evaluate.Evaluator):
+        param (jedi.parser.tree.Param):
+
+    Example:
+        >>> from jedi.evaluate.docstrings import *  # NOQA
+        >>> from jedi.evaluate.docstrings import _search_param_in_docstr, _evaluate_for_statement_string
+        >>> #script = jedi.Script(source, line=178, column=0)
+        >>> from jedi._compatibility import u
+        >>> from jedi.parser import ParserWithRecovery, load_grammar
+        >>> from jedi.evaluate import Evaluator
+        >>> source = open(jedi.evaluate.docstrings.__file__.replace('.pyc', '.py'), 'r').read()
+        >>> parser = ParserWithRecovery(load_grammar(), u(source), 'example.py')
+        >>> func = parser.module.children[-3].children[1]
+        >>> evaluator = Evaluator(load_grammar())
+        >>> param = func.children[2].children[1]
+        >>> types = follow_param(evaluator, param)
+        >>> print('types = %r' % (types,))
+        >>> assert len(types) == 1
+        >>> #import jedi
+        >>> #import jedi.parser
+        >>> #import utool as ut
+        >>> #position_modifier = ut.DynStruct()
+        >>> #position_modifier.line = 0
+        >>> #child = jedi.parser.tree.Name(position_modifier, 'arg1', 0)
+        >>> #jedi.parser.tree.Param(children, None)
+    """
+    def eval_docstring(docstr):
         return set(
-            [p for param_str in _search_param_in_docstr(docstring, str(param.name))
+            [p for param_str in _search_param_in_docstr(docstr, str(param.name))
                 for p in _evaluate_for_statement_string(evaluator, param_str, module)]
         )
     func = param.parent_function
     module = param.get_parent_until()
 
-    types = eval_docstring(func.raw_doc)
+    docstr = func.raw_doc
+    types = eval_docstring(docstr)
     if func.name.value == '__init__':
         cls = func.get_parent_until(Class)
         if cls.type == 'classdef':
