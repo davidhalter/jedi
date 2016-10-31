@@ -410,9 +410,6 @@ class Evaluator(object):
         if self.is_analysis:
             arguments.eval_all()
 
-        if isinstance(obj, er.FunctionContext):
-            obj = obj.get_decorated_func()
-
         debug.dbg('execute: %s %s', obj, arguments)
         try:
             # Some stdlib functions like super(), namedtuple(), etc. have been

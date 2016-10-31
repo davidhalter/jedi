@@ -130,11 +130,13 @@ class TreeArguments(AbstractArguments):
         named_args = []
         for stars, el in self._split():
             if stars == 1:
-                arrays = self._evaluator.eval_element(self._context, el)
+                arrays = self._context.eval_node(el)
                 iterators = [_iterate_star_args(self._evaluator, a, el, func)
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
+                    # TODO zip_longest yields None, that means this would raise
+                    # an exception?
                     yield None, context.get_merged_lazy_context(values)
             elif stars == 2:
                 arrays = self._evaluator.eval_element(self._context, el)
@@ -142,6 +144,7 @@ class TreeArguments(AbstractArguments):
                          for a in arrays]
                 for dct in dicts:
                     for key, values in dct.items():
+                        raise NotImplementedError
                         yield key, values
             else:
                 if tree.is_node(el, 'argument'):
@@ -177,19 +180,19 @@ class TreeArguments(AbstractArguments):
         return _get_calling_var_args(self._evaluator, self)
 
 
-class ValueArguments(AbstractArguments):
-    def __init__(self, value_list):
-        self._value_list = value_list
+class ValuesArguments(AbstractArguments):
+    def __init__(self, values_list):
+        self._values_list = values_list
 
     def unpack(self, func=None):
-        for value in self._value_list:
-            yield None, context.LazyKnownContext(value)
+        for values in self._values_list:
+            yield None, context.LazyKnownContexts(values)
 
     def get_calling_var_args(self):
         return None
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self._value_list)
+        return '<%s: %s>' % (type(self).__name__, self._values_list)
 
 
 class ExecutedParam(object):
@@ -242,11 +245,10 @@ def get_params(evaluator, parent_context, func, var_args):
     for param in func.params:
         param_dict[str(param.name)] = param
     unpacked_va = list(var_args.unpack(func))
-    from jedi.evaluate.representation import InstanceElement
-    if isinstance(func, InstanceElement):
-        raise DeprecationWarning
-        # Include self at this place.
-        unpacked_va.insert(0, (None, [func.instance]))
+    from jedi.evaluate.instance import TreeInstance
+    if isinstance(parent_context, TreeInstance):
+        # Include the self parameter here.
+        unpacked_va.insert(0, (None, context.LazyKnownContext(parent_context)))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
@@ -291,16 +293,16 @@ def get_params(evaluator, parent_context, func, var_args):
 
         if param.stars == 1:
             # *args param
-            values_list = []
+            lazy_context_list = []
             if argument is not None:
-                values_list.append([argument])
+                lazy_context_list.append(argument)
                 for key, argument in var_arg_iterator:
                     # Iterate until a key argument is found.
                     if key:
                         var_arg_iterator.push_back((key, argument))
                         break
-                    values_list.append([argument])
-            seq = iterable.FakeSequence(evaluator, 'tuple', values_list)
+                    lazy_context_list.append(argument)
+            seq = iterable.FakeSequence(evaluator, 'tuple', lazy_context_list)
             result_arg = context.LazyKnownContext(seq)
         elif param.stars == 2:
             # **kwargs param

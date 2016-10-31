@@ -188,8 +188,7 @@ class InstanceClassFilter(ParserTreeFilter):
 
     def _filter(self, names):
         names = super(InstanceClassFilter, self)._filter(names)
-        return [get_instance_el(self._evaluator, self._context, name, True)
-                for name in names if self._access_possible(name)]
+        return [name for name in names if self._access_possible(name)]
 
     def _check_flows(self, names):
         return names
@@ -207,7 +206,7 @@ class SelfNameFilter(InstanceClassFilter):
     def _filter_self_names(self, names):
         for name in names:
             trailer = name.parent
-            if tree.is_node(trailer, 'trailer') \
+            if trailer.type == 'trailer' \
                     and len(trailer.children) == 2 \
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name):
@@ -216,4 +215,4 @@ class SelfNameFilter(InstanceClassFilter):
                     if init_execution is not None and \
                             init_execution.start_pos < name.start_pos < init_execution.end_pos:
                         name = init_execution.name_for_position(name.start_pos)
-                    yield get_instance_el(self._evaluator, self._context, name)
+                    yield name

@@ -351,48 +351,79 @@ def _get_global_stmt_scopes(evaluator, global_stmt, name):
 @memoize_default(set(), evaluator_is_first_arg=True)
 def _name_to_types(evaluator, context, name, scope):
     types = []
-    typ = name.get_definition()
-    if typ.isinstance(tree.ForStmt):
-        types = pep0484.find_type_from_comment_hint_for(evaluator, typ, name)
+    node = name.get_definition()
+    if node.isinstance(tree.ForStmt):
+        types = pep0484.find_type_from_comment_hint_for(evaluator, node, name)
         if types:
             return types
-    if typ.isinstance(tree.WithStmt):
-        types = pep0484.find_type_from_comment_hint_with(evaluator, typ, name)
+    if node.isinstance(tree.WithStmt):
+        types = pep0484.find_type_from_comment_hint_with(evaluator, node, name)
         if types:
             return types
-    if typ.type in ('for_stmt', 'comp_for'):
-        container_types = context.eval_node(typ.children[3])
-        for_types = iterable.py__iter__types(evaluator, container_types, typ.children[3])
+    if node.type in ('for_stmt', 'comp_for'):
+        container_types = context.eval_node(node.children[3])
+        for_types = iterable.py__iter__types(evaluator, container_types, node.children[3])
         types = check_tuple_assignments(evaluator, for_types, name)
-    elif isinstance(typ, tree.Param):
-        types = _eval_param(evaluator, context, typ, scope)
-    elif typ.isinstance(tree.ExprStmt):
-        types = _remove_statements(evaluator, context, typ, name)
-    elif typ.isinstance(tree.WithStmt):
-        types = evaluator.eval_element(typ.node_from_name(name))
-    elif isinstance(typ, tree.Import):
+    elif isinstance(node, tree.Param):
+        return set()  # TODO remove
+        types = _eval_param(evaluator, context, node, scope)
+    elif node.isinstance(tree.ExprStmt):
+        types = _remove_statements(evaluator, context, node, name)
+    elif node.isinstance(tree.WithStmt):
+        types = evaluator.eval_element(node.node_from_name(name))
+    elif isinstance(node, tree.Import):
         types = imports.ImportWrapper(evaluator, name).follow()
-    elif typ.isinstance(tree.Function, tree.Class):
-        types = [evaluator.wrap(typ, parent_context=context)]
-    elif typ.type == 'global_stmt':
-        for s in _get_global_stmt_scopes(evaluator, typ, name):
+    elif node.type in ('funcdef', 'classdef'):
+        types = _apply_decorators(evaluator, context, node)
+    elif node.type == 'global_stmt':
+        for s in _get_global_stmt_scopes(evaluator, node, name):
             finder = NameFinder(evaluator, s, str(name))
             names_dicts = finder.get_filters(search_global=True)
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             names_dicts = [next(names_dicts)]
             types += finder.find(names_dicts, attribute_lookup=False)
-    elif isinstance(typ, tree.TryStmt):
+    elif isinstance(node, tree.TryStmt):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
         # the static analysis report.
         exceptions = evaluator.eval_element(name.get_previous_sibling().get_previous_sibling())
         types = set(chain.from_iterable(evaluator.execute(t) for t in exceptions))
     else:
-        if typ.isinstance(er.Function):
-            typ = typ.get_decorated_func()
-        types = set([typ])
+        raise DeprecationWarning
+        types = set([node])
     return types
+
+
+def _apply_decorators(evaluator, context, node):
+    """
+    Returns the function, that should to be executed in the end.
+    This is also the places where the decorators are processed.
+    """
+    decoratee_context = evaluator.wrap(node, parent_context=context)
+    initial = values = set([decoratee_context])
+    for dec in reversed(node.get_decorators()):
+        debug.dbg('decorator: %s %s', dec, values)
+        dec_values = context.eval_node(dec.children[1])
+        trailer = dec.children[2:-1]
+        if trailer:
+            # Create a trailer and evaluate it.
+            trailer = tree.Node('trailer', trailer)
+            trailer.parent = dec
+            dec_values = context.eval_trailer(dec_values, trailer)
+
+        if not len(dec_values):
+            debug.warning('decorator not found: %s on %s', dec, node)
+            return initial
+
+        values = unite(dec_value.execute(param.ValuesArguments([values]))
+                       for dec_value in dec_values)
+        if not len(values):
+            debug.warning('not possible to resolve wrappers found %s', node)
+            return initial
+
+        debug.dbg('decorator end %s', values)
+    return values
 
 
 def _remove_statements(evaluator, context, stmt, name):

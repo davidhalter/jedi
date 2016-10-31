@@ -23,8 +23,8 @@ class Context(object):
         """
         Execute a function with already executed arguments.
         """
-        from jedi.evaluate.param import ValueArguments
-        return self.execute(ValueArguments(value_list))
+        from jedi.evaluate.param import ValuesArguments
+        return self.execute(ValuesArguments(value_list))
 
     def eval_node(self, node):
         return self._evaluator.eval_element(self, node)

@@ -386,6 +386,7 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
         function returns the value for a certain index.
         """
         if self.type == 'dict':
+            raise NotImplementedError
             # Get keys.
             types = set()
             for k, _ in self._items():
@@ -442,9 +443,11 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
 
 class _FakeArray(ArrayLiteralContext):
     def __init__(self, evaluator, container, type):
-        self.type = type
+        # TODO is this class really needed?
+        self._array_type = type
         self._evaluator = evaluator
         self.atom = container
+        self.parent_context = evaluator.BUILTINS
 
 
 class ImplicitTuple(_FakeArray):
@@ -458,28 +461,25 @@ class ImplicitTuple(_FakeArray):
 
 
 class FakeSequence(_FakeArray):
-    def __init__(self, evaluator, type, context_sets):
+    def __init__(self, evaluator, array_type, lazy_context_list):
         """
         type should be one of "tuple", "list"
         """
-        super(FakeSequence, self).__init__(evaluator, context_sets, type)
-        self._context_sets = context_sets
-
-    def _resolve(self, context_set):
-        for x in context_set:
-            try:
-                infer = x.infer
-            except AttributeError:
-                yield x
-            else:
-                for value in infer():
-                    yield value
+        super(FakeSequence, self).__init__(evaluator, None, array_type)
+        self._lazy_context_list = lazy_context_list
 
     def _items(self):
-        return self._context_sets
+        raise DeprecationWarning
+        return self._context_list
 
     def py__getitem__(self, index):
-        return set(self._resolve(self._context_sets[index]))
+        return self._lazy_context_list[index].infer()
+
+    def py__iter__(self):
+        return self._lazy_context_list
+
+    def __repr__(self):
+        return "<%s of %s>" % (type(self).__name__, self._lazy_context_list)
 
 
 def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
@@ -520,9 +520,10 @@ class FakeDict(_FakeArray):
         yield set(compiled.create(self._evaluator, key) for key in self._dct)
 
     def py__getitem__(self, index):
-        return unite(self._evaluator.eval_element(v) for v in self._dct[index])
+        return self._dct[index].infer()
 
     def _items(self):
+        raise DeprecationWarning
         for key, values in self._dct.items():
             # TODO this is not proper. The values could be multiple values?!
             yield key, values[0]

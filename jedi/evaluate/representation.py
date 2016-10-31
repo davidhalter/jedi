@@ -522,68 +522,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-    def __init__(self, evaluator, parent_context, func, is_decorated=False):
+    def __init__(self, evaluator, parent_context, func):
         """ This should not be called directly """
         super(FunctionContext, self).__init__(evaluator, parent_context)
         self.base = self.base_func = func
-        self.is_decorated = is_decorated
-        # A property that is set by the decorator resolution.
-        self.decorates = None
-
-    @memoize_default()
-    def get_decorated_func(self):
-        """
-        Returns the function, that should to be executed in the end.
-        This is also the places where the decorators are processed.
-        """
-        f = self.base_func
-        decorators = self.base_func.get_decorators()
-
-        if not decorators or self.is_decorated:
-            return self
-
-        # Only enter it, if has not already been processed.
-        if not self.is_decorated:
-            for dec in reversed(decorators):
-                debug.dbg('decorator: %s %s', dec, f)
-                dec_results = self._evaluator.eval_element(dec.children[1])
-                trailer = dec.children[2:-1]
-                if trailer:
-                    # Create a trailer and evaluate it.
-                    trailer = tree.Node('trailer', trailer)
-                    trailer.parent = dec
-                    dec_results = self._evaluator.eval_trailer(dec_results, trailer)
-
-                if not len(dec_results):
-                    debug.warning('decorator not found: %s on %s', dec, self.base_func)
-                    return self
-                decorator = dec_results.pop()
-                if dec_results:
-                    debug.warning('multiple decorators found %s %s',
-                                  self.base_func, dec_results)
-
-                # Create param array.
-                if isinstance(f, FunctionContext):
-                    old_func = f  # TODO this is just hacky. change.
-                elif f.type == 'funcdef':
-                    old_func = FunctionContext(self._evaluator, f, is_decorated=True)
-                else:
-                    old_func = f
-
-                wrappers = self._evaluator.execute_evaluated(decorator, old_func)
-                if not len(wrappers):
-                    debug.warning('no wrappers found %s', self.base_func)
-                    return self
-                if len(wrappers) > 1:
-                    # TODO resolve issue with multiple wrappers -> multiple types
-                    debug.warning('multiple wrappers found %s %s',
-                                  self.base_func, wrappers)
-                f = list(wrappers)[0]
-                if isinstance(f, (Instance, FunctionContext)):
-                    f.decorates = self
-
-                debug.dbg('decorator end %s', f)
-        return f
 
     def names_dicts(self, search_global):
         if search_global:
@@ -624,10 +566,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
         return compiled.get_special_object(self._evaluator, name)
 
     def __repr__(self):
-        dec = ''
-        if self.decorates is not None:
-            dec = " decorates " + repr(self.decorates)
-        return "<e%s of %s%s>" % (type(self).__name__, self.base_func, dec)
+        return "<e%s of %s>" % (type(self).__name__, self.base_func)
 
 
 class LambdaWrapper(FunctionContext):
