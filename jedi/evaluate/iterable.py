@@ -33,17 +33,16 @@ from jedi.evaluate import pep0484
 from jedi import common
 from jedi.evaluate.filters import DictFilter
 from jedi.evaluate import context
+from jedi.evaluate import precedence
 
 
 class AbstractSequence(context.Context):
-    _array_type = None
-
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         raise NotImplementedError
 
     @property
     def name(self):
-        return compiled.CompiledContextName(self, self._array_type)
+        return compiled.CompiledContextName(self, self.array_type)
 
 
 class IterableWrapper(tree.Base):
@@ -269,7 +268,6 @@ class ArrayMixin(object):
     def name(self):
         return FakeSequence(self._evaluator, [], self.type).name
 
-    @memoize_default()
     def dict_values(self):
         return unite(self._evaluator.eval_element(v) for k, v in self._items())
 
@@ -352,16 +350,16 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
         self._defining_context = defining_context
 
         if self.atom.type in ('testlist_star_expr', 'testlist'):
-            self._array_type = 'tuple'
+            self.array_type = 'tuple'
         else:
-            self._array_type = ArrayLiteralContext.mapping[atom.children[0]]
+            self.array_type = ArrayLiteralContext.mapping[atom.children[0]]
             """The builtin name of the array (list, set, tuple or dict)."""
 
         c = self.atom.children
         array_node = c[1]
-        if self._array_type == 'dict' and array_node != '}' \
+        if self.array_type == 'dict' and array_node != '}' \
                 and (not hasattr(array_node, 'children') or ':' not in array_node.children):
-            self._array_type = 'set'
+            self.array_type = 'set'
 
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
@@ -437,6 +435,16 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
         else:
             return [array_node]
 
+    def exact_key_items(self):
+        """
+        Returns a generator of tuples like dict.items(), where the key is
+        resolved (as a string) and the values are still LazyContexts.
+        """
+        for key_node, value in self._items():
+            for key in self._defining_context.eval_node(key_node):
+                if precedence.is_string(key):
+                    yield key.obj, context.LazyTreeContext(self._defining_context, value)
+
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.atom)
 
@@ -444,7 +452,7 @@ class ArrayLiteralContext(AbstractSequence, ArrayMixin):
 class _FakeArray(ArrayLiteralContext):
     def __init__(self, evaluator, container, type):
         # TODO is this class really needed?
-        self._array_type = type
+        self.array_type = type
         self._evaluator = evaluator
         self.atom = container
         self.parent_context = evaluator.BUILTINS
@@ -522,11 +530,17 @@ class FakeDict(_FakeArray):
     def py__getitem__(self, index):
         return self._dct[index].infer()
 
+    def dict_values(self):
+        return unite(lazy_context.infer() for lazy_context in self._dct.values())
+
     def _items(self):
         raise DeprecationWarning
         for key, values in self._dct.items():
             # TODO this is not proper. The values could be multiple values?!
             yield key, values[0]
+
+    def exact_key_items(self):
+        return self._dct.items()
 
 
 class MergedArray(_FakeArray):
@@ -645,7 +659,7 @@ def py__getitem__(evaluator, context, types, trailer):
             # If the index is not clearly defined, we have to get all the
             # possiblities.
             for typ in list(types):
-                if isinstance(typ, Array) and typ.type == 'dict':
+                if isinstance(typ, AbstractSequence) and typ.type == 'dict':
                     types.remove(typ)
                     result |= typ.dict_values()
             return result | py__iter__types(evaluator, types)

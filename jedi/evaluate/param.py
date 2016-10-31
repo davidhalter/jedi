@@ -140,11 +140,8 @@ class TreeArguments(AbstractArguments):
                     yield None, context.get_merged_lazy_context(values)
             elif stars == 2:
                 arrays = self._evaluator.eval_element(self._context, el)
-                dicts = [_star_star_dict(self._evaluator, a, el, func)
-                         for a in arrays]
-                for dct in dicts:
-                    for key, values in dct.items():
-                        raise NotImplementedError
+                for dct in arrays:
+                    for key, values in _star_star_dict(self._evaluator, dct, el, func):
                         yield key, values
             else:
                 if tree.is_node(el, 'argument'):
@@ -394,28 +391,19 @@ def _iterate_star_args(evaluator, array, input_node, func=None):
 
 
 def _star_star_dict(evaluator, array, input_node, func):
-    dct = defaultdict(lambda: [])
     from jedi.evaluate.representation import Instance
     if isinstance(array, Instance) and array.name.get_code() == 'dict':
         # For now ignore this case. In the future add proper iterators and just
         # make one call without crazy isinstance checks.
         return {}
-
-    if isinstance(array, iterable.FakeDict):
-        return array._dct
-    elif isinstance(array, iterable.Array) and array.type == 'dict':
-        # TODO bad call to non-public API
-        for key_node, value in array._items():
-            for key in evaluator.eval_element(key_node):
-                if precedence.is_string(key):
-                    dct[key.obj].append(value)
-
+    elif isinstance(array, iterable.AbstractSequence) and array.array_type == 'dict':
+        return array.exact_key_items()
     else:
         if func is not None:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
                 % (func.name.value, array)
             analysis.add(evaluator, 'type-error-star-star', input_node, message=m)
-    return dict(dct)
+        return {}
 
 
 def _error_argument_count(func, actual_count):
