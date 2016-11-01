@@ -210,8 +210,8 @@ class NameFinder(object):
                                 # deliver types.
                                 self._found_predefined_if_name = types
                             else:
-                                check = flow_analysis.reachability_check(self._context, self.context,
-                                                                  origin_scope)
+                                check = flow_analysis.reachability_check(
+                                    self._context, self.context, origin_scope)
                                 if check is flow_analysis.UNREACHABLE:
                                     self._found_predefined_if_name = set()
                                 else:
@@ -341,6 +341,7 @@ class NameFinder(object):
 
 
 def _get_global_stmt_scopes(evaluator, global_stmt, name):
+    raise DeprecationWarning
     global_stmt_scope = global_stmt.get_parent_scope()
     module = global_stmt_scope.get_parent_until()
     for used_name in module.used_names[str(name)]:
@@ -400,7 +401,18 @@ def _apply_decorators(evaluator, context, node):
     Returns the function, that should to be executed in the end.
     This is also the places where the decorators are processed.
     """
-    decoratee_context = evaluator.wrap(node, parent_context=context)
+    if node.type == 'classdef':
+        decoratee_context = er.ClassContext(
+            evaluator,
+            parent_context=context,
+            classdef=node
+        )
+    else:
+        decoratee_context = er.FunctionContext(
+            evaluator,
+            parent_context=context,
+            funcdef=node
+        )
     initial = values = set([decoratee_context])
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values)

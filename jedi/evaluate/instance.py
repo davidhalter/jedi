@@ -1,9 +1,9 @@
 from abc import abstractproperty
 
-from jedi.common import unite
+from jedi.common import unite, to_list
 from jedi import debug
 from jedi.evaluate import compiled
-from jedi.evaluate.filters import ParserTreeFilter, ContextName
+from jedi.evaluate.filters import ParserTreeFilter, ContextName, TreeNameDefinition
 from jedi.evaluate.context import Context
 
 
@@ -91,13 +91,13 @@ class AbstractInstanceContext(Context):
                 if isinstance(cls, compiled.CompiledObject):
                     yield SelfNameFilter(self._evaluator, self, cls, origin_scope)
                 else:
-                    yield SelfNameFilter(self._evaluator, self, cls.base, origin_scope)
+                    yield SelfNameFilter(self._evaluator, self, cls.classdef, origin_scope)
 
         for cls in self._class_context.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
                 yield CompiledInstanceClassFilter(self._evaluator, self, cls)
             else:
-                yield InstanceClassFilter(self._evaluator, self, cls.base, origin_scope)
+                yield InstanceClassFilter(self._evaluator, self, cls.classdef, origin_scope)
 
     def py__getitem__(self, index):
         try:
@@ -165,7 +165,31 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
                 for name in names]
 
 
+class BoundMethod(object):
+    def __init__(self, function):
+        self._function = function
+
+    def __getattr__(self, name):
+        return getattr(self._function, name)
+
+
+class InstanceNameDefinition(TreeNameDefinition):
+    @to_list
+    def infer(self):
+        contexts = super(InstanceNameDefinition, self).infer()
+        from jedi.evaluate.representation import FunctionContext
+        for context in contexts:
+                """
+            if isinstance(contexts, FunctionContext):
+                # TODO what about compiled objects?
+                yield BoundMethod(context)
+            else:
+                """
+                yield context
+
 class InstanceClassFilter(ParserTreeFilter):
+    name_class = InstanceNameDefinition
+
     def __init__(self, evaluator, context, parser_scope, origin_scope):
         super(InstanceClassFilter, self).__init__(
             evaluator=evaluator,

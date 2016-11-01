@@ -153,7 +153,7 @@ def builtins_super(evaluator, types, objects, scope):
                 cls = cls.base
             su = cls.py__bases__()
             if su:
-                return evaluator.execute(su[0])
+                return su[0].infer()
     return set()
 
 

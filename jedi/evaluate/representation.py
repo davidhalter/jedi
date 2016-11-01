@@ -417,9 +417,9 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
-    def __init__(self, evaluator, base, parent_context):
+    def __init__(self, evaluator, classdef, parent_context):
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
-        self.base = base
+        self.classdef = classdef
 
     @memoize_default(default=())
     def py__mro__(self):
@@ -430,38 +430,41 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
         mro = [self]
         # TODO Do a proper mro resolution. Currently we are just listing
         # classes. However, it's a complicated algorithm.
-        for cls in self.py__bases__():
-            # TODO detect for TypeError: duplicate base class str,
-            # e.g.  `class X(str, str): pass`
-            try:
-                mro_method = cls.py__mro__
-            except AttributeError:
-                # TODO add a TypeError like:
-                """
-                >>> class Y(lambda: test): pass
-                Traceback (most recent call last):
-                  File "<stdin>", line 1, in <module>
-                TypeError: function() argument 1 must be code, not str
-                >>> class Y(1): pass
-                Traceback (most recent call last):
-                  File "<stdin>", line 1, in <module>
-                TypeError: int() takes at most 2 arguments (3 given)
-                """
-                pass
-            else:
-                add(cls)
-                for cls_new in mro_method():
-                    add(cls_new)
+        for lazy_cls in self.py__bases__():
+            # TODO there's multiple different mro paths possible if this yields
+            # multiple possibilities. Could be changed to be more correct.
+            for cls in lazy_cls.infer():
+                # TODO detect for TypeError: duplicate base class str,
+                # e.g.  `class X(str, str): pass`
+                try:
+                    mro_method = cls.py__mro__
+                except AttributeError:
+                    # TODO add a TypeError like:
+                    """
+                    >>> class Y(lambda: test): pass
+                    Traceback (most recent call last):
+                      File "<stdin>", line 1, in <module>
+                    TypeError: function() argument 1 must be code, not str
+                    >>> class Y(1): pass
+                    Traceback (most recent call last):
+                      File "<stdin>", line 1, in <module>
+                    TypeError: int() takes at most 2 arguments (3 given)
+                    """
+                    pass
+                else:
+                    add(cls)
+                    for cls_new in mro_method():
+                        add(cls_new)
         return tuple(mro)
 
     @memoize_default(default=())
     def py__bases__(self):
-        arglist = self.base.get_super_arglist()
+        arglist = self.classdef.get_super_arglist()
         if arglist:
-            args = param.Arguments(self._evaluator, self, arglist)
-            return list(chain.from_iterable(args.eval_args()))
+            args = param.TreeArguments(self._evaluator, self, arglist)
+            return [value for key, value in args.unpack() if key is None]
         else:
-            return [compiled.create(self._evaluator, object)]
+            return [context.LazyKnownContext(compiled.create(self._evaluator, object))]
 
     def py__call__(self, params):
         return set([TreeInstance(self._evaluator, self.parent_context, self, params)])
@@ -488,44 +491,38 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
 
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self._evaluator, self, self.base, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(self._evaluator, self, self.classdef, until_position, origin_scope=origin_scope)
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
                     for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ParserTreeFilter(self._evaluator, self, scope.base, origin_scope=origin_scope)
+                    yield ParserTreeFilter(self._evaluator, self, scope.classdef, origin_scope=origin_scope)
 
     def is_class(self):
         return True
 
     def get_subscope_by_name(self, name):
+        raise DeprecationWarning
         for s in self.py__mro__():
             for sub in reversed(s.subscopes):
                 if sub.name.value == name:
                     return sub
         raise KeyError("Couldn't find subscope.")
 
-    def __getattr__(self, name):
-        if name not in ['start_pos', 'end_pos', 'parent', 'raw_doc',
-                        'doc', 'get_imports', 'get_parent_until', 'get_code',
-                        'subscopes', 'names_dict', 'type']:
-            return super(ClassContext, self).__getattribute__(name)
-        return getattr(self.base, name)
-
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self.base)
+        return "<e%s of %s>" % (type(self).__name__, self.classdef)
 
 
 class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-    def __init__(self, evaluator, parent_context, func):
+    def __init__(self, evaluator, parent_context, funcdef):
         """ This should not be called directly """
         super(FunctionContext, self).__init__(evaluator, parent_context)
-        self.base = self.base_func = func
+        self.base = self.base_func = funcdef
 
     def names_dicts(self, search_global):
         if search_global:
@@ -711,6 +708,16 @@ class FunctionExecutionContext(Executed):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.funcdef)
+
+
+class AnonymousFunctionExecution(FunctionExecutionContext):
+    def __init__(self, evaluator, parent_context, funcdef):
+        super(AnonymousFunctionExecution, self).__init__(
+            evaluator, parent_context, funcdef, var_args=None)
+
+    @memoize_default(default=NO_DEFAULT)
+    def get_params(self):
+        return []
 
 
 class GlobalName(helpers.FakeName):

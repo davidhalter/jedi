@@ -111,19 +111,16 @@ class Evaluator(object):
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
     def wrap(self, element, parent_context):
-        if isinstance(element, Context) or element is None:
-            # TODO this is so ugly, please refactor.
-            return element
-
         if element.type == 'classdef':
             return er.ClassContext(self, element, parent_context)
         elif element.type == 'funcdef':
-            return er.FunctionContext(self, parent_context, element)
+            return er.AnonymousFunctionExecution(self, parent_context, element)
         elif element.type == 'lambda':
             return er.LambdaWrapper(self, element)
         elif element.type == 'file_input':
             return er.ModuleContext(self, element)
         else:
+            raise DeprecationWarning
             return element
 
     def find_types(self, context, name_str, position=None, search_global=False,
@@ -317,6 +314,7 @@ class Evaluator(object):
         elif element.type == 'dotted_name':
             types = self._eval_atom(context, element.children[0])
             for next_name in element.children[2::2]:
+                # TODO add search_global=True?
                 types = set(chain.from_iterable(self.find_types(typ, next_name)
                                                 for typ in types))
             types = types
