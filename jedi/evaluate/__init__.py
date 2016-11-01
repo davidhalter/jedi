@@ -110,19 +110,6 @@ class Evaluator(object):
         self.recursion_detector = recursion.RecursionDetector(self)
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def wrap(self, element, parent_context):
-        if element.type == 'classdef':
-            return er.ClassContext(self, element, parent_context)
-        elif element.type == 'funcdef':
-            return er.AnonymousFunctionExecution(self, parent_context, element)
-        elif element.type == 'lambda':
-            return er.LambdaWrapper(self, element)
-        elif element.type == 'file_input':
-            return er.ModuleContext(self, element)
-        else:
-            raise DeprecationWarning
-            return element
-
     def find_types(self, context, name_str, position=None, search_global=False,
                    is_goto=False):
         """
@@ -515,16 +502,33 @@ class Evaluator(object):
             return self.find_types(scope, name, stmt.start_pos,
                                    search_global=True, is_goto=True)
 
-    def create_context(self, node):
-        def from_scope(scope):
+    def wrap(self, element, parent_context):
+        raise DeprecationWarning
+        if element.type == 'classdef':
+            return er.ClassContext(self, element, parent_context)
+        elif element.type == 'lambda':
+            return er.LambdaWrapper(self, element)
+        elif element.type == 'file_input':
+            return er.ModuleContext(self, element)
+        else:
+            raise DeprecationWarning
+            return element
+
+    def create_context(self, module_context, node):
+        def from_scope_node(scope_node):
             parent_context = None
-            parent_scope = scope.get_parent_scope()
+            parent_scope = scope_node.get_parent_scope()
             if parent_scope is not None:
-                parent_context = from_scope(parent_scope)
+                parent_context = from_scope_node(parent_scope)
+            if scope_node == module_context.module_node:
+                return module_context
+            elif scope_node.type == 'funcdef':
+                return er.AnonymousFunctionExecution(self, parent_context, scope_node)
+            raise DeprecationWarning
             return self.wrap(scope, parent_context=parent_context)
 
         if node.is_scope():
-            scope = node
+            scope_node = node
         else:
-            scope = node.get_parent_scope()
-        return from_scope(scope)
+            scope_node = node.get_parent_scope()
+        return from_scope_node(scope_node)

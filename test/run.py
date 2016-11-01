@@ -122,6 +122,7 @@ from jedi import debug
 from jedi._compatibility import unicode, is_py3
 from jedi.parser import Parser, load_grammar
 from jedi.api.classes import Definition
+from jedi.evaluate.representation import ModuleContext
 
 
 TEST_COMPLETIONS = 0
@@ -189,13 +190,12 @@ class IntegrationTestCase(object):
                 parser = Parser(load_grammar(), string, start_symbol='eval_input')
                 parser.get_root_node().move(self.line_nr)
                 element = parser.get_parsed_node()
-                module = script._get_module()
+                module_context = script._get_module()
                 # TODO remove
                 element.parent = jedi.api.completion.get_user_scope(
-                    module,
+                    module_context,
                     (self.line_nr, self.column)
                 )
-                module_context = evaluator.wrap(module, parent_context=None)
                 results = evaluator.eval_element(module_context, element)
                 if not results:
                     raise Exception('Could not resolve %s on line %s'

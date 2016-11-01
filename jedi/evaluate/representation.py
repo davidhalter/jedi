@@ -734,10 +734,9 @@ class GlobalName(helpers.FakeName):
 class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     parent_context = None
 
-    def __init__(self, evaluator, module, parent_module=None):
-        self._evaluator = evaluator
-        self.base = self._module = module
-        self._parent_module = parent_module
+    def __init__(self, evaluator, module_node):
+        super(ModuleContext, self).__init__(evaluator, parent_context=None)
+        self.module_node = module_node
         self.path = None
 
     def names_dicts(self, search_global):
@@ -754,11 +753,11 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         yield ParserTreeFilter(
             self._evaluator,
             self,
-            self._module,
+            self.module_node,
             until_position,
             origin_scope=origin_scope
         )
-        yield GlobalNameFilter(self, self._module)
+        yield GlobalNameFilter(self, self.module_node)
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         # TODO 
@@ -774,7 +773,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
     @memoize_default([])
     def star_imports(self):
         modules = []
-        for i in self.base.imports:
+        for i in self.module_node.imports:
             if i.is_star_import():
                 name = i.star_import_name()
                 new = imports.ImportWrapper(self._evaluator, name).follow()
@@ -798,7 +797,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
     @property
     @memoize_default()
     def name(self):
-        return ContextName(self, self.base.name)
+        return ContextName(self, self.module_node.name)
 
     def _get_init_directory(self):
         """
@@ -824,10 +823,10 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         """
         In contrast to Python's __file__ can be None.
         """
-        if self._module.path is None:
+        if self.module_node.path is None:
             return None
 
-        return os.path.abspath(self._module.path)
+        return os.path.abspath(self.module_node.path)
 
     def py__package__(self):
         if self._get_init_directory() is None:
@@ -884,7 +883,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         Lists modules in the directory of this module (if this module is a
         package).
         """
-        path = self._module.path
+        path = self.module_node.path
         names = {}
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
             mods = pkgutil.iter_modules([os.path.dirname(path)])
@@ -909,4 +908,4 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         return compiled.get_special_object(self._evaluator, 'MODULE_CLASS')
 
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self._module)
+        return "<%s: %s>" % (type(self).__name__, self.module_node)

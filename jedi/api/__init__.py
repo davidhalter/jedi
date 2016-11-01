@@ -132,14 +132,18 @@ class Script(object):
         debug.speed('init')
 
     @cache.memoize_method
-    def _get_module(self):
+    def _get_module_node(self):
         cache.invalidate_star_import_cache(self._path)
         parser = FastParser(self._grammar, self._source, self.path)
         save_parser(self.path, parser, pickling=False)
 
-        module = self._evaluator.wrap(parser.module, parent_context=None)
-        imports.add_module(self._evaluator, unicode(module.name), module)
         return parser.module
+
+    @cache.memoize_method
+    def _get_module(self):
+        module = er.ModuleContext(self._evaluator, self._get_module_node())
+        imports.add_module(self._evaluator, unicode(module.name), module)
+        return module
 
     @property
     def source_path(self):
@@ -183,13 +187,14 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        leaf = self._get_module().name_for_position(self._pos)
+        module_node = self._get_module_node()
+        leaf = module_node.name_for_position(self._pos)
         if leaf is None:
-            leaf = self._get_module().get_leaf_for_position(self._pos)
+            leaf = module_node.get_leaf_for_position(self._pos)
             if leaf is None:
                 return []
 
-        context = self._evaluator.create_context(leaf)
+        context = self._evaluator.create_context(self._get_module(), leaf)
         definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
 
         names = [s.name for s in definitions]
@@ -229,7 +234,7 @@ class Script(object):
         """
         Used for goto_assignments and usages.
         """
-        name = self._get_module().name_for_position(self._pos)
+        name = self._get_module_node().name_for_position(self._pos)
         if name is None:
             return []
         return list(self._evaluator.goto(name))
@@ -248,7 +253,8 @@ class Script(object):
         temp, settings.dynamic_flow_information = \
             settings.dynamic_flow_information, False
         try:
-            user_stmt = self._get_module().get_statement_for_position(self._pos)
+            module_node = self._get_module_node()
+            user_stmt = module_node.get_statement_for_position(self._pos)
             definitions = self._goto()
             if not definitions and isinstance(user_stmt, tree.Import):
                 # For not defined imports (goto doesn't find something, we take
@@ -270,7 +276,7 @@ class Script(object):
                                                                definitions)
 
             module = set([d.get_parent_until() for d in definitions])
-            module.add(self._get_module())
+            module.add(module_node)
             names = usages.usages(self._evaluator, definitions, module)
 
             for d in set(definitions):
@@ -297,7 +303,7 @@ class Script(object):
         :rtype: list of :class:`classes.CallSignature`
         """
         call_signature_details = \
-            helpers.get_call_signature_details(self._get_module(), self._pos)
+            helpers.get_call_signature_details(self._get_module_node(), self._pos)
         if call_signature_details is None:
             return []
 
@@ -320,9 +326,10 @@ class Script(object):
 
     def _analysis(self):
         self._evaluator.is_analysis = True
-        self._evaluator.analysis_modules = [self._get_module()]
+        module_node = self._get_module_node()
+        self._evaluator.analysis_modules = [module_node]
         try:
-            for node in self._get_module().nodes_to_execute():
+            for node in module_node.nodes_to_execute():
                 if node.type in ('funcdef', 'classdef'):
                     if node.type == 'classdef':
                         continue
@@ -387,11 +394,9 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
 
-        parser_module = super(Interpreter, self)._get_module()
-        self._module = interpreter.MixedModule(self._evaluator, parser_module, self.namespaces)
-
-    def _get_module(self):
-        return self._module
+    def _get_module_node(self):
+        parser_module = super(Interpreter, self)._get_module_node()
+        return interpreter.MixedModule(self._evaluator, parser_module, self.namespaces)
 
 
 def defined_names(source, path=None, encoding='utf-8'):
@@ -437,7 +442,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
     defs = [classes.Definition(script._evaluator, name_part)
-            for name_part in get_module_names(script._get_module(), all_scopes)]
+            for name_part in get_module_names(script._get_module().module_node, all_scopes)]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
 

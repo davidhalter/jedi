@@ -47,11 +47,11 @@ def filter_names(evaluator, completion_names, stack, like_name):
                 yield new
 
 
-def get_user_scope(module, position):
+def get_user_scope(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
     """
-    user_stmt = module.get_statement_for_position(position)
+    user_stmt = module_context.module_node.get_statement_for_position(position)
     if user_stmt is None:
         def scan(scope):
             for s in scope.children:
@@ -62,20 +62,20 @@ def get_user_scope(module, position):
                         return scan(s)
             return None
 
-        return scan(module) or module
+        return scan(module) or module_context
     else:
         return user_stmt.get_parent_scope(include_flows=True)
 
 
 class Completion:
-    def __init__(self, evaluator, module_node, code_lines, position, call_signatures_method):
+    def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
-        self._module_node = module_node
-        self._module = evaluator.wrap(module_node, parent_context=None)
+        self._module_context = module
+        self._module_node = module.module_node
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
-        self._like_name = helpers.get_on_completion_name(module_node, code_lines, position)
+        self._like_name = helpers.get_on_completion_name(self._module_node, code_lines, position)
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._position = position[0], position[1] - len(self._like_name)
@@ -172,10 +172,10 @@ class Completion:
             yield keywords.keyword(self._evaluator, k).name
 
     def _global_completions(self):
-        scope = get_user_scope(self._module_node, self._position)
+        scope = get_user_scope(self._module_context, self._position)
         if not scope.is_scope():  # Might be a flow (if/while/etc).
             scope = scope.get_parent_scope()
-        scope = self._evaluator.create_context(scope)
+        scope = self._evaluator.create_context(self._module_context, scope)
         debug.dbg('global completion scope: %s', scope)
         filters = get_global_filters(
             self._evaluator,
@@ -189,8 +189,9 @@ class Completion:
         return completion_names
 
     def _trailer_completions(self, atom_expr):
-        user_scope = get_user_scope(self._module_node, self._position)
-        contexts = self._evaluator.eval_element(self._evaluator.create_context(atom_expr), atom_expr)
+        user_scope = get_user_scope(self._module_context, self._position)
+        evaluation_context = self._evaluator.create_context(self._module_context, atom_expr)
+        contexts = self._evaluator.eval_element(evaluation_context, atom_expr)
         completion_names = []
         debug.dbg('trailer completion contexts: %s', contexts)
         for context in contexts:
@@ -215,7 +216,7 @@ class Completion:
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [str(n) for n in names]
-        i = imports.Importer(self._evaluator, names, self._module, level)
+        i = imports.Importer(self._evaluator, names, self._module_context, level)
         return i.completion_names(self._evaluator, only_modules=only_modules)
 
     def _get_class_context_completions(self, is_function=True):
