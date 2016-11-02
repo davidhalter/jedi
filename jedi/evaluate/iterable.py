@@ -247,9 +247,9 @@ class ArrayMixin(object):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = compiled.builtin_from_name(self._evaluator, self.type)
-        for typ in self._evaluator.execute_evaluated(scope, self):
-            for filter in scope.get_filters():
+        compiled_obj = compiled.builtin_from_name(self._evaluator, self.array_type)
+        for typ in compiled_obj.execute_evaluated(self):
+            for filter in typ.get_filters():
                 yield filter
                 # TODO this should be used.
                 #yield DictFilter(self._get_names_dict(names_dicts[1]))
@@ -263,10 +263,6 @@ class ArrayMixin(object):
     @safe_property
     def parent(self):
         return self._evaluator.BUILTINS
-
-    @property
-    def name(self):
-        return FakeSequence(self._evaluator, [], self.type).name
 
     def dict_values(self):
         return unite(self._evaluator.eval_element(v) for k, v in self._items())
@@ -339,7 +335,7 @@ class GeneratorComprehension(Comprehension, GeneratorMixin):
     pass
 
 
-class ArrayLiteralContext(AbstractSequence, ArrayMixin):
+class ArrayLiteralContext(ArrayMixin, AbstractSequence):
     mapping = {'(': 'tuple',
                '[': 'list',
                '{': 'dict'}
