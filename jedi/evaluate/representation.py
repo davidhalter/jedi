@@ -57,6 +57,7 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName
+from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 from jedi.evaluate.instance import TreeInstance
 
@@ -512,7 +513,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
         raise KeyError("Couldn't find subscope.")
 
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self.classdef)
+        return "<%s of %s>" % (type(self).__name__, self.classdef)
 
 
 class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
@@ -522,7 +523,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
     def __init__(self, evaluator, parent_context, funcdef):
         """ This should not be called directly """
         super(FunctionContext, self).__init__(evaluator, parent_context)
-        self.base = self.base_func = funcdef
+        self.base = self.base_func = self.funcdef = funcdef
 
     def names_dicts(self, search_global):
         if search_global:
@@ -563,7 +564,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
         return compiled.get_special_object(self._evaluator, name)
 
     def __repr__(self):
-        return "<e%s of %s>" % (type(self).__name__, self.base_func)
+        return "<%s of %s>" % (type(self).__name__, self.base_func)
 
 
 class LambdaWrapper(FunctionContext):
@@ -717,7 +718,8 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
-        return []
+        # We need to do a dynamic search here.
+        return search_params(self._evaluator, self.funcdef)
 
 
 class GlobalName(helpers.FakeName):

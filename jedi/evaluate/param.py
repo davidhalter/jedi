@@ -195,7 +195,6 @@ class ValuesArguments(AbstractArguments):
 class ExecutedParam(object):
     """Fake a param and give it values."""
     def __init__(self, original_param, var_args, lazy_context):
-        assert not isinstance(lazy_context, (tuple, list))
         self._original_param = original_param
         self.var_args = var_args
         self._lazy_context = lazy_context
@@ -208,6 +207,9 @@ class ExecutedParam(object):
     def position_nr(self):
         # Need to use the original logic here, because it uses the parent.
         return self._original_param.position_nr
+
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, self.string_name)
 
 
 def _get_calling_var_args(evaluator, var_args):

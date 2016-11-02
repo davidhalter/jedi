@@ -72,7 +72,7 @@ class ParamName(ContextName):
 
     def _get_param(self):
         params = self.parent_context.get_params()
-        return [p for p in params if p.string_name == self.string_name][0]
+        return params[self.name.parent.position_nr]
 
 
 class AbstractFilter(object):

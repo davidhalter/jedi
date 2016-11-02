@@ -387,7 +387,7 @@ class Evaluator(object):
         return new_types
 
     @debug.increase_indent
-    def execute(self, obj, arguments=None):
+    def execute(self, obj, arguments):
         if not isinstance(arguments, param.AbstractArguments):
             raise NotImplementedError
             arguments = param.Arguments(self, arguments)
