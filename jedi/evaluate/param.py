@@ -266,29 +266,28 @@ def get_params(evaluator, parent_context, func, var_args):
         key, argument = next(var_arg_iterator, (None, default))
         while key is not None:
             keys_only = True
-            k = unicode(key)
             try:
-                key_param = param_dict[unicode(key)]
+                key_param = param_dict[key]
             except KeyError:
                 non_matching_keys[key] = argument
             else:
-                result_params.append(ExecutedParam(key_param, var_args, argument))
-
-            if k in keys_used:
-                had_multiple_value_error = True
-                m = ("TypeError: %s() got multiple values for keyword argument '%s'."
-                     % (func.name, k))
-                calling_va = _get_calling_var_args(evaluator, var_args)
-                if calling_va is not None:
-                    analysis.add(evaluator, 'type-error-multiple-values',
-                                 calling_va, message=m)
-            else:
-                try:
-                    keys_used[k] = result_params[-1]
-                except IndexError:
-                    # TODO this is wrong stupid and whatever.
-                    pass
+                if key in keys_used:
+                    had_multiple_value_error = True
+                    m = ("TypeError: %s() got multiple values for keyword argument '%s'."
+                         % (func.name, key))
+                    calling_va = _get_calling_var_args(evaluator, var_args)
+                    if calling_va is not None:
+                        analysis.add(evaluator, 'type-error-multiple-values',
+                                     calling_va, message=m)
+                else:
+                    keys_used[key] = ExecutedParam(key_param, var_args, argument)
             key, argument = next(var_arg_iterator, (None, None))
+
+        try:
+            result_params.append(keys_used[param.name.value])
+            continue
+        except KeyError:
+            pass
 
         if param.stars == 1:
             # *args param
@@ -312,7 +311,10 @@ def get_params(evaluator, parent_context, func, var_args):
             # normal param
             if argument is None:
                 # No value: Return an empty container
-                result_arg = context.LazyUnknownContext()
+                if param.default is None:
+                    result_arg = context.LazyUnknownContext()
+                else:
+                    result_arg = context.LazyTreeContext(parent_context, param.default)
                 if not keys_only:
                     calling_va = var_args.get_calling_var_args()
                     if calling_va is not None:
@@ -322,10 +324,8 @@ def get_params(evaluator, parent_context, func, var_args):
             else:
                 result_arg = argument
 
-        # Now add to result if it's not one of the previously covered cases.
-        if (not keys_only or param.stars == 2):
-            result_params.append(ExecutedParam(param, var_args, result_arg))
-            keys_used[unicode(param.name)] = result_params[-1]
+        result_params.append(ExecutedParam(param, var_args, result_arg))
+        keys_used[param.name.value] = result_params[-1]
 
     if keys_only:
         # All arguments should be handed over to the next function. It's not
@@ -333,9 +333,6 @@ def get_params(evaluator, parent_context, func, var_args):
         # there's nothing to find for certain names.
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
-            result_arg = (context.LazyUnknownContext() if param.default is None else
-                          context.LazyTreeContext(parent_context, param.default))
-            result_params.append(ExecutedParam(param, var_args, result_arg))
 
             if not (non_matching_keys or had_multiple_value_error or
                     param.stars or param.default):
@@ -351,12 +348,12 @@ def get_params(evaluator, parent_context, func, var_args):
             % (func.name, key)
         analysis.add(evaluator, 'type-error-keyword-argument', argument.whatever, message=m)
 
-    remaining_params = list(var_arg_iterator)
-    if remaining_params:
+    remaining_arguments = list(var_arg_iterator)
+    if remaining_arguments:
         m = _error_argument_count(func, len(unpacked_va))
         # Just report an error for the first param that is not needed (like
         # cPython).
-        first_key, first_values = remaining_params[0]
+        first_key, first_values = remaining_arguments[0]
         # TODO REENABLE
         for v in []:#first_values:
             if first_key is not None:
