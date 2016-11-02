@@ -1006,12 +1006,10 @@ class Function(ClassOrFunc):
       5) ??
       6) annotation (if present)
     """
-    __slots__ = ('listeners',)
     type = 'funcdef'
 
     def __init__(self, children):
         super(Function, self).__init__(children)
-        self.listeners = set()  # not used here, but in evaluation.
         parameters = self.children[2]  # After `def foo`
         parameters.children[1:-1] = _create_params(parameters, parameters.children[1:-1])
 
@@ -1096,7 +1094,6 @@ class Lambda(Function):
     def __init__(self, children):
         # We don't want to call the Function constructor, call its parent.
         super(Function, self).__init__(children)
-        self.listeners = set()  # not used here, but in evaluation.
         lst = self.children[1:-2]  # Everything between `lambda` and the `:` operator is a parameter.
         self.children[1:-2] = _create_params(self, lst)
 
