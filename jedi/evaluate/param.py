@@ -416,11 +416,11 @@ def _error_argument_count(func, actual_count):
 def create_default_param(parent_context, param):
     if param.stars == 1:
         result_arg = context.LazyKnownContext(
-            iterable.FakeSequence(parent_context._evaluator, 'tuple', [])
+            iterable.FakeSequence(parent_context.evaluator, 'tuple', [])
         )
     elif param.stars == 2:
         result_arg = context.LazyKnownContext(
-            iterable.FakeDict(parent_context._evaluator, {})
+            iterable.FakeDict(parent_context.evaluator, {})
         )
     elif param.default is None:
         result_arg = context.LazyUnknownContext()

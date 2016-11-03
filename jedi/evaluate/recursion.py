@@ -92,7 +92,7 @@ class _RecursionNode(object):
 
 def execution_recursion_decorator(func):
     def run(execution, **kwargs):
-        detector = execution._evaluator.execution_recursion_detector
+        detector = execution.evaluator.execution_recursion_detector
         if detector.push_execution(execution):
             result = set()
         else:

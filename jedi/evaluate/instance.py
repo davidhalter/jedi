@@ -70,14 +70,14 @@ class AbstractInstanceContext(Context):
     def execute_function_slot(self, name, *args):
         raise NotImplementedError
         method = self.get_subscope_by_name(name)
-        return self._evaluator.execute_evaluated(method, *args)
+        return self.evaluator.execute_evaluated(method, *args)
 
     def get_descriptor_returns(self, obj):
         """ Throws a KeyError if there's no method. """
         raise NotImplementedError
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        none_obj = compiled.create(self._evaluator, None)
+        none_obj = compiled.create(self.evaluator, None)
         args = [obj, obj.base] if isinstance(obj, Instance) else [none_obj, obj]
         try:
             return self.execute_subscope_by_name('__get__', *args)
@@ -89,15 +89,15 @@ class AbstractInstanceContext(Context):
         if include_self_names:
             for cls in self._class_context.py__mro__():
                 if isinstance(cls, compiled.CompiledObject):
-                    yield SelfNameFilter(self._evaluator, self, cls, origin_scope)
+                    yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
                 else:
-                    yield SelfNameFilter(self._evaluator, self, cls.classdef, origin_scope)
+                    yield SelfNameFilter(self.evaluator, self, cls.classdef, origin_scope)
 
         for cls in self._class_context.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
-                yield CompiledInstanceClassFilter(self._evaluator, self, cls)
+                yield CompiledInstanceClassFilter(self.evaluator, self, cls)
             else:
-                yield InstanceClassFilter(self._evaluator, self, cls.classdef, origin_scope)
+                yield InstanceClassFilter(self.evaluator, self, cls.classdef, origin_scope)
 
     def py__getitem__(self, index):
         try:
@@ -106,7 +106,7 @@ class AbstractInstanceContext(Context):
             debug.warning('No __getitem__, cannot access the array.')
             return set()
         else:
-            index_obj = compiled.create(self._evaluator, index)
+            index_obj = compiled.create(self.evaluator, index)
             return unite(name.execute_evaluated(index_obj) for name in names)
 
     def py__iter__(self):
@@ -116,7 +116,7 @@ class AbstractInstanceContext(Context):
             debug.warning('No __iter__ on %s.' % self)
             return
         else:
-            iters = self._evaluator.execute(method)
+            iters = self.evaluator.execute(method)
             for generator in iters:
                 if isinstance(generator, Instance):
                     # `__next__` logic.

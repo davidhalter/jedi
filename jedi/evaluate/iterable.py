@@ -121,18 +121,18 @@ class GeneratorMixin(object):
 
     @memoize_default()
     def names_dicts(self, search_global=False):  # is always False
-        gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
+        gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
         yield self._get_names_dict(gen_obj.names_dict)
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
+        gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
         yield DictFilter(self._get_names_dict(gen_obj.names_dict))
 
     def py__bool__(self):
         return True
 
     def py__class__(self):
-        gen_obj = compiled.get_special_object(self._evaluator, 'GENERATOR_OBJECT')
+        gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
         return gen_obj.py__class__()
 
 
@@ -166,7 +166,7 @@ class Comprehension(IterableWrapper):
         return cls(evaluator, atom)
 
     def __init__(self, evaluator, atom):
-        self._evaluator = evaluator
+        self.evaluator = evaluator
         self._atom = atom
 
     def _get_comprehension(self):
@@ -197,7 +197,7 @@ class Comprehension(IterableWrapper):
         return helpers.deep_ast_copy(node, parent=last_comp)
 
     def _nested(self, comp_fors):
-        evaluator = self._evaluator
+        evaluator = self.evaluator
         comp_for = comp_fors[0]
         input_node = comp_for.children[3]
         input_types = evaluator.eval_element(input_node)
@@ -239,15 +239,15 @@ class ArrayMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = compiled.builtin_from_name(self._evaluator, self.type)
+        scope = compiled.builtin_from_name(self.evaluator, self.type)
         # builtins only have one class -> [0]
-        scopes = self._evaluator.execute_evaluated(scope, self)
+        scopes = self.evaluator.execute_evaluated(scope, self)
         names_dicts = list(scopes)[0].names_dicts(search_global)
         yield self._get_names_dict(names_dicts[1])
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         # `array.type` is a string with the type, e.g. 'list'.
-        compiled_obj = compiled.builtin_from_name(self._evaluator, self.array_type)
+        compiled_obj = compiled.builtin_from_name(self.evaluator, self.array_type)
         for typ in compiled_obj.execute_evaluated(self):
             for filter in typ.get_filters():
                 yield filter
@@ -258,26 +258,26 @@ class ArrayMixin(object):
         return None  # We don't know the length, because of appends.
 
     def py__class__(self):
-        return compiled.builtin_from_name(self._evaluator, self.type)
+        return compiled.builtin_from_name(self.evaluator, self.type)
 
     @safe_property
     def parent(self):
-        return self._evaluator.BUILTINS
+        return self.evaluator.BUILTINS
 
     def dict_values(self):
-        return unite(self._evaluator.eval_element(v) for k, v in self._items())
+        return unite(self.evaluator.eval_element(v) for k, v in self._items())
 
     @register_builtin_method('values', type='dict')
     def _imitate_values(self):
         items = self.dict_values()
-        return create_evaluated_sequence_set(self._evaluator, items, sequence_type='list')
+        return create_evaluated_sequence_set(self.evaluator, items, sequence_type='list')
 
     @register_builtin_method('items', type='dict')
     def _imitate_items(self):
-        items = [set([FakeSequence(self._evaluator, (k, v), 'tuple')])
+        items = [set([FakeSequence(self.evaluator, (k, v), 'tuple')])
                  for k, v in self._items()]
 
-        return create_evaluated_sequence_set(self._evaluator, *items, sequence_type='list')
+        return create_evaluated_sequence_set(self.evaluator, *items, sequence_type='list')
 
 
 class ListComprehension(Comprehension, ArrayMixin):
@@ -288,7 +288,7 @@ class ListComprehension(Comprehension, ArrayMixin):
         result = all_types[index]
         if isinstance(index, slice):
             return create_evaluated_sequence_set(
-                self._evaluator,
+                self.evaluator,
                 unite(result),
                 sequence_type='list'
             )
@@ -324,11 +324,11 @@ class DictComprehension(Comprehension, ArrayMixin):
 
     @register_builtin_method('items', type='dict')
     def _imitate_items(self):
-        items = set(FakeSequence(self._evaluator,
+        items = set(FakeSequence(self.evaluator,
                     (AlreadyEvaluated(keys), AlreadyEvaluated(values)), 'tuple')
                     for keys, values in self._iterate())
 
-        return create_evaluated_sequence_set(self._evaluator, items, sequence_type='list')
+        return create_evaluated_sequence_set(self.evaluator, items, sequence_type='list')
 
 
 class GeneratorComprehension(Comprehension, GeneratorMixin):
@@ -391,7 +391,7 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
             for node in self._items():
                 yield context.LazyTreeContext(self._defining_context, node)
 
-            additions = check_array_additions(self._evaluator, self)
+            additions = check_array_additions(self.evaluator, self)
             if additions:
                 yield additions
 
@@ -447,7 +447,7 @@ class _FakeArray(ArrayLiteralContext):
     def __init__(self, evaluator, container, type):
         # TODO is this class really needed?
         self.array_type = type
-        self._evaluator = evaluator
+        self.evaluator = evaluator
         self.atom = container
         self.parent_context = evaluator.BUILTINS
 
@@ -519,7 +519,7 @@ class FakeDict(_FakeArray):
 
     def py__iter__(self):
         for key in self._dct:
-            yield context.LazyKnownContext(compiled.create(self._evaluator, key))
+            yield context.LazyKnownContext(compiled.create(self.evaluator, key))
 
     def py__getitem__(self, index):
         return self._dct[index].infer()
@@ -820,7 +820,7 @@ class _ArrayInstance(IterableWrapper):
     we don't use these operations in `builtins.py`.
     """
     def __init__(self, evaluator, instance):
-        self._evaluator = evaluator
+        self.evaluator = evaluator
         self.instance = instance
         self.var_args = instance.var_args
 
@@ -831,15 +831,15 @@ class _ArrayInstance(IterableWrapper):
         except StopIteration:
             types = set()
         else:
-            types = unite(self._evaluator.eval_element(node) for node in first_nodes)
-            for types in py__iter__(self._evaluator, types, first_nodes[0]):
+            types = unite(self.evaluator.eval_element(node) for node in first_nodes)
+            for types in py__iter__(self.evaluator, types, first_nodes[0]):
                 yield types
 
         module = self.var_args.get_parent_until()
         if module is None:
             return
         is_list = str(self.instance.name) == 'list'
-        additions = _check_array_additions(self._evaluator, self.instance, module, is_list)
+        additions = _check_array_additions(self.evaluator, self.instance, module, is_list)
         if additions:
             yield additions
 

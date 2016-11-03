@@ -24,7 +24,7 @@ def memoize_default(default=NO_DEFAULT, evaluator_is_first_arg=False, second_arg
             elif second_arg_is_evaluator:  # needed for meta classes
                 cache = args[0].memoize_cache
             else:
-                cache = obj._evaluator.memoize_cache
+                cache = obj.evaluator.memoize_cache
 
             try:
                 memo = cache[function]

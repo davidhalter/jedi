@@ -44,9 +44,8 @@ class CompiledObject(Context):
     used_names = {}  # To be consistent with modules.
 
     def __init__(self, evaluator, obj, parent_context=None):
-        self._evaluator = evaluator
+        super(CompiledObject, self).__init__(evaluator, parent_context)
         self.obj = obj
-        self.parent_context = parent_context
 
     def get_root_node(self):
         # To make things a bit easier with filters we add this method here.
@@ -56,21 +55,21 @@ class CompiledObject(Context):
     def py__call__(self, params):
         if inspect.isclass(self.obj):
             from jedi.evaluate.instance import CompiledInstance
-            return set([CompiledInstance(self._evaluator, self.parent_context, self, params)])
+            return set([CompiledInstance(self.evaluator, self.parent_context, self, params)])
         else:
             return set(self._execute_function(params))
 
     @CheckAttribute
     def py__class__(self):
-        return create(self._evaluator, self.obj.__class__)
+        return create(self.evaluator, self.obj.__class__)
 
     @CheckAttribute
     def py__mro__(self):
-        return tuple(create(self._evaluator, cls) for cls in self.obj.__mro__)
+        return tuple(create(self.evaluator, cls) for cls in self.obj.__mro__)
 
     @CheckAttribute
     def py__bases__(self):
-        return tuple(create(self._evaluator, cls) for cls in self.obj.__bases__)
+        return tuple(create(self.evaluator, cls) for cls in self.obj.__bases__)
 
     def py__bool__(self):
         return bool(self.obj)
@@ -172,7 +171,7 @@ class CompiledObject(Context):
         search_global shouldn't change the fact that there's one dict, this way
         there's only one `object`.
         """
-        return [LazyNamesDict(self._evaluator, self, is_instance)]
+        return [LazyNamesDict(self.evaluator, self, is_instance)]
 
     @memoize_method
     def _ensure_one_filter(self, is_instance):
@@ -180,11 +179,11 @@ class CompiledObject(Context):
         search_global shouldn't change the fact that there's one dict, this way
         there's only one `object`.
         """
-        return CompiledObjectFilter(self._evaluator, self, is_instance)
+        return CompiledObjectFilter(self.evaluator, self, is_instance)
 
     def get_subscope_by_name(self, name):
         if name in dir(self.obj):
-            return CompiledName(self._evaluator, self, name).parent
+            return CompiledName(self.evaluator, self, name).parent
         else:
             raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
 
@@ -194,7 +193,7 @@ class CompiledObject(Context):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return set()
 
-        return set([create(self._evaluator, self.obj[index])])
+        return set([create(self.evaluator, self.obj[index])])
 
     @CheckAttribute
     def py__iter__(self):
@@ -203,7 +202,7 @@ class CompiledObject(Context):
             return
 
         for part in self.obj:
-            yield set([create(self._evaluator, part)])
+            yield set([create(self.evaluator, part)])
 
     @property
     def name(self):
@@ -227,8 +226,8 @@ class CompiledObject(Context):
                     # We want to evaluate everything except None.
                     # TODO do we?
                     continue
-                bltn_obj = create(self._evaluator, bltn_obj)
-                for result in self._evaluator.execute(bltn_obj, params):
+                bltn_obj = create(self.evaluator, bltn_obj)
+                for result in self.evaluator.execute(bltn_obj, params):
                     yield result
 
     @property
@@ -244,7 +243,7 @@ class CompiledObject(Context):
         for name in dir(self.obj):
             try:
                 faked_subscopes.append(
-                    fake.get_faked(self._evaluator, module, self.obj, parent=self, name=name)
+                    fake.get_faked(self.evaluator, module, self.obj, parent=self, name=name)
                 )
             except fake.FakeDoesNotExist:
                 pass

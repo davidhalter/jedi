@@ -59,7 +59,7 @@ class TreeNameDefinition(ContextName):
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.evaluate.finder import _name_to_types
-        return _name_to_types(self.parent_context._evaluator, self.parent_context, self.name, None)
+        return _name_to_types(self.parent_context.evaluator, self.parent_context, self.name, None)
 
 
 class ParamName(ContextName):
@@ -124,7 +124,6 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
     def __init__(self, evaluator, context, parser_scope, until_position=None, origin_scope=None):
         super(ParserTreeFilter, self).__init__(context, parser_scope, origin_scope)
         self._until_position = until_position
-        self._evaluator = evaluator
 
     def _filter(self, names):
         names = super(ParserTreeFilter, self)._filter(names)

@@ -107,7 +107,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
     @property
     def py__call__(self):
         def actual(params):
-            return self._evaluator.execute(method, params)
+            return self.evaluator.execute(method, params)
 
         try:
             method = self.get_subscope_by_name('__call__')
@@ -130,7 +130,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             func = self.get_subscope_by_name('__init__')
         except KeyError:
             return None
-        return FunctionExecutionContext(self._evaluator, self, func, self.var_args)
+        return FunctionExecutionContext(self.evaluator, self, func, self.var_args)
 
     def _get_func_self_name(self, func):
         """
@@ -172,22 +172,22 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
                             name = trailer.children[1]  # After dot.
                             if name.is_definition():
                                 arr = names.setdefault(name.value, [])
-                                arr.append(get_instance_el(self._evaluator, self, name))
+                                arr.append(get_instance_el(self.evaluator, self, name))
         return names
 
     def get_subscope_by_name(self, name):
         sub = self._class_context.get_subscope_by_name(name)
-        return get_instance_el(self._evaluator, self, sub, True)
+        return get_instance_el(self.evaluator, self, sub, True)
 
     def execute_subscope_by_name(self, name, *args):
         method = self.get_subscope_by_name(name)
-        return self._evaluator.execute_evaluated(method, *args)
+        return self.evaluator.execute_evaluated(method, *args)
 
     def get_descriptor_returns(self, obj):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        none_obj = compiled.create(self._evaluator, None)
+        none_obj = compiled.create(self.evaluator, None)
         args = [obj, obj.base] if isinstance(obj, Instance) else [none_obj, obj]
         try:
             return self.execute_subscope_by_name('__get__', *args)
@@ -201,24 +201,24 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         for s in self._class_context.py__mro__()[1:]:
             if not isinstance(s, compiled.CompiledObject):
                 # Compiled objects don't have `self.` names.
-                for inst in self._evaluator.execute(s):
+                for inst in self.evaluator.execute(s):
                     yield inst._self_names_dict(add_mro=False)
 
         for names_dict in self.base.names_dicts(search_global=False, is_instance=True):
-            yield LazyInstanceDict(self._evaluator, self, names_dict)
+            yield LazyInstanceDict(self.evaluator, self, names_dict)
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         for cls in self._class_context.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
-                yield SelfNameFilter(self._evaluator, self, cls, origin_scope)
+                yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
             else:
-                yield SelfNameFilter(self._evaluator, self, cls.base, origin_scope)
+                yield SelfNameFilter(self.evaluator, self, cls.base, origin_scope)
 
         for cls in self._class_context.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
-                yield CompiledInstanceClassFilter(self._evaluator, self, cls)
+                yield CompiledInstanceClassFilter(self.evaluator, self, cls)
             else:
-                yield InstanceClassFilter(self._evaluator, self, cls.base, origin_scope)
+                yield InstanceClassFilter(self.evaluator, self, cls.base, origin_scope)
 
     def py__getitem__(self, index):
         try:
@@ -227,8 +227,8 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             debug.warning('No __getitem__, cannot access the array.')
             return set()
         else:
-            index_obj = compiled.create(self._evaluator, index)
-            return self._evaluator.execute_evaluated(method, index_obj)
+            index_obj = compiled.create(self.evaluator, index)
+            return self.evaluator.execute_evaluated(method, index_obj)
 
     def py__iter__(self):
         try:
@@ -237,7 +237,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
             debug.warning('No __iter__ on %s.' % self)
             return
         else:
-            iters = self._evaluator.execute(method)
+            iters = self.evaluator.execute(method)
             for generator in iters:
                 if isinstance(generator, Instance):
                     # `__next__` logic.
@@ -313,7 +313,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
     variable (e.g. self.variable or class methods).
     """
     def __init__(self, evaluator, instance, var, is_class_var):
-        self._evaluator = evaluator
+        self.evaluator = evaluator
         self.instance = instance
         self.var = var
         self.is_class_var = is_class_var
@@ -328,7 +328,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
                 and par == self.instance.base.base:
             par = self.instance
         else:
-            par = get_instance_el(self._evaluator, self.instance, par,
+            par = get_instance_el(self.evaluator, self.instance, par,
                                   self.is_class_var)
         return par
 
@@ -341,11 +341,11 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
     def get_decorated_func(self):
         """ Needed because the InstanceElement should not be stripped """
         func = self.var.get_decorated_func()
-        func = get_instance_el(self._evaluator, self.instance, func)
+        func = get_instance_el(self.evaluator, self.instance, func)
         return func
 
     def get_rhs(self):
-        return get_instance_el(self._evaluator, self.instance,
+        return get_instance_el(self.evaluator, self.instance,
                                self.var.get_rhs(), self.is_class_var)
 
     def is_definition(self):
@@ -354,7 +354,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
     @property
     def children(self):
         # Copy and modify the array.
-        return [get_instance_el(self._evaluator, self.instance, command, self.is_class_var)
+        return [get_instance_el(self.evaluator, self.instance, command, self.is_class_var)
                 for command in self.var.children]
 
     @property
@@ -364,11 +364,11 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
 
     def __iter__(self):
         for el in self.var.__iter__():
-            yield get_instance_el(self._evaluator, self.instance, el,
+            yield get_instance_el(self.evaluator, self.instance, el,
                                   self.is_class_var)
 
     def __getitem__(self, index):
-        return get_instance_el(self._evaluator, self.instance, self.var[index],
+        return get_instance_el(self.evaluator, self.instance, self.var[index],
                                self.is_class_var)
 
     def isinstance(self, *cls):
@@ -462,16 +462,16 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
     def py__bases__(self):
         arglist = self.classdef.get_super_arglist()
         if arglist:
-            args = param.TreeArguments(self._evaluator, self, arglist)
+            args = param.TreeArguments(self.evaluator, self, arglist)
             return [value for key, value in args.unpack() if key is None]
         else:
-            return [context.LazyKnownContext(compiled.create(self._evaluator, object))]
+            return [context.LazyKnownContext(compiled.create(self.evaluator, object))]
 
     def py__call__(self, params):
-        return set([TreeInstance(self._evaluator, self.parent_context, self, params)])
+        return set([TreeInstance(self.evaluator, self.parent_context, self, params)])
 
     def py__class__(self):
-        return compiled.create(self._evaluator, type)
+        return compiled.create(self.evaluator, type)
 
     @property
     def params(self):
@@ -492,14 +492,14 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
 
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self._evaluator, self, self.classdef, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(self.evaluator, self, self.classdef, until_position, origin_scope=origin_scope)
         else:
             for scope in self.py__mro__():
                 if isinstance(scope, compiled.CompiledObject):
                     for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ParserTreeFilter(self._evaluator, self, scope.classdef, origin_scope=origin_scope)
+                    yield ParserTreeFilter(self.evaluator, self, scope.classdef, origin_scope=origin_scope)
 
     def is_class(self):
         return True
@@ -535,7 +535,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
-            yield ParserTreeFilter(self._evaluator, self, self.base, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(self.evaluator, self, self.base, until_position, origin_scope=origin_scope)
         else:
             scope = self.py__class__()
             for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
@@ -544,13 +544,13 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
     @Python3Method
     def py__call__(self, params):
         function_execution = FunctionExecutionContext(
-            self._evaluator,
+            self.evaluator,
             self.parent_context,
             self.base,
             params
         )
         if self.base.is_generator():
-            return set([iterable.Generator(self._evaluator, function_execution)])
+            return set([iterable.Generator(self.evaluator, function_execution)])
         else:
             return function_execution.get_return_values()
 
@@ -561,7 +561,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
             name = 'METHOD_CLASS'
         else:
             name = 'FUNCTION_CLASS'
-        return compiled.get_special_object(self._evaluator, name)
+        return compiled.get_special_object(self.evaluator, name)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.base_func)
@@ -604,7 +604,7 @@ class FunctionExecutionContext(Executed):
     def get_return_values(self, check_yields=False):
         funcdef = self.funcdef
         if funcdef.type in ('lambdef', 'lambdef_nocond'):
-            return self._evaluator.eval_element(self.children[-1])
+            return self.evaluator.eval_element(self.children[-1])
 
         """
         if func.listeners:
@@ -622,8 +622,8 @@ class FunctionExecutionContext(Executed):
             returns = funcdef.yields
         else:
             returns = funcdef.returns
-            types = set(docstrings.find_return_types(self._evaluator, funcdef))
-            types |= set(pep0484.find_return_types(self._evaluator, funcdef))
+            types = set(docstrings.find_return_types(self.evaluator, funcdef))
+            types |= set(pep0484.find_return_types(self.evaluator, funcdef))
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)
@@ -646,7 +646,7 @@ class FunctionExecutionContext(Executed):
         if node.type == 'yield_arg':
             # It must be a yield from.
             yield_from_types = self.eval_node(node)
-            for lazy_context in iterable.py__iter__(self._evaluator, yield_from_types, node):
+            for lazy_context in iterable.py__iter__(self.evaluator, yield_from_types, node):
                 yield lazy_context
         else:
             yield context.LazyTreeContext(self, node)
@@ -679,7 +679,7 @@ class FunctionExecutionContext(Executed):
                 return
             last_for_stmt = for_stmt
 
-        evaluator = self._evaluator
+        evaluator = self.evaluator
         for for_stmt, yields in yields_order:
             if for_stmt is None:
                 # No for_stmt, just normal yields.
@@ -699,13 +699,13 @@ class FunctionExecutionContext(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield FunctionExecutionFilter(self._evaluator, self, self.funcdef,
+        yield FunctionExecutionFilter(self.evaluator, self, self.funcdef,
                                       until_position,
                                       origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
-        return param.get_params(self._evaluator, self.parent_context, self.funcdef, self.var_args)
+        return param.get_params(self.evaluator, self.parent_context, self.funcdef, self.var_args)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.funcdef)
@@ -719,7 +719,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
         # We need to do a dynamic search here.
-        return search_params(self._evaluator, self.parent_context, self.funcdef)
+        return search_params(self.evaluator, self.parent_context, self.funcdef)
 
 
 class GlobalName(helpers.FakeName):
@@ -753,7 +753,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
-            self._evaluator,
+            self.evaluator,
             self,
             self.module_node,
             until_position,
@@ -778,7 +778,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         for i in self.module_node.imports:
             if i.is_star_import():
                 name = i.star_import_name()
-                new = imports.ImportWrapper(self._evaluator, name).follow()
+                new = imports.ImportWrapper(self.evaluator, name).follow()
                 for module in new:
                     if isinstance(module, tree.Module):
                         modules += module.star_imports()
@@ -789,7 +789,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
     def _module_attributes_dict(self):
         def parent_callback():
             # Create a string type object (without a defined string in it):
-            return list(self._evaluator.execute(compiled.create(self._evaluator, str)))[0]
+            return list(self.evaluator.execute(compiled.create(self.evaluator, str)))[0]
 
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
@@ -815,7 +815,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         return None
 
     def py__name__(self):
-        for name, module in self._evaluator.modules.items():
+        for name, module in self.evaluator.modules.items():
             if module == self:
                 return name
 
@@ -838,7 +838,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
 
     def _py__path__(self):
         if self._parent_module is None:
-            search_path = self._evaluator.sys_path
+            search_path = self.evaluator.sys_path
         else:
             search_path = self._parent_module.py__path__()
         init_path = self.py__file__()
@@ -907,7 +907,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         return names
 
     def py__class__(self):
-        return compiled.get_special_object(self._evaluator, 'MODULE_CLASS')
+        return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
 
     def __repr__(self):
         return "<%s: %s>" % (type(self).__name__, self.module_node)
