@@ -24,8 +24,9 @@ from jedi import settings
 from jedi import debug
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
-from jedi.evaluate.param import TreeArguments
+from jedi.evaluate.param import TreeArguments, create_default_param
 from jedi.common import to_list, unite
+from jedi.evaluate import context
 
 
 MAX_PARAM_SEARCHES = 20
@@ -54,7 +55,7 @@ class MergedExecutedParams(object):
 
 
 @debug.increase_indent
-def search_params(evaluator, funcdef):
+def search_params(evaluator, parent_context, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -74,12 +75,15 @@ def search_params(evaluator, funcdef):
     try:
         debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
         function_executions = _search_function_executions(evaluator, funcdef)
-        zipped_params = zip(*(
-            function_execution.get_params()
-            for function_execution in function_executions
-        ))
-        params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
-        # Evaluate the ExecutedParams to types.
+        if function_executions:
+            zipped_params = zip(*(
+                function_execution.get_params()
+                for function_execution in function_executions
+            ))
+            params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
+            # Evaluate the ExecutedParams to types.
+        else:
+            params = [create_default_param(parent_context, p) for p in funcdef.params]
         debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
     finally:

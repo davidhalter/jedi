@@ -719,7 +719,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
         # We need to do a dynamic search here.
-        return search_params(self._evaluator, self.funcdef)
+        return search_params(self._evaluator, self.parent_context, self.funcdef)
 
 
 class GlobalName(helpers.FakeName):

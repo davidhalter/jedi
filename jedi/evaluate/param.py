@@ -259,11 +259,7 @@ def get_params(evaluator, parent_context, func, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
-        default = None
-        if param.default is not None:
-            default = context.LazyTreeContext(parent_context, param.default)
-
-        key, argument = next(var_arg_iterator, (None, default))
+        key, argument = next(var_arg_iterator, (None, None))
         while key is not None:
             keys_only = True
             try:
@@ -415,3 +411,19 @@ def _error_argument_count(func, actual_count):
         before = 'from %s to ' % (len(func.params) - default_arguments)
     return ('TypeError: %s() takes %s%s arguments (%s given).'
             % (func.name, before, len(func.params), actual_count))
+
+
+def create_default_param(parent_context, param):
+    if param.stars == 1:
+        result_arg = context.LazyKnownContext(
+            iterable.FakeSequence(parent_context._evaluator, 'tuple', [])
+        )
+    elif param.stars == 2:
+        result_arg = context.LazyKnownContext(
+            iterable.FakeDict(parent_context._evaluator, {})
+        )
+    elif param.default is None:
+        result_arg = context.LazyUnknownContext()
+    else:
+        result_arg = context.LazyTreeContext(parent_context, param.default)
+    return ExecutedParam(param, None, result_arg)
