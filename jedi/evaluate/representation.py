@@ -405,12 +405,6 @@ class Wrapper(tree.Base):
         """
         return True
 
-    @property
-    @underscore_memoization
-    def name(self):
-        name = self.base.name
-        return ContextName(self, name)
-
 
 class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     """
@@ -515,6 +509,10 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.classdef)
 
+    @property
+    def name(self):
+        return ContextName(self, self.classdef.name)
+
 
 class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     """
@@ -558,7 +556,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
             self.base,
             params
         )
-        return self.execute_function_(function_execution)
+        return self.infer_function_execution(function_execution)
 
     def py__class__(self):
         # This differentiation is only necessary for Python2. Python3 does not
@@ -571,6 +569,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self.base_func)
+
+    @property
+    def name(self):
+        return ContextName(self, self.funcdef.name)
 
 
 class LambdaWrapper(FunctionContext):

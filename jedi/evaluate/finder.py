@@ -325,7 +325,7 @@ class NameFinder(object):
         # The name must not be in the dictionary, but part of the class
         # definition. __get__ is only called if the descriptor is defined in
         # the class dictionary.
-        name_scope = name.get_definition().get_parent_scope()
+        name_scope = name.tree_name.get_definition().get_parent_scope()
         if not isinstance(name_scope, (er.Instance, tree.Class)):
             return types
 

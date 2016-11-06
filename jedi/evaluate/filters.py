@@ -36,17 +36,17 @@ class AbstractNameDefinition(object):
 
 
 class ContextName(AbstractNameDefinition):
-    def __init__(self, parent_context, name):
+    def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
-        self.name = name
+        self.tree_name = tree_name
 
     @property
     def string_name(self):
-        return self.name.value
+        return self.tree_name.value
 
     @property
     def start_pos(self):
-        return self.name.start_pos
+        return self.tree_name.start_pos
 
     def infer(self):
         return [self.parent_context]
@@ -59,20 +59,20 @@ class TreeNameDefinition(ContextName):
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.evaluate.finder import _name_to_types
-        return _name_to_types(self.parent_context.evaluator, self.parent_context, self.name, None)
+        return _name_to_types(self.parent_context.evaluator, self.parent_context, self.tree_name, None)
 
 
 class ParamName(ContextName):
-    def __init__(self, parent_context, name):
+    def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
-        self.name = name
+        self.tree_name = tree_name
 
     def infer(self):
         return self._get_param().infer()
 
     def _get_param(self):
         params = self.parent_context.get_params()
-        return params[self.name.parent.position_nr]
+        return params[self.tree_name.parent.position_nr]
 
 
 class AbstractFilter(object):
