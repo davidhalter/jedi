@@ -159,11 +159,11 @@ class TreeInstance(AbstractInstanceContext):
     def create_instance_context(self, class_context, node):
         scope = node.get_parent_scope()
         if scope == class_context.classdef:
-            return self
+            return class_context
         else:
             parent_context = self.create_instance_context(class_context, scope)
             if scope.type == 'funcdef':
-                if scope.name.value == '__init__' and parent_context == self:
+                if scope.name.value == '__init__' and parent_context == class_context:
                     return InstanceFunctionExecution(
                         self,
                         class_context.parent_context,
@@ -214,12 +214,16 @@ class BoundMethod(object):
         )
         return self._function.infer_function_execution(function_execution)
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._function)
+
 
 class InstanceNameDefinition(TreeNameDefinition):
     def infer(self):
         contexts = super(InstanceNameDefinition, self).infer()
         for context in contexts:
             yield context
+
 
 class InstanceClassFilter(ParserTreeFilter):
     name_class = InstanceNameDefinition
