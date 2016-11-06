@@ -50,7 +50,7 @@ def parse_google_argblock(lines):
         http://www.sphinx-doc.org/en/stable/ext/example_google.html#example-google
 
     Example:
-        >>> from jedi.evaluate.google_docscrape import *  # NOQA
+        >>> from jedi.evaluate.docscrape_google import *  # NOQA
         >>> # Test various ways that arglines can be written
         >>> line_list = [
         ...     'foo1 (int): a description',
@@ -98,7 +98,7 @@ def split_google_docblocks(docstr):
             tag and the second item is the bock corresponding to that tag.
 
     Example:
-        >>> from jedi.evaluate.google_docscrape import *  # NOQA
+        >>> from jedi.evaluate.docscrape_google import *  # NOQA
         >>> docstr = split_google_docblocks.__doc__
         >>> groups = split_google_docblocks(docstr)
         >>> #print('groups = %s' % (groups,))

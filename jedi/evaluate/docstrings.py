@@ -65,7 +65,7 @@ else:
         return []
 
 
-from jedi.evaluate.google_docscrape import parse_google_args
+from jedi.evaluate.docscrape_google import parse_google_args
 
 def _search_param_in_googledocstr(docstr, param_str):
     """
