@@ -5,7 +5,7 @@ import sys
 
 
 def parse_google_args(docstr):
-    """
+    r"""
     Generates dictionaries of argument hints based on a google docstring
 
     Args:
@@ -18,8 +18,8 @@ def parse_google_args(docstr):
         >>> from jedi.evaluate.docscrape_google import *  # NOQA
         >>> docstr = parse_google_args.__doc__
         >>> argdict_list = list(parse_google_args(docstr))
-        >>> print(argdict_list)
-        [{'type': 'str', 'name': 'docstr'}]
+        >>> print([sorted(d.items()) for d in argdict_list])
+        [[('name', 'docstr'), ('type', 'str')]]
     """
     blocks = split_google_docblocks(docstr)
     for key, lines in blocks:
@@ -29,7 +29,7 @@ def parse_google_args(docstr):
 
 
 def parse_google_returns(docstr):
-    """
+    r"""
     Generates dictionaries of possible return hints based on a google docstring
 
     Args:
@@ -42,8 +42,8 @@ def parse_google_returns(docstr):
         >>> from jedi.evaluate.docscrape_google import *  # NOQA
         >>> docstr = parse_google_returns.__doc__
         >>> retdict_list = list(parse_google_returns(docstr))
-        >>> print(retdict_list)
-        [{'type': 'dict'}]
+        >>> print([sorted(d.items()) for d in retdict_list])
+        [[('type', 'dict')]]
     """
     blocks = split_google_docblocks(docstr)
     for key, lines in blocks:
@@ -64,22 +64,22 @@ def parse_google_retblock(lines):
         >>> from jedi.evaluate.docscrape_google import *  # NOQA
         >>> # Test various ways that arglines can be written
         >>> line_list = [
-        >>>     '',
-        >>>     'no type, just a description',
-        >>>     'list: a description',
-        >>>     'bool: a description\n    with a newline',
-        >>>     'int or bool: a description',
-        >>>     'threading.Thread: a description',
-        >>>     '(int, str): a tuple of int and str',
-        >>>     'tuple: a tuple of int and str',
-        >>>     'Tuple[int, str]: a tuple of int and str',
-        >>>     # Variations without the colon or a description
-        >>>     'list',
-        >>>     'Tuple[int, str]',
-        >>> ]
+        ...     '',
+        ...     'no type, just a description',
+        ...     'list: a description',
+        ...     'bool: a description\n    with a newline',
+        ...     'int or bool: a description',
+        ...     'threading.Thread: a description',
+        ...     '(int, str): a tuple of int and str',
+        ...     'tuple: a tuple of int and str',
+        ...     'Tuple[int, str]: a tuple of int and str',
+        ...     # Variations without the colon or a description
+        ...     'list',
+        ...     'Tuple[int, str]',
+        ... ]
         >>> lines = '\n'.join(line_list)
         >>> retdict_list = list(parse_google_retblock(lines))
-        >>> print('retdict_list = %s' % (retdict_list),)
+        >>> #print('retdict_list = %s' % (retdict_list),)
         >>> # : only the first of these lines should not parse
         >>> # assert len(retdict_list) == len(line_list) - 2
         >>> # but for now any non-empty line parses

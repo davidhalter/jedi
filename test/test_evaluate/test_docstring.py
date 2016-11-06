@@ -200,7 +200,7 @@ class TestDocstring(unittest.TestCase):
 
     def test_google_follow_args(self):
         from jedi.evaluate import docstrings
-        from future.types import newint, newstr, newlist
+        from jedi._compatibility import builtins
         google_source = dedent('''
         def foobar(x, y):
             """
@@ -220,13 +220,13 @@ class TestDocstring(unittest.TestCase):
         assert len(y_type_list) == 2
         y_base_objs = set([t.base.obj for t in y_type_list])
         x_base_objs = set([t.base.obj for t in x_type_list])
-        assert x_base_objs == {newint, newstr, newlist}
-        assert y_base_objs == {newint, newstr}
+        assert x_base_objs == {builtins.int, builtins.str, builtins.list}
+        assert y_base_objs == {builtins.int, builtins.str}
 
     @unittest.skipIf(numpydoc_unavailable, 'numpydoc module is unavailable')
     def test_numpy_follow_args(self):
         from jedi.evaluate import docstrings
-        from future.types import newint, newstr, newlist
+        from jedi._compatibility import builtins
         numpy_source = dedent('''
         def foobar(x, y):
             """
@@ -247,5 +247,5 @@ class TestDocstring(unittest.TestCase):
         assert len(y_type_list) == 2
         y_base_objs = set([t.base.obj for t in y_type_list])
         x_base_objs = set([t.base.obj for t in x_type_list])
-        assert x_base_objs == {newint, newstr, newlist}
-        assert y_base_objs == {newint, newstr}
+        assert x_base_objs == {builtins.int, builtins.str, builtins.list}
+        assert y_base_objs == {builtins.int, builtins.str}
