@@ -244,10 +244,6 @@ def get_params(evaluator, parent_context, func, var_args):
     for param in func.params:
         param_dict[str(param.name)] = param
     unpacked_va = list(var_args.unpack(func))
-    from jedi.evaluate.instance import TreeInstance
-    if isinstance(parent_context, TreeInstance):
-        # Include the self parameter here.
-        unpacked_va.insert(0, (None, context.LazyKnownContext(parent_context)))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])

@@ -541,6 +541,15 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
             for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
                 yield filter
 
+    def infer_function_execution(self, function_execution):
+        """
+        Created to be used by inheritance.
+        """
+        if self.base.is_generator():
+            return set([iterable.Generator(self.evaluator, function_execution)])
+        else:
+            return function_execution.get_return_values()
+
     @Python3Method
     def py__call__(self, params):
         function_execution = FunctionExecutionContext(
@@ -549,10 +558,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
             self.base,
             params
         )
-        if self.base.is_generator():
-            return set([iterable.Generator(self.evaluator, function_execution)])
-        else:
-            return function_execution.get_return_values()
+        return self.execute_function_(function_execution)
 
     def py__class__(self):
         # This differentiation is only necessary for Python2. Python3 does not

@@ -160,16 +160,16 @@ class TreeInstance(AbstractInstanceContext):
             parent_context = self.create_instance_context(class_context, scope)
             if scope.type == 'funcdef':
                 if scope.name.value == '__init__' and parent_context == self:
-                    return er.FunctionExecutionContext(
-                        self.evaluator,
-                        self.parent_context,
+                    return InstanceFunctionExecution(
+                        self,
+                        class_context.parent_context,
                         scope,
                         self.var_args
                     )
                 else:
                     return er.AnonymousFunctionExecution(
                         self.evaluator,
-                        self.parent_context,
+                        class_context.parent_context,
                         scope,
                     )
             else:
@@ -193,26 +193,29 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
 
 
 class BoundMethod(object):
-    def __init__(self, function):
+    def __init__(self, instance, class_context, function):
+        self._instance = instance
+        self._class_context = class_context
         self._function = function
 
     def __getattr__(self, name):
         return getattr(self._function, name)
 
+    def py__call__(self, var_args):
+        function_execution = InstanceFunctionExecution(
+            self._instance,
+            self._class_context.parent_context,
+            self._function.funcdef,
+            var_args
+        )
+        return self._function.infer_function_execution(function_execution)
+
 
 class InstanceNameDefinition(TreeNameDefinition):
-    @to_list
     def infer(self):
         contexts = super(InstanceNameDefinition, self).infer()
-        from jedi.evaluate.representation import FunctionContext
         for context in contexts:
-                """
-            if isinstance(contexts, FunctionContext):
-                # TODO what about compiled objects?
-                yield BoundMethod(context)
-            else:
-                """
-                yield context
+            yield context
 
 class InstanceClassFilter(ParserTreeFilter):
     name_class = InstanceNameDefinition
@@ -287,3 +290,30 @@ class LazyInstanceName(TreeNameDefinition):
     @property
     def parent_context(self):
         return self._instance.create_instance_context(self._class_context, self.name)
+
+    def infer(self):
+        values = super(LazyInstanceName, self).infer()
+        for v in values:
+            if isinstance(v, er.FunctionContext):
+                yield BoundMethod(self._instance, self._class_context, v)
+            else:
+                yield v
+
+
+class InstanceVarArgs(object):
+    def __init__(self, instance, var_args):
+        self._instance = instance
+        self._var_args = var_args
+
+    def unpack(self, func=None):
+        yield None, self._instance
+        for values in self._var_args.unpack(func):
+            yield values
+
+
+class InstanceFunctionExecution(er.FunctionExecutionContext):
+    def __init__(self, instance, parent_context, funcdef, var_args):
+        var_args = InstanceVarArgs(instance, var_args)
+
+        super(InstanceFunctionExecution, self).__init__(
+            instance.evaluator, parent_context, funcdef, var_args)
