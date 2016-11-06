@@ -260,26 +260,22 @@ def _strip_rst_role(type_str):
 
 def _evaluate_for_statement_string(evaluator, string, module):
     """
-
-    python -m jedi.evaluate.docstrings _evaluate_for_statement_string
-
-    Example:
-        >>> from jedi.evaluate.docstrings import *  # NOQA
-        >>> from jedi.evaluate.docstrings import _search_param_in_docstr
-        >>> from jedi.evaluate.docstrings import _evaluate_for_statement_string
-        >>> from jedi.evaluate.docstrings import _execute_array_values
-        >>> from jedi.evaluate.docstrings import _execute_types_in_stmt
-        >>> from jedi._compatibility import builtins
-        >>> import jedi
-        >>> source = open(jedi.evaluate.docstrings.__file__.replace('.pyc', '.py'), 'r').read()
-        >>> script = jedi.Script(source)
-        >>> evaluator = script._evaluator
-        >>> module = script._get_module()
-        >>> string = 'int'
-        >>> type_list = _evaluate_for_statement_string(evaluator, string, module)
-        >>> assert len(type_list) == 1, 'only one possible type'
-        >>> baseobj_list = [t.base.obj for t in type_list]
-        >>> assert baseobj_list[0] is builtins.int, 'should be int'
+    >>> from jedi.evaluate.docstrings import *  # NOQA
+    >>> from jedi.evaluate.docstrings import _search_param_in_docstr
+    >>> from jedi.evaluate.docstrings import _evaluate_for_statement_string
+    >>> from jedi.evaluate.docstrings import _execute_array_values
+    >>> from jedi.evaluate.docstrings import _execute_types_in_stmt
+    >>> from jedi._compatibility import builtins
+    >>> import jedi
+    >>> source = open(jedi.evaluate.docstrings.__file__.replace('.pyc', '.py'), 'r').read()
+    >>> script = jedi.Script(source)
+    >>> evaluator = script._evaluator
+    >>> module = script._get_module()
+    >>> string = 'int'
+    >>> type_list = _evaluate_for_statement_string(evaluator, string, module)
+    >>> assert len(type_list) == 1, 'only one possible type'
+    >>> baseobj_list = [t.base.obj for t in type_list]
+    >>> assert baseobj_list[0] is builtins.int, 'should be int'
     """
     if string is None:
         return []
@@ -436,15 +432,3 @@ def find_return_types(evaluator, func):
         type_ = _evaluate_for_statement_string(evaluator, type_str, module)
         types.extend(type_)
     return types
-
-
-if __name__ == '__main__':
-    r"""
-    CommandLine:
-        python -m jedi.evaluate.docstrings
-        python -m jedi.evaluate.docstrings --allexamples
-    """
-    import multiprocessing
-    multiprocessing.freeze_support()  # for win32
-    import utool as ut  # NOQA
-    ut.doctest_funcs()
