@@ -258,6 +258,13 @@ class CompiledObject(Context):
     def get_imports(self):
         return []  # Builtins don't have imports
 
+    @property
+    def classdef(self):
+        """
+        This is used to be able to work with compiled fakes.
+        """
+        return self
+
 
 class CompiledName(AbstractNameDefinition):
     def __init__(self, evaluator, parent_context, name):

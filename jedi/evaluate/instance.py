@@ -5,6 +5,8 @@ from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParserTreeFilter, ContextName, TreeNameDefinition
 from jedi.evaluate.context import Context
+from jedi.evaluate.cache import memoize_default
+from jedi.evaluate import representation as er
 
 
 class AbstractInstanceContext(Context):
@@ -91,13 +93,13 @@ class AbstractInstanceContext(Context):
                 if isinstance(cls, compiled.CompiledObject):
                     yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
                 else:
-                    yield SelfNameFilter(self.evaluator, self, cls.classdef, origin_scope)
+                    yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
 
         for cls in self._class_context.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
                 yield CompiledInstanceClassFilter(self.evaluator, self, cls)
             else:
-                yield InstanceClassFilter(self.evaluator, self, cls.classdef, origin_scope)
+                yield InstanceClassFilter(self.evaluator, self, cls, origin_scope)
 
     def py__getitem__(self, index):
         try:
@@ -149,6 +151,31 @@ class TreeInstance(AbstractInstanceContext):
     def name(self):
         return ContextName(self, self._class_context.name)
 
+    @memoize_default()
+    def create_instance_context(self, class_context, node):
+        scope = node.get_parent_scope()
+        if scope == class_context.classdef:
+            return self
+        else:
+            parent_context = self.create_instance_context(class_context, scope)
+            if scope.type == 'funcdef':
+                if scope.name.value == '__init__' and parent_context == self:
+                    return er.FunctionExecutionContext(
+                        self.evaluator,
+                        self.parent_context,
+                        scope,
+                        self.var_args
+                    )
+                else:
+                    return er.AnonymousFunctionExecution(
+                        self.evaluator,
+                        self.parent_context,
+                        scope,
+                    )
+            else:
+                raise NotImplementedError
+        return class_context
+
 
 class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
     def __init__(self, evaluator, instance, compiled_object):
@@ -190,13 +217,14 @@ class InstanceNameDefinition(TreeNameDefinition):
 class InstanceClassFilter(ParserTreeFilter):
     name_class = InstanceNameDefinition
 
-    def __init__(self, evaluator, context, parser_scope, origin_scope):
+    def __init__(self, evaluator, context, class_context, origin_scope):
         super(InstanceClassFilter, self).__init__(
             evaluator=evaluator,
             context=context,
-            parser_scope=parser_scope,
+            parser_scope=class_context.classdef,
             origin_scope=origin_scope
         )
+        self._class_context = class_context
 
     def _equals_origin_scope(self):
         node = self._origin_scope
@@ -217,6 +245,9 @@ class InstanceClassFilter(ParserTreeFilter):
     def _check_flows(self, names):
         return names
 
+    def _convert_names(self, names):
+        return [LazyInstanceName(self._context, self._class_context, name) for name in names]
+
 
 class SelfNameFilter(InstanceClassFilter):
     def _filter(self, names):
@@ -234,9 +265,25 @@ class SelfNameFilter(InstanceClassFilter):
                     and len(trailer.children) == 2 \
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name):
-                    init_execution = self._context._get_init_execution()
+                    yield name
+                    continue
+                    init_execution = self._context.get_init_function()
                     # Hopefully we can somehow change this.
                     if init_execution is not None and \
                             init_execution.start_pos < name.start_pos < init_execution.end_pos:
                         name = init_execution.name_for_position(name.start_pos)
                     yield name
+
+
+class LazyInstanceName(TreeNameDefinition):
+    """
+    This name calculates the parent_context lazily.
+    """
+    def __init__(self, instance, class_context, name):
+        self._instance = instance
+        self._class_context = class_context
+        self.name = name
+
+    @property
+    def parent_context(self):
+        return self._instance.create_instance_context(self._class_context, self.name)

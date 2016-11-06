@@ -59,7 +59,6 @@ from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
-from jedi.evaluate.instance import TreeInstance
 
 
 class Executed(context.TreeContext):
@@ -468,6 +467,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
             return [context.LazyKnownContext(compiled.create(self.evaluator, object))]
 
     def py__call__(self, params):
+        from jedi.evaluate.instance import TreeInstance
         return set([TreeInstance(self.evaluator, self.parent_context, self, params)])
 
     def py__class__(self):

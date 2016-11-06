@@ -515,15 +515,24 @@ class Evaluator(object):
             return element
 
     def create_context(self, module_context, node):
-        def from_scope_node(scope_node):
+        def from_scope_node(scope_node, child_is_funcdef=None):
+            is_funcdef = scope_node.type == 'funcdef'
             parent_context = None
             parent_scope = scope_node.get_parent_scope()
             if parent_scope is not None:
-                parent_context = from_scope_node(parent_scope)
+                parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
+
+            # TODO this whole procedure just ignores decorators
             if scope_node == module_context.module_node:
                 return module_context
-            elif scope_node.type == 'funcdef':
+            elif is_funcdef:
                 return er.AnonymousFunctionExecution(self, parent_context, scope_node)
+            elif scope_node.type == 'classdef':
+                if child_is_funcdef:
+                    # anonymous instance
+                    raise NotImplementedError
+                else:
+                    return er.ClassContext(self, scope_node, parent_context)
             raise DeprecationWarning
             return self.wrap(scope, parent_context=parent_context)
 
