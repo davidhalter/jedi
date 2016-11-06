@@ -1,13 +1,25 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function, division, absolute_import
 import re
+import sys
 
 
 def parse_google_args(docstr):
     """
+    Generates dictionaries of argument hints based on a google docstring
+
     Args:
         docstr (str): a google-style docstring
 
     Yields:
         dict: dictionaries of parameter hints
+
+    Example:
+        >>> from jedi.evaluate.docscrape_google import *  # NOQA
+        >>> docstr = parse_google_args.__doc__
+        >>> argdict_list = list(parse_google_args(docstr))
+        >>> print(argdict_list)
+        [{'type': 'str', 'name': 'docstr'}]
     """
     blocks = split_google_docblocks(docstr)
     for key, lines in blocks:
@@ -18,25 +30,79 @@ def parse_google_args(docstr):
 
 def parse_google_returns(docstr):
     """
+    Generates dictionaries of possible return hints based on a google docstring
+
     Args:
         docstr (str): a google-style docstring
 
     Yields:
         dict: dictionaries of return value hints
+
+    Example:
+        >>> from jedi.evaluate.docscrape_google import *  # NOQA
+        >>> docstr = parse_google_returns.__doc__
+        >>> retdict_list = list(parse_google_returns(docstr))
+        >>> print(retdict_list)
+        [{'type': 'dict'}]
     """
     blocks = split_google_docblocks(docstr)
     for key, lines in blocks:
         if key == 'Returns':
             for retdict in parse_google_retblock(lines):
                 yield retdict
+        if key == 'Yields':
+            for retdict in parse_google_retblock(lines):
+                yield retdict
 
 
 def parse_google_retblock(lines):
-    """
+    r"""
     Args:
-        lines (str): the unindented lines from an Returns docstring section
+        lines (str): unindented lines from a Returns or Yields section
+
+    Example:
+        >>> from jedi.evaluate.docscrape_google import *  # NOQA
+        >>> # Test various ways that arglines can be written
+        >>> line_list = [
+        >>>     '',
+        >>>     'no type, just a description',
+        >>>     'list: a description',
+        >>>     'bool: a description\n    with a newline',
+        >>>     'int or bool: a description',
+        >>>     'threading.Thread: a description',
+        >>>     '(int, str): a tuple of int and str',
+        >>>     'tuple: a tuple of int and str',
+        >>>     'Tuple[int, str]: a tuple of int and str',
+        >>>     # Variations without the colon or a description
+        >>>     'list',
+        >>>     'Tuple[int, str]',
+        >>> ]
+        >>> lines = '\n'.join(line_list)
+        >>> retdict_list = list(parse_google_retblock(lines))
+        >>> print('retdict_list = %s' % (retdict_list),)
+        >>> # : only the first of these lines should not parse
+        >>> # assert len(retdict_list) == len(line_list) - 2
+        >>> # but for now any non-empty line parses
+        >>> assert len(retdict_list) == len(line_list) - 1
+        >>> # make sure only valid type strings were parsed.
+        >>> assert not any(d['type'].startswith(' ') for d in retdict_list)
     """
-    raise NotImplementedError
+    # FIXME: Currently this works using a very simple heuristic using a colon
+    # to differentiate between the type hint and the description. This can
+    # cause an issue if the returns block only contains a description and no
+    # type hint. This will work for the majority of cases, but in the future
+    # this should be implemented using a parser.
+    retdict_list = []
+    noindent_pat = re.compile('^[^\s]')
+    for line in lines.split('\n'):
+        if noindent_pat.match(line):
+            parts = line.split(':')
+            type_part = parts[0]
+            # desc_part = ':'.join(parts[1:])
+            # retdict = {'type': type_part, 'desc': desc_part}
+            retdict = {'type': type_part}
+            retdict_list.append(retdict)
+    return retdict_list
 
 
 def parse_google_argblock(lines):
@@ -45,7 +111,7 @@ def parse_google_argblock(lines):
         lines (str): the unindented lines from an Args docstring section
 
     References:
-        # Not sure which one of these is *the* standard
+        # It is not clear which of these is *the* standard or if there is one
         https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google
         http://www.sphinx-doc.org/en/stable/ext/example_google.html#example-google
 
@@ -53,6 +119,7 @@ def parse_google_argblock(lines):
         >>> from jedi.evaluate.docscrape_google import *  # NOQA
         >>> # Test various ways that arglines can be written
         >>> line_list = [
+        ...     '',
         ...     'foo1 (int): a description',
         ...     'foo2: a description\n    with a newline',
         ...     'foo3 (int or str): a description',
@@ -70,12 +137,18 @@ def parse_google_argblock(lines):
         >>> lines = '\n'.join(line_list)
         >>> argdict_list = list(parse_google_argblock(lines))
         >>> # print('argdict_list = %s' % (argdict_list),)
-        >>> assert len(argdict_list) == len(line_list)
+        >>> # All lines except the first should be accepted
+        >>> assert len(argdict_list) == len(line_list) - 1
     """
     name_pat = r'(?P<name>[A-Za-z_][A-Za-z0-9_]*)'
     type_pat = r'(?P<type>[^)]*)'
     # Typing is optional
-    type_part = '(' + '|'.join(['\(' + type_pat + '\)\s*:', '\s*:']) + ')'
+    or_parts = [
+        '\(' + type_pat + '\)\s*:',
+        '\s*:'
+    ]
+    type_part = '(' + '|'.join(or_parts) + ')'
+    # Each arg hint must defined a on newline without any indentation
     argline_pat = '^' + name_pat + r'\s*' + type_part
 
     argdict_list = []
@@ -103,6 +176,8 @@ def split_google_docblocks(docstr):
         >>> groups = split_google_docblocks(docstr)
         >>> #print('groups = %s' % (groups,))
         >>> assert len(groups) == 3
+        >>> print([k for k, v in groups])
+        ['Args', 'Returns', 'Example']
     """
     import re
     import textwrap
