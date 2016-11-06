@@ -49,6 +49,9 @@ try:
 except ImportError:
     def _search_param_in_numpydocstr(docstr, param_str):
         return []
+
+    def _search_return_in_numpydocstr(docstr):
+        return []
 else:
     def _search_param_in_numpydocstr(docstr, param_str):
         r"""
@@ -78,6 +81,39 @@ else:
                     p_type = m.group(1)
                 return _expand_typestr(p_type)
         return []
+
+    def _search_return_in_numpydocstr(docstr):
+        r"""
+        Search `docstr` (in numpydoc format) for type(-s) of `param_str`.
+
+        >>> from jedi.evaluate.docstrings import *  # NOQA
+        >>> from jedi.evaluate.docstrings import _search_return_in_numpydocstr
+        >>> from jedi.evaluate.docstrings import _expand_typestr
+        >>> docstr = (
+        ...    'Returns\n'
+        ...    '----------\n'
+        ...    'int\n'
+        ...    '    can return an anoymous integer\n'
+        ...    'out : ndarray\n'
+        ...    '    can return a named value\n'
+        ... )
+        >>> _search_return_in_numpydocstr(docstr)
+        ['int', 'ndarray']
+        """
+        doc = NumpyDocString(docstr)
+        returns = doc._parsed_data['Returns']
+        returns += doc._parsed_data['Yields']
+        found = []
+        for p_name, p_type, p_descr in returns:
+            if not p_type:
+                p_type = p_name
+                p_name = ''
+
+            m = re.match('([^,]+(,[^,]+)*?)$', p_type)
+            if m:
+                p_type = m.group(1)
+            found.extend(_expand_typestr(p_type))
+        return found
 
 
 def _expand_typestr(p_type):
@@ -126,6 +162,26 @@ def _search_param_in_googledocstr(docstr, param_str):
             found = _expand_typestr(typestr)
             break
     return found
+
+
+def _search_return_in_gooogledocstr(docstr):
+    r"""
+    >>> from jedi.evaluate.docstrings import *  # NOQA
+    >>> from jedi.evaluate.docstrings import _search_return_in_gooogledocstr
+    >>> docstr = (
+    ... 'Returns:\n'
+    ... '    ndarray:\n'
+    ... '    int\n'
+    ... )
+    >>> sorted(_search_return_in_gooogledocstr(docstr))
+    ['int', 'ndarray']
+    """
+    google_rets = list(docscrape_google.parse_google_returns(docstr))
+    found = []
+    for retdict in google_rets:
+        p_type = retdict['type']
+        found.extend(_expand_typestr(p_type))
+    return list(set(found))
 
 
 def _search_param_in_docstr(docstr, param_str):
@@ -345,6 +401,8 @@ def find_return_types(evaluator, func):
     >>> from jedi.evaluate.docstrings import *  # NOQA
     >>> from jedi.evaluate.docstrings import _search_param_in_docstr
     >>> from jedi.evaluate.docstrings import _evaluate_for_statement_string
+    >>> from jedi.evaluate.docstrings import _search_return_in_gooogledocstr
+    >>> from jedi.evaluate.docstrings import _search_return_in_numpydocstr
     >>> from jedi._compatibility import builtins
     >>> source = open(jedi.evaluate.docstrings.__file__.replace('.pyc', '.py'), 'r').read()
     >>> script = jedi.Script(source)
@@ -360,16 +418,24 @@ def find_return_types(evaluator, func):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(docstr)
             if match:
-                return _strip_rst_role(match.group(1))
-        # Check for Google style return hint
-        found = list(docscrape_google.parse_google_returns(docstr))
+                return [_strip_rst_role(match.group(1))]
+        found = []
         if not found:
-            found = None
+            # Check for google style return hint
+            found = _search_return_in_gooogledocstr(docstr)
+
+        if not found:
+            # Check for numpy style return hint
+            found = _search_return_in_numpydocstr(docstr)
         return found
 
     docstr = func.raw_doc
-    type_str = search_return_in_docstr(docstr)
-    return _evaluate_for_statement_string(evaluator, type_str, func.get_parent_until())
+    module = func.get_parent_until()
+    types = []
+    for type_str in search_return_in_docstr(docstr):
+        type_ = _evaluate_for_statement_string(evaluator, type_str, module)
+        types.extend(type_)
+    return types
 
 
 if __name__ == '__main__':
