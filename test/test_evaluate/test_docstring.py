@@ -5,7 +5,7 @@ CommandLine:
     # Switch to the right directory
     cd $(python -c "import jedi; from os.path import dirname, abspath; print(dirname(dirname(abspath(jedi.__file__))))")
     # Run the doctests in this module
-    nosetests test/test_evaluate/test_docstring.py --verbose
+    tox -e py test/test_evaluate/test_docstring.py
 
 """
 
