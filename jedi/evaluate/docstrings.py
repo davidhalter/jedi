@@ -327,8 +327,6 @@ def _execute_array_values(evaluator, array):
     """
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
-
-    array = list(definitions)[0]
     """
     if isinstance(array, Array):
         values = []
