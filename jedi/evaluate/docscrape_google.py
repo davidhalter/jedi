@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+Handles parsing of information out of google style docstrings
+
+CommaneLine:
+    # Run the doctests
+    tox -e py jedi/evaluate/docscrape_google.py
+"""
 from __future__ import print_function, division, absolute_import
 import re
 import sys
@@ -252,7 +259,7 @@ def split_google_docblocks(docstr):
         ['Todo'],
     ]
     # Map aliased tags to a cannonical name (the first item in the group).
-    tag_aliases = {item: group[0] for group in tag_groups for item in group}
+    tag_aliases = dict([(item, group[0]) for group in tag_groups for item in group])
     tag_pattern = '^' + '(' + '|'.join(tag_aliases.keys()) + '): *$'
 
     group_id = 0
