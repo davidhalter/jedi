@@ -305,8 +305,8 @@ class TestDocstring(unittest.TestCase):
         assert len(y_type_list) == 2
         y_base_objs = set([t.base.obj for t in y_type_list])
         x_base_objs = set([t.base.obj for t in x_type_list])
-        assert x_base_objs == {builtins.int, builtins.str, builtins.list}
-        assert y_base_objs == {builtins.int, builtins.str}
+        assert x_base_objs == set([builtins.int, builtins.str, builtins.list])
+        assert y_base_objs == set([builtins.int, builtins.str])
 
     def test_google_find_return_types(self):
         from jedi.evaluate import docstrings
