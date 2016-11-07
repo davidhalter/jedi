@@ -120,7 +120,7 @@ def _expand_typestr(p_type):
     """
     Attempts to interpret the possible types
     """
-    # Check if multiple types are specified
+    # Check if alternative types are specified
     if re.search('\\bor\\b', p_type):
         types = [t.strip() for t in p_type.split('or')]
     # Check if type has a set of valid literal values
@@ -157,7 +157,6 @@ def _search_param_in_googledocstr(docstr, param_str):
     found = None
     for garg in docscrape_google.parse_google_args(docstr):
         if garg['name'] == param_str:
-            # TODO: parse multiple / complex / optional types
             typestr = garg['type']
             found = _expand_typestr(typestr)
             break
