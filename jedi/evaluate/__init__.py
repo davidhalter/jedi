@@ -78,6 +78,7 @@ from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.context import Context
+from jedi.evaluate.instance import AnonymousInstance
 
 
 class Evaluator(object):
@@ -528,13 +529,12 @@ class Evaluator(object):
             elif is_funcdef:
                 return er.AnonymousFunctionExecution(self, parent_context, scope_node)
             elif scope_node.type == 'classdef':
+                class_context = er.ClassContext(self, scope_node, parent_context)
                 if child_is_funcdef:
                     # anonymous instance
-                    raise NotImplementedError
+                    return AnonymousInstance(self, parent_context, class_context)
                 else:
-                    return er.ClassContext(self, scope_node, parent_context)
-            raise DeprecationWarning
-            return self.wrap(scope, parent_context=parent_context)
+                    return class_context
 
         if node.is_scope():
             scope_node = node

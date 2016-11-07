@@ -1,12 +1,14 @@
 from abc import abstractproperty
 
-from jedi.common import unite, to_list
+from jedi.common import unite
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParserTreeFilter, ContextName, TreeNameDefinition
 from jedi.evaluate.context import Context, LazyKnownContext
 from jedi.evaluate.cache import memoize_default
+from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
+from jedi.evaluate.dynamic import search_params
 
 
 class AbstractInstanceContext(Context):
@@ -181,6 +183,16 @@ class TreeInstance(AbstractInstanceContext):
         return class_context
 
 
+class AnonymousInstance(TreeInstance):
+    def __init__(self, evaluator, parent_context, class_context):
+        super(AnonymousInstance, self).__init__(
+            evaluator,
+            parent_context,
+            class_context,
+            var_args=None
+        )
+
+
 class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
     def __init__(self, evaluator, instance, compiled_object):
         super(CompiledInstanceClassFilter, self).__init__(
@@ -313,13 +325,19 @@ class InstanceVarArgs(object):
         self._instance = instance
         self._var_args = var_args
 
+    @memoize_method
+    def get_var_args(self):
+        if self._var_args is None:
+            return search_params(self.evaluator, self.parent_context, self.funcdef)
+        return self._var_args
+
     def unpack(self, func=None):
         yield None, LazyKnownContext(self._instance)
-        for values in self._var_args.unpack(func):
+        for values in self._get_var_args.unpack(func):
             yield values
 
     def get_calling_var_args(self):
-        return self._var_args.get_calling_var_args()
+        return self._get_var_args().get_calling_var_args()
 
 
 class InstanceFunctionExecution(er.FunctionExecutionContext):
