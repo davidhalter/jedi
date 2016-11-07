@@ -3,7 +3,7 @@ from abc import abstractproperty
 from jedi.common import unite
 from jedi import debug
 from jedi.evaluate import compiled
-from jedi.evaluate.filters import ParserTreeFilter, ContextName, TreeNameDefinition
+from jedi.evaluate import filters
 from jedi.evaluate.context import Context, LazyKnownContext
 from jedi.evaluate.cache import memoize_default
 from jedi.cache import memoize_method
@@ -155,7 +155,7 @@ class CompiledInstance(AbstractInstanceContext):
 class TreeInstance(AbstractInstanceContext):
     @property
     def name(self):
-        return ContextName(self, self.class_context.name.tree_name)
+        return filters.ContextName(self, self.class_context.name.tree_name)
 
     @memoize_default()
     def create_instance_context(self, class_context, node):
@@ -230,14 +230,14 @@ class BoundMethod(object):
         return '<%s: %s>' % (self.__class__.__name__, self._function)
 
 
-class InstanceNameDefinition(TreeNameDefinition):
+class InstanceNameDefinition(filters.TreeNameDefinition):
     def infer(self):
         contexts = super(InstanceNameDefinition, self).infer()
         for context in contexts:
             yield context
 
 
-class InstanceClassFilter(ParserTreeFilter):
+class InstanceClassFilter(filters.ParserTreeFilter):
     name_class = InstanceNameDefinition
 
     def __init__(self, evaluator, context, class_context, origin_scope):
@@ -298,7 +298,7 @@ class SelfNameFilter(InstanceClassFilter):
                     yield name
 
 
-class LazyInstanceName(TreeNameDefinition):
+class LazyInstanceName(filters.TreeNameDefinition):
     """
     This name calculates the parent_context lazily.
     """
@@ -321,19 +321,25 @@ class LazyInstanceName(TreeNameDefinition):
 
 
 class InstanceVarArgs(object):
-    def __init__(self, instance, var_args):
+    def __init__(self, instance, funcdef, var_args):
         self._instance = instance
+        self._funcdef = funcdef
         self._var_args = var_args
 
     @memoize_method
-    def get_var_args(self):
+    def _get_var_args(self):
         if self._var_args is None:
-            return search_params(self.evaluator, self.parent_context, self.funcdef)
+            # TODO this parent_context might be wrong. test?!
+            return search_params(
+                self._instance.evaluator,
+                self._instance.class_context,
+                self._funcdef
+            )
         return self._var_args
 
     def unpack(self, func=None):
         yield None, LazyKnownContext(self._instance)
-        for values in self._get_var_args.unpack(func):
+        for values in self._get_var_args().unpack(func):
             yield values
 
     def get_calling_var_args(self):
@@ -342,7 +348,15 @@ class InstanceVarArgs(object):
 
 class InstanceFunctionExecution(er.FunctionExecutionContext):
     def __init__(self, instance, parent_context, funcdef, var_args):
-        var_args = InstanceVarArgs(instance, var_args)
+        var_args = InstanceVarArgs(instance, funcdef, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
             instance.evaluator, parent_context, funcdef, var_args)
+
+
+class AnonymousInstanceFunctionExecution(InstanceFunctionExecution):
+    function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
+
+    def __init__(self, instance, parent_context, funcdef):
+        super(AnonymousInstanceFunctionExecution, self).__init__(
+            instance, parent_context, funcdef, None)

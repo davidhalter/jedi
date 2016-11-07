@@ -28,35 +28,20 @@ def try_iter_content(types, depth=0):
                 try_iter_content(iter_types, depth + 1)
 
 
-class AbstractArguments(tree.Base):
-    def get_parent_until(self, *args, **kwargs):
-        raise DeprecationWarning
-        if self.trailer is None:
-            try:
-                element = self.argument_node[0]
-                if isinstance(element, iterable.AlreadyEvaluated):
-                    element = list(self._evaluator.eval_element(self._context, element))[0]
-            except IndexError:
-                return None
-            else:
-                return element.get_parent_until(*args, **kwargs)
-        else:
-            return self.trailer.get_parent_until(*args, **kwargs)
-
+class AbstractArguments():
     def eval_argument_clinic(self, arguments):
         """Uses a list with argument clinic information (see PEP 436)."""
-        raise DeprecationWarning('not sure if we really deprecate it')
         iterator = self.unpack()
         for i, (name, optional, allow_kwargs) in enumerate(arguments):
-            key, va_values = next(iterator, (None, []))
+            key, argument = next(iterator, (None, None))
             if key is not None:
                 raise NotImplementedError
-            if not va_values and not optional:
+            if argument is None and not optional:
                 debug.warning('TypeError: %s expected at least %s arguments, got %s',
                               name, len(arguments), i)
                 raise ValueError
-            values = set(chain.from_iterable(self._evaluator.eval_element(self._context, el)
-                                             for el in va_values))
+            values = set() if argument is None else argument.infer()
+
             if not values and not optional:
                 # For the stdlib we always want values. If we don't get them,
                 # that's ok, maybe something is too hard to resolve, however,
@@ -64,11 +49,6 @@ class AbstractArguments(tree.Base):
                 debug.warning('argument_clinic "%s" not resolvable.', name)
                 raise ValueError
             yield values
-
-    def scope(self):
-        raise DeprecationWarning
-        # Returns the scope in which the arguments are used.
-        return (self.trailer or self.argument_node).get_parent_until(tree.IsScope)
 
     def eval_args(self):
         # TODO this method doesn't work with named args and a lot of other
@@ -171,7 +151,7 @@ class TreeArguments(AbstractArguments):
             yield argument, default, stars
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.argument_node)
+        return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
 
     def get_calling_var_args(self):
         return _get_calling_var_args(self._evaluator, self)

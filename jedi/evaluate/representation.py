@@ -589,6 +589,8 @@ class FunctionExecutionContext(Executed):
     multiple calls to functions and recursion has to be avoided. But this is
     responsibility of the decorators.
     """
+    function_execution_filter = FunctionExecutionFilter
+
     def __init__(self, evaluator, parent_context, funcdef, var_args):
         super(FunctionExecutionContext, self).__init__(evaluator, parent_context, var_args)
         self.funcdef = funcdef
@@ -707,9 +709,9 @@ class FunctionExecutionContext(Executed):
                     del evaluator.predefined_if_name_dict_dict[for_stmt]
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield FunctionExecutionFilter(self.evaluator, self, self.funcdef,
-                                      until_position,
-                                      origin_scope=origin_scope)
+        yield self.function_execution_filter(self.evaluator, self, self.funcdef,
+                                             until_position,
+                                             origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):

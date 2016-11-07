@@ -1,4 +1,6 @@
 from jedi.common import unite
+
+
 class Context(object):
     type = None # TODO remove
 

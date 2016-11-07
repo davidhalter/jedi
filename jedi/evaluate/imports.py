@@ -448,16 +448,15 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
         p = path
         p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
         save_parser(path, p)
-        from jedi.evaluate.representation import ModuleWrapper
-        return ModuleWrapper(evaluator, p.module, parent_module)
+        return p.module
 
     if sys_path is None:
         sys_path = evaluator.sys_path
 
     cached = load_parser(path)
     module = load(source) if cached is None else cached.module
-    module = evaluator.wrap(module)
-    return module
+    from jedi.evaluate.representation import ModuleContext
+    return ModuleContext(evaluator, module)
 
 
 def add_module(evaluator, module_name, module):
@@ -469,7 +468,7 @@ def add_module(evaluator, module_name, module):
         evaluator.modules[module_name] = module
 
 
-def get_modules_containing_name(evaluator, mods, name):
+def get_module_nodes_containing_name(evaluator, module_nodes, name):
     """
     Search a name in the directories of modules.
     """
@@ -492,9 +491,9 @@ def get_modules_containing_name(evaluator, mods, name):
                 return module
 
     # skip non python modules
-    mods = set(m for m in mods if not isinstance(m, compiled.CompiledObject))
+    module_nodes = set(m for m in module_nodes if not isinstance(m, compiled.CompiledObject))
     mod_paths = set()
-    for m in mods:
+    for m in module_nodes:
         mod_paths.add(m.path)
         yield m
 
@@ -513,5 +512,5 @@ def get_modules_containing_name(evaluator, mods, name):
         for p in sorted(paths):
             # make testing easier, sort it - same results on every interpreter
             c = check_python_file(p)
-            if c is not None and c not in mods and not isinstance(c, compiled.CompiledObject):
-                yield c
+            if c is not None and c not in module_nodes and not isinstance(c, compiled.CompiledObject):
+                yield c.module_node

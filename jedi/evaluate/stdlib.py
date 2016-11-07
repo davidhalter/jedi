@@ -31,7 +31,7 @@ class NotInStdLib(LookupError):
 
 def execute(evaluator, obj, arguments):
     try:
-        obj_name = str(obj.name)
+        obj_name = obj.name.string_name
     except AttributeError:
         pass
     else:
@@ -109,10 +109,6 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
 def builtins_getattr(evaluator, objects, names, defaults=None):
     # follow the first param
     for obj in objects:
-        if not isinstance(obj, (er.Instance, er.Class, tree.Module, compiled.CompiledObject)):
-            debug.warning('getattr called without instance')
-            continue
-
         for name in names:
             if precedence.is_string(name):
                 return evaluator.find_types(obj, name.obj)

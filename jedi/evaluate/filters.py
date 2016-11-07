@@ -75,6 +75,16 @@ class ParamName(ContextName):
         return params[self.tree_name.parent.position_nr]
 
 
+class AnonymousInstanceParamName(ParamName):
+    def infer(self):
+        if self.tree_name.parent.position_nr == 0:
+            # This is a speed optimization, to return the self param (because
+            # it's known). This only affects anonymous instances.
+            return set([self.parent_context])
+        else:
+            return self._get_param().infer()
+
+
 class AbstractFilter(object):
     _until_position = None
 
@@ -145,6 +155,8 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
 
 class FunctionExecutionFilter(ParserTreeFilter):
+    param_name = ParamName
+
     def __init__(self, evaluator, context, parser_scope,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
@@ -160,9 +172,13 @@ class FunctionExecutionFilter(ParserTreeFilter):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                yield ParamName(self._context, name)
+                yield self.param_name(self._context, name)
             else:
                 yield TreeNameDefinition(self._context, name)
+
+
+class AnonymousInstanceFunctionExecutionFilter(FunctionExecutionFilter):
+    param_name = AnonymousInstanceParamName
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):

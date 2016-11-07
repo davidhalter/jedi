@@ -98,9 +98,9 @@ def _search_function_executions(evaluator, funcdef):
     """
     from jedi.evaluate import representation as er
 
-    def get_possible_nodes(module, func_name):
+    def get_possible_nodes(module_node, func_name):
             try:
-                names = module.used_names[func_name]
+                names = module_node.used_names[func_name]
             except KeyError:
                 return
 
@@ -110,7 +110,7 @@ def _search_function_executions(evaluator, funcdef):
                 if trailer.type == 'trailer' and bracket == '(':
                     yield name, trailer
 
-    current_module = funcdef.get_parent_until()
+    current_module_node = funcdef.get_parent_until()
     func_name = unicode(funcdef.name)
     compare_node = funcdef
     if func_name == '__init__':
@@ -122,9 +122,10 @@ def _search_function_executions(evaluator, funcdef):
 
     found_executions = False
     i = 0
-    for mod in imports.get_modules_containing_name(evaluator, [current_module], func_name):
-        module_context = er.ModuleContext(evaluator, mod)
-        for name, trailer in get_possible_nodes(mod, func_name):
+    for module_node in imports.get_module_nodes_containing_name(
+            evaluator, [current_module_node], func_name):
+        module_context = er.ModuleContext(evaluator, module_node)
+        for name, trailer in get_possible_nodes(module_node, func_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion
@@ -134,16 +135,16 @@ def _search_function_executions(evaluator, funcdef):
                 return
 
             random_context = evaluator.create_context(module_context, name)
-            for context in evaluator.goto_definitions(random_context, name):
-                if compare_node == context.funcdef:
+            for value in evaluator.goto_definitions(random_context, name):
+                if compare_node == value.funcdef:
                     arglist = trailer.children[1]
                     if arglist == ')':
                         arglist = ()
                     args = TreeArguments(evaluator, random_context, arglist, trailer)
                     yield er.FunctionExecutionContext(
                         evaluator,
-                        context.parent_context,
-                        context.funcdef,
+                        value.parent_context,
+                        value.funcdef,
                         args
                     )
                     found_executions = True
