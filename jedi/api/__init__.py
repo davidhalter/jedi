@@ -105,7 +105,7 @@ class Script(object):
 
         if source is None:
             # TODO add a better warning than the traceback!
-            with open(path) as f:
+            with open(path, 'rb') as f:
                 source = f.read()
 
         self._source = common.source_to_unicode(source, encoding)
