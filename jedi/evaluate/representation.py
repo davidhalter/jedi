@@ -255,7 +255,7 @@ class Instance(use_metaclass(CachedMetaClass, Executed)):
         return ContextName(self, self._class_context.name.string_name)
 
     def __repr__(self):
-        return "<%s of %s(%s)>" % (type(self).__name__, self._class_context,
+        return "<%s of %s(%s)>" % (self.__type__.__name__, self._class_context,
                                    self.var_args)
 
 
@@ -388,7 +388,7 @@ class InstanceElement(use_metaclass(CachedMetaClass, tree.Base)):
             return FunctionContext.py__call__(self, params)
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.var)
+        return "<%s of %s>" % (self.__type__.__name__, self.var)
 
 
 class Wrapper(tree.Base):
@@ -507,7 +507,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
         raise KeyError("Couldn't find subscope.")
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.classdef)
+        return "<%s of %s>" % (self.__type__.__name__, self.classdef)
 
     @property
     def name(self):
@@ -568,7 +568,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
         return compiled.get_special_object(self.evaluator, name)
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.base_func)
+        return "<%s of %s>" % (self.__type__.__name__, self.base_func)
 
     @property
     def name(self):
@@ -718,7 +718,7 @@ class FunctionExecutionContext(Executed):
         return param.get_params(self.evaluator, self.parent_context, self.funcdef, self.var_args)
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.funcdef)
+        return "<%s of %s>" % (self.__class__.__name__, self.funcdef)
 
 
 class AnonymousFunctionExecution(FunctionExecutionContext):
@@ -920,4 +920,4 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
 
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.module_node)
+        return "<%s: %s>" % (self.__class__.__name__, self.module_node)

@@ -99,7 +99,7 @@ class CompiledObject(Context):
         return params
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, repr(self.obj))
+        return '<%s: %s>' % (self.__class__.__name__, repr(self.obj))
 
     @underscore_memoization
     def _parse_function_doc(self):
@@ -277,7 +277,7 @@ class CompiledName(AbstractNameDefinition):
             name = self.parent_context.name  # __name__ is not defined all the time
         except AttributeError:
             name = None
-        return '<%s: (%s).%s>' % (type(self).__name__, name, self.string_name)
+        return '<%s: (%s).%s>' % (self.__class__.__name__, name, self.string_name)
 
     @underscore_memoization
     def infer(self):

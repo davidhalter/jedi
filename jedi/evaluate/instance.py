@@ -44,7 +44,7 @@ class AbstractInstanceContext(Context):
 
     @property
     def py__call__(self):
-        names = self._get_function_slot_names('__call__')
+        names = self.get_function_slot_names('__call__')
         if not names:
             # Means the Instance is not callable.
             raise AttributeError
@@ -61,7 +61,7 @@ class AbstractInstanceContext(Context):
         # Signalize that we don't know about the bool type.
         return None
 
-    def _get_function_slot_names(self, name):
+    def get_function_slot_names(self, name):
         # Python classes don't look at the dictionary of the instance when
         # looking up `__call__`. This is something that has to do with Python's
         # internal slot system (note: not __slots__, but C slots).
@@ -73,7 +73,7 @@ class AbstractInstanceContext(Context):
 
     def execute_function_slots(self, names, *evaluated_args):
         return unite(
-            self.evaluator.execute_evaluated(method, *evaluated_args)
+            self.execute_evaluated(method, *evaluated_args)
             for name in names
             for method in name.infer()
         )
@@ -82,7 +82,7 @@ class AbstractInstanceContext(Context):
         """ Throws a KeyError if there's no method. """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        names = self._get_function_slot_names('__get__')
+        names = self.get_function_slot_names('__get__')
         if names:
             if isinstance(obj, AbstractInstanceContext):
                 return self.execute_function_slots(names, obj, obj.class_context)
@@ -109,7 +109,7 @@ class AbstractInstanceContext(Context):
 
     def py__getitem__(self, index):
         try:
-            names = self._get_function_slot_names('__getitem__')
+            names = self.get_function_slot_names('__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return set()
@@ -142,7 +142,7 @@ class AbstractInstanceContext(Context):
         pass
 
     def __repr__(self):
-        return "<%s of %s(%s)>" % (type(self).__name__, self.class_context,
+        return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_context,
                                    self.var_args)
 
 

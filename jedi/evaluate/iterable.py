@@ -440,7 +440,7 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
                     yield key.obj, context.LazyTreeContext(self._defining_context, value)
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self.atom)
+        return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
 class _FakeArray(ArrayLiteralContext):

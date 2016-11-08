@@ -169,7 +169,7 @@ class ValuesArguments(AbstractArguments):
         return None
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self._values_list)
+        return '<%s: %s>' % (self.__class__.__name__, self._values_list)
 
 
 class ExecutedParam(object):
@@ -189,7 +189,7 @@ class ExecutedParam(object):
         return self._original_param.position_nr
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.string_name)
+        return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
 def _get_calling_var_args(evaluator, var_args):

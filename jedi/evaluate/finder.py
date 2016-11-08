@@ -33,6 +33,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
+from jedi.evaluate.instance import AbstractInstanceContext
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.filters import get_global_filters
 
@@ -274,22 +275,19 @@ class NameFinder(object):
 
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
-        result = set()
         # str is important, because it shouldn't be `Name`!
         name = compiled.create(self._evaluator, str(self.name_str))
-        with common.ignored(KeyError):
-            result = inst.execute_subscope_by_name('__getattr__', name)
-        if not result:
-            # This is a little bit special. `__getattribute__` is in Python
-            # executed before `__getattr__`. But: I know no use case, where
-            # this could be practical and where jedi would return wrong types.
-            # If you ever find something, let me know!
-            # We are inversing this, because a hand-crafted `__getattribute__`
-            # could still call another hand-crafted `__getattr__`, but not the
-            # other way around.
-            with common.ignored(KeyError):
-                result = inst.execute_subscope_by_name('__getattribute__', name)
-        return result
+
+        # This is a little bit special. `__getattribute__` is in Python
+        # executed before `__getattr__`. But: I know no use case, where
+        # this could be practical and where Jedi would return wrong types.
+        # If you ever find something, let me know!
+        # We are inversing this, because a hand-crafted `__getattribute__`
+        # could still call another hand-crafted `__getattr__`, but not the
+        # other way around.
+        names = (inst.get_function_slot_names('__getattr__') or
+                 inst.get_function_slot_names('__getattribute__'))
+        return inst.execute_function_slots(names, name)
 
     def _names_to_types(self, names, attribute_lookup):
         types = set()
@@ -315,7 +313,8 @@ class NameFinder(object):
                 types |= set(self._resolve_descriptors(name, new_types))
             else:
                 types |= set(new_types)
-        if not names and isinstance(self.context, er.Instance):
+
+        if not names and isinstance(self.context, AbstractInstanceContext):
             # handling __getattr__ / __getattribute__
             return self._check_getattr(self.context)
 
