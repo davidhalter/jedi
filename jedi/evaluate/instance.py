@@ -73,9 +73,8 @@ class AbstractInstanceContext(Context):
 
     def execute_function_slots(self, names, *evaluated_args):
         return unite(
-            self.execute_evaluated(method, *evaluated_args)
+            name.execute_evaluated(*evaluated_args)
             for name in names
-            for method in name.infer()
         )
 
     def get_descriptor_returns(self, obj):
@@ -208,7 +207,7 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
                 for name in names]
 
 
-class BoundMethod(object):
+class BoundMethod(Context):
     def __init__(self, instance, class_context, function):
         self._instance = instance
         self._class_context = class_context

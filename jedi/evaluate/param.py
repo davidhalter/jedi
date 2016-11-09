@@ -29,16 +29,16 @@ def try_iter_content(types, depth=0):
 
 
 class AbstractArguments():
-    def eval_argument_clinic(self, arguments):
+    def eval_argument_clinic(self, parameters):
         """Uses a list with argument clinic information (see PEP 436)."""
         iterator = self.unpack()
-        for i, (name, optional, allow_kwargs) in enumerate(arguments):
+        for i, (name, optional, allow_kwargs) in enumerate(parameters):
             key, argument = next(iterator, (None, None))
             if key is not None:
                 raise NotImplementedError
             if argument is None and not optional:
                 debug.warning('TypeError: %s expected at least %s arguments, got %s',
-                              name, len(arguments), i)
+                              name, len(parameters), i)
                 raise ValueError
             values = set() if argument is None else argument.infer()
 
