@@ -71,6 +71,7 @@ def search_params(evaluator, parent_context, funcdef):
     if not settings.dynamic_params:
         return set()
 
+    raise NotImplementedError
     evaluator.dynamic_params_depth += 1
     try:
         debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')

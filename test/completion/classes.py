@@ -50,6 +50,8 @@ class TestClass(object):
         self.var_local = 3
         #? ['var_class', 'var_func', 'var_inst', 'var_local']
         self.var_
+        #?
+        var_local
 
     def ret(self, a1):
         # should not know any class functions!

@@ -172,8 +172,8 @@ class TreeInstance(AbstractInstanceContext):
                         self.var_args
                     )
                 else:
-                    return er.AnonymousFunctionExecution(
-                        self.evaluator,
+                    return AnonymousInstanceFunctionExecution(
+                        self,
                         class_context.parent_context,
                         scope,
                     )

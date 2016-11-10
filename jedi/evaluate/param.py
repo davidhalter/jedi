@@ -118,7 +118,7 @@ class TreeArguments(AbstractArguments):
                 for values in list(zip_longest(*iterators)):
                     # TODO zip_longest yields None, that means this would raise
                     # an exception?
-                    yield None, context.get_merged_lazycontext(values)
+                    yield None, context.get_merged_lazy_context(values)
             elif stars == 2:
                 arrays = self._evaluator.eval_element(self.context, el)
                 for dct in arrays:

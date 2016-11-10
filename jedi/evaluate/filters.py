@@ -80,7 +80,7 @@ class AnonymousInstanceParamName(ParamName):
         if self.tree_name.parent.position_nr == 0:
             # This is a speed optimization, to return the self param (because
             # it's known). This only affects anonymous instances.
-            return set([self.parent_context])
+            return set([self.parent_context.instance])
         else:
             return self._get_param().infer()
 
@@ -137,7 +137,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
     def _filter(self, names):
         names = super(ParserTreeFilter, self)._filter(names)
-        names = [n for n in names if n.is_definition()]
+        names = [n for n in names if n.is_definition() and n.parent.type != 'trailer']
         names = [n for n in names if n.parent.get_parent_scope() == self._parser_scope]
 
         return list(self._check_flows(names))
