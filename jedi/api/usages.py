@@ -44,6 +44,6 @@ def usages_add_import_modules(evaluator, definitions):
     for d in definitions:
         imp_or_stmt = d.get_definition()
         if isinstance(imp_or_stmt, tree.Import):
-            s = imports.ImportWrapper(evaluator, d)
+            s = imports.ImportWrapper(context, d)
             new |= set(s.follow(is_goto=True))
     return set(definitions) | new

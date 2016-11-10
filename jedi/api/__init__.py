@@ -217,7 +217,7 @@ class Script(object):
             for name in names:
                 definition = name.get_definition()
                 if definition.type in ('import_name', 'import_from'):
-                    imp = imports.ImportWrapper(self._evaluator, name)
+                    imp = imports.ImportWrapper(context, name)
                     for name in filter_follow_imports(imp.follow(is_goto=True)):
                         yield name
                 else:
@@ -340,7 +340,7 @@ class Script(object):
                     if node.is_nested():
                         import_names |= set(path[-1] for path in node.paths())
                     for n in import_names:
-                        imports.ImportWrapper(self._evaluator, n).follow()
+                        imports.ImportWrapper(context, n).follow()
                 elif node.type == 'expr_stmt':
                     types = self._evaluator.eval_element(node)
                     for testlist in node.children[:-1:2]:

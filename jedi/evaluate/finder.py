@@ -372,7 +372,7 @@ def _name_to_types(evaluator, context, name, scope):
     elif node.isinstance(tree.WithStmt):
         types = evaluator.eval_element(node.node_from_name(name))
     elif isinstance(node, tree.Import):
-        types = imports.ImportWrapper(evaluator, name).follow()
+        types = imports.ImportWrapper(context, name).follow()
     elif node.type in ('funcdef', 'classdef'):
         types = _apply_decorators(evaluator, context, node)
     elif node.type == 'global_stmt':
@@ -459,7 +459,7 @@ def _remove_statements(evaluator, context, stmt, name):
         pep0484.find_type_from_comment_hint_assign(evaluator, stmt, name)
     if pep0484types:
         return pep0484types
-    types |= evaluator.eval_statement(context, stmt, seek_name=name)
+    types |= context.eval_stmt(stmt, seek_name=name)
 
     if check_instance is not None:
         # class renames
@@ -666,19 +666,21 @@ def check_tuple_assignments(evaluator, types, name):
     """
     Checks if tuples are assigned.
     """
+    lazy_context = None
     for index, node in name.assignment_indexes():
         iterated = iterable.py__iter__(evaluator, types, node)
         for _ in range(index + 1):
             try:
-                types = next(iterated)
+                lazy_context = next(iterated)
             except StopIteration:
                 # We could do this with the default param in next. But this
                 # would allow this loop to run for a very long time if the
                 # index number is high. Therefore break if the loop is
                 # finished.
-                types = set()
-                break
-    return types
+                return set()
+    if lazy_context is None:
+        return types
+    return lazy_context.infer()
 
 
 def filter_private_variable(scope, origin_node):

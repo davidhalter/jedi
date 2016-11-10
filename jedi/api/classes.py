@@ -170,7 +170,9 @@ class BaseDefinition(object):
         par = self._definition
         while par is not None:
             if isinstance(par, tree.Import):
-                path += imports.ImportWrapper(self._evaluator, self._name).import_path
+                # Not self._name.infer()?
+                raise DeprecationWarning
+                path += imports.ImportWrapper(self._name.context, self._name).import_path
                 break
             try:
                 name = par.name
@@ -323,6 +325,8 @@ class BaseDefinition(object):
         if self._definition.isinstance(tree.ExprStmt):
             return self._evaluator.eval_statement(self._definition)
         elif self._definition.isinstance(tree.Import):
+            raise DeprecationWarning
+            # TODO self._name.infer()?
             return imports.ImportWrapper(self._evaluator, self._name).follow()
         else:
             return set([self._definition])
@@ -475,6 +479,7 @@ class Completion(BaseDefinition):
         """
         definition = self._definition
         if isinstance(definition, tree.Import):
+            raise DeprecationWarning
             i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) > 1 or not fast:
                 followed = self._follow_statements_imports()
@@ -494,6 +499,7 @@ class Completion(BaseDefinition):
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
         if isinstance(self._definition, tree.Import):
+            raise DeprecationWarning
             i = imports.ImportWrapper(self._evaluator, self._name)
             if len(i.import_path) <= 1:
                 return 'module'
@@ -514,6 +520,7 @@ class Completion(BaseDefinition):
         # TODO REMOVE
         definition = self._definition
         if definition.isinstance(tree.Import):
+            raise DeprecationWarning
             i = imports.ImportWrapper(self._evaluator, self._name)
             return i.follow()
         return super(Completion, self)._follow_statements_imports()

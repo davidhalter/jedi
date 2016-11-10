@@ -71,7 +71,6 @@ def search_params(evaluator, parent_context, funcdef):
     if not settings.dynamic_params:
         return set()
 
-    raise NotImplementedError
     evaluator.dynamic_params_depth += 1
     try:
         debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
@@ -137,7 +136,8 @@ def _search_function_executions(evaluator, funcdef):
 
             random_context = evaluator.create_context(module_context, name)
             for value in evaluator.goto_definitions(random_context, name):
-                if compare_node == value.funcdef:
+                value_node = value.get_node()
+                if compare_node == value_node:
                     arglist = trailer.children[1]
                     if arglist == ')':
                         arglist = ()
@@ -145,7 +145,7 @@ def _search_function_executions(evaluator, funcdef):
                     yield er.FunctionExecutionContext(
                         evaluator,
                         value.parent_context,
-                        value.funcdef,
+                        value_node,
                         args
                     )
                     found_executions = True

@@ -427,7 +427,7 @@ class Evaluator(object):
                 for_types = iterable.py__iter__types(self, container_types, def_.children[3])
                 return finder.check_tuple_assignments(self, for_types, name)
             elif def_.type in ('import_from', 'import_name'):
-                return imports.ImportWrapper(self, name).follow()
+                return imports.ImportWrapper(context, name).follow()
 
         call = helpers.call_of_leaf(name)
         return self.eval_element(context, call)
@@ -437,7 +437,7 @@ class Evaluator(object):
             for name in names:
                 if isinstance(name.parent, helpers.FakeImport):
                     # Those are implicit imports.
-                    s = imports.ImportWrapper(self, name)
+                    s = imports.ImportWrapper(context, name)
                     for n in s.follow(is_goto=True):
                         yield n
                 else:
@@ -476,7 +476,7 @@ class Evaluator(object):
         elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
             return [name]
         elif isinstance(stmt, tree.Import):
-            modules = imports.ImportWrapper(self, name).follow(is_goto=True)
+            modules = imports.ImportWrapper(context, name).follow(is_goto=True)
             return list(resolve_implicit_imports(modules))
         elif par.type == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)

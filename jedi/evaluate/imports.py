@@ -29,7 +29,6 @@ from jedi import settings
 from jedi.common import source_to_unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
-from jedi.evaluate.cache import memoize_default, NO_DEFAULT
 
 
 def completion_names(evaluator, imp, pos):
@@ -58,17 +57,17 @@ def completion_names(evaluator, imp, pos):
     return importer.completion_names(evaluator, only_modules)
 
 
-class ImportWrapper(tree.Base):
-    def __init__(self, evaluator, name):
-        self._evaluator = evaluator
+class ImportWrapper(object):
+    def __init__(self, context, name):
+        self._context = context
         self._name = name
 
         self._import = name.get_parent_until(tree.Import)
         self.import_path = self._import.path_for_name(name)
 
-    @memoize_default()
+    # TODO move this whole thing to a function
     def follow(self, is_goto=False):
-        module = self._evaluator.wrap(self._import.get_parent_until())
+        module = self._import.get_parent_until()
         import_path = self._import.path_for_name(self._name)
         from_import_name = None
         try:
@@ -83,7 +82,7 @@ class ImportWrapper(tree.Base):
                 from_import_name = import_path[-1]
                 import_path = from_names
 
-        importer = Importer(self._evaluator, tuple(import_path),
+        importer = Importer(self._context.evaluator, tuple(import_path),
                             module, self._import.level)
 
         types = importer.follow()
@@ -93,13 +92,13 @@ class ImportWrapper(tree.Base):
 
         if from_import_name is not None:
             types = set(chain.from_iterable(
-                self._evaluator.find_types(t, unicode(from_import_name),
+                self.evaluator.find_types(t, unicode(from_import_name),
                                            is_goto=is_goto)
                 for t in types))
 
             if not types:
                 path = import_path + [from_import_name]
-                importer = Importer(self._evaluator, tuple(path),
+                importer = Importer(self.evaluator, tuple(path),
                                     module, self._import.level)
                 types = importer.follow()
                 # goto only accepts `Name`
@@ -219,7 +218,6 @@ class Importer(object):
         """Returns the import path as pure strings instead of `Name`."""
         return tuple(str(name) for name in self.import_path)
 
-    @memoize_default()
     def sys_path_with_modifications(self):
         in_path = []
         sys_path_mod = list(sys_path.sys_path_with_modifications(self._evaluator, self.module))
@@ -239,7 +237,6 @@ class Importer(object):
 
         return in_path + sys_path_mod
 
-    @memoize_default(NO_DEFAULT)
     def follow(self):
         if not self.import_path:
             return set()
@@ -513,4 +510,5 @@ def get_module_nodes_containing_name(evaluator, module_nodes, name):
             # make testing easier, sort it - same results on every interpreter
             c = check_python_file(p)
             if c is not None and c not in module_nodes and not isinstance(c, compiled.CompiledObject):
+                continue # TODO REENABLE
                 yield c.module_node

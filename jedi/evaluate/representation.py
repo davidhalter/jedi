@@ -415,6 +415,9 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
         self.classdef = classdef
 
+    def get_node(self):
+        return self.classdef
+
     @memoize_default(default=())
     def py__mro__(self):
         def add(cls):
@@ -522,6 +525,9 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
         """ This should not be called directly """
         super(FunctionContext, self).__init__(evaluator, parent_context)
         self.base = self.base_func = self.funcdef = funcdef
+
+    def get_node(self):
+        return self.funcdef
 
     def names_dicts(self, search_global):
         if search_global:
@@ -788,7 +794,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         for i in self.module_node.imports:
             if i.is_star_import():
                 name = i.star_import_name()
-                new = imports.ImportWrapper(self.evaluator, name).follow()
+                new = imports.ImportWrapper(self, name).follow()
                 for module in new:
                     if isinstance(module, tree.Module):
                         modules += module.star_imports()

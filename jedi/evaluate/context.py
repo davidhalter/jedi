@@ -32,6 +32,9 @@ class Context(object):
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
 
+    def eval_stmt(self, stmt, seek_name=None):
+        return self.evaluator.eval_statement(self, stmt, seek_name)
+
 
 class TreeContext(Context):
     pass
