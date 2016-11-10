@@ -16,9 +16,9 @@ from jedi._compatibility import unicode
 from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
+from jedi.evaluate.instance import InstanceFunctionExecution
 from jedi.evaluate import iterable
 from jedi.parser import ParserWithRecovery
-from jedi.parser import tree
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
@@ -61,7 +61,7 @@ def _follow_param(evaluator, arguments, index):
         return unite(evaluator.eval_element(v) for v in values)
 
 
-def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=False):
+def argument_clinic(string, want_obj=False, want_context=False, want_arguments=False):
     """
     Works like Argument Clinic (PEP 436), to validate function params.
     """
@@ -91,8 +91,8 @@ def argument_clinic(string, want_obj=False, want_scope=False, want_arguments=Fal
                 return set()
             else:
                 kwargs = {}
-                if want_scope:
-                    kwargs['scope'] = arguments.scope()
+                if want_context:
+                    kwargs['context'] = arguments.context
                 if want_obj:
                     kwargs['obj'] = obj
                 if want_arguments:
@@ -134,22 +134,12 @@ class SuperInstance(er.Instance):
         super().__init__(evaluator, su and su[0] or self)
 
 
-@argument_clinic('[type[, obj]], /', want_scope=True)
-def builtins_super(evaluator, types, objects, scope):
+@argument_clinic('[type[, obj]], /', want_context=True)
+def builtins_super(evaluator, types, objects, context):
     # TODO make this able to detect multiple inheritance super
-    accept = (tree.Function, er.FunctionExecution)
-    if scope.isinstance(*accept):
-        wanted = (tree.Class, er.Instance)
-        cls = scope.get_parent_until(accept + wanted,
-                                     include_current=False)
-        if isinstance(cls, wanted):
-            if isinstance(cls, tree.Class):
-                cls = er.Class(evaluator, cls)
-            elif isinstance(cls, er.Instance):
-                cls = cls.base
-            su = cls.py__bases__()
-            if su:
-                return su[0].infer()
+    if isinstance(context, InstanceFunctionExecution):
+        su = context.instance.py__class__().py__bases__()
+        return su[0].infer()
     return set()
 
 

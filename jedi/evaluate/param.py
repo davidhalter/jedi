@@ -1,13 +1,11 @@
 from collections import defaultdict
-from itertools import chain
 
-from jedi._compatibility import unicode, zip_longest
+from jedi._compatibility import zip_longest
 from jedi import debug
 from jedi import common
 from jedi.parser import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
-from jedi.evaluate import precedence
 from jedi.evaluate import context
 
 
@@ -29,6 +27,8 @@ def try_iter_content(types, depth=0):
 
 
 class AbstractArguments():
+    context = None
+
     def eval_argument_clinic(self, parameters):
         """Uses a list with argument clinic information (see PEP 436)."""
         iterator = self.unpack()
@@ -54,16 +54,17 @@ class AbstractArguments():
         # TODO this method doesn't work with named args and a lot of other
         # things. Use unpack.
         raise DeprecationWarning
-        return [self._evaluator.eval_element(self._context, el) for stars, el in self._split()]
+        return [self._evaluator.eval_element(self.context, el) for stars, el in self._split()]
 
     def eval_all(self, func=None):
         """
         Evaluates all arguments as a support for static analysis
         (normally Jedi).
         """
+        raise DeprecationWarning
         for key, element_values in self.unpack():
             for element in element_values:
-                types = self._evaluator.eval_element(self._context, element)
+                types = self._evaluator.eval_element(self.context, element)
                 try_iter_content(types)
 
 
@@ -77,7 +78,7 @@ class TreeArguments(AbstractArguments):
         :param argument_node: May be an argument_node or a list of nodes.
         """
         self.argument_node = argument_node
-        self._context = context
+        self.context = context
         self._evaluator = evaluator
         self.trailer = trailer  # Can be None, e.g. in a class definition.
 
@@ -110,16 +111,16 @@ class TreeArguments(AbstractArguments):
         named_args = []
         for stars, el in self._split():
             if stars == 1:
-                arrays = self._context.eval_node(el)
+                arrays = self.context.eval_node(el)
                 iterators = [_iterate_star_args(self._evaluator, a, el, func)
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
                     # TODO zip_longest yields None, that means this would raise
                     # an exception?
-                    yield None, context.get_merged_lazy_context(values)
+                    yield None, context.get_merged_lazycontext(values)
             elif stars == 2:
-                arrays = self._evaluator.eval_element(self._context, el)
+                arrays = self._evaluator.eval_element(self.context, el)
                 for dct in arrays:
                     for key, values in _star_star_dict(self._evaluator, dct, el, func):
                         yield key, values
@@ -127,14 +128,14 @@ class TreeArguments(AbstractArguments):
                 if tree.is_node(el, 'argument'):
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
-                        named_args.append((c[0].value, context.LazyTreeContext(self._context, c[2]),))
+                        named_args.append((c[0].value, context.LazyTreeContext(self.context, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         comp = iterable.GeneratorComprehension(
                             self._evaluator, self.argument_node.parent)
                         yield None, context.LazyKnownContext(comp)
                 else:
-                    yield None, context.LazyTreeContext(self._context, el)
+                    yield None, context.LazyTreeContext(self.context, el)
 
         # Reordering var_args is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.

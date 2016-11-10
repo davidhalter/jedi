@@ -347,6 +347,7 @@ class InstanceVarArgs(object):
 
 class InstanceFunctionExecution(er.FunctionExecutionContext):
     def __init__(self, instance, parent_context, funcdef, var_args):
+        self.instance = instance
         var_args = InstanceVarArgs(instance, funcdef, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
