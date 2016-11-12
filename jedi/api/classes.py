@@ -68,7 +68,7 @@ class BaseDefinition(object):
         self._definition = None
 
         # generate a path to the definition
-        self._module = name.parent_context.get_root_context()
+        self._module = name.get_root_context()
         if self.in_builtin_module():
             self.module_path = None
         else:

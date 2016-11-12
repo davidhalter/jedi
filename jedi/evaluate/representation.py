@@ -37,7 +37,6 @@ import os
 import pkgutil
 import imp
 import re
-from itertools import chain
 
 from jedi._compatibility import use_metaclass, unicode, Python3Method, is_py3
 from jedi.parser import tree
@@ -51,7 +50,6 @@ from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
-from jedi.evaluate import helpers
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
@@ -738,7 +736,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
         return search_params(self.evaluator, self.parent_context, self.funcdef)
 
 
-class GlobalName(helpers.FakeName):
+class GlobalName(object):
     def __init__(self, name):
         """
         We need to mark global names somehow. Otherwise they are just normal
@@ -748,7 +746,24 @@ class GlobalName(helpers.FakeName):
         super(GlobalName, self).__init__(name.value, name.parent,
                                          name.start_pos, is_definition=True)
 
+
+class ModuleAttributeName(AbstractNameDefinition):
+    """
+    For module attributes like __file__, __str__ and so on.
+    """
+    def __init__(self, parent_module, string_name):
+        self.parent_context = parent_module
+        self.string_name = string_name
+
+    def infer(self):
+        return compiled.create(self.parent_context.evaluator, str).execute(
+            param.ValuesArguments([])
+        )
+
+
 class SubModuleName(AbstractNameDefinition):
+    """
+    """
     def __init__(self, parent_module, string_name):
         self.parent_context = parent_module
         self.string_name = string_name
@@ -791,11 +806,8 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         yield GlobalNameFilter(self, self.module_node)
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
-        # TODO 
-        '''
         for star_module in self.star_imports():
-            yield star_module.names_dict
-        '''
+            yield next(star_module.get_filters(search_global))
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
@@ -816,14 +828,9 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
 
     @memoize_default()
     def _module_attributes_dict(self):
-        def parent_callback():
-            # Create a string type object (without a defined string in it):
-            return list(self.evaluator.execute(compiled.create(self.evaluator, str)))[0]
-
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
-        return dict((n, helpers.LazyName(n, parent_callback, is_definition=True))
-                    for n in names)
+        return dict((n, ModuleAttributeName(self, n)) for n in names)
 
     @property
     @memoize_default()
@@ -923,8 +930,8 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         #   import hacks.
         # ``os.path`` is a hardcoded exception, because it's a
         # ``sys.modules`` modification.
-        #if str(self.name) == 'os':
-        #    names.append(helpers.FakeName('path', parent=self))
+        # if str(self.name) == 'os':
+        #     names.append(Name('path', parent_context=self))
 
         return names
 

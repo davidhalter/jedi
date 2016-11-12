@@ -1,7 +1,6 @@
 import copy
 from itertools import chain
 
-from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.parser import tree
 
 
@@ -158,13 +157,3 @@ class FakeName(tree.Name):
             return super(FakeName, self).is_definition()
         else:
             return self._is_definition
-
-
-class LazyName(AbstractNameDefinition):
-    def __init__(self, name, parent_callback, is_definition=None):
-        # TODO remove is_definition
-        self.string_name = name
-        self._parent_callback = parent_callback
-
-    def infer(self):
-        return self._parent_callback()
