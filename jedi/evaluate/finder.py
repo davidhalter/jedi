@@ -370,7 +370,7 @@ def _name_to_types(evaluator, context, name, scope):
     elif node.isinstance(tree.ExprStmt):
         types = _remove_statements(evaluator, context, node, name)
     elif node.isinstance(tree.WithStmt):
-        types = evaluator.eval_element(node.node_from_name(name))
+        types = context.eval_node(node.node_from_name(name))
     elif isinstance(node, tree.Import):
         types = imports.ImportWrapper(context, name).follow()
     elif node.type in ('funcdef', 'classdef'):

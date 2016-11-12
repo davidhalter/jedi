@@ -1,10 +1,11 @@
 from abc import abstractproperty
 
+from jedi._compatibility import is_py3
 from jedi.common import unite
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
-from jedi.evaluate.context import Context, LazyKnownContext
+from jedi.evaluate.context import Context, LazyKnownContext, get_merged_lazy_context
 from jedi.evaluate.cache import memoize_default
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
@@ -117,24 +118,24 @@ class AbstractInstanceContext(Context):
             return unite(name.execute_evaluated(index_obj) for name in names)
 
     def py__iter__(self):
-        try:
-            method = self.get_subscope_by_name('__iter__')
-        except KeyError:
+        iter_slot_names = self.get_function_slot_names('__iter__')
+        if not iter_slot_names:
             debug.warning('No __iter__ on %s.' % self)
             return
-        else:
-            iters = self.evaluator.execute(method)
-            for generator in iters:
-                if isinstance(generator, Instance):
-                    # `__next__` logic.
-                    name = '__next__' if is_py3 else 'next'
-                    try:
-                        yield generator.execute_subscope_by_name(name)
-                    except KeyError:
-                        debug.warning('Instance has no __next__ function in %s.', generator)
-                else:
-                    for typ in generator.py__iter__():
-                        yield typ
+
+        for generator in self.execute_function_slots(iter_slot_names):
+            if isinstance(generator, AbstractInstanceContext):
+                # `__next__` logic.
+                name = '__next__' if is_py3 else 'next'
+                try:
+                    yield get_merged_lazy_context(
+                        generator.execute_subscope_by_name(name)
+                    )
+                except KeyError:
+                    debug.warning('Instance has no __next__ function in %s.', generator)
+            else:
+                for lazy_context in generator.py__iter__():
+                    yield lazy_context
 
     @abstractproperty
     def name(self):

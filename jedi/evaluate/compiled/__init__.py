@@ -13,7 +13,7 @@ from jedi.cache import underscore_memoization, memoize_method
 from jedi.parser.tree import Param, Operator
 from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition
-from jedi.evaluate.context import Context
+from jedi.evaluate.context import Context, LazyKnownContext
 from . import fake
 
 
@@ -202,7 +202,7 @@ class CompiledObject(Context):
             return
 
         for part in self.obj:
-            yield set([create(self.evaluator, part)])
+            yield LazyKnownContext(create(self.evaluator, part))
 
     @property
     def name(self):
