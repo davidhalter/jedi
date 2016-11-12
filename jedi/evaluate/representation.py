@@ -56,7 +56,7 @@ from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
-    GlobalNameFilter, DictFilter, ContextName
+    GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 
@@ -748,6 +748,19 @@ class GlobalName(helpers.FakeName):
         super(GlobalName, self).__init__(name.value, name.parent,
                                          name.start_pos, is_definition=True)
 
+class SubModuleName(AbstractNameDefinition):
+    def __init__(self, parent_module, string_name):
+        self.parent_context = parent_module
+        self.string_name = string_name
+
+    def infer(self):
+        return imports.Importer(
+            self.parent_context.evaluator,
+            [self.string_name],
+            self.parent_context,
+            level=1
+        ).follow()
+
 
 class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     parent_context = None
@@ -776,7 +789,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
             origin_scope=origin_scope
         )
         yield GlobalNameFilter(self, self.module_node)
-        #yield DictFilter(self._sub_modules_dict())
+        yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         # TODO 
         '''
@@ -903,12 +916,8 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
             mods = pkgutil.iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
-                raise NotImplementedError
-                fake_n = helpers.FakeName(name)
                 # It's obviously a relative import to the current module.
-                imp = helpers.FakeImport(fake_n, self, level=1)
-                fake_n.parent = imp
-                names[name] = fake_n
+                names[name] = SubModuleName(self, name)
 
         # TODO add something like this in the future, its cleaner than the
         #   import hacks.

@@ -139,34 +139,6 @@ def get_module_names(module, all_scopes):
     return chain.from_iterable(dct.values())
 
 
-class FakeImport(tree.ImportName):
-    def __init__(self, name, parent, level=0):
-        super(FakeImport, self).__init__([])
-        self.parent = parent
-        self._level = level
-        self.name = name
-
-    def get_defined_names(self):
-        return [self.name]
-
-    def aliases(self):
-        return {}
-
-    @property
-    def level(self):
-        return self._level
-
-    @property
-    def start_pos(self):
-        return 0, 0
-
-    def paths(self):
-        return [[self.name]]
-
-    def is_definition(self):
-        return True
-
-
 class FakeName(tree.Name):
     def __init__(self, name_str, parent=None, start_pos=(0, 0), is_definition=None):
         """
