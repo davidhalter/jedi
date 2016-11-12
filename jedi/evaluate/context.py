@@ -8,6 +8,9 @@ class Context(object):
         self.evaluator = evaluator
         self.parent_context = parent_context
 
+    def get_node(self):
+        return None
+
     def get_parent_flow_context(self):
         return self.parent_context
 

@@ -201,7 +201,8 @@ class Completion:
         completion_names = []
         debug.dbg('trailer completion contexts: %s', contexts)
         for context in contexts:
-            for filter in context.get_filters(search_global=False, origin_scope=user_context):
+            for filter in context.get_filters(
+                    search_global=False, origin_scope=user_context.get_node()):
                 completion_names += filter.values()
         return completion_names
 

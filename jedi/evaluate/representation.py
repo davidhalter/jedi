@@ -613,6 +613,9 @@ class FunctionExecutionContext(Executed):
         #self.names_dict = funcdef.names_dict
         #self._copied_funcdef = funcdef
 
+    def get_node(self):
+        return self.funcdef
+
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator
     def get_return_values(self, check_yields=False):
@@ -773,6 +776,9 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
         super(ModuleContext, self).__init__(evaluator, parent_context=None)
         self.module_node = module_node
         self.path = None
+
+    def get_node(self):
+        return self.module_node
 
     def names_dicts(self, search_global):
         yield self.base.names_dict
