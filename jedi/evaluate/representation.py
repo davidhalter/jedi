@@ -776,7 +776,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
             origin_scope=origin_scope
         )
         yield GlobalNameFilter(self, self.module_node)
-        yield DictFilter(self._sub_modules_dict())
+        #yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         # TODO 
         '''
@@ -853,10 +853,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
             return self.py__name__()
 
     def _py__path__(self):
-        if self._parent_module is None:
-            search_path = self.evaluator.sys_path
-        else:
-            search_path = self._parent_module.py__path__()
+        search_path = self.evaluator.sys_path
         init_path = self.py__file__()
         if os.path.basename(init_path) == '__init__.py':
             with open(init_path, 'rb') as f:

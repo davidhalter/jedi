@@ -18,7 +18,6 @@ import sys
 from itertools import chain
 
 from jedi._compatibility import find_module, unicode
-from jedi import common
 from jedi import debug
 from jedi.parser import fast
 from jedi.parser import tree
@@ -26,7 +25,7 @@ from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi import settings
-from jedi.common import source_to_unicode
+from jedi.common import source_to_unicode, unite
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 
@@ -62,16 +61,15 @@ class ImportWrapper(object):
         self._context = context
         self._name = name
 
-        self._import = name.get_parent_until(tree.Import)
-        self.import_path = self._import.path_for_name(name)
-
     # TODO move this whole thing to a function
     def follow(self, is_goto=False):
-        module = self._import.get_parent_until()
-        import_path = self._import.path_for_name(self._name)
+        module_context = self._context.get_root_context()
+        import_node = self._name.get_parent_until(tree.Import)
+        import_path = import_node.path_for_name(self._name)
         from_import_name = None
+        evaluator = self._context.evaluator
         try:
-            from_names = self._import.get_from_names()
+            from_names = import_node.get_from_names()
         except AttributeError:
             # Is an import_name
             pass
@@ -82,24 +80,26 @@ class ImportWrapper(object):
                 from_import_name = import_path[-1]
                 import_path = from_names
 
-        importer = Importer(self._context.evaluator, tuple(import_path),
-                            module, self._import.level)
+        importer = Importer(evaluator, tuple(import_path),
+                            module_context, import_node.level)
 
+        # TODO This is terrible, why different Importer instances?
         types = importer.follow()
 
-        #if self._import.is_nested() and not self.nested_resolve:
-        #    scopes = [NestedImportModule(module, self._import)]
+        #if import_node.is_nested() and not self.nested_resolve:
+        #    scopes = [NestedImportModule(module, import_node)]
 
         if from_import_name is not None:
-            types = set(chain.from_iterable(
-                self.evaluator.find_types(t, unicode(from_import_name),
-                                           is_goto=is_goto)
-                for t in types))
+            types = unite(
+                evaluator.find_types(t, unicode(from_import_name),
+                                     is_goto=is_goto)
+                for t in types
+            )
 
             if not types:
                 path = import_path + [from_import_name]
-                importer = Importer(self.evaluator, tuple(path),
-                                    module, self._import.level)
+                importer = Importer(evaluator, tuple(path),
+                                    module_context, import_node.level)
                 types = importer.follow()
                 # goto only accepts `Name`
                 if is_goto:
@@ -164,7 +164,7 @@ def get_init_path(directory_path):
 
 
 class Importer(object):
-    def __init__(self, evaluator, import_path, module, level=0):
+    def __init__(self, evaluator, import_path, module_context, level=0):
         """
         An implementation similar to ``__import__``. Use `follow`
         to actually follow the imports.
@@ -180,19 +180,19 @@ class Importer(object):
         debug.speed('import %s' % (import_path,))
         self._evaluator = evaluator
         self.level = level
-        self.module = module
+        self.module_context = module_context
         try:
-            self.file_path = module.py__file__()
+            self.file_path = module_context.py__file__()
         except AttributeError:
             # Can be None for certain compiled modules like 'builtins'.
             self.file_path = None
 
         if level:
-            base = module.py__package__().split('.')
+            base = module_context.py__package__().split('.')
             if base == ['']:
                 base = []
             if level > len(base):
-                path = module.py__file__()
+                path = module_context.py__file__()
                 if path is not None:
                     import_path = list(import_path)
                     for i in range(level):
@@ -220,7 +220,10 @@ class Importer(object):
 
     def sys_path_with_modifications(self):
         in_path = []
-        sys_path_mod = list(sys_path.sys_path_with_modifications(self._evaluator, self.module))
+        sys_path_mod = list(sys_path.sys_path_with_modifications(
+            self._evaluator,
+            self.module_context
+        ))
         if self.file_path is not None:
             # If you edit e.g. gunicorn, there will be imports like this:
             # `from gunicorn import something`. But gunicorn is not in the
@@ -285,12 +288,13 @@ class Importer(object):
                 return self._evaluator.find_types(parent_module, 'path')
 
             try:
-                paths = parent_module.py__path__()
+                method = parent_module.py__path__
             except AttributeError:
                 # The module is not a package.
                 _add_error(self._evaluator, import_path[-1])
                 return set()
             else:
+                paths = method()
                 debug.dbg('search_module %s in paths %s', module_name, paths)
                 for path in paths:
                     # At the moment we are only using one path. So this is
@@ -349,7 +353,7 @@ class Importer(object):
     def _generate_name(self, name):
         # Create a pseudo import to be able to follow them.
         name = helpers.FakeName(name)
-        imp = helpers.FakeImport(name, parent=self.module)
+        imp = helpers.FakeImport(name, parent=self.module_context)
         name.parent = imp
         return name
 
@@ -443,7 +447,7 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
         else:
             return compiled.load_module(evaluator, path)
         p = path
-        p = fast.FastParser(evaluator.grammar, common.source_to_unicode(source), p)
+        p = fast.FastParser(evaluator.grammar, source_to_unicode(source), p)
         save_parser(path, p)
         return p.module
 
