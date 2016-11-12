@@ -377,8 +377,11 @@ def _name_to_types(evaluator, context, name, scope):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
         # the static analysis report.
-        exceptions = evaluator.eval_element(name.get_previous_sibling().get_previous_sibling())
-        types = set(chain.from_iterable(evaluator.execute(t) for t in exceptions))
+        exceptions = context.eval_node(name.get_previous_sibling().get_previous_sibling())
+        types = unite(
+            evaluator.execute(t, param.ValuesArguments([]))
+            for t in exceptions
+        )
     else:
         raise DeprecationWarning
         types = set([node])

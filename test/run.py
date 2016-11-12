@@ -191,11 +191,8 @@ class IntegrationTestCase(object):
                 parser.get_root_node().move(self.line_nr)
                 element = parser.get_parsed_node()
                 module_context = script._get_module()
-                # TODO remove
-                element.parent = jedi.api.completion.get_user_scope(
-                    module_context,
-                    (self.line_nr, self.column)
-                )
+                # The context shouldn't matter for the test results.
+                element.parent = module_context.module_node
                 results = evaluator.eval_element(module_context, element)
                 if not results:
                     raise Exception('Could not resolve %s on line %s'

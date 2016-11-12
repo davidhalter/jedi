@@ -52,6 +52,7 @@ def get_user_scope(module_context, position):
     Returns the scope in which the user resides. This includes flows.
     """
     user_stmt = module_context.module_node.get_statement_for_position(position)
+    evaluator = module_context.evaluator
     if user_stmt is None:
         def scan(scope):
             for s in scope.children:
@@ -62,9 +63,17 @@ def get_user_scope(module_context, position):
                         return scan(s)
             return None
 
-        return scan(module) or module_context
+        scanned_node = scan(module_context.module_node)
+        if scanned_node:
+            return evaluator.create_context(module_context, scanned_node)
+        return module_context
     else:
-        return user_stmt.get_parent_scope(include_flows=True)
+        scope_node = user_stmt.get_parent_scope(include_flows=True)
+        return evaluator.create_context(module_context, scope_node)
+
+    # TODO need something like this in this func?
+        #if not context.is_scope():  # Might be a flow (if/while/etc).
+            #context = context.get_parent_scope()
 
 
 class Completion:
@@ -172,16 +181,13 @@ class Completion:
             yield keywords.keyword(self._evaluator, k).name
 
     def _global_completions(self):
-        scope = get_user_scope(self._module_context, self._position)
-        if not scope.is_scope():  # Might be a flow (if/while/etc).
-            scope = scope.get_parent_scope()
-        scope = self._evaluator.create_context(self._module_context, scope)
-        debug.dbg('global completion scope: %s', scope)
+        context = get_user_scope(self._module_context, self._position)
+        debug.dbg('global completion scope: %s', context)
         filters = get_global_filters(
             self._evaluator,
-            scope,
+            context,
             self._position,
-            origin_scope=scope
+            origin_scope=context
         )
         completion_names = []
         for filter in filters:
@@ -189,13 +195,13 @@ class Completion:
         return completion_names
 
     def _trailer_completions(self, atom_expr):
-        user_scope = get_user_scope(self._module_context, self._position)
+        user_context = get_user_scope(self._module_context, self._position)
         evaluation_context = self._evaluator.create_context(self._module_context, atom_expr)
         contexts = self._evaluator.eval_element(evaluation_context, atom_expr)
         completion_names = []
         debug.dbg('trailer completion contexts: %s', contexts)
         for context in contexts:
-            for filter in context.get_filters(search_global=False, origin_scope=user_scope):
+            for filter in context.get_filters(search_global=False, origin_scope=user_context):
                 completion_names += filter.values()
         return completion_names
 
