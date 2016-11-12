@@ -736,17 +736,6 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
         return search_params(self.evaluator, self.parent_context, self.funcdef)
 
 
-class GlobalName(object):
-    def __init__(self, name):
-        """
-        We need to mark global names somehow. Otherwise they are just normal
-        names that are not definitions.
-        """
-        raise NotImplementedError
-        super(GlobalName, self).__init__(name.value, name.parent,
-                                         name.start_pos, is_definition=True)
-
-
 class ModuleAttributeName(AbstractNameDefinition):
     """
     For module attributes like __file__, __str__ and so on.

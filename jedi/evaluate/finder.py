@@ -19,7 +19,6 @@ from itertools import chain
 from jedi._compatibility import unicode
 from jedi.parser import tree
 from jedi import debug
-from jedi import common
 from jedi.common import unite
 from jedi import settings
 from jedi.evaluate import representation as er
@@ -227,7 +226,7 @@ class NameFinder(object):
                 # TODO seriously? this is stupid.
                 continue
             check = flow_analysis.reachability_check(self._context, name_scope,
-                                              stmt, origin_scope)
+                                                     stmt, origin_scope)
             if check is not flow_analysis.UNREACHABLE:
                 last_names.append(name)
 
@@ -339,15 +338,6 @@ class NameFinder(object):
         return result
 
 
-def _get_global_stmt_scopes(evaluator, global_stmt, name):
-    raise DeprecationWarning
-    global_stmt_scope = global_stmt.get_parent_scope()
-    module = global_stmt_scope.get_parent_until()
-    for used_name in module.used_names[str(name)]:
-        if used_name.parent.type == 'global_stmt':
-            yield evaluator.wrap(used_name.get_parent_scope())
-
-
 @memoize_default(set(), evaluator_is_first_arg=True)
 def _name_to_types(evaluator, context, name, scope):
     types = []
@@ -376,13 +366,13 @@ def _name_to_types(evaluator, context, name, scope):
     elif node.type in ('funcdef', 'classdef'):
         types = _apply_decorators(evaluator, context, node)
     elif node.type == 'global_stmt':
-        for s in _get_global_stmt_scopes(evaluator, node, name):
-            finder = NameFinder(evaluator, s, str(name))
-            names_dicts = finder.get_filters(search_global=True)
-            # For global_stmt lookups, we only need the first possible scope,
-            # which means the function itself.
-            names_dicts = [next(names_dicts)]
-            types += finder.find(names_dicts, attribute_lookup=False)
+        context = evaluator.create_context(context, name)
+        finder = NameFinder(evaluator, context, str(name))
+        filters = finder.get_filters(search_global=True)
+        # For global_stmt lookups, we only need the first possible scope,
+        # which means the function itself.
+        filters = [next(filters)]
+        types += finder.find(filters, attribute_lookup=False)
     elif isinstance(node, tree.TryStmt):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
