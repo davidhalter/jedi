@@ -26,7 +26,7 @@ class Context(object):
                 return context
             context = context.parent_context
 
-    def execute(self, arguments=None):
+    def execute(self, arguments):
         return self.evaluator.execute(self, arguments)
 
     def execute_evaluated(self, *value_list):

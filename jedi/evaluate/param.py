@@ -7,6 +7,7 @@ from jedi.parser import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import context
+from jedi.evaluate import docstrings
 
 
 def try_iter_content(types, depth=0):
@@ -175,13 +176,19 @@ class ValuesArguments(AbstractArguments):
 
 class ExecutedParam(object):
     """Fake a param and give it values."""
-    def __init__(self, original_param, var_args, lazy_context):
+    def __init__(self, var_args_context, original_param, var_args, lazy_context):
+        self._root_context = var_args_context.get_root_context()
         self._original_param = original_param
         self.var_args = var_args
         self._lazy_context = lazy_context
         self.string_name = self._original_param.name.value
 
     def infer(self):
+        pep0484_hints = set()#pep0484.follow_param(evaluator, param)
+        doc_params = docstrings.follow_param(self._root_context, self._original_param)
+        if pep0484_hints or doc_params:
+            return list(set(pep0484_hints) | set(doc_params))
+
         return self._lazy_context.infer()
 
     @property
@@ -253,7 +260,7 @@ def get_params(evaluator, parent_context, func, var_args):
                         analysis.add(evaluator, 'type-error-multiple-values',
                                      calling_va, message=m)
                 else:
-                    keys_used[key] = ExecutedParam(key_param, var_args, argument)
+                    keys_used[key] = ExecutedParam(parent_context, key_param, var_args, argument)
             key, argument = next(var_arg_iterator, (None, None))
 
         try:
@@ -297,7 +304,7 @@ def get_params(evaluator, parent_context, func, var_args):
             else:
                 result_arg = argument
 
-        result_params.append(ExecutedParam(param, var_args, result_arg))
+        result_params.append(ExecutedParam(parent_context, param, var_args, result_arg))
         keys_used[param.name.value] = result_params[-1]
 
     if keys_only:
@@ -403,4 +410,4 @@ def create_default_param(parent_context, param):
         result_arg = context.LazyUnknownContext()
     else:
         result_arg = context.LazyTreeContext(parent_context, param.default)
-    return ExecutedParam(param, None, result_arg)
+    return ExecutedParam(parent_context, param, None, result_arg)

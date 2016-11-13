@@ -643,7 +643,7 @@ class FunctionExecutionContext(Executed):
             returns = funcdef.yields
         else:
             returns = funcdef.returns
-            types = set(docstrings.find_return_types(self.evaluator, funcdef))
+            types = set(docstrings.find_return_types(self.get_root_context(), funcdef))
             types |= set(pep0484.find_return_types(self.evaluator, funcdef))
 
         for r in returns:
