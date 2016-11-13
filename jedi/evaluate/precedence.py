@@ -131,7 +131,7 @@ def _element_calculate(evaluator, left, operator, right):
     r_is_num = _is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
-        if isinstance(left, iterable.Array) or is_string(left):
+        if isinstance(left, iterable.AbstractSequence) or is_string(left):
             return set([left])
         elif isinstance(right, iterable.Array) or is_string(right):
             return set([right])

@@ -265,7 +265,7 @@ class ArrayMixin(object):
         return self.evaluator.BUILTINS
 
     def dict_values(self):
-        return unite(self.evaluator.eval_element(v) for k, v in self._items())
+        return unite(self._defining_context.eval_node(v) for k, v in self._items())
 
     @register_builtin_method('values', type='dict')
     def _imitate_values(self):
@@ -386,7 +386,7 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
             # We don't know which dict index comes first, therefore always
             # yield all the types.
             for _ in types:
-                yield types
+                yield context.LazyKnownContexts(types)
         else:
             for node in self._items():
                 yield context.LazyTreeContext(self._defining_context, node)
@@ -847,8 +847,8 @@ class _ArrayInstance(IterableWrapper):
 
 
 class Slice(object):
-    def __init__(self, evaluator, start, stop, step):
-        self._evaluator = evaluator
+    def __init__(self, context, start, stop, step):
+        self._context = context
         # all of them are either a Precedence or None.
         self._start = start
         self._stop = stop
@@ -864,7 +864,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = self._evaluator.eval_element(element)
+            result = self._context.eval_node(element)
             if len(result) != 1:
                 # For simplicity, we want slices to be clear defined with just
                 # one type.  Otherwise we will return an empty slice object.
@@ -886,7 +886,7 @@ def create_index_types(evaluator, context, index):
     """
     if index == ':':
         # Like array[:]
-        return set([Slice(evaluator, None, None, None)])
+        return set([Slice(context, None, None, None)])
     elif tree.is_node(index, 'subscript'):  # subscript is a slice operation.
         # Like array[:3]
         result = []
@@ -901,7 +901,7 @@ def create_index_types(evaluator, context, index):
                 result.append(el)
         result += [None] * (3 - len(result))
 
-        return set([Slice(evaluator, *result)])
+        return set([Slice(context, *result)])
 
     # No slices
     return context.eval_node(index)

@@ -671,9 +671,8 @@ def check_tuple_assignments(evaluator, types, name):
                 # index number is high. Therefore break if the loop is
                 # finished.
                 return set()
-    if lazy_context is None:
-        return types
-    return lazy_context.infer()
+        types = lazy_context.infer()
+    return types
 
 
 def filter_private_variable(scope, origin_node):

@@ -409,6 +409,8 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
+    api_type = 'class'
+
     def __init__(self, evaluator, classdef, parent_context):
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
         self.classdef = classdef
@@ -519,6 +521,8 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
     """
     Needed because of decorators. Decorators are evaluated here.
     """
+    api_type = 'function'
+
     def __init__(self, evaluator, parent_context, funcdef):
         """ This should not be called directly """
         super(FunctionContext, self).__init__(evaluator, parent_context)

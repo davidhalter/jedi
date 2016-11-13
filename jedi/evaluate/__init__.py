@@ -341,9 +341,9 @@ class Evaluator(object):
             c = atom.children
             if c[0].type == 'string':
                 # Will be one string.
-                types = self._eval_atom(c[0])
+                types = self._eval_atom(context, c[0])
                 for string in c[1:]:
-                    right = self._eval_atom(string)
+                    right = self._eval_atom(context, string)
                     types = precedence.calculate(self, types, '+', right)
                 return types
             # Parentheses without commas are not tuples.

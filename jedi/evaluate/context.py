@@ -3,7 +3,11 @@ from jedi.common import unite
 
 class Context(object):
     type = None # TODO remove
-    api_type = ''
+    api_type = 'instance'
+    """
+    Most contexts are just instances of something, therefore make this the
+    default to make subclassing a lot easier.
+    """
 
     def __init__(self, evaluator, parent_context=None):
         self.evaluator = evaluator
