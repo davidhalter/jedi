@@ -414,7 +414,7 @@ def _apply_decorators(evaluator, context, node):
             # Create a trailer and evaluate it.
             trailer = tree.Node('trailer', trailer)
             trailer.parent = dec
-            dec_values = context.eval_trailer(dec_values, trailer)
+            dec_values = evaluator.eval_trailer(context, dec_values, trailer)
 
         if not len(dec_values):
             debug.warning('decorator not found: %s on %s', dec, node)

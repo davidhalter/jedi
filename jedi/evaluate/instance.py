@@ -222,7 +222,7 @@ class BoundMethod(Context):
     def py__call__(self, var_args):
         function_execution = InstanceFunctionExecution(
             self._instance,
-            self._class_context.parent_context,
+            self.parent_context,
             self._function.funcdef,
             var_args
         )
