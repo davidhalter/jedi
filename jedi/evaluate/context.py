@@ -3,6 +3,7 @@ from jedi.common import unite
 
 class Context(object):
     type = None # TODO remove
+    api_type = ''
 
     def __init__(self, evaluator, parent_context=None):
         self.evaluator = evaluator

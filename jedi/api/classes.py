@@ -17,8 +17,6 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
-from jedi.evaluate.compiled import mixed
-from jedi.api import keywords
 from jedi.evaluate.finder import filter_definition_names
 
 
@@ -147,22 +145,10 @@ class BaseDefinition(object):
         'function'
 
         """
-        stripped = self._definition
-        if isinstance(stripped, er.InstanceElement):
-            stripped = stripped.var
-
-        if isinstance(stripped, (compiled.CompiledObject, mixed.MixedObject)):
-            return stripped.api_type()
-        elif isinstance(stripped, iterable.ArrayLiteralContext):
-            return 'instance'
-        elif isinstance(stripped, tree.Import):
-            return 'import'
-
-        string = type(stripped).__name__.lower().replace('wrapper', '')
-        if string == 'exprstmt':
-            return 'statement'
-        else:
-            return string
+        try:
+            return self._name.parent_context.api_type
+        except AttributeError:
+            return ''
 
     def _path(self):
         """The path to a module/class/function definition."""
@@ -576,8 +562,6 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
 
         """
         d = self._definition
-        if isinstance(d, er.InstanceElement):
-            d = d.var
 
         if isinstance(d, compiled.CompiledObject):
             typ = d.api_type()

@@ -108,6 +108,7 @@ class CompiledObject(Context):
 
         return _parse_function_doc(self.doc)
 
+    @property
     def api_type(self):
         obj = self.obj
         if inspect.isclass(obj):
