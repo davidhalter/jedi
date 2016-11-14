@@ -5,7 +5,7 @@ from jedi.common import unite
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
-from jedi.evaluate.context import Context, LazyKnownContext, get_merged_lazy_context
+from jedi.evaluate.context import Context, LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import memoize_default
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
@@ -127,11 +127,12 @@ class AbstractInstanceContext(Context):
             if isinstance(generator, AbstractInstanceContext):
                 # `__next__` logic.
                 name = '__next__' if is_py3 else 'next'
-                try:
-                    yield get_merged_lazy_context(
-                        generator.execute_subscope_by_name(name)
+                iter_slot_names = generator.get_function_slot_names(name)
+                if iter_slot_names:
+                    yield LazyKnownContexts(
+                        generator.execute_function_slots(iter_slot_names)
                     )
-                except KeyError:
+                else:
                     debug.warning('Instance has no __next__ function in %s.', generator)
             else:
                 for lazy_context in generator.py__iter__():

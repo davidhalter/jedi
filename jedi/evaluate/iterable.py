@@ -23,15 +23,15 @@ It is important to note that:
 from jedi.common import unite, safe_property
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import use_metaclass, unicode, zip_longest
+from jedi._compatibility import unicode, zip_longest, is_py3
 from jedi.parser import tree
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
-from jedi.evaluate.cache import CachedMetaClass, memoize_default
+from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
 from jedi import common
-from jedi.evaluate.filters import DictFilter
+from jedi.evaluate.filters import DictFilter, AbstractNameDefinition
 from jedi.evaluate import context
 from jedi.evaluate import precedence
 
@@ -45,49 +45,53 @@ class AbstractSequence(context.Context):
         return compiled.CompiledContextName(self, self.array_type)
 
 
-class IterableWrapper(tree.Base):
-    def is_class(self):
-        return False
-
-    @memoize_default()
-    def _get_names_dict(self, names_dict):
-        raise NotImplementedError
-        builtin_methods = {}
-        for cls in reversed(type(self).mro()):
-            try:
-                builtin_methods.update(cls.builtin_methods)
-            except AttributeError:
-                pass
-
-        if not builtin_methods:
-            return names_dict
-
-        dct = {}
-        for names in names_dict.values():
-            for name in names:
-                name_str = name.value
-                try:
-                    method = builtin_methods[name_str, self.type]
-                except KeyError:
-                    dct[name_str] = name
-                else:
-                    parent = BuiltinMethod(self, method, name.parent)
-                    dct[name_str] = helpers.FakeName(name_str, parent, is_definition=True)
-        return dct
-
-
-class BuiltinMethod(IterableWrapper):
+class BuiltinMethod(object):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
-    def __init__(self, builtin, method, builtin_func):
-        self._builtin = builtin
+    def __init__(self, builtin_context, method, builtin_func):
+        self._builtin_context = builtin_context
         self._method = method
         self._builtin_func = builtin_func
 
     def py__call__(self, params):
-        return self._method(self._builtin)
+        return self._method(self._builtin_context)
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
+
+
+class SpecialMethodFilter(DictFilter):
+    """
+    A filter for methods that are defined in this module on the corresponding
+    classes like Generator (for __next__, etc).
+    """
+    class SpecialMethodName(AbstractNameDefinition):
+        def __init__(self, parent_context, string_name, callable_, builtin_context):
+            self.parent_context = parent_context
+            self.string_name = string_name
+            self._callable = callable_
+            self._builtin_context = builtin_context
+
+        def infer(self):
+            filter = next(self._builtin_context.get_filters())
+            # We can take the first index, because on builtin methods there's
+            # always only going to be one name. The same is true for the
+            # inferred values.
+            builtin_func = filter.get(self.string_name)[0].infer().pop()
+            return set([BuiltinMethod(self.parent_context, self._callable, builtin_func)])
+
+    def __init__(self, context, dct, builtin_context):
+        super(SpecialMethodFilter, self).__init__(dct)
+        self.context = context
+        self._builtin_context = builtin_context
+        """
+        This context is what will be used to introspect the name, where as the
+        other context will be used to execute the function.
+
+        We distinguish, because we have to.
+        """
+
+    def _convert(self, name, value):
+        return self.SpecialMethodName(self.context, name, value, self._builtin_context)
 
 
 def has_builtin_methods(cls):
@@ -100,10 +104,13 @@ def has_builtin_methods(cls):
     return cls
 
 
-def register_builtin_method(method_name, type=None):
+def register_builtin_method(method_name, python_version_match=None):
     def wrapper(func):
+        if python_version_match and python_version_match + int(is_py3) == 3:
+            # Some functions do only apply to certain versions.
+            return func
         dct = func.__dict__.setdefault('registered_builtin_methods', {})
-        dct[method_name, type] = func
+        dct[method_name] = func
         return func
     return wrapper
 
@@ -113,11 +120,11 @@ class GeneratorMixin(object):
     type = None
 
     @register_builtin_method('send')
-    @register_builtin_method('next')
-    @register_builtin_method('__next__')
+    @register_builtin_method('next', python_version_match=2)
+    @register_builtin_method('__next__', python_version_match=3)
     def py__next__(self):
         # TODO add TypeError if params are given.
-        return unite(self.py__iter__())
+        return unite(lazy_context.infer() for lazy_context in self.py__iter__())
 
     @memoize_default()
     def names_dicts(self, search_global=False):  # is always False
@@ -126,7 +133,9 @@ class GeneratorMixin(object):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
-        yield DictFilter(self._get_names_dict(gen_obj.names_dict))
+        yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
+        for filter in gen_obj.get_filters(search_global):
+            yield filter
 
     def py__bool__(self):
         return True
@@ -150,7 +159,7 @@ class Generator(context.Context, GeneratorMixin):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
-class Comprehension(IterableWrapper):
+class Comprehension(object):
     @staticmethod
     def from_atom(evaluator, atom):
         bracket = atom.children[0]
@@ -212,7 +221,7 @@ class Comprehension(IterableWrapper):
                     yield result
             except IndexError:
                 iterated = evaluator.eval_element(self._eval_node())
-                if self.type == 'dict':
+                if self.array_type == 'dict':
                     yield iterated, evaluator.eval_element(self._eval_node(2))
                 else:
                     yield iterated
@@ -239,7 +248,7 @@ class ArrayMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.
         # `array.type` is a string with the type, e.g. 'list'.
-        scope = compiled.builtin_from_name(self.evaluator, self.type)
+        scope = compiled.builtin_from_name(self.evaluator, self.array_type)
         # builtins only have one class -> [0]
         scopes = self.evaluator.execute_evaluated(scope, self)
         names_dicts = list(scopes)[0].names_dicts(search_global)
@@ -248,6 +257,7 @@ class ArrayMixin(object):
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         # `array.type` is a string with the type, e.g. 'list'.
         compiled_obj = compiled.builtin_from_name(self.evaluator, self.array_type)
+        yield SpecialMethodFilter(self, self.builtin_methods, compiled_obj)
         for typ in compiled_obj.execute_evaluated(self):
             for filter in typ.get_filters():
                 yield filter
@@ -258,7 +268,7 @@ class ArrayMixin(object):
         return None  # We don't know the length, because of appends.
 
     def py__class__(self):
-        return compiled.builtin_from_name(self.evaluator, self.type)
+        return compiled.builtin_from_name(self.evaluator, self.array_type)
 
     @safe_property
     def parent(self):
@@ -267,12 +277,14 @@ class ArrayMixin(object):
     def dict_values(self):
         return unite(self._defining_context.eval_node(v) for k, v in self._items())
 
-    @register_builtin_method('values', type='dict')
+
+class DICT(object):
+    @register_builtin_method('values')
     def _imitate_values(self):
         items = self.dict_values()
         return create_evaluated_sequence_set(self.evaluator, items, sequence_type='list')
 
-    @register_builtin_method('items', type='dict')
+    @register_builtin_method('items')
     def _imitate_items(self):
         items = [set([FakeSequence(self.evaluator, (k, v), 'tuple')])
                  for k, v in self._items()]
@@ -322,7 +334,7 @@ class DictComprehension(Comprehension, ArrayMixin):
     def dict_values(self):
         return unite(values for keys, values in self._iterate())
 
-    @register_builtin_method('items', type='dict')
+    @register_builtin_method('items')
     def _imitate_items(self):
         items = set(FakeSequence(self.evaluator,
                     (AlreadyEvaluated(keys), AlreadyEvaluated(values)), 'tuple')
@@ -397,7 +409,7 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
 
     def _values(self):
         """Returns a list of a list of node."""
-        if self.type == 'dict':
+        if self.array_type == 'dict':
             return unite(v for k, v in self._items())
         else:
             return self._items()
@@ -810,7 +822,7 @@ def check_array_instances(evaluator, instance):
     return param.Arguments(evaluator, instance, [AlreadyEvaluated([ai])])
 
 
-class _ArrayInstance(IterableWrapper):
+class _ArrayInstance(object):
     """
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)

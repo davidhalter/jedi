@@ -199,14 +199,17 @@ class DictFilter(AbstractFilter):
 
     def get(self, name):
         try:
-            leaf_name = self._dct[str(name)]
+            value = self._convert(name, self._dct[str(name)])
         except KeyError:
             return []
 
-        return list(self._filter([leaf_name]))
+        return list(self._filter([value]))
 
     def values(self):
-        return self._filter(self._dct.values())
+        return self._filter(self._convert(*item) for item in self._dct.items())
+
+    def _convert(self, name, value):
+        return value
 
 
 def get_global_filters(evaluator, context, until_position, origin_scope):

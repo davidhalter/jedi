@@ -674,9 +674,9 @@ class FunctionExecutionContext(Executed):
 
     @recursion.execution_recursion_decorator
     def get_yield_values(self):
-        yields = self.funcdef.yields
-        stopAt = tree.ForStmt, tree.WhileStmt, tree.IfStmt
-        for_parents = [(x, x.get_parent_until((stopAt))) for x in yields]
+        for_parents = [(y, tree.search_ancestor(y, ('for_stmt', 'funcdef',
+                                                    'while_stmt', 'if_stmt')))
+                       for y in self.funcdef.yields]
 
         # Calculate if the yields are placed within the same for loop.
         yields_order = []
@@ -687,13 +687,13 @@ class FunctionExecutionContext(Executed):
             parent = for_stmt.parent
             if parent.type == 'suite':
                 parent = parent.parent
-            if for_stmt.type == 'for_stmt' and parent == self \
+            if for_stmt.type == 'for_stmt' and parent == self.func_def \
                     and for_stmt.defines_one_name():  # Simplicity for now.
                 if for_stmt == last_for_stmt:
                     yields_order[-1][1].append(yield_)
                 else:
                     yields_order.append((for_stmt, [yield_]))
-            elif for_stmt == self:
+            elif for_stmt == self.funcdef:
                 yields_order.append((None, [yield_]))
             else:
                 yield self.get_return_values(check_yields=True)

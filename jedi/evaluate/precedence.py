@@ -31,7 +31,7 @@ def literals_to_types(evaluator, result):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
             cls = builtin_from_name(evaluator, typ.name.string_name)
-            new_result |= evaluator.execute(cls)
+            new_result |= cls.execute_evaluated([])
         else:
             new_result.add(typ)
     return new_result
