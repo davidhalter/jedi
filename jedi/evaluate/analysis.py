@@ -78,6 +78,7 @@ class Warning(Error):
 
 
 def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
+    return
     from jedi.evaluate.iterable import MergedNodes
     while isinstance(jedi_obj, MergedNodes):
         if len(jedi_obj) != 1:

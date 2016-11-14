@@ -649,8 +649,7 @@ def py__getitem__(evaluator, context, types, trailer):
     # https://github.com/davidhalter/jedi/issues/663
     for typ in list(types):
         if isinstance(typ, ClassContext):
-            typing_module_types = \
-                pep0484.get_types_for_typing_module(evaluator, typ, node)
+            typing_module_types = pep0484.py__getitem__(context, typ, node)
             if typing_module_types is not None:
                 types.remove(typ)
                 result |= typing_module_types

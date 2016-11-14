@@ -343,11 +343,11 @@ def _name_to_types(evaluator, context, name, scope):
     types = []
     node = name.get_definition()
     if node.isinstance(tree.ForStmt):
-        types = pep0484.find_type_from_comment_hint_for(evaluator, node, name)
+        types = pep0484.find_type_from_comment_hint_for(context, node, name)
         if types:
             return types
     if node.isinstance(tree.WithStmt):
-        types = pep0484.find_type_from_comment_hint_with(evaluator, node, name)
+        types = pep0484.find_type_from_comment_hint_with(context, node, name)
         if types:
             return types
     if node.type in ('for_stmt', 'comp_for'):
@@ -449,7 +449,7 @@ def _remove_statements(evaluator, context, stmt, name):
         stmt = stmt.var
 
     pep0484types = \
-        pep0484.find_type_from_comment_hint_assign(evaluator, stmt, name)
+        pep0484.find_type_from_comment_hint_assign(context, stmt, name)
     if pep0484types:
         return pep0484types
     types |= context.eval_stmt(stmt, seek_name=name)

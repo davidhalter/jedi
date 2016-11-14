@@ -24,36 +24,36 @@ import itertools
 import os
 from jedi.parser import \
     Parser, load_grammar, ParseError, ParserWithRecovery, tree
-from jedi.evaluate.cache import memoize_default
 from jedi.common import unite
+from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import compiled
+from jedi.evaluate.context import LazyTreeContext
 from jedi import debug
 from jedi import _compatibility
 import re
 
 
-def _evaluate_for_annotation(evaluator, annotation, index=None):
+def _evaluate_for_annotation(context, annotation, index=None):
     """
     Evaluates a string-node, looking for an annotation
     If index is not None, the annotation is expected to be a tuple
     and we're interested in that index
     """
     if annotation is not None:
-        definitions = evaluator.eval_element(
-            _fix_forward_reference(evaluator, annotation))
+        definitions = context.eval_node(
+            _fix_forward_reference(context, annotation))
         if index is not None:
             definitions = list(itertools.chain.from_iterable(
                 definition.py__getitem__(index) for definition in definitions
                 if definition.type == 'tuple' and
                 len(list(definition.py__iter__())) >= index))
-        return list(itertools.chain.from_iterable(
-            evaluator.execute(d) for d in definitions))
+        return unite(d.execute_evaluated() for d in definitions)
     else:
-        return []
+        return set()
 
 
-def _fix_forward_reference(evaluator, node):
-    evaled_nodes = evaluator.eval_element(node)
+def _fix_forward_reference(context, node):
+    evaled_nodes = context.eval_node(node)
     if len(evaled_nodes) != 1:
         debug.warning("Eval'ed typing index %s should lead to 1 object, "
                       " not %s" % (node, evaled_nodes))
@@ -80,7 +80,7 @@ def _fix_forward_reference(evaluator, node):
 @memoize_default(None, evaluator_is_first_arg=True)
 def follow_param(evaluator, param):
     annotation = param.annotation()
-    return _evaluate_for_annotation(evaluator, annotation)
+    return _evaluate_for_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):
@@ -97,9 +97,9 @@ def py__annotations__(funcdef):
 
 
 @memoize_default(None, evaluator_is_first_arg=True)
-def find_return_types(evaluator, func):
+def find_return_types(context, func):
     annotation = py__annotations__(func).get("return", None)
-    return _evaluate_for_annotation(evaluator, annotation)
+    return _evaluate_for_annotation(context, annotation)
 
 
 _typing_module = None
@@ -121,9 +121,8 @@ def _get_typing_replacement_module():
     return _typing_module
 
 
-def get_types_for_typing_module(evaluator, typ, node):
-    from jedi.evaluate.iterable import FakeSequence
-    if not typ.base.get_parent_until().name.value == "typing":
+def py__getitem__(context, typ, node):
+    if not typ.get_root_context().name.string_name == "typing":
         return None
     # we assume that any class using [] in a module called
     # "typing" with a name for which we have a replacement
@@ -136,51 +135,56 @@ def get_types_for_typing_module(evaluator, typ, node):
         nodes = [node]
     del node
 
-    nodes = [_fix_forward_reference(evaluator, node) for node in nodes]
+    nodes = [_fix_forward_reference(context, node) for node in nodes]
+    type_name = typ.name.string_name
 
     # hacked in Union and Optional, since it's hard to do nicely in parsed code
-    if typ.name.value == "Union":
-        return unite(evaluator.eval_element(node) for node in nodes)
-    if typ.name.value == "Optional":
-        return evaluator.eval_element(nodes[0])
+    if type_name == "Union":
+        return unite(context.eval_node(node) for node in nodes)
+    if type_name == "Optional":
+        return context.eval_node(nodes[0])
 
-    typing = _get_typing_replacement_module()
-    factories = evaluator.find_types(typing, "factory")
+    from jedi.evaluate.representation import ModuleContext
+    typing = ModuleContext(context.evaluator, _get_typing_replacement_module())
+    factories = typing.py__getattribute__("factory")
     assert len(factories) == 1
     factory = list(factories)[0]
     assert factory
-    function_body_nodes = factory.children[4].children
+    function_body_nodes = factory.funcdef.children[4].children
     valid_classnames = set(child.name.value
                            for child in function_body_nodes
                            if isinstance(child, tree.Class))
-    if typ.name.value not in valid_classnames:
+    if type_name not in valid_classnames:
         return None
-    compiled_classname = compiled.create(evaluator, typ.name.value)
+    compiled_classname = compiled.create(context.evaluator, type_name)
 
-    args = FakeSequence(evaluator, nodes, "tuple")
+    from jedi.evaluate.iterable import FakeSequence
+    args = FakeSequence(
+        context.evaluator,
+        "tuple",
+        [LazyTreeContext(context, n) for n in nodes]
+    )
 
-    result = evaluator.execute_evaluated(factory, compiled_classname, args)
+    result = factory.execute_evaluated(compiled_classname, args)
     return result
 
 
-def find_type_from_comment_hint_for(evaluator, node, name):
-    return \
-        _find_type_from_comment_hint(evaluator, node, node.children[1], name)
+def find_type_from_comment_hint_for(context, node, name):
+    return _find_type_from_comment_hint(context, node, node.children[1], name)
 
 
-def find_type_from_comment_hint_with(evaluator, node, name):
+def find_type_from_comment_hint_with(context, node, name):
     assert len(node.children[1].children) == 3, \
         "Can only be here when children[1] is 'foo() as f'"
-    return _find_type_from_comment_hint(
-        evaluator, node, node.children[1].children[2], name)
+    varlist = node.children[1].children[2]
+    return _find_type_from_comment_hint(context, node, varlist, name)
 
 
-def find_type_from_comment_hint_assign(evaluator, node, name):
-    return \
-        _find_type_from_comment_hint(evaluator, node, node.children[0], name)
+def find_type_from_comment_hint_assign(context, node, name):
+    return _find_type_from_comment_hint(context, node, node.children[0], name)
 
 
-def _find_type_from_comment_hint(evaluator, node, varlist, name):
+def _find_type_from_comment_hint(context, node, varlist, name):
     index = None
     if varlist.type in ("testlist_star_expr", "exprlist"):
         # something like "a, b = 1, 2"
@@ -204,4 +208,4 @@ def _find_type_from_comment_hint(evaluator, node, varlist, name):
         repr(str(match.group(1).strip())),
         node.start_pos)
     annotation.parent = node.parent
-    return _evaluate_for_annotation(evaluator, annotation, index)
+    return _evaluate_for_annotation(context, annotation, index)
