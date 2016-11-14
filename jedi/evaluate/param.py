@@ -8,6 +8,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import context
 from jedi.evaluate import docstrings
+from jedi.evaluate import pep0484
 
 
 def try_iter_content(types, depth=0):
@@ -184,7 +185,7 @@ class ExecutedParam(object):
         self.string_name = self._original_param.name.value
 
     def infer(self):
-        pep0484_hints = set()#pep0484.follow_param(evaluator, param)
+        pep0484_hints = pep0484.follow_param(self._root_context, self._original_param)
         doc_params = docstrings.follow_param(self._root_context, self._original_param)
         if pep0484_hints or doc_params:
             return list(set(pep0484_hints) | set(doc_params))

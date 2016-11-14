@@ -324,6 +324,31 @@ class SelfNameFilter(InstanceClassFilter):
                     yield name
 
 
+class ParamArguments(object):
+    """
+    TODO This seems like a strange class, clean up?
+    """
+    class LazyParamContext(object):
+        def __init__(self, fucking_param):
+            self._param = fucking_param
+
+        def infer(self):
+            return self._param.infer()
+
+    def __init__(self, class_context, funcdef):
+        self._class_context = class_context
+        self._funcdef = funcdef
+
+    def unpack(self, func=None):
+        params = search_params(
+            self._class_context.evaluator,
+            self._class_context,
+            self._funcdef
+        )
+        for p in params:
+            yield None, self.LazyParamContext(p)
+
+
 class InstanceVarArgs(object):
     def __init__(self, instance, funcdef, var_args):
         self._instance = instance
@@ -334,11 +359,8 @@ class InstanceVarArgs(object):
     def _get_var_args(self):
         if self._var_args is None:
             # TODO this parent_context might be wrong. test?!
-            return search_params(
-                self._instance.evaluator,
-                self._instance.class_context,
-                self._funcdef
-            )
+            return ParamArguments(self._instance.class_context, self._funcdef)
+
         return self._var_args
 
     def unpack(self, func=None):

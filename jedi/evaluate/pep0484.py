@@ -77,8 +77,8 @@ def _fix_forward_reference(context, node):
         return node
 
 
-@memoize_default(None, evaluator_is_first_arg=True)
-def follow_param(evaluator, param):
+@memoize_default()
+def follow_param(context, param):
     annotation = param.annotation()
     return _evaluate_for_annotation(context, annotation)
 
@@ -96,7 +96,7 @@ def py__annotations__(funcdef):
     return dct
 
 
-@memoize_default(None, evaluator_is_first_arg=True)
+@memoize_default()
 def find_return_types(context, func):
     annotation = py__annotations__(func).get("return", None)
     return _evaluate_for_annotation(context, annotation)
