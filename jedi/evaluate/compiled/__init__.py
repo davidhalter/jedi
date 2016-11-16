@@ -364,7 +364,7 @@ class CompiledObjectFilter(AbstractFilter):
             # lookups possible without having the actual attribute. However
             # this makes proper completion possible.
             return [FakeName(name, create(self._evaluator, None), is_definition=True)]
-        return [self.name_class(self._evaluator, self._compiled_obj, name)]
+        return [self._create(name)]
 
     def values(self):
         obj = self._compiled_obj.obj
@@ -379,6 +379,9 @@ class CompiledObjectFilter(AbstractFilter):
             for filter in create(self._evaluator, type).get_filters():
                 names += filter.values()
         return names
+
+    def _create(self, name):
+        return self.name_class(self._evaluator, self._compiled_obj, name)
 
 
 def dotted_from_fs_path(fs_path, sys_path):

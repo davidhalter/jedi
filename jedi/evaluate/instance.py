@@ -142,24 +142,10 @@ class AbstractInstanceContext(Context):
     def name(self):
         pass
 
-    def __repr__(self):
-        return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_context,
-                                   self.var_args)
-
-
-class CompiledInstance(AbstractInstanceContext):
-    @property
-    def name(self):
-        return compiled.CompiledContextName(self, self.class_context.name.string_name)
-
-
-class TreeInstance(AbstractInstanceContext):
-    @property
-    def name(self):
-        return filters.ContextName(self, self.class_context.name.tree_name)
-
     @memoize_default()
     def create_instance_context(self, class_context, node):
+        if node.parent.type in ('funcdef', 'classdef'):
+            node = node.parent
         scope = node.get_parent_scope()
         if scope == class_context.classdef:
             return class_context
@@ -183,6 +169,28 @@ class TreeInstance(AbstractInstanceContext):
                 raise NotImplementedError
         return class_context
 
+    def __repr__(self):
+        return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_context,
+                                   self.var_args)
+
+
+class CompiledInstance(AbstractInstanceContext):
+    @property
+    def name(self):
+        return compiled.CompiledContextName(self, self.class_context.name.string_name)
+
+    def create_instance_context(self, class_context, node):
+        if node.get_parent_scope().type == 'classdef':
+            return class_context
+        else:
+            return super(CompiledInstance, self).create_instance_context(class_context, node)
+
+
+class TreeInstance(AbstractInstanceContext):
+    @property
+    def name(self):
+        return filters.ContextName(self, self.class_context.name.tree_name)
+
 
 class AnonymousInstance(TreeInstance):
     def __init__(self, evaluator, parent_context, class_context):
@@ -194,7 +202,22 @@ class AnonymousInstance(TreeInstance):
         )
 
 
+class CompiledInstanceName(compiled.CompiledName):
+    def __init__(self, evaluator, instance, parent_context, name):
+        super(CompiledInstanceName, self).__init__(evaluator, parent_context, name)
+        self._instance = instance
+
+    def infer(self):
+        for v in super(CompiledInstanceName, self).infer():
+            if isinstance(v, er.FunctionContext):
+                yield BoundMethod(self._instance, self.parent_context, v)
+            else:
+                yield v
+
+
 class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
+    name_class = CompiledInstanceName
+
     def __init__(self, evaluator, instance, compiled_object):
         super(CompiledInstanceClassFilter, self).__init__(
             evaluator,
@@ -203,10 +226,8 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
         )
         self._instance = instance
 
-    def _filter(self, names):
-        names = super(CompiledInstanceClassFilter, self)._filter(names)
-        return [get_instance_el(self._evaluator, self._instance, name, True)
-                for name in names]
+    def _create(self, name):
+        return self.name_class(self._evaluator, self._instance, self._compiled_obj, name)
 
 
 class BoundMethod(Context):
@@ -236,6 +257,20 @@ class InstanceNameDefinition(filters.TreeNameDefinition):
         contexts = super(InstanceNameDefinition, self).infer()
         for context in contexts:
             yield context
+
+
+class LazyInstanceName(filters.TreeNameDefinition):
+    """
+    This name calculates the parent_context lazily.
+    """
+    def __init__(self, instance, class_context, tree_name):
+        self._instance = instance
+        self._class_context = class_context
+        self.tree_name = tree_name
+
+    @property
+    def parent_context(self):
+        return self._instance.create_instance_context(self._class_context, self.tree_name)
 
 
 class LazyInstanceName(filters.TreeNameDefinition):
@@ -289,9 +324,6 @@ class InstanceClassFilter(filters.ParserTreeFilter):
         names = super(InstanceClassFilter, self)._filter(names)
         return [name for name in names if self._access_possible(name)]
 
-    def _check_flows(self, names):
-        return names
-
     def _convert_names(self, names):
         return [self.name_class(self.context, self._class_context, name) for name in names]
 
@@ -303,9 +335,10 @@ class SelfNameFilter(InstanceClassFilter):
         names = self._filter_self_names(names)
         if isinstance(self._parser_scope, compiled.CompiledObject):
             # This would be for builtin skeletons, which are not yet supported.
-            return []
-        start, end = self._parser_scope.start_pos, self._parser_scope.end_pos
-        return [n for n in names if start < n.start_pos < end]
+            return list(names)
+        else:
+            start, end = self._parser_scope.start_pos, self._parser_scope.end_pos
+            return [n for n in names if start < n.start_pos < end]
 
     def _filter_self_names(self, names):
         for name in names:
@@ -322,6 +355,9 @@ class SelfNameFilter(InstanceClassFilter):
                             init_execution.start_pos < name.start_pos < init_execution.end_pos:
                         name = init_execution.name_for_position(name.start_pos)
                     yield name
+
+    def _check_flows(self, names):
+        return names
 
 
 class ParamArguments(object):

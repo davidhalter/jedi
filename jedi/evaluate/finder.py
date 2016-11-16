@@ -22,6 +22,7 @@ from jedi import debug
 from jedi.common import unite
 from jedi import settings
 from jedi.evaluate import representation as er
+from jedi.evaluate.instance import AbstractInstanceContext
 from jedi.evaluate import dynamic
 from jedi.evaluate import compiled
 from jedi.evaluate import docstrings
@@ -32,9 +33,8 @@ from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
-from jedi.evaluate.instance import AbstractInstanceContext
 from jedi.evaluate.cache import memoize_default
-from jedi.evaluate.filters import get_global_filters
+from jedi.evaluate.filters import get_global_filters, ContextName
 
 
 def filter_after_position(names, position, origin=None):
@@ -321,7 +321,8 @@ class NameFinder(object):
 
         for name in names:
             new_types = name.infer()
-            if isinstance(self.context, (er.ClassContext, er.Instance)) and attribute_lookup:
+            if isinstance(self.context, (er.ClassContext, AbstractInstanceContext)) \
+                    and attribute_lookup:
                 types |= set(self._resolve_descriptors(name, new_types))
             else:
                 types |= set(new_types)
@@ -334,6 +335,10 @@ class NameFinder(object):
         return types
 
     def _resolve_descriptors(self, name, types):
+        if not isinstance(name, ContextName):
+            # Compiled names and other stuff should just be ignored when it
+            # comes to descriptors.
+            return types
         # The name must not be in the dictionary, but part of the class
         # definition. __get__ is only called if the descriptor is defined in
         # the class dictionary.
@@ -353,7 +358,7 @@ class NameFinder(object):
 
 
 @memoize_default(set(), evaluator_is_first_arg=True)
-def _name_to_types(evaluator, context, name, scope):
+def _name_to_types(evaluator, context, name):
     types = []
     node = name.get_definition()
     if node.isinstance(tree.ForStmt):
@@ -370,7 +375,7 @@ def _name_to_types(evaluator, context, name, scope):
         types = check_tuple_assignments(evaluator, for_types, name)
     elif isinstance(node, tree.Param):
         return set()  # TODO remove
-        types = _eval_param(evaluator, context, node, scope)
+        types = _eval_param(evaluator, context, node)
     elif node.isinstance(tree.ExprStmt):
         types = _remove_statements(evaluator, context, node, name)
     elif node.isinstance(tree.WithStmt):
@@ -423,10 +428,10 @@ def _apply_decorators(evaluator, context, node):
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values)
         dec_values = context.eval_node(dec.children[1])
-        trailer = dec.children[2:-1]
-        if trailer:
+        trailer_nodes = dec.children[2:-1]
+        if trailer_nodes:
             # Create a trailer and evaluate it.
-            trailer = tree.Node('trailer', trailer)
+            trailer = tree.Node('trailer', trailer_nodes)
             trailer.parent = dec
             dec_values = evaluator.eval_trailer(context, dec_values, trailer)
 

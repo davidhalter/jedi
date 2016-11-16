@@ -59,7 +59,7 @@ class TreeNameDefinition(ContextName):
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.evaluate.finder import _name_to_types
-        return _name_to_types(self.parent_context.evaluator, self.parent_context, self.tree_name, None)
+        return _name_to_types(self.parent_context.evaluator, self.parent_context, self.tree_name)
 
 
 class ParamName(ContextName):
