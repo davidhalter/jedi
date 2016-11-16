@@ -365,7 +365,7 @@ class Evaluator(object):
                         pass
 
                 if comp_for.type == 'comp_for':
-                    return set([iterable.Comprehension.from_atom(self, atom)])
+                    return set([iterable.Comprehension.from_atom(self, context, atom)])
             return set([iterable.ArrayLiteralContext(self, context, atom)])
 
     def eval_trailer(self, context, types, trailer):

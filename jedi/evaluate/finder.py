@@ -130,7 +130,6 @@ class NameFinder(object):
                     analysis.add(self._evaluator, 'name-error', self.name_str,
                                  message)
 
-        debug.dbg('finder._names_to_types: %s -> %s', names, types)
         return types
 
     def get_filters(self, search_global=False):
@@ -245,9 +244,23 @@ class NameFinder(object):
         """
         names = []
         for filter in filters:
-            names = filter.get(self.name_str)
-            if names:
-                break
+            if self._evaluator.predefined_if_name_dict_dict:
+                node = self.name_str
+                while node is not None and not isinstance(node, tree.IsScope):
+                    node = node.parent
+                    if node.type in ("if_stmt", "for_stmt", "comp_for"):
+                        try:
+                            name_dict = self._evaluator.predefined_if_name_dict_dict[node]
+                            types = set(name_dict[str(self.name_str)])
+                        except KeyError:
+                            continue
+                        else:
+                            self._found_predefined_if_name = types
+                            return []
+            else:
+                names = filter.get(self.name_str)
+                if names:
+                    break
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
                   self.context, names, self.position)
         return list(self._clean_names(names))
@@ -313,6 +326,7 @@ class NameFinder(object):
             else:
                 types |= set(new_types)
 
+        debug.dbg('finder._names_to_types: %s -> %s', names, types)
         if not names and isinstance(self.context, AbstractInstanceContext):
             # handling __getattr__ / __getattribute__
             return self._check_getattr(self.context)

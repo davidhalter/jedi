@@ -276,7 +276,7 @@ class InstanceClassFilter(filters.ParserTreeFilter):
     def _equals_origin_scope(self):
         node = self._origin_scope
         while node is not None:
-            if node == self._parser_scope or node == self._context:
+            if node == self._parser_scope or node == self.context:
                 return True
             node = node.get_parent_scope()
         return False
@@ -293,7 +293,7 @@ class InstanceClassFilter(filters.ParserTreeFilter):
         return names
 
     def _convert_names(self, names):
-        return [self.name_class(self._context, self._class_context, name) for name in names]
+        return [self.name_class(self.context, self._class_context, name) for name in names]
 
 
 class SelfNameFilter(InstanceClassFilter):
@@ -316,7 +316,7 @@ class SelfNameFilter(InstanceClassFilter):
                 if name.is_definition() and self._access_possible(name):
                     yield name
                     continue
-                    init_execution = self._context.get_init_function()
+                    init_execution = self.context.get_init_function()
                     # Hopefully we can somehow change this.
                     if init_execution is not None and \
                             init_execution.start_pos < name.start_pos < init_execution.end_pos:

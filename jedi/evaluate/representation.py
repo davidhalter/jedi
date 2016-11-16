@@ -687,7 +687,7 @@ class FunctionExecutionContext(Executed):
             parent = for_stmt.parent
             if parent.type == 'suite':
                 parent = parent.parent
-            if for_stmt.type == 'for_stmt' and parent == self.func_def \
+            if for_stmt.type == 'for_stmt' and parent == self.funcdef \
                     and for_stmt.defines_one_name():  # Simplicity for now.
                 if for_stmt == last_for_stmt:
                     yields_order[-1][1].append(yield_)
@@ -709,7 +709,7 @@ class FunctionExecutionContext(Executed):
                         yield result
             else:
                 input_node = for_stmt.get_input_node()
-                for_types = evaluator.eval_element(input_node)
+                for_types = self.eval_node(input_node)
                 ordered = iterable.py__iter__(evaluator, for_types, input_node)
                 for index_types in ordered:
                     dct = {str(for_stmt.children[1]): index_types}

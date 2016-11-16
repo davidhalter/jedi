@@ -43,11 +43,6 @@ class Context(object):
     def eval_stmt(self, stmt, seek_name=None):
         return self.evaluator.eval_statement(self, stmt, seek_name)
 
-    def py__getattribute__(self, name_str, position=None,
-                           search_global=False, is_goto=False):
-        return self.evaluator.find_types(self, name_str, position,
-                                         search_global, is_goto)
-
 
 class TreeContext(Context):
     pass

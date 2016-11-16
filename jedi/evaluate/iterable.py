@@ -37,6 +37,9 @@ from jedi.evaluate import precedence
 
 
 class AbstractSequence(context.Context):
+    def __init__(self, evaluator):
+        super(AbstractSequence, self).__init__(evaluator, evaluator.BUILTINS)
+
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         raise NotImplementedError
 
@@ -117,7 +120,7 @@ def register_builtin_method(method_name, python_version_match=None):
 
 @has_builtin_methods
 class GeneratorMixin(object):
-    type = None
+    array_type = None
 
     @register_builtin_method('send')
     @register_builtin_method('next', python_version_match=2)
@@ -145,7 +148,7 @@ class GeneratorMixin(object):
         return gen_obj.py__class__()
 
 
-class Generator(context.Context, GeneratorMixin):
+class Generator(GeneratorMixin, context.Context):
     """Handling of `yield` functions."""
 
     def __init__(self, evaluator, func_execution_context):
@@ -159,9 +162,9 @@ class Generator(context.Context, GeneratorMixin):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
-class Comprehension(object):
+class Comprehension(AbstractSequence):
     @staticmethod
-    def from_atom(evaluator, atom):
+    def from_atom(evaluator, context, atom):
         bracket = atom.children[0]
         if bracket == '{':
             if atom.children[1].children[1] == ':':
@@ -172,10 +175,11 @@ class Comprehension(object):
             cls = GeneratorComprehension
         elif bracket == '[':
             cls = ListComprehension
-        return cls(evaluator, atom)
+        return cls(evaluator, context, atom)
 
-    def __init__(self, evaluator, atom):
-        self.evaluator = evaluator
+    def __init__(self, evaluator, defining_context, atom):
+        super(Comprehension, self).__init__(evaluator)
+        self._defining_context = defining_context
         self._atom = atom
 
     def _get_comprehension(self):
@@ -209,20 +213,21 @@ class Comprehension(object):
         evaluator = self.evaluator
         comp_for = comp_fors[0]
         input_node = comp_for.children[3]
-        input_types = evaluator.eval_element(input_node)
+        input_types = self._defining_context.eval_node(input_node)
 
         iterated = py__iter__(evaluator, input_types, input_node)
         exprlist = comp_for.children[1]
-        for i, types in enumerate(iterated):
+        for i, lazy_context in enumerate(iterated):
+            types = lazy_context.infer()
             evaluator.predefined_if_name_dict_dict[comp_for] = \
                 unpack_tuple_to_dict(evaluator, types, exprlist)
             try:
                 for result in self._nested(comp_fors[1:]):
                     yield result
             except IndexError:
-                iterated = evaluator.eval_element(self._eval_node())
+                iterated = self._defining_context.eval_node(self._eval_node())
                 if self.array_type == 'dict':
-                    yield iterated, evaluator.eval_element(self._eval_node(2))
+                    yield iterated, self._defining_context.eval_node(self._eval_node(2))
                 else:
                     yield iterated
             finally:
@@ -236,8 +241,8 @@ class Comprehension(object):
             yield result
 
     def py__iter__(self):
-        raise NotImplementedError
-        return self._iterate()
+        for set_ in self._iterate():
+            yield context.LazyKnownContexts(set_)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._atom)
@@ -292,28 +297,24 @@ class DICT(object):
         return create_evaluated_sequence_set(self.evaluator, *items, sequence_type='list')
 
 
-class ListComprehension(Comprehension, ArrayMixin):
-    type = 'list'
+class ListComprehension(ArrayMixin, Comprehension):
+    array_type = 'list'
 
     def py__getitem__(self, index):
-        all_types = list(self.py__iter__())
-        result = all_types[index]
         if isinstance(index, slice):
-            return create_evaluated_sequence_set(
-                self.evaluator,
-                unite(result),
-                sequence_type='list'
-            )
-        return result
+            return set([self])
+
+        all_types = list(self.py__iter__())
+        return all_types[index].infer()
 
 
-class SetComprehension(Comprehension, ArrayMixin):
-    type = 'set'
+class SetComprehension(ArrayMixin, Comprehension):
+    array_type = 'set'
 
 
 @has_builtin_methods
-class DictComprehension(Comprehension, ArrayMixin):
-    type = 'dict'
+class DictComprehension(ArrayMixin, Comprehension):
+    array_type = 'dict'
 
     def _get_comp_for(self):
         return self._get_comprehension().children[3]
@@ -343,7 +344,7 @@ class DictComprehension(Comprehension, ArrayMixin):
         return create_evaluated_sequence_set(self.evaluator, items, sequence_type='list')
 
 
-class GeneratorComprehension(Comprehension, GeneratorMixin):
+class GeneratorComprehension(GeneratorMixin, Comprehension):
     pass
 
 
@@ -353,7 +354,7 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
                '{': 'dict'}
 
     def __init__(self, evaluator, defining_context, atom):
-        super(ArrayLiteralContext, self).__init__(evaluator, evaluator.BUILTINS)
+        super(ArrayLiteralContext, self).__init__(evaluator)
         self.atom = atom
         self._defining_context = defining_context
 
@@ -461,7 +462,6 @@ class _FakeArray(ArrayLiteralContext):
         self.array_type = type
         self.evaluator = evaluator
         self.atom = container
-        self.parent_context = evaluator.BUILTINS
 
 
 class ImplicitTuple(_FakeArray):
@@ -585,7 +585,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
         dct = {}
         parts = iter(exprlist.children[::2])
         n = 0
-        for iter_types in py__iter__(evaluator, types, exprlist):
+        for lazy_context in py__iter__(evaluator, types, exprlist):
             n += 1
             try:
                 part = next(parts)
@@ -593,7 +593,7 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
                 analysis.add(evaluator, 'value-error-too-many-values', part,
                              message="ValueError: too many values to unpack (expected %s)" % n)
             else:
-                dct.update(unpack_tuple_to_dict(evaluator, iter_types, part))
+                dct.update(unpack_tuple_to_dict(evaluator, lazy_context.infer(), part))
         has_parts = next(parts, None)
         if types and has_parts is not None:
             analysis.add(evaluator, 'value-error-too-few-values', has_parts,
@@ -685,6 +685,7 @@ def py__getitem__(evaluator, context, types, trailer):
                     result |= py__iter__types(evaluator, set([typ]))
                 except KeyError:
                     # Must be a dict. Lists don't raise KeyErrors.
+                    raise
                     result |= typ.dict_values()
     return result
 

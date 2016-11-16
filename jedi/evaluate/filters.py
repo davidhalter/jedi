@@ -114,7 +114,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
         super(AbstractUsedNamesFilter, self).__init__(origin_scope)
         self._parser_scope = parser_scope
         self._used_names = self._parser_scope.get_root_node().used_names
-        self._context = context
+        self.context = context
 
     def get(self, name):
         try:
@@ -125,7 +125,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
         return self._convert_names(self._filter(names))
 
     def _convert_names(self, names):
-        return [self.name_class(self._context, name) for name in names]
+        return [self.name_class(self.context, name) for name in names]
 
     def values(self):
         return self._convert_names(name for name_list in self._used_names.values()
@@ -140,14 +140,16 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
     def _filter(self, names):
         names = super(ParserTreeFilter, self)._filter(names)
         names = [n for n in names if n.is_definition() and n.parent.type != 'trailer']
-        names = [n for n in names if n.parent.get_parent_scope() == self._parser_scope]
+        names = [n for n in names
+                 if ((n.parent if n.parent.type in ('classdef', 'funcdef') else n)
+                        .get_parent_scope() == self._parser_scope)]
 
         return list(self._check_flows(names))
 
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
             check = flow_analysis.reachability_check(
-                self._context, self._parser_scope, name, self._origin_scope
+                self.context, self._parser_scope, name, self._origin_scope
             )
             if check is not flow_analysis.UNREACHABLE:
                 yield name
@@ -174,9 +176,9 @@ class FunctionExecutionFilter(ParserTreeFilter):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                yield self.param_name(self._context, name)
+                yield self.param_name(self.context, name)
             else:
-                yield TreeNameDefinition(self._context, name)
+                yield TreeNameDefinition(self.context, name)
 
 
 class AnonymousInstanceFunctionExecutionFilter(FunctionExecutionFilter):
