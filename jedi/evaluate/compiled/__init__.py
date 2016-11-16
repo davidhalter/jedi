@@ -65,7 +65,7 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__mro__(self):
-        return tuple(create(self.evaluator, cls) for cls in self.obj.__mro__)
+        return (self,) + tuple(create(self.evaluator, cls) for cls in self.obj.__mro__[1:])
 
     @CheckAttribute
     def py__bases__(self):

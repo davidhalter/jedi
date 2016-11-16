@@ -623,7 +623,7 @@ def py__iter__(evaluator, types, node=None):
         else:
             type_iters.append(iter_method())
 
-    for lazy_contexts in zip_longest(*type_iters, fillvalue=None):
+    for lazy_contexts in zip_longest(*type_iters):
         yield context.get_merged_lazy_context(
             [l for l in lazy_contexts if l is not None]
         )

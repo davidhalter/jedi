@@ -97,7 +97,7 @@ class AbstractInstanceContext(Context):
         if include_self_names:
             for cls in self.class_context.py__mro__():
                 if isinstance(cls, compiled.CompiledObject):
-                    yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
+                    yield CompiledSelfNameFilter(self.evaluator, self, cls, origin_scope)
                 else:
                     yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
 
@@ -273,20 +273,6 @@ class LazyInstanceName(filters.TreeNameDefinition):
         return self._instance.create_instance_context(self._class_context, self.tree_name)
 
 
-class LazyInstanceName(filters.TreeNameDefinition):
-    """
-    This name calculates the parent_context lazily.
-    """
-    def __init__(self, instance, class_context, tree_name):
-        self._instance = instance
-        self._class_context = class_context
-        self.tree_name = tree_name
-
-    @property
-    def parent_context(self):
-        return self._instance.create_instance_context(self._class_context, self.tree_name)
-
-
 class LazyInstanceClassName(LazyInstanceName):
     def infer(self):
         for v in super(LazyInstanceClassName, self).infer():
@@ -358,6 +344,14 @@ class SelfNameFilter(InstanceClassFilter):
 
     def _check_flows(self, names):
         return names
+
+
+class CompiledSelfNameFilter(SelfNameFilter):
+    """
+    This filter is a bit special and exists only because of `compiled/fake/*`.
+    """
+    def _access_possible(self, name):
+        return True
 
 
 class ParamArguments(object):
