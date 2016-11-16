@@ -458,10 +458,10 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
 
 class _FakeArray(ArrayLiteralContext):
     def __init__(self, evaluator, container, type):
-        # TODO is this class really needed?
+        super(ArrayLiteralContext, self).__init__(evaluator)
         self.array_type = type
-        self.evaluator = evaluator
         self.atom = container
+        # TODO is this class really needed?
 
 
 class ImplicitTuple(_FakeArray):
@@ -685,7 +685,6 @@ def py__getitem__(evaluator, context, types, trailer):
                     result |= py__iter__types(evaluator, set([typ]))
                 except KeyError:
                     # Must be a dict. Lists don't raise KeyErrors.
-                    raise
                     result |= typ.dict_values()
     return result
 
