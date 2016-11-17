@@ -66,6 +66,7 @@ from itertools import chain
 
 from jedi.parser import tree
 from jedi import debug
+from jedi.common import unite
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
@@ -77,7 +78,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import helpers
-from jedi.evaluate.context import Context
+from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.instance import AnonymousInstance, AnonymousInstanceFunctionExecution
 
 
@@ -461,36 +462,43 @@ class Evaluator(object):
                 param_names = []
                 for typ in types:
                     try:
-                        params = typ.params
+                        get_param_names = typ.get_param_names
                     except AttributeError:
                         pass
                     else:
-                        param_names += [param.name for param in params
-                                        if param.name.value == name.value]
+                        for param_name in get_param_names():
+                            if param_name.string_name == name.value:
+                                param_names.append(param_name)
                 return param_names
         elif isinstance(par, tree.ExprStmt) and name in par.get_defined_names():
             # Only take the parent, because if it's more complicated than just
             # a name it's something you can "goto" again.
-            return [name]
+            return [TreeNameDefinition(context, name)]
         elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
-            return [name]
+            return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
-            modules = imports.ImportWrapper(context, name).follow(is_goto=True)
-            return list(resolve_implicit_imports(modules))
+            module_names = imports.ImportWrapper(context, name).follow(is_goto=True)
+            return module_names
+            return list(resolve_implicit_imports(module_names))
         elif par.type == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
                 new_dotted.children[index - 1:] = []
-                types = self.eval_element(context, new_dotted)
+                values = self.eval_element(context, new_dotted)
+                return unite(
+                    self.find_types(value, name, is_goto=True) for value in values
+                )
                 return resolve_implicit_imports(iterable.unite(
                     self.find_types(typ, name, is_goto=True) for typ in types
                 ))
 
-        scope = name.get_parent_scope()
         if tree.is_node(par, 'trailer') and par.children[0] == '.':
             call = helpers.call_of_leaf(name, cut_own_trailer=True)
-            types = self.eval_element(context, call)
+            values = self.eval_element(context, call)
+            return unite(
+                self.find_types(value, name, is_goto=True) for value in values
+            )
             return resolve_implicit_imports(iterable.unite(
                 self.find_types(typ, name, is_goto=True) for typ in types
             ))
@@ -499,7 +507,7 @@ class Evaluator(object):
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
                 stmt = name
-            return self.find_types(scope, name, stmt.start_pos,
+            return self.find_types(context, name, stmt.start_pos,
                                    search_global=True, is_goto=True)
 
     def wrap(self, element, parent_context):

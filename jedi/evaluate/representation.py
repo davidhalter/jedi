@@ -54,7 +54,8 @@ from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
-    GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition
+    GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
+    ParamName, AnonymousInstanceParamName
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 
@@ -470,12 +471,10 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
     def py__class__(self):
         return compiled.create(self.evaluator, type)
 
-    @property
-    def params(self):
-        try:
-            return self.get_subscope_by_name('__init__').params
-        except KeyError:
-            return []  # object.__init__
+    def get_params(self):
+        from jedi.evaluate.instance import AnonymousInstance
+        anon = AnonymousInstance(self.evaluator, self.parent_context, self)
+        return [AnonymousInstanceParamName(anon, param.name) for param in self.funcdef.params]
 
     def names_dicts(self, search_global, is_instance=False):
         if search_global:
@@ -508,6 +507,13 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
                 if sub.name.value == name:
                     return sub
         raise KeyError("Couldn't find subscope.")
+
+    def get_function_slot_names(self, name):
+        for filter in self.get_filters(search_global=False):
+            names = filter.get(name)
+            if names:
+                return names
+        return []
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.classdef)
@@ -581,6 +587,14 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
     @property
     def name(self):
         return ContextName(self, self.funcdef.name)
+
+    def get_param_names(self):
+        anon = AnonymousFunctionExecution(
+            self.evaluator,
+            self.parent_context,
+            self.funcdef
+        )
+        return [ParamName(anon, param.name) for param in self.funcdef.params]
 
 
 class LambdaWrapper(FunctionContext):
@@ -747,6 +761,8 @@ class ModuleAttributeName(AbstractNameDefinition):
     """
     For module attributes like __file__, __str__ and so on.
     """
+    api_type = 'instance'
+
     def __init__(self, parent_module, string_name):
         self.parent_context = parent_module
         self.string_name = string_name
@@ -758,8 +774,9 @@ class ModuleAttributeName(AbstractNameDefinition):
 
 
 class SubModuleName(AbstractNameDefinition):
-    """
-    """
+    api_type = 'module'
+    start_pos = (1, 0)
+
     def __init__(self, parent_module, string_name):
         self.parent_context = parent_module
         self.string_name = string_name
@@ -774,6 +791,7 @@ class SubModuleName(AbstractNameDefinition):
 
 
 class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
+    api_type = 'module'
     parent_context = None
 
     def __init__(self, evaluator, module_node):

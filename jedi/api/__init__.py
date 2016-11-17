@@ -237,7 +237,8 @@ class Script(object):
         name = self._get_module_node().name_for_position(self._pos)
         if name is None:
             return []
-        return list(self._evaluator.goto(name))
+        context = self._evaluator.create_context(self._get_module(), name)
+        return list(self._evaluator.goto(context, name))
 
     def usages(self, additional_module_paths=()):
         """

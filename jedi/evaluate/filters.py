@@ -51,6 +51,10 @@ class ContextName(AbstractNameDefinition):
     def infer(self):
         return [self.parent_context]
 
+    @property
+    def api_type(self):
+        return self.parent_context.api_type
+
 
 class TreeNameDefinition(ContextName):
     def get_parent_flow_context(self):
@@ -61,8 +65,20 @@ class TreeNameDefinition(ContextName):
         from jedi.evaluate.finder import _name_to_types
         return _name_to_types(self.parent_context.evaluator, self.parent_context, self.tree_name)
 
+    @property
+    def api_type(self):
+        definition = self.tree_name.get_definition()
+        return dict(
+            import_name='import',
+            funcdef='function',
+            param='param',
+            classdef='class',
+        ).get(definition.type, 'statement')
+
 
 class ParamName(ContextName):
+    api_type = 'param'
+
     def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
         self.tree_name = tree_name

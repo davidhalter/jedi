@@ -144,7 +144,6 @@ class FakeName(tree.Name):
         In case is_definition is defined (not None), that bool value will be
         returned.
         """
-        raise NotImplementedError
         super(FakeName, self).__init__(name_str, start_pos)
         self.parent = parent
         self._is_definition = is_definition

@@ -76,7 +76,7 @@ class KeywordName(AbstractNameDefinition):
 
 
 class Keyword(object):
-    type = 'completion_keyword'
+    api_type = 'keyword'
 
     def __init__(self, evaluator, name, pos):
         self.name = KeywordName(evaluator, name)

@@ -44,7 +44,7 @@ class C(object):
         self.b
         #! 14 ['def b']
         self.b()
-        #! 11 ['self']
+        #! 11 ['param self']
         self.b
         return 1
 
@@ -99,7 +99,7 @@ ClassVar().x = ''
 
 # Recurring use of the same var name, github #315
 def f(t=None):
-    #! 9 ['t=None']
+    #! 9 ['param t=None']
     t = t or 1
 
 
@@ -180,9 +180,9 @@ class ClassDef():
 # -----------------
 
 param = ClassDef
-#! 8 ['param']
+#! 8 ['param param']
 def ab1(param): pass
-#! 9 ['param']
+#! 9 ['param param']
 def ab2(param): pass
 #! 11 ['param = ClassDef']
 def ab3(a=param): pass
@@ -211,7 +211,7 @@ for i in []:
 def dec(dec_param=3):
     pass
 
-#! 8 ['dec_param=3']
+#! 8 ['param dec_param=3']
 @dec(dec_param=5)
 def y():
     pass

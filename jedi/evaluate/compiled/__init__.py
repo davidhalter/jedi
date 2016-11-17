@@ -85,7 +85,8 @@ class CompiledObject(Context):
         return inspect.getdoc(self.obj) or ''
 
     @property
-    def params(self):
+    def get_params(self):
+        return []  # TODO Fix me.
         params_str, ret = self._parse_function_doc()
         tokens = params_str.split(',')
         if inspect.ismethoddescriptor(self.obj):
@@ -280,6 +281,9 @@ class CompiledName(AbstractNameDefinition):
             name = None
         return '<%s: (%s).%s>' % (self.__class__.__name__, name, self.string_name)
 
+    def api_type(self):
+        return self.infer()[0].api_type
+
     @underscore_memoization
     def infer(self):
         module = self.parent_context.get_root_context()
@@ -290,6 +294,10 @@ class CompiledContextName(AbstractNameDefinition):
     def __init__(self, parent_context, name):
         self.string_name = name
         self.parent_context = parent_context
+
+    @property
+    def api_type(self):
+        return self.parent_context.api_type
 
     def infer(self):
         return [self.parent_context]

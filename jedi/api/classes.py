@@ -145,10 +145,7 @@ class BaseDefinition(object):
         'function'
 
         """
-        try:
-            return self._name.parent_context.api_type
-        except AttributeError:
-            return ''
+        return self._name.api_type
 
     def _path(self):
         """The path to a module/class/function definition."""
@@ -418,7 +415,7 @@ class Completion(BaseDefinition):
         """
         Return the rest of the word, e.g. completing ``isinstance``::
 
-            isinstan# <-- Cursor is here
+            # <-- Cursor is here
 
         would return the string 'ce'. It also adds additional stuff, depending
         on your `settings.py`.
@@ -561,6 +558,36 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         'class C'
 
         """
+        typ = self.type
+        if typ in ('statement', 'param'):
+            definition = self._name.tree_name.get_definition()
+
+            try:
+                first_leaf = definition.first_leaf()
+            except AttributeError:
+                # `d` is already a Leaf (Name).
+                first_leaf = definition
+            # Remove the prefix, because that's not what we want for get_code
+            # here.
+            old, first_leaf.prefix = first_leaf.prefix, ''
+            try:
+                txt = definition.get_code()
+            finally:
+                first_leaf.prefix = old
+            # Delete comments:
+            txt = re.sub('#[^\n]+\n', ' ', txt)
+            # Delete multi spaces/newlines
+            txt = re.sub('\s+', ' ', txt).strip()
+            if typ == 'param':
+                txt = typ + ' ' + txt
+            return txt
+        if typ == 'function':
+            # For the description we want a short and a pythonic way.
+            typ = 'def'
+        return typ + ' ' + self._name.string_name
+
+        # TODO DELETE
+
         d = self._definition
 
         if isinstance(d, compiled.CompiledObject):
