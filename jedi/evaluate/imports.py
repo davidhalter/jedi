@@ -455,9 +455,12 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
         sys_path = evaluator.sys_path
 
     cached = load_parser(path)
-    module = load(source) if cached is None else cached.module
+    module_node = load(source) if cached is None else cached.module
+    if isinstance(module_node, compiled.CompiledObject):
+        return module_node
+
     from jedi.evaluate.representation import ModuleContext
-    return ModuleContext(evaluator, module)
+    return ModuleContext(evaluator, module_node)
 
 
 def add_module(evaluator, module_name, module):
@@ -469,18 +472,22 @@ def add_module(evaluator, module_name, module):
         evaluator.modules[module_name] = module
 
 
-def get_module_nodes_containing_name(evaluator, module_nodes, name):
+def get_modules_containing_name(evaluator, modules, name):
     """
     Search a name in the directories of modules.
     """
+    from jedi.evaluate import representation as er
+
     def check_python_file(path):
         try:
-            return parser_cache[path].parser.module
+            parser_cache_item = parser_cache[path]
         except KeyError:
             try:
                 return check_fs(path)
             except IOError:
                 return None
+        else:
+            return er.ModuleContext(evaluator, parser_cache_item.parser.module)
 
     def check_fs(path):
         with open(path, 'rb') as f:
@@ -492,27 +499,29 @@ def get_module_nodes_containing_name(evaluator, module_nodes, name):
                 return module
 
     # skip non python modules
-    module_nodes = set(m for m in module_nodes if not isinstance(m, compiled.CompiledObject))
-    mod_paths = set()
-    for m in module_nodes:
-        mod_paths.add(m.path)
+    used_mod_paths = set()
+    for m in modules:
+        used_mod_paths.add(m.py__file__())
         yield m
 
-    if settings.dynamic_params_for_other_modules:
-        paths = set(settings.additional_dynamic_modules)
-        for p in mod_paths:
-            if p is not None:
-                # We need abspath, because the seetings paths might not already
-                # have been converted to absolute paths.
-                d = os.path.dirname(os.path.abspath(p))
-                for entry in os.listdir(d):
-                    if entry not in mod_paths:
-                        if entry.endswith('.py'):
-                            paths.add(d + os.path.sep + entry)
+    if not settings.dynamic_params_for_other_modules:
+        return
 
-        for p in sorted(paths):
-            # make testing easier, sort it - same results on every interpreter
-            c = check_python_file(p)
-            if c is not None and c not in module_nodes and not isinstance(c, compiled.CompiledObject):
-                continue # TODO REENABLE
-                yield c.module_node
+    paths = set(settings.additional_dynamic_modules)
+    for p in used_mod_paths:
+        if p is not None:
+            # We need abspath, because the seetings paths might not already
+            # have been converted to absolute paths.
+            d = os.path.dirname(os.path.abspath(p))
+            for file_name in os.listdir(d):
+                path = os.path.join(d, file_name)
+                if path not in used_mod_paths and path not in paths:
+                    if file_name.endswith('.py'):
+                        paths.add(path)
+
+    # Sort here to make issues less random.
+    for p in sorted(paths):
+        # make testing easier, sort it - same results on every interpreter
+        m = check_python_file(p)
+        if m is not None and not isinstance(m, compiled.CompiledObject):
+            yield m

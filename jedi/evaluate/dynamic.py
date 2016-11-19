@@ -74,7 +74,12 @@ def search_params(evaluator, parent_context, funcdef):
     evaluator.dynamic_params_depth += 1
     try:
         debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
-        function_executions = _search_function_executions(evaluator, funcdef)
+        module_context = parent_context.get_root_context()
+        function_executions = _search_function_executions(
+            evaluator,
+            module_context,
+            funcdef
+        )
         if function_executions:
             zipped_params = zip(*(
                 function_execution.get_params()
@@ -92,15 +97,15 @@ def search_params(evaluator, parent_context, funcdef):
 
 @memoize_default([], evaluator_is_first_arg=True)
 @to_list
-def _search_function_executions(evaluator, funcdef):
+def _search_function_executions(evaluator, module_context, funcdef):
     """
     Returns a list of param names.
     """
     from jedi.evaluate import representation as er
 
-    def get_possible_nodes(module_node, func_name):
+    def get_possible_nodes(module_context, func_name):
             try:
-                names = module_node.used_names[func_name]
+                names = module_context.module_node.used_names[func_name]
             except KeyError:
                 return
 
@@ -110,7 +115,6 @@ def _search_function_executions(evaluator, funcdef):
                 if trailer.type == 'trailer' and bracket == '(':
                     yield name, trailer
 
-    current_module_node = funcdef.get_parent_until()
     func_name = unicode(funcdef.name)
     compare_node = funcdef
     if func_name == '__init__':
@@ -122,10 +126,9 @@ def _search_function_executions(evaluator, funcdef):
 
     found_executions = False
     i = 0
-    for module_node in imports.get_module_nodes_containing_name(
-            evaluator, [current_module_node], func_name):
-        module_context = er.ModuleContext(evaluator, module_node)
-        for name, trailer in get_possible_nodes(module_node, func_name):
+    for for_mod_context in imports.get_modules_containing_name(
+            evaluator, [module_context], func_name):
+        for name, trailer in get_possible_nodes(for_mod_context, func_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion

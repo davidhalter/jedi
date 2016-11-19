@@ -34,6 +34,7 @@ from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.helpers import get_module_names
 from jedi.evaluate.sys_path import get_venv_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
+from jedi.evaluate.filters import TreeNameDefinition
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -256,8 +257,8 @@ class Script(object):
         try:
             module_node = self._get_module_node()
             user_stmt = module_node.get_statement_for_position(self._pos)
-            definitions = self._goto()
-            if not definitions and isinstance(user_stmt, tree.Import):
+            definition_names = self._goto()
+            if not definition_names and isinstance(user_stmt, tree.Import):
                 # For not defined imports (goto doesn't find something, we take
                 # the name as a definition. This is enough, because every name
                 # points to it.
@@ -265,22 +266,23 @@ class Script(object):
                 if name is None:
                     # Must be syntax
                     return []
-                definitions = [name]
+                self._evaluator
+                definition_names = [TreeNameDefinition(self._get_module(), name)]
 
-            if not definitions:
+            if not definition_names:
                 # Without a definition for a name we cannot find references.
                 return []
 
-            if not isinstance(user_stmt, tree.Import):
+            if not isinstance(user_stmt, tree.Import) and False:
                 # import case is looked at with add_import_name option
-                definitions = usages.usages_add_import_modules(self._evaluator,
-                                                               definitions)
+                definition_names = usages.usages_add_import_modules(self._evaluator,
+                                                                    definition_names)
 
-            module = set([d.get_parent_until() for d in definitions])
-            module.add(module_node)
-            names = usages.usages(self._evaluator, definitions, module)
+            modules = set([d.get_root_context() for d in definition_names])
+            modules.add(self._get_module())
+            names = usages.usages(self._evaluator, definition_names, modules)
 
-            for d in set(definitions):
+            for d in set(definition_names):
                 names.append(classes.Definition(self._evaluator, d))
         finally:
             settings.dynamic_flow_information = temp

@@ -2,6 +2,7 @@ from jedi._compatibility import unicode
 from jedi.api import classes
 from jedi.parser import tree
 from jedi.evaluate import imports
+from jedi.evaluate.filters import TreeNameDefinition
 
 
 def usages(evaluator, definition_names, mods):
@@ -14,23 +15,20 @@ def usages(evaluator, definition_names, mods):
         """
         result = []
         for d in definitions:
-            module = d.get_parent_until()
+            module = d.get_root_context()
             result.append((module, d.start_pos))
         return result
 
-    search_name = unicode(list(definition_names)[0])
+    search_name = list(definition_names)[0].string_name
     compare_definitions = compare_array(definition_names)
-    mods |= set([d.get_parent_until() for d in definition_names])
+    mods = mods | set([d.get_root_context() for d in definition_names])
     definitions = []
     for m in imports.get_modules_containing_name(evaluator, mods, search_name):
-        try:
-            check_names = m.used_names[search_name]
-        except KeyError:
-            continue
-        for name in check_names:
-
-            result = evaluator.goto(name)
+        for name_node in m.module_node.used_names.get(search_name, []):
+            context = evaluator.create_context(m, name_node)
+            result = evaluator.goto(context, name_node)
             if [c for c in compare_array(result) if c in compare_definitions]:
+                name = TreeNameDefinition(context, name_node)
                 definitions.append(classes.Definition(evaluator, name))
                 # Previous definitions might be imports, so include them
                 # (because goto might return that import name).
@@ -42,6 +40,7 @@ def usages_add_import_modules(evaluator, definitions):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
+        print(d)
         imp_or_stmt = d.get_definition()
         if isinstance(imp_or_stmt, tree.Import):
             s = imports.ImportWrapper(context, d)
