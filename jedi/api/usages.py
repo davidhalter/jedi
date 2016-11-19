@@ -1,8 +1,8 @@
-from jedi._compatibility import unicode
 from jedi.api import classes
 from jedi.parser import tree
 from jedi.evaluate import imports
 from jedi.evaluate.filters import TreeNameDefinition
+from jedi.evaluate.representation import ModuleContext
 
 
 def usages(evaluator, definition_names, mods):
@@ -22,27 +22,31 @@ def usages(evaluator, definition_names, mods):
     search_name = list(definition_names)[0].string_name
     compare_definitions = compare_array(definition_names)
     mods = mods | set([d.get_root_context() for d in definition_names])
-    definitions = []
+    definition_names = set(definition_names)
     for m in imports.get_modules_containing_name(evaluator, mods, search_name):
-        for name_node in m.module_node.used_names.get(search_name, []):
-            context = evaluator.create_context(m, name_node)
-            result = evaluator.goto(context, name_node)
-            if [c for c in compare_array(result) if c in compare_definitions]:
-                name = TreeNameDefinition(context, name_node)
-                definitions.append(classes.Definition(evaluator, name))
-                # Previous definitions might be imports, so include them
-                # (because goto might return that import name).
-                compare_definitions += compare_array([name])
-    return definitions
+        if isinstance(m, ModuleContext):
+            for name_node in m.module_node.used_names.get(search_name, []):
+                context = evaluator.create_context(m, name_node)
+                result = evaluator.goto(context, name_node)
+                if [c for c in compare_array(result) if c in compare_definitions]:
+                    name = TreeNameDefinition(context, name_node)
+                    definition_names.add(name)
+                    # Previous definitions might be imports, so include them
+                    # (because goto might return that import name).
+                    compare_definitions += compare_array([name])
+        else:
+            definition_names.add(m.name)
+
+    return [classes.Definition(evaluator, n) for n in definition_names]
 
 
-def usages_add_import_modules(evaluator, definitions):
+def resolve_potential_imports(evaluator, definitions):
     """ Adds the modules of the imports """
     new = set()
     for d in definitions:
-        print(d)
-        imp_or_stmt = d.get_definition()
-        if isinstance(imp_or_stmt, tree.Import):
-            s = imports.ImportWrapper(context, d)
-            new |= set(s.follow(is_goto=True))
+        if isinstance(d, TreeNameDefinition):
+            imp_or_stmt = d.tree_name.get_definition()
+            if isinstance(imp_or_stmt, tree.Import):
+                s = imports.ImportWrapper(d.parent_context, d.tree_name)
+                new |= resolve_potential_imports(evaluator, set(s.follow(is_goto=True)))
     return set(definitions) | new

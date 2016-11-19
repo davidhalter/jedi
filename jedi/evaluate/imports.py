@@ -501,7 +501,12 @@ def get_modules_containing_name(evaluator, modules, name):
     # skip non python modules
     used_mod_paths = set()
     for m in modules:
-        used_mod_paths.add(m.py__file__())
+        try:
+            path = m.py__file__()
+        except AttributeError:
+            pass
+        else:
+            used_mod_paths.add(path)
         yield m
 
     if not settings.dynamic_params_for_other_modules:

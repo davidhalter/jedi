@@ -266,28 +266,22 @@ class Script(object):
                 if name is None:
                     # Must be syntax
                     return []
-                self._evaluator
                 definition_names = [TreeNameDefinition(self._get_module(), name)]
 
             if not definition_names:
                 # Without a definition for a name we cannot find references.
                 return []
 
-            if not isinstance(user_stmt, tree.Import) and False:
-                # import case is looked at with add_import_name option
-                definition_names = usages.usages_add_import_modules(self._evaluator,
-                                                                    definition_names)
+            definition_names = usages.resolve_potential_imports(self._evaluator,
+                                                                definition_names)
 
             modules = set([d.get_root_context() for d in definition_names])
             modules.add(self._get_module())
-            names = usages.usages(self._evaluator, definition_names, modules)
-
-            for d in set(definition_names):
-                names.append(classes.Definition(self._evaluator, d))
+            definitions = usages.usages(self._evaluator, definition_names, modules)
         finally:
             settings.dynamic_flow_information = temp
 
-        return helpers.sorted_definitions(set(names))
+        return helpers.sorted_definitions(set(definitions))
 
     def call_signatures(self):
         """
