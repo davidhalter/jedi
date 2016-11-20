@@ -222,7 +222,7 @@ class Completion:
         return level, names
 
     def _get_importer_names(self, names, level=0, only_modules=True):
-        names = [str(n) for n in names]
+        names = [n.value for n in names]
         i = imports.Importer(self._evaluator, names, self._module_context, level)
         return i.completion_names(self._evaluator, only_modules=only_modules)
 

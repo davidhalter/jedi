@@ -28,6 +28,7 @@ from jedi import settings
 from jedi.common import source_to_unicode, unite
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
+from jedi.evaluate.filters import AbstractNameDefinition
 
 
 def completion_names(evaluator, imp, pos):
@@ -161,6 +162,36 @@ def get_init_path(directory_path):
         if os.path.exists(path):
             return path
     return None
+
+
+class ImportName(AbstractNameDefinition):
+    api_type = 'module'
+    start_pos = (1, 0)
+
+    def __init__(self, parent_module, string_name):
+        self.parent_context = parent_module
+        self.string_name = string_name
+
+    def infer(self):
+        return Importer(
+            self.parent_context.evaluator,
+            [self.string_name],
+            self.parent_context,
+        ).follow()
+
+    def get_root_context(self):
+        # Not sure if this is correct.
+        return self.parent_context.get_root_context()
+
+
+class SubModuleName(ImportName):
+    def infer(self):
+        return Importer(
+            self.parent_context.evaluator,
+            [self.string_name],
+            self.parent_context,
+            level=1
+        ).follow()
 
 
 class Importer(object):
@@ -350,14 +381,16 @@ class Importer(object):
         self._evaluator.modules[module_name] = module
         return set([module])
 
-    def _generate_name(self, name):
+    def _generate_name(self, name, in_module=None):
         # Create a pseudo import to be able to follow them.
-        name = helpers.FakeName(name)
-        imp = helpers.FakeImport(name, parent=self.module_context)
-        name.parent = imp
-        return name
+        if in_module is None:
+            #imp = helpers.FakeImport(name, parent=self.module_context)
+            #name.parent = imp
+            #return name
+            return ImportName(self.module_context, name)
+        return SubModuleName(in_module, name)
 
-    def _get_module_names(self, search_path=None):
+    def _get_module_names(self, search_path=None, in_module=None):
         """
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
@@ -365,13 +398,13 @@ class Importer(object):
 
         names = []
         # add builtin module names
-        if search_path is None:
+        if search_path is None and in_module is None:
             names += [self._generate_name(name) for name in sys.builtin_module_names]
 
         if search_path is None:
             search_path = self.sys_path_with_modifications()
         for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
-            names.append(self._generate_name(name))
+            names.append(self._generate_name(name, in_module=in_module))
         return names
 
     def completion_names(self, evaluator, only_modules=False):
@@ -380,6 +413,7 @@ class Importer(object):
             definition that is not defined in a module.
         """
         from jedi.evaluate import finder
+        from jedi.evaluate.representation import ModuleContext
         names = []
         if self.import_path:
             # flask
@@ -396,15 +430,16 @@ class Importer(object):
                     if os.path.isdir(flaskext):
                         names += self._get_module_names([flaskext])
 
-            for scope in self.follow():
+            for context in self.follow():
                 # Non-modules are not completable.
-                if not scope.type == 'file_input':  # not a module
+                if context.api_type != 'module':  # not a module
                     continue
 
                 # namespace packages
-                if isinstance(scope, tree.Module) and scope.path.endswith('__init__.py'):
-                    paths = scope.py__path__()
-                    names += self._get_module_names(paths)
+                if isinstance(context, ModuleContext) and \
+                        context.py__file__().endswith('__init__.py'):
+                    paths = context.py__path__()
+                    names += self._get_module_names(paths, in_module=context)
 
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to
@@ -416,12 +451,8 @@ class Importer(object):
 
                     continue
 
-                for names_dict in scope.names_dicts(search_global=False):
-                    _names = list(chain.from_iterable(names_dict.values()))
-                    if not _names:
-                        continue
-                    _names = finder.filter_definition_names(_names, scope)
-                    names += _names
+                for filter in context.get_filters(search_global=False):
+                    names += filter.values()
         else:
             # Empty import path=completion after import
             if not self.level:

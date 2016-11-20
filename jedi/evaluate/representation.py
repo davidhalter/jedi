@@ -773,23 +773,6 @@ class ModuleAttributeName(AbstractNameDefinition):
         )
 
 
-class SubModuleName(AbstractNameDefinition):
-    api_type = 'module'
-    start_pos = (1, 0)
-
-    def __init__(self, parent_module, string_name):
-        self.parent_context = parent_module
-        self.string_name = string_name
-
-    def infer(self):
-        return imports.Importer(
-            self.parent_context.evaluator,
-            [self.string_name],
-            self.parent_context,
-            level=1
-        ).follow()
-
-
 class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
     api_type = 'module'
     parent_context = None
@@ -941,7 +924,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
             mods = pkgutil.iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
                 # It's obviously a relative import to the current module.
-                names[name] = SubModuleName(self, name)
+                names[name] = imports.SubModuleName(self, name)
 
         # TODO add something like this in the future, its cleaner than the
         #   import hacks.
