@@ -598,8 +598,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
 
 
 class LambdaWrapper(FunctionContext):
-    def get_decorated_func(self):
-        return self
+    pass
 
 
 class FunctionExecutionContext(Executed):
@@ -638,8 +637,8 @@ class FunctionExecutionContext(Executed):
     @recursion.execution_recursion_decorator
     def get_return_values(self, check_yields=False):
         funcdef = self.funcdef
-        if funcdef.type in ('lambdef', 'lambdef_nocond'):
-            return self.evaluator.eval_element(self.children[-1])
+        if isinstance(funcdef, tree.Lambda):
+            return self.evaluator.eval_element(self, funcdef.children[-1])
 
         """
         if func.listeners:
@@ -821,7 +820,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)
                 name = i.star_import_name()
                 new = imports.ImportWrapper(self, name).follow()
                 for module in new:
-                    if isinstance(module, tree.Module):
+                    if isinstance(module, ModuleContext):
                         modules += module.star_imports()
                 modules += new
         return modules

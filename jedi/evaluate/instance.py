@@ -375,7 +375,12 @@ class ParamArguments(object):
             self._class_context,
             self._funcdef
         )
+        is_first = True
         for p in params:
+            # TODO Yeah, here at last, the class seems to be really wrong.
+            if is_first:
+                is_first = False
+                continue
             yield None, self.LazyParamContext(p)
 
 

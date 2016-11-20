@@ -64,6 +64,7 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
 
     if parent is not None:
         new_obj.parent = parent
+    raise NotImplementedError
     return new_obj
 
 
@@ -94,12 +95,14 @@ def call_of_leaf(leaf, cut_own_trailer=False):
 
     power = trailer.parent
     index = power.children.index(trailer)
-    power = deep_ast_copy(power)
     if cut_own_trailer:
         cut = index
     else:
         cut = index + 1
-    power.children[cut:] = []
+
+    new_power = copy.copy(power)
+    new_power.children = list(new_power.children)
+    new_power.children[cut:] = []
 
     if power.type == 'error_node':
         start = index

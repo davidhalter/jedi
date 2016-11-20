@@ -270,8 +270,8 @@ class Evaluator(object):
             if element.value in ('False', 'True', 'None'):
                 types.add(compiled.builtin_from_name(self, element.value))
             # else: print e.g. could be evaluated like this in Python 2.7
-        elif element.isinstance(tree.Lambda):
-            types = set([er.LambdaWrapper(self, element)])
+        elif isinstance(element, tree.Lambda):
+            types = set([er.LambdaWrapper(self, context, element)])
         elif element.isinstance(er.LambdaWrapper):
             types = set([element])  # TODO this is no real evaluation.
         elif element.type == 'expr_stmt':

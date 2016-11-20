@@ -104,21 +104,22 @@ def _search_function_executions(evaluator, module_context, funcdef):
     from jedi.evaluate import representation as er
 
     def get_possible_nodes(module_context, func_name):
-            try:
-                names = module_context.module_node.used_names[func_name]
-            except KeyError:
-                return
+        if not isinstance(module_context, er.ModuleContext):
+            return
+        try:
+            names = module_context.module_node.used_names[func_name]
+        except KeyError:
+            return
 
-            for name in names:
-                bracket = name.get_next_leaf()
-                trailer = bracket.parent
-                if trailer.type == 'trailer' and bracket == '(':
-                    yield name, trailer
+        for name in names:
+            bracket = name.get_next_leaf()
+            trailer = bracket.parent
+            if trailer.type == 'trailer' and bracket == '(':
+                yield name, trailer
 
     func_name = unicode(funcdef.name)
     compare_node = funcdef
     if func_name == '__init__':
-        raise NotImplementedError
         cls = funcdef.get_parent_scope()
         if isinstance(cls, tree.Class):
             func_name = unicode(cls.name)
