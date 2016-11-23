@@ -429,8 +429,7 @@ class Evaluator(object):
             elif def_.type in ('import_from', 'import_name'):
                 return imports.ImportWrapper(context, name).follow()
 
-        call = helpers.call_of_leaf(name)
-        return self.eval_element(context, call)
+        return helpers.evaluate_call_of_leaf(context, name)
 
     def goto(self, context, name):
         def resolve_implicit_imports(names):
@@ -522,7 +521,7 @@ class Evaluator(object):
             raise DeprecationWarning
             return element
 
-    def create_context(self, module_context, node):
+    def create_context(self, base_context, node):
         def from_scope_node(scope_node, child_is_funcdef=None):
             is_funcdef = scope_node.type == 'funcdef'
             parent_context = None
@@ -531,8 +530,8 @@ class Evaluator(object):
                 parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
 
             # TODO this whole procedure just ignores decorators
-            if scope_node == module_context.module_node:
-                return module_context
+            if scope_node == base_node:
+                return base_context
             elif is_funcdef:
                 if isinstance(parent_context, AnonymousInstance):
                     return AnonymousInstanceFunctionExecution(
@@ -549,6 +548,8 @@ class Evaluator(object):
                     return AnonymousInstance(self, parent_context, class_context)
                 else:
                     return class_context
+
+        base_node = base_context.get_node()
 
         if node.is_scope():
             scope_node = node

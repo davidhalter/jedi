@@ -142,6 +142,19 @@ class AbstractInstanceContext(Context):
     def name(self):
         pass
 
+    def _create_init_execution(self, class_context, func_node):
+        return InstanceFunctionExecution(
+            self,
+            class_context.parent_context,
+            func_node,
+            self.var_args
+        )
+
+    def create_init_executions(self):
+        for name in self.get_function_slot_names('__init__'):
+            if isinstance(name, LazyInstanceName):
+                yield self._create_init_execution(name.class_context, name.tree_name.parent)
+
     @memoize_default()
     def create_instance_context(self, class_context, node):
         if node.parent.type in ('funcdef', 'classdef'):
@@ -153,12 +166,7 @@ class AbstractInstanceContext(Context):
             parent_context = self.create_instance_context(class_context, scope)
             if scope.type == 'funcdef':
                 if scope.name.value == '__init__' and parent_context == class_context:
-                    return InstanceFunctionExecution(
-                        self,
-                        class_context.parent_context,
-                        scope,
-                        self.var_args
-                    )
+                    return self._create_init_execution(class_context, scope)
                 else:
                     return AnonymousInstanceFunctionExecution(
                         self,
@@ -230,7 +238,7 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
         return self.name_class(self._evaluator, self._instance, self._compiled_obj, name)
 
 
-class BoundMethod(Context):
+class BoundMethod(object):
     def __init__(self, instance, class_context, function):
         self._instance = instance
         self._class_context = class_context
@@ -239,13 +247,16 @@ class BoundMethod(Context):
     def __getattr__(self, name):
         return getattr(self._function, name)
 
-    def py__call__(self, var_args):
-        function_execution = InstanceFunctionExecution(
+    def get_function_execution(self, arguments):
+        return InstanceFunctionExecution(
             self._instance,
             self.parent_context,
             self._function.funcdef,
-            var_args
+            arguments
         )
+
+    def py__call__(self, arguments):
+        function_execution = self.get_function_execution(arguments)
         return self._function.infer_function_execution(function_execution)
 
     def __repr__(self):
@@ -265,19 +276,19 @@ class LazyInstanceName(filters.TreeNameDefinition):
     """
     def __init__(self, instance, class_context, tree_name):
         self._instance = instance
-        self._class_context = class_context
+        self.class_context = class_context
         self.tree_name = tree_name
 
     @property
     def parent_context(self):
-        return self._instance.create_instance_context(self._class_context, self.tree_name)
+        return self._instance.create_instance_context(self.class_context, self.tree_name)
 
 
 class LazyInstanceClassName(LazyInstanceName):
     def infer(self):
         for v in super(LazyInstanceClassName, self).infer():
             if isinstance(v, er.FunctionContext):
-                yield BoundMethod(self._instance, self._class_context, v)
+                yield BoundMethod(self._instance, self.class_context, v)
             else:
                 yield v
 

@@ -7,7 +7,7 @@ from jedi.api import helpers
 from jedi.evaluate import imports
 from jedi.api import keywords
 from jedi.evaluate import compiled
-from jedi.evaluate.helpers import call_of_leaf
+from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi.evaluate.filters import get_global_filters
 
 
@@ -164,8 +164,7 @@ class Completion:
                 return list(self._get_class_context_completions(is_function=True))
             elif symbol_names[-1] == 'trailer' and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
-                atom_expr = call_of_leaf(dot.get_previous_leaf())
-                completion_names += self._trailer_completions(atom_expr)
+                completion_names += self._trailer_completions(dot.get_previous_leaf())
             else:
                 completion_names += self._global_completions()
                 completion_names += self._get_class_context_completions(is_function=False)
@@ -194,10 +193,12 @@ class Completion:
             completion_names += filter.values()
         return completion_names
 
-    def _trailer_completions(self, atom_expr):
+    def _trailer_completions(self, previous_leaf):
         user_context = get_user_scope(self._module_context, self._position)
-        evaluation_context = self._evaluator.create_context(self._module_context, atom_expr)
-        contexts = self._evaluator.eval_element(evaluation_context, atom_expr)
+        evaluation_context = self._evaluator.create_context(
+            self._module_context, previous_leaf
+        )
+        contexts = evaluate_call_of_leaf(evaluation_context, previous_leaf)
         completion_names = []
         debug.dbg('trailer completion contexts: %s', contexts)
         for context in contexts:

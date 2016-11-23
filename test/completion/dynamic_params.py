@@ -56,11 +56,11 @@ def func(c):
     return c
 
 #? str()
-func("str")
+func("something")
 
 @def_func
 def func(c=1):
-    #? int() float()
+    #? float()
     return c
 
 func(1.0)

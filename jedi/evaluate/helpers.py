@@ -2,6 +2,7 @@ import copy
 from itertools import chain
 
 from jedi.parser import tree
+from jedi.common import unite
 
 
 def deep_ast_copy(obj, parent=None, new_elements=None):
@@ -64,11 +65,10 @@ def deep_ast_copy(obj, parent=None, new_elements=None):
 
     if parent is not None:
         new_obj.parent = parent
-    raise NotImplementedError
     return new_obj
 
 
-def call_of_leaf(leaf, cut_own_trailer=False):
+def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
     """
     Creates a "call" node that consist of all ``trailer`` and ``power``
     objects.  E.g. if you call it with ``append``::
@@ -90,8 +90,8 @@ def call_of_leaf(leaf, cut_own_trailer=False):
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
         if trailer.type == 'atom':
-            return trailer
-        return leaf
+            return context.eval_node(trailer)
+        return context.eval_node(leaf)
 
     power = trailer.parent
     index = power.children.index(trailer)
@@ -100,21 +100,25 @@ def call_of_leaf(leaf, cut_own_trailer=False):
     else:
         cut = index + 1
 
-    new_power = copy.copy(power)
-    new_power.children = list(new_power.children)
-    new_power.children[cut:] = []
+    values = context.eval_node(power.children[0])
+    for trailer in power.children[1:cut]:
+        values = context.eval_trailer(values, trailer)
+    return values
 
-    if power.type == 'error_node':
+    # TODO delete
+    '''
+    if new_power.type == 'error_node':
         start = index
         while True:
             start -= 1
-            if power.children[start].type != 'trailer':
+            if new_power.children[start].type != 'trailer':
                 break
-        transformed = tree.Node('power', power.children[start:])
-        transformed.parent = power.parent
+        transformed = tree.Node('power', new_power.children[start:])
+        transformed.parent = new_power.parent
         return transformed
+    '''
 
-    return power
+    return new_power
 
 
 def get_names_of_node(node):

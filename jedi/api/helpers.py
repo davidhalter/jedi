@@ -5,7 +5,7 @@ import re
 from collections import namedtuple
 
 from jedi._compatibility import u
-from jedi.evaluate.helpers import call_of_leaf
+from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi import parser
 from jedi.parser import tokenize
 from jedi.cache import time_cache
@@ -198,16 +198,12 @@ def evaluate_goto_definition(evaluator, context, leaf):
         # magic itself.
         return evaluator.goto_definitions(context, leaf)
 
-    node = None
     parent = leaf.parent
     if parent.type == 'atom':
-        node = leaf.parent
+        return context.eval_node(leaf.parent)
     elif parent.type == 'trailer':
-        node = call_of_leaf(leaf)
-
-    if node is None:
-        return []
-    return evaluator.eval_element(context, node)
+        return evaluate_call_of_leaf(context, leaf)
+    return []
 
 
 CallSignatureDetails = namedtuple(

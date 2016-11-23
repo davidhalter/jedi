@@ -209,7 +209,7 @@ class Comprehension(AbstractSequence):
             # InstanceElement anyway, I don't care.
             node = node.var
         last_comp = list(comp_for.get_comp_fors())[-1]
-        raise NotImplementedError('should not need to copy...')
+        #TODO raise NotImplementedError('should not need to copy...')
         return helpers.deep_ast_copy(node, parent=last_comp)
 
     def _nested(self, comp_fors):
