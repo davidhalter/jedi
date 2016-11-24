@@ -16,7 +16,7 @@ from jedi._compatibility import unicode
 from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
-from jedi.evaluate.instance import InstanceFunctionExecution
+from jedi.evaluate.instance import InstanceFunctionExecution, AbstractInstanceContext
 from jedi.evaluate import iterable
 from jedi.parser import ParserWithRecovery
 from jedi import debug
@@ -127,7 +127,7 @@ def builtins_type(evaluator, objects, bases, dicts):
         return set([o.py__class__() for o in objects])
 
 
-class SuperInstance(er.Instance):
+class SuperInstance(AbstractInstanceContext):
     """To be used like the object ``super`` returns."""
     def __init__(self, evaluator, cls):
         su = cls.py_mro()[1]
