@@ -253,7 +253,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrappe
             arguments
         )
 
-    @Python3Method
     def py__call__(self, arguments):
         function_execution = self.get_function_execution(arguments)
         return self.infer_function_execution(function_execution)

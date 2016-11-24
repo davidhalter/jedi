@@ -201,13 +201,7 @@ class Comprehension(AbstractSequence):
         """
         comp_for = self._get_comp_for()
         # For nested comprehensions we need to search the last one.
-        from jedi.evaluate.representation import InstanceElement
         node = self._get_comprehension().children[index]
-        if isinstance(node, InstanceElement):
-            # This seems to be a strange case that I haven't found a way to
-            # write tests against. However since it's my new goal to get rid of
-            # InstanceElement anyway, I don't care.
-            node = node.var
         last_comp = list(comp_for.get_comp_fors())[-1]
         #TODO raise NotImplementedError('should not need to copy...')
         return helpers.deep_ast_copy(node, parent=last_comp)
@@ -860,8 +854,12 @@ class _ArrayInstance(object):
             yield additions
 
 
-class Slice(object):
+class Slice(context.Context):
     def __init__(self, context, start, stop, step):
+        super(Slice, self).__init__(
+            context.evaluator,
+            parent_context=context.evaluator.BUILTINS
+        )
         self._context = context
         # all of them are either a Precedence or None.
         self._start = start

@@ -339,12 +339,6 @@ class NameFinder(object):
             # Compiled names and other stuff should just be ignored when it
             # comes to descriptors.
             return types
-        # The name must not be in the dictionary, but part of the class
-        # definition. __get__ is only called if the descriptor is defined in
-        # the class dictionary.
-        name_scope = name.tree_name.get_definition().get_parent_scope()
-        if not isinstance(name_scope, (er.Instance, tree.Class)):
-            return types
 
         result = set()
         for r in types:
@@ -463,9 +457,6 @@ def _remove_statements(evaluator, context, stmt, name):
         #res_new.append(stmt)
 
     check_instance = None
-    if isinstance(stmt, er.InstanceElement) and stmt.is_class_var:
-        check_instance = stmt.instance
-        stmt = stmt.var
 
     pep0484types = \
         pep0484.find_type_from_comment_hint_assign(context, stmt, name)

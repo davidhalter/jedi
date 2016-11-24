@@ -148,7 +148,7 @@ class Evaluator(object):
             types = finder.check_tuple_assignments(self, types, seek_name)
 
         first_operation = stmt.first_operation()
-        if first_operation not in ('=', None) and not isinstance(stmt, er.InstanceElement):  # TODO don't check for this.
+        if first_operation not in ('=', None):
             # `=` is always the last character in aug assignments -> -1
             operator = copy.copy(first_operation)
             operator.value = operator.value[:-1]

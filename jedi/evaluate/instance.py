@@ -7,6 +7,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import filters
 from jedi.evaluate.context import Context, LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.param import ValuesArguments
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate.dynamic import search_params
@@ -115,7 +116,7 @@ class AbstractInstanceContext(Context):
             return set()
         else:
             index_obj = compiled.create(self.evaluator, index)
-            return unite(name.execute_evaluated(index_obj) for name in names)
+            return self.execute_function_slots(names, index_obj)
 
     def py__iter__(self):
         iter_slot_names = self.get_function_slot_names('__iter__')
@@ -218,7 +219,10 @@ class CompiledInstanceName(compiled.CompiledName):
     def infer(self):
         for v in super(CompiledInstanceName, self).infer():
             if isinstance(v, er.FunctionContext):
-                yield BoundMethod(self._instance, self.parent_context, v)
+                yield BoundMethod(
+                    v.evaluator, self._instance, self.parent_context,
+                    v.parent_context, v.funcdef
+                )
             else:
                 yield v
 
@@ -238,29 +242,19 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
         return self.name_class(self._evaluator, self._instance, self._compiled_obj, name)
 
 
-class BoundMethod(object):
-    def __init__(self, instance, class_context, function):
+class BoundMethod(er.FunctionContext):
+    def __init__(self, evaluator, instance, class_context, *args, **kwargs):
+        super(BoundMethod, self).__init__(evaluator, *args, **kwargs)
         self._instance = instance
         self._class_context = class_context
-        self._function = function
-
-    def __getattr__(self, name):
-        return getattr(self._function, name)
 
     def get_function_execution(self, arguments):
         return InstanceFunctionExecution(
             self._instance,
             self.parent_context,
-            self._function.funcdef,
+            self.funcdef,
             arguments
         )
-
-    def py__call__(self, arguments):
-        function_execution = self.get_function_execution(arguments)
-        return self._function.infer_function_execution(function_execution)
-
-    def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._function)
 
 
 class InstanceNameDefinition(filters.TreeNameDefinition):
@@ -288,7 +282,10 @@ class LazyInstanceClassName(LazyInstanceName):
     def infer(self):
         for v in super(LazyInstanceClassName, self).infer():
             if isinstance(v, er.FunctionContext):
-                yield BoundMethod(self._instance, self.class_context, v)
+                yield BoundMethod(
+                    v.evaluator, self._instance, self.class_context,
+                    v.parent_context, v.funcdef
+                )
             else:
                 yield v
 
