@@ -16,7 +16,8 @@ from jedi._compatibility import unicode
 from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
-from jedi.evaluate.instance import InstanceFunctionExecution, AbstractInstanceContext
+from jedi.evaluate.instance import InstanceFunctionExecution, \
+    AbstractInstanceContext, CompiledInstance
 from jedi.evaluate import iterable
 from jedi.parser import ParserWithRecovery
 from jedi import debug
@@ -148,18 +149,17 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
-    first_arg = next(arguments.as_tuple())[0]
-    ordered = list(iterable.py__iter__(evaluator, sequences, first_arg))
+    key, lazy_context = next(arguments.unpack())
+    ordered = list(iterable.py__iter__(evaluator, sequences, lazy_context.data))
 
-    rev = [iterable.AlreadyEvaluated(o) for o in reversed(ordered)]
+    rev = list(reversed(ordered))
     # Repack iterator values and then run it the normal way. This is
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    rev = iterable.AlreadyEvaluated(
-        [iterable.FakeSequence(evaluator, rev, 'list')]
-    )
-    return set([er.Instance(evaluator, obj, param.Arguments(evaluator, [rev]))])
+    seq = iterable.FakeSequence(evaluator, 'list', rev)
+    arguments = param.ValuesArguments([[seq]])
+    return set([CompiledInstance(evaluator, evaluator.BUILTINS, obj, arguments)])
 
 
 @argument_clinic('obj, type, /', want_arguments=True)

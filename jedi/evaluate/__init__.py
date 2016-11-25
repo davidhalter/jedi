@@ -484,8 +484,7 @@ class Evaluator(object):
                 ))
 
         if tree.is_node(par, 'trailer') and par.children[0] == '.':
-            call = helpers.call_of_leaf(name, cut_own_trailer=True)
-            values = self.eval_element(context, call)
+            values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
             return unite(
                 self.find_types(value, name, is_goto=True) for value in values
             )

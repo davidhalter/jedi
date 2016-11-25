@@ -47,6 +47,10 @@ class Context(object):
     def eval_trailer(self, types, trailer):
         return self.evaluator.eval_trailer(self, types, trailer)
 
+    def py__getattribute__(self, name_or_str, position=None,
+                           search_global=False, is_goto=False):
+        return self.evaluator.find_types(self, name_or_str, position, search_global, is_goto)
+
 
 class TreeContext(Context):
     def __init__(self, evaluator, parent_context=None):
@@ -62,10 +66,10 @@ class FlowContext(TreeContext):
 
 class AbstractLazyContext(object):
     def __init__(self, data):
-        self._data = data
+        self.data = data
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._data)
+        return '<%s: %s>' % (self.__class__.__name__, self.data)
 
     def infer(self):
         raise NotImplementedError
@@ -74,13 +78,13 @@ class AbstractLazyContext(object):
 class LazyKnownContext(AbstractLazyContext):
     """data is a context."""
     def infer(self):
-        yield self._data
+        yield self.data
 
 
 class LazyKnownContexts(AbstractLazyContext):
     """data is a set of contexts."""
     def infer(self):
-        return self._data
+        return self.data
 
 
 class LazyUnknownContext(AbstractLazyContext):
@@ -97,7 +101,7 @@ class LazyTreeContext(AbstractLazyContext):
         self._context = context
 
     def infer(self):
-        return self._context.eval_node(self._data)
+        return self._context.eval_node(self.data)
 
 
 def get_merged_lazy_context(lazy_contexts):
@@ -110,4 +114,4 @@ def get_merged_lazy_context(lazy_contexts):
 class MergedLazyContexts(AbstractLazyContext):
     """data is a list of lazy contexts."""
     def infer(self):
-        return unite(l.infer() for l in self._data)
+        return unite(l.infer() for l in self.data)
