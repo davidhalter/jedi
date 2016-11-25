@@ -53,6 +53,7 @@ from jedi.evaluate import pep0484
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
+from jedi.evaluate import helpers
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
     ParamName, AnonymousInstanceParamName
@@ -409,13 +410,12 @@ class FunctionExecutionContext(Executed):
                 input_node = for_stmt.get_input_node()
                 for_types = self.eval_node(input_node)
                 ordered = iterable.py__iter__(evaluator, for_types, input_node)
-                for index_types in ordered:
-                    dct = {str(for_stmt.children[1]): index_types}
-                    evaluator.predefined_if_name_dict_dict[for_stmt] = dct
-                    for yield_in_same_for_stmt in yields:
-                        for result in self._eval_yield(yield_in_same_for_stmt):
-                            yield result
-                    del evaluator.predefined_if_name_dict_dict[for_stmt]
+                for lazy_context in ordered:
+                    dct = {str(for_stmt.children[1]): lazy_context.infer()}
+                    with helpers.predefine_names(self, for_stmt, dct):
+                        for yield_in_same_for_stmt in yields:
+                            for result in self._eval_yield(yield_in_same_for_stmt):
+                                yield result
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield self.function_execution_filter(self.evaluator, self, self.funcdef,

@@ -216,19 +216,17 @@ class Comprehension(AbstractSequence):
         exprlist = comp_for.children[1]
         for i, lazy_context in enumerate(iterated):
             types = lazy_context.infer()
-            evaluator.predefined_if_name_dict_dict[comp_for] = \
-                unpack_tuple_to_dict(evaluator, types, exprlist)
-            try:
-                for result in self._nested(comp_fors[1:]):
-                    yield result
-            except IndexError:
-                iterated = self._defining_context.eval_node(self._eval_node())
-                if self.array_type == 'dict':
-                    yield iterated, self._defining_context.eval_node(self._eval_node(2))
-                else:
-                    yield iterated
-            finally:
-                del evaluator.predefined_if_name_dict_dict[comp_for]
+            dct = unpack_tuple_to_dict(evaluator, types, exprlist)
+            with helpers.predefine_names(self._defining_context, comp_for, dct):
+                try:
+                    for result in self._nested(comp_fors[1:]):
+                        yield result
+                except IndexError:
+                    iterated = self._defining_context.eval_node(self._eval_node())
+                    if self.array_type == 'dict':
+                        yield iterated, self._defining_context.eval_node(self._eval_node(2))
+                    else:
+                        yield iterated
 
     @memoize_default(default=[])
     @common.to_list
@@ -552,13 +550,12 @@ class MergedArray(_FakeArray):
         self._arrays = arrays
 
     def py__iter__(self):
-        raise NotImplementedError
         for array in self._arrays:
-            for types in array.py__iter__():
-                yield types
+            for lazy_context in array.py__iter__():
+                yield lazy_context
 
     def py__getitem__(self, index):
-        return unite(self.py__iter__())
+        return unite(lazy_context.infer() for lazy_context in self.py__iter__())
 
     def _items(self):
         for array in self._arrays:

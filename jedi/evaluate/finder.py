@@ -95,12 +95,16 @@ def filter_definition_names(names, origin, position=None):
 
 
 class NameFinder(object):
-    def __init__(self, evaluator, context, name_str, position=None):
+    def __init__(self, evaluator, context, name_or_str, position=None):
         self._evaluator = evaluator
         # Make sure that it's not just a syntax tree node.
-        self.context = context
-        self.name_str = name_str
-        self.position = position
+        self._context = context
+        self._name = name_or_str
+        if isinstance(name_or_str, tree.Name):
+            self._string_name = name_or_str.value
+        else:
+            self._string_name = name_or_str
+        self._position = position
         self._found_predefined_if_name = None
 
     @debug.increase_indent
@@ -118,30 +122,30 @@ class NameFinder(object):
         types = self._names_to_types(names, attribute_lookup)
 
         if not names and not types \
-                and not (isinstance(self.name_str, tree.Name) and
-                         isinstance(self.name_str.parent.parent, tree.Param)):
-            if not isinstance(self.name_str, (str, unicode)):  # TODO Remove?
+                and not (isinstance(self._name, tree.Name) and
+                         isinstance(self._name.parent.parent, tree.Param)):
+            if isinstance(self._name, tree.Name):
                 if attribute_lookup:
                     analysis.add_attribute_error(self._evaluator,
-                                                 self.context, self.name_str)
+                                                 self._context, self._name)
                 else:
                     message = ("NameError: name '%s' is not defined."
-                               % self.name_str)
-                    analysis.add(self._evaluator, 'name-error', self.name_str,
+                               % self._string_name)
+                    analysis.add(self._evaluator, 'name-error', self._name,
                                  message)
 
         return types
 
     def get_filters(self, search_global=False):
-        if isinstance(self.name_str, tree.Name):
-            origin_scope = self.name_str.get_parent_until(tree.Scope, reverse=True)
+        if isinstance(self._name, tree.Name):
+            origin_scope = self._name.get_parent_until(tree.Scope, reverse=True)
         else:
             origin_scope = None
 
         if search_global:
-            return get_global_filters(self._evaluator, self.context, self.position, origin_scope)
+            return get_global_filters(self._evaluator, self._context, self._position, origin_scope)
         else:
-            return self.context.get_filters(search_global, self.position, origin_scope=origin_scope)
+            return self._context.get_filters(search_global, self._position, origin_scope=origin_scope)
 
     def names_dict_lookup(self, names_dict, position):
         def get_param(scope, el):
@@ -149,15 +153,14 @@ class NameFinder(object):
                 return scope.param_by_name(str(el))
             return el
 
-        search_str = str(self.name_str)
         try:
-            names = names_dict[search_str]
+            names = names_dict[self._string_name]
             if not names:  # We want names, otherwise stop.
                 return []
         except KeyError:
             return []
 
-        names = filter_definition_names(names, self.name_str, position)
+        names = filter_definition_names(names, self._name, position)
 
         name_scope = None
         # Only the names defined in the last position are valid definitions.
@@ -166,7 +169,7 @@ class NameFinder(object):
             stmt = name.get_definition()
             name_scope = self._evaluator.wrap(stmt.get_parent_scope())
 
-            if isinstance(self.context, er.Instance) and not isinstance(name_scope, er.Instance):
+            if isinstance(self._context, er.Instance) and not isinstance(name_scope, er.Instance):
                 # Instances should not be checked for positioning, because we
                 # don't know in which order the functions are called.
                 last_names.append(name)
@@ -190,27 +193,27 @@ class NameFinder(object):
                 last_names.append(name)
                 continue
 
-            if isinstance(self.name_str, tree.Name):
-                origin_scope = self.name_str.get_parent_until(tree.Scope, reverse=True)
-                scope = self.name_str
+            if isinstance(self._name, tree.Name):
+                origin_scope = self._name.get_parent_until(tree.Scope, reverse=True)
+                scope = self._name
                 check = None
                 while True:
                     scope = scope.parent
                     if scope.type in ("if_stmt", "for_stmt", "comp_for"):
                         try:
-                            name_dict = self._evaluator.predefined_if_name_dict_dict[scope]
-                            types = set(name_dict[str(self.name_str)])
+                            name_dict = self.context.predefined_names[scope]
+                            types = set(name_dict[self._string_name])
                         except KeyError:
                             continue
                         else:
-                            if self.name_str.start_pos < scope.children[1].end_pos:
+                            if self._name.start_pos < scope.children[1].end_pos:
                                 # It doesn't make any sense to check if
                                 # statements in the if statement itself, just
                                 # deliver types.
                                 self._found_predefined_if_name = types
                             else:
                                 check = flow_analysis.reachability_check(
-                                    self._context, self.context, origin_scope)
+                                    self._context, self._context, origin_scope)
                                 if check is flow_analysis.UNREACHABLE:
                                     self._found_predefined_if_name = set()
                                 else:
@@ -243,26 +246,26 @@ class NameFinder(object):
         `names_dicts`), until a name fits.
         """
         names = []
+        if self._context.predefined_names:
+            # TODO is this ok? node might not always be a tree.Name
+            node = self._name
+            while node is not None and not isinstance(node, tree.IsScope):
+                node = node.parent
+                if node.type in ("if_stmt", "for_stmt", "comp_for"):
+                    try:
+                        name_dict = self._context.predefined_names[node]
+                        types = name_dict[self._string_name]
+                    except KeyError:
+                        continue
+                    else:
+                        self._found_predefined_if_name = types
+                        return []
         for filter in filters:
-            if self._evaluator.predefined_if_name_dict_dict:
-                node = self.name_str
-                while node is not None and not isinstance(node, tree.IsScope):
-                    node = node.parent
-                    if node.type in ("if_stmt", "for_stmt", "comp_for"):
-                        try:
-                            name_dict = self._evaluator.predefined_if_name_dict_dict[node]
-                            types = set(name_dict[str(self.name_str)])
-                        except KeyError:
-                            continue
-                        else:
-                            self._found_predefined_if_name = types
-                            return []
-            else:
-                names = filter.get(self.name_str)
-                if names:
-                    break
-        debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self.name_str,
-                  self.context, names, self.position)
+            names = filter.get(self._name)
+            if names:
+                break
+        debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self._string_name,
+                  self._context, names, self._position)
         return list(self._clean_names(names))
 
     def _clean_names(self, names):
@@ -288,7 +291,7 @@ class NameFinder(object):
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         # str is important, because it shouldn't be `Name`!
-        name = compiled.create(self._evaluator, str(self.name_str))
+        name = compiled.create(self._evaluator, self._string_name)
 
         # This is a little bit special. `__getattribute__` is in Python
         # executed before `__getattr__`. But: I know no use case, where
@@ -305,9 +308,9 @@ class NameFinder(object):
         types = set()
 
         # Add isinstance and other if/assert knowledge.
-        #if isinstance(self.name_str, tree.Name):
+        #if isinstance(self._name, tree.Name):
             ## Ignore FunctionExecution parents for now.
-            #flow_scope = self.name_str
+            #flow_scope = self._name
             #until = flow_scope.get_parent_until(er.FunctionExecution)
             #while not isinstance(until, er.FunctionExecution):
                 #flow_scope = flow_scope.get_parent_scope(include_flows=True)
@@ -315,22 +318,22 @@ class NameFinder(object):
                     #break
                 ## TODO check if result is in scope -> no evaluation necessary
                 #n = check_flow_information(self._evaluator, flow_scope,
-                                           #self.name_str, self.position)
+                                           #self._name, self._position)
                 #if n:
                     #return n
 
         for name in names:
             new_types = name.infer()
-            if isinstance(self.context, (er.ClassContext, AbstractInstanceContext)) \
+            if isinstance(self._context, (er.ClassContext, AbstractInstanceContext)) \
                     and attribute_lookup:
                 types |= set(self._resolve_descriptors(name, new_types))
             else:
                 types |= set(new_types)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
-        if not names and isinstance(self.context, AbstractInstanceContext):
+        if not names and isinstance(self._context, AbstractInstanceContext):
             # handling __getattr__ / __getattribute__
-            return self._check_getattr(self.context)
+            return self._check_getattr(self._context)
 
         return types
 
@@ -347,7 +350,7 @@ class NameFinder(object):
             except AttributeError:
                 result.add(r)
             else:
-                result |= desc_return(self.context)
+                result |= desc_return(self._context)
         return result
 
 
@@ -582,8 +585,9 @@ def _check_isinstance_type(evaluator, element, search_name):
     result = set()
     for cls_or_tup in evaluator.eval_element(classes):
         if isinstance(cls_or_tup, iterable.Array) and cls_or_tup.type == 'tuple':
-            for typ in unite(cls_or_tup.py__iter__()):
-                result |= evaluator.execute(typ)
+            for lazy_context in cls_or_tup.py__iter__():
+                for context in lazy_context.infer():
+                    result |= context.execute_evaluated()
         else:
             result |= evaluator.execute(cls_or_tup)
     return result

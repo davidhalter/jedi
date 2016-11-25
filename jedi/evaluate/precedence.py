@@ -1,7 +1,7 @@
 """
 Handles operator precedence.
 """
-import operator
+import operator as op
 
 from jedi._compatibility import unicode
 from jedi.parser import tree
@@ -11,14 +11,14 @@ from jedi.evaluate import analysis
 
 # Maps Python syntax to the operator module.
 COMPARISON_OPERATORS = {
-    '==': operator.eq,
-    '!=': operator.ne,
-    'is': operator.is_,
-    'is not': operator.is_not,
-    '<': operator.lt,
-    '<=': operator.le,
-    '>': operator.gt,
-    '>=': operator.ge,
+    '==': op.eq,
+    '!=': op.ne,
+    'is': op.is_,
+    'is not': op.is_not,
+    '<': op.lt,
+    '<=': op.le,
+    '>': op.gt,
+    '>=': op.ge,
 }
 
 
@@ -117,23 +117,23 @@ def is_literal(obj):
 
 def _is_tuple(obj):
     from jedi.evaluate import iterable
-    return isinstance(obj, iterable.AbstractSequence) and obj.type == 'tuple'
+    return isinstance(obj, iterable.AbstractSequence) and obj.array_type == 'tuple'
 
 
 def _is_list(obj):
     from jedi.evaluate import iterable
-    return isinstance(obj, iterable.AbstractSequence) and obj.type == 'list'
+    return isinstance(obj, iterable.AbstractSequence) and obj.array_type == 'list'
 
 
 def _element_calculate(evaluator, left, operator, right):
-    from jedi.evaluate import iterable, representation as er
+    from jedi.evaluate import iterable, instance
     l_is_num = _is_number(left)
     r_is_num = _is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.AbstractSequence) or is_string(left):
             return set([left])
-        elif isinstance(right, iterable.Array) or is_string(right):
+        elif isinstance(right, iterable.AbstractSequence) or is_string(right):
             return set([right])
     elif operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
@@ -166,7 +166,7 @@ def _element_calculate(evaluator, left, operator, right):
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
-        return isinstance(obj, er.Instance) and obj.name.get_code() in ('int', 'float')
+        return isinstance(obj, instance.CompiledInstance) and obj.name.name_string in ('int', 'float')
 
     # Static analysis, one is a number, the other one is not.
     if operator in ('+', '-') and l_is_num != r_is_num \

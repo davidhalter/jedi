@@ -118,7 +118,7 @@ def _faked(module, obj, name):
     # Having the module as a `parser.tree.Module`, we need to scan
     # for methods.
     if name is None:
-        if inspect.isbuiltin(obj):
+        if inspect.isbuiltin(obj) or inspect.isclass(obj):
             return _search_scope(faked_mod, obj.__name__), faked_mod
         elif not inspect.isclass(obj):
             # object is a method or descriptor
@@ -172,9 +172,11 @@ def memoize_faked(obj):
 def _get_faked(module, obj, name=None):
     obj = type(obj) if is_class_instance(obj) else obj
     result, fake_module = _faked(module, obj, name)
-    if result is None or result.type == 'classdef':
+    if result is None:
         # We're not interested in classes. What we want is functions.
         raise FakeDoesNotExist
+    elif result.type == 'classdef':
+        return result, fake_module
     else:
         # Set the docstr which was previously not set (faked modules don't
         # contain it).
@@ -192,8 +194,7 @@ def get_faked(evaluator, module, obj, name=None, parent_context=None):
     faked, fake_module = _get_faked(module and module.obj, obj, name)
     if module is not None:
         module.used_names = fake_module.used_names
-    from jedi.evaluate.representation import FunctionContext
-    return FunctionContext(evaluator, parent_context, faked)
+    return faked
 
 
 def is_class_instance(obj):

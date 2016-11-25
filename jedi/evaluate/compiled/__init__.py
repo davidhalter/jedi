@@ -38,14 +38,14 @@ class CheckAttribute(object):
 
 
 class CompiledObject(Context):
-    # comply with the parser
-    start_pos = 0, 0
     path = None  # modules have this attribute - set it to None.
     used_names = {}  # To be consistent with modules.
 
-    def __init__(self, evaluator, obj, parent_context=None):
+    def __init__(self, evaluator, obj, parent_context=None, faked_class=None):
         super(CompiledObject, self).__init__(evaluator, parent_context)
         self.obj = obj
+        # This attribute will not be set for most classes, except for fakes.
+        self.classdef = faked_class
 
     def get_root_node(self):
         # To make things a bit easier with filters we add this method here.
@@ -232,25 +232,6 @@ class CompiledObject(Context):
                 for result in self.evaluator.execute(bltn_obj, params):
                     yield result
 
-    @property
-    @underscore_memoization
-    def subscopes(self):
-        """
-        Returns only the faked scopes - the other ones are not important for
-        internal analysis.
-        """
-        raise NotImplementedError
-        module = self.get_parent_until()
-        faked_subscopes = []
-        for name in dir(self.obj):
-            try:
-                faked_subscopes.append(
-                    fake.get_faked(self.evaluator, module, self.obj, parent=self, name=name)
-                )
-            except fake.FakeDoesNotExist:
-                pass
-        return faked_subscopes
-
     def is_scope(self):
         return True
 
@@ -259,13 +240,6 @@ class CompiledObject(Context):
 
     def get_imports(self):
         return []  # Builtins don't have imports
-
-    @property
-    def classdef(self):
-        """
-        This is used to be able to work with compiled fakes.
-        """
-        return self
 
 
 class CompiledName(AbstractNameDefinition):
@@ -534,7 +508,10 @@ def _parse_function_doc(doc):
 def _create_from_name(evaluator, module, compiled_object, name):
     obj = compiled_object.obj
     try:
-        return fake.get_faked(evaluator, module, obj, parent_context=compiled_object, name=name)
+        faked = fake.get_faked(evaluator, module, obj, parent_context=compiled_object, name=name)
+        if faked.type == 'funcdef':
+            from jedi.evaluate.representation import FunctionContext
+            return FunctionContext(evaluator, compiled_object, faked)
     except fake.FakeDoesNotExist:
         pass
 
@@ -607,6 +584,7 @@ def create(evaluator, obj, parent_context=None, module=None):
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
+    faked = None
     if inspect.ismodule(obj):
         if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.
@@ -616,8 +594,11 @@ def create(evaluator, obj, parent_context=None, module=None):
             return create(evaluator, obj, create(evaluator, _builtins))
 
         try:
-            return fake.get_faked(evaluator, module, obj, parent_context=parent_context)
+            faked = fake.get_faked(evaluator, module, obj, parent_context=parent_context)
+            if faked.type == 'funcdef':
+                from jedi.evaluate.representation import FunctionContext
+                return FunctionContext(evaluator, parent_context, faked)
         except fake.FakeDoesNotExist:
             pass
 
-    return CompiledObject(evaluator, obj, parent_context)
+    return CompiledObject(evaluator, obj, parent_context, faked)

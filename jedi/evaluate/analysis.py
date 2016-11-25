@@ -112,10 +112,10 @@ def _check_for_setattr(instance):
 
 def add_attribute_error(evaluator, scope, name):
     message = ('AttributeError: %s has no attribute %s.' % (scope, name))
-    from jedi.evaluate.representation import Instance
+    from jedi.evaluate.instance import AbstractInstanceContext
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
-    if isinstance(scope, Instance):
+    if isinstance(scope, AbstractInstanceContext):
         typ = Warning
         try:
             scope.get_subscope_by_name('__getattr__')

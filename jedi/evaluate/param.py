@@ -24,8 +24,8 @@ def try_iter_content(types, depth=0):
         except AttributeError:
             pass
         else:
-            for iter_types in f():
-                try_iter_content(iter_types, depth + 1)
+            for lazy_context in f():
+                try_iter_content(lazy_context.infer(), depth + 1)
 
 
 class AbstractArguments():
@@ -136,7 +136,7 @@ class TreeArguments(AbstractArguments):
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         comp = iterable.GeneratorComprehension(
-                            self._evaluator, self.argument_node.parent)
+                            self._evaluator, self.context, self.argument_node.parent)
                         yield None, context.LazyKnownContext(comp)
                 else:
                     yield None, context.LazyTreeContext(self.context, el)

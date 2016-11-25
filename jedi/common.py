@@ -3,7 +3,6 @@ import sys
 import contextlib
 import functools
 import re
-from itertools import chain
 from ast import literal_eval
 
 from jedi._compatibility import unicode, reraise
@@ -184,7 +183,7 @@ def splitlines(string, keepends=False):
 
 def unite(iterable):
     """Turns a two dimensional array into a one dimensional."""
-    return set(chain.from_iterable(iterable))
+    return set(typ for types in iterable for typ in types)
 
 
 def to_list(func):

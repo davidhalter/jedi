@@ -338,6 +338,8 @@ set(a)[0]
 #? int() str()
 list(set(a))[1]
 #? int() str()
+next(iter(set(a)))
+#? int() str()
 list(list(set(a)))[1]
 
 # does not yet work, because the recursion catching is not good enough (catches # to much)

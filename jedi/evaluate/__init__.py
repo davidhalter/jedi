@@ -91,7 +91,6 @@ class Evaluator(object):
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
         self.mixed_cache = {}  # see `evaluate.compiled.mixed.create()`
         self.analysis = []
-        self.predefined_if_name_dict_dict = {}
         self.dynamic_params_depth = 0
         self.is_analysis = False
 
@@ -165,17 +164,12 @@ class Evaluator(object):
                 for_iterables = self.eval_element(context, node)
                 ordered = list(iterable.py__iter__(self, for_iterables, node))
 
-                for index_types in ordered:
-                    dct = {str(for_stmt.children[1]): index_types}
-                    self.predefined_if_name_dict_dict[for_stmt] = dct
-                    t = self.eval_element(context, rhs)
-                    left = precedence.calculate(self, left, operator, t)
+                for lazy_context in ordered:
+                    dct = {str(for_stmt.children[1]): lazy_context.infer()}
+                    with helpers.predefine_names(context, for_stmt, dct):
+                        t = self.eval_element(context, rhs)
+                        left = precedence.calculate(self, left, operator, t)
                 types = left
-                if ordered:
-                    # If there are no for entries, we cannot iterate and the
-                    # types are defined by += entries. Therefore the for loop
-                    # is never called.
-                    del self.predefined_if_name_dict_dict[for_stmt]
             else:
                 types = precedence.calculate(self, left, operator, types)
         debug.dbg('eval_statement result %s', types)
@@ -183,12 +177,12 @@ class Evaluator(object):
 
     def eval_element(self, context, element):
         if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
-        predefined_if_name_dict = self.predefined_if_name_dict_dict.get(if_stmt)
+        predefined_if_name_dict = context.predefined_names.get(if_stmt)
         if predefined_if_name_dict is None and isinstance(if_stmt, tree.IfStmt):
             if_stmt_test = if_stmt.children[1]
             name_dicts = [{}]
             # If we already did a check, we don't want to do it again -> If
-            # predefined_if_name_dict_dict is filled, we stop.
+            # context.predefined_names is filled, we stop.
             # We don't want to check the if stmt itself, it's just about
             # the content.
             if element.start_pos > if_stmt_test.end_pos:
@@ -227,11 +221,8 @@ class Evaluator(object):
             if len(name_dicts) > 1:
                 result = set()
                 for name_dict in name_dicts:
-                    self.predefined_if_name_dict_dict[if_stmt] = name_dict
-                    try:
+                    with helpers.predefine_names(context, if_stmt, name_dict):
                         result |= self._eval_element_not_cached(context, element)
-                    finally:
-                        del self.predefined_if_name_dict_dict[if_stmt]
                 return result
             else:
                 return self._eval_element_if_evaluated(context, element)
@@ -250,7 +241,7 @@ class Evaluator(object):
         parent = element
         while parent is not None:
             parent = parent.parent
-            predefined_if_name_dict = self.predefined_if_name_dict_dict.get(parent)
+            predefined_if_name_dict = context.predefined_names.get(parent)
             if predefined_if_name_dict is not None:
                 return self._eval_element_not_cached(context, element)
         return self._eval_element_cached(context, element)

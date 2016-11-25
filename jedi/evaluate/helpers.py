@@ -1,8 +1,8 @@
 import copy
 from itertools import chain
+from contextlib import contextmanager
 
 from jedi.parser import tree
-from jedi.common import unite
 
 
 def deep_ast_copy(obj, parent=None, new_elements=None):
@@ -116,9 +116,9 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
         transformed = tree.Node('power', new_power.children[start:])
         transformed.parent = new_power.parent
         return transformed
-    '''
 
     return new_power
+    '''
 
 
 def get_names_of_node(node):
@@ -163,3 +163,15 @@ class FakeName(tree.Name):
             return super(FakeName, self).is_definition()
         else:
             return self._is_definition
+
+
+@contextmanager
+def predefine_names(context, flow_scope, dct):
+    predefined = context.predefined_names
+    if flow_scope in predefined:
+        raise NotImplementedError('Why does this happen?')
+    predefined[flow_scope] = dct
+    try:
+        yield
+    finally:
+        del predefined[flow_scope]

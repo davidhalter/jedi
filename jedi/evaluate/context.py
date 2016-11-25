@@ -8,6 +8,7 @@ class Context(object):
     Most contexts are just instances of something, therefore make this the
     default to make subclassing a lot easier.
     """
+    predefined_names = {}
 
     def __init__(self, evaluator, parent_context=None):
         self.evaluator = evaluator
@@ -48,7 +49,11 @@ class Context(object):
 
 
 class TreeContext(Context):
-    pass
+    def __init__(self, evaluator, parent_context=None):
+        super(TreeContext, self).__init__(evaluator, parent_context)
+        self.predefined_names = {}
+
+
 class FlowContext(TreeContext):
     def get_parent_flow_context(self):
         if 1:
@@ -88,8 +93,8 @@ class LazyUnknownContext(AbstractLazyContext):
 
 class LazyTreeContext(AbstractLazyContext):
     def __init__(self, context, node):
+        super(LazyTreeContext, self).__init__(node)
         self._context = context
-        self._data = node
 
     def infer(self):
         return self._context.eval_node(self._data)
