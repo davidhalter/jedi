@@ -2,7 +2,6 @@ from jedi.common import unite
 
 
 class Context(object):
-    type = None # TODO remove
     api_type = 'instance'
     """
     Most contexts are just instances of something, therefore make this the

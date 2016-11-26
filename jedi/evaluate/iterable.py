@@ -546,7 +546,7 @@ class FakeDict(_FakeArray):
 
 class MergedArray(_FakeArray):
     def __init__(self, evaluator, arrays):
-        super(MergedArray, self).__init__(evaluator, arrays, arrays[-1].type)
+        super(MergedArray, self).__init__(evaluator, arrays, arrays[-1].array_type)
         self._arrays = arrays
 
     def py__iter__(self):
@@ -660,7 +660,7 @@ def py__getitem__(evaluator, context, types, trailer):
             # If the index is not clearly defined, we have to get all the
             # possiblities.
             for typ in list(types):
-                if isinstance(typ, AbstractSequence) and typ.type == 'dict':
+                if isinstance(typ, AbstractSequence) and typ.array_type == 'dict':
                     types.remove(typ)
                     result |= typ.dict_values()
             return result | py__iter__types(evaluator, types)
@@ -685,11 +685,12 @@ def py__getitem__(evaluator, context, types, trailer):
 
 def check_array_additions(evaluator, array):
     """ Just a mapper function for the internal _check_array_additions """
-    if array.type not in ('list', 'set'):
+    if array.array_type not in ('list', 'set'):
         # TODO also check for dict updates
         return set()
 
-    is_list = array.type == 'list'
+    return set()
+    is_list = array.array_type == 'list'
     try:
         current_module = array.atom.get_parent_until()
     except AttributeError:
