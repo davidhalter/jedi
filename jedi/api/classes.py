@@ -7,12 +7,12 @@ import warnings
 from itertools import chain
 import re
 
-from jedi._compatibility import unicode, use_metaclass
+from jedi._compatibility import unicode
 from jedi import settings
 from jedi import common
 from jedi.parser import tree
 from jedi.parser.utils import load_parser
-from jedi.evaluate.cache import memoize_default, CachedMetaClass
+from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
@@ -300,7 +300,7 @@ class BaseDefinition(object):
         defs = self._evaluator.goto(self._name)
         return [Definition(self._evaluator, d) for d in defs]
 
-    @memoize_default()
+    @memoize_method
     def _follow_statements_imports(self):
         """
         Follow both statements and imports, as far as possible.
@@ -315,7 +315,7 @@ class BaseDefinition(object):
             return set([self._definition])
 
     @property
-    @memoize_default()
+    @memoize_method
     def params(self):
         """
         Raises an ``AttributeError``if the definition is not callable.
@@ -495,7 +495,7 @@ class Completion(BaseDefinition):
                 return followed[0].type
         return super(Completion, self).type
 
-    @memoize_default()
+    @memoize_method
     def _follow_statements_imports(self):
         # imports completion is very complicated and needs to be treated
         # separately in Completion.
@@ -508,7 +508,7 @@ class Completion(BaseDefinition):
             return i.follow()
         return super(Completion, self)._follow_statements_imports()
 
-    @memoize_default()
+    @memoize_method
     def follow_definition(self):
         """
         Return the original definitions. I strongly recommend not using it for
@@ -522,7 +522,7 @@ class Completion(BaseDefinition):
         return [Definition(self._evaluator, d.name) for d in defs]
 
 
-class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
+class Definition(BaseDefinition):
     """
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
@@ -641,7 +641,7 @@ class Definition(use_metaclass(CachedMetaClass, BaseDefinition)):
         position = '' if self.in_builtin_module else '@%s' % (self.line)
         return "%s:%s%s" % (self.module_name, self.description, position)
 
-    @memoize_default()
+    @memoize_method
     def defined_names(self):
         """
         List sub-definitions (e.g., methods in class).
