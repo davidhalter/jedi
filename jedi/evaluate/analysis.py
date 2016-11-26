@@ -100,9 +100,13 @@ def _check_for_setattr(instance):
     """
     Check if there's any setattr method inside an instance. If so, return True.
     """
-    module = instance.get_parent_until()
+    from jedi.evaluate.representation import ModuleContext
+    module = instance.get_root_context()
+    if not isinstance(module, ModuleContext):
+        return False
+
     try:
-        stmts = module.used_names['setattr']
+        stmts = module.module_node.used_names['setattr']
     except KeyError:
         return False
 
@@ -117,14 +121,10 @@ def add_attribute_error(evaluator, scope, name):
     # instead of an error, if that happens.
     if isinstance(scope, AbstractInstanceContext):
         typ = Warning
-        try:
-            scope.get_subscope_by_name('__getattr__')
-        except KeyError:
-            try:
-                scope.get_subscope_by_name('__getattribute__')
-            except KeyError:
-                if not _check_for_setattr(scope):
-                    typ = Error
+        if not (scope.get_function_slot_names('__getattr__') or
+                scope.get_function_slot_names('__getattribute__')):
+            if not _check_for_setattr(scope):
+                typ = Error
     else:
         typ = Error
 

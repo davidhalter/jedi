@@ -258,7 +258,7 @@ class BoundMethod(er.FunctionContext):
     def get_function_execution(self, arguments):
         return InstanceFunctionExecution(
             self._instance,
-            self.parent_context,
+            self._class_context.parent_context,
             self.funcdef,
             arguments
         )

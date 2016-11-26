@@ -182,7 +182,7 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
             if len(params) != 1:
                 continue
             values = params[0].infer()
-            nodes = [value.get_node() for value in values]
+            nodes = [v.get_node() for v in values]
             if nodes == [compare_node]:
                 # Found a decorator.
                 module_context = context.get_root_context()

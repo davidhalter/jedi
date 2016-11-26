@@ -513,16 +513,14 @@ class Evaluator(object):
 
     def create_context(self, base_context, node):
         def from_scope_node(scope_node, child_is_funcdef=None):
-            is_funcdef = scope_node.type == 'funcdef'
-            parent_context = None
-            parent_scope = scope_node.get_parent_scope()
-            if parent_scope is not None:
-                parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
-
-            # TODO this whole procedure just ignores decorators
             if scope_node == base_node:
                 return base_context
-            elif is_funcdef:
+
+            is_funcdef = scope_node.type == 'funcdef'
+            parent_scope = scope_node.get_parent_scope()
+            parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
+
+            if is_funcdef:
                 if isinstance(parent_context, AnonymousInstance):
                     return AnonymousInstanceFunctionExecution(
                         parent_context,
