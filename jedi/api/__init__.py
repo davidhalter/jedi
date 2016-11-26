@@ -304,7 +304,10 @@ class Script(object):
         if call_signature_details is None:
             return []
 
-        context = self._evaluator.create_context(call_signature_details.bracket_leaf)
+        context = self._evaluator.create_context(
+            self._get_module(),
+            call_signature_details.bracket_leaf
+        )
         with common.scale_speed_settings(settings.scale_call_signatures):
             definitions = helpers.cache_call_signatures(
                 self._evaluator,

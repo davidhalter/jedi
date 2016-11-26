@@ -15,7 +15,7 @@ def get_call_signature_param_names(call_signatures):
     # add named params
     for call_sig in call_signatures:
         # Allow protected access, because it's a public API.
-        module = call_sig._name.get_parent_until()
+        module = call_sig._name.get_root_context()
         # Compiled modules typically don't allow keyword arguments.
         if not isinstance(module, compiled.CompiledObject):
             for p in call_sig.params:
