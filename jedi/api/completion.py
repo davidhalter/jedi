@@ -22,7 +22,8 @@ def get_call_signature_param_names(call_signatures):
                 # Allow access on _definition here, because it's a
                 # public API and we don't want to make the internal
                 # Name object public.
-                if p._definition.stars == 0:  # no *args/**kwargs
+                tree_param = tree.search_ancestor(p._name.tree_name, 'param')
+                if tree_param.stars == 0:  # no *args/**kwargs
                     yield p._name
 
 

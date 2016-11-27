@@ -34,7 +34,7 @@ my_lambda = lambda lambda_param: lambda_param + 1
 #? 22 ['lambda_param']
 my_lambda(lambda_param)
 
-# __call__
+# __call__ / __init__
 class Test(object):
     def __init__(self, hello_other):
         pass
@@ -42,7 +42,21 @@ class Test(object):
     def __call__(self, hello):
         pass
 
+    def test(self, blub):
+        pass
+
+#? 10 ['hello_other']
+Test(hello=)
 #? 12 ['hello']
 Test()(hello=)
 #? 11 []
 Test()(self=)
+#? 16 []
+Test().test(self=)
+#? 16 ['blub']
+Test().test(blub=)
+
+# builtins
+
+#? 12 []
+any(iterable=)

@@ -14,6 +14,7 @@ from jedi.parser import tree
 from jedi.parser.utils import load_parser
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
+from jedi.evaluate import instance
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
@@ -305,14 +306,14 @@ class BaseDefinition(object):
         """
         Follow both statements and imports, as far as possible.
         """
-        if self._definition.isinstance(tree.ExprStmt):
+        if self._name.api_type == 'expr_stmt':
             return self._evaluator.eval_statement(self._definition)
-        elif self._definition.isinstance(tree.Import):
+        elif self._name.api_type == 'import':
             raise DeprecationWarning
             # TODO self._name.infer()?
             return imports.ImportWrapper(self._evaluator, self._name).follow()
         else:
-            return set([self._definition])
+            return set([self._name.parent_context])
 
     @property
     @memoize_method
@@ -321,33 +322,33 @@ class BaseDefinition(object):
         Raises an ``AttributeError``if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
+        def get_param_names(context):
+            param_names = []
+            if context.api_type == 'function':
+                param_names = context.get_param_names()
+                if isinstance(context, instance.BoundMethod):
+                    param_names = param_names[1:]
+            elif isinstance(context, (instance.AbstractInstanceContext, er.ClassContext)):
+                if isinstance(context, er.ClassContext):
+                    search = '__init__'
+                else:
+                    search = '__call__'
+                names = context.get_function_slot_names(search)
+                if not names:
+                    return []
+
+                # Just take the first one here, not optimal, but currently
+                # there's no better solution.
+                inferred = names[0].infer()
+                return get_param_names(next(iter(inferred)))
+            return param_names
+
         followed = list(self._follow_statements_imports())
         if not followed or not hasattr(followed[0], 'py__call__'):
             raise AttributeError()
-        followed = followed[0]  # only check the first one.
+        context = followed[0]  # only check the first one.
 
-        if followed.type in ('funcdef', 'lambda'):
-            if isinstance(followed, er.InstanceElement):
-                params = followed.params[1:]
-            else:
-                params = followed.params
-        elif followed.isinstance(er.compiled.CompiledObject):
-            params = followed.params
-        elif isinstance(followed, er.Class):
-            try:
-                sub = followed.get_subscope_by_name('__init__')
-                params = sub.params[1:]  # ignore self
-            except KeyError:
-                return []
-        elif isinstance(followed, er.Instance):
-            try:
-                sub = followed.get_subscope_by_name('__call__')
-                params = sub.params[1:]  # ignore self
-            except KeyError:
-                return []
-        else:
-            return []
-        return [_Param(self._evaluator, p.name) for p in params]
+        return [_Param(self._evaluator, n) for n in get_param_names(context)]
 
     def parent(self):
         scope = self._definition.get_parent_scope()
