@@ -45,7 +45,7 @@ def _evaluate_for_annotation(context, annotation, index=None):
         if index is not None:
             definitions = list(itertools.chain.from_iterable(
                 definition.py__getitem__(index) for definition in definitions
-                if definition.type == 'tuple' and
+                if definition.array_type == 'tuple' and
                 len(list(definition.py__iter__())) >= index))
         return unite(d.execute_evaluated() for d in definitions)
     else:

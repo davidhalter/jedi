@@ -258,7 +258,7 @@ class BoundMethod(er.FunctionContext):
     def get_function_execution(self, arguments):
         return InstanceFunctionExecution(
             self._instance,
-            self._class_context.parent_context,
+            self.parent_context,
             self.funcdef,
             arguments
         )
@@ -289,9 +289,16 @@ class LazyInstanceClassName(LazyInstanceName):
     def infer(self):
         for v in super(LazyInstanceClassName, self).infer():
             if isinstance(v, er.FunctionContext):
+                # Classes are never used to resolve anything within the
+                # functions. Only other functions and modules will resolve
+                # those things.
+                parent_context = v.parent_context
+                while isinstance(parent_context, er.ClassContext):
+                    parent_context = parent_context.parent_context
+
                 yield BoundMethod(
                     v.evaluator, self._instance, self.class_context,
-                    v.parent_context, v.funcdef
+                    parent_context, v.funcdef
                 )
             else:
                 yield v
