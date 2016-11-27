@@ -399,9 +399,8 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
             for node in self._items():
                 yield context.LazyTreeContext(self._defining_context, node)
 
-            additions = check_array_additions(self.evaluator, self)
-            if additions:
-                yield additions
+            for addition in check_array_additions(self._defining_context, self):
+                yield addition
 
     def _values(self):
         """Returns a list of a list of node."""
@@ -683,55 +682,46 @@ def py__getitem__(evaluator, context, types, trailer):
     return result
 
 
-def check_array_additions(evaluator, array):
+def check_array_additions(context, sequence):
     """ Just a mapper function for the internal _check_array_additions """
-    if array.array_type not in ('list', 'set'):
+    if sequence.array_type not in ('list', 'set'):
         # TODO also check for dict updates
         return set()
 
-    return set()
-    is_list = array.array_type == 'list'
-    try:
-        current_module = array.atom.get_parent_until()
-    except AttributeError:
-        # If there's no get_parent_until, it's a FakeSequence or another Fake
-        # type. Those fake types are used inside Jedi's engine. No values may
-        # be added to those after their creation.
-        return set()
-    return _check_array_additions(evaluator, array, current_module, is_list)
+    return _check_array_additions(context, sequence)
 
 
-@memoize_default(default=set(), evaluator_is_first_arg=True)
+@memoize_default(default=set())
 @debug.increase_indent
-def _check_array_additions(evaluator, compare_array, module, is_list):
+def _check_array_additions(context, sequence):
     """
     Checks if a `Array` has "add" (append, insert, extend) statements:
 
     >>> a = [""]
     >>> a.append(1)
     """
-    debug.dbg('Dynamic array search for %s' % compare_array, color='MAGENTA')
-    if not settings.dynamic_array_additions or isinstance(module, compiled.CompiledObject):
+    from jedi.evaluate import representation as er, param
+
+    debug.dbg('Dynamic array search for %s' % sequence, color='MAGENTA')
+    module_context = context.get_root_context()
+    if not settings.dynamic_array_additions or isinstance(module_context, compiled.CompiledObject):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
         return set()
 
-    def check_additions(arglist, add_name):
-        params = list(param.Arguments(evaluator, context, arglist).unpack())
+    def find_additions(context, arglist, add_name):
+        params = list(param.TreeArguments(context.evaluator, context, arglist).unpack())
         result = set()
         if add_name in ['insert']:
             params = params[1:]
         if add_name in ['append', 'add', 'insert']:
-            for key, nodes in params:
-                result |= unite(evaluator.eval_element(node) for node in nodes)
+            for key, lazy_context in params:
+                result.add(lazy_context)
         elif add_name in ['extend', 'update']:
-            for key, nodes in params:
-                for node in nodes:
-                    types = evaluator.eval_element(node)
-                    result |= py__iter__types(evaluator, types, node)
+            for key, lazy_context in params:
+                result |= set(py__iter__(context.evaluator, lazy_context.infer()))
         return result
 
-    from jedi.evaluate import representation as er, param
-
+    '''
     def get_execution_parent(element):
         """ Used to get an Instance/FunctionExecution parent """
         if isinstance(element, Array):
@@ -744,21 +734,27 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
         if isinstance(node, er.InstanceElement) or node is None:
             return node
         return node.get_parent_until(er.FunctionExecution)
+'''
 
     temp_param_add, settings.dynamic_params_for_other_modules = \
         settings.dynamic_params_for_other_modules, False
 
-    search_names = ['append', 'extend', 'insert'] if is_list else ['add', 'update']
-    comp_arr_parent = get_execution_parent(compare_array)
+    is_list = sequence.name.string_name == 'list'
+    search_names = (['append', 'extend', 'insert'] if is_list else ['add', 'update'])
+    #comp_arr_parent = None
 
     added_types = set()
     for add_name in search_names:
         try:
-            possible_names = module.used_names[add_name]
+            possible_names = module_context.module_node.used_names[add_name]
         except KeyError:
             continue
         else:
             for name in possible_names:
+                context_node = context.get_node()
+                if not (context_node.start_pos < name.start_pos < context_node.end_pos):
+                    continue
+                '''
                 # Check if the original scope is an execution. If it is, one
                 # can search for the same statement, that is in the module
                 # dict. Executions are somewhat special in jedi, since they
@@ -772,6 +768,7 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                         # improves Jedi's speed for array lookups, since we
                         # don't have to check the whole source tree anymore.
                         continue
+                '''
                 trailer = name.parent
                 power = trailer.parent
                 trailer_pos = power.children.index(trailer)
@@ -784,36 +781,42 @@ def _check_array_additions(evaluator, compare_array, module, is_list):
                             or execution_trailer.children[0] != '(' \
                             or execution_trailer.children[1] == ')':
                         continue
-                power = helpers.call_of_leaf(name, cut_own_trailer=True)
-                # InstanceElements are special, because they don't get copied,
-                # but have this wrapper around them.
-                if isinstance(comp_arr_parent, er.InstanceElement):
-                    power = er.get_instance_el(evaluator, comp_arr_parent.instance, power)
 
-                if evaluator.recursion_detector.push_stmt(power):
+                random_context = context.create_context(name)
+                if context.evaluator.recursion_detector.push_stmt(power):
                     # Check for recursion. Possible by using 'extend' in
                     # combination with function calls.
                     continue
                 try:
-                    if compare_array in evaluator.eval_element(power):
+                    found = helpers.evaluate_call_of_leaf(
+                        random_context,
+                        name,
+                        cut_own_trailer=True
+                    )
+                    if sequence in found:
                         # The arrays match. Now add the results
-                        added_types |= check_additions(execution_trailer.children[1], add_name)
+                        added_types |= find_additions(
+                            random_context,
+                            execution_trailer.children[1],
+                            add_name
+                        )
                 finally:
-                    evaluator.recursion_detector.pop_stmt()
+                    context.evaluator.recursion_detector.pop_stmt()
+
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
     debug.dbg('Dynamic array result %s' % added_types, color='MAGENTA')
     return added_types
 
 
-def check_array_instances(evaluator, instance):
+def get_dynamic_array_instance(instance):
     """Used for set() and list() instances."""
     if not settings.dynamic_array_additions:
         return instance.var_args
 
-    ai = _ArrayInstance(evaluator, instance)
+    ai = _ArrayInstance(instance)
     from jedi.evaluate import param
-    return param.Arguments(evaluator, instance, [AlreadyEvaluated([ai])])
+    return param.ValuesArguments([[ai]])
 
 
 class _ArrayInstance(object):
@@ -827,29 +830,25 @@ class _ArrayInstance(object):
     and therefore doesn't need `names_dicts`, `py__bool__` and so on, because
     we don't use these operations in `builtins.py`.
     """
-    def __init__(self, evaluator, instance):
-        self.evaluator = evaluator
+    def __init__(self, instance):
         self.instance = instance
         self.var_args = instance.var_args
 
     def py__iter__(self):
-        raise NotImplementedError
+        var_args = self.var_args
         try:
-            _, first_nodes = next(self.var_args.unpack())
+            _, lazy_context = next(var_args.unpack())
         except StopIteration:
-            types = set()
+            pass
         else:
-            types = unite(self.evaluator.eval_element(node) for node in first_nodes)
-            for types in py__iter__(self.evaluator, types, first_nodes[0]):
-                yield types
+            for lazy in py__iter__(self.instance.evaluator, lazy_context.infer()):
+                yield lazy
 
-        module = self.var_args.get_parent_until()
-        if module is None:
-            return
-        is_list = str(self.instance.name) == 'list'
-        additions = _check_array_additions(self.evaluator, self.instance, module, is_list)
-        if additions:
-            yield additions
+        from jedi.evaluate import param
+        if isinstance(var_args, param.TreeArguments):
+            additions = _check_array_additions(var_args.context, self.instance)
+            for addition in additions:
+                yield addition
 
 
 class Slice(context.Context):

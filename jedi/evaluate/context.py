@@ -50,6 +50,9 @@ class Context(object):
                            search_global=False, is_goto=False):
         return self.evaluator.find_types(self, name_or_str, position, search_global, is_goto)
 
+    def create_context(self, node):
+        return self.evaluator.create_context(self, node)
+
 
 class TreeContext(Context):
     def __init__(self, evaluator, parent_context=None):
