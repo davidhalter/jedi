@@ -112,7 +112,7 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
     for obj in objects:
         for name in names:
             if precedence.is_string(name):
-                return evaluator.find_types(obj, name.obj)
+                return obj.py__getattribute__(name.obj)
             else:
                 debug.warning('getattr called without str')
                 continue
@@ -185,12 +185,12 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                 classes = unite(cls_or_tup.py__iter__())
                 bool_results.add(any(cls in mro for cls in classes))
             else:
-                _, nodes = list(arguments.unpack())[1]
-                for node in nodes:
-                    message = 'TypeError: isinstance() arg 2 must be a ' \
-                              'class, type, or tuple of classes and types, ' \
-                              'not %s.' % cls_or_tup
-                    analysis.add(evaluator, 'type-error-isinstance', node, message)
+                _, lazy_context = list(arguments.unpack())[1]
+                node = lazy_context.data
+                message = 'TypeError: isinstance() arg 2 must be a ' \
+                          'class, type, or tuple of classes and types, ' \
+                          'not %s.' % cls_or_tup
+                analysis.add(evaluator, 'type-error-isinstance', node, message)
 
     return set(compiled.create(evaluator, x) for x in bool_results)
 

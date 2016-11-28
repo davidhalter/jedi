@@ -46,9 +46,12 @@ class Context(object):
     def eval_trailer(self, types, trailer):
         return self.evaluator.eval_trailer(self, types, trailer)
 
-    def py__getattribute__(self, name_or_str, position=None,
+    def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            search_global=False, is_goto=False):
-        return self.evaluator.find_types(self, name_or_str, position, search_global, is_goto)
+        if name_context is None:
+            name_context = self
+        return self.evaluator.find_types(
+            self, name_or_str, name_context, position, search_global, is_goto)
 
     def create_context(self, node):
         return self.evaluator.create_context(self, node)

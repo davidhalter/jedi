@@ -123,7 +123,6 @@ from jedi._compatibility import unicode, is_py3
 from jedi.parser import Parser, load_grammar
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
-from jedi.evaluate.representation import ModuleContext
 
 
 TEST_COMPLETIONS = 0
@@ -193,8 +192,8 @@ class IntegrationTestCase(object):
                 element = parser.get_parsed_node()
                 module_context = script._get_module()
                 # The context shouldn't matter for the test results.
-                element.parent = module_context.module_node
                 user_context = get_user_scope(module_context, (self.line_nr, 0))
+                element.parent = user_context.get_node()
                 results = evaluator.eval_element(user_context, element)
                 if not results:
                     raise Exception('Could not resolve %s on line %s'

@@ -92,9 +92,11 @@ class ImportWrapper(object):
 
         if from_import_name is not None:
             types = unite(
-                evaluator.find_types(t, unicode(from_import_name),
-                                     is_goto=is_goto)
-                for t in types
+                t.py__getattribute__(
+                    unicode(from_import_name),
+                    name_context=self._context,
+                    is_goto=is_goto
+                ) for t in types
             )
 
             if not types:
@@ -316,7 +318,7 @@ class Importer(object):
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
             if [str(i) for i in import_path] == ['os', 'path']:
-                return self._evaluator.find_types(parent_module, 'path')
+                return parent_module.py__getattribute__('path')
 
             try:
                 method = parent_module.py__path__

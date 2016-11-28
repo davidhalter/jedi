@@ -121,6 +121,49 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
     '''
 
 
+def call_of_leaf(leaf):
+    """
+    Creates a "call" node that consist of all ``trailer`` and ``power``
+    objects.  E.g. if you call it with ``append``::
+
+        list([]).append(3) or None
+
+    You would get a node with the content ``list([]).append`` back.
+
+    This generates a copy of the original ast node.
+
+    If you're using the leaf, e.g. the bracket `)` it will return ``list([])``.
+    """
+    # TODO this is the old version of this call. Try to remove it.
+    trailer = leaf.parent
+    # The leaf may not be the last or first child, because there exist three
+    # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
+    # we should not match anything more than x.
+    if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
+        if trailer.type == 'atom':
+            return trailer
+        return leaf
+
+    power = trailer.parent
+    index = power.children.index(trailer)
+
+    new_power = copy.copy(power)
+    new_power.children = list(new_power.children)
+    new_power.children[index + 1:] = []
+
+    if power.type == 'error_node':
+        start = index
+        while True:
+            start -= 1
+            if power.children[start].type != 'trailer':
+                break
+        transformed = tree.Node('power', power.children[start:])
+        transformed.parent = power.parent
+        return transformed
+
+    return power
+
+
 def get_names_of_node(node):
     try:
         children = node.children

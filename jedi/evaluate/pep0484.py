@@ -71,7 +71,7 @@ def _fix_forward_reference(context, node):
         else:
             module = node.get_parent_until()
             new_node.move(module.end_pos[0])
-            new_node.parent = module
+            new_node.parent = context.get_node()
             return new_node
     else:
         return node

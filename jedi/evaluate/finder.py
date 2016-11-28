@@ -33,6 +33,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
+from jedi.evaluate.context import TreeContext
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.filters import get_global_filters, ContextName
 
@@ -95,10 +96,11 @@ def filter_definition_names(names, origin, position=None):
 
 
 class NameFinder(object):
-    def __init__(self, evaluator, context, name_or_str, position=None):
+    def __init__(self, evaluator, context, name_context, name_or_str, position=None):
         self._evaluator = evaluator
         # Make sure that it's not just a syntax tree node.
         self._context = context
+        self._name_context = name_context
         self._name = name_or_str
         if isinstance(name_or_str, tree.Name):
             self._string_name = name_or_str.value
@@ -308,19 +310,17 @@ class NameFinder(object):
         types = set()
 
         # Add isinstance and other if/assert knowledge.
-        #if isinstance(self._name, tree.Name):
-            ## Ignore FunctionExecution parents for now.
-            #flow_scope = self._name
-            #until = flow_scope.get_parent_until(er.FunctionExecution)
-            #while not isinstance(until, er.FunctionExecution):
-                #flow_scope = flow_scope.get_parent_scope(include_flows=True)
-                #if flow_scope is None:
-                    #break
-                ## TODO check if result is in scope -> no evaluation necessary
-                #n = check_flow_information(self._evaluator, flow_scope,
-                                           #self._name, self._position)
-                #if n:
-                    #return n
+        if isinstance(self._name, tree.Name) and \
+                not isinstance(self._name_context, AbstractInstanceContext):
+            # Ignore FunctionExecution parents for now.
+            flow_scope = self._name
+            while flow_scope != self._name_context.get_node():
+                flow_scope = flow_scope.get_parent_scope(include_flows=True)
+                # TODO check if result is in scope -> no evaluation necessary
+                n = check_flow_information(self._name_context, flow_scope,
+                                           self._name, self._position)
+                if n:
+                    return n
 
         for name in names:
             new_types = name.infer()
@@ -515,14 +515,14 @@ def _eval_param(evaluator, context, param, scope):
         if not res_new:
             if param.stars:
                 t = 'tuple' if param.stars == 1 else 'dict'
-                typ = list(evaluator.find_types(evaluator.BUILTINS, t))[0]
+                typ = list(evaluator.BUILTINS.py__getattribute__(t))[0]
                 res_new = evaluator.execute(typ)
         if param.default:
             res_new |= evaluator.eval_element(context, param.default)
         return res_new
 
 
-def check_flow_information(evaluator, flow, search_name, pos):
+def check_flow_information(context, flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
 
@@ -545,7 +545,7 @@ def check_flow_information(evaluator, flow, search_name, pos):
         for name in names:
             ass = name.get_parent_until(tree.AssertStmt)
             if isinstance(ass, tree.AssertStmt) and pos is not None and ass.start_pos < pos:
-                result = _check_isinstance_type(evaluator, ass.assertion(), search_name)
+                result = _check_isinstance_type(context, ass.assertion(), search_name)
                 if result:
                     break
 
@@ -553,11 +553,11 @@ def check_flow_information(evaluator, flow, search_name, pos):
         potential_ifs = [c for c in flow.children[1::4] if c != ':']
         for if_test in reversed(potential_ifs):
             if search_name.start_pos > if_test.end_pos:
-                return _check_isinstance_type(evaluator, if_test, search_name)
+                return _check_isinstance_type(context, if_test, search_name)
     return result
 
 
-def _check_isinstance_type(evaluator, element, search_name):
+def _check_isinstance_type(context, element, search_name):
     try:
         assert element.type in ('power', 'atom_expr')
         # this might be removed if we analyze and, etc
@@ -569,27 +569,29 @@ def _check_isinstance_type(evaluator, element, search_name):
 
         # arglist stuff
         arglist = trailer.children[1]
-        args = param.Arguments(evaluator, arglist, trailer)
-        lst = list(args.unpack())
+        args = param.TreeArguments(context.evaluator, context, arglist, trailer)
+        param_list = list(args.unpack())
         # Disallow keyword arguments
-        assert len(lst) == 2 and lst[0][0] is None and lst[1][0] is None
-        name = lst[0][1][0]  # first argument, values, first value
+        assert len(param_list) == 2
+        (key1, lazy_context_object), (key2, lazy_context_cls) = param_list
+        assert key1 is None and key2 is None
+        call = helpers.call_of_leaf(search_name)
+        is_instance_call = helpers.call_of_leaf(lazy_context_object.data)
         # Do a simple get_code comparison. They should just have the same code,
         # and everything will be all right.
-        classes = lst[1][1][0]
-        call = helpers.call_of_leaf(search_name)
-        assert name.get_code(normalized=True) == call.get_code(normalized=True)
+        assert is_instance_call.get_code(normalized=True) == call.get_code(normalized=True)
     except AssertionError:
         return set()
 
     result = set()
-    for cls_or_tup in evaluator.eval_element(classes):
-        if isinstance(cls_or_tup, iterable.Array) and cls_or_tup.type == 'tuple':
+    for cls_or_tup in lazy_context_cls.infer():
+        if isinstance(cls_or_tup, iterable.AbstractSequence) and \
+                cls_or_tup.array_type == 'tuple':
             for lazy_context in cls_or_tup.py__iter__():
                 for context in lazy_context.infer():
                     result |= context.execute_evaluated()
         else:
-            result |= evaluator.execute(cls_or_tup)
+            result |= cls_or_tup.execute_evaluated()
     return result
 
 

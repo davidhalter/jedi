@@ -111,8 +111,8 @@ class Evaluator(object):
         self.recursion_detector = recursion.RecursionDetector(self)
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def find_types(self, context, name_str, position=None, search_global=False,
-                   is_goto=False):
+    def find_types(self, context, name_or_str, name_context, position=None,
+                   search_global=False, is_goto=False):
         """
         This is the search function. The most important part to debug.
         `remove_statements` and `filter_statements` really are the core part of
@@ -121,7 +121,7 @@ class Evaluator(object):
         :param position: Position of the last statement -> tuple of line, column
         :return: List of Names. Their parents are the types.
         """
-        f = finder.NameFinder(self, context, name_str, position)
+        f = finder.NameFinder(self, context, name_context, name_or_str, position)
         filters = f.get_filters(search_global)
         if is_goto:
             return f.filter_name(filters)
@@ -152,7 +152,8 @@ class Evaluator(object):
             operator = copy.copy(first_operation)
             operator.value = operator.value[:-1]
             name = str(stmt.get_defined_names()[0])
-            left = self.find_types(context, name, stmt.start_pos, search_global=True)
+            left = context.py__getattribute__(
+                name, position=stmt.start_pos, search_global=True)
 
             for_stmt = stmt.get_parent_until(tree.ForStmt)
             if isinstance(for_stmt, tree.ForStmt) and types \
@@ -294,8 +295,10 @@ class Evaluator(object):
             types = self._eval_atom(context, element.children[0])
             for next_name in element.children[2::2]:
                 # TODO add search_global=True?
-                types = set(chain.from_iterable(self.find_types(typ, next_name)
-                                                for typ in types))
+                types = unite(
+                    typ.py__getattribute__(next_name, name_context=context)
+                    for typ in types
+                )
             types = types
         elif element.type == 'eval_input':
             types = self._eval_element_not_cached(context, element.children[0])
@@ -326,7 +329,11 @@ class Evaluator(object):
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
                 stmt = atom
-            return self.find_types(context, atom, stmt.start_pos, search_global=True)
+            return context.py__getattribute__(
+                name_or_str=atom,
+                position=stmt.start_pos,
+                search_global=True
+            )
         elif isinstance(atom, tree.Literal):
             return set([compiled.create(self, atom.eval())])
         else:
@@ -372,7 +379,10 @@ class Evaluator(object):
             for typ in types:
                 debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
                 if trailer_op == '.':
-                    new_types |= self.find_types(typ, node)
+                    new_types |= typ.py__getattribute__(
+                        name_context=context,
+                        name_or_str=node
+                    )
                 elif trailer_op == '(':
                     arguments = param.TreeArguments(self, context, node, trailer)
                     new_types |= self.execute(typ, arguments)
@@ -477,27 +487,32 @@ class Evaluator(object):
                 new_dotted.children[index - 1:] = []
                 values = self.eval_element(context, new_dotted)
                 return unite(
-                    self.find_types(value, name, is_goto=True) for value in values
+                    value.py__getattribute__(name, name_context=context, is_goto=True)
+                    for value in values
                 )
-                return resolve_implicit_imports(iterable.unite(
-                    self.find_types(typ, name, is_goto=True) for typ in types
-                ))
+                #return resolve_implicit_imports(iterable.unite(
+                    #self.find_types(typ, name, is_goto=True) for typ in types
+                #))
 
         if tree.is_node(par, 'trailer') and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
             return unite(
-                self.find_types(value, name, is_goto=True) for value in values
+                value.py__getattribute__(name, name_context=context, is_goto=True)
+                for value in values
             )
-            return resolve_implicit_imports(iterable.unite(
-                self.find_types(typ, name, is_goto=True) for typ in types
-            ))
+            #return resolve_implicit_imports(iterable.unite(
+                #self.find_types(typ, name, is_goto=True) for typ in types
+            #))
         else:
             if stmt.type != 'expr_stmt':
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
                 stmt = name
-            return self.find_types(context, name, stmt.start_pos,
-                                   search_global=True, is_goto=True)
+            return context.py__getattribute__(
+                name,
+                position=stmt.start_pos,
+                search_global=True, is_goto=True
+            )
 
     def wrap(self, element, parent_context):
         raise DeprecationWarning
