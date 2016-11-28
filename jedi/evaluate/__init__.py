@@ -213,7 +213,7 @@ class Evaluator(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][str(if_name)] = [definition]
+                                    new_name_dicts[i][str(if_name)] = set([definition])
 
                                 name_dicts += new_name_dicts
                         else:

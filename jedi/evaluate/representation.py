@@ -74,22 +74,7 @@ class Executed(context.TreeContext):
         return True
 
 
-class Wrapper(tree.Base):
-    def is_scope(self):
-        return True
-
-    def is_class(self):
-        return False
-
-    def py__bool__(self):
-        """
-        Since Wrapper is a super class for classes, functions and modules,
-        the return value will always be true.
-        """
-        return True
-
-
-class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
+class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -207,7 +192,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper))
         return ContextName(self, self.classdef.name)
 
 
-class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
+class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -457,7 +442,7 @@ class ModuleAttributeName(AbstractNameDefinition):
         )
 
 
-class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext, Wrapper)):
+class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     api_type = 'module'
     parent_context = None
 

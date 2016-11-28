@@ -56,6 +56,16 @@ class Context(object):
     def create_context(self, node):
         return self.evaluator.create_context(self, node)
 
+    def is_class(self):
+        return False
+
+    def py__bool__(self):
+        """
+        Since Wrapper is a super class for classes, functions and modules,
+        the return value will always be true.
+        """
+        return True
+
 
 class TreeContext(Context):
     def __init__(self, evaluator, parent_context=None):
