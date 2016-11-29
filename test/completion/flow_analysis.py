@@ -1,3 +1,39 @@
+# -----------------
+# First a few name resolution things
+# -----------------
+
+x = 3
+if NOT_DEFINED:
+    x = ''
+#? 6 int()
+elif x:
+    pass
+else:
+    #? int()
+    x
+
+x = 1
+try:
+    x = ''
+#? 8 int() str()
+except x:
+    #? 5 int() str()
+    x
+    x = 1.0
+else:
+    #? 5 int() str()
+    x
+    x = list
+finally:
+    #? 5 int() str() float() list
+    x
+    x = tuple
+
+
+# -----------------
+# Return checks
+# -----------------
+
 def foo(x):
     if 1.0:
         return 1

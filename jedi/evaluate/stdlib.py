@@ -179,10 +179,13 @@ def builtins_isinstance(evaluator, objects, types, arguments):
         for cls_or_tup in types:
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
-            elif str(cls_or_tup.name) == 'tuple' \
-                    and cls_or_tup.get_parent_scope() == evaluator.BUILTINS:
+            elif cls_or_tup.name.string_name == 'tuple' \
+                    and cls_or_tup.get_root_context() == evaluator.BUILTINS:
                 # Check for tuples.
-                classes = unite(cls_or_tup.py__iter__())
+                classes = unite(
+                    lazy_context.infer()
+                    for lazy_context in cls_or_tup.py__iter__()
+                )
                 bool_results.add(any(cls in mro for cls in classes))
             else:
                 _, lazy_context = list(arguments.unpack())[1]

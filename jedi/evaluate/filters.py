@@ -155,12 +155,17 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 
     def _filter(self, names):
         names = super(ParserTreeFilter, self)._filter(names)
-        names = [n for n in names if n.is_definition() and n.parent.type != 'trailer']
-        names = [n for n in names
-                 if ((n.parent if n.parent.type in ('classdef', 'funcdef') else n)
-                        .get_parent_scope() == self._parser_scope)]
-
+        names = [n for n in names if self._is_name_reachable(n)]
         return list(self._check_flows(names))
+
+    def _is_name_reachable(self, name):
+        if not name.is_definition():
+            return False
+        parent = name.parent
+        if parent.type == 'trailer':
+            return False
+        base_node = parent if parent.type in ('classdef', 'funcdef') else name
+        return base_node.get_parent_scope() == self._parser_scope
 
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):

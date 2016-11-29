@@ -1134,11 +1134,28 @@ class Lambda(Function):
 
 class Flow(BaseNode):
     __slots__ = ()
+    FLOW_KEYWORDS = (
+        'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
+    )
 
     def nodes_to_execute(self, last_added=False):
         for child in self.children:
             for node_to_execute in child.nodes_to_execute():
                 yield node_to_execute
+
+    def get_branch_keyword(self, node):
+        start_pos = node.start_pos
+        if not (self.start_pos < start_pos <= self.end_pos):
+            raise ValueError('The node is not part of the flow.')
+
+        keyword = None
+        for i, child in enumerate(self.children):
+            if start_pos < child.start_pos:
+                return keyword
+            first_leaf = child.first_leaf()
+            if first_leaf in self.FLOW_KEYWORDS:
+                keyword = first_leaf
+        return 0
 
 
 class IfStmt(Flow):

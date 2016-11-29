@@ -32,19 +32,46 @@ UNREACHABLE = Status(False, 'unreachable')
 UNSURE = Status(None, 'unsure')
 
 
+def _get_flow_scopes(node):
+    while True:
+        node = node.get_parent_scope(include_flows=True)
+        if node.type in ('funcdef', 'classdef', 'file_input'):
+            return
+        yield node
+
+
 def reachability_check(context, context_scope, node, origin_scope=None):
     flow_scope = node.get_parent_scope(include_flows=True)
-    # Direct parents get resolved, we filter scopes that are separate branches.
-    # This makes sense for autocompletion and static analysis. For actual
-    # Python it doesn't matter, because we're talking about potentially
-    # unreachable code.
-    # e.g. `if 0:` would cause all name lookup within the flow make
-    # unaccessible. This is not a "problem" in Python, because the code is
-    # never called. In Jedi though, we still want to infer types.
-    #while origin_scope is not None:
-        #if flow_scope == origin_scope:
-            #return REACHABLE
-        #origin_scope = origin_scope.parent
+    if origin_scope is not None:
+        origin_flow_scopes = list(_get_flow_scopes(origin_scope))
+        node_flow_scopes = list(_get_flow_scopes(node))
+
+        branch_matches = True
+        for flow_scope in origin_flow_scopes:
+            if flow_scope in node_flow_scopes:
+                node_keyword = flow_scope.get_branch_keyword(node)
+                origin_keyword = flow_scope.get_branch_keyword(origin_scope)
+                branch_matches = node_keyword == origin_keyword
+                if flow_scope.type == 'if_stmt':
+                    if not branch_matches:
+                        return UNREACHABLE
+                elif flow_scope.type == 'try_stmt':
+                    if not branch_matches and origin_keyword == 'else' \
+                            and node_keyword == 'except':
+                        return UNREACHABLE
+                break
+
+        # Direct parents get resolved, we filter scopes that are separate
+        # branches.  This makes sense for autocompletion and static analysis.
+        # For actual Python it doesn't matter, because we're talking about
+        # potentially unreachable code.
+        # e.g. `if 0:` would cause all name lookup within the flow make
+        # unaccessible. This is not a "problem" in Python, because the code is
+        # never called. In Jedi though, we still want to infer types.
+        while origin_scope is not None:
+            if flow_scope == origin_scope and branch_matches:
+                return REACHABLE
+            origin_scope = origin_scope.parent
 
     return _break_check(context, context_scope, flow_scope, node)
 
