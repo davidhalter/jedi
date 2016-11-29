@@ -327,13 +327,14 @@ class NameFinder(object):
                 not isinstance(self._name_context, AbstractInstanceContext):
             # Ignore FunctionExecution parents for now.
             flow_scope = self._name
-            while flow_scope != self._name_context.get_node():
+            while True:
                 flow_scope = flow_scope.get_parent_scope(include_flows=True)
-                # TODO check if result is in scope -> no evaluation necessary
                 n = _check_flow_information(self._name_context, flow_scope,
                                             self._name, self._position)
                 if n is not None:
                     return n
+                if flow_scope == self._name_context.get_node():
+                    break
         return types
 
     def _resolve_descriptors(self, name, types):
@@ -533,20 +534,25 @@ def _check_flow_information(context, flow, search_name, pos):
     if not settings.dynamic_flow_information:
         return None
 
-    result = set()
+    result = None
     if flow.is_scope():
         # Check for asserts.
+        module_node = flow.get_root_node()
         try:
-            names = reversed(flow.names_dict[search_name.value])
-        except (KeyError, AttributeError):
-            names = []
+            names = module_node.used_names[search_name.value]
+        except KeyError:
+            return None
+        names = reversed([
+            n for n in names
+            if flow.start_pos <= n.start_pos < (pos or flow.end_pos)
+        ])
 
         for name in names:
-            ass = name.get_parent_until(tree.AssertStmt)
-            if isinstance(ass, tree.AssertStmt) and pos is not None and ass.start_pos < pos:
+            ass = tree.search_ancestor(name, 'assert_stmt')
+            if ass is not None:
                 result = _check_isinstance_type(context, ass.assertion(), search_name)
-                if result:
-                    break
+                if result is not None:
+                    return result
 
     if isinstance(flow, (tree.IfStmt, tree.WhileStmt)):
         potential_ifs = [c for c in flow.children[1::4] if c != ':']
@@ -580,7 +586,7 @@ def _check_isinstance_type(context, element, search_name):
         # and everything will be all right.
         assert is_instance_call.get_code(normalized=True) == call.get_code(normalized=True)
     except AssertionError:
-        return set()
+        return None
 
     result = set()
     for cls_or_tup in lazy_context_cls.infer():

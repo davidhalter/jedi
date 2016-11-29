@@ -41,7 +41,7 @@ def _get_flow_scopes(node):
 
 
 def reachability_check(context, context_scope, node, origin_scope=None):
-    flow_scope = node.get_parent_scope(include_flows=True)
+    first_flow_scope = node.get_parent_scope(include_flows=True)
     if origin_scope is not None:
         origin_flow_scopes = list(_get_flow_scopes(origin_scope))
         node_flow_scopes = list(_get_flow_scopes(node))
@@ -69,11 +69,11 @@ def reachability_check(context, context_scope, node, origin_scope=None):
         # unaccessible. This is not a "problem" in Python, because the code is
         # never called. In Jedi though, we still want to infer types.
         while origin_scope is not None:
-            if flow_scope == origin_scope and branch_matches:
+            if first_flow_scope == origin_scope and branch_matches:
                 return REACHABLE
             origin_scope = origin_scope.parent
 
-    return _break_check(context, context_scope, flow_scope, node)
+    return _break_check(context, context_scope, first_flow_scope, node)
 
 
 def _break_check(context, context_scope, flow_scope, node):
@@ -96,11 +96,6 @@ def _break_check(context, context_scope, flow_scope, node):
     if reachable in (UNREACHABLE, UNSURE):
         return reachable
 
-    # TODO REMOVE WTF
-    #if element_scope.type == 'file_input':
-        # The definition is in another module and therefore just return what we
-        # have generated.
-    #    return reachable
     if context_scope != flow_scope and context_scope != flow_scope.parent:
         flow_scope = flow_scope.get_parent_scope(include_flows=True)
         return reachable & _break_check(context, context_scope, flow_scope, node)
