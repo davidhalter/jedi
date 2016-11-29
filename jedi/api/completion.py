@@ -232,22 +232,21 @@ class Completion:
         """
         Autocomplete inherited methods when overriding in child class.
         """
-        return
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         cls = leaf.get_parent_until(tree.Class)
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.
-            cls = self._evaluator.wrap(cls)
+            random_context = self._module_context.create_context(cls)
         else:
             return
 
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
-        filters = cls.get_filters(search_global=False, is_instance=True)
+        filters = random_context.get_filters(search_global=False, is_instance=True)
         # The first dict is the dictionary of class itself.
         next(filters)
         for filter in filters:
             for name in filter.values():
-                if (name.parent.type == 'funcdef') == is_function:
+                if (name.api_type == 'function') == is_function:
                     yield name

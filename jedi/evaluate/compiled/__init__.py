@@ -255,6 +255,7 @@ class CompiledName(AbstractNameDefinition):
             name = None
         return '<%s: (%s).%s>' % (self.__class__.__name__, name, self.string_name)
 
+    @property
     def api_type(self):
         return self.infer()[0].api_type
 

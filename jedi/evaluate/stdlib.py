@@ -140,7 +140,7 @@ def builtins_super(evaluator, types, objects, context):
     # TODO make this able to detect multiple inheritance super
     if isinstance(context, InstanceFunctionExecution):
         su = context.instance.py__class__().py__bases__()
-        return su[0].infer()
+        return unite(context.execute_evaluated() for context in su[0].infer())
     return set()
 
 
