@@ -449,7 +449,6 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def __init__(self, evaluator, module_node):
         super(ModuleContext, self).__init__(evaluator, parent_context=None)
         self.module_node = module_node
-        self.path = None
 
     def get_node(self):
         return self.module_node

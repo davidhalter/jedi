@@ -9,6 +9,7 @@ from jedi.parser import ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
+from jedi.evaluate.compiled import CompiledObject
 from jedi.parser.utils import load_parser, save_parser
 
 
@@ -146,7 +147,7 @@ def _paths_from_list_modifications(module_path, trailer1, trailer2):
     return _execute_code(module_path, arg.get_code())
 
 
-def _check_module(evaluator, module):
+def _check_module(evaluator, module_context):
     """
     Detect sys.path modifications within module.
     """
@@ -162,8 +163,11 @@ def _check_module(evaluator, module):
                         yield name, power
 
     sys_path = list(evaluator.sys_path)  # copy
+    if isinstance(module_context, CompiledObject):
+        return sys_path
+
     try:
-        possible_names = module.used_names['path']
+        possible_names = module_context.get_node().used_names['path']
     except KeyError:
         # module.used_names is MergedNamesDict whose getitem never throws
         # keyerror, this is superfluous.
@@ -172,15 +176,20 @@ def _check_module(evaluator, module):
         for name, power in get_sys_path_powers(possible_names):
             stmt = name.get_definition()
             if len(power.children) >= 4:
-                sys_path.extend(_paths_from_list_modifications(module.path, *power.children[2:4]))
+                sys_path.extend(
+                    _paths_from_list_modifications(
+                        module_context.py__file__(), *power.children[2:4]
+                    )
+                )
             elif name.get_definition().type == 'expr_stmt':
                 sys_path.extend(_paths_from_assignment(evaluator, stmt))
     return sys_path
 
 
 @memoize_default(evaluator_is_first_arg=True, default=[])
-def sys_path_with_modifications(evaluator, module):
-    if module.path is None:
+def sys_path_with_modifications(evaluator, module_context):
+    path = module_context.py__file__()
+    if path is None:
         # Support for modules without a path is bad, therefore return the
         # normal path.
         return list(evaluator.sys_path)
@@ -188,13 +197,13 @@ def sys_path_with_modifications(evaluator, module):
     curdir = os.path.abspath(os.curdir)
     #TODO why do we need a chdir?
     with common.ignored(OSError):
-        os.chdir(os.path.dirname(module.path))
+        os.chdir(os.path.dirname(path))
 
     buildout_script_paths = set()
 
-    result = _check_module(evaluator, module)
-    result += _detect_django_path(module.path)
-    for buildout_script in _get_buildout_scripts(module.path):
+    result = _check_module(evaluator, module_context)
+    result += _detect_django_path(path)
+    for buildout_script in _get_buildout_scripts(path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script):
             buildout_script_paths.add(path)
     # cleanup, back to old directory

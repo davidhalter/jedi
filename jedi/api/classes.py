@@ -71,7 +71,7 @@ class BaseDefinition(object):
         if self.in_builtin_module():
             self.module_path = None
         else:
-            self.module_path = self._module.path
+            self.module_path = self._module.py__file__()
             """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
 
     @property
