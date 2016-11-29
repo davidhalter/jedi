@@ -35,7 +35,7 @@ UNSURE = Status(None, 'unsure')
 def _get_flow_scopes(node):
     while True:
         node = node.get_parent_scope(include_flows=True)
-        if node.type in ('funcdef', 'classdef', 'file_input'):
+        if node is None or node.is_scope():
             return
         yield node
 

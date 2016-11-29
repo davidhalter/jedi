@@ -187,7 +187,7 @@ class Completion:
             self._evaluator,
             context,
             self._position,
-            origin_scope=context
+            origin_scope=self._module_node
         )
         completion_names = []
         for filter in filters:

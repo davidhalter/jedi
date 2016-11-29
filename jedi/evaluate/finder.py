@@ -309,19 +309,6 @@ class NameFinder(object):
     def _names_to_types(self, names, attribute_lookup):
         types = set()
 
-        # Add isinstance and other if/assert knowledge.
-        if isinstance(self._name, tree.Name) and \
-                not isinstance(self._name_context, AbstractInstanceContext):
-            # Ignore FunctionExecution parents for now.
-            flow_scope = self._name
-            while flow_scope != self._name_context.get_node():
-                flow_scope = flow_scope.get_parent_scope(include_flows=True)
-                # TODO check if result is in scope -> no evaluation necessary
-                n = check_flow_information(self._name_context, flow_scope,
-                                           self._name, self._position)
-                if n:
-                    return n
-
         for name in names:
             new_types = name.infer()
             if isinstance(self._context, (er.ClassContext, AbstractInstanceContext)) \
@@ -335,6 +322,18 @@ class NameFinder(object):
             # handling __getattr__ / __getattribute__
             return self._check_getattr(self._context)
 
+        # Add isinstance and other if/assert knowledge.
+        if not types and isinstance(self._name, tree.Name) and \
+                not isinstance(self._name_context, AbstractInstanceContext):
+            # Ignore FunctionExecution parents for now.
+            flow_scope = self._name
+            while flow_scope != self._name_context.get_node():
+                flow_scope = flow_scope.get_parent_scope(include_flows=True)
+                # TODO check if result is in scope -> no evaluation necessary
+                n = _check_flow_information(self._name_context, flow_scope,
+                                            self._name, self._position)
+                if n is not None:
+                    return n
         return types
 
     def _resolve_descriptors(self, name, types):
@@ -522,7 +521,7 @@ def _eval_param(evaluator, context, param, scope):
         return res_new
 
 
-def check_flow_information(context, flow, search_name, pos):
+def _check_flow_information(context, flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
 
