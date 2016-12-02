@@ -69,9 +69,17 @@ listen(['' for x in [1]])
 # nested list comprehensions
 # -----------------
 
-b = [a for arr in [[1]] for a in arr]
+b = [a for arr in [[1, 1.0]] for a in arr]
 #? int()
 b[0]
+#? float()
+b[1]
+
+b = [arr for arr in [[1, 1.0]] for a in arr]
+#? int()
+b[0][0]
+#? float()
+b[1][1]
 
 b = [a for arr in [[1]] if '' for a in arr if '']
 #? int()
@@ -181,6 +189,8 @@ def x():
 foo = [x for x in [1, '']][:1]
 #? int()
 foo[0]
+#? str()
+foo[1]
 
 # -----------------
 # In class

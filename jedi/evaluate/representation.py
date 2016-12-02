@@ -184,9 +184,6 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                 return names
         return []
 
-    def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.classdef)
-
     @property
     def name(self):
         return ContextName(self, self.classdef.name)
@@ -251,9 +248,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         else:
             name = 'FUNCTION_CLASS'
         return compiled.get_special_object(self.evaluator, name)
-
-    def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.base_func)
 
     @property
     def name(self):
@@ -410,9 +404,6 @@ class FunctionExecutionContext(Executed):
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
         return param.get_params(self.evaluator, self.parent_context, self.funcdef, self.var_args)
-
-    def __repr__(self):
-        return "<%s of %s>" % (self.__class__.__name__, self.funcdef)
 
 
 class AnonymousFunctionExecution(FunctionExecutionContext):
@@ -605,6 +596,3 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
-
-    def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.module_node)

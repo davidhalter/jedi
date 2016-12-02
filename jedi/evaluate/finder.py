@@ -107,7 +107,7 @@ class NameFinder(object):
         else:
             self._string_name = name_or_str
         self._position = position
-        self._found_predefined_if_name = None
+        self._found_predefined_types = None
 
     @debug.increase_indent
     def find(self, filters, attribute_lookup):
@@ -118,8 +118,8 @@ class NameFinder(object):
         # TODO rename scopes to names_dicts
 
         names = self.filter_name(filters)
-        if self._found_predefined_if_name is not None:
-            return self._found_predefined_if_name
+        if self._found_predefined_types is not None:
+            return self._found_predefined_types
 
         types = self._names_to_types(names, attribute_lookup)
 
@@ -201,7 +201,8 @@ class NameFinder(object):
                 check = None
                 while True:
                     scope = scope.parent
-                    if scope.type in ("if_stmt", "for_stmt", "comp_for"):
+                    if scope.type in ("if_stmt", "for_stmt"):
+                        # TODO try removing for_stmt.
                         try:
                             name_dict = self.context.predefined_names[scope]
                             types = set(name_dict[self._string_name])
@@ -212,14 +213,14 @@ class NameFinder(object):
                                 # It doesn't make any sense to check if
                                 # statements in the if statement itself, just
                                 # deliver types.
-                                self._found_predefined_if_name = types
+                                self._found_predefined_types = types
                             else:
                                 check = flow_analysis.reachability_check(
                                     self._context, self._context, origin_scope)
                                 if check is flow_analysis.UNREACHABLE:
-                                    self._found_predefined_if_name = set()
+                                    self._found_predefined_types = set()
                                 else:
-                                    self._found_predefined_if_name = types
+                                    self._found_predefined_types = types
                             break
                     if isinstance(scope, tree.IsScope) or scope is None:
                         break
@@ -260,7 +261,7 @@ class NameFinder(object):
                     except KeyError:
                         continue
                     else:
-                        self._found_predefined_if_name = types
+                        self._found_predefined_types = types
                         return []
         for filter in filters:
             names = filter.get(self._name)
@@ -354,7 +355,6 @@ class NameFinder(object):
         return result
 
 
-@memoize_default(set(), evaluator_is_first_arg=True)
 def _name_to_types(evaluator, context, name):
     types = []
     node = name.get_definition()
@@ -367,9 +367,12 @@ def _name_to_types(evaluator, context, name):
         if types:
             return types
     if node.type in ('for_stmt', 'comp_for'):
-        container_types = context.eval_node(node.children[3])
-        for_types = iterable.py__iter__types(evaluator, container_types, node.children[3])
-        types = check_tuple_assignments(evaluator, for_types, name)
+        try:
+            types = context.predefined_names[node][name.value]
+        except KeyError:
+            container_types = context.eval_node(node.children[3])
+            for_types = iterable.py__iter__types(evaluator, container_types, node.children[3])
+            types = check_tuple_assignments(evaluator, for_types, name)
     elif isinstance(node, tree.Param):
         return set()  # TODO remove
         types = _eval_param(evaluator, context, node)

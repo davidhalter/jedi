@@ -177,6 +177,9 @@ class Evaluator(object):
         return types
 
     def eval_element(self, context, element):
+        if isinstance(context, iterable.CompForContext):
+            return self._eval_element_not_cached(context, element)
+
         if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
         predefined_if_name_dict = context.predefined_names.get(if_stmt)
         if predefined_if_name_dict is None and isinstance(if_stmt, tree.IfStmt):

@@ -72,6 +72,9 @@ class TreeContext(Context):
         super(TreeContext, self).__init__(evaluator, parent_context)
         self.predefined_names = {}
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self.get_node())
+
 
 class FlowContext(TreeContext):
     def get_parent_flow_context(self):

@@ -31,7 +31,8 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
 from jedi import common
-from jedi.evaluate.filters import DictFilter, AbstractNameDefinition
+from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
+    ParserTreeFilter
 from jedi.evaluate import context
 from jedi.evaluate import precedence
 
@@ -164,6 +165,22 @@ class Generator(GeneratorMixin, context.Context):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
+class CompForContext(context.TreeContext):
+    @classmethod
+    def from_comp_for(cls, parent_context, comp_for):
+        return cls(parent_context.evaluator, parent_context, comp_for)
+
+    def __init__(self, evaluator, parent_context, comp_for):
+        super(CompForContext, self).__init__(evaluator, parent_context)
+        self.node = comp_for
+
+    def get_node(self):
+        return self.node
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        yield ParserTreeFilter(self.evaluator, self, self.node)
+
+
 class Comprehension(AbstractSequence):
     @staticmethod
     def from_atom(evaluator, context, atom):
@@ -192,13 +209,14 @@ class Comprehension(AbstractSequence):
         # The atom contains a testlist_comp
         return self._get_comprehension().children[1]
 
-    @memoize_default()
     def _eval_node(self, index=0):
         """
         The first part `x + 1` of the list comprehension:
 
             [x + 1 for x in foo]
         """
+        return self._get_comprehension().children[index]
+        #TODO delete
         comp_for = self._get_comp_for()
         # For nested comprehensions we need to search the last one.
         node = self._get_comprehension().children[index]
@@ -206,25 +224,37 @@ class Comprehension(AbstractSequence):
         #TODO raise NotImplementedError('should not need to copy...')
         return helpers.deep_ast_copy(node, parent=last_comp)
 
-    def _nested(self, comp_fors):
+    @memoize_default()
+    def _get_comp_for_context(self, parent_context, comp_for):
+        return CompForContext.from_comp_for(
+            parent_context,
+            comp_for,
+        )
+
+    def _nested(self, comp_fors, parent_context=None):
         evaluator = self.evaluator
         comp_for = comp_fors[0]
         input_node = comp_for.children[3]
-        input_types = self._defining_context.eval_node(input_node)
+        parent_context = parent_context or self._defining_context
+        input_types = parent_context.eval_node(input_node)
 
         iterated = py__iter__(evaluator, input_types, input_node)
         exprlist = comp_for.children[1]
         for i, lazy_context in enumerate(iterated):
             types = lazy_context.infer()
             dct = unpack_tuple_to_dict(evaluator, types, exprlist)
-            with helpers.predefine_names(self._defining_context, comp_for, dct):
+            context = self._get_comp_for_context(
+                parent_context,
+                comp_for,
+            )
+            with helpers.predefine_names(context, comp_for, dct):
                 try:
-                    for result in self._nested(comp_fors[1:]):
+                    for result in self._nested(comp_fors[1:], context):
                         yield result
                 except IndexError:
-                    iterated = self._defining_context.eval_node(self._eval_node())
+                    iterated = context.eval_node(self._eval_node())
                     if self.array_type == 'dict':
-                        yield iterated, self._defining_context.eval_node(self._eval_node(2))
+                        yield iterated, context.eval_node(self._eval_node(2))
                     else:
                         yield iterated
 
