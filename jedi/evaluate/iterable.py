@@ -486,7 +486,7 @@ class DictLiteralContext(SequenceLiteralContext):
     @register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
-        return FakeSequence(self.evaluator, 'list', [lazy_context])
+        return set([FakeSequence(self.evaluator, 'list', [lazy_context])])
 
     @register_builtin_method('items')
     def _imitate_items(self):
@@ -532,7 +532,7 @@ class FakeSequence(_FakeArray):
         return self._context_list
 
     def py__getitem__(self, index):
-        return self._lazy_context_list[index].infer()
+        return set(self._lazy_context_list[index].infer())
 
     def py__iter__(self):
         return self._lazy_context_list

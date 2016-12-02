@@ -15,7 +15,6 @@ import imp
 import os
 import pkgutil
 import sys
-from itertools import chain
 
 from jedi._compatibility import find_module, unicode
 from jedi import debug
@@ -171,29 +170,39 @@ class ImportName(AbstractNameDefinition):
     start_pos = (1, 0)
 
     def __init__(self, parent_module, string_name):
-        self.parent_context = parent_module
+        self.parent_module = parent_module
         self.string_name = string_name
 
     def infer(self):
         return Importer(
-            self.parent_context.evaluator,
+            self.parent_module.evaluator,
             [self.string_name],
-            self.parent_context,
+            self.parent_module,
         ).follow()
 
     def get_root_context(self):
         # Not sure if this is correct.
         return self.parent_context.get_root_context()
 
+    @property
+    def parent_context(self):
+        return self.parent_module
+
 
 class SubModuleName(ImportName):
     def infer(self):
         return Importer(
-            self.parent_context.evaluator,
+            self.parent_module.evaluator,
             [self.string_name],
-            self.parent_context,
+            self.parent_module,
             level=1
         ).follow()
+
+    @property
+    def parent_context(self):
+        # This is a bit of a special case. But it seems like it's working well.
+        # Since a SubModuleName is basically a lazy name to a module
+        return next(iter(self.infer()))
 
 
 class Importer(object):

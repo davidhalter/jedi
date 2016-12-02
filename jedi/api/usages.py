@@ -9,15 +9,14 @@ def usages(evaluator, definition_names, mods):
     """
     :param definitions: list of Name
     """
-    def compare_array(definitions):
+    def compare_array(definition_names):
         """ `definitions` are being compared by module/start_pos, because
         sometimes the id's of the objects change (e.g. executions).
         """
-        result = []
-        for d in definitions:
-            module = d.get_root_context()
-            result.append((module, d.start_pos))
-        return result
+        return [
+            (d.get_root_context(), d.start_pos)
+            for d in definition_names
+        ]
 
     search_name = list(definition_names)[0].string_name
     compare_definitions = compare_array(definition_names)
@@ -35,6 +34,7 @@ def usages(evaluator, definition_names, mods):
                     # (because goto might return that import name).
                     compare_definitions += compare_array([name])
         else:
+            # compiled objects
             definition_names.add(m.name)
 
     return [classes.Definition(evaluator, n) for n in definition_names]
