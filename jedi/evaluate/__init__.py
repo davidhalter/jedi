@@ -281,7 +281,7 @@ class Evaluator(object):
                 types = self.eval_trailer(context, types, trailer)
         elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
-            types = set([iterable.ArrayLiteralContext(self, context, element)])
+            types = set([iterable.SequenceLiteralContext(self, context, element)])
         elif element.type in ('not_test', 'factor'):
             types = self.eval_element(context, element.children[-1])
             for operator in element.children[:-1]:
@@ -368,7 +368,18 @@ class Evaluator(object):
 
                 if comp_for.type == 'comp_for':
                     return set([iterable.Comprehension.from_atom(self, context, atom)])
-            return set([iterable.ArrayLiteralContext(self, context, atom)])
+
+            # It's a dict/list/tuple literal.
+            array_node = c[1]
+            try:
+                array_node_c = array_node.children
+            except AttributeError:
+                array_node_c = []
+            if c[0] == '{' and (array_node == '}' or ':' in array_node_c):
+                context = iterable.DictLiteralContext(self, context, atom)
+            else:
+                context = iterable.SequenceLiteralContext(self, context, atom)
+            return set([context])
 
     def eval_trailer(self, context, types, trailer):
         trailer_op, node = trailer.children[:2]
@@ -554,6 +565,9 @@ class Evaluator(object):
                     return AnonymousInstance(self, parent_context, class_context)
                 else:
                     return class_context
+            elif scope_node.type == 'comp_for':
+                return iterable.CompForContext.from_comp_for(parent_context, scope_node)
+            raise Exception("There's a scope that was not managed.")
 
         base_node = base_context.get_node()
 

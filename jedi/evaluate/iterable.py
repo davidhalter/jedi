@@ -38,6 +38,8 @@ from jedi.evaluate import precedence
 
 
 class AbstractSequence(context.Context):
+    builtin_methods = {}
+
     def __init__(self, evaluator):
         super(AbstractSequence, self).__init__(evaluator, evaluator.BUILTINS)
 
@@ -101,7 +103,16 @@ class SpecialMethodFilter(DictFilter):
 
 
 def has_builtin_methods(cls):
-    cls.builtin_methods = {}
+    base_dct = {}
+    # Need to care properly about inheritance. Builtin Methods should not get
+    # lost, just because they are not mentioned in a class.
+    for base_cls in reversed(cls.__bases__):
+        try:
+            base_dct.update(base_cls.builtin_methods)
+        except AttributeError:
+            pass
+
+    cls.builtin_methods = base_dct
     for func in cls.__dict__.values():
         try:
             cls.builtin_methods.update(func.registered_builtin_methods)
@@ -226,10 +237,7 @@ class Comprehension(AbstractSequence):
 
     @memoize_default()
     def _get_comp_for_context(self, parent_context, comp_for):
-        return CompForContext.from_comp_for(
-            parent_context,
-            comp_for,
-        )
+        return parent_context.create_context(comp_for)
 
     def _nested(self, comp_fors, parent_context=None):
         evaluator = self.evaluator
@@ -273,7 +281,6 @@ class Comprehension(AbstractSequence):
         return "<%s of %s>" % (type(self).__name__, self._atom)
 
 
-@has_builtin_methods
 class ArrayMixin(object):
     @memoize_default()
     def names_dicts(self, search_global=False):  # Always False.
@@ -308,20 +315,6 @@ class ArrayMixin(object):
         return unite(self._defining_context.eval_node(v) for k, v in self._items())
 
 
-class DICT(object):
-    @register_builtin_method('values')
-    def _imitate_values(self):
-        items = self.dict_values()
-        return create_evaluated_sequence_set(self.evaluator, items, sequence_type='list')
-
-    @register_builtin_method('items')
-    def _imitate_items(self):
-        items = [set([FakeSequence(self.evaluator, (k, v), 'tuple')])
-                 for k, v in self._items()]
-
-        return create_evaluated_sequence_set(self.evaluator, *items, sequence_type='list')
-
-
 class ListComprehension(ArrayMixin, Comprehension):
     array_type = 'list'
 
@@ -345,9 +338,8 @@ class DictComprehension(ArrayMixin, Comprehension):
         return self._get_comprehension().children[3]
 
     def py__iter__(self):
-        raise NotImplementedError
         for keys, values in self._iterate():
-            yield keys
+            yield context.LazyKnownContexts(keys)
 
     def py__getitem__(self, index):
         for keys, values in self._iterate():
@@ -360,11 +352,19 @@ class DictComprehension(ArrayMixin, Comprehension):
     def dict_values(self):
         return unite(values for keys, values in self._iterate())
 
+    @register_builtin_method('values')
+    def _imitate_values(self):
+        lazy_context = context.LazyKnownContexts(self.dict_values())
+        return set([FakeSequence(self.evaluator, 'list', [lazy_context])])
+
     @register_builtin_method('items')
     def _imitate_items(self):
-        items = set(FakeSequence(self.evaluator,
-                    (AlreadyEvaluated(keys), AlreadyEvaluated(values)), 'tuple')
-                    for keys, values in self._iterate())
+        items = set(
+            FakeSequence(
+                self.evaluator, 'tuple'
+                (context.LazyKnownContexts(keys), context.LazyKnownContexts(values))
+            ) for keys, values in self._iterate()
+        )
 
         return create_evaluated_sequence_set(self.evaluator, items, sequence_type='list')
 
@@ -373,27 +373,21 @@ class GeneratorComprehension(GeneratorMixin, Comprehension):
     pass
 
 
-class ArrayLiteralContext(ArrayMixin, AbstractSequence):
+class SequenceLiteralContext(ArrayMixin, AbstractSequence):
     mapping = {'(': 'tuple',
                '[': 'list',
-               '{': 'dict'}
+               '{': 'set'}
 
     def __init__(self, evaluator, defining_context, atom):
-        super(ArrayLiteralContext, self).__init__(evaluator)
+        super(SequenceLiteralContext, self).__init__(evaluator)
         self.atom = atom
         self._defining_context = defining_context
 
         if self.atom.type in ('testlist_star_expr', 'testlist'):
             self.array_type = 'tuple'
         else:
-            self.array_type = ArrayLiteralContext.mapping[atom.children[0]]
+            self.array_type = SequenceLiteralContext.mapping[atom.children[0]]
             """The builtin name of the array (list, set, tuple or dict)."""
-
-        c = self.atom.children
-        array_node = c[1]
-        if self.array_type == 'dict' and array_node != '}' \
-                and (not hasattr(array_node, 'children') or ':' not in array_node.children):
-            self.array_type = 'set'
 
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
@@ -469,7 +463,7 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
     def exact_key_items(self):
         """
         Returns a generator of tuples like dict.items(), where the key is
-        resolved (as a string) and the values are still LazyContexts.
+        resolved (as a string) and the values are still lazy contexts.
         """
         for key_node, value in self._items():
             for key in self._defining_context.eval_node(key_node):
@@ -480,9 +474,36 @@ class ArrayLiteralContext(ArrayMixin, AbstractSequence):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
-class _FakeArray(ArrayLiteralContext):
+@has_builtin_methods
+class DictLiteralContext(SequenceLiteralContext):
+    array_type = 'dict'
+
+    def __init__(self, evaluator, defining_context, atom):
+        super(SequenceLiteralContext, self).__init__(evaluator)
+        self._defining_context = defining_context
+        self.atom = atom
+
+    @register_builtin_method('values')
+    def _imitate_values(self):
+        lazy_context = context.LazyKnownContexts(self.dict_values())
+        return FakeSequence(self.evaluator, 'list', [lazy_context])
+
+    @register_builtin_method('items')
+    def _imitate_items(self):
+        lazy_contexts = [
+            context.LazyKnownContext(FakeSequence(
+                self.evaluator, 'tuple',
+                (context.LazyTreeContext(self._defining_context, key_node),
+                 context.LazyTreeContext(self._defining_context, value_node))
+            )) for key_node, value_node in self._items()
+        ]
+
+        return set([FakeSequence(self.evaluator, 'list', lazy_contexts)])
+
+
+class _FakeArray(SequenceLiteralContext):
     def __init__(self, evaluator, container, type):
-        super(ArrayLiteralContext, self).__init__(evaluator)
+        super(SequenceLiteralContext, self).__init__(evaluator)
         self.array_type = type
         self.atom = container
         # TODO is this class really needed?
@@ -518,18 +539,6 @@ class FakeSequence(_FakeArray):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._lazy_context_list)
-
-
-def create_evaluated_sequence_set(evaluator, *types_order, **kwargs):
-    """
-    ``sequence_type`` is a named argument, that doesn't work in Python2. For backwards
-    compatibility reasons, we're now using kwargs.
-    """
-    sequence_type = kwargs.pop('sequence_type')
-    assert not kwargs
-
-    sets = tuple(AlreadyEvaluated(types) for types in types_order)
-    return set([FakeSequence(evaluator, sets, sequence_type)])
 
 
 class AlreadyEvaluated(frozenset):

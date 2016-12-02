@@ -596,7 +596,7 @@ class Definition(BaseDefinition):
             if typ == 'instance':
                 typ = 'class'  # The description should be similar to Py objects.
             d = typ + ' ' + d.name.get_code()
-        elif isinstance(d, iterable.ArrayLiteralContext):
+        elif isinstance(d, iterable.SequenceLiteralContext):
             d = 'class ' + d.type
         elif isinstance(d, (tree.Class, er.ClassContext, er.Instance)):
             d = 'class ' + unicode(d.name)

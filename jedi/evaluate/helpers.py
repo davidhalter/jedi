@@ -100,25 +100,22 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
     else:
         cut = index + 1
 
-    values = context.eval_node(power.children[0])
-    for trailer in power.children[1:cut]:
-        values = context.eval_trailer(values, trailer)
-    return values
-
-    # TODO delete
-    '''
-    if new_power.type == 'error_node':
+    if power.type == 'error_node':
         start = index
         while True:
             start -= 1
-            if new_power.children[start].type != 'trailer':
+            base = power.children[start]
+            if base.type != 'trailer':
                 break
-        transformed = tree.Node('power', new_power.children[start:])
-        transformed.parent = new_power.parent
-        return transformed
+        trailers = power.children[start + 1: index + 1]
+    else:
+        base = power.children[0]
+        trailers = power.children[1:cut]
 
-    return new_power
-    '''
+    values = context.eval_node(base)
+    for trailer in trailers:
+        values = context.eval_trailer(values, trailer)
+    return values
 
 
 def call_of_leaf(leaf):

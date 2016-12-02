@@ -25,7 +25,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser.tree import search_ancestor
 from jedi.common import indent_block
-from jedi.evaluate.iterable import ArrayLiteralContext, FakeSequence, AlreadyEvaluated
+from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence, AlreadyEvaluated
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -173,7 +173,7 @@ def _execute_array_values(evaluator, array):
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
     """
-    if isinstance(array, ArrayLiteralContext):
+    if isinstance(array, SequenceLiteralContext):
         values = []
         for lazy_context in array.py__iter__():
             objects = unite(_execute_array_values(evaluator, typ) for typ in lazy_context.infer())
@@ -194,7 +194,7 @@ def follow_param(module_context, param):
     types = eval_docstring(func.raw_doc)
     if func.name.value == '__init__':
         cls = search_ancestor(func, 'classdef')
-        if cls.type == 'classdef':
+        if cls is not None:
             types |= eval_docstring(cls.raw_doc)
 
     return types
