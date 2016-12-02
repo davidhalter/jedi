@@ -80,7 +80,7 @@ def filter_definition_names(names, origin, position=None):
     scope = stmt.get_parent_scope()
 
     if not (isinstance(scope, er.FunctionExecution) and
-            isinstance(scope.base, er.LambdaWrapper)):
+            isinstance(scope.base, LambdaWrapper)):
         names = filter_after_position(names, position, origin)
     names = [name for name in names
              if name.is_definition() and not is_comprehension_name(name, origin)]
@@ -386,7 +386,7 @@ def _name_to_types(evaluator, context, name):
         types = _apply_decorators(evaluator, context, node)
     elif node.type == 'global_stmt':
         context = evaluator.create_context(context, name)
-        finder = NameFinder(evaluator, context, str(name))
+        finder = NameFinder(evaluator, context, context, str(name))
         filters = finder.get_filters(search_global=True)
         # For global_stmt lookups, we only need the first possible scope,
         # which means the function itself.

@@ -266,9 +266,7 @@ class Evaluator(object):
                 types.add(compiled.builtin_from_name(self, element.value))
             # else: print e.g. could be evaluated like this in Python 2.7
         elif isinstance(element, tree.Lambda):
-            types = set([er.LambdaWrapper(self, context, element)])
-        elif element.isinstance(er.LambdaWrapper):
-            types = set([element])  # TODO this is no real evaluation.
+            types = set([er.FunctionContext(self, context, element)])
         elif element.type == 'expr_stmt':
             types = self.eval_statement(context, element)
         elif element.type in ('power', 'atom_expr'):
@@ -545,7 +543,7 @@ class Evaluator(object):
             if scope_node == base_node:
                 return base_context
 
-            is_funcdef = scope_node.type == 'funcdef'
+            is_funcdef = scope_node.type in ('funcdef', 'lambda')
             parent_scope = scope_node.get_parent_scope()
             parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
 

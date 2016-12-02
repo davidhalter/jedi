@@ -38,11 +38,11 @@ import pkgutil
 import imp
 import re
 
-from jedi._compatibility import use_metaclass, unicode, Python3Method, is_py3
+from jedi._compatibility import use_metaclass, unicode, Python3Method
 from jedi.parser import tree
 from jedi import debug
 from jedi import common
-from jedi.cache import underscore_memoization, cache_star_import
+from jedi.cache import cache_star_import
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled import mixed
@@ -262,10 +262,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         return [ParamName(anon, param.name) for param in self.funcdef.params]
 
 
-class LambdaWrapper(FunctionContext):
-    pass
-
-
 class FunctionExecutionContext(Executed):
     """
     This class is used to evaluate functions and their returns.
@@ -302,7 +298,7 @@ class FunctionExecutionContext(Executed):
     @recursion.execution_recursion_decorator
     def get_return_values(self, check_yields=False):
         funcdef = self.funcdef
-        if isinstance(funcdef, tree.Lambda):
+        if funcdef.type == 'lambda':
             return self.evaluator.eval_element(self, funcdef.children[-1])
 
         """

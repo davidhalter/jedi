@@ -166,7 +166,8 @@ def _element_calculate(evaluator, left, operator, right):
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
-        return isinstance(obj, instance.CompiledInstance) and obj.name.name_string in ('int', 'float')
+        return isinstance(obj, instance.CompiledInstance) and \
+            obj.name.string_name in ('int', 'float')
 
     # Static analysis, one is a number, the other one is not.
     if operator in ('+', '-') and l_is_num != r_is_num \
