@@ -62,8 +62,7 @@ class AbstractInstanceContext(Context):
             for name in names
         )
 
-    def get_descriptor_returns(self, obj):
-        """ Throws a KeyError if there's no method. """
+    def py__get__(self, obj):
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
         names = self.get_function_slot_names('__get__')
@@ -277,21 +276,22 @@ class LazyInstanceName(filters.TreeNameDefinition):
 
 class LazyInstanceClassName(LazyInstanceName):
     def infer(self):
-        for v in super(LazyInstanceClassName, self).infer():
-            if isinstance(v, er.FunctionContext):
+        for result_context in super(LazyInstanceClassName, self).infer():
+            if isinstance(result_context, er.FunctionContext):
                 # Classes are never used to resolve anything within the
                 # functions. Only other functions and modules will resolve
                 # those things.
-                parent_context = v.parent_context
+                parent_context = result_context.parent_context
                 while isinstance(parent_context, er.ClassContext):
                     parent_context = parent_context.parent_context
 
                 yield BoundMethod(
-                    v.evaluator, self._instance, self.class_context,
-                    parent_context, v.funcdef
+                    result_context.evaluator, self._instance, self.class_context,
+                    parent_context, result_context.funcdef
                 )
             else:
-                yield v
+                for c in er.apply_py__get__(result_context, self._instance):
+                    yield c
 
 
 class InstanceClassFilter(filters.ParserTreeFilter):

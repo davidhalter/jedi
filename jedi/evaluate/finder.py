@@ -266,6 +266,7 @@ class NameFinder(object):
         for filter in filters:
             names = filter.get(self._name)
             if names:
+                self._last_used_filter = filter
                 break
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self._string_name,
                   self._context, names, self._position)
@@ -310,13 +311,7 @@ class NameFinder(object):
     def _names_to_types(self, names, attribute_lookup):
         types = set()
 
-        for name in names:
-            new_types = name.infer()
-            if isinstance(self._context, (er.ClassContext, AbstractInstanceContext)) \
-                    and attribute_lookup:
-                types |= set(self._resolve_descriptors(name, new_types))
-            else:
-                types |= set(new_types)
+        types = unite(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, types)
         if not names and isinstance(self._context, AbstractInstanceContext):
@@ -337,22 +332,6 @@ class NameFinder(object):
                 if flow_scope == self._name_context.get_node():
                     break
         return types
-
-    def _resolve_descriptors(self, name, types):
-        if not isinstance(name, ContextName):
-            # Compiled names and other stuff should just be ignored when it
-            # comes to descriptors.
-            return types
-
-        result = set()
-        for r in types:
-            try:
-                desc_return = r.get_descriptor_returns
-            except AttributeError:
-                result.add(r)
-            else:
-                result |= desc_return(self._context)
-        return result
 
 
 def _name_to_types(evaluator, context, name):

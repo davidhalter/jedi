@@ -508,6 +508,7 @@ def _parse_function_doc(doc):
 
 def _create_from_name(evaluator, module, compiled_object, name):
     obj = compiled_object.obj
+    faked = None
     try:
         faked = fake.get_faked(evaluator, module, obj, parent_context=compiled_object, name=name)
         if faked.type == 'funcdef':
@@ -523,7 +524,7 @@ def _create_from_name(evaluator, module, compiled_object, name):
         # PyQt4.QtGui.QStyleOptionComboBox.currentText
         # -> just set it to None
         obj = None
-    return create(evaluator, obj, parent_context=compiled_object)
+    return create(evaluator, obj, parent_context=compiled_object, faked=faked)
 
 
 def builtin_from_name(evaluator, string):
@@ -558,21 +559,17 @@ def compiled_objects_cache(attribute_name):
         Caching the id has the advantage that an object doesn't need to be
         hashable.
         """
-        def wrapper(evaluator, obj, parent_context=None, module=None):
+        def wrapper(evaluator, obj, parent_context=None, module=None, faked=None):
             cache = getattr(evaluator, attribute_name)
             # Do a very cheap form of caching here.
             key = id(obj), id(parent_context)
             try:
                 return cache[key][0]
             except KeyError:
-                # TODO this whole decorator looks way too ugly and this if
-                # doesn't make it better. Find a more generic solution.
-                if parent_context or module:
-                    result = func(evaluator, obj, parent_context, module)
-                else:
-                    result = func(evaluator, obj)
+                # TODO this whole decorator is way too ugly
+                result = func(evaluator, obj, parent_context, module, faked)
                 # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent_context, module
+                cache[key] = result, obj, parent_context, module, faked
                 return result
         return wrapper
 
@@ -580,12 +577,11 @@ def compiled_objects_cache(attribute_name):
 
 
 @compiled_objects_cache('compiled_cache')
-def create(evaluator, obj, parent_context=None, module=None):
+def create(evaluator, obj, parent_context=None, module=None, faked=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
-    faked = None
     if inspect.ismodule(obj):
         if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.

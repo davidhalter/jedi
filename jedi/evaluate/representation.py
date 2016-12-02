@@ -56,7 +56,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
-    ParamName, AnonymousInstanceParamName
+    ParamName, AnonymousInstanceParamName, TreeNameDefinition
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 
@@ -72,6 +72,27 @@ class Executed(context.TreeContext):
 
     def is_scope(self):
         return True
+
+
+def apply_py__get__(context, base_context):
+    try:
+        method = context.py__get__
+    except AttributeError:
+        yield context
+    else:
+        for descriptor_context in method(base_context):
+            yield descriptor_context
+
+
+class ClassName(TreeNameDefinition):
+    def infer(self):
+        for result_context in super(ClassName, self).infer():
+            for c in apply_py__get__(result_context, self.parent_context):
+                yield c
+
+
+class ClassFilter(ParserTreeFilter):
+    name_class = ClassName
 
 
 class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
@@ -164,7 +185,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                     for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ParserTreeFilter(self.evaluator, self, scope.classdef, origin_scope=origin_scope)
+                    yield ClassFilter(self.evaluator, self, scope.classdef, origin_scope=origin_scope)
 
     def is_class(self):
         return True
