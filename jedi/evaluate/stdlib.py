@@ -106,6 +106,25 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
     return f
 
 
+@argument_clinic('iterator[, default], /')
+def builtins_next(evaluator, iterators, defaults):
+    if evaluator.python_version[0] == 2:
+        name = 'next'
+    else:
+        name = '__next__'
+
+    types = set()
+    for iterator in iterators:
+        if isinstance(iterator, AbstractInstanceContext):
+            for filter in iterator.get_filters(include_self_names=True):
+                for n in filter.get(name):
+                    for context in n.infer():
+                        types |= context.execute_evaluated()
+    if types:
+        return types
+    return defaults
+
+
 @argument_clinic('object, name[, default], /')
 def builtins_getattr(evaluator, objects, names, defaults=None):
     # follow the first param
@@ -249,6 +268,7 @@ def _return_first_param(evaluator, firsts):
 
 _implemented = {
     'builtins': {
+        'next': builtins_next,
         'getattr': builtins_getattr,
         'type': builtins_type,
         'super': builtins_super,

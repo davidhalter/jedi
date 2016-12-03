@@ -93,6 +93,7 @@ class Evaluator(object):
         self.analysis = []
         self.dynamic_params_depth = 0
         self.is_analysis = False
+        self.python_version = sys.version_info[:2]
 
         if sys_path is None:
             sys_path = sys.path
