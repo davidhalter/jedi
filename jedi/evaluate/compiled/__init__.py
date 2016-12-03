@@ -33,7 +33,17 @@ class CheckAttribute(object):
 
     def __get__(self, instance, owner):
         # This might raise an AttributeError. That's wanted.
-        getattr(instance.obj, self.check_name)
+        if self.check_name == '__iter__':
+            # Python iterators are a bit strange, because there's no need for
+            # the __iter__ function as long as __getitem__ is defined (it will
+            # just start with __getitem__(0). This is especially true for
+            # Python 2 strings, where `str.__iter__` is not even defined.
+            try:
+                iter(instance.obj)
+            except TypeError:
+                raise AttributeError
+        else:
+            getattr(instance.obj, self.check_name)
         return partial(self.func, instance)
 
 
