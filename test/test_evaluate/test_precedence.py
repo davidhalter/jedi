@@ -1,6 +1,5 @@
-from jedi.parser import load_grammar, Parser
-from jedi.evaluate import Evaluator
 from jedi.evaluate.compiled import CompiledObject
+from jedi import Script
 
 import pytest
 
@@ -12,9 +11,7 @@ import pytest
     '... == ...'
 ])
 def test_equals(source):
-    evaluator = Evaluator(load_grammar())
-    node = Parser(load_grammar(), source, 'eval_input').get_parsed_node()
-    results = evaluator.eval_element(node)
-    assert len(results) == 1
-    first = results.pop()
+    script = Script(source)
+    node = script._get_module_node().children[0].children[0]
+    first, = script._get_module().eval_node(node)
     assert isinstance(first, CompiledObject) and first.obj is True

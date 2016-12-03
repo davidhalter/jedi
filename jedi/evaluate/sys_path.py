@@ -86,7 +86,7 @@ def _execute_code(module_path, code):
     return []
 
 
-def _paths_from_assignment(evaluator, expr_stmt):
+def _paths_from_assignment(module_context, expr_stmt):
     """
     Extracts the assigned strings from an assignment that looks as follows::
 
@@ -122,11 +122,11 @@ def _paths_from_assignment(evaluator, expr_stmt):
 
         from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
-        types = evaluator.eval_element(expr_stmt)
-        for types in py__iter__(evaluator, types, expr_stmt):
-            for typ in types:
-                if is_string(typ):
-                    yield typ.obj
+        types = module_context.create_context(expr_stmt).eval_node(expr_stmt)
+        for lazy_context in py__iter__(module_context.evaluator, types, expr_stmt):
+            for context in lazy_context.infer():
+                if is_string(context):
+                    yield context.obj
 
 
 def _paths_from_list_modifications(module_path, trailer1, trailer2):
@@ -147,7 +147,7 @@ def _paths_from_list_modifications(module_path, trailer1, trailer2):
     return _execute_code(module_path, arg.get_code())
 
 
-def _check_module(evaluator, module_context):
+def _check_module(module_context):
     """
     Detect sys.path modifications within module.
     """
@@ -162,7 +162,7 @@ def _check_module(evaluator, module_context):
                     if isinstance(n, tree.Name) and n.value == 'path':
                         yield name, power
 
-    sys_path = list(evaluator.sys_path)  # copy
+    sys_path = list(module_context.evaluator.sys_path)  # copy
     if isinstance(module_context, CompiledObject):
         return sys_path
 
@@ -182,7 +182,7 @@ def _check_module(evaluator, module_context):
                     )
                 )
             elif name.get_definition().type == 'expr_stmt':
-                sys_path.extend(_paths_from_assignment(evaluator, stmt))
+                sys_path.extend(_paths_from_assignment(module_context, stmt))
     return sys_path
 
 
@@ -201,7 +201,7 @@ def sys_path_with_modifications(evaluator, module_context):
 
     buildout_script_paths = set()
 
-    result = _check_module(evaluator, module_context)
+    result = _check_module(module_context)
     result += _detect_django_path(path)
     for buildout_script in _get_buildout_scripts(path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script):
@@ -225,11 +225,12 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
         return p.module
 
     cached = load_parser(buildout_script)
-    module = cached and cached.module or load(buildout_script)
-    if not module:
+    module_node = cached and cached.module or load(buildout_script)
+    if module_node is None:
         return
 
-    for path in _check_module(evaluator, module):
+    from jedi.evaluate.representation import ModuleContext
+    for path in _check_module(ModuleContext(evaluator, module_node)):
         yield path
 
 

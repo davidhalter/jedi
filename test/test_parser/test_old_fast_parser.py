@@ -257,7 +257,7 @@ def test_string_literals():
     """)
 
     script = jedi.Script(dedent(source))
-    script._get_module().end_pos == (6, 0)
+    script._get_module().module_node.end_pos == (6, 0)
     assert script.completions()
 
 
@@ -275,7 +275,7 @@ def test_decorator_string_issue():
 
     s = jedi.Script(source)
     assert s.completions()
-    assert s._get_module().get_code() == source
+    assert s._get_module().module_node.get_code() == source
 
 
 def test_round_trip():

@@ -4,16 +4,15 @@ import sys
 
 import pytest
 
-from jedi._compatibility import unicode
-from jedi.parser import ParserWithRecovery, load_grammar
-from jedi.evaluate import sys_path, Evaluator
+from jedi.evaluate import sys_path
+from jedi import Script
 
 
 def test_paths_from_assignment():
     def paths(src):
-        grammar = load_grammar()
-        stmt = ParserWithRecovery(grammar, unicode(src)).module.statements[0]
-        return set(sys_path._paths_from_assignment(Evaluator(grammar), stmt))
+        script = Script(src)
+        stmt = script._get_module_node().statements[0]
+        return set(sys_path._paths_from_assignment(script._get_module(), stmt))
 
     assert paths('sys.path[0:0] = ["a"]') == set(['a'])
     assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == set(['b', 'c'])

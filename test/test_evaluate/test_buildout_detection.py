@@ -7,9 +7,17 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     sys_path_with_modifications,
                                     _check_module)
 from jedi.evaluate import Evaluator
+from jedi.evaluate.representation import ModuleContext
 from jedi.parser import ParserWithRecovery, load_grammar
 
 from ..helpers import cwd_at
+
+
+def check_module_test(code):
+    grammar = load_grammar()
+    p = ParserWithRecovery(grammar, code)
+    module_context = ModuleContext(Evaluator(grammar), p.module)
+    return _check_module(module_context)
 
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name')
@@ -30,44 +38,44 @@ def test_buildout_detection():
 
 
 def test_append_on_non_sys_path():
-    SRC = dedent(u("""
+    code = dedent(u("""
         class Dummy(object):
             path = []
 
         d = Dummy()
         d.path.append('foo')"""))
-    grammar = load_grammar()
-    p = ParserWithRecovery(grammar, SRC)
-    paths = _check_module(Evaluator(grammar), p.module)
+
+    paths = check_module_test(code)
     assert len(paths) > 0
     assert 'foo' not in paths
 
 
 def test_path_from_invalid_sys_path_assignment():
-    SRC = dedent(u("""
+    code = dedent(u("""
         import sys
         sys.path = 'invalid'"""))
-    grammar = load_grammar()
-    p = ParserWithRecovery(grammar, SRC)
-    paths = _check_module(Evaluator(grammar), p.module)
+
+    paths = check_module_test(code)
     assert len(paths) > 0
     assert 'invalid' not in paths
 
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name/')
 def test_sys_path_with_modifications():
-    SRC = dedent(u("""
+    code = dedent(u("""
         import os
     """))
+
+    path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
     grammar = load_grammar()
-    p = ParserWithRecovery(grammar, SRC)
-    p.module.path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
-    paths = sys_path_with_modifications(Evaluator(grammar), p.module)
+    p = ParserWithRecovery(grammar, code, module_path=path)
+    module_context = ModuleContext(Evaluator(grammar), p.module)
+    paths = sys_path_with_modifications(module_context.evaluator, module_context)
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 
 
 def test_path_from_sys_path_assignment():
-    SRC = dedent(u("""
+    code = dedent(u("""
         #!/usr/bin/python
 
         import sys
@@ -82,8 +90,7 @@ def test_path_from_sys_path_assignment():
 
         if __name__ == '__main__':
             sys.exit(important_package.main())"""))
-    grammar = load_grammar()
-    p = ParserWithRecovery(grammar, SRC)
-    paths = _check_module(Evaluator(grammar), p.module)
+
+    paths = check_module_test(code)
     assert 1 not in paths
     assert '/home/test/.buildout/eggs/important_package.egg' in paths
