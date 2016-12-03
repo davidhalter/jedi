@@ -85,7 +85,10 @@ class CompiledObject(Context):
         return bool(self.obj)
 
     def py__file__(self):
-        return self.obj.__file__
+        try:
+            return self.obj.__file__
+        except AttributeError:
+            return None
 
     def is_class(self):
         return inspect.isclass(self.obj)
