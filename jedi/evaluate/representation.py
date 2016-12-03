@@ -30,6 +30,8 @@ py__file__()                           Only on modules. Returns None if does
                                        not exist.
 py__package__()                        Only on modules. For the import system.
 py__path__()                           Only on modules. For the import system.
+py__get__(call_object)                 Only on instances. Simulates
+                                       descriptors.
 ====================================== ========================================
 
 __
@@ -360,9 +362,8 @@ class FunctionExecutionContext(Executed):
 
     def _eval_yield(self, yield_expr):
         node = yield_expr.children[1]
-        if node.type == 'yield_arg':
-            # It must be a yield from.
-            yield_from_types = self.eval_node(node)
+        if node.type == 'yield_arg':  # It must be a yield from.
+            yield_from_types = self.eval_node(node.children[1])
             for lazy_context in iterable.py__iter__(self.evaluator, yield_from_types, node):
                 yield lazy_context
         else:
