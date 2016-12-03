@@ -22,8 +22,8 @@ def test_preload_modules():
 
     api.preload_module('sys')
     check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
-    api.preload_module('json', 'token')
-    check_loaded('json', 'token')
+    api.preload_module('types', 'token')
+    check_loaded('types', 'token')
 
     utils.parser_cache = temp_cache
 

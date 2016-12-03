@@ -216,11 +216,9 @@ class Script(object):
         """
         def filter_follow_imports(names):
             for name in names:
-                definition = name.get_definition()
-                if definition.type in ('import_name', 'import_from'):
-                    imp = imports.ImportWrapper(context, name)
-                    for name in filter_follow_imports(imp.follow(is_goto=True)):
-                        yield name
+                if isinstance(name, (imports.ImportName, TreeNameDefinition)):
+                    for context in name.infer():
+                        yield context.name
                 else:
                     yield name
 
@@ -436,13 +434,21 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         ``definitions=True``. E.g. ``a = b`` returns ``b``.
     """
     def def_ref_filter(_def):
-        is_def = _def.is_definition()
+        is_def = _def._name.tree_name.is_definition()
         return definitions and is_def or references and not is_def
 
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
-    defs = [classes.Definition(script._evaluator, name_part)
-            for name_part in get_module_names(script._get_module().module_node, all_scopes)]
+    module_context = script._get_module()
+    defs = [
+        classes.Definition(
+            script._evaluator,
+            TreeNameDefinition(
+                module_context.create_context(name),
+                name
+            )
+        ) for name in get_module_names(script._get_module_node(), all_scopes)
+    ]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
 

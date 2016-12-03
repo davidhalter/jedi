@@ -112,6 +112,17 @@ class CompiledObject(Context):
             params.append(Param(parts, self))
         return params
 
+    def get_param_names(self):
+        params_str, ret = self._parse_function_doc()
+        tokens = params_str.split(',')
+        if inspect.ismethoddescriptor(self.obj):
+            tokens.insert(0, 'self')
+        for p in tokens:
+            parts = p.strip().split('=')
+            if len(parts) > 1:
+                parts.insert(1, Operator('=', (0, 0)))
+            yield UnresolvableParamName(self, p[0])
+
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, repr(self.obj))
 
@@ -276,6 +287,17 @@ class CompiledName(AbstractNameDefinition):
     def infer(self):
         module = self.parent_context.get_root_context()
         return [_create_from_name(self._evaluator, module, self.parent_context, self.string_name)]
+
+
+class UnresolvableParamName(AbstractNameDefinition):
+    api_type = 'param'
+
+    def __init__(self, compiled_obj, name):
+        self.parent_context = compiled_obj.parent_context
+        self.string_name = name
+
+    def infer(self):
+        return set()
 
 
 class CompiledContextName(AbstractNameDefinition):

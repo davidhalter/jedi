@@ -564,10 +564,14 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                     # modules on sys_path or whatever the search_path is.
                     paths = set()
                     for s in search_path:
-                        other = os.path.join(s, unicode(self.name))
+                        other = os.path.join(s, self.name.string_name)
                         if os.path.isdir(other):
                             paths.add(other)
-                    return list(paths)
+                    if paths:
+                        return list(paths)
+                    # TODO I'm not sure if this is how nested namespace
+                    # packages work. The tests are not really good enough to
+                    # show that.
         # Default to this.
         return [self._get_init_directory()]
 

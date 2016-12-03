@@ -18,7 +18,9 @@ from jedi.evaluate import instance
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
+from jedi.evaluate.filters import ParamName
 from jedi.evaluate.finder import filter_definition_names
+from jedi.api.keywords import KeywordName
 
 
 def defined_names(evaluator, scope):
@@ -63,7 +65,7 @@ class BaseDefinition(object):
         An instance of :class:`jedi.parser.reprsentation.Name` subclass.
         """
         #self._definition = list(self._name.infer())[0]
-        #self.is_keyword = isinstance(self._definition, keywords.Keyword)
+        self.is_keyword = isinstance(self._name, KeywordName)
         self._definition = None
 
         # generate a path to the definition
@@ -232,9 +234,9 @@ class BaseDefinition(object):
 
         """
         if raw:
-            return _Help(self._definition).raw()
+            return _Help(self._name.parent_context).raw()
         else:
-            return _Help(self._definition).full()
+            return _Help(self._name.parent_context).full()
 
     @property
     def doc(self):
@@ -259,7 +261,7 @@ class BaseDefinition(object):
     @property
     def description(self):
         """A textual description of the object."""
-        return unicode(self._name)
+        return unicode(self._name.string_name)
 
     @property
     def full_name(self):
@@ -298,7 +300,12 @@ class BaseDefinition(object):
         return '.'.join(path if path[0] else path[1:])
 
     def goto_assignments(self):
-        defs = self._evaluator.goto(self._name)
+        try:
+            tree_name = self._name.tree_name
+        except AttributeError:
+            return self
+
+        defs = self._evaluator.goto(self._name.parent_context, tree_name)
         return [Definition(self._evaluator, d) for d in defs]
 
     @memoize_method
@@ -306,6 +313,7 @@ class BaseDefinition(object):
         """
         Follow both statements and imports, as far as possible.
         """
+        return self._name.infer()
         if self._name.api_type == 'expr_stmt':
             return self._evaluator.eval_statement(self._definition)
         elif self._name.api_type == 'import':
@@ -351,9 +359,7 @@ class BaseDefinition(object):
         return [_Param(self._evaluator, n) for n in get_param_names(context)]
 
     def parent(self):
-        scope = self._definition.get_parent_scope()
-        scope = self._evaluator.wrap(scope)
-        return Definition(self._evaluator, scope.name)
+        return Definition(self._evaluator, self._name.parent_context.name)
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
@@ -371,7 +377,7 @@ class BaseDefinition(object):
         if self.in_builtin_module():
             return ''
 
-        path = self._definition.get_parent_until().path
+        path = self._name.get_root_context().py__file__()
         parser = load_parser(path)
         lines = common.splitlines(parser.source)
 
@@ -401,7 +407,7 @@ class Completion(BaseDefinition):
                 and self.type == 'Function':
             append = '('
 
-        if isinstance(self._definition, tree.Param) and self._stack is not None:
+        if isinstance(self._name, ParamName) and self._stack is not None:
             node_names = list(self._stack.get_node_names(self._evaluator.grammar))
             if 'trailer' in node_names and 'argument' not in node_names:
                 append += '='
@@ -438,9 +444,10 @@ class Completion(BaseDefinition):
     @property
     def description(self):
         """Provide a description of the completion object."""
-        if self._definition is None:
-            return self._name.string_name
+        # TODO improve the class structure.
+        return Definition.description.__get__(self)
 
+        # TODO remove
         t = self.type
         if t == 'statement' or t == 'import':
             desc = self._definition.get_code()
@@ -461,20 +468,20 @@ class Completion(BaseDefinition):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        definition = self._definition
-        if isinstance(definition, tree.Import):
-            raise DeprecationWarning
-            i = imports.ImportWrapper(self._evaluator, self._name)
-            if len(i.import_path) > 1 or not fast:
-                followed = self._follow_statements_imports()
+        context = self._name.parent_context
+        if isinstance(self._name, imports.ImportName):
+            if fast:
+                return ''
+            else:
+                followed = self._name.infer()
                 if followed:
                     # TODO: Use all of the followed objects as input to Documentation.
-                    definition = list(followed)[0]
+                    context = next(iter(followed))
 
         if raw:
-            return _Help(definition).raw()
+            return _Help(context).raw()
         else:
-            return _Help(definition).full()
+            return _Help(context).full()
 
     @property
     def type(self):
@@ -772,7 +779,7 @@ class _Help(object):
 
     def full(self):
         try:
-            return self._name.doc
+            return self._name.get_node().doc
         except AttributeError:
             return self.raw()
 
@@ -782,7 +789,7 @@ class _Help(object):
 
         See :attr:`doc` for example.
         """
-        try:
-            return self._name.raw_doc
-        except AttributeError:
+        node = self._name.get_node()
+        if node is None:
             return ''
+        return node.raw_doc

@@ -431,7 +431,7 @@ class Importer(object):
             if self.str_import_path == ('flask', 'ext'):
                 # List Flask extensions like ``flask_foo``
                 for mod in self._get_module_names():
-                    modname = str(mod)
+                    modname = mod.string_name
                     if modname.startswith('flask_'):
                         extname = modname[len('flask_'):]
                         names.append(self._generate_name(extname))

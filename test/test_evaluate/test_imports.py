@@ -97,7 +97,7 @@ def test_not_importable_file():
 def test_import_unique():
     src = "import os; os.path"
     defs = jedi.Script(src, path='example.py').goto_definitions()
-    defs = [d._definition for d in defs]
+    defs = [d._name.parent_context for d in defs]
     assert len(defs) == len(set(defs))
 
 
