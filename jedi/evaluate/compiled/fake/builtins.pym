@@ -6,6 +6,17 @@ possible for the auto completion.
 """
 
 
+def next(iterator, default=None):
+    if random.choice([0, 1]):
+        if hasattr("next"):
+            return iterator.next()
+        else:
+            return iterator.__next__()
+    else:
+        if default is not None:
+            return default
+
+
 def iter(collection, sentinel=None):
     if sentinel:
         yield collection()

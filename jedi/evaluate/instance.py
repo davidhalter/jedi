@@ -213,14 +213,18 @@ class CompiledInstanceName(compiled.CompiledName):
         self._instance = instance
 
     def infer(self):
-        for v in super(CompiledInstanceName, self).infer():
-            if isinstance(v, er.FunctionContext):
+        for result_context in super(CompiledInstanceName, self).infer():
+            if isinstance(result_context, er.FunctionContext):
+                parent_context = result_context.parent_context
+                while parent_context.is_class():
+                    parent_context = parent_context.parent_context
+
                 yield BoundMethod(
-                    v.evaluator, self._instance, self.parent_context,
-                    v.parent_context, v.funcdef
+                    result_context.evaluator, self._instance, self.parent_context,
+                    parent_context, result_context.funcdef
                 )
             else:
-                yield v
+                yield result_context
 
 
 class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
@@ -282,7 +286,7 @@ class LazyInstanceClassName(LazyInstanceName):
                 # functions. Only other functions and modules will resolve
                 # those things.
                 parent_context = result_context.parent_context
-                while isinstance(parent_context, er.ClassContext):
+                while parent_context.is_class():
                     parent_context = parent_context.parent_context
 
                 yield BoundMethod(

@@ -123,7 +123,7 @@ def has_builtin_methods(cls):
 
 def register_builtin_method(method_name, python_version_match=None):
     def wrapper(func):
-        if python_version_match and python_version_match == 2 + int(is_py3):
+        if python_version_match and python_version_match != 2 + int(is_py3):
             # Some functions do only apply to certain versions.
             return func
         dct = func.__dict__.setdefault('registered_builtin_methods', {})

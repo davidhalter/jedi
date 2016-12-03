@@ -17,7 +17,7 @@ from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate.instance import InstanceFunctionExecution, \
-    AbstractInstanceContext, CompiledInstance
+    AbstractInstanceContext, CompiledInstance, BoundMethod
 from jedi.evaluate import iterable
 from jedi.parser import ParserWithRecovery
 from jedi import debug
@@ -31,6 +31,9 @@ class NotInStdLib(LookupError):
 
 
 def execute(evaluator, obj, arguments):
+    if isinstance(obj, BoundMethod):
+        raise NotInStdLib()
+
     try:
         obj_name = obj.name.string_name
     except AttributeError:
@@ -108,6 +111,10 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
 
 @argument_clinic('iterator[, default], /')
 def builtins_next(evaluator, iterators, defaults):
+    """
+    TODO this function is currently not used. It's a stab at implementing next
+    in a different way than fake objects. This would be a bit more flexible.
+    """
     if evaluator.python_version[0] == 2:
         name = 'next'
     else:
@@ -268,7 +275,6 @@ def _return_first_param(evaluator, firsts):
 
 _implemented = {
     'builtins': {
-        'next': builtins_next,
         'getattr': builtins_getattr,
         'type': builtins_type,
         'super': builtins_super,
