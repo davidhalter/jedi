@@ -77,7 +77,7 @@ def _load_faked_module(module):
 
 def _search_scope(scope, obj_name):
     for s in scope.subscopes:
-        if str(s.name) == obj_name:
+        if s.name.value == obj_name:
             return s
 
 
@@ -191,6 +191,14 @@ def _get_faked(module, obj, name=None):
 
 
 def get_faked(evaluator, module, obj, name=None, parent_context=None):
+    if parent_context and parent_context.classdef is not None:
+        # Try to search in already clearly defined stuff.
+        found = _search_scope(parent_context.classdef, name)
+        if found is not None:
+            return found
+        else:
+            raise FakeDoesNotExist
+
     faked, fake_module = _get_faked(module and module.obj, obj, name)
     if module is not None:
         module.used_names = fake_module.used_names

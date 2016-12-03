@@ -123,7 +123,7 @@ A(3).test2()
 
 
 # -----------------
-# list comprehensions
+# comprehensions
 # -----------------
 
 def from_comprehension(foo):

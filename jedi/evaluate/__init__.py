@@ -540,6 +540,21 @@ class Evaluator(object):
             return element
 
     def create_context(self, base_context, node):
+        def parent_scope(node):
+            while True:
+                node = node.parent
+
+                if node.is_scope():
+                    return node
+                elif node.type in ('argument', 'testlist_comp'):
+                    if node.children[1].type == 'comp_for':
+                        return node.children[1]
+                elif node.type == 'dictorsetmaker':
+                    for n in node.children[1:4]:
+                        # In dictionaries it can be pretty much anything.
+                        if node.children[1].type == 'comp_for':
+                            return node
+
         def from_scope_node(scope_node, child_is_funcdef=None):
             if scope_node == base_node:
                 return base_context
@@ -573,5 +588,5 @@ class Evaluator(object):
         if node.is_scope():
             scope_node = node
         else:
-            scope_node = node.get_parent_scope()
+            scope_node = parent_scope(node)
         return from_scope_node(scope_node)
