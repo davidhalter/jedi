@@ -170,7 +170,7 @@ class TestCallSignatures(TestCase):
         signatures = Script(s).call_signatures()
         assert len(signatures) == 1
         x = [p.description for p in signatures[0].params]
-        assert x == ['*args']
+        assert x == ['param *args']
 
     def test_additional_brackets(self):
         assert_signature('str((', 'str', 0)
@@ -265,8 +265,7 @@ def test_signature_is_definition():
 
     # Now compare all the attributes that a CallSignature must also have.
     for attr_name in dir(definition):
-        dont_scan = ['defined_names', 'line_nr', 'start_pos', 'documentation',
-                     'doc', 'parent', 'goto_assignments']
+        dont_scan = ['defined_names', 'parent', 'goto_assignments', 'params']
         if attr_name.startswith('_') or attr_name in dont_scan:
             continue
         attribute = getattr(definition, attr_name)

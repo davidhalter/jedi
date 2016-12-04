@@ -121,7 +121,7 @@ class CompiledObject(Context):
             parts = p.strip().split('=')
             if len(parts) > 1:
                 parts.insert(1, Operator('=', (0, 0)))
-            yield UnresolvableParamName(self, p[0])
+            yield UnresolvableParamName(self, parts[0])
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, repr(self.obj))
@@ -373,8 +373,11 @@ class CompiledObjectFilter(AbstractFilter):
     @memoize_method
     def get(self, name):
         name = str(name)
+        obj = self._compiled_obj.obj
         try:
-            getattr(self._compiled_obj.obj, name)
+            getattr(obj, name)
+            if self._is_instance and name not in dir(obj):
+                return []
         except AttributeError:
             return []
         except Exception:

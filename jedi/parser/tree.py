@@ -1618,7 +1618,7 @@ class Param(BaseNode):
         return self.get_parent_until(IsScope)
 
     def __repr__(self):
-        default = '' if self.default is None else '=%s' % self.default
+        default = '' if self.default is None else '=%s' % self.default.get_code()
         return '<%s: %s>' % (type(self).__name__, str(self._tfpdef()) + default)
 
 

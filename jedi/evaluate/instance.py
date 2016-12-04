@@ -224,7 +224,10 @@ class CompiledInstanceName(compiled.CompiledName):
                     parent_context, result_context.funcdef
                 )
             else:
-                yield result_context
+                if result_context.api_type == 'function':
+                    yield CompiledBoundMethod(result_context)
+                else:
+                    yield result_context
 
 
 class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
@@ -255,6 +258,15 @@ class BoundMethod(er.FunctionContext):
             self.funcdef,
             arguments
         )
+
+
+class CompiledBoundMethod(compiled.CompiledObject):
+    def __init__(self, func):
+        super(CompiledBoundMethod, self).__init__(
+            func.evaluator, func.obj, func.parent_context, func.classdef)
+
+    def get_param_names(self):
+        return list(super(CompiledBoundMethod, self).get_param_names())[1:]
 
 
 class InstanceNameDefinition(filters.TreeNameDefinition):

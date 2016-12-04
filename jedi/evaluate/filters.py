@@ -69,7 +69,8 @@ class TreeNameDefinition(ContextName):
     def api_type(self):
         definition = self.tree_name.get_definition()
         return dict(
-            import_name='import',
+            import_name='module',
+            import_from='module',
             funcdef='function',
             param='param',
             classdef='class',

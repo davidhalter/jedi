@@ -314,14 +314,6 @@ class BaseDefinition(object):
         Follow both statements and imports, as far as possible.
         """
         return self._name.infer()
-        if self._name.api_type == 'expr_stmt':
-            return self._evaluator.eval_statement(self._definition)
-        elif self._name.api_type == 'import':
-            raise DeprecationWarning
-            # TODO self._name.infer()?
-            return imports.ImportWrapper(self._evaluator, self._name).follow()
-        else:
-            return set([self._name.parent_context])
 
     @property
     @memoize_method
@@ -349,6 +341,8 @@ class BaseDefinition(object):
                 # there's no better solution.
                 inferred = names[0].infer()
                 return get_param_names(next(iter(inferred)))
+            elif isinstance(context, compiled.CompiledObject):
+                return context.get_param_names()
             return param_names
 
         followed = list(self._follow_statements_imports())
@@ -469,10 +463,8 @@ class Completion(BaseDefinition):
             parses all libraries starting with ``a``.
         """
         context = self._name.parent_context
-        if isinstance(self._name, imports.ImportName):
-            if fast:
-                return ''
-            else:
+        if self._name.api_type == 'module':
+            if not fast:
                 followed = self._name.infer()
                 if followed:
                     # TODO: Use all of the followed objects as input to Documentation.
@@ -489,18 +481,9 @@ class Completion(BaseDefinition):
         The type of the completion objects. Follows imports. For a further
         description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
         """
-        if isinstance(self._definition, tree.Import):
-            raise DeprecationWarning
-            i = imports.ImportWrapper(self._evaluator, self._name)
-            if len(i.import_path) <= 1:
-                return 'module'
-
-            followed = self.follow_definition()
-            if followed:
-                # Caveat: Only follows the first one, ignore the other ones.
-                # This is ok, since people are almost never interested in
-                # variations.
-                return followed[0].type
+        if self._name.api_type == 'module':
+            for context in self._name.infer():
+                return context.name.api_type
         return super(Completion, self).type
 
     @memoize_method
@@ -567,8 +550,12 @@ class Definition(BaseDefinition):
 
         """
         typ = self.type
-        if typ in ('statement', 'param'):
-            definition = self._name.tree_name.get_definition()
+        try:
+            tree_name = self._name.tree_name
+        except AttributeError:
+            pass
+        else:
+            definition = tree_name.get_definition()
 
             try:
                 first_leaf = definition.first_leaf()
@@ -668,7 +655,12 @@ class Definition(BaseDefinition):
         Returns True, if defined as a name in a statement, function or class.
         Returns False, if it's a reference to such a definition.
         """
-        return self._name.is_definition()
+        try:
+            tree_name = self._name.tree_name
+        except AttributeError:
+            return True
+        else:
+            return tree_name.is_definition()
 
     def __eq__(self, other):
         return self._name.start_pos == other._name.start_pos \
@@ -705,17 +697,27 @@ class CallSignature(Definition):
             for i, param in enumerate(self.params):
                 if self._key_name_str == param.name:
                     return i
-            if self.params and self.params[-1]._name.get_definition().stars == 2:
-                return i
-            else:
-                return None
+            if self.params:
+                param_name = self.params[-1]._name
+                try:
+                    tree_name = param_name.tree_name
+                except AttributeError:
+                    pass
+                else:
+                    if tree_name.get_definition().stars == 2:
+                        return i
+            return None
 
         if self._index >= len(self.params):
-
             for i, param in enumerate(self.params):
-                # *args case
-                if param._name.get_definition().stars == 1:
-                    return i
+                try:
+                    tree_name = param._name.tree_name
+                except AttributeError:
+                    pass
+                else:
+                    # *args case
+                    if tree_name.get_definition().stars == 1:
+                        return i
             return None
         return self._index
 
