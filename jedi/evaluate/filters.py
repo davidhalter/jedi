@@ -13,14 +13,13 @@ class AbstractNameDefinition(object):
     start_pos = None
     string_name = None
     parent_context = None
+    tree_name = None
 
     @abstractmethod
     def infer(self):
         raise NotImplementedError
 
     def get_root_context(self):
-        if self.parent_context is None:
-            return self
         return self.parent_context.get_root_context()
 
     def __repr__(self):
@@ -34,8 +33,12 @@ class AbstractNameDefinition(object):
     def execute_evaluated(self, *args, **kwargs):
         return unite(context.execute_evaluated(*args, **kwargs) for context in self.infer())
 
+    @property
+    def api_type(self):
+        return self.parent_context.api_type
 
-class ContextName(AbstractNameDefinition):
+
+class AbstractTreeName(AbstractNameDefinition):
     def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
         self.tree_name = tree_name
@@ -48,15 +51,26 @@ class ContextName(AbstractNameDefinition):
     def start_pos(self):
         return self.tree_name.start_pos
 
+
+class ContextName(AbstractTreeName):
+    def __init__(self, context, tree_name):
+        super(ContextName, self).__init__(context.parent_context, tree_name)
+        self._context = context
+
     def infer(self):
-        return [self.parent_context]
+        return [self._context]
+
+    def get_root_context(self):
+        if self.parent_context is None:
+            return self._context
+        return super(ContextName, self).get_root_context()
 
     @property
     def api_type(self):
-        return self.parent_context.api_type
+        return self._context.api_type
 
 
-class TreeNameDefinition(ContextName):
+class TreeNameDefinition(AbstractTreeName):
     def get_parent_flow_context(self):
         return self.parent_context
 
@@ -77,7 +91,7 @@ class TreeNameDefinition(ContextName):
         ).get(definition.type, 'statement')
 
 
-class ParamName(ContextName):
+class ParamName(AbstractTreeName):
     api_type = 'param'
 
     def __init__(self, parent_context, tree_name):

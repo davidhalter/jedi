@@ -488,6 +488,8 @@ class Evaluator(object):
             # a name it's something you can "goto" again.
             return [TreeNameDefinition(context, name)]
         elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
+            if par.type in ('funcdef', 'classdef', 'module'):
+                return [context.name]
             return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
             module_names = imports.ImportWrapper(context, name).follow(is_goto=True)

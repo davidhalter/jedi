@@ -305,10 +305,6 @@ class CompiledContextName(AbstractNameDefinition):
         self.string_name = name
         self.parent_context = parent_context
 
-    @property
-    def api_type(self):
-        return self.parent_context.api_type
-
     def infer(self):
         return [self.parent_context]
 

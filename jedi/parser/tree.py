@@ -520,13 +520,16 @@ class BaseNode(Base):
     def end_pos(self):
         return self.children[-1].end_pos
 
-    def get_code(self, normalized=False, include_prefix=True):
+    def _get_code_for_children(self, children, normalized, include_prefix):
         # TODO implement normalized (depending on context).
         if include_prefix:
-            return "".join(c.get_code(normalized) for c in self.children)
+            return "".join(c.get_code(normalized) for c in children)
         else:
-            first = self.children[0].get_code(include_prefix=False)
-            return first + "".join(c.get_code(normalized) for c in self.children[1:])
+            first = children[0].get_code(include_prefix=False)
+            return first + "".join(c.get_code(normalized) for c in children[1:])
+
+    def get_code(self, normalized=False, include_prefix=True):
+        return self._get_code_for_children(self.children, normalized, include_prefix)
 
     @Python3Method
     def name_for_position(self, position):
@@ -1620,6 +1623,12 @@ class Param(BaseNode):
     def __repr__(self):
         default = '' if self.default is None else '=%s' % self.default.get_code()
         return '<%s: %s>' % (type(self).__name__, str(self._tfpdef()) + default)
+
+    def get_code(self, normalized=False, include_prefix=True):
+        children = self.children
+        if children[-1] == ',':
+            children = children[:-1]
+        return self._get_code_for_children(children, normalized, include_prefix)
 
 
 class CompFor(BaseNode):

@@ -148,6 +148,18 @@ class BaseDefinition(object):
         'function'
 
         """
+        tree_name = self._name.tree_name
+        resolve = False
+        if tree_name is not None:
+            # TODO move this to their respective names.
+            definition = tree_name.get_definition()
+            if definition.type == 'import_from' and \
+                    tree_name in definition.get_defined_names():
+                resolve = True
+
+        if isinstance(self._name, imports.SubModuleName) or resolve:
+            for context in self._name.infer():
+                return context.api_type
         return self._name.api_type
 
     def _path(self):
@@ -353,7 +365,15 @@ class BaseDefinition(object):
         return [_Param(self._evaluator, n) for n in get_param_names(context)]
 
     def parent(self):
-        return Definition(self._evaluator, self._name.parent_context.name)
+        context = self._name.parent_context
+        if context is None:
+            return None
+
+        if isinstance(context, er.FunctionExecutionContext):
+            # TODO the function context should be a part of the function
+            # execution context.
+            context = er.FunctionContext(self._evaluator, context.parent_context, context.funcdef)
+        return Definition(self._evaluator, context.name)
 
     def __repr__(self):
         return "<%s %s>" % (type(self).__name__, self.description)
@@ -475,17 +495,6 @@ class Completion(BaseDefinition):
         else:
             return _Help(context).full()
 
-    @property
-    def type(self):
-        """
-        The type of the completion objects. Follows imports. For a further
-        description, look at :attr:`jedi.api.classes.BaseDefinition.type`.
-        """
-        if self._name.api_type == 'module':
-            for context in self._name.infer():
-                return context.name.api_type
-        return super(Completion, self).type
-
     @memoize_method
     def _follow_statements_imports(self):
         # imports completion is very complicated and needs to be treated
@@ -586,7 +595,7 @@ class Definition(BaseDefinition):
         d = self._definition
 
         if isinstance(d, compiled.CompiledObject):
-            typ = d.api_type()
+            typ = d.api_type
             if typ == 'instance':
                 typ = 'class'  # The description should be similar to Py objects.
             d = typ + ' ' + d.name.get_code()

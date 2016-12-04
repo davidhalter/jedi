@@ -164,7 +164,7 @@ def test_param_endings():
     around them.
     """
     sig = Script('def x(a, b=5, c=""): pass\n x(').call_signatures()[0]
-    assert [p.description for p in sig.params] == ['a', 'b=5', 'c=""']
+    assert [p.description for p in sig.params] == ['param a', 'param b=5', 'param c=""']
 
 
 class TestIsDefinition(TestCase):
@@ -202,9 +202,8 @@ class TestIsDefinition(TestCase):
 
 class TestParent(TestCase):
     def _parent(self, source, line=None, column=None):
-        defs = Script(dedent(source), line, column).goto_assignments()
-        assert len(defs) == 1
-        return defs[0].parent()
+        def_, = Script(dedent(source), line, column).goto_assignments()
+        return def_.parent()
 
     def test_parent(self):
         parent = self._parent('foo=1\nfoo')
@@ -231,7 +230,7 @@ class TestParent(TestCase):
                 def bar(): pass
             Foo().bar''')).completions()[0].parent()
         assert parent.name == 'Foo'
-        assert parent.type == 'instance'
+        assert parent.type == 'class'
 
         parent = Script('str.join').completions()[0].parent()
         assert parent.name == 'str'
@@ -287,27 +286,27 @@ class TestGotoAssignments(TestCase):
     def test_import(self):
         nms = names('from json import load', references=True)
         assert nms[0].name == 'json'
-        assert nms[0].type == 'import'
+        assert nms[0].type == 'module'
         n = nms[0].goto_assignments()[0]
         assert n.name == 'json'
         assert n.type == 'module'
 
         assert nms[1].name == 'load'
-        assert nms[1].type == 'import'
+        assert nms[1].type == 'function'
         n = nms[1].goto_assignments()[0]
         assert n.name == 'load'
         assert n.type == 'function'
 
         nms = names('import os; os.path', references=True)
         assert nms[0].name == 'os'
-        assert nms[0].type == 'import'
+        assert nms[0].type == 'module'
         n = nms[0].goto_assignments()[0]
         assert n.name == 'os'
         assert n.type == 'module'
 
         n = nms[2].goto_assignments()[0]
         assert n.name == 'path'
-        assert n.type == 'import'
+        assert n.type == 'module'
 
         nms = names('import os.path', references=True)
         n = nms[0].goto_assignments()[0]
@@ -322,17 +321,21 @@ class TestGotoAssignments(TestCase):
     def test_import_alias(self):
         nms = names('import json as foo', references=True)
         assert nms[0].name == 'json'
-        assert nms[0].type == 'import'
+        assert nms[0].type == 'module'
+        assert nms[0]._name.tree_name.get_definition().type == 'import_name'
         n = nms[0].goto_assignments()[0]
         assert n.name == 'json'
         assert n.type == 'module'
+        assert n._name.tree_name.get_definition().type == 'file_input'
 
         assert nms[1].name == 'foo'
-        assert nms[1].type == 'import'
+        assert nms[1].type == 'module'
+        assert nms[1]._name.tree_name.get_definition().type == 'import_name'
         ass = nms[1].goto_assignments()
         assert len(ass) == 1
         assert ass[0].name == 'json'
         assert ass[0].type == 'module'
+        assert ass[0]._name.tree_name.get_definition().type == 'file_input'
 
 
 def test_added_equals_to_params():

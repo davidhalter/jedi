@@ -166,7 +166,6 @@ def get_init_path(directory_path):
 
 
 class ImportName(AbstractNameDefinition):
-    api_type = 'module'
     start_pos = (1, 0)
 
     def __init__(self, parent_module, string_name):
@@ -188,6 +187,9 @@ class ImportName(AbstractNameDefinition):
     def parent_context(self):
         return self.parent_module
 
+    @property
+    def api_type(self):
+        return 'module'
 
 class SubModuleName(ImportName):
     def infer(self):
