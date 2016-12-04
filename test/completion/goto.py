@@ -22,10 +22,10 @@ cd = e
 
 #! ['module math']
 import math
-#! ['import math']
+#! ['module math']
 math
 
-#! ['import math']
+#! ['module math']
 b = math
 #! ['b = math']
 b
@@ -148,7 +148,7 @@ mod1.a
 #! ['a = 1.0']
 from import_tree.pkg.mod1 import a
 
-#! ['import os']
+#! ['module os']
 from .imports import os
 
 #! ['some_variable = 1']

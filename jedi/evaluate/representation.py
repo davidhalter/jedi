@@ -252,13 +252,12 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         else:
             return function_execution.get_return_values()
 
-    def get_function_execution(self, arguments):
-        return FunctionExecutionContext(
-            self.evaluator,
-            self.parent_context,
-            self.base,
-            arguments
-        )
+    def get_function_execution(self, arguments=None):
+        e = self.evaluator
+        if arguments is None:
+            return AnonymousFunctionExecution(e, self.parent_context, self)
+        else:
+            return FunctionExecutionContext(e, self.parent_context, self, arguments)
 
     def py__call__(self, arguments):
         function_execution = self.get_function_execution(arguments)
@@ -281,7 +280,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         anon = AnonymousFunctionExecution(
             self.evaluator,
             self.parent_context,
-            self.funcdef
+            self
         )
         return [ParamName(anon, param.name) for param in self.funcdef.params]
 
@@ -297,12 +296,14 @@ class FunctionExecutionContext(Executed):
     """
     function_execution_filter = FunctionExecutionFilter
 
-    def __init__(self, evaluator, parent_context, funcdef, var_args):
+    def __init__(self, evaluator, parent_context, function_context, var_args):
         super(FunctionExecutionContext, self).__init__(evaluator, parent_context, var_args)
-        self.funcdef = funcdef
-        if isinstance(funcdef, mixed.MixedObject):
+        self.function_context = function_context
+        self.funcdef = function_context.funcdef
+        if isinstance(function_context, mixed.MixedObject):
             # The extra information in mixed is not needed anymore. We can just
             # unpack it and give it the tree object.
+            raise DeprecationWarning
             funcdef = funcdef.definition
 
         # Just overwrite the old version. We don't need it anymore.
@@ -316,7 +317,7 @@ class FunctionExecutionContext(Executed):
         #self._copied_funcdef = funcdef
 
     def get_node(self):
-        return self.funcdef
+        return self.function_context.funcdef
 
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator
@@ -426,9 +427,9 @@ class FunctionExecutionContext(Executed):
 
 
 class AnonymousFunctionExecution(FunctionExecutionContext):
-    def __init__(self, evaluator, parent_context, funcdef):
+    def __init__(self, evaluator, parent_context, function_context):
         super(AnonymousFunctionExecution, self).__init__(
-            evaluator, parent_context, funcdef, var_args=None)
+            evaluator, parent_context, function_context, var_args=None)
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):

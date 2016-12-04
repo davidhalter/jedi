@@ -79,7 +79,7 @@ from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition
-from jedi.evaluate.instance import AnonymousInstance, AnonymousInstanceFunctionExecution
+from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 
 
 class Evaluator(object):
@@ -489,7 +489,10 @@ class Evaluator(object):
             return [TreeNameDefinition(context, name)]
         elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
             if par.type in ('funcdef', 'classdef', 'module'):
-                return [context.name]
+                if par.type == 'funcdef':
+                    return [context.function_context.name]
+                else:
+                    return [context.name]
             return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
             module_names = imports.ImportWrapper(context, name).follow(is_goto=True)
@@ -567,13 +570,17 @@ class Evaluator(object):
 
             if is_funcdef:
                 if isinstance(parent_context, AnonymousInstance):
-                    return AnonymousInstanceFunctionExecution(
-                        parent_context,
-                        parent_context.parent_context,
-                        scope_node
+                    func = BoundMethod(
+                        self, parent_context, parent_context.class_context,
+                        parent_context.parent_context, scope_node
                     )
                 else:
-                    return er.AnonymousFunctionExecution(self, parent_context, scope_node)
+                    func = er.FunctionContext(
+                        self,
+                        parent_context,
+                        scope_node
+                    )
+                return func.get_function_execution()
             elif scope_node.type == 'classdef':
                 class_context = er.ClassContext(self, scope_node, parent_context)
                 if child_is_funcdef:

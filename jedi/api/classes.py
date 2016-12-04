@@ -312,12 +312,10 @@ class BaseDefinition(object):
         return '.'.join(path if path[0] else path[1:])
 
     def goto_assignments(self):
-        try:
-            tree_name = self._name.tree_name
-        except AttributeError:
+        if self._name.tree_name is None:
             return self
 
-        defs = self._evaluator.goto(self._name.parent_context, tree_name)
+        defs = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
         return [Definition(self._evaluator, d) for d in defs]
 
     @memoize_method
@@ -559,36 +557,34 @@ class Definition(BaseDefinition):
 
         """
         typ = self.type
-        try:
-            tree_name = self._name.tree_name
-        except AttributeError:
-            pass
-        else:
-            definition = tree_name.get_definition()
+        tree_name = self._name.tree_name
+        if typ in ('function', 'class', 'module') or tree_name is None:
+            if typ == 'function':
+                # For the description we want a short and a pythonic way.
+                typ = 'def'
+            return typ + ' ' + self._name.string_name
 
-            try:
-                first_leaf = definition.first_leaf()
-            except AttributeError:
-                # `d` is already a Leaf (Name).
-                first_leaf = definition
-            # Remove the prefix, because that's not what we want for get_code
-            # here.
-            old, first_leaf.prefix = first_leaf.prefix, ''
-            try:
-                txt = definition.get_code()
-            finally:
-                first_leaf.prefix = old
-            # Delete comments:
-            txt = re.sub('#[^\n]+\n', ' ', txt)
-            # Delete multi spaces/newlines
-            txt = re.sub('\s+', ' ', txt).strip()
-            if typ == 'param':
-                txt = typ + ' ' + txt
-            return txt
-        if typ == 'function':
-            # For the description we want a short and a pythonic way.
-            typ = 'def'
-        return typ + ' ' + self._name.string_name
+        definition = tree_name.get_definition()
+
+        try:
+            first_leaf = definition.first_leaf()
+        except AttributeError:
+            # `d` is already a Leaf (Name).
+            first_leaf = definition
+        # Remove the prefix, because that's not what we want for get_code
+        # here.
+        old, first_leaf.prefix = first_leaf.prefix, ''
+        try:
+            txt = definition.get_code()
+        finally:
+            first_leaf.prefix = old
+        # Delete comments:
+        txt = re.sub('#[^\n]+\n', ' ', txt)
+        # Delete multi spaces/newlines
+        txt = re.sub('\s+', ' ', txt).strip()
+        if typ == 'param':
+            txt = typ + ' ' + txt
+        return txt
 
         # TODO DELETE
 
@@ -664,12 +660,10 @@ class Definition(BaseDefinition):
         Returns True, if defined as a name in a statement, function or class.
         Returns False, if it's a reference to such a definition.
         """
-        try:
-            tree_name = self._name.tree_name
-        except AttributeError:
+        if self._name.tree_name is None:
             return True
         else:
-            return tree_name.is_definition()
+            return self._name.tree_name.is_definition()
 
     def __eq__(self, other):
         return self._name.start_pos == other._name.start_pos \
@@ -708,22 +702,15 @@ class CallSignature(Definition):
                     return i
             if self.params:
                 param_name = self.params[-1]._name
-                try:
-                    tree_name = param_name.tree_name
-                except AttributeError:
-                    pass
-                else:
-                    if tree_name.get_definition().stars == 2:
+                if param_name.tree_name is not None:
+                    if param_name.tree_name.get_definition().stars == 2:
                         return i
             return None
 
         if self._index >= len(self.params):
             for i, param in enumerate(self.params):
-                try:
-                    tree_name = param._name.tree_name
-                except AttributeError:
-                    pass
-                else:
+                tree_name = param._name.tree_name
+                if tree_name is not None:
                     # *args case
                     if tree_name.get_definition().stars == 1:
                         return i

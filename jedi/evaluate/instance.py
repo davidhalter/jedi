@@ -130,10 +130,13 @@ class AbstractInstanceContext(Context):
         pass
 
     def _create_init_execution(self, class_context, func_node):
+        bound_method = BoundMethod(
+            self.evaluator, self, class_context, self.parent_context, func_node
+        )
         return InstanceFunctionExecution(
             self,
             class_context.parent_context,
-            func_node,
+            bound_method,
             self.var_args
         )
 
@@ -155,11 +158,11 @@ class AbstractInstanceContext(Context):
                 if scope.name.value == '__init__' and parent_context == class_context:
                     return self._create_init_execution(class_context, scope)
                 else:
-                    return AnonymousInstanceFunctionExecution(
-                        self,
-                        class_context.parent_context,
-                        scope,
+                    bound_method = BoundMethod(
+                        self.evaluator, self, class_context,
+                        self.parent_context, scope
                     )
+                    return bound_method.get_function_execution()
             else:
                 raise NotImplementedError
         return class_context
@@ -251,13 +254,13 @@ class BoundMethod(er.FunctionContext):
         self._instance = instance
         self._class_context = class_context
 
-    def get_function_execution(self, arguments):
-        return InstanceFunctionExecution(
-            self._instance,
-            self.parent_context,
-            self.funcdef,
-            arguments
-        )
+    def get_function_execution(self, arguments=None):
+        if arguments is None:
+            return AnonymousInstanceFunctionExecution(
+                self._instance, self.parent_context, self)
+        else:
+            return InstanceFunctionExecution(
+                self._instance, self.parent_context, self, arguments)
 
 
 class CompiledBoundMethod(compiled.CompiledObject):
@@ -428,17 +431,17 @@ class InstanceVarArgs(object):
 
 
 class InstanceFunctionExecution(er.FunctionExecutionContext):
-    def __init__(self, instance, parent_context, funcdef, var_args):
+    def __init__(self, instance, parent_context, function_context, var_args):
         self.instance = instance
-        var_args = InstanceVarArgs(instance, funcdef, var_args)
+        var_args = InstanceVarArgs(instance, function_context.funcdef, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
-            instance.evaluator, parent_context, funcdef, var_args)
+            instance.evaluator, parent_context, function_context, var_args)
 
 
 class AnonymousInstanceFunctionExecution(InstanceFunctionExecution):
     function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
 
-    def __init__(self, instance, parent_context, funcdef):
+    def __init__(self, instance, parent_context, function_context):
         super(AnonymousInstanceFunctionExecution, self).__init__(
-            instance, parent_context, funcdef, None)
+            instance, parent_context, function_context, None)

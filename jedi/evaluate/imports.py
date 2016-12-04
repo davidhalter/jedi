@@ -191,6 +191,7 @@ class ImportName(AbstractNameDefinition):
     def api_type(self):
         return 'module'
 
+
 class SubModuleName(ImportName):
     def infer(self):
         return Importer(
