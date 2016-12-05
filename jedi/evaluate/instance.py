@@ -366,6 +366,11 @@ class SelfNameFilter(InstanceClassFilter):
                 if name.is_definition() and self._access_possible(name):
                     yield name
                     continue
+
+
+
+
+
                     init_execution = self.context.get_init_function()
                     # Hopefully we can somehow change this.
                     if init_execution is not None and \

@@ -208,6 +208,17 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                 return names
         return []
 
+    def get_param_names(self):
+        for name in self.get_function_slot_names('__init__'):
+            for context_ in name.infer():
+                try:
+                    method = context_.get_param_names
+                except AttributeError:
+                    pass
+                else:
+                    return method()[:-1]
+        return []
+
     @property
     def name(self):
         return ContextName(self, self.classdef.name)
@@ -277,12 +288,8 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         return ContextName(self, self.funcdef.name)
 
     def get_param_names(self):
-        anon = AnonymousFunctionExecution(
-            self.evaluator,
-            self.parent_context,
-            self
-        )
-        return [ParamName(anon, param.name) for param in self.funcdef.params]
+        function_execution = self.get_function_execution()
+        return [ParamName(function_execution, param.name) for param in self.funcdef.params]
 
 
 class FunctionExecutionContext(Executed):
