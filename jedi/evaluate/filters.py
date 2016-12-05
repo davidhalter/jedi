@@ -52,22 +52,24 @@ class AbstractTreeName(AbstractNameDefinition):
         return self.tree_name.start_pos
 
 
-class ContextName(AbstractTreeName):
-    def __init__(self, context, tree_name):
-        super(ContextName, self).__init__(context.parent_context, tree_name)
-        self._context = context
-
+class ContextNameMixin(object):
     def infer(self):
-        return [self._context]
+        return set([self._context])
 
     def get_root_context(self):
         if self.parent_context is None:
             return self._context
-        return super(ContextName, self).get_root_context()
+        return super(ContextNameMixin, self).get_root_context()
 
     @property
     def api_type(self):
         return self._context.api_type
+
+
+class ContextName(ContextNameMixin, AbstractTreeName):
+    def __init__(self, context, tree_name):
+        super(ContextName, self).__init__(context.parent_context, tree_name)
+        self._context = context
 
 
 class TreeNameDefinition(AbstractTreeName):

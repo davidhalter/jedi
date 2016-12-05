@@ -216,7 +216,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                 except AttributeError:
                     pass
                 else:
-                    return method()[:-1]
+                    return list(method())[1:]
         return []
 
     @property

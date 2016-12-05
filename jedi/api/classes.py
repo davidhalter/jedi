@@ -164,28 +164,31 @@ class BaseDefinition(object):
 
     def _path(self):
         """The path to a module/class/function definition."""
-        path = []
-        par = self._definition
-        while par is not None:
-            if isinstance(par, tree.Import):
-                # Not self._name.infer()?
-                raise DeprecationWarning
-                path += imports.ImportWrapper(self._name.context, self._name).import_path
-                break
-            try:
-                name = par.name
-            except AttributeError:
-                pass
-            else:
-                if isinstance(par, er.ModuleWrapper):
-                    # TODO just make the path dotted from the beginning, we
-                    # shouldn't really split here.
-                    path[0:0] = par.py__name__().split('.')
-                    break
+        def to_reverse():
+            name = self._name
+            if name.api_type == 'module':
+                try:
+                    name = list(name.infer())[0].name
+                except IndexError:
+                    pass
+            yield name.string_name
+            name.api_type
+            parent_context = name.parent_context
+            print(parent_context)
+            while parent_context is not None:
+                try:
+                    method = parent_context.py__name__
+                except AttributeError:
+                    try:
+                        yield parent_context.name.string_name
+                    except AttributeError:
+                        pass
                 else:
-                    path.insert(0, unicode(name))
-            par = par.parent
-        return path
+                    # TODO this main clause seems strange.
+                    for name in (method() or '__main__').split('.'):
+                        yield name
+                parent_context = parent_context.parent_context
+        return reversed(list(to_reverse()))
 
     @property
     def module_name(self):
@@ -299,11 +302,12 @@ class BaseDefinition(object):
         >>> print(script.goto_definitions()[0].full_name)
         os.path.join
 
-        Notice that it correctly returns ``'os.path.join'`` instead of
-        (for example) ``'posixpath.join'``.
-
+        Notice that it returns ``'os.path.join'`` instead of (for example)
+        ``'posixpath.join'``. This is not correct, since the modules name would
+        be ``<module 'posixpath' ...>```. However most users find the latter
+        more practical.
         """
-        path = [unicode(p) for p in self._path()]
+        path = list(self._path())
         # TODO add further checks, the mapping should only occur on stdlib.
         if not path:
             return None  # for keywords the path is empty
@@ -476,7 +480,7 @@ class Completion(BaseDefinition):
         if t == 'statement' or t == 'import':
             desc = self._definition.get_code()
         else:
-            desc = '.'.join(unicode(p) for p in self._path())
+            desc = '.'.join(self._path())
 
         line = '' if self.in_builtin_module else '@%s' % self.line
         return '%s: %s%s' % (t, desc, line)

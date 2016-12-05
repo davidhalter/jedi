@@ -12,7 +12,8 @@ from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.parser.tree import Param, Operator
 from jedi.evaluate.helpers import FakeName
-from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition
+from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
+    ContextNameMixin
 from jedi.evaluate.context import Context, LazyKnownContext
 from . import fake
 
@@ -300,13 +301,11 @@ class UnresolvableParamName(AbstractNameDefinition):
         return set()
 
 
-class CompiledContextName(AbstractNameDefinition):
-    def __init__(self, parent_context, name):
+class CompiledContextName(ContextNameMixin, AbstractNameDefinition):
+    def __init__(self, context, name):
         self.string_name = name
-        self.parent_context = parent_context
-
-    def infer(self):
-        return [self.parent_context]
+        self._context = context
+        self.parent_context = context.parent_context
 
 
 class LazyNamesDict(object):

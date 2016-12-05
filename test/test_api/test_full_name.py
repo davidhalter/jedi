@@ -69,7 +69,7 @@ class TestFullDefinedName(TestCase):
         self.check("""
         def f(): pass
         class C: pass
-        """, ['f', 'C'])
+        """, ['__main__.f', '__main__.C'])
 
     def test_imports(self):
         self.check("""
