@@ -1624,11 +1624,11 @@ class Param(BaseNode):
         default = '' if self.default is None else '=%s' % self.default.get_code()
         return '<%s: %s>' % (type(self).__name__, str(self._tfpdef()) + default)
 
-    def get_code(self, normalized=False, include_prefix=True):
+    def get_description(self):
         children = self.children
         if children[-1] == ',':
             children = children[:-1]
-        return self._get_code_for_children(children, normalized, include_prefix)
+        return self._get_code_for_children(children, False, False)
 
 
 class CompFor(BaseNode):

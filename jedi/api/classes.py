@@ -219,7 +219,7 @@ class BaseDefinition(object):
             return None
         return self._name.start_pos[1]
 
-    def docstring(self, raw=False):
+    def docstring(self, raw=False, fast=True):
         r"""
         Return a document string for this completion object.
 
@@ -244,11 +244,16 @@ class BaseDefinition(object):
         >>> print(script.goto_definitions()[0].docstring(raw=True))
         Document for function f.
 
+        :param fast: Don't follow imports that are only one level deep like
+            ``import foo``, but follow ``from foo import bar``. This makes
+            sense for speed reasons. Completing `import a` is slow if you use
+            the ``foo.docstring(fast=False)`` on every object, because it
+            parses all libraries starting with ``a``.
         """
         if raw:
-            return _Help(self._name.parent_context).raw()
+            return _Help(self._name).raw(fast=fast)
         else:
-            return _Help(self._name.parent_context).full()
+            return _Help(self._name).full(fast=fast)
 
     @property
     def doc(self):
@@ -453,6 +458,13 @@ class Completion(BaseDefinition):
         """
         return self._complete(False)
 
+    def docstring(self, raw=False, fast=True):
+        if self._like_name_length >= 3:
+            # In this case we can just resolve the like name, because we
+            # wouldn't load like > 100 Python modules anymore.
+            fast = False
+        return super(Completion, self,).docstring(raw, fast)
+
     @property
     def description(self):
         """Provide a description of the completion object."""
@@ -471,27 +483,6 @@ class Completion(BaseDefinition):
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name)
-
-    def docstring(self, raw=False, fast=True):
-        """
-        :param fast: Don't follow imports that are only one level deep like
-            ``import foo``, but follow ``from foo import bar``. This makes
-            sense for speed reasons. Completing `import a` is slow if you use
-            the ``foo.docstring(fast=False)`` on every object, because it
-            parses all libraries starting with ``a``.
-        """
-        context = self._name.parent_context
-        if self._name.api_type == 'module':
-            if not fast:
-                followed = self._name.infer()
-                if followed:
-                    # TODO: Use all of the followed objects as input to Documentation.
-                    context = next(iter(followed))
-
-        if raw:
-            return _Help(context).raw()
-        else:
-            return _Help(context).full()
 
     @memoize_method
     def _follow_statements_imports(self):
@@ -563,6 +554,8 @@ class Definition(BaseDefinition):
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
             return typ + ' ' + self._name.string_name
+        elif typ == 'param':
+            return typ + ' ' + tree_name.get_definition().get_description()
 
         definition = tree_name.get_definition()
 
@@ -582,8 +575,6 @@ class Definition(BaseDefinition):
         txt = re.sub('#[^\n]+\n', ' ', txt)
         # Delete multi spaces/newlines
         txt = re.sub('\s+', ' ', txt).strip()
-        if typ == 'param':
-            txt = typ + ' ' + txt
         return txt
 
         # TODO DELETE
@@ -775,19 +766,34 @@ class _Help(object):
     def __init__(self, definition):
         self._name = definition
 
-    def full(self):
-        try:
-            return self._name.get_node().doc
-        except AttributeError:
-            return self.raw()
+    @memoize_method
+    def _get_node(self, fast):
+        if self._name.api_type == 'module' and not fast:
+            followed = self._name.infer()
+            if followed:
+                # TODO: Use all of the followed objects as input to Documentation.
+                context = next(iter(followed))
+                return context.get_node()
+        return self._name.tree_name.get_definition()
 
-    def raw(self):
+    def full(self, fast=True):
+        node = self._get_node(fast)
+        try:
+            return node.doc
+        except AttributeError:
+            return self.raw(fast)
+
+    def raw(self, fast=True):
         """
         The raw docstring ``__doc__`` for any object.
 
         See :attr:`doc` for example.
         """
-        node = self._name.get_node()
+        node = self._get_node(fast)
         if node is None:
             return ''
-        return node.raw_doc
+
+        try:
+            return node.raw_doc
+        except AttributeError:
+            return ''
