@@ -544,7 +544,7 @@ class Evaluator(object):
             raise DeprecationWarning
             return element
 
-    def create_context(self, base_context, node):
+    def create_context(self, base_context, node, node_is_context=False):
         def parent_scope(node):
             while True:
                 node = node.parent
@@ -594,7 +594,7 @@ class Evaluator(object):
 
         base_node = base_context.get_node()
 
-        if node.is_scope():
+        if node_is_context and node.is_scope():
             scope_node = node
         else:
             scope_node = parent_scope(node)

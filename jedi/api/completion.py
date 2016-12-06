@@ -53,7 +53,6 @@ def get_user_scope(module_context, position):
     Returns the scope in which the user resides. This includes flows.
     """
     user_stmt = module_context.module_node.get_statement_for_position(position)
-    evaluator = module_context.evaluator
     if user_stmt is None:
         def scan(scope):
             for s in scope.children:
@@ -66,15 +65,10 @@ def get_user_scope(module_context, position):
 
         scanned_node = scan(module_context.module_node)
         if scanned_node:
-            return evaluator.create_context(module_context, scanned_node)
+            return module_context.create_context(scanned_node, node_is_context=True)
         return module_context
     else:
-        scope_node = user_stmt.get_parent_scope(include_flows=True)
-        return evaluator.create_context(module_context, scope_node)
-
-    # TODO need something like this in this func?
-        #if not context.is_scope():  # Might be a flow (if/while/etc).
-            #context = context.get_parent_scope()
+        return module_context.create_context(user_stmt)
 
 
 class Completion:
@@ -236,7 +230,10 @@ class Completion:
         cls = leaf.get_parent_until(tree.Class)
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.
-            random_context = self._module_context.create_context(cls)
+            random_context = self._module_context.create_context(
+                cls,
+                node_is_context=True
+            )
         else:
             return
 

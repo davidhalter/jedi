@@ -174,7 +174,6 @@ class BaseDefinition(object):
             yield name.string_name
             name.api_type
             parent_context = name.parent_context
-            print(parent_context)
             while parent_context is not None:
                 try:
                     method = parent_context.py__name__
