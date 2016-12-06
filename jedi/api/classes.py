@@ -54,8 +54,6 @@ class BaseDefinition(object):
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
         'argparse._ActionsContainer': 'argparse.ArgumentParser',
-        '_sre.SRE_Match': 're.MatchObject',
-        '_sre.SRE_Pattern': 're.RegexObject',
     }.items())
 
     def __init__(self, evaluator, name):
@@ -777,6 +775,8 @@ class _Help(object):
                 # TODO: Use all of the followed objects as input to Documentation.
                 context = next(iter(followed))
                 return context.get_node()
+        if self._name.tree_name is None:
+            return None
         return self._name.tree_name.get_definition()
 
     def full(self, fast=True):

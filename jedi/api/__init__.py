@@ -437,18 +437,17 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         is_def = _def._name.tree_name.is_definition()
         return definitions and is_def or references and not is_def
 
-    def get_definitions():
-        for tree_name in get_module_names(script._get_module_node(), all_scopes):
-            name = TreeNameDefinition(
-                module_context.create_context(tree_name),
-                tree_name
-            )
-            yield classes.Definition(script._evaluator, name)
-
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding)
     module_context = script._get_module()
     defs = [
+        classes.Definition(
+            script._evaluator,
+            TreeNameDefinition(
+                module_context.create_context(name.parent),
+                name
+            )
+        ) for name in get_module_names(script._get_module_node(), all_scopes)
     ]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 

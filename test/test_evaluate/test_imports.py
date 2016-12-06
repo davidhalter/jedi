@@ -97,8 +97,8 @@ def test_not_importable_file():
 def test_import_unique():
     src = "import os; os.path"
     defs = jedi.Script(src, path='example.py').goto_definitions()
-    defs = [d._name.parent_context for d in defs]
-    assert len(defs) == len(set(defs))
+    parent_contexts = [d._name._context for d in defs]
+    assert len(parent_contexts) == len(set(parent_contexts))
 
 
 def test_cache_works_with_sys_path_param(tmpdir):

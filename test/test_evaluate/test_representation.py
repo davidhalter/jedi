@@ -4,8 +4,8 @@ from jedi import Script
 
 
 def get_definition_and_evaluator(source):
-    d = Script(dedent(source)).goto_definitions()[0]
-    return d._name.parent_context, d._evaluator
+    first, = Script(dedent(source)).goto_definitions()
+    return first._name._context, first._evaluator
 
 
 def test_function_execution():
