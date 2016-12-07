@@ -55,7 +55,7 @@ class TestDefinedNames(TestCase):
         subdefinitions = definitions[0].defined_names()
         self.assert_definition_names(subdefinitions, ['f', 'g'])
         self.assertEqual([d.full_name for d in subdefinitions],
-                         ['Class.f', 'Class.g'])
+                         ['__main__.Class.f', '__main__.Class.g'])
 
     def test_nested_class(self):
         definitions = self.check_defined_names("""

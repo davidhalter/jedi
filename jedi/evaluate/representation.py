@@ -538,7 +538,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def py__name__(self):
         for name, module in self.evaluator.modules.items():
-            if module == self:
+            if module == self and name != '':
                 return name
 
         return '__main__'

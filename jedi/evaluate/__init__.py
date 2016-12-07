@@ -62,7 +62,6 @@ that are not used are just being ignored.
 
 import copy
 import sys
-from itertools import chain
 
 from jedi.parser import tree
 from jedi import debug

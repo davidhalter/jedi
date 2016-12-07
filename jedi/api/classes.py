@@ -4,7 +4,6 @@ These classes are the much bigger part of the whole API, because they contain
 the interesting information about completion and goto operations.
 """
 import warnings
-from itertools import chain
 import re
 
 from jedi._compatibility import unicode
@@ -19,21 +18,23 @@ from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParamName
-from jedi.evaluate.finder import filter_definition_names
 from jedi.api.keywords import KeywordName
 
 
-def defined_names(evaluator, scope):
+def _sort_names_by_start_pos(names):
+    return sorted(names, key=lambda s: s.start_pos or (0, 0))
+
+
+def defined_names(evaluator, context):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Definition
     """
-    dct = scope.names_dict
-    names = list(chain.from_iterable(dct.values()))
-    names = filter_definition_names(names, scope)
-    return [Definition(evaluator, d) for d in sorted(names, key=lambda s: s.start_pos)]
+    filter = next(context.get_filters(search_global=True))
+    names = [name for name in filter.values()]
+    return [Definition(evaluator, n) for n in _sort_names_by_start_pos(names)]
 
 
 class BaseDefinition(object):
@@ -169,8 +170,14 @@ class BaseDefinition(object):
                     name = list(name.infer())[0].name
                 except IndexError:
                     pass
-            yield name.string_name
-            name.api_type
+
+            if name.api_type == 'module':
+                module_context, = name.infer()
+                for n in reversed(module_context.py__name__().split('.')):
+                    yield n
+            else:
+                yield name.string_name
+
             parent_context = name.parent_context
             while parent_context is not None:
                 try:
@@ -181,8 +188,7 @@ class BaseDefinition(object):
                     except AttributeError:
                         pass
                 else:
-                    # TODO this main clause seems strange.
-                    for name in (method() or '__main__').split('.'):
+                    for name in reversed(method().split('.')):
                         yield name
                 parent_context = parent_context.parent_context
         return reversed(list(to_reverse()))
@@ -640,12 +646,10 @@ class Definition(BaseDefinition):
 
         :rtype: list of Definition
         """
-        defs = self._follow_statements_imports()
-        # For now we don't want base classes or evaluate decorators.
-        defs = [d.base if isinstance(d, (er.Class, er.Function)) else d for d in defs]
-        iterable = (defined_names(self._evaluator, d) for d in defs)
-        iterable = list(iterable)
-        return list(chain.from_iterable(iterable))
+        defs = self._name.infer()
+        return _sort_names_by_start_pos(
+            common.unite(defined_names(self._evaluator, d) for d in defs)
+        )
 
     def is_definition(self):
         """

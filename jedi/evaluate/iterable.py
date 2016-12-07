@@ -166,7 +166,7 @@ class Generator(GeneratorMixin, context.Context):
     """Handling of `yield` functions."""
 
     def __init__(self, evaluator, func_execution_context):
-        super(Generator, self).__init__(evaluator)
+        super(Generator, self).__init__(evaluator, parent_context=evaluator.BUILTINS)
         self._func_execution_context = func_execution_context
 
     def py__iter__(self):
