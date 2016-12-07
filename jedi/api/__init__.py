@@ -195,7 +195,7 @@ class Script(object):
             if leaf is None:
                 return []
 
-        context = self._evaluator.create_context(self._get_module(), leaf)
+        context = self._evaluator.create_context(self._get_module(), leaf.parent)
         definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
 
         names = [s.name for s in definitions]
