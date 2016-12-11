@@ -14,9 +14,7 @@ would check whether a flow has the form of ``if isinstance(a, type_or_tuple)``.
 Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
-from itertools import chain
 
-from jedi._compatibility import unicode
 from jedi.parser import tree
 from jedi import debug
 from jedi.common import unite
@@ -33,9 +31,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
-from jedi.evaluate.context import TreeContext
-from jedi.evaluate.cache import memoize_default
-from jedi.evaluate.filters import get_global_filters, ContextName
+from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
 
 
 def filter_after_position(names, position, origin=None):
@@ -128,22 +124,22 @@ class NameFinder(object):
                          isinstance(self._name.parent.parent, tree.Param)):
             if isinstance(self._name, tree.Name):
                 if attribute_lookup:
-                    analysis.add_attribute_error(self._evaluator,
-                                                 self._context, self._name)
+                    analysis.add_attribute_error(self._context, self._name)
                 else:
                     message = ("NameError: name '%s' is not defined."
                                % self._string_name)
-                    analysis.add(self._evaluator, 'name-error', self._name,
-                                 message)
+                    analysis.add(self._context, 'name-error', self._name, message)
 
         return types
 
-    def get_filters(self, search_global=False):
+    def _get_origin_scope(self):
         if isinstance(self._name, tree.Name):
-            origin_scope = self._name.get_parent_until(tree.Scope, reverse=True)
+            return self._name.get_parent_until(tree.Scope, reverse=True)
         else:
-            origin_scope = None
+            return None
 
+    def get_filters(self, search_global=False):
+        origin_scope = self._get_origin_scope()
         if search_global:
             return get_global_filters(self._evaluator, self._context, self._position, origin_scope)
         else:
@@ -321,15 +317,17 @@ class NameFinder(object):
         # Add isinstance and other if/assert knowledge.
         if not types and isinstance(self._name, tree.Name) and \
                 not isinstance(self._name_context, AbstractInstanceContext):
-            # Ignore FunctionExecution parents for now.
             flow_scope = self._name
+            base_node = self._name_context.get_node()
+            if base_node.type == 'comp_for':
+                return types
             while True:
                 flow_scope = flow_scope.get_parent_scope(include_flows=True)
                 n = _check_flow_information(self._name_context, flow_scope,
                                             self._name, self._position)
                 if n is not None:
                     return n
-                if flow_scope == self._name_context.get_node():
+                if flow_scope == base_node:
                     break
         return types
 

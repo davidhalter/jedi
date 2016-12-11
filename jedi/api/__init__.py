@@ -13,7 +13,6 @@ import os
 import warnings
 import sys
 
-from jedi._compatibility import unicode
 from jedi.parser import load_grammar
 from jedi.parser import tree
 from jedi.parser.fast import FastParser
@@ -195,7 +194,7 @@ class Script(object):
             if leaf is None:
                 return []
 
-        context = self._evaluator.create_context(self._get_module(), leaf.parent)
+        context = self._evaluator.create_context(self._get_module(), leaf)
         definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
 
         names = [s.name for s in definitions]
@@ -328,11 +327,12 @@ class Script(object):
         self._evaluator.analysis_modules = [module_node]
         try:
             for node in module_node.nodes_to_execute():
+                context = self._get_module().create_context(node)
                 if node.type in ('funcdef', 'classdef'):
-                    if node.type == 'classdef':
-                        continue
-                        raise NotImplementedError
-                    er.Function(self._evaluator, node).get_decorated_func()
+                    # TODO This is stupid, should be private
+                    from jedi.evaluate.finder import _name_to_types
+                    # Resolve the decorators.
+                    _name_to_types(self._evaluator, context, node.children[1])
                 elif isinstance(node, tree.Import):
                     import_names = set(node.get_defined_names())
                     if node.is_nested():
@@ -340,12 +340,12 @@ class Script(object):
                     for n in import_names:
                         imports.ImportWrapper(context, n).follow()
                 elif node.type == 'expr_stmt':
-                    types = self._evaluator.eval_element(node)
+                    types = context.eval_node(node)
                     for testlist in node.children[:-1:2]:
                         # Iterate tuples.
                         unpack_tuple_to_dict(self._evaluator, types, testlist)
                 else:
-                    try_iter_content(self._evaluator.goto_definitions(node))
+                    try_iter_content(self._evaluator.goto_definitions(context, node))
                 self._evaluator.reset_recursion_limitations()
 
             ana = [a for a in self._evaluator.analysis if self.path == a.path]

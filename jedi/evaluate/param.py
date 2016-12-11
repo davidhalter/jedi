@@ -63,11 +63,9 @@ class AbstractArguments():
         Evaluates all arguments as a support for static analysis
         (normally Jedi).
         """
-        raise DeprecationWarning
-        for key, element_values in self.unpack():
-            for element in element_values:
-                types = self._evaluator.eval_element(self.context, element)
-                try_iter_content(types)
+        for key, lazy_context in self.unpack():
+            types = lazy_context.infer()
+            try_iter_content(types)
 
 
 class TreeArguments(AbstractArguments):
@@ -260,7 +258,7 @@ def get_params(evaluator, parent_context, func, var_args):
                          % (func.name, key))
                     calling_va = _get_calling_var_args(evaluator, var_args)
                     if calling_va is not None:
-                        analysis.add(evaluator, 'type-error-multiple-values',
+                        analysis.add(parent_context, 'type-error-multiple-values',
                                      calling_va, message=m)
                 else:
                     keys_used[key] = ExecutedParam(parent_context, key_param, var_args, argument)
@@ -302,7 +300,7 @@ def get_params(evaluator, parent_context, func, var_args):
                     calling_va = var_args.get_calling_var_args()
                     if calling_va is not None:
                         m = _error_argument_count(func, len(unpacked_va))
-                        analysis.add(evaluator, 'type-error-too-few-arguments',
+                        analysis.add(parent_context, 'type-error-too-few-arguments',
                                      calling_va, message=m)
             else:
                 result_arg = argument
@@ -323,13 +321,13 @@ def get_params(evaluator, parent_context, func, var_args):
                 calling_va = _get_calling_var_args(evaluator, var_args)
                 if calling_va is not None:
                     m = _error_argument_count(func, len(unpacked_va))
-                    analysis.add(evaluator, 'type-error-too-few-arguments',
+                    analysis.add(parent_context, 'type-error-too-few-arguments',
                                  calling_va, message=m)
 
     for key, argument in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
             % (func.name, key)
-        analysis.add(evaluator, 'type-error-keyword-argument', argument.whatever, message=m)
+        analysis.add(parent_context, 'type-error-keyword-argument', argument.whatever, message=m)
 
     remaining_arguments = list(var_arg_iterator)
     if remaining_arguments:
@@ -354,7 +352,7 @@ def get_params(evaluator, parent_context, func, var_args):
                     # print('\t\tnonkw', non_kw_param.parent.var_args.argument_node, )
                     if origin_args not in [f.parent.parent for f in first_values]:
                         continue
-            analysis.add(evaluator, 'type-error-too-many-arguments',
+            analysis.add(parent_context, 'type-error-too-many-arguments',
                          v, message=m)
     return result_params
 

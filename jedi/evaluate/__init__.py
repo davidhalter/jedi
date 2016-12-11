@@ -169,10 +169,10 @@ class Evaluator(object):
                     dct = {str(for_stmt.children[1]): lazy_context.infer()}
                     with helpers.predefine_names(context, for_stmt, dct):
                         t = self.eval_element(context, rhs)
-                        left = precedence.calculate(self, left, operator, t)
+                        left = precedence.calculate(self, context, left, operator, t)
                 types = left
             else:
-                types = precedence.calculate(self, left, operator, types)
+                types = precedence.calculate(self, context, left, operator, types)
         debug.dbg('eval_statement result %s', types)
         return types
 
@@ -180,9 +180,16 @@ class Evaluator(object):
         if isinstance(context, iterable.CompForContext):
             return self._eval_element_not_cached(context, element)
 
-        if_stmt = element.get_parent_until((tree.IfStmt, tree.ForStmt, tree.IsScope))
+        if_stmt = element
+        while if_stmt is not None:
+            if_stmt = if_stmt.parent
+            if if_stmt.type in ('if_stmt', 'for_stmt'):
+                break
+            if if_stmt.is_scope():
+                if_stmt = None
+                break
         predefined_if_name_dict = context.predefined_names.get(if_stmt)
-        if predefined_if_name_dict is None and isinstance(if_stmt, tree.IfStmt):
+        if predefined_if_name_dict is None and if_stmt and if_stmt.type == 'if_stmt':
             if_stmt_test = if_stmt.children[1]
             name_dicts = [{}]
             # If we already did a check, we don't want to do it again -> If
@@ -274,7 +281,7 @@ class Evaluator(object):
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     right = self.eval_element(context, element.children[2])
-                    types = set(precedence.calculate(self, types, trailer, right))
+                    types = set(precedence.calculate(self, context, types, trailer, right))
                     break
                 types = self.eval_trailer(context, types, trailer)
         elif element.type in ('testlist_star_expr', 'testlist',):
@@ -344,7 +351,7 @@ class Evaluator(object):
                 types = self._eval_atom(context, c[0])
                 for string in c[1:]:
                     right = self._eval_atom(context, string)
-                    types = precedence.calculate(self, types, '+', right)
+                    types = precedence.calculate(self, context, types, '+', right)
                 return types
             # Parentheses without commas are not tuples.
             elif c[0] == '(' and not len(c) == 2 \
@@ -491,11 +498,6 @@ class Evaluator(object):
             # a name it's something you can "goto" again.
             return [TreeNameDefinition(context, name)]
         elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
-            if par.type in ('funcdef', 'classdef', 'module'):
-                if par.type == 'funcdef':
-                    return [context.function_context.name]
-                else:
-                    return [context.name]
             return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
             module_names = imports.ImportWrapper(context, name).follow(is_goto=True)
@@ -600,5 +602,9 @@ class Evaluator(object):
         if node_is_context and node.is_scope():
             scope_node = node
         else:
+            if node.parent.type in ('funcdef', 'classdef'):
+                # When we're on class/function names/leafs that define the
+                # object itself and not its contents.
+                node = node.parent
             scope_node = parent_scope(node)
         return from_scope_node(scope_node)

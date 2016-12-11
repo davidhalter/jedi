@@ -71,9 +71,12 @@ def pytest_generate_tests(metafunc):
 
     if 'static_analysis_case' in metafunc.fixturenames:
         base_dir = os.path.join(os.path.dirname(__file__), 'static_analysis')
+        cases = list(collect_static_analysis_tests(base_dir, test_files))
         metafunc.parametrize(
             'static_analysis_case',
-            collect_static_analysis_tests(base_dir, test_files))
+            cases,
+            ids=[c.name for c in cases]
+        )
 
 
 def collect_static_analysis_tests(base_dir, test_files):
@@ -91,13 +94,13 @@ class StaticAnalysisCase(object):
     """
     def __init__(self, path):
         self._path = path
+        self.name = os.path.basename(path)
         with open(path) as f:
             self._source = f.read()
 
         self.skip = False
         for line in self._source.splitlines():
             self.skip = self.skip or run.skip_python_version(line)
-
 
     def collect_comparison(self):
         cases = []

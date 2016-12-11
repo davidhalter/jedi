@@ -133,7 +133,7 @@ class BaseDefinition(object):
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> defs                           # doctest: +NORMALIZE_WHITESPACE
         [<Definition module keyword>, <Definition class C>,
-         <Definition class D>, <Definition def f>]
+         <Definition instance D>, <Definition def f>]
 
         Finally, here is what you can get from :attr:`type`:
 
@@ -489,7 +489,7 @@ class Completion(BaseDefinition):
         return '%s: %s%s' % (t, desc, line)
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self._name)
+        return '<%s: %s>' % (type(self).__name__, self._name.string_name)
 
     @memoize_method
     def _follow_statements_imports(self):
@@ -556,7 +556,7 @@ class Definition(BaseDefinition):
         """
         typ = self.type
         tree_name = self._name.tree_name
-        if typ in ('function', 'class', 'module') or tree_name is None:
+        if typ in ('function', 'class', 'module', 'instance') or tree_name is None:
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
@@ -743,8 +743,8 @@ class CallSignature(Definition):
         return self._executable.get_parent_until()
 
     def __repr__(self):
-        return '<%s: %s index %s>' % (type(self).__name__, self._name,
-                                      self.index)
+        return '<%s: %s index %s>' % \
+            (type(self).__name__, self._name.string_name, self.index)
 
 
 class _Param(Definition):

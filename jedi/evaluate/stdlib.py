@@ -58,11 +58,11 @@ def execute(evaluator, obj, arguments):
 
 def _follow_param(evaluator, arguments, index):
     try:
-        key, values = list(arguments.unpack())[index]
+        key, lazy_context = list(arguments.unpack())[index]
     except IndexError:
         return set()
     else:
-        return unite(evaluator.eval_element(v) for v in values)
+        return lazy_context.infer()
 
 
 def argument_clinic(string, want_obj=False, want_context=False, want_arguments=False):
@@ -219,7 +219,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                 message = 'TypeError: isinstance() arg 2 must be a ' \
                           'class, type, or tuple of classes and types, ' \
                           'not %s.' % cls_or_tup
-                analysis.add(evaluator, 'type-error-isinstance', node, message)
+                analysis.add(cls_or_tup, 'type-error-isinstance', node, message)
 
     return set(compiled.create(evaluator, x) for x in bool_results)
 
@@ -244,11 +244,12 @@ def collections_namedtuple(evaluator, obj, arguments):
     _fields = list(_follow_param(evaluator, arguments, 1))[0]
     if isinstance(_fields, compiled.CompiledObject):
         fields = _fields.obj.replace(',', ' ').split()
-    elif isinstance(_fields, iterable.Array):
-        try:
-            fields = [v.obj for v in unite(_fields.py__iter__())]
-        except AttributeError:
-            return set()
+    elif isinstance(_fields, iterable.AbstractSequence):
+        fields = [
+            v.obj
+            for lazy_context in _fields.py__iter__()
+            for v in lazy_context.infer() if hasattr(v, 'obj')
+        ]
     else:
         return set()
 
@@ -265,7 +266,7 @@ def collections_namedtuple(evaluator, obj, arguments):
 
     # Parse source
     generated_class = ParserWithRecovery(evaluator.grammar, unicode(source)).module.subscopes[0]
-    return set([er.Class(evaluator, generated_class)])
+    return set([er.ClassContext(evaluator, generated_class, evaluator.BUILTINS)])
 
 
 @argument_clinic('first, /')

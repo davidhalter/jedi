@@ -59,13 +59,13 @@ def calculate_children(evaluator, context, children):
                     types = context.eval_node(right)
             # Otherwise continue, because of uncertainty.
         else:
-            types = calculate(evaluator, types, operator,
+            types = calculate(evaluator, context, types, operator,
                               context.eval_node(right))
     debug.dbg('calculate_children types %s', types)
     return types
 
 
-def calculate(evaluator, left_result, operator, right_result):
+def calculate(evaluator, context, left_result, operator, right_result):
     result = set()
     if not left_result or not right_result:
         # illegal slices e.g. cause left/right_result to be None
@@ -80,7 +80,7 @@ def calculate(evaluator, left_result, operator, right_result):
         else:
             for left in left_result:
                 for right in right_result:
-                    result |= _element_calculate(evaluator, left, operator, right)
+                    result |= _element_calculate(evaluator, context, left, operator, right)
     return result
 
 
@@ -125,7 +125,7 @@ def _is_list(obj):
     return isinstance(obj, iterable.AbstractSequence) and obj.array_type == 'list'
 
 
-def _element_calculate(evaluator, left, operator, right):
+def _element_calculate(evaluator, context, left, operator, right):
     from jedi.evaluate import iterable, instance
     l_is_num = _is_number(left)
     r_is_num = _is_number(right)
@@ -173,7 +173,7 @@ def _element_calculate(evaluator, left, operator, right):
     if operator in ('+', '-') and l_is_num != r_is_num \
             and not (check(left) or check(right)):
         message = "TypeError: unsupported operand type(s) for +: %s and %s"
-        analysis.add(evaluator, 'type-error-operation', operator,
+        analysis.add(context, 'type-error-operation', operator,
                      message % (left, right))
 
     return set([left, right])

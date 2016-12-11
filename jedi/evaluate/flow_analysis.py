@@ -1,6 +1,3 @@
-from jedi.parser import tree
-
-
 class Status(object):
     lookup_table = {}
 

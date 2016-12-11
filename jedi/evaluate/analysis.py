@@ -58,8 +58,8 @@ class Error(object):
         return self.__unicode__()
 
     def __eq__(self, other):
-        return (self.path == other.path and self.name == other.name
-                and self._start_pos == other._start_pos)
+        return (self.path == other.path and self.name == other.name and
+                self._start_pos == other._start_pos)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -77,23 +77,19 @@ class Warning(Error):
     pass
 
 
-def add(evaluator, name, jedi_obj, message=None, typ=Error, payload=None):
+def add(context, name, jedi_name, message=None, typ=Error, payload=None):
     return
-    from jedi.evaluate.iterable import MergedNodes
-    while isinstance(jedi_obj, MergedNodes):
-        if len(jedi_obj) != 1:
-            # TODO is this kosher?
-            return
-        jedi_obj = list(jedi_obj)[0]
-
+    from jedi.evaluate import Evaluator
+    if isinstance(context, Evaluator):
+        raise 1
     exception = CODES[name][1]
-    if _check_for_exception_catch(evaluator, jedi_obj, exception, payload):
+    if _check_for_exception_catch(context, jedi_name, exception, payload):
         return
 
-    module_path = jedi_obj.get_parent_until().path
-    instance = typ(name, module_path, jedi_obj.start_pos, message)
+    module_path = jedi_name.get_root_node().path
+    instance = typ(name, module_path, jedi_name.start_pos, message)
     debug.warning(str(instance), format=False)
-    evaluator.analysis.append(instance)
+    context.evaluator.analysis.append(instance)
 
 
 def _check_for_setattr(instance):
@@ -114,25 +110,29 @@ def _check_for_setattr(instance):
                for stmt in stmts)
 
 
-def add_attribute_error(evaluator, scope, name):
-    message = ('AttributeError: %s has no attribute %s.' % (scope, name))
-    from jedi.evaluate.instance import AbstractInstanceContext
+def add_attribute_error(context, name):
+    message = ('AttributeError: %s has no attribute %s.' % (context, name))
+    from jedi.evaluate.instance import AbstractInstanceContext, CompiledInstanceName
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
-    if isinstance(scope, AbstractInstanceContext):
-        typ = Warning
-        if not (scope.get_function_slot_names('__getattr__') or
-                scope.get_function_slot_names('__getattribute__')):
-            if not _check_for_setattr(scope):
-                typ = Error
-    else:
-        typ = Error
+    typ = Error
+    if isinstance(context, AbstractInstanceContext):
+        slot_names = context.get_function_slot_names('__getattr__') + \
+            context.get_function_slot_names('__getattribute__')
+        for n in slot_names:
+            if isinstance(name, CompiledInstanceName) and \
+                    n.parent_context.obj == object:
+                typ = Warning
+                break
 
-    payload = scope, name
-    add(evaluator, 'attribute-error', name, message, typ, payload)
+        if _check_for_setattr(context):
+            typ = Warning
+
+    payload = context, name
+    add(context, 'attribute-error', name, message, typ, payload)
 
 
-def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
+def _check_for_exception_catch(context, jedi_name, exception, payload=None):
     """
     Checks if a jedi object (e.g. `Statement`) sits inside a try/catch and
     doesn't count as an error (if equal to `exception`).
@@ -153,17 +153,18 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             colon = next(iterator)
             suite = next(iterator)
             if branch_type == 'try' \
-                    and not (branch_type.start_pos < jedi_obj.start_pos <= suite.end_pos):
+                    and not (branch_type.start_pos < jedi_name.start_pos <= suite.end_pos):
                 return False
 
         for node in obj.except_clauses():
             if node is None:
                 return True  # An exception block that catches everything.
             else:
-                except_classes = evaluator.eval_element(node)
+                except_classes = context.eval_node(node)
                 for cls in except_classes:
                     from jedi.evaluate import iterable
-                    if isinstance(cls, iterable.Array) and cls.type == 'tuple':
+                    if isinstance(cls, iterable.AbstractSequence) and \
+                            cls.array_type == 'tuple':
                         # multiple exceptions
                         for typ in unite(cls.py__iter__()):
                             if check_match(typ, exception):
@@ -174,7 +175,7 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
 
     def check_hasattr(node, suite):
         try:
-            assert suite.start_pos <= jedi_obj.start_pos < suite.end_pos
+            assert suite.start_pos <= jedi_name.start_pos < suite.end_pos
             assert node.type in ('power', 'atom_expr')
             base = node.children[0]
             assert base.type == 'name' and base.value == 'hasattr'
@@ -183,28 +184,28 @@ def _check_for_exception_catch(evaluator, jedi_obj, exception, payload=None):
             arglist = trailer.children[1]
             assert arglist.type == 'arglist'
             from jedi.evaluate.param import Arguments
-            args = list(Arguments(evaluator, arglist).unpack())
+            args = list(Arguments(context, arglist).unpack())
             # Arguments should be very simple
             assert len(args) == 2
 
             # Check name
             key, values = args[1]
             assert len(values) == 1
-            names = list(evaluator.eval_element(values[0]))
+            names = list(context.eval_node(values[0]))
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
             assert names[0].obj == str(payload[1])
 
             # Check objects
             key, values = args[0]
             assert len(values) == 1
-            objects = evaluator.eval_element(values[0])
+            objects = context.eval_node(values[0])
             return payload[0] in objects
         except AssertionError:
             return False
 
-    obj = jedi_obj
-    while obj is not None and not obj.isinstance(tree.Function, tree.Class):
-        if obj.isinstance(tree.Flow):
+    obj = jedi_name
+    while obj is not None and not isinstance(obj, (tree.Function, tree.Class)):
+        if isinstance(obj, tree.Flow):
             # try/except catch check
             if obj.isinstance(tree.TryStmt) and check_try_for_except(obj, exception):
                 return True

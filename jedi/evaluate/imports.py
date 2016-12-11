@@ -147,10 +147,10 @@ class NestedImportModule(tree.Module):
                                    self._nested_import)
 
 
-def _add_error(evaluator, name, message=None):
+def _add_error(context, name, message=None):
+    # Should be a name, not a string!
     if hasattr(name, 'parent'):
-        # Should be a name, not a string!
-        analysis.add(evaluator, 'import-error', name, message)
+        analysis.add(context, 'import-error', name, message)
 
 
 def get_init_path(directory_path):
@@ -168,24 +168,20 @@ def get_init_path(directory_path):
 class ImportName(AbstractNameDefinition):
     start_pos = (1, 0)
 
-    def __init__(self, parent_module, string_name):
-        self.parent_module = parent_module
+    def __init__(self, parent_context, string_name):
+        self.parent_context = parent_context
         self.string_name = string_name
 
     def infer(self):
         return Importer(
-            self.parent_module.evaluator,
+            self.parent_context.evaluator,
             [self.string_name],
-            self.parent_module,
+            self.parent_context,
         ).follow()
 
     def get_root_context(self):
         # Not sure if this is correct.
         return self.parent_context.get_root_context()
-
-    @property
-    def parent_context(self):
-        return self.parent_module
 
     @property
     def api_type(self):
@@ -195,17 +191,11 @@ class ImportName(AbstractNameDefinition):
 class SubModuleName(ImportName):
     def infer(self):
         return Importer(
-            self.parent_module.evaluator,
+            self.parent_context.evaluator,
             [self.string_name],
-            self.parent_module,
+            self.parent_context,
             level=1
         ).follow()
-
-    @property
-    def parent_context(self):
-        # This is a bit of a special case. But it seems like it's working well.
-        # Since a SubModuleName is basically a lazy name to a module
-        return next(iter(self.infer()))
 
 
 class Importer(object):
@@ -249,7 +239,7 @@ class Importer(object):
                     if dir_name:
                         import_path.insert(0, dir_name)
                     else:
-                        _add_error(self._evaluator, import_path[-1])
+                        _add_error(module_context, import_path[-1])
                         import_path = []
                         # TODO add import error.
                         debug.warning('Attempted relative import beyond top-level package.')
@@ -336,7 +326,7 @@ class Importer(object):
                 method = parent_module.py__path__
             except AttributeError:
                 # The module is not a package.
-                _add_error(self._evaluator, import_path[-1])
+                _add_error(parent_module, import_path[-1])
                 return set()
             else:
                 paths = method()
@@ -351,7 +341,7 @@ class Importer(object):
                     except ImportError:
                         module_path = None
                 if module_path is None:
-                    _add_error(self._evaluator, import_path[-1])
+                    _add_error(parent_module, import_path[-1])
                     return set()
         else:
             parent_module = None
@@ -367,7 +357,7 @@ class Importer(object):
                     sys.path = temp
             except ImportError:
                 # The module is not a package.
-                _add_error(self._evaluator, import_path[-1])
+                _add_error(parent_module, import_path[-1])
                 return set()
 
         source = None

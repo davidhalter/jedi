@@ -9,19 +9,31 @@ def usages(evaluator, definition_names, mods):
     """
     :param definitions: list of Name
     """
+    def resolve_names(definition_names):
+        for name in definition_names:
+            if name.api_type == 'module':
+                found = False
+                for context in name.infer():
+                    found = True
+                    yield context.name
+                if not found:
+                    yield name
+            else:
+                yield name
+
     def compare_array(definition_names):
         """ `definitions` are being compared by module/start_pos, because
         sometimes the id's of the objects change (e.g. executions).
         """
         return [
-            (d.get_root_context(), d.start_pos)
-            for d in definition_names
+            (name.get_root_context(), name.start_pos)
+            for name in resolve_names(definition_names)
         ]
 
     search_name = list(definition_names)[0].string_name
     compare_definitions = compare_array(definition_names)
     mods = mods | set([d.get_root_context() for d in definition_names])
-    definition_names = set(definition_names)
+    definition_names = set(resolve_names(definition_names))
     for m in imports.get_modules_containing_name(evaluator, mods, search_name):
         if isinstance(m, ModuleContext):
             for name_node in m.module_node.used_names.get(search_name, []):
