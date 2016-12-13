@@ -114,7 +114,11 @@ class NameFinder(object):
         # TODO rename scopes to names_dicts
 
         names = self.filter_name(filters)
-        if self._found_predefined_types is not None:
+        if self._found_predefined_types is not None and names:
+            check = flow_analysis.reachability_check(
+                self._context, self._context.get_node(), self._name)
+            if check is flow_analysis.UNREACHABLE:
+                return set()
             return self._found_predefined_types
 
         types = self._names_to_types(names, attribute_lookup)
@@ -258,11 +262,11 @@ class NameFinder(object):
                         continue
                     else:
                         self._found_predefined_types = types
-                        return []
+                        break
+
         for filter in filters:
             names = filter.get(self._name)
             if names:
-                self._last_used_filter = filter
                 break
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self._string_name,
                   self._context, names, self._position)
