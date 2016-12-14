@@ -623,13 +623,15 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
             try:
                 part = next(parts)
             except StopIteration:
-                analysis.add(evaluator, 'value-error-too-many-values', part,
+                # TODO this context is probably not right.
+                analysis.add(next(iter(types)), 'value-error-too-many-values', part,
                              message="ValueError: too many values to unpack (expected %s)" % n)
             else:
                 dct.update(unpack_tuple_to_dict(evaluator, lazy_context.infer(), part))
         has_parts = next(parts, None)
         if types and has_parts is not None:
-            analysis.add(evaluator, 'value-error-too-few-values', has_parts,
+            # TODO this context is probably not right.
+            analysis.add(next(iter(types)), 'value-error-too-few-values', has_parts,
                          message="ValueError: need more than %s values to unpack" % n)
         return dct
     elif exprlist.type == 'power' or exprlist.type == 'atom_expr':
@@ -651,7 +653,8 @@ def py__iter__(evaluator, types, node=None):
             iter_method = typ.py__iter__
         except AttributeError:
             if node is not None:
-                analysis.add(evaluator, 'type-error-not-iterable', node,
+                # TODO this context is probably not right.
+                analysis.add(typ, 'type-error-not-iterable', node,
                              message="TypeError: '%s' object is not iterable" % typ)
         else:
             type_iters.append(iter_method())
@@ -709,7 +712,8 @@ def py__getitem__(evaluator, context, types, trailer):
             try:
                 getitem = typ.py__getitem__
             except AttributeError:
-                analysis.add(evaluator, 'type-error-not-subscriptable', trailer_op,
+                # TODO this context is probably not right.
+                analysis.add(context, 'type-error-not-subscriptable', trailer_op,
                              message="TypeError: '%s' object is not subscriptable" % typ)
             else:
                 try:
