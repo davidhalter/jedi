@@ -431,8 +431,8 @@ class InstanceVarArgs(object):
         for values in self._get_var_args().unpack(func):
             yield values
 
-    def get_calling_var_args(self):
-        return self._get_var_args().get_calling_var_args()
+    def get_calling_nodes(self):
+        return self._get_var_args().get_calling_nodes()
 
 
 class InstanceFunctionExecution(er.FunctionExecutionContext):

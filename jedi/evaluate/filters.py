@@ -101,9 +101,9 @@ class ParamName(AbstractTreeName):
         self.tree_name = tree_name
 
     def infer(self):
-        return self._get_param().infer()
+        return self.get_param().infer()
 
-    def _get_param(self):
+    def get_param(self):
         params = self.parent_context.get_params()
         param_node = search_ancestor(self.tree_name, 'param')
         return params[param_node.position_nr]
@@ -117,7 +117,7 @@ class AnonymousInstanceParamName(ParamName):
             # it's known). This only affects anonymous instances.
             return set([self.parent_context.instance])
         else:
-            return self._get_param().infer()
+            return self.get_param().infer()
 
 
 class AbstractFilter(object):

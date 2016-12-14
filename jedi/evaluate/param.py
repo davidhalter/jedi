@@ -9,6 +9,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate import context
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
+from jedi.evaluate.filters import ParamName
 
 
 def add_argument_issue(parent_context, error_name, lazy_context, message):
@@ -59,12 +60,6 @@ class AbstractArguments():
                 debug.warning('argument_clinic "%s" not resolvable.', name)
                 raise ValueError
             yield values
-
-    def eval_args(self):
-        # TODO this method doesn't work with named args and a lot of other
-        # things. Use unpack.
-        raise DeprecationWarning
-        return [self._evaluator.eval_element(self.context, el) for stars, el in self._split()]
 
     def eval_all(self, func=None):
         """
@@ -120,7 +115,7 @@ class TreeArguments(AbstractArguments):
         for stars, el in self._split():
             if stars == 1:
                 arrays = self.context.eval_node(el)
-                iterators = [_iterate_star_args(self._evaluator, a, el, func)
+                iterators = [_iterate_star_args(self.context, a, el, func)
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
@@ -132,7 +127,7 @@ class TreeArguments(AbstractArguments):
             elif stars == 2:
                 arrays = self._evaluator.eval_element(self.context, el)
                 for dct in arrays:
-                    for key, values in _star_star_dict(self._evaluator, dct, el, func):
+                    for key, values in _star_star_dict(self.context, dct, el, func):
                         yield key, values
             else:
                 if tree.is_node(el, 'argument'):
@@ -152,8 +147,7 @@ class TreeArguments(AbstractArguments):
         for named_arg in named_args:
             yield named_arg
 
-    def as_tuple(self):
-        raise DeprecationWarning
+    def as_tree_tuple_objects(self):
         for stars, argument in self._split():
             if tree.is_node(argument, 'argument'):
                 argument, default = argument.children[::2]
@@ -164,8 +158,36 @@ class TreeArguments(AbstractArguments):
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
 
-    def get_calling_var_args(self):
-        return _get_calling_var_args(self._evaluator, self)
+    def get_calling_nodes(self):
+        from jedi.evaluate.dynamic import MergedExecutedParams
+        old_arguments_list = []
+        arguments = self
+
+        while arguments not in old_arguments_list:
+            if not isinstance(arguments, TreeArguments):
+                break
+
+            old_arguments_list.append(arguments)
+            for name, default, stars in reversed(list(arguments.as_tree_tuple_objects())):
+                if not stars or not isinstance(name, tree.Name):
+                    continue
+
+                names = self._evaluator.goto(arguments.context, name)
+                if len(names) != 1:
+                    break
+                if not isinstance(names[0], ParamName):
+                    break
+                param = names[0].get_param()
+                if isinstance(param, MergedExecutedParams):
+                    # For dynamic searches we don't even want to see errors.
+                    return []
+                if not isinstance(param, ExecutedParam):
+                    break
+                if param.var_args is None:
+                    break
+                arguments = param.var_args
+
+        return [arguments.argument_node or arguments.trailer]
 
 
 class ValuesArguments(AbstractArguments):
@@ -176,8 +198,8 @@ class ValuesArguments(AbstractArguments):
         for values in self._values_list:
             yield None, context.LazyKnownContexts(values)
 
-    def get_calling_var_args(self):
-        return None
+    def get_calling_nodes(self):
+        return []
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._values_list)
@@ -209,32 +231,6 @@ class ExecutedParam(object):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
-def _get_calling_var_args(evaluator, var_args):
-    old_var_args = None
-    while var_args != old_var_args:
-        old_var_args = var_args
-        continue#TODO REMOVE
-        for name, default, stars in reversed(list(var_args.as_tuple())):
-            if not stars or not isinstance(name, tree.Name):
-                continue
-
-            names = evaluator.goto(name)
-            if len(names) != 1:
-                break
-            param = names[0].get_definition()
-            if not isinstance(param, ExecutedParam):
-                if isinstance(param, tree.Param):
-                    # There is no calling var_args in this case - there's just
-                    # a param without any input.
-                    return None
-                break
-            # We never want var_args to be a tuple. This should be enough for
-            # now, we can change it later, if we need to.
-            if isinstance(param.var_args, Arguments):
-                var_args = param.var_args
-    return var_args.argument_node or var_args.trailer
-
-
 def get_params(evaluator, parent_context, func, var_args):
     result_params = []
     param_dict = {}
@@ -264,10 +260,9 @@ def get_params(evaluator, parent_context, func, var_args):
                     had_multiple_value_error = True
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
                          % (func.name, key))
-                    calling_va = _get_calling_var_args(evaluator, var_args)
-                    if calling_va is not None:
+                    for node in var_args.get_calling_nodes():
                         analysis.add(parent_context, 'type-error-multiple-values',
-                                     calling_va, message=m)
+                                     node, message=m)
                 else:
                     keys_used[key] = ExecutedParam(parent_context, key_param, var_args, argument)
             key, argument = next(var_arg_iterator, (None, None))
@@ -303,18 +298,18 @@ def get_params(evaluator, parent_context, func, var_args):
                 if param.default is None:
                     result_arg = context.LazyUnknownContext()
                     if not keys_only:
-                        calling_va = var_args.get_calling_var_args()
-                        if calling_va is not None:
+                        for node in var_args.get_calling_nodes():
                             m = _error_argument_count(func, len(unpacked_va))
                             analysis.add(parent_context, 'type-error-too-few-arguments',
-                                         calling_va, message=m)
+                                         node, message=m)
                 else:
                     result_arg = context.LazyTreeContext(parent_context, param.default)
             else:
                 result_arg = argument
 
         result_params.append(ExecutedParam(parent_context, param, var_args, result_arg))
-        keys_used[param.name.value] = result_params[-1]
+        if not isinstance(result_arg, context.LazyUnknownContext):
+            keys_used[param.name.value] = result_params[-1]
 
     if keys_only:
         # All arguments should be handed over to the next function. It's not
@@ -326,11 +321,10 @@ def get_params(evaluator, parent_context, func, var_args):
             if not (non_matching_keys or had_multiple_value_error or
                     param.stars or param.default):
                 # add a warning only if there's not another one.
-                calling_va = _get_calling_var_args(evaluator, var_args)
-                if calling_va is not None:
+                for node in var_args.get_calling_nodes():
                     m = _error_argument_count(func, len(unpacked_va))
                     analysis.add(parent_context, 'type-error-too-few-arguments',
-                                 calling_va, message=m)
+                                 node, message=m)
 
     for key, lazy_context in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
@@ -364,11 +358,13 @@ def get_params(evaluator, parent_context, func, var_args):
                 if origin_args not in [f.parent.parent for f in first_values]:
                     continue
                     """
-        add_argument_issue(parent_context, 'type-error-too-many-arguments', lazy_context, message=m)
+        if var_args.get_calling_nodes():
+            # There might not be a valid calling node so check for that first.
+            add_argument_issue(parent_context, 'type-error-too-many-arguments', lazy_context, message=m)
     return result_params
 
 
-def _iterate_star_args(evaluator, array, input_node, func=None):
+def _iterate_star_args(context, array, input_node, func=None):
     try:
         iter_ = array.py__iter__
     except AttributeError:
@@ -376,13 +372,13 @@ def _iterate_star_args(evaluator, array, input_node, func=None):
             # TODO this func should not be needed.
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
                 % (func.name.value, array)
-            analysis.add(evaluator, 'type-error-star', input_node, message=m)
+            analysis.add(context, 'type-error-star', input_node, message=m)
     else:
         for lazy_context in iter_():
             yield lazy_context
 
 
-def _star_star_dict(evaluator, array, input_node, func):
+def _star_star_dict(context, array, input_node, func):
     from jedi.evaluate.instance import CompiledInstance
     if isinstance(array, CompiledInstance) and array.name.string_name == 'dict':
         # For now ignore this case. In the future add proper iterators and just
@@ -394,7 +390,7 @@ def _star_star_dict(evaluator, array, input_node, func):
         if func is not None:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
                 % (func.name.value, array)
-            analysis.add(evaluator, 'type-error-star-star', input_node, message=m)
+            analysis.add(context, 'type-error-star-star', input_node, message=m)
         return {}
 
 
