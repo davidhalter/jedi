@@ -78,7 +78,7 @@ def search_params(evaluator, parent_context, funcdef):
             funcdef
         )
         if function_executions:
-            zipped_params = zip(*(
+            zipped_params = zip(*list(
                 function_execution.get_params()
                 for function_execution in function_executions
             ))

@@ -84,7 +84,7 @@ class SpecialMethodFilter(DictFilter):
             # We can take the first index, because on builtin methods there's
             # always only going to be one name. The same is true for the
             # inferred values.
-            builtin_func = filter.get(self.string_name)[0].infer().pop()
+            builtin_func = next(iter(filter.get(self.string_name)[0].infer()))
             return set([BuiltinMethod(self.parent_context, self._callable, builtin_func)])
 
     def __init__(self, context, dct, builtin_context):

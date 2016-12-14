@@ -79,7 +79,7 @@ class Warning(Error):
 
 def add(context, error_name, node, message=None, typ=Error, payload=None):
     from jedi.evaluate import Evaluator
-    if isinstance(context, Evaluator):
+    if isinstance(context, Evaluator) or context is None:
         raise 1
     exception = CODES[error_name][1]
     if _check_for_exception_catch(context, node, exception, payload):
@@ -100,12 +100,13 @@ def _check_for_setattr(instance):
     if not isinstance(module, ModuleContext):
         return False
 
+    node = module.module_node
     try:
-        stmts = module.module_node.used_names['setattr']
+        stmts = node.used_names['setattr']
     except KeyError:
         return False
 
-    return any(instance.start_pos < stmt.start_pos < instance.end_pos
+    return any(node.start_pos < stmt.start_pos < node.end_pos
                for stmt in stmts)
 
 
@@ -165,9 +166,10 @@ def _check_for_exception_catch(context, jedi_name, exception, payload=None):
                     if isinstance(cls, iterable.AbstractSequence) and \
                             cls.array_type == 'tuple':
                         # multiple exceptions
-                        for typ in unite(cls.py__iter__()):
-                            if check_match(typ, exception):
-                                return True
+                        for lazy_context in cls.py__iter__():
+                            for typ in lazy_context.infer():
+                                if check_match(typ, exception):
+                                    return True
                     else:
                         if check_match(cls, exception):
                             return True
@@ -182,22 +184,20 @@ def _check_for_exception_catch(context, jedi_name, exception, payload=None):
             assert trailer.type == 'trailer'
             arglist = trailer.children[1]
             assert arglist.type == 'arglist'
-            from jedi.evaluate.param import Arguments
-            args = list(Arguments(context, arglist).unpack())
+            from jedi.evaluate.param import TreeArguments
+            args = list(TreeArguments(context.evaluator, context, arglist).unpack())
             # Arguments should be very simple
             assert len(args) == 2
 
             # Check name
-            key, values = args[1]
-            assert len(values) == 1
-            names = list(context.eval_node(values[0]))
+            key, lazy_context = args[1]
+            names = list(lazy_context.infer())
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
             assert names[0].obj == str(payload[1])
 
             # Check objects
-            key, values = args[0]
-            assert len(values) == 1
-            objects = context.eval_node(values[0])
+            key, lazy_context = args[0]
+            objects = lazy_context.infer()
             return payload[0] in objects
         except AssertionError:
             return False

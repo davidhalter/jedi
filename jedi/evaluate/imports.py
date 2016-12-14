@@ -357,7 +357,7 @@ class Importer(object):
                     sys.path = temp
             except ImportError:
                 # The module is not a package.
-                _add_error(parent_module, import_path[-1])
+                _add_error(self.module_context, import_path[-1])
                 return set()
 
         source = None
