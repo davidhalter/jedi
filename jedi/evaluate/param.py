@@ -11,6 +11,14 @@ from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 
 
+def add_argument_issue(parent_context, error_name, lazy_context, message):
+    if isinstance(lazy_context, context.LazyTreeContext):
+        node = lazy_context.data
+        if node.parent.type == 'argument':
+            node = node.parent
+        analysis.add(parent_context, error_name, node, message)
+
+
 def try_iter_content(types, depth=0):
     """Helper method for static analysis."""
     if depth > 10:
@@ -294,14 +302,14 @@ def get_params(evaluator, parent_context, func, var_args):
                 # No value: Return an empty container
                 if param.default is None:
                     result_arg = context.LazyUnknownContext()
+                    if not keys_only:
+                        calling_va = var_args.get_calling_var_args()
+                        if calling_va is not None:
+                            m = _error_argument_count(func, len(unpacked_va))
+                            analysis.add(parent_context, 'type-error-too-few-arguments',
+                                         calling_va, message=m)
                 else:
                     result_arg = context.LazyTreeContext(parent_context, param.default)
-                if not keys_only:
-                    calling_va = var_args.get_calling_var_args()
-                    if calling_va is not None:
-                        m = _error_argument_count(func, len(unpacked_va))
-                        analysis.add(parent_context, 'type-error-too-few-arguments',
-                                     calling_va, message=m)
             else:
                 result_arg = argument
 
@@ -324,36 +332,39 @@ def get_params(evaluator, parent_context, func, var_args):
                     analysis.add(parent_context, 'type-error-too-few-arguments',
                                  calling_va, message=m)
 
-    for key, argument in non_matching_keys.items():
+    for key, lazy_context in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
             % (func.name, key)
-        analysis.add(parent_context, 'type-error-keyword-argument', argument.whatever, message=m)
+        add_argument_issue(
+            parent_context,
+            'type-error-keyword-argument',
+            lazy_context,
+            message=m
+        )
 
     remaining_arguments = list(var_arg_iterator)
     if remaining_arguments:
         m = _error_argument_count(func, len(unpacked_va))
         # Just report an error for the first param that is not needed (like
         # cPython).
-        first_key, first_values = remaining_arguments[0]
-        # TODO REENABLE
-        for v in []:#first_values:
-            if first_key is not None:
-                # Is a keyword argument, return the whole thing instead of just
-                # the value node.
-                v = v.parent
-                try:
-                    non_kw_param = keys_used[first_key]
-                except KeyError:
-                    pass
-                else:
-                    origin_args = non_kw_param.parent.var_args.argument_node
-                    # TODO  calculate the var_args tree and check if it's in
-                    # the tree (if not continue).
-                    # print('\t\tnonkw', non_kw_param.parent.var_args.argument_node, )
-                    if origin_args not in [f.parent.parent for f in first_values]:
-                        continue
-            analysis.add(parent_context, 'type-error-too-many-arguments',
-                         v, message=m)
+        first_key, lazy_context = remaining_arguments[0]
+        if first_key is not None:
+            # Is a keyword argument, return the whole thing instead of just
+            # the value node.
+            try:
+                non_kw_param = keys_used[first_key]
+            except KeyError:
+                pass
+            else:
+                """
+                origin_args = non_kw_param.parent.var_args.argument_node
+                # TODO  calculate the var_args tree and check if it's in
+                # the tree (if not continue).
+                # print('\t\tnonkw', non_kw_param.parent.var_args.argument_node, )
+                if origin_args not in [f.parent.parent for f in first_values]:
+                    continue
+                    """
+        add_argument_issue(parent_context, 'type-error-too-many-arguments', lazy_context, message=m)
     return result_params
 
 

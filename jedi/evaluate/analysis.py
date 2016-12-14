@@ -77,17 +77,16 @@ class Warning(Error):
     pass
 
 
-def add(context, name, jedi_name, message=None, typ=Error, payload=None):
-    return
+def add(context, error_name, node, message=None, typ=Error, payload=None):
     from jedi.evaluate import Evaluator
     if isinstance(context, Evaluator):
         raise 1
-    exception = CODES[name][1]
-    if _check_for_exception_catch(context, jedi_name, exception, payload):
+    exception = CODES[error_name][1]
+    if _check_for_exception_catch(context, node, exception, payload):
         return
 
-    module_path = jedi_name.get_root_node().path
-    instance = typ(name, module_path, jedi_name.start_pos, message)
+    module_path = node.get_root_node().path
+    instance = typ(error_name, module_path, node.start_pos, message)
     debug.warning(str(instance), format=False)
     context.evaluator.analysis.append(instance)
 
