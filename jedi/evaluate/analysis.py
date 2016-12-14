@@ -78,9 +78,6 @@ class Warning(Error):
 
 
 def add(context, error_name, node, message=None, typ=Error, payload=None):
-    from jedi.evaluate import Evaluator
-    if isinstance(context, Evaluator) or context is None:
-        raise 1
     exception = CODES[error_name][1]
     if _check_for_exception_catch(context, node, exception, payload):
         return
