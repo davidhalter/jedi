@@ -342,22 +342,6 @@ def get_params(evaluator, parent_context, func, var_args):
         # Just report an error for the first param that is not needed (like
         # cPython).
         first_key, lazy_context = remaining_arguments[0]
-        if first_key is not None:
-            # Is a keyword argument, return the whole thing instead of just
-            # the value node.
-            try:
-                non_kw_param = keys_used[first_key]
-            except KeyError:
-                pass
-            else:
-                """
-                origin_args = non_kw_param.parent.var_args.argument_node
-                # TODO  calculate the var_args tree and check if it's in
-                # the tree (if not continue).
-                # print('\t\tnonkw', non_kw_param.parent.var_args.argument_node, )
-                if origin_args not in [f.parent.parent for f in first_values]:
-                    continue
-                    """
         if var_args.get_calling_nodes():
             # There might not be a valid calling node so check for that first.
             add_argument_issue(parent_context, 'type-error-too-many-arguments', lazy_context, message=m)
