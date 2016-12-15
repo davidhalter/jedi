@@ -434,6 +434,9 @@ class InstanceVarArgs(object):
     def get_calling_nodes(self):
         return self._get_var_args().get_calling_nodes()
 
+    def __getattr__(self, name):
+        return getattr(self._var_args, name)
+
 
 class InstanceFunctionExecution(er.FunctionExecutionContext):
     def __init__(self, instance, parent_context, function_context, var_args):

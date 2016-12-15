@@ -585,57 +585,6 @@ def _check_isinstance_type(context, element, search_name):
 
 
 def global_names_dict_generator(evaluator, scope, position):
-    """
-    For global name lookups. Yields tuples of (names_dict, position). If the
-    position is None, the position does not matter anymore in that scope.
-
-    This function is used to include names from outer scopes. For example, when
-    the current scope is function:
-
-    >>> from jedi._compatibility import u, no_unicode_pprint
-    >>> from jedi.parser import ParserWithRecovery, load_grammar
-    >>> parser = ParserWithRecovery(load_grammar(), u('''
-    ... x = ['a', 'b', 'c']
-    ... def func():
-    ...     y = None
-    ... '''))
-    >>> scope = parser.module.subscopes[0]
-    >>> scope
-    <Function: func@3-5>
-
-    `global_names_dict_generator` is a generator.  First it yields names from
-    most inner scope.
-
-    >>> from jedi.evaluate import Evaluator
-    >>> evaluator = Evaluator(load_grammar())
-    >>> scope = evaluator.wrap(scope)
-    >>> pairs = list(global_names_dict_generator(evaluator, scope, (4, 0)))
-    >>> no_unicode_pprint(pairs[0])
-    ({'func': [], 'y': [<Name: y@4,4>]}, (4, 0))
-
-    Then it yields the names from one level "lower". In this example, this
-    is the most outer scope. As you can see, the position in the tuple is now
-    None, because typically the whole module is loaded before the function is
-    called.
-
-    >>> no_unicode_pprint(pairs[1])
-    ({'func': [<Name: func@3,4>], 'x': [<Name: x@2,0>]}, None)
-
-    After that we have a few underscore names that are part of the module.
-
-    >>> sorted(pairs[2][0].keys())
-    ['__doc__', '__file__', '__name__', '__package__']
-    >>> pairs[3]  # global names -> there are none in our example.
-    ({}, None)
-    >>> pairs[4]  # package modules -> Also none.
-    ({}, None)
-
-    Finally, it yields names from builtin, if `include_builtin` is
-    true (default).
-
-    >>> pairs[5][0].values()                              #doctest: +ELLIPSIS
-    [[<CompiledName: ...>], ...]
-    """
     in_func = False
     while scope is not None:
         if not (scope.type == 'classdef' and in_func):

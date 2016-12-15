@@ -186,6 +186,7 @@ class TreeArguments(AbstractArguments):
                 if param.var_args is None:
                     break
                 arguments = param.var_args
+                break
 
         return [arguments.argument_node or arguments.trailer]
 

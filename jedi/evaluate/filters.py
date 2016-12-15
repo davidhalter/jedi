@@ -164,6 +164,9 @@ class AbstractUsedNamesFilter(AbstractFilter):
         return self._convert_names(name for name_list in self._used_names.values()
                                    for name in self._filter(name_list))
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self.context)
+
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
     def __init__(self, evaluator, context, parser_scope, until_position=None, origin_scope=None):
@@ -257,6 +260,52 @@ class DictFilter(AbstractFilter):
 def get_global_filters(evaluator, context, until_position, origin_scope):
     """
     Returns all filters in order of priority for name resolution.
+
+    For global name lookups. The filters will handle name resolution
+    themselves, but here we gather possible filters downwards.
+
+    >>> from jedi._compatibility import u, no_unicode_pprint
+    >>> from jedi import Script
+    >>> script = Script(u('''
+    ... x = ['a', 'b', 'c']
+    ... def func():
+    ...     y = None
+    ... '''))
+    >>> module_node = script._get_module_node()
+    >>> scope = module_node.subscopes[0]
+    >>> scope
+    <Function: func@3-5>
+    >>> context = script._get_module().create_context(scope)
+    >>> filters = list(get_global_filters(context.evaluator, context, (4, 0), None))
+
+    First we get the names names from the function scope.
+
+    >>> no_unicode_pprint(filters[0])
+    <ParserTreeFilter: <ModuleContext: <Module: None@2-5>>>
+    >>> sorted(str(n) for n in filters[0].values())
+    ['<TreeNameDefinition: func@(3, 4)>', '<TreeNameDefinition: x@(2, 0)>']
+    >>> filters[0]._until_position
+    (4, 0)
+
+    Then it yields the names from one level "lower". In this example, this is
+    the module scope. As a side note, you can see, that the position in the
+    filter is now None, because typically the whole module is loaded before the
+    function is called.
+
+    >>> filters[1].values()  # global names -> there are none in our example.
+    []
+    >>> list(filters[2].values())  # package modules -> Also empty.
+    []
+    >>> sorted(name.string_name for name in filters[3].values())  # Module attributes
+    ['__doc__', '__file__', '__name__', '__package__']
+    >>> print(filters[1]._until_position)
+    None
+
+    Finally, it yields the builtin filter, if `include_builtin` is
+    true (default).
+
+    >>> filters[4].values()                              #doctest: +ELLIPSIS
+    [<CompiledName: ...>, ...]
     """
     from jedi.evaluate.representation import FunctionExecutionContext
     while context is not None:
