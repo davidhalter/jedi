@@ -392,9 +392,13 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
 
-    def _get_module_node(self):
+    def _get_module(self):
         parser_module = super(Interpreter, self)._get_module_node()
-        return interpreter.MixedModule(self._evaluator, parser_module, self.namespaces)
+        return interpreter.MixedModuleContext(
+            self._evaluator,
+            parser_module,
+            self.namespaces
+        )
 
 
 def defined_names(source, path=None, encoding='utf-8'):
