@@ -314,6 +314,20 @@ class CompiledContextName(ContextNameMixin, AbstractNameDefinition):
         self.parent_context = context.parent_context
 
 
+class EmptyCompiledName(AbstractNameDefinition):
+    """
+    Accessing some names will raise an exception. To avoid not having any
+    completions, just give Jedi the option to return this object. It infers to
+    nothing.
+    """
+    def __init__(self, evaluator, name):
+        self.parent_context = evaluator.BUILTINS
+        self.string_name = name
+
+    def infer(self):
+        return []
+
+
 class CompiledObjectFilter(AbstractFilter):
     """
     A names_dict instance for compiled objects, resembles the parser.tree.
@@ -340,7 +354,7 @@ class CompiledObjectFilter(AbstractFilter):
             # This is a bit ugly. We're basically returning this to make
             # lookups possible without having the actual attribute. However
             # this makes proper completion possible.
-            return [FakeName(name, create(self._evaluator, None), is_definition=True)]
+            return [EmptyCompiledName(self._evaluator, name)]
         return [self._create_name(name)]
 
     def values(self):
