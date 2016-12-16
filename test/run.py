@@ -193,6 +193,8 @@ class IntegrationTestCase(object):
                 module_context = script._get_module()
                 # The context shouldn't matter for the test results.
                 user_context = get_user_scope(module_context, (self.line_nr, 0))
+                if user_context.api_type == 'function':
+                    user_context = user_context.get_function_execution()
                 element.parent = user_context.get_node()
                 results = evaluator.eval_element(user_context, element)
                 if not results:

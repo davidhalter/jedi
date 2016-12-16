@@ -39,6 +39,7 @@ from jedi.evaluate import precedence
 
 class AbstractSequence(context.Context):
     builtin_methods = {}
+    api_type = 'instance'
 
     def __init__(self, evaluator):
         super(AbstractSequence, self).__init__(evaluator, evaluator.BUILTINS)

@@ -175,7 +175,6 @@ class AbstractInstanceContext(Context):
 
 
 class CompiledInstance(AbstractInstanceContext):
-
     def __init__(self, *args, **kwargs):
         super(CompiledInstance, self).__init__(*args, **kwargs)
         # I don't think that dynamic append lookups should happen here. That
@@ -246,8 +245,9 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
         )
         self._instance = instance
 
-    def _create(self, name):
-        return self.name_class(self._evaluator, self._instance, self._compiled_obj, name)
+    def _create_name(self, name):
+        return self.name_class(
+            self._evaluator, self._instance, self._compiled_object, name)
 
 
 class BoundMethod(er.FunctionContext):
