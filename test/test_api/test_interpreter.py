@@ -60,7 +60,8 @@ def test_side_effect_completion():
     side_effect = get_completion('SideEffectContainer', _GlobalNameSpace.__dict__)
 
     # It's a class that contains MixedObject.
-    assert isinstance(side_effect._definition.base, mixed.MixedObject)
+    context, = side_effect._name.infer()
+    assert isinstance(context, mixed.MixedObject)
     foo = get_completion('SideEffectContainer.foo', _GlobalNameSpace.__dict__)
     assert foo.name == 'foo'
 

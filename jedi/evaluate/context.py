@@ -2,10 +2,9 @@ from jedi.common import unite
 
 
 class Context(object):
-    api_type = 'instance'
+    api_type = None
     """
-    Most contexts are just instances of something, therefore make this the
-    default to make subclassing a lot easier.
+    To be defined by subclasses.
     """
     predefined_names = {}
 

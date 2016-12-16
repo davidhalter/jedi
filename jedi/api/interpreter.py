@@ -6,6 +6,7 @@ import copy
 from jedi.cache import underscore_memoization
 from jedi.evaluate import helpers
 from jedi.evaluate.representation import ModuleContext
+from jedi.evaluate import compiled
 from jedi.evaluate.compiled import mixed
 from jedi.evaluate.context import Context
 
@@ -25,22 +26,19 @@ class MixedModuleContext(Context):
     def get_node(self):
         return self.tree_node
 
-    def names_dicts(self, search_global):
-        for names_dict in self._module_context.names_dicts(search_global):
-            yield names_dict
-
-        for namespace_obj in self._namespace_objects:
-            m = mixed.MixedObject(self.evaluator, namespace_obj, self.tree_node.name)
-            for names_dict in m.names_dicts(False):
-                yield names_dict
-
     def get_filters(self, *args, **kwargs):
         for filter in self._module_context.get_filters(*args, **kwargs):
             yield filter
 
         for namespace_obj in self._namespace_objects:
-            m = mixed.MixedObject(self.evaluator, namespace_obj, self.tree_node.name)
-            for filter in m.get_filters(*args, **kwargs):
+            compiled_object = compiled.create(self.evaluator, namespace_obj)
+            mixed_object = mixed.MixedObject(
+                self.evaluator,
+                parent_context=self,
+                compiled_object=compiled_object,
+                tree_name=self.tree_node.name
+            )
+            for filter in mixed_object.get_filters(*args, **kwargs):
                 yield filter
 
     def __getattr__(self, name):

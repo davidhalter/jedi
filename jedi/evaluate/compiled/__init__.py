@@ -231,6 +231,12 @@ class CompiledObject(Context):
         for part in self.obj:
             yield LazyKnownContext(create(self.evaluator, part))
 
+    def py__name__(self):
+        try:
+            return self._get_class().__name__
+        except AttributeError:
+            return None
+
     @property
     def name(self):
         try:
@@ -308,67 +314,22 @@ class CompiledContextName(ContextNameMixin, AbstractNameDefinition):
         self.parent_context = context.parent_context
 
 
-class LazyNamesDict(object):
-    """
-    A names_dict instance for compiled objects, resembles the parser.tree.
-    """
-    name_class = CompiledName
-
-    def __init__(self, evaluator, compiled_obj, is_instance=False):
-        self._evaluator = evaluator
-        self._compiled_obj = compiled_obj
-        self._is_instance = is_instance
-
-    def __iter__(self):
-        return (v[0].value for v in self.values())
-
-    @memoize_method
-    def __getitem__(self, name):
-        try:
-            getattr(self._compiled_obj.obj, name)
-        except AttributeError:
-            raise KeyError('%s in %s not found.' % (name, self._compiled_obj))
-        except Exception:
-            # This is a bit ugly. We're basically returning this to make
-            # lookups possible without having the actual attribute. However
-            # this makes proper completion possible.
-            return [FakeName(name, create(self._evaluator, None), is_definition=True)]
-        return [self.name_class(self._evaluator, self._compiled_obj, name)]
-
-    def values(self):
-        obj = self._compiled_obj.obj
-
-        values = []
-        for name in dir(obj):
-            try:
-                values.append(self[name])
-            except KeyError:
-                # The dir function can be wrong.
-                pass
-
-        is_instance = self._is_instance or fake.is_class_instance(obj)
-        # ``dir`` doesn't include the type names.
-        if not inspect.ismodule(obj) and obj != type and not is_instance:
-            values += create(self._evaluator, type).names_dict.values()
-        return values
-
-
 class CompiledObjectFilter(AbstractFilter):
     """
     A names_dict instance for compiled objects, resembles the parser.tree.
     """
     name_class = CompiledName
 
-    def __init__(self, evaluator, compiled_obj, is_instance=False):
+    def __init__(self, evaluator, compiled_object, is_instance=False):
         super(CompiledObjectFilter, self).__init__(None)
         self._evaluator = evaluator
-        self._compiled_obj = compiled_obj
+        self._compiled_object = compiled_object
         self._is_instance = is_instance
 
     @memoize_method
     def get(self, name):
         name = str(name)
-        obj = self._compiled_obj.obj
+        obj = self._compiled_object.obj
         try:
             getattr(obj, name)
             if self._is_instance and name not in dir(obj):
@@ -380,10 +341,10 @@ class CompiledObjectFilter(AbstractFilter):
             # lookups possible without having the actual attribute. However
             # this makes proper completion possible.
             return [FakeName(name, create(self._evaluator, None), is_definition=True)]
-        return [self._create(name)]
+        return [self._create_name(name)]
 
     def values(self):
-        obj = self._compiled_obj.obj
+        obj = self._compiled_object.obj
 
         names = []
         for name in dir(obj):
@@ -396,8 +357,8 @@ class CompiledObjectFilter(AbstractFilter):
                 names += filter.values()
         return names
 
-    def _create(self, name):
-        return self.name_class(self._evaluator, self._compiled_obj, name)
+    def _create_name(self, name):
+        return self.name_class(self._evaluator, self._compiled_object, name)
 
 
 def dotted_from_fs_path(fs_path, sys_path):
