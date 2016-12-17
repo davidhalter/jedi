@@ -168,6 +168,7 @@ def get_module_names(module, all_scopes):
     if all_scopes:
         dct = module.used_names
     else:
+        raise DeprecationWarning
         dct = module.names_dict
     return chain.from_iterable(dct.values())
 

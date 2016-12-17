@@ -91,7 +91,7 @@ class NameFinder(object):
     def filter_name(self, filters):
         """
         Searches names that are defined in a scope (the different
-        `names_dicts`), until a name fits.
+        ``filters``), until a name fits.
         """
         names = []
         if self._context.predefined_names:

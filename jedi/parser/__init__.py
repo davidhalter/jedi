@@ -100,7 +100,6 @@ class Parser(object):
         # Todo Remove start_parsing (with False)
 
         self._used_names = {}
-        self._scope_names_stack = [{}]
         self._global_names = []
 
         self.source = source
@@ -180,35 +179,17 @@ class Parser(object):
         # returned by convert multiple times.
         if symbol == 'global_stmt':
             self._global_names += new_node.get_global_names()
-        elif isinstance(new_node, pt.Lambda):
-            new_node.names_dict = self._scope_names_stack.pop()
-        elif isinstance(new_node, (pt.ClassOrFunc, pt.Module)) \
-                and symbol in ('funcdef', 'classdef', 'file_input'):
-            # scope_name_stack handling
-            scope_names = self._scope_names_stack.pop()
-            if isinstance(new_node, pt.ClassOrFunc):
-                n = new_node.name
-                scope_names[n.value].remove(n)
-                # Set the func name of the current node
-                arr = self._scope_names_stack[-1].setdefault(n.value, [])
-                arr.append(n)
-            new_node.names_dict = scope_names
         return new_node
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
         # print('leaf', repr(value), token.tok_name[type])
         if type == tokenize.NAME:
             if value in grammar.keywords:
-                if value in ('def', 'class', 'lambda'):
-                    self._scope_names_stack.append({})
-
                 return pt.Keyword(value, start_pos, prefix)
             else:
                 name = pt.Name(value, start_pos, prefix)
                 # Keep a listing of all used names
                 arr = self._used_names.setdefault(name.value, [])
-                arr.append(name)
-                arr = self._scope_names_stack[-1].setdefault(name.value, [])
                 arr.append(name)
                 return name
         elif type == STRING:
@@ -362,8 +343,6 @@ class ParserWithRecovery(Parser):
                 symbol = grammar.number2symbol[typ]
                 failed_stack.append((symbol, nodes))
                 all_nodes += nodes
-            if nodes and nodes[0] in ('def', 'class', 'lambda'):
-                self._scope_names_stack.pop()
         if failed_stack:
             stack[start_index - 1][2][1].append(pt.ErrorNode(all_nodes))
 

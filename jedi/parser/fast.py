@@ -13,7 +13,6 @@ from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
 from jedi.parser.tree import Module, search_ancestor, EndMarker
 from jedi.parser.utils import parser_cache
-from jedi.parser import tokenize
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
                                   ENDMARKER, INDENT, DEDENT, tok_name)
@@ -37,7 +36,7 @@ class FastParser(use_metaclass(CachedFastParser)):
     pass
 
 
-def _merge_names_dicts(base_dict, other_dict):
+def _merge_used_names(base_dict, other_dict):
     for key, names in other_dict.items():
         base_dict.setdefault(key, []).extend(names)
 
@@ -107,7 +106,6 @@ class DiffParser(object):
         self._new_module = Module(self._new_children)
         # TODO get rid of Module.global_names in evaluator. It's getting ignored here.
         self._new_module.path = self._old_module.path
-        self._new_module.names_dict = {}
         self._new_module.used_names = {}
         self._new_module.global_names = []
         self._prefix = ''
@@ -221,8 +219,7 @@ class DiffParser(object):
                     to = _get_last_line(nodes[-1])
                     debug.dbg('diff actually copy %s to %s', from_, to)
                     self._update_positions(nodes, line_offset)
-                    parent = self._insert_nodes(nodes)
-                    self._update_names_dict(parent, nodes)
+                    self._insert_nodes(nodes)
                     self._copied_ranges.append((from_, to))
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we just parse the rest.
@@ -352,28 +349,6 @@ class DiffParser(object):
                 return node
             node = parent
 
-    def _update_names_dict(self, scope_node, nodes):
-        assert scope_node.type in ('suite', 'file_input')
-
-        names_dict = scope_node.names_dict
-
-        def scan(nodes):
-            for node in nodes:
-                if node.type in ('classdef', 'funcdef'):
-                    scan([node.children[1]])
-                    continue
-                try:
-                    scan(node.children)
-                except AttributeError:
-                    if node.type == 'name':
-                        names_dict.setdefault(node.value, []).append(node)
-
-        scan(nodes)
-
-    def _merge_parsed_node(self, scope_node, parsed_node):
-        _merge_names_dicts(scope_node.names_dict, parsed_node.names_dict)
-        _merge_names_dicts(self._new_module.used_names, parsed_node.used_names)
-
     def _divide_node(self, node, until_line):
         """
         Breaks up scopes and returns only the part until the given line.
@@ -422,8 +397,11 @@ class DiffParser(object):
         while until_line > self._parsed_until_line:
             node = self._parse_scope_node(until_line)
             nodes = self._get_children_nodes(node)
-            parent = self._insert_nodes(nodes)
-            self._merge_parsed_node(parent, node)
+            self._insert_nodes(nodes)
+            _merge_used_names(
+                self._new_module.used_names,
+                node.used_names
+            )
 
     def _get_children_nodes(self, node):
         nodes = node.children

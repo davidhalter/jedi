@@ -717,7 +717,7 @@ class Scope(BaseNode, DocstringMixin):
     :param start_pos: The position (line and column) of the scope.
     :type start_pos: tuple(int, int)
     """
-    __slots__ = ('names_dict',)
+    __slots__ = ()
 
     def __init__(self, children):
         super(Scope, self).__init__(children)
@@ -1647,17 +1647,6 @@ class CompFor(BaseNode):
 
     def is_scope(self):
         return True
-
-    @property
-    def names_dict(self):
-        dct = {}
-        for name in self.get_defined_names():
-            arr = dct.setdefault(name.value, [])
-            arr.append(name)
-        return dct
-
-    def names_dicts(self, search_global):
-        yield self.names_dict
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
