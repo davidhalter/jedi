@@ -10,6 +10,7 @@ from jedi.parser.fast import FastParser
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
+from jedi.evaluate.context import Context
 
 
 class MixedObject(object):
@@ -47,6 +48,12 @@ class MixedObject(object):
             tree_name.parent,
             node_is_context=True
         )
+
+    def eval_trailer(*args, **kwags):
+        return Context.eval_trailer(*args, **kwags)
+
+    def py__getattribute__(*args, **kwargs):
+        return Context.py__getattribute__(*args, **kwargs)
 
     def get_filters(self, *args, **kwargs):
         yield MixedObjectFilter(self.evaluator, self)
