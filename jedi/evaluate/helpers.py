@@ -165,12 +165,14 @@ def get_module_names(module, all_scopes):
     Returns a dictionary with name parts as keys and their call paths as
     values.
     """
-    if all_scopes:
-        dct = module.used_names
-    else:
-        raise DeprecationWarning
-        dct = module.names_dict
-    return chain.from_iterable(dct.values())
+    names = chain.from_iterable(module.used_names.values())
+    if not all_scopes:
+        # We have to filter all the names that don't have the module as a
+        # parent_scope. There's None as a parent, because nodes in the module
+        # node have the parent module and not suite as all the others.
+        # Therefore it's important to catch that case.
+        names = [n for n in names if n.get_parent_scope().parent in (module, None)]
+    return names
 
 
 class FakeName(tree.Name):
