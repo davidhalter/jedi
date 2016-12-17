@@ -78,7 +78,7 @@ class Differ(object):
     def initialize(self, source):
         debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
-        self.parser = ParserWithRecovery(grammar, source)
+        self.parser = ParserWithRecovery(grammar, u(source))
         return self.parser.module
 
     def parse(self, source, copies=0, parsers=0, expect_error_leaves=False):
