@@ -324,13 +324,6 @@ class Evaluator(object):
         if isinstance(atom, tree.Name):
             # This is the first global lookup.
             stmt = atom.get_definition()
-            #if isinstance(context, er.FunctionExecution):
-                ## Adjust scope: If the name is not in the suite, it's a param
-                ## default or annotation and will be resolved as part of the
-                ## parent scope.
-                #colon = scope.children.index(':')
-                #if atom.start_pos < scope.children[colon + 1].start_pos:
-                    ##scope = scope.get_parent_scope()
             if isinstance(stmt, tree.CompFor):
                 stmt = stmt.get_parent_until((tree.ClassOrFunc, tree.ExprStmt))
             if stmt.type != 'expr_stmt':
@@ -355,8 +348,8 @@ class Evaluator(object):
                 return types
             # Parentheses without commas are not tuples.
             elif c[0] == '(' and not len(c) == 2 \
-                    and not(tree.is_node(c[1], 'testlist_comp')
-                            and len(c[1].children) > 1):
+                    and not(tree.is_node(c[1], 'testlist_comp') and
+                            len(c[1].children) > 1):
                 return self.eval_element(context, c[1])
 
             try:
@@ -519,18 +512,6 @@ class Evaluator(object):
                 position=stmt.start_pos,
                 search_global=True, is_goto=True
             )
-
-    def wrap(self, element, parent_context):
-        raise DeprecationWarning
-        if element.type == 'classdef':
-            return er.ClassContext(self, element, parent_context)
-        elif element.type == 'lambda':
-            return er.LambdaWrapper(self, element)
-        elif element.type == 'file_input':
-            return er.ModuleContext(self, element)
-        else:
-            raise DeprecationWarning
-            return element
 
     def create_context(self, base_context, node, node_is_context=False):
         def parent_scope(node):

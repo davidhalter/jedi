@@ -92,14 +92,6 @@ def memoize_method(method):
     return wrapper
 
 
-def cache_star_import(func):
-    @time_cache("star_import_cache_validity")
-    def wrapper(self):
-        yield self.base  # The cache key
-        yield func(self)
-    return wrapper
-
-
 def _invalidate_star_import_cache_module(module, only_main=False):
     """ Important if some new modules are being reparsed """
     try:

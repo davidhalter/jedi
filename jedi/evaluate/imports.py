@@ -31,32 +31,6 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.filters import AbstractNameDefinition
 
 
-def completion_names(evaluator, imp, pos):
-    name = imp.name_for_position(pos)
-    module = evaluator.wrap(imp.get_parent_until())
-    if name is None:
-        level = 0
-        for node in imp.children:
-            if node.end_pos <= pos:
-                if node in ('.', '...'):
-                    level += len(node.value)
-        import_path = []
-    else:
-        # Completion on an existing name.
-
-        # The import path needs to be reduced by one, because we're completing.
-        import_path = imp.path_for_name(name)[:-1]
-        level = imp.level
-
-    importer = Importer(evaluator, tuple(import_path), module, level)
-    if isinstance(imp, tree.ImportFrom):
-        c = imp.children
-        only_modules = c[c.index('import')].start_pos >= pos
-    else:
-        only_modules = True
-    return importer.completion_names(evaluator, only_modules)
-
-
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
 @memoize_default(default=set())
@@ -385,9 +359,6 @@ class Importer(object):
     def _generate_name(self, name, in_module=None):
         # Create a pseudo import to be able to follow them.
         if in_module is None:
-            #imp = helpers.FakeImport(name, parent=self.module_context)
-            #name.parent = imp
-            #return name
             return ImportName(self.module_context, name)
         return SubModuleName(in_module, name)
 
@@ -413,7 +384,6 @@ class Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
-        from jedi.evaluate import finder
         from jedi.evaluate.representation import ModuleContext
         names = []
         if self.import_path:

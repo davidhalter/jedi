@@ -41,14 +41,12 @@ import pkgutil
 import imp
 import re
 
-from jedi._compatibility import use_metaclass, unicode, Python3Method
+from jedi._compatibility import use_metaclass
 from jedi.parser import tree
 from jedi import debug
 from jedi import common
-from jedi.cache import cache_star_import
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
 from jedi.evaluate import compiled
-from jedi.evaluate.compiled import mixed
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
@@ -444,7 +442,6 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
     # to push the star imports into Evaluator.modules, if we reenable this.
-    #@cache_star_import
     @memoize_default([])
     def star_imports(self):
         modules = []
