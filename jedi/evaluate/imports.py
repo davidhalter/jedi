@@ -56,63 +56,56 @@ def completion_names(evaluator, imp, pos):
     return importer.completion_names(evaluator, only_modules)
 
 
-class ImportWrapper(object):
-    def __init__(self, context, name):
-        self._context = context
-        self._name = name
+def infer_import(context, tree_name, is_goto=False):
+    module_context = context.get_root_context()
+    import_node = tree_name.get_parent_until(tree.Import)
+    import_path = import_node.path_for_name(tree_name)
+    from_import_name = None
+    evaluator = context.evaluator
+    try:
+        from_names = import_node.get_from_names()
+    except AttributeError:
+        # Is an import_name
+        pass
+    else:
+        if len(from_names) + 1 == len(import_path):
+            # We have to fetch the from_names part first and then check
+            # if from_names exists in the modules.
+            from_import_name = import_path[-1]
+            import_path = from_names
 
-    # TODO move this whole thing to a function
-    def follow(self, is_goto=False):
-        module_context = self._context.get_root_context()
-        import_node = self._name.get_parent_until(tree.Import)
-        import_path = import_node.path_for_name(self._name)
-        from_import_name = None
-        evaluator = self._context.evaluator
-        try:
-            from_names = import_node.get_from_names()
-        except AttributeError:
-            # Is an import_name
-            pass
-        else:
-            if len(from_names) + 1 == len(import_path):
-                # We have to fetch the from_names part first and then check
-                # if from_names exists in the modules.
-                from_import_name = import_path[-1]
-                import_path = from_names
+    importer = Importer(evaluator, tuple(import_path),
+                        module_context, import_node.level)
 
-        importer = Importer(evaluator, tuple(import_path),
-                            module_context, import_node.level)
+    types = importer.follow()
 
-        # TODO This is terrible, why different Importer instances?
-        types = importer.follow()
+    #if import_node.is_nested() and not self.nested_resolve:
+    #    scopes = [NestedImportModule(module, import_node)]
 
-        #if import_node.is_nested() and not self.nested_resolve:
-        #    scopes = [NestedImportModule(module, import_node)]
+    if from_import_name is not None:
+        types = unite(
+            t.py__getattribute__(
+                unicode(from_import_name),
+                name_context=context,
+                is_goto=is_goto
+            ) for t in types
+        )
 
-        if from_import_name is not None:
-            types = unite(
-                t.py__getattribute__(
-                    unicode(from_import_name),
-                    name_context=self._context,
-                    is_goto=is_goto
-                ) for t in types
-            )
-
-            if not types:
-                path = import_path + [from_import_name]
-                importer = Importer(evaluator, tuple(path),
-                                    module_context, import_node.level)
-                types = importer.follow()
-                # goto only accepts `Name`
-                if is_goto:
-                    types = set(s.name for s in types)
-        else:
+        if not types:
+            path = import_path + [from_import_name]
+            importer = Importer(evaluator, tuple(path),
+                                module_context, import_node.level)
+            types = importer.follow()
             # goto only accepts `Name`
             if is_goto:
                 types = set(s.name for s in types)
+    else:
+        # goto only accepts `Name`
+        if is_goto:
+            types = set(s.name for s in types)
 
-        debug.dbg('after import: %s', types)
-        return types
+    debug.dbg('after import: %s', types)
+    return types
 
 
 class NestedImportModule(tree.Module):

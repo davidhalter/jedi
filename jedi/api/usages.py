@@ -59,6 +59,10 @@ def resolve_potential_imports(evaluator, definitions):
         if isinstance(d, TreeNameDefinition):
             imp_or_stmt = d.tree_name.get_definition()
             if isinstance(imp_or_stmt, tree.Import):
-                s = imports.ImportWrapper(d.parent_context, d.tree_name)
-                new |= resolve_potential_imports(evaluator, set(s.follow(is_goto=True)))
+                new |= resolve_potential_imports(
+                    evaluator,
+                    set(imports.infer_import(
+                        d.parent_context, d.tree_name, is_goto=True
+                    ))
+                )
     return set(definitions) | new

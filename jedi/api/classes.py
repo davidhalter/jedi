@@ -500,8 +500,7 @@ class Completion(BaseDefinition):
         definition = self._definition
         if definition.isinstance(tree.Import):
             raise DeprecationWarning
-            i = imports.ImportWrapper(self._evaluator, self._name)
-            return i.follow()
+            return imports.infer_import(self._evaluator, self._name)
         return super(Completion, self)._follow_statements_imports()
 
     @memoize_method

@@ -451,21 +451,11 @@ class Evaluator(object):
                 for_types = iterable.py__iter__types(self, container_types, def_.children[3])
                 return finder.check_tuple_assignments(self, for_types, name)
             elif def_.type in ('import_from', 'import_name'):
-                return imports.ImportWrapper(context, name).follow()
+                return imports.infer_import(context, name)
 
         return helpers.evaluate_call_of_leaf(context, name)
 
     def goto(self, context, name):
-        def resolve_implicit_imports(names):
-            for name in names:
-                if isinstance(name.parent, helpers.FakeImport):
-                    # Those are implicit imports.
-                    s = imports.ImportWrapper(context, name)
-                    for n in s.follow(is_goto=True):
-                        yield n
-                else:
-                    yield name
-
         stmt = name.get_definition()
         par = name.parent
         if par.type == 'argument' and par.children[1] == '=' and par.children[0] == name:
@@ -500,9 +490,8 @@ class Evaluator(object):
         elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
             return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
-            module_names = imports.ImportWrapper(context, name).follow(is_goto=True)
+            module_names = imports.infer_import(context, name, is_goto=True)
             return module_names
-            return list(resolve_implicit_imports(module_names))
         elif par.type == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:
@@ -513,9 +502,6 @@ class Evaluator(object):
                     value.py__getattribute__(name, name_context=context, is_goto=True)
                     for value in values
                 )
-                #return resolve_implicit_imports(iterable.unite(
-                    #self.find_types(typ, name, is_goto=True) for typ in types
-                #))
 
         if tree.is_node(par, 'trailer') and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
@@ -523,9 +509,6 @@ class Evaluator(object):
                 value.py__getattribute__(name, name_context=context, is_goto=True)
                 for value in values
             )
-            #return resolve_implicit_imports(iterable.unite(
-                #self.find_types(typ, name, is_goto=True) for typ in types
-            #))
         else:
             if stmt.type != 'expr_stmt':
                 # We only need to adjust the start_pos for statements, because

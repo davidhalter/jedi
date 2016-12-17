@@ -505,7 +505,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         for i in self.module_node.imports:
             if i.is_star_import():
                 name = i.star_import_name()
-                new = imports.ImportWrapper(self, name).follow()
+                new = imports.infer_import(self, name)
                 for module in new:
                     if isinstance(module, ModuleContext):
                         modules += module.star_imports()

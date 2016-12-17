@@ -362,7 +362,7 @@ def _name_to_types(evaluator, context, name):
     elif node.isinstance(tree.WithStmt):
         types = context.eval_node(node.node_from_name(name))
     elif isinstance(node, tree.Import):
-        types = imports.ImportWrapper(context, name).follow()
+        types = imports.infer_import(context, name)
     elif node.type in ('funcdef', 'classdef'):
         types = _apply_decorators(evaluator, context, node)
     elif node.type == 'global_stmt':

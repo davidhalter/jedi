@@ -338,7 +338,7 @@ class Script(object):
                     if node.is_nested():
                         import_names |= set(path[-1] for path in node.paths())
                     for n in import_names:
-                        imports.ImportWrapper(context, n).follow()
+                        imports.infer_import(context, n)
                 elif node.type == 'expr_stmt':
                     types = context.eval_node(node)
                     for testlist in node.children[:-1:2]:
