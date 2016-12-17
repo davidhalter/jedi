@@ -130,31 +130,31 @@ def test_list():
 
 
 def test_slice():
-    class Foo():
+    class Foo1():
         bar = []
     baz = 'xbarx'
-    _assert_interpreter_complete('getattr(Foo, baz[1:-1]).append',
+    _assert_interpreter_complete('getattr(Foo1, baz[1:-1]).append',
                                  locals(),
                                  ['append'])
 
 
 def test_getitem_side_effects():
-    class Foo():
+    class Foo2():
         def __getitem__(self, index):
             # possible side effects here, should therefore not call this.
             return index
 
-    foo = Foo()
+    foo = Foo2()
     _assert_interpreter_complete('foo[0].', locals(), [])
 
 
 def test_property_error():
-    class Foo():
+    class Foo3():
         @property
         def bar(self):
             raise ValueError
 
-    foo = Foo()
+    foo = Foo3()
     _assert_interpreter_complete('foo.bar', locals(), ['bar'])
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
 
