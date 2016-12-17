@@ -11,18 +11,6 @@ from jedi import debug
 from jedi import settings
 
 
-def recursion_decorator(func):
-    def run(evaluator, stmt, *args, **kwargs):
-        rec_detect = evaluator.recursion_detector
-        if rec_detect.push_stmt(stmt):
-            return set()
-        else:
-            result = func(evaluator, stmt, *args, **kwargs)
-            rec_detect.pop_stmt()
-        return result
-    return run
-
-
 class RecursionDetector(object):
     """
     A decorator to detect recursions in statements. In a recursion a statement

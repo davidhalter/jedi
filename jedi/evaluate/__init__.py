@@ -128,7 +128,6 @@ class Evaluator(object):
         return f.find(filters, attribute_lookup=not search_global)
 
     #@memoize_default(default=[], evaluator_is_first_arg=True)
-    #@recursion.recursion_decorator
     @debug.increase_indent
     def eval_statement(self, context, stmt, seek_name=None):
         """
