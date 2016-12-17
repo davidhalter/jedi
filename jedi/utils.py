@@ -87,7 +87,11 @@ def setup_readline(namespace_module=__main__):
 
                     lines = common.splitlines(text)
                     position = (len(lines), len(lines[-1]))
-                    name = get_on_completion_name(interpreter._get_module(), lines, position)
+                    name = get_on_completion_name(
+                        interpreter._get_module_node(),
+                        lines,
+                        position
+                    )
                     before = text[:len(text) - len(name)]
                     completions = interpreter.completions()
                 except:

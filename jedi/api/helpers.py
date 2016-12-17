@@ -20,8 +20,8 @@ def sorted_definitions(defs):
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
 
 
-def get_on_completion_name(module, lines, position):
-    leaf = module.get_leaf_for_position(position)
+def get_on_completion_name(module_node, lines, position):
+    leaf = module_node.get_leaf_for_position(position)
     if leaf is None or leaf.type in ('string', 'error_leaf'):
         # Completions inside strings are a bit special, we need to parse the
         # string. The same is true for comments and error_leafs.

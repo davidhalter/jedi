@@ -170,7 +170,6 @@ def memoize_faked(obj):
 
 @memoize_faked
 def _get_faked(module, obj, name=None):
-    obj = type(obj) if is_class_instance(obj) else obj
     result, fake_module = _faked(module, obj, name)
     if result is None:
         # We're not interested in classes. What we want is functions.
