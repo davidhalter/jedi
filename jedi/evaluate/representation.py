@@ -307,21 +307,6 @@ class FunctionExecutionContext(Executed):
         super(FunctionExecutionContext, self).__init__(evaluator, parent_context, var_args)
         self.function_context = function_context
         self.funcdef = function_context.funcdef
-        if isinstance(function_context, mixed.MixedObject):
-            # The extra information in mixed is not needed anymore. We can just
-            # unpack it and give it the tree object.
-            raise DeprecationWarning
-            funcdef = funcdef.definition
-
-        # Just overwrite the old version. We don't need it anymore.
-        #funcdef = helpers.deep_ast_copy(funcdef, new_elements=self._copy_dict)
-        #for child in funcdef.children:
-            #if child.type not in ('operator', 'keyword'):
-                # Not all nodes are properly copied by deep_ast_copy.
-                #child.parent = self
-        #self.children = funcdef.children
-        #self.names_dict = funcdef.names_dict
-        #self._copied_funcdef = funcdef
 
     def get_node(self):
         return self.function_context.funcdef
@@ -332,17 +317,6 @@ class FunctionExecutionContext(Executed):
         funcdef = self.funcdef
         if funcdef.type == 'lambda':
             return self.evaluator.eval_element(self, funcdef.children[-1])
-
-        """
-        if func.listeners:
-            # Feed the listeners, with the params.
-            for listener in func.listeners:
-                listener.execute(self._get_params())
-            # If we do have listeners, that means that there's not a regular
-            # execution ongoing. In this case Jedi is interested in the
-            # inserted params, not in the actual execution of the function.
-            return set()
-"""
 
         if check_yields:
             types = set()
