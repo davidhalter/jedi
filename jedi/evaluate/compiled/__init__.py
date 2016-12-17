@@ -78,6 +78,13 @@ class CompiledObject(Base):
     @property
     def doc(self):
         return inspect.getdoc(self.obj) or ''
+        
+    @property
+    def raw_doc(self):
+        try:
+            return unicode(self.doc)
+        except NameError: # python 3
+            return self.doc
 
     @property
     def params(self):
@@ -196,9 +203,12 @@ class CompiledObject(Base):
         return FakeName(name, self)
 
     def _execute_function(self, params):
+        from jedi.evaluate import docstrings
         if self.type != 'funcdef':
             return
-
+        types = set([])
+        types |= set(docstrings.find_return_types(self._evaluator, self))
+        debug.dbg('docstrings type return: %s in %s', types, self)
         for name in self._parse_function_doc()[1].split():
             try:
                 bltn_obj = getattr(_builtins, name)
@@ -210,8 +220,9 @@ class CompiledObject(Base):
                     # TODO do we?
                     continue
                 bltn_obj = create(self._evaluator, bltn_obj)
-                for result in self._evaluator.execute(bltn_obj, params):
-                    yield result
+                types |= set(self._evaluator.execute(bltn_obj, params))
+        for result in types:
+            yield result
 
     @property
     @underscore_memoization
