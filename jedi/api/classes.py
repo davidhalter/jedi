@@ -6,7 +6,7 @@ the interesting information about completion and goto operations.
 import warnings
 import re
 
-from jedi._compatibility import unicode
+from jedi._compatibility import u
 from jedi import settings
 from jedi import common
 from jedi.parser import tree
@@ -14,7 +14,6 @@ from jedi.parser.utils import load_parser
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import instance
-from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParamName
@@ -63,9 +62,7 @@ class BaseDefinition(object):
         """
         An instance of :class:`jedi.parser.reprsentation.Name` subclass.
         """
-        #self._definition = list(self._name.infer())[0]
         self.is_keyword = isinstance(self._name, KeywordName)
-        self._definition = None
 
         # generate a path to the definition
         self._module = name.get_root_context()
@@ -284,7 +281,7 @@ class BaseDefinition(object):
     @property
     def description(self):
         """A textual description of the object."""
-        return unicode(self._name.string_name)
+        return u(self._name.string_name)
 
     @property
     def full_name(self):
@@ -330,13 +327,6 @@ class BaseDefinition(object):
         defs = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
         return [Definition(self._evaluator, d) for d in defs]
 
-    @memoize_method
-    def _follow_statements_imports(self):
-        """
-        Follow both statements and imports, as far as possible.
-        """
-        return self._name.infer()
-
     @property
     @memoize_method
     def params(self):
@@ -367,7 +357,7 @@ class BaseDefinition(object):
                 return context.get_param_names()
             return param_names
 
-        followed = list(self._follow_statements_imports())
+        followed = list(self._name.infer())
         if not followed or not hasattr(followed[0], 'py__call__'):
             raise AttributeError()
         context = followed[0]  # only check the first one.
@@ -478,30 +468,8 @@ class Completion(BaseDefinition):
         # TODO improve the class structure.
         return Definition.description.__get__(self)
 
-        # TODO remove
-        t = self.type
-        if t == 'statement' or t == 'import':
-            desc = self._definition.get_code()
-        else:
-            desc = '.'.join(self._path())
-
-        line = '' if self.in_builtin_module else '@%s' % self.line
-        return '%s: %s%s' % (t, desc, line)
-
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.string_name)
-
-    @memoize_method
-    def _follow_statements_imports(self):
-        # imports completion is very complicated and needs to be treated
-        # separately in Completion.
-        return self._name.infer()
-        # TODO REMOVE
-        definition = self._definition
-        if definition.isinstance(tree.Import):
-            raise DeprecationWarning
-            return imports.infer_import(self._evaluator, self._name)
-        return super(Completion, self)._follow_statements_imports()
 
     @memoize_method
     def follow_definition(self):
@@ -513,7 +481,7 @@ class Completion(BaseDefinition):
         follows all results. This means with 1000 completions (e.g.  numpy),
         it's just PITA-slow.
         """
-        defs = self._follow_statements_imports()
+        defs = self._name.infer()
         return [Definition(self._evaluator, d.name) for d in defs]
 
 
@@ -559,70 +527,19 @@ class Definition(BaseDefinition):
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
-            return typ + ' ' + self._name.string_name
+            return typ + ' ' + u(self._name.string_name)
         elif typ == 'param':
             return typ + ' ' + tree_name.get_definition().get_description()
 
         definition = tree_name.get_definition()
-
-        try:
-            first_leaf = definition.first_leaf()
-        except AttributeError:
-            # `d` is already a Leaf (Name).
-            first_leaf = definition
         # Remove the prefix, because that's not what we want for get_code
         # here.
-        old, first_leaf.prefix = first_leaf.prefix, ''
-        try:
-            txt = definition.get_code()
-        finally:
-            first_leaf.prefix = old
+        txt = definition.get_code(include_prefix=False)
         # Delete comments:
         txt = re.sub('#[^\n]+\n', ' ', txt)
         # Delete multi spaces/newlines
         txt = re.sub('\s+', ' ', txt).strip()
         return txt
-
-        # TODO DELETE
-
-        d = self._definition
-
-        if isinstance(d, compiled.CompiledObject):
-            typ = d.api_type
-            if typ == 'instance':
-                typ = 'class'  # The description should be similar to Py objects.
-            d = typ + ' ' + d.name.get_code()
-        elif isinstance(d, iterable.SequenceLiteralContext):
-            d = 'class ' + d.type
-        elif isinstance(d, (tree.Class, er.ClassContext, er.Instance)):
-            d = 'class ' + unicode(d.name)
-        elif isinstance(d, (er.FunctionContext, tree.Function)):
-            d = 'def ' + unicode(d.name)
-        elif isinstance(d, tree.Module):
-            # only show module name
-            d = 'module %s' % self.module_name
-        elif isinstance(d, tree.Param):
-            d = d.get_code().strip()
-            if d.endswith(','):
-                d = d[:-1]  # Remove the comma.
-        else:  # ExprStmt
-            return self._name.string_name
-            try:
-                first_leaf = d.first_leaf()
-            except AttributeError:
-                # `d` is already a Leaf (Name).
-                first_leaf = d
-            # Remove the prefix, because that's not what we want for get_code
-            # here.
-            old, first_leaf.prefix = first_leaf.prefix, ''
-            try:
-                d = d.get_code()
-            finally:
-                first_leaf.prefix = old
-        # Delete comments:
-        d = re.sub('#[^\n]+\n', ' ', d)
-        # Delete multi spaces/newlines
-        return re.sub('\s+', ' ', d).strip()
 
     @property
     def desc_with_module(self):
@@ -730,7 +647,7 @@ class CallSignature(Definition):
         The name (e.g. 'isinstance') as a string.
         """
         warnings.warn("Use name instead.", DeprecationWarning)
-        return unicode(self.name)
+        return self.name
 
     @property
     def module(self):

@@ -205,7 +205,8 @@ def u(string):
     """
     if is_py3:
         return str(string)
-    elif not isinstance(string, unicode):
+
+    if not isinstance(string, unicode):
         return unicode(str(string), 'UTF-8')
     return string
 
