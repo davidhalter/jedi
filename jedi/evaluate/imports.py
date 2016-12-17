@@ -18,15 +18,16 @@ import sys
 
 from jedi._compatibility import find_module, unicode
 from jedi import debug
+from jedi import settings
+from jedi.common import source_to_unicode, unite
 from jedi.parser import fast
 from jedi.parser import tree
 from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
-from jedi import settings
-from jedi.common import source_to_unicode, unite
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
+from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.filters import AbstractNameDefinition
 
 
@@ -56,6 +57,9 @@ def completion_names(evaluator, imp, pos):
     return importer.completion_names(evaluator, only_modules)
 
 
+# This memoization is needed, because otherwise we will infinitely loop on
+# certain imports.
+@memoize_default(default=set())
 def infer_import(context, tree_name, is_goto=False):
     module_context = context.get_root_context()
     import_node = tree_name.get_parent_until(tree.Import)
