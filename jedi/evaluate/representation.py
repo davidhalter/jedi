@@ -169,16 +169,6 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         anon = AnonymousInstance(self.evaluator, self.parent_context, self)
         return [AnonymousInstanceParamName(anon, param.name) for param in self.funcdef.params]
 
-    def names_dicts(self, search_global, is_instance=False):
-        if search_global:
-            yield self.names_dict
-        else:
-            for scope in self.py__mro__():
-                if isinstance(scope, compiled.CompiledObject):
-                    yield scope.names_dicts(False, is_instance)[0]
-                else:
-                    yield scope.names_dict
-
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
             yield ParserTreeFilter(self.evaluator, self, self.classdef, until_position, origin_scope=origin_scope)
@@ -237,14 +227,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def get_node(self):
         return self.funcdef
-
-    def names_dicts(self, search_global):
-        if search_global:
-            yield self.names_dict
-        else:
-            scope = self.py__class__()
-            for names_dict in scope.names_dicts(False):
-                yield names_dict
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
@@ -444,16 +426,6 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def get_node(self):
         return self.module_node
-
-    def names_dicts(self, search_global):
-        yield self.base.names_dict
-        yield self._module_attributes_dict()
-
-        for star_module in self.star_imports():
-            yield star_module.names_dict
-
-        yield dict((str(n), [GlobalName(n)]) for n in self.base.global_names)
-        yield self._sub_modules_dict()
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield ParserTreeFilter(

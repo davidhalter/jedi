@@ -144,11 +144,6 @@ class GeneratorMixin(object):
         # TODO add TypeError if params are given.
         return unite(lazy_context.infer() for lazy_context in self.py__iter__())
 
-    @memoize_default()
-    def names_dicts(self, search_global=False):  # is always False
-        gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
-        yield self._get_names_dict(gen_obj.names_dict)
-
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
         yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
@@ -228,13 +223,6 @@ class Comprehension(AbstractSequence):
             [x + 1 for x in foo]
         """
         return self._get_comprehension().children[index]
-        #TODO delete
-        comp_for = self._get_comp_for()
-        # For nested comprehensions we need to search the last one.
-        node = self._get_comprehension().children[index]
-        last_comp = list(comp_for.get_comp_fors())[-1]
-        #TODO raise NotImplementedError('should not need to copy...')
-        return helpers.deep_ast_copy(node, parent=last_comp)
 
     @memoize_default()
     def _get_comp_for_context(self, parent_context, comp_for):
@@ -284,15 +272,6 @@ class Comprehension(AbstractSequence):
 
 
 class ArrayMixin(object):
-    @memoize_default()
-    def names_dicts(self, search_global=False):  # Always False.
-        # `array.type` is a string with the type, e.g. 'list'.
-        scope = compiled.builtin_from_name(self.evaluator, self.array_type)
-        # builtins only have one class -> [0]
-        scopes = self.evaluator.execute_evaluated(scope, self)
-        names_dicts = list(scopes)[0].names_dicts(search_global)
-        yield self._get_names_dict(names_dicts[1])
-
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         # `array.type` is a string with the type, e.g. 'list'.
         compiled_obj = compiled.builtin_from_name(self.evaluator, self.array_type)
@@ -300,8 +279,6 @@ class ArrayMixin(object):
         for typ in compiled_obj.execute_evaluated(self):
             for filter in typ.get_filters():
                 yield filter
-                # TODO this should be used.
-                #yield DictFilter(self._get_names_dict(names_dicts[1]))
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
@@ -745,7 +722,7 @@ def _check_array_additions(context, sequence):
     >>> a = [""]
     >>> a.append(1)
     """
-    from jedi.evaluate import representation as er, param
+    from jedi.evaluate import param
 
     debug.dbg('Dynamic array search for %s' % sequence, color='MAGENTA')
     module_context = context.get_root_context()
@@ -766,27 +743,11 @@ def _check_array_additions(context, sequence):
                 result |= set(py__iter__(context.evaluator, lazy_context.infer()))
         return result
 
-    '''
-    def get_execution_parent(element):
-        """ Used to get an Instance/FunctionExecution parent """
-        if isinstance(element, Array):
-            node = element.atom
-        else:
-            # Is an Instance with an
-            # Arguments([AlreadyEvaluated([_ArrayInstance])]) inside
-            # Yeah... I know... It's complicated ;-)
-            node = list(element.var_args.argument_node[0])[0].var_args.trailer
-        if isinstance(node, er.InstanceElement) or node is None:
-            return node
-        return node.get_parent_until(er.FunctionExecution)
-'''
-
     temp_param_add, settings.dynamic_params_for_other_modules = \
         settings.dynamic_params_for_other_modules, False
 
     is_list = sequence.name.string_name == 'list'
     search_names = (['append', 'extend', 'insert'] if is_list else ['add', 'update'])
-    #comp_arr_parent = None
 
     added_types = set()
     for add_name in search_names:
@@ -799,21 +760,6 @@ def _check_array_additions(context, sequence):
                 context_node = context.get_node()
                 if not (context_node.start_pos < name.start_pos < context_node.end_pos):
                     continue
-                '''
-                # Check if the original scope is an execution. If it is, one
-                # can search for the same statement, that is in the module
-                # dict. Executions are somewhat special in jedi, since they
-                # literally copy the contents of a function.
-                if isinstance(comp_arr_parent, er.FunctionExecution):
-                    if comp_arr_parent.start_pos < name.start_pos < comp_arr_parent.end_pos:
-                        name = comp_arr_parent.name_for_position(name.start_pos)
-                    else:
-                        # Don't check definitions that are not defined in the
-                        # same function. This is not "proper" anyway. It also
-                        # improves Jedi's speed for array lookups, since we
-                        # don't have to check the whole source tree anymore.
-                        continue
-                '''
                 trailer = name.parent
                 power = trailer.parent
                 trailer_pos = power.children.index(trailer)
@@ -872,7 +818,7 @@ class _ArrayInstance(object):
 
     In contrast to Array, ListComprehension and all other iterable types, this
     is something that is only used inside `evaluate/compiled/fake/builtins.py`
-    and therefore doesn't need `names_dicts`, `py__bool__` and so on, because
+    and therefore doesn't need filters, `py__bool__` and so on, because
     we don't use these operations in `builtins.py`.
     """
     def __init__(self, instance):

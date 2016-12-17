@@ -180,25 +180,9 @@ class CompiledObject(Context):
             # automatically by doing `import numpy`.
             return type
 
-    @property
-    def names_dict(self):
-        # For compatibility with `representation.Class`.
-        return self.names_dicts(False)[0]
-
-    def names_dicts(self, search_global, is_instance=False):
-        return self._names_dict_ensure_one_dict(is_instance)
-
     def get_filters(self, search_global=False, is_instance=False,
                     until_position=None, origin_scope=None):
         yield self._ensure_one_filter(is_instance)
-
-    @memoize_method
-    def _names_dict_ensure_one_dict(self, is_instance):
-        """
-        search_global shouldn't change the fact that there's one dict, this way
-        there's only one `object`.
-        """
-        return [LazyNamesDict(self.evaluator, self, is_instance)]
 
     @memoize_method
     def _ensure_one_filter(self, is_instance):
@@ -329,9 +313,6 @@ class EmptyCompiledName(AbstractNameDefinition):
 
 
 class CompiledObjectFilter(AbstractFilter):
-    """
-    A names_dict instance for compiled objects, resembles the parser.tree.
-    """
     name_class = CompiledName
 
     def __init__(self, evaluator, compiled_object, is_instance=False):

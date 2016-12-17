@@ -1,10 +1,7 @@
 """
 TODO Some parts of this module are still not well documented.
 """
-import copy
 
-from jedi.cache import underscore_memoization
-from jedi.evaluate import helpers
 from jedi.evaluate.representation import ModuleContext
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled import mixed
