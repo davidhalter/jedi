@@ -20,21 +20,22 @@ It is important to note that:
 1. Array modfications work only in the current module.
 2. Jedi only checks Array additions; ``list.pop``, etc are ignored.
 """
-from jedi.common import unite, safe_property
 from jedi import debug
 from jedi import settings
+from jedi import common
+from jedi.common import unite, safe_property
 from jedi._compatibility import unicode, zip_longest, is_py3
 from jedi.parser import tree
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
-from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
-from jedi import common
-from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
-    ParserTreeFilter
 from jedi.evaluate import context
 from jedi.evaluate import precedence
+from jedi.evaluate import recursion
+from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
+    ParserTreeFilter
 
 
 class AbstractSequence(context.Context):
@@ -774,25 +775,21 @@ def _check_array_additions(context, sequence):
                         continue
 
                 random_context = context.create_context(name)
-                if context.evaluator.recursion_detector.push_stmt(power):
-                    # Check for recursion. Possible by using 'extend' in
-                    # combination with function calls.
-                    continue
-                try:
-                    found = helpers.evaluate_call_of_leaf(
-                        random_context,
-                        name,
-                        cut_own_trailer=True
-                    )
-                    if sequence in found:
-                        # The arrays match. Now add the results
-                        added_types |= find_additions(
+
+                with recursion.execution_allowed(context.evaluator, power) as allowed:
+                    if allowed:
+                        found = helpers.evaluate_call_of_leaf(
                             random_context,
-                            execution_trailer.children[1],
-                            add_name
+                            name,
+                            cut_own_trailer=True
                         )
-                finally:
-                    context.evaluator.recursion_detector.pop_stmt()
+                        if sequence in found:
+                            # The arrays match. Now add the results
+                            added_types |= find_additions(
+                                random_context,
+                                execution_trailer.children[1],
+                                add_name
+                            )
 
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add

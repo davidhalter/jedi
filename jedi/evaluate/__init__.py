@@ -108,7 +108,7 @@ class Evaluator(object):
         self.BUILTINS = compiled.get_special_object(self, 'BUILTINS')
 
     def reset_recursion_limitations(self):
-        self.recursion_detector = recursion.RecursionDetector(self)
+        self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
     def find_types(self, context, name_or_str, name_context, position=None,
