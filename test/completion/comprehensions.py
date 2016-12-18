@@ -94,7 +94,7 @@ b[0]
 
 # jedi issue #26
 #? list()
-a = [[int(v) for v in line.strip().split() if v] for line in ["123", "123", "123"] if line]
+a = [[int(v) for v in line.strip().split() if v] for line in ["123", str(), "123"] if line]
 #? list()
 a[0]
 #? int()
