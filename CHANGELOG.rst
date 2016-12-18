@@ -10,7 +10,8 @@ Changelog
 - Basic type inference for ``yield from`` PEP 380.
 - PEP 484 support (most of the important features of it). Thanks Claude! (@reinhrst)
 - Added ``get_line_code`` to ``Definition`` and ``Completion`` objects.
-- Again a lot of internal changes.
+- Completely rewritten the type inference engine.
+- A new and better parser for parsing parts of Python code.
 
 0.9.0 (2015-04-10)
 ++++++++++++++++++
