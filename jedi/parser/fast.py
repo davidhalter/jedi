@@ -104,10 +104,8 @@ class DiffParser(object):
         self._old_children = self._old_module.children
         self._new_children = []
         self._new_module = Module(self._new_children)
-        # TODO get rid of Module.global_names in evaluator. It's getting ignored here.
         self._new_module.path = self._old_module.path
         self._new_module.used_names = {}
-        self._new_module.global_names = []
         self._prefix = ''
 
     def update(self, lines_new):

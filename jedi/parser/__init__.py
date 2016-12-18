@@ -100,7 +100,6 @@ class Parser(object):
         # Todo Remove start_parsing (with False)
 
         self._used_names = {}
-        self._global_names = []
 
         self.source = source
         self._added_newline = False
@@ -165,7 +164,7 @@ class Parser(object):
         """
         symbol = grammar.number2symbol[type]
         try:
-            new_node = Parser.AST_MAPPING[symbol](children)
+            return Parser.AST_MAPPING[symbol](children)
         except KeyError:
             if symbol == 'suite':
                 # We don't want the INDENT/DEDENT in our parser tree. Those
@@ -173,13 +172,7 @@ class Parser(object):
                 # ones and therefore have pseudo start/end positions and no
                 # prefixes. Just ignore them.
                 children = [children[0]] + children[2:-1]
-            new_node = pt.Node(symbol, children)
-
-        # We need to check raw_node always, because the same node can be
-        # returned by convert multiple times.
-        if symbol == 'global_stmt':
-            self._global_names += new_node.get_global_names()
-        return new_node
+            return pt.Node(symbol, children)
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
         # print('leaf', repr(value), token.tok_name[type])
@@ -282,7 +275,6 @@ class ParserWithRecovery(Parser):
         self.module = root_node
         self.module.used_names = self._used_names
         self.module.path = self._module_path
-        self.module.global_names = self._global_names
         return root_node
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,

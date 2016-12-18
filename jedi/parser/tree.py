@@ -792,7 +792,7 @@ class Module(Scope):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'global_names', 'used_names', '_name')
+    __slots__ = ('path', 'used_names', '_name')
     type = 'file_input'
 
     def __init__(self, children):
