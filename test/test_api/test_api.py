@@ -112,7 +112,7 @@ def test_goto_assignments_on_non_name():
         assert api.Script('True').goto_assignments() == []
     else:
         # In Python 2.7 True is still a name.
-        assert api.Script('True').goto_assignments()[0].description == 'class bool'
+        assert api.Script('True').goto_assignments()[0].description == 'instance True'
 
 
 def test_goto_definitions_on_non_name():

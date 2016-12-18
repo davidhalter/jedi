@@ -77,15 +77,15 @@ class Warning(Error):
     pass
 
 
-def add(context, error_name, node, message=None, typ=Error, payload=None):
+def add(node_context, error_name, node, message=None, typ=Error, payload=None):
     exception = CODES[error_name][1]
-    if _check_for_exception_catch(context, node, exception, payload):
+    if _check_for_exception_catch(node_context, node, exception, payload):
         return
 
     module_path = node.get_root_node().path
     instance = typ(error_name, module_path, node.start_pos, message)
     debug.warning(str(instance), format=False)
-    context.evaluator.analysis.append(instance)
+    node_context.evaluator.analysis.append(instance)
 
 
 def _check_for_setattr(instance):
@@ -107,29 +107,29 @@ def _check_for_setattr(instance):
                for stmt in stmts)
 
 
-def add_attribute_error(context, name):
-    message = ('AttributeError: %s has no attribute %s.' % (context, name))
+def add_attribute_error(name_context, lookup_context, name):
+    message = ('AttributeError: %s has no attribute %s.' % (lookup_context, name))
     from jedi.evaluate.instance import AbstractInstanceContext, CompiledInstanceName
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
     typ = Error
-    if isinstance(context, AbstractInstanceContext):
-        slot_names = context.get_function_slot_names('__getattr__') + \
-            context.get_function_slot_names('__getattribute__')
+    if isinstance(lookup_context, AbstractInstanceContext):
+        slot_names = lookup_context.get_function_slot_names('__getattr__') + \
+            lookup_context.get_function_slot_names('__getattribute__')
         for n in slot_names:
             if isinstance(name, CompiledInstanceName) and \
                     n.parent_context.obj == object:
                 typ = Warning
                 break
 
-        if _check_for_setattr(context):
+        if _check_for_setattr(lookup_context):
             typ = Warning
 
-    payload = context, name
-    add(context, 'attribute-error', name, message, typ, payload)
+    payload = lookup_context, name
+    add(name_context, 'attribute-error', name, message, typ, payload)
 
 
-def _check_for_exception_catch(context, jedi_name, exception, payload=None):
+def _check_for_exception_catch(node_context, jedi_name, exception, payload=None):
     """
     Checks if a jedi object (e.g. `Statement`) sits inside a try/catch and
     doesn't count as an error (if equal to `exception`).
@@ -157,7 +157,7 @@ def _check_for_exception_catch(context, jedi_name, exception, payload=None):
             if node is None:
                 return True  # An exception block that catches everything.
             else:
-                except_classes = context.eval_node(node)
+                except_classes = node_context.eval_node(node)
                 for cls in except_classes:
                     from jedi.evaluate import iterable
                     if isinstance(cls, iterable.AbstractSequence) and \
@@ -182,7 +182,7 @@ def _check_for_exception_catch(context, jedi_name, exception, payload=None):
             arglist = trailer.children[1]
             assert arglist.type == 'arglist'
             from jedi.evaluate.param import TreeArguments
-            args = list(TreeArguments(context.evaluator, context, arglist).unpack())
+            args = list(TreeArguments(node_context.evaluator, node_context, arglist).unpack())
             # Arguments should be very simple
             assert len(args) == 2
 

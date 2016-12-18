@@ -67,11 +67,12 @@ class NameFinder(object):
                          isinstance(self._name.parent.parent, tree.Param)):
             if isinstance(self._name, tree.Name):
                 if attribute_lookup:
-                    analysis.add_attribute_error(self._context, self._name)
+                    analysis.add_attribute_error(
+                        self._name_context, self._context, self._name)
                 else:
                     message = ("NameError: name '%s' is not defined."
                                % self._string_name)
-                    analysis.add(self._context, 'name-error', self._name, message)
+                    analysis.add(self._name_context, 'name-error', self._name, message)
 
         return types
 
