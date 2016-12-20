@@ -8,9 +8,8 @@ from jedi._compatibility import u
 from jedi.common import splitlines
 from jedi import cache
 from jedi.parser import load_grammar
-from jedi.parser.fast import FastParser, DiffParser
+from jedi.parser.fast import DiffParser
 from jedi.parser import ParserWithRecovery
-from jedi.parser.utils import save_parser
 
 
 def test_add_to_end():
@@ -284,3 +283,18 @@ def test_wrong_whitespace(differ):
 
     code += """abc(\npass\n    """
     differ.parse(code, parsers=1, copies=1, expect_error_leaves=True)
+
+
+def test_issues_with_error_leaves(differ):
+    code = dedent('''
+    def ints():
+        str..
+        str
+    ''')
+    code2 = dedent('''
+    def ints():
+        str.
+        str
+    ''')
+    differ.initialize(code)
+    differ.parse(code2, parsers=2, copies=0, expect_error_leaves=True)

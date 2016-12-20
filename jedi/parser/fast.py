@@ -44,7 +44,7 @@ def _merge_used_names(base_dict, other_dict):
 def _get_last_line(node_or_leaf):
     last_leaf = node_or_leaf.last_leaf()
     if last_leaf.type == 'error_leaf':
-        typ = tok_name[last_leaf.original_type].lower()
+        typ = last_leaf.original_type
     else:
         typ = last_leaf.type
     if typ == 'newline':
@@ -84,6 +84,17 @@ def _is_flow_node(node):
     except AttributeError:
         return False
     return value in ('if', 'for', 'while', 'try')
+
+
+def _last_leaf_is_newline(last_leaf):
+    if last_leaf.prefix.endswith('\n'):
+        return True
+    if last_leaf.prefix:
+        return False
+    previous_leaf = last_leaf.get_previous_leaf()
+    return (previous_leaf.type == 'newline' or
+            previous_leaf.type == 'error_leaf' and
+            previous_leaf.original_type == 'newline')
 
 
 class DiffParser(object):
@@ -269,8 +280,7 @@ class DiffParser(object):
         is_endmarker = last_leaf.type == self.endmarker_type
         if is_endmarker:
             self._parsed_until_line = last_leaf.start_pos[0]
-            if last_leaf.prefix.endswith('\n') or \
-                    not last_leaf.prefix and last_leaf.get_previous_leaf().type == 'newline':
+            if _last_leaf_is_newline(last_leaf):
                 self._parsed_until_line -= 1
         else:
             if last_leaf.type == 'newline':

@@ -21,7 +21,7 @@ import re
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
-                               STRING)
+                               STRING, tok_name)
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
@@ -321,7 +321,7 @@ class ParserWithRecovery(Parser):
                 # Otherwise the parser will get into trouble and DEDENT too early.
                 self._omit_dedent_list.append(self._indent_counter)
             else:
-                error_leaf = pt.ErrorLeaf(typ, value, start_pos, prefix)
+                error_leaf = pt.ErrorLeaf(tok_name[typ].lower(), value, start_pos, prefix)
                 stack[-1][2][1].append(error_leaf)
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
