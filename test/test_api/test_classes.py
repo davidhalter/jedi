@@ -238,9 +238,13 @@ class TestParent(TestCase):
 
 
 def test_type():
-    """
-    Github issue #397, type should never raise an error.
-    """
+    for c in Script('a = [str()]; a[0].').completions():
+        if c.name == '__class__':
+            assert c.type == 'class'
+        else:
+            assert c.type in ('function', 'instance')
+
+    # Github issue #397, type should never raise an error.
     for c in Script('import os; os.path.').completions():
         assert c.type
 

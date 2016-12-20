@@ -272,7 +272,7 @@ class CompiledName(AbstractNameDefinition):
 
     @property
     def api_type(self):
-        return self.infer()[0].api_type
+        return next(iter(self.infer())).api_type
 
     @underscore_memoization
     def infer(self):

@@ -171,7 +171,7 @@ class DiffParser(object):
                 assert operation == 'delete'
 
         # Cleanup (setting endmarker, used_names)
-        self._post_parse()
+        self._cleanup()
         if self._added_newline:
             self._parser.module = self._parser._parsed = self._new_module
             self._parser.remove_last_newline()
@@ -414,11 +414,12 @@ class DiffParser(object):
     def _get_children_nodes(self, node):
         nodes = node.children
         first_element = nodes[0]
-        if first_element.type == 'error_leaf' and \
-                first_element.original_type == 'indent':
-            assert nodes[-1].type == 'dedent'
-            # This means that the start and end leaf
-            nodes = nodes[1:-2] + [nodes[-1]]
+        # TODO this looks very strange...
+        #if first_element.type == 'error_leaf' and \
+                #first_element.original_type == 'indent':
+            #assert nodes[-1].type == 'dedent'
+            ## This means that the start and end leaf
+            #nodes = nodes[1:-1] + [nodes[-1]]
 
         return nodes
 
@@ -440,7 +441,7 @@ class DiffParser(object):
         )
         return self._active_parser.parse(tokenizer=tokenizer)
 
-    def _post_parse(self):
+    def _cleanup(self):
         # Add the used names from the old parser to the new one.
         copied_line_numbers = set()
         for l1, l2 in self._copied_ranges:
