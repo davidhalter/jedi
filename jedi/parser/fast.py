@@ -15,7 +15,7 @@ from jedi.parser.tree import Module, search_ancestor, EndMarker
 from jedi.parser.utils import parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
-                                  ENDMARKER, INDENT, DEDENT, tok_name)
+                                  ENDMARKER, INDENT, DEDENT)
 
 
 class CachedFastParser(type):
@@ -197,6 +197,7 @@ class DiffParser(object):
                 p_children = line_stmt.parent.children
                 index = p_children.index(line_stmt)
                 nodes = []
+                # Match all the nodes that are in the wanted range.
                 for node in p_children[index:]:
                     last_line = _get_last_line(node)
 
@@ -224,11 +225,11 @@ class DiffParser(object):
 
                 if nodes:
                     self._copy_count += 1
-                    from_ = nodes[0].start_pos[0]
-                    to = _get_last_line(nodes[-1])
-                    debug.dbg('diff actually copy %s to %s', from_, to)
                     self._update_positions(nodes, line_offset)
                     self._insert_nodes(nodes)
+                    from_ = nodes[0].get_start_pos_of_prefix()[0]
+                    to = _get_last_line(nodes[-1])
+                    debug.dbg('diff actually copy %s to %s', from_, to)
                     self._copied_ranges.append((from_, to))
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we just parse the rest.
@@ -261,13 +262,6 @@ class DiffParser(object):
                 node.start_pos = node.start_pos[0] + line_offset, node.start_pos[1]
             else:
                 self._update_positions(children, line_offset)
-        if line_offset == 0:
-            return
-
-        # Find start node:
-        node = self._parser.get_parsed_node()
-        while True:
-            return node
 
     def _insert_nodes(self, nodes):
         """
@@ -328,9 +322,6 @@ class DiffParser(object):
                         )
                         continue
 
-                # TODO check if the indentation is lower than the last statement
-                # and add a dedent error leaf.
-                # TODO do the same for indent error leafs.
                 p_children += nodes
                 assert new_parent.type in ('suite', 'file_input')
                 break
@@ -379,7 +370,7 @@ class DiffParser(object):
                 if divided_node is not None:
                     new_suite_children.append(divided_node)
                 if len(new_suite_children) < 2:
-                    # A suite only with newline and indent is not valid.
+                    # A suite only with newline is not valid.
                     return None
                 break
         else:
@@ -403,7 +394,7 @@ class DiffParser(object):
         valid state is reached.
         """
         while until_line > self._parsed_until_line:
-            node = self._parse_scope_node(until_line)
+            node = self._try_parse_part(until_line)
             nodes = self._get_children_nodes(node)
             self._insert_nodes(nodes)
             _merge_used_names(
@@ -415,15 +406,21 @@ class DiffParser(object):
         nodes = node.children
         first_element = nodes[0]
         # TODO this looks very strange...
-        #if first_element.type == 'error_leaf' and \
-                #first_element.original_type == 'indent':
+        if first_element.type == 'error_leaf' and \
+                first_element.original_type == 'indent':
+            assert False, str(nodes)
             #assert nodes[-1].type == 'dedent'
             ## This means that the start and end leaf
             #nodes = nodes[1:-1] + [nodes[-1]]
 
         return nodes
 
-    def _parse_scope_node(self, until_line):
+    def _try_parse_part(self, until_line):
+        """
+        Sets up a normal parser that uses a spezialized tokenizer to only parse
+        until a certain position (or a bit longer if the statement hasn't
+        ended.
+        """
         self._parser_count += 1
         # TODO speed up, shouldn't copy the whole list all the time.
         # memoryview?
@@ -442,6 +439,7 @@ class DiffParser(object):
         return self._active_parser.parse(tokenizer=tokenizer)
 
     def _cleanup(self):
+        """Add used names and an end marker."""
         # Add the used names from the old parser to the new one.
         copied_line_numbers = set()
         for l1, l2 in self._copied_ranges:

@@ -298,3 +298,23 @@ def test_issues_with_error_leaves(differ):
     ''')
     differ.initialize(code)
     differ.parse(code2, parsers=2, copies=0, expect_error_leaves=True)
+
+
+def test_unfinished_nodes(differ):
+    code = dedent('''
+    class a():
+        def __init__(self, a):
+            self.a =  a
+        def p(self):
+    a(1)
+    ''')
+    code2 = dedent('''
+    class a():
+        def __init__(self, a):
+            self.a =  a
+        def p(self):
+            self.
+    a(1)
+    ''')
+    differ.initialize(code)
+    differ.parse(code2, parsers=2, copies=1, expect_error_leaves=True)
