@@ -65,6 +65,22 @@ def _flows_finished(grammar, stack):
     return True
 
 
+def _pop_error_nodes(nodes):
+    removed_last = False
+    while nodes and nodes[-1].type in ('error_leaf', 'error_node'):
+        # Error leafs/nodes don't have a defined start/end. Error
+        # nodes might not end with a newline (e.g. if there's an
+        # open `(`). Therefore ignore all of them unless they are
+        # succeeded with valid parser state.
+        nodes.pop()
+        removed_last = True
+
+    if not removed_last and nodes and _is_flow_node(nodes[-1]):
+        # If we just copy flows at the end, they might be continued
+        # after the copy limit (in the new parser).
+        nodes.pop()
+
+
 def suite_or_file_input_is_valid(grammar, stack):
     if not _flows_finished(grammar, stack):
         return False
@@ -95,6 +111,17 @@ def _last_leaf_is_newline(last_leaf):
     return (previous_leaf.type == 'newline' or
             previous_leaf.type == 'error_leaf' and
             previous_leaf.original_type == 'newline')
+
+
+def _update_positions(nodes, line_offset):
+    for node in nodes:
+        try:
+            children = node.children
+        except AttributeError:
+            # Is a leaf
+            node.start_pos = node.start_pos[0] + line_offset, node.start_pos[1]
+        else:
+            _update_positions(children, line_offset)
 
 
 class DiffParser(object):
@@ -196,41 +223,20 @@ class DiffParser(object):
             else:
                 p_children = line_stmt.parent.children
                 index = p_children.index(line_stmt)
-                nodes = []
+                nodes = p_children[index:]
+
                 # Match all the nodes that are in the wanted range.
-                for node in p_children[index:]:
-                    last_line = _get_last_line(node)
-
-                    if last_line > until_line_old:
-                        divided_node = self._divide_node(node, until_line_old)
-                        if divided_node is not None:
-                            nodes.append(divided_node)
-                        break
-                    else:
-                        nodes.append(node)
-
-                removed_last = False
-                while nodes and nodes[-1].type in ('error_leaf', 'error_node'):
-                    # Error leafs/nodes don't have a defined start/end. Error
-                    # nodes might not end with a newline (e.g. if there's an
-                    # open `(`). Therefore ignore all of them unless they are
-                    # succeeded with valid parser state.
-                    nodes.pop()
-                    removed_last = True
-
-                if not removed_last and nodes and _is_flow_node(nodes[-1]):
-                    # If we just copy flows at the end, they might be continued
-                    # after the copy limit (in the new parser).
-                    nodes.pop()
-
+                nodes = self._divide_nodes(nodes, until_line_old)
                 if nodes:
                     self._copy_count += 1
-                    self._update_positions(nodes, line_offset)
+                    _update_positions(nodes, line_offset)
                     self._insert_nodes(nodes)
+
                     from_ = nodes[0].get_start_pos_of_prefix()[0]
                     to = _get_last_line(nodes[-1])
-                    debug.dbg('diff actually copy %s to %s', from_, to)
                     self._copied_ranges.append((from_, to))
+
+                    debug.dbg('diff actually copy %s to %s', from_, to)
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we just parse the rest.
                 # We might not reach the end, because there's a statement
@@ -252,16 +258,6 @@ class DiffParser(object):
             return node
         # Must be on the same line. Otherwise we need to parse that bit.
         return None
-
-    def _update_positions(self, nodes, line_offset):
-        for node in nodes:
-            try:
-                children = node.children
-            except AttributeError:
-                # Is a leaf
-                node.start_pos = node.start_pos[0] + line_offset, node.start_pos[1]
-            else:
-                self._update_positions(children, line_offset)
 
     def _insert_nodes(self, nodes):
         """
@@ -349,11 +345,6 @@ class DiffParser(object):
             node = parent
 
     def _divide_node(self, node, until_line):
-        """
-        Breaks up scopes and returns only the part until the given line.
-
-        Tries to get the parts it can safely get and ignores the rest.
-        """
         if node.type not in ('classdef', 'funcdef'):
             return None
 
@@ -361,32 +352,47 @@ class DiffParser(object):
         if suite.type != 'suite':
             return None
 
+        nodes = self._divide_nodes(suite.children, until_line)
+
+        if len(nodes) < 2:
+            # A suite only with newline is not valid.
+            return None
+
         new_node = copy.copy(node)
         new_suite = copy.copy(suite)
-        for i, child in enumerate(new_suite.children):
-            if _get_last_line(child) > until_line:
-                divided_node = self._divide_node(child, until_line)
-                new_suite_children = new_suite.children[:i]
-                if divided_node is not None:
-                    new_suite_children.append(divided_node)
-                if len(new_suite_children) < 2:
-                    # A suite only with newline is not valid.
-                    return None
-                break
-        else:
-            raise ValueError("Should always exit over break, otherwise we "
-                             "don't even have to call divide_node")
 
         # And now set the correct parents
-        for child in new_suite_children:
+        for child in nodes:
             child.parent = new_suite
-        new_suite.children = new_suite_children
+        new_suite.children = nodes
 
         new_node.children = list(new_node.children)
         new_node.children[-1] = new_suite
         for child in new_node.children:
             child.parent = new_node
         return new_node
+
+    def _divide_nodes(self, nodes, until_line):
+        """
+        Breaks up scopes and returns only the part until the given line.
+
+        Tries to get the parts it can safely get and ignores the rest.
+        """
+        new_nodes = []
+        for i, child in enumerate(nodes):
+            # TODO this check might take a bit of time for large files. We
+            # might want to change this to do more intelligent guessing or
+            # binary search.
+            if _get_last_line(child) > until_line:
+                node = self._divide_node(child, until_line)
+                if node is not None:
+                    new_nodes.append(node)
+                break
+            else:
+                new_nodes.append(child)
+        _pop_error_nodes(new_nodes)
+
+        return new_nodes
 
     def _parse(self, until_line):
         """
