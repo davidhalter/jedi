@@ -65,24 +65,6 @@ def _flows_finished(grammar, stack):
     return True
 
 
-def _pop_error_nodes(nodes):
-    if not nodes:
-        return
-
-    if nodes[-1].type in ('error_leaf', 'error_node'):
-        # Error leafs/nodes don't have a defined start/end. Error
-        # nodes might not end with a newline (e.g. if there's an
-        # open `(`). Therefore ignore all of them unless they are
-        # succeeded with valid parser state.
-        nodes.pop()
-        return
-
-    if _is_flow_node(nodes[-1]):
-        # If we just copy flows at the end, they might be continued
-        # after the copy limit (in the new parser).
-        nodes.pop()
-
-
 def suite_or_file_input_is_valid(grammar, stack):
     if not _flows_finished(grammar, stack):
         return False
@@ -388,35 +370,31 @@ class DiffParser(object):
             last_node = check_nodes[-1]
 
         drop_node_count = 0
-        if _is_flow_node(last_node):
+        if last_node.type in ('error_leaf', 'error_node'):
+            # Error leafs/nodes don't have a defined start/end. Error
+            # nodes might not end with a newline (e.g. if there's an
+            # open `(`). Therefore ignore all of them unless they are
+            # succeeded with valid parser state.
+            n = last_node
+            # In this while loop we try to remove until we find a newline.
+            while True:
+                drop_node_count += 1
+                try:
+                    n = check_nodes[drop_node_count]
+                except IndexError:
+                    break
+                if n.last_leaf().type == 'newline':
+                    break
+        elif _is_flow_node(last_node):
             # TODO the flows might be part of lower scopes... XXX
             # If we just copy flows at the end, they might be continued
             # after the copy limit (in the new parser).
             drop_node_count += 1
-        else:
-            if last_node.type in ('error_leaf', 'error_node'):
-                # Error leafs/nodes don't have a defined start/end. Error
-                # nodes might not end with a newline (e.g. if there's an
-                # open `(`). Therefore ignore all of them unless they are
-                # succeeded with valid parser state.
-                n = last_node
-                while True:
-                    drop_node_count += 1
-                    try:
-                        n = check_nodes[drop_node_count]
-                    except IndexError:
-                        break
-                    if n.last_leaf().type == 'newline':
-                        break
 
         if drop_node_count:
-            if check_nodes is nodes:
-                base_node = nodes[-drop_node_count]
-            else:
-                base_node = nodes[-1]
-            node = self._drop_last_node(base_node, last_node, drop_node_count)
+            node = self._drop_last_node(nodes[-1], last_node, drop_node_count)
             if node is None:
-                nodes.pop()
+                nodes = nodes[:-drop_node_count]
             else:
                 nodes[-1] = node
         return nodes
