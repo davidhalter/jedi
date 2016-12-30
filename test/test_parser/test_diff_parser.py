@@ -313,8 +313,8 @@ def test_unfinished_nodes(differ):
         def __init__(self, a):
             self.a =  a
         def p(self):
-            self.
+            self
     a(1)
     ''')
     differ.initialize(code)
-    differ.parse(code2, parsers=2, copies=1, expect_error_leaves=True)
+    differ.parse(code2, parsers=1, copies=2)

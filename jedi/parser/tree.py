@@ -322,8 +322,6 @@ class Leaf(Base):
         return self
 
     def last_leaf(self):
-        if self.type == 'dedent':
-            return self.get_previous_leaf()
         return self
 
     def get_code(self, normalized=False, include_prefix=True):
