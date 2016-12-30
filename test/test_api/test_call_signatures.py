@@ -50,14 +50,13 @@ class TestCallSignatures(TestCase):
 
     def test_more_complicated(self):
         run = self._run_simple
-        '''
+
         s4 = 'abs(zip(), , set,'
         run(s4, None, column=3)
         run(s4, 'abs', 0, 4)
         run(s4, 'zip', 0, 8)
         run(s4, 'abs', 0, 9)
-        #run(s4, 'abs', 1, 10)
-        '''
+        run(s4, 'abs', None, 10)
 
         s5 = "sorted(1,\nif 2:\n def a():"
         run(s5, 'sorted', 0, 7)
