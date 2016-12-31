@@ -1,23 +1,25 @@
 language: python
-python: 3.5
 sudo: false
-env:
-    - TOXENV=py26
-    - TOXENV=py27
-    - TOXENV=py33
-    - TOXENV=py34
-    - TOXENV=py35
-    - TOXENV=pypy
-    - TOXENV=cov
-    - TOXENV=sith
+python:
+  - 2.6
+  - 2.7
+  - 3.3
+  - 3.4
+  - 3.5
+  - 3.6
+  - pypy
 matrix:
-    allow_failures:
-        - env: TOXENV=cov
-        - env: TOXENV=sith
-        - env: TOXENV=pypy
-python: 3.5
+  allow_failures:
+    - python: pypy
+    - env: TOXENV=cov
+    - env: TOXENV=sith
+  include:
+    - python: 3.5
+      env: TOXENV=cov
+    - python: 3.5
+      env: TOXENV=sith
 install:
-    - pip install --quiet tox
+    - pip install --quiet tox-travis
 script:
     - tox
 after_script:
