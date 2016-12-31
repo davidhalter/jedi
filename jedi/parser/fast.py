@@ -11,7 +11,7 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
-from jedi.parser.tree import Module, search_ancestor, EndMarker
+from jedi.parser.tree import Module, search_ancestor, EndMarker, Flow
 from jedi.parser.utils import parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
@@ -360,6 +360,11 @@ class DiffParser(object):
         if parent == nodes[0].get_parent_scope():
             check_nodes = nodes
         else:
+            n = parent
+            while n is not None:
+                if isinstance(n, Flow):
+                    parent = n.get_parent_scope()
+                n = n.parent
             check_nodes = parent.children
 
         last_node = check_nodes[-1]
@@ -386,7 +391,6 @@ class DiffParser(object):
                 if n.last_leaf().type == 'newline':
                     break
         elif _is_flow_node(last_node):
-            # TODO the flows might be part of lower scopes... XXX
             # If we just copy flows at the end, they might be continued
             # after the copy limit (in the new parser).
             drop_node_count += 1

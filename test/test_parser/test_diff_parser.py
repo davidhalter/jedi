@@ -318,3 +318,15 @@ def test_unfinished_nodes(differ):
     ''')
     differ.initialize(code)
     differ.parse(code2, parsers=1, copies=2)
+
+
+def test_nested_if_and_scopes(differ):
+    code = dedent('''
+    class a():
+        if 1:
+            def b():
+                2
+    ''')
+    code2 = code + '    else:\n        3'
+    differ.initialize(code)
+    differ.parse(code2, parsers=1, copies=0)
