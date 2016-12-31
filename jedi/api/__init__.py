@@ -105,8 +105,12 @@ class Script(object):
 
         if source is None:
             # TODO add a better warning than the traceback!
-            with open(path) as f:
-                source = f.read()
+            try:
+                with open(path) as f:
+                    source = f.read()
+            except UnicodeDecodeError:
+                with open(path, encoding='utf8') as f:
+                    source = f.read()
 
         self._source = common.source_to_unicode(source, encoding)
         self._code_lines = common.splitlines(self._source)
