@@ -98,7 +98,7 @@ class AbstractLazyContext(object):
 class LazyKnownContext(AbstractLazyContext):
     """data is a context."""
     def infer(self):
-        yield self.data
+        return set([self.data])
 
 
 class LazyKnownContexts(AbstractLazyContext):
