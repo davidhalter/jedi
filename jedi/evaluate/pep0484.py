@@ -139,9 +139,13 @@ def py__getitem__(context, typ, node):
     type_name = typ.name.string_name
 
     # hacked in Union and Optional, since it's hard to do nicely in parsed code
-    if type_name == "Union":
+    if type_name in ("Union", '_Union'):
+        # In Python 3.6 it's still called typing.Union but it's an instance
+        # called _Union.
         return unite(context.eval_node(node) for node in nodes)
-    if type_name == "Optional":
+    if type_name in ("Optional", '_Optional'):
+        # Here we have the same issue like in Union. Therefore we also need to
+        # check for the instance typing._Optional (Python 3.6).
         return context.eval_node(nodes[0])
 
     from jedi.evaluate.representation import ModuleContext

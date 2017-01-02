@@ -654,6 +654,7 @@ def py__iter__types(evaluator, types, node=None):
 
 def py__getitem__(evaluator, context, types, trailer):
     from jedi.evaluate.representation import ClassContext
+    from jedi.evaluate.instance import TreeInstance
     result = set()
 
     trailer_op, node, trailer_cl = trailer.children
@@ -663,7 +664,7 @@ def py__getitem__(evaluator, context, types, trailer):
     # special case: PEP0484 typing module, see
     # https://github.com/davidhalter/jedi/issues/663
     for typ in list(types):
-        if isinstance(typ, ClassContext):
+        if isinstance(typ, (ClassContext, TreeInstance)):
             typing_module_types = pep0484.py__getitem__(context, typ, node)
             if typing_module_types is not None:
                 types.remove(typ)
