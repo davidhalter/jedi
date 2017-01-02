@@ -105,7 +105,7 @@ class Script(object):
 
         if source is None:
             # TODO add a better warning than the traceback!
-            with open(path) as f:
+            with open(path, 'rb') as f:
                 source = f.read()
 
         self._source = common.source_to_unicode(source, encoding)
@@ -206,8 +206,8 @@ class Script(object):
 
     def goto_assignments(self, follow_imports=False):
         """
-        Return the first definition found. Imports and statements aren't
-        followed. Multiple objects may be returned, because Python itself is a
+        Return the first definition found, while optionally following imports.
+        Multiple objects may be returned, because Python itself is a
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 

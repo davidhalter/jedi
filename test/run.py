@@ -25,10 +25,10 @@ multiple Python versions.
 .. _tox: http://testrun.org/tox
 
 Integration test cases are located in ``test/completion`` directory
-and each test cases are indicated by the comment ``#?`` (completions /
-definitions), ``#!`` (assignments) and ``#<`` (usages).  There is also
-support for third party libraries. In a normal test run they are not
-being executed, you have to provide a ``--thirdparty`` option.
+and each test case is indicated by either the comment ``#?`` (completions /
+definitions), ``#!`` (assignments), or ``#<`` (usages).
+There is also support for third party libraries. In a normal test run they are
+not being executed, you have to provide a ``--thirdparty`` option.
 
 In addition to standard `-k` and `-m` options in py.test, you can use
 `-T` (`--test-files`) option to specify integration test cases to run.
@@ -64,7 +64,7 @@ happening.
 Auto-Completion
 +++++++++++++++
 
-Uses comments to specify a test in the next line. The comment says, which
+Uses comments to specify a test in the next line. The comment says which
 results are expected. The comment always begins with `#?`. The last row
 symbolizes the cursor.
 
@@ -94,8 +94,8 @@ Tests look like this::
     #! ['abc=1']
     abc
 
-Additionally it is possible to add a number which describes to position of
-the test (otherwise it's just end of line)::
+Additionally it is possible to specify the column by adding a number, which
+describes the position of the test (otherwise it's just the end of line)::
 
     #! 2 ['abc=1']
     abc

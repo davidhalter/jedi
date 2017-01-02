@@ -430,7 +430,7 @@ class Evaluator(object):
         def_ = name.get_definition()
         is_simple_name = name.parent.type not in ('power', 'trailer')
         if is_simple_name:
-            if name.parent.type == 'classdef':
+            if name.parent.type == 'classdef' and name.parent.name == name:
                 return [er.ClassContext(self, name.parent, context)]
             elif name.parent.type == 'funcdef':
                 return [er.FunctionContext(self, context, name.parent)]
