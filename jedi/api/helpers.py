@@ -252,7 +252,10 @@ def get_call_signature_details(module, position):
     leaf = module.get_leaf_for_position(position, include_prefixes=True)
     if leaf.start_pos >= position:
         # Whitespace / comments after the leaf count towards the previous leaf.
-        leaf = leaf.get_previous_leaf()
+        try:
+            leaf = leaf.get_previous_leaf()
+        except IndexError:
+            return None
 
     if leaf == ')':
         if leaf.end_pos == position:

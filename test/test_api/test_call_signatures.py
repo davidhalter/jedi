@@ -285,6 +285,7 @@ def test_no_signature():
     X()(""")
     assert Script(s).call_signatures() == []
     assert len(Script(s, column=2).call_signatures()) == 1
+    assert Script('').call_signatures() == []
 
 
 def test_dict_literal_in_incomplete_call():
