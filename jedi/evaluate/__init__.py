@@ -127,9 +127,15 @@ class Evaluator(object):
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
 
+    def eval_statement(self, context, stmt, seek_name=None):
+        with recursion.execution_allowed(self, stmt) as allowed:
+            if allowed or context.get_root_context() == self.BUILTINS:
+                return self._eval_stmt(context, stmt, seek_name)
+        return set()
+
     #@memoize_default(default=[], evaluator_is_first_arg=True)
     @debug.increase_indent
-    def eval_statement(self, context, stmt, seek_name=None):
+    def _eval_stmt(self, context, stmt, seek_name=None):
         """
         The starting point of the completion. A statement always owns a call
         list, which are the calls, that a statement does. In case multiple
@@ -236,13 +242,11 @@ class Evaluator(object):
                 return result
             else:
                 return self._eval_element_if_evaluated(context, element)
-                return self._eval_element_cached(context, element)
         else:
             if predefined_if_name_dict:
                 return self._eval_element_not_cached(context, element)
             else:
                 return self._eval_element_if_evaluated(context, element)
-                return self._eval_element_cached(context, element)
 
     def _eval_element_if_evaluated(self, context, element):
         """

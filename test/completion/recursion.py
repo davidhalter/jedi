@@ -49,3 +49,30 @@ class FooListComp():
 
 #? int()
 FooListComp().recursive[0]
+
+
+class InstanceAttributeIfs:
+    def b(self):
+        self.a1 = 1
+        self.a2 = 1
+
+    def c(self):
+        self.a2 = ''
+
+    def x(self):
+        self.b()
+
+        if self.a1 == 1:
+            self.a1 = self.a1 + 1
+        if self.a2 == UNDEFINED:
+            self.a2 = self.a2 + 1
+
+        #? int()
+        self.a1
+        #? int() str()
+        self.a2
+
+#? int()
+InstanceAttributeIfs().a1
+#? int() str()
+InstanceAttributeIfs().a2
