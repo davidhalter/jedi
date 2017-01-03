@@ -529,8 +529,8 @@ class Evaluator(object):
                 elif node.type == 'dictorsetmaker':
                     for n in node.children[1:4]:
                         # In dictionaries it can be pretty much anything.
-                        if node.children[1].type == 'comp_for':
-                            return node
+                        if n.type == 'comp_for':
+                            return n
 
         def from_scope_node(scope_node, child_is_funcdef=None, is_nested=True):
             if scope_node == base_node:
@@ -563,6 +563,8 @@ class Evaluator(object):
                 else:
                     return class_context
             elif scope_node.type == 'comp_for':
+                if node.start_pos >= scope_node.children[-1].start_pos:
+                    return parent_context
                 return iterable.CompForContext.from_comp_for(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 

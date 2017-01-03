@@ -273,3 +273,28 @@ _sre
 
 #< 0
 import undefined
+
+# -----------------
+# comprehensions
+# -----------------
+
+#< 0 (0,0), (2,12)
+x = 32
+#< 12 (-2,0), (0,12)
+[x for x in x]
+
+#< 0 (0,0), (2,1), (2,12)
+x = 32
+#< 12 (-2,0), (0,1), (0,12)
+[x for b in x]
+
+
+#< 1 (0,1), (0,7)
+[x for x in something]
+#< 7 (0,1), (0,7)
+[x for x in something]
+
+#< 1 (0,1), (0,10)
+{x:1 for  x in something}
+#< 10 (0,1), (0,10)
+{x:1 for  x in something}

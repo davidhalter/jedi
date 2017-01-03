@@ -17,8 +17,9 @@ tuple(a + 3 for a in [''])
 # Some variables within are not defined
 # ----------
 
+abcdef = None
 #! 12 name-error
-[1 for a in NOT_DEFINFED for b in a if 1]
+[1 for a in NOT_DEFINFED for b in abcdef if 1]
 
 #! 25 name-error
 [1 for a in [1] for b in NOT_DEFINED if 1]
