@@ -158,6 +158,10 @@ class GeneratorMixin(object):
         gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
         return gen_obj.py__class__()
 
+    @property
+    def name(self):
+        return compiled.CompiledContextName(self, 'generator')
+
 
 class Generator(GeneratorMixin, context.Context):
     """Handling of `yield` functions."""

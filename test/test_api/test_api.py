@@ -119,6 +119,11 @@ def test_goto_definitions_on_non_name():
     assert api.Script('import x', column=0).goto_definitions() == []
 
 
+def test_goto_definitions_on_generator():
+    def_, = api.Script('def x(): yield 1\ny=x()\ny').goto_definitions()
+    assert def_.name == 'generator'
+
+
 def test_goto_definition_not_multiple():
     """
     There should be only one Definition result if it leads back to the same
