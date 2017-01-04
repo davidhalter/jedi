@@ -83,16 +83,6 @@ class BaseDefinition(object):
         return self._name.string_name
 
     @property
-    def start_pos(self):
-        """
-        .. deprecated:: 0.7.0
-           Use :attr:`.line` and :attr:`.column` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Use line/column instead.", DeprecationWarning)
-        return self._name.start_pos
-
-    @property
     def type(self):
         """
         The type of the definition.
