@@ -211,7 +211,7 @@ class BaseDefinition(object):
         start_pos = self._name.start_pos
         if start_pos is None:
             return None
-        return start_pos[0]
+        return start_pos[1]
 
     def docstring(self, raw=False, fast=True):
         r"""
@@ -558,8 +558,9 @@ class Definition(BaseDefinition):
         :rtype: list of Definition
         """
         defs = self._name.infer()
-        return _sort_names_by_start_pos(
-            common.unite(defined_names(self._evaluator, d) for d in defs)
+        return sorted(
+            common.unite(defined_names(self._evaluator, d) for d in defs),
+            key=lambda s: s._name.start_pos or (0, 0)
         )
 
     def is_definition(self):

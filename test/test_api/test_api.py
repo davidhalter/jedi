@@ -177,18 +177,18 @@ def test_goto_assignments_follow_imports():
     inspect.isfunction""")
     definition, = api.Script(code, column=0).goto_assignments(follow_imports=True)
     assert 'inspect.py' in definition.module_path
-    assert definition.start_pos == (1, 0)
+    assert (definition.line, definition.column) == (1, 0)
 
     definition, = api.Script(code).goto_assignments(follow_imports=True)
     assert 'inspect.py' in definition.module_path
-    assert definition.start_pos > (1, 0)
+    assert (definition.line, definition.column) > (1, 0)
 
     code = '''def param(p): pass\nparam(1)'''
     start_pos = 1, len('def param(')
 
     script = api.Script(code, *start_pos)
     definition, = script.goto_assignments(follow_imports=True)
-    assert definition.start_pos == start_pos
+    assert (definition.line, definition.column) == start_pos
     assert definition.name == 'p'
     result, = definition.goto_assignments()
     assert result.name == 'p'
@@ -198,4 +198,4 @@ def test_goto_assignments_follow_imports():
     assert result.name == 'int'
 
     definition, = script.goto_assignments()
-    assert definition.start_pos == start_pos
+    assert (definition.line, definition.column) == start_pos

@@ -272,7 +272,7 @@ class TestGotoAssignments(TestCase):
               """
         bar = names(dedent(src), references=True)[-1]
         param = bar.goto_assignments()[0]
-        assert param.start_pos == (1, 13)
+        assert (param.line, param.column) == (1, 13)
         assert param.type == 'param'
 
     def test_class_call(self):

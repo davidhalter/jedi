@@ -48,7 +48,7 @@ def test_nested_resolve():
 
     cls = get_completion('XX', locals())
     func = get_completion('XX.x', locals())
-    assert func.start_pos == (cls.start_pos[0] + 1, 12)
+    assert (func.line, func.column) == (cls.line + 1, 12)
 
 
 def test_side_effect_completion():
