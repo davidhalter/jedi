@@ -9,7 +9,6 @@ import re
 from jedi._compatibility import u
 from jedi import settings
 from jedi import common
-from jedi.parser import tree
 from jedi.parser.utils import load_parser
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
@@ -324,8 +323,14 @@ class BaseDefinition(object):
         if self._name.tree_name is None:
             return self
 
-        defs = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
-        return [Definition(self._evaluator, d) for d in defs]
+        names = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
+        return [Definition(self._evaluator, n) for n in names]
+
+    def _goto_definitions(self):
+        # TODO make this function public.
+        print(self._name.infer(), self._name.parent_context)
+        x = self._name.parent_context
+        return [Definition(self._evaluator, d.name) for d in self._name.infer()]
 
     @property
     @memoize_method

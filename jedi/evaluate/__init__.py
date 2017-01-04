@@ -77,7 +77,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import helpers
-from jedi.evaluate.filters import TreeNameDefinition
+from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 
 
@@ -483,6 +483,8 @@ class Evaluator(object):
             # Only take the parent, because if it's more complicated than just
             # a name it's something you can "goto" again.
             return [TreeNameDefinition(context, name)]
+        elif par.type == 'param' and par.name:
+            return [ParamName(context, name)]
         elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
             return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
