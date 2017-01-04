@@ -200,16 +200,18 @@ class BaseDefinition(object):
     @property
     def line(self):
         """The line where the definition occurs (starting with 1)."""
-        if self.in_builtin_module():
+        start_pos = self._name.start_pos
+        if start_pos is None:
             return None
-        return self._name.start_pos[0]
+        return start_pos[0]
 
     @property
     def column(self):
         """The column where the definition occurs (starting with 0)."""
-        if self.in_builtin_module():
+        start_pos = self._name.start_pos
+        if start_pos is None:
             return None
-        return self._name.start_pos[1]
+        return start_pos[0]
 
     def docstring(self, raw=False, fast=True):
         r"""
@@ -318,8 +320,6 @@ class BaseDefinition(object):
 
     def _goto_definitions(self):
         # TODO make this function public.
-        print(self._name.infer(), self._name.parent_context)
-        x = self._name.parent_context
         return [Definition(self._evaluator, d.name) for d in self._name.infer()]
 
     @property
