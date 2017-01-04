@@ -6,7 +6,6 @@ from jedi.api import classes
 from jedi.api import helpers
 from jedi.evaluate import imports
 from jedi.api import keywords
-from jedi.evaluate import compiled
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi.evaluate.filters import get_global_filters
 
@@ -14,15 +13,15 @@ from jedi.evaluate.filters import get_global_filters
 def get_call_signature_param_names(call_signatures):
     # add named params
     for call_sig in call_signatures:
-        # Allow protected access, because it's a public API.
-        module = call_sig._name.get_root_context()
-        # Compiled modules typically don't allow keyword arguments.
-        if not isinstance(module, compiled.CompiledObject):
-            for p in call_sig.params:
+        for p in call_sig.params:
+            # Allow protected access, because it's a public API.
+            tree_name = p._name.tree_name
+            # Compiled modules typically don't allow keyword arguments.
+            if tree_name is not None:
                 # Allow access on _definition here, because it's a
                 # public API and we don't want to make the internal
                 # Name object public.
-                tree_param = tree.search_ancestor(p._name.tree_name, 'param')
+                tree_param = tree.search_ancestor(tree_name, 'param')
                 if tree_param.stars == 0:  # no *args/**kwargs
                     yield p._name
 
