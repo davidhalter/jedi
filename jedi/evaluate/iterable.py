@@ -190,7 +190,7 @@ class CompForContext(context.TreeContext):
         return self.tree_node
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield ParserTreeFilter(self.evaluator, self, self.tree_node)
+        yield ParserTreeFilter(self.evaluator, self)
 
 
 class Comprehension(AbstractSequence):

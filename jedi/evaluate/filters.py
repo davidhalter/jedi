@@ -165,9 +165,18 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
-    def __init__(self, evaluator, context, parser_scope, until_position=None,
-                 origin_scope=None, ):
-        super(ParserTreeFilter, self).__init__(context, parser_scope)
+    def __init__(self, evaluator, context, node_context=None, until_position=None,
+                 origin_scope=None):
+        """
+        node_context is an option to specify a second context for use cases
+        like the class mro where the parent class of a new name would be the
+        context, but for some type inference it's important to have a local
+        context of the other classes.
+        """
+        if node_context is None:
+            node_context = context
+        super(ParserTreeFilter, self).__init__(context, node_context.tree_node)
+        self._node_context = node_context
         self._origin_scope = origin_scope
         self._until_position = until_position
 
@@ -188,7 +197,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
             check = flow_analysis.reachability_check(
-                self.context, self._parser_scope, name, self._origin_scope
+                self._node_context, self._parser_scope, name, self._origin_scope
             )
             if check is not flow_analysis.UNREACHABLE:
                 yield name
@@ -200,12 +209,12 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 class FunctionExecutionFilter(ParserTreeFilter):
     param_name = ParamName
 
-    def __init__(self, evaluator, context, parser_scope,
+    def __init__(self, evaluator, context, node_context=None,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
             evaluator,
             context,
-            parser_scope,
+            node_context,
             until_position,
             origin_scope
         )

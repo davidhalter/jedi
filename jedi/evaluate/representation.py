@@ -166,16 +166,20 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self.evaluator, self, self.tree_node, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(
+                self.evaluator,
+                context=self,
+                until_position=until_position,
+                origin_scope=origin_scope
+            )
         else:
             for scope in self.py__mro__():
-                print(scope)
                 if isinstance(scope, compiled.CompiledObject):
                     for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
                     yield ClassFilter(
-                        self.evaluator, self, scope.tree_node,
+                        self.evaluator, self, node_context=scope,
                         origin_scope=origin_scope)
 
     def is_class(self):
@@ -225,7 +229,12 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
-            yield ParserTreeFilter(self.evaluator, self, self.tree_node, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(
+                self.evaluator,
+                context=self,
+                until_position=until_position,
+                origin_scope=origin_scope
+            )
         else:
             scope = self.py__class__()
             for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
@@ -372,8 +381,8 @@ class FunctionExecutionContext(Executed):
                                 yield result
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield self.function_execution_filter(self.evaluator, self, self.tree_node,
-                                             until_position,
+        yield self.function_execution_filter(self.evaluator, self,
+                                             until_position=until_position,
                                              origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
@@ -419,9 +428,8 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
             self.evaluator,
-            self,
-            self.tree_node,
-            until_position,
+            context=self,
+            until_position=until_position,
             origin_scope=origin_scope
         )
         yield GlobalNameFilter(self, self.tree_node)

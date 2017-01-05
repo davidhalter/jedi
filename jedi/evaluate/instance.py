@@ -322,7 +322,7 @@ class InstanceClassFilter(filters.ParserTreeFilter):
         super(InstanceClassFilter, self).__init__(
             evaluator=evaluator,
             context=context,
-            parser_scope=class_context.tree_node,
+            node_context=class_context,
             origin_scope=origin_scope
         )
         self._class_context = class_context
