@@ -162,35 +162,35 @@ class NameFinder(object):
         return types
 
 
-def _name_to_types(evaluator, context, name):
+def _name_to_types(evaluator, context, tree_name):
     types = []
-    node = name.get_definition()
+    node = tree_name.get_definition()
     if node.isinstance(tree.ForStmt):
-        types = pep0484.find_type_from_comment_hint_for(context, node, name)
+        types = pep0484.find_type_from_comment_hint_for(context, node, tree_name)
         if types:
             return types
     if node.isinstance(tree.WithStmt):
-        types = pep0484.find_type_from_comment_hint_with(context, node, name)
+        types = pep0484.find_type_from_comment_hint_with(context, node, tree_name)
         if types:
             return types
     if node.type in ('for_stmt', 'comp_for'):
         try:
-            types = context.predefined_names[node][name.value]
+            types = context.predefined_names[node][tree_name.value]
         except KeyError:
             container_types = context.eval_node(node.children[3])
             for_types = iterable.py__iter__types(evaluator, container_types, node.children[3])
-            types = check_tuple_assignments(evaluator, for_types, name)
+            types = check_tuple_assignments(evaluator, for_types, tree_name)
     elif node.isinstance(tree.ExprStmt):
-        types = _remove_statements(evaluator, context, node, name)
+        types = _remove_statements(evaluator, context, node, tree_name)
     elif node.isinstance(tree.WithStmt):
-        types = context.eval_node(node.node_from_name(name))
+        types = context.eval_node(node.node_from_name(tree_name))
     elif isinstance(node, tree.Import):
-        types = imports.infer_import(context, name)
+        types = imports.infer_import(context, tree_name)
     elif node.type in ('funcdef', 'classdef'):
         types = _apply_decorators(evaluator, context, node)
     elif node.type == 'global_stmt':
-        context = evaluator.create_context(context, name)
-        finder = NameFinder(evaluator, context, context, str(name))
+        context = evaluator.create_context(context, tree_name)
+        finder = NameFinder(evaluator, context, context, str(tree_name))
         filters = finder.get_filters(search_global=True)
         # For global_stmt lookups, we only need the first possible scope,
         # which means the function itself.
@@ -200,7 +200,7 @@ def _name_to_types(evaluator, context, name):
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
         # the static analysis report.
-        exceptions = context.eval_node(name.get_previous_sibling().get_previous_sibling())
+        exceptions = context.eval_node(tree_name.get_previous_sibling().get_previous_sibling())
         types = unite(
             evaluator.execute(t, param.ValuesArguments([]))
             for t in exceptions

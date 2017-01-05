@@ -46,7 +46,8 @@ class MixedObject(object):
 
         self._context = module_context.create_context(
             tree_name.parent,
-            node_is_context=True
+            node_is_context=True,
+            node_is_object=True
         )
 
     # We have to overwrite everything that has to do with trailers, name

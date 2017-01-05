@@ -518,7 +518,7 @@ class Evaluator(object):
                 search_global=True, is_goto=True
             )
 
-    def create_context(self, base_context, node, node_is_context=False):
+    def create_context(self, base_context, node, node_is_context=False, node_is_object=False):
         def parent_scope(node):
             while True:
                 node = node.parent
@@ -534,7 +534,7 @@ class Evaluator(object):
                         if n.type == 'comp_for':
                             return n
 
-        def from_scope_node(scope_node, child_is_funcdef=None, is_nested=True):
+        def from_scope_node(scope_node, child_is_funcdef=None, is_nested=True, node_is_object=False):
             if scope_node == base_node:
                 return base_context
 
@@ -554,7 +554,7 @@ class Evaluator(object):
                         parent_context,
                         scope_node
                     )
-                if is_nested:
+                if is_nested and not node_is_object:
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
@@ -580,4 +580,4 @@ class Evaluator(object):
                 # object itself and not its contents.
                 node = node.parent
             scope_node = parent_scope(node)
-        return from_scope_node(scope_node, is_nested=not node_is_context)
+        return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)

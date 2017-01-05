@@ -55,8 +55,8 @@ class Context(object):
         return self.evaluator.find_types(
             self, name_or_str, name_context, position, search_global, is_goto)
 
-    def create_context(self, node, node_is_context=False):
-        return self.evaluator.create_context(self, node, node_is_context)
+    def create_context(self, node, node_is_context=False, node_is_object=False):
+        return self.evaluator.create_context(self, node, node_is_context, node_is_object)
 
     def is_class(self):
         return False
