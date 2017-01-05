@@ -123,9 +123,6 @@ class AnonymousInstanceParamName(ParamName):
 class AbstractFilter(object):
     _until_position = None
 
-    def __init__(self, origin_scope=None):
-        self._origin_scope = origin_scope
-
     def _filter(self, names):
         if self._until_position is not None:
             return [n for n in names if n.start_pos < self._until_position]
@@ -143,8 +140,7 @@ class AbstractFilter(object):
 class AbstractUsedNamesFilter(AbstractFilter):
     name_class = TreeNameDefinition
 
-    def __init__(self, context, parser_scope, origin_scope=None):
-        super(AbstractUsedNamesFilter, self).__init__(origin_scope)
+    def __init__(self, context, parser_scope):
         self._parser_scope = parser_scope
         self._used_names = self._parser_scope.get_root_node().used_names
         self.context = context
@@ -170,7 +166,8 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
     def __init__(self, evaluator, context, parser_scope, until_position=None, origin_scope=None):
-        super(ParserTreeFilter, self).__init__(context, parser_scope, origin_scope)
+        super(ParserTreeFilter, self).__init__(context, parser_scope)
+        self._origin_scope = origin_scope
         self._until_position = until_position
 
     def _filter(self, names):
@@ -227,7 +224,7 @@ class AnonymousInstanceFunctionExecutionFilter(FunctionExecutionFilter):
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):
-    def __init__(self, context, parser_scope, origin_scope=None):
+    def __init__(self, context, parser_scope):
         super(GlobalNameFilter, self).__init__(context, parser_scope)
 
     @to_list
@@ -238,8 +235,7 @@ class GlobalNameFilter(AbstractUsedNamesFilter):
 
 
 class DictFilter(AbstractFilter):
-    def __init__(self, dct, origin_scope=None):
-        super(DictFilter, self).__init__(origin_scope)
+    def __init__(self, dct):
         self._dct = dct
 
     def get(self, name):

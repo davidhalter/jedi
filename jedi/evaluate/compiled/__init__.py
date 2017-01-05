@@ -316,7 +316,6 @@ class CompiledObjectFilter(AbstractFilter):
     name_class = CompiledName
 
     def __init__(self, evaluator, compiled_object, is_instance=False):
-        super(CompiledObjectFilter, self).__init__(None)
         self._evaluator = evaluator
         self._compiled_object = compiled_object
         self._is_instance = is_instance
