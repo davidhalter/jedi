@@ -36,7 +36,7 @@ class MixedObject(object):
         self.obj = compiled_object.obj
         self._tree_name = tree_name
         name_module = tree_name.get_root_node()
-        if parent_context.get_node().get_root_node() != name_module:
+        if parent_context.tree_node.get_root_node() != name_module:
             from jedi.evaluate.representation import ModuleContext
             module_context = ModuleContext(evaluator, name_module)
             name = compiled_object.get_root_context().py__name__()

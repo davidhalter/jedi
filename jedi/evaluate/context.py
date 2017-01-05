@@ -8,13 +8,11 @@ class Context(object):
     To be defined by subclasses.
     """
     predefined_names = {}
+    tree_node = None
 
     def __init__(self, evaluator, parent_context=None):
         self.evaluator = evaluator
         self.parent_context = parent_context
-
-    def get_node(self):
-        return None
 
     def get_parent_flow_context(self):
         return self.parent_context
@@ -75,7 +73,7 @@ class TreeContext(Context):
         self.predefined_names = {}
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.get_node())
+        return '<%s: %s>' % (self.__class__.__name__, self.tree_node)
 
 
 class FlowContext(TreeContext):

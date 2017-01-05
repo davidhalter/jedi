@@ -30,3 +30,16 @@ class Y(X):
 
 #? []
 myfoobar
+
+# -----------------
+# Inheritance
+# -----------------
+
+class Super():
+    enabled = True
+    if enabled:
+        yo_dude = 4
+
+class Sub(Super):
+    #? ['yo_dude']
+    yo_dud

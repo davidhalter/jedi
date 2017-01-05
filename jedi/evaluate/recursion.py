@@ -75,12 +75,12 @@ class ExecutionRecursionDetector(object):
         self.recursion_level -= 1
 
     def push_execution(self, execution):
-        in_par_execution_funcs = execution.funcdef in self.parent_execution_funcs
-        in_execution_funcs = execution.funcdef in self.execution_funcs
+        in_par_execution_funcs = execution.tree_node in self.parent_execution_funcs
+        in_execution_funcs = execution.tree_node in self.execution_funcs
         self.recursion_level += 1
         self.execution_count += 1
-        self.execution_funcs.add(execution.funcdef)
-        self.parent_execution_funcs.append(execution.funcdef)
+        self.execution_funcs.add(execution.tree_node)
+        self.parent_execution_funcs.append(execution.tree_node)
 
         if self.execution_count > settings.max_executions:
             return True

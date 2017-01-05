@@ -105,10 +105,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def __init__(self, evaluator, classdef, parent_context):
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
-        self.classdef = classdef
-
-    def get_node(self):
-        return self.classdef
+        self.tree_node = classdef
 
     @memoize_default(default=())
     def py__mro__(self):
@@ -148,7 +145,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     @memoize_default(default=())
     def py__bases__(self):
-        arglist = self.classdef.get_super_arglist()
+        arglist = self.tree_node.get_super_arglist()
         if arglist:
             args = param.TreeArguments(self.evaluator, self, arglist)
             return [value for key, value in args.unpack() if key is None]
@@ -169,14 +166,17 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
-            yield ParserTreeFilter(self.evaluator, self, self.classdef, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(self.evaluator, self, self.tree_node, until_position, origin_scope=origin_scope)
         else:
             for scope in self.py__mro__():
+                print(scope)
                 if isinstance(scope, compiled.CompiledObject):
                     for filter in scope.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ClassFilter(self.evaluator, self, scope.classdef, origin_scope=origin_scope)
+                    yield ClassFilter(
+                        self.evaluator, self, scope.tree_node,
+                        origin_scope=origin_scope)
 
     def is_class(self):
         return True
@@ -209,7 +209,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     @property
     def name(self):
-        return ContextName(self, self.classdef.name)
+        return ContextName(self, self.tree_node.name)
 
 
 class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
@@ -221,14 +221,11 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def __init__(self, evaluator, parent_context, funcdef):
         """ This should not be called directly """
         super(FunctionContext, self).__init__(evaluator, parent_context)
-        self.base = self.base_func = self.funcdef = funcdef
-
-    def get_node(self):
-        return self.funcdef
+        self.tree_node = funcdef
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
-            yield ParserTreeFilter(self.evaluator, self, self.base, until_position, origin_scope=origin_scope)
+            yield ParserTreeFilter(self.evaluator, self, self.tree_node, until_position, origin_scope=origin_scope)
         else:
             scope = self.py__class__()
             for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
@@ -238,7 +235,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         Created to be used by inheritance.
         """
-        if self.base.is_generator():
+        if self.tree_node.is_generator():
             return set([iterable.Generator(self.evaluator, function_execution)])
         else:
             return function_execution.get_return_values()
@@ -257,7 +254,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def py__class__(self):
         # This differentiation is only necessary for Python2. Python3 does not
         # use a different method class.
-        if isinstance(self.base.get_parent_scope(), tree.Class):
+        if isinstance(self.tree_node.get_parent_scope(), tree.Class):
             name = 'METHOD_CLASS'
         else:
             name = 'FUNCTION_CLASS'
@@ -265,11 +262,11 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     @property
     def name(self):
-        return ContextName(self, self.funcdef.name)
+        return ContextName(self, self.tree_node.name)
 
     def get_param_names(self):
         function_execution = self.get_function_execution()
-        return [ParamName(function_execution, param.name) for param in self.funcdef.params]
+        return [ParamName(function_execution, param.name) for param in self.tree_node.params]
 
 
 class FunctionExecutionContext(Executed):
@@ -286,15 +283,12 @@ class FunctionExecutionContext(Executed):
     def __init__(self, evaluator, parent_context, function_context, var_args):
         super(FunctionExecutionContext, self).__init__(evaluator, parent_context, var_args)
         self.function_context = function_context
-        self.funcdef = function_context.funcdef
-
-    def get_node(self):
-        return self.function_context.funcdef
+        self.tree_node = function_context.tree_node
 
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator
     def get_return_values(self, check_yields=False):
-        funcdef = self.funcdef
+        funcdef = self.tree_node
         if funcdef.type == 'lambda':
             return self.evaluator.eval_element(self, funcdef.children[-1])
 
@@ -335,7 +329,7 @@ class FunctionExecutionContext(Executed):
     def get_yield_values(self):
         for_parents = [(y, tree.search_ancestor(y, ('for_stmt', 'funcdef',
                                                     'while_stmt', 'if_stmt')))
-                       for y in self.funcdef.yields]
+                       for y in self.tree_node.yields]
 
         # Calculate if the yields are placed within the same for loop.
         yields_order = []
@@ -346,13 +340,13 @@ class FunctionExecutionContext(Executed):
             parent = for_stmt.parent
             if parent.type == 'suite':
                 parent = parent.parent
-            if for_stmt.type == 'for_stmt' and parent == self.funcdef \
+            if for_stmt.type == 'for_stmt' and parent == self.tree_node \
                     and for_stmt.defines_one_name():  # Simplicity for now.
                 if for_stmt == last_for_stmt:
                     yields_order[-1][1].append(yield_)
                 else:
                     yields_order.append((for_stmt, [yield_]))
-            elif for_stmt == self.funcdef:
+            elif for_stmt == self.tree_node:
                 yields_order.append((None, [yield_]))
             else:
                 yield self.get_return_values(check_yields=True)
@@ -378,13 +372,13 @@ class FunctionExecutionContext(Executed):
                                 yield result
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield self.function_execution_filter(self.evaluator, self, self.funcdef,
+        yield self.function_execution_filter(self.evaluator, self, self.tree_node,
                                              until_position,
                                              origin_scope=origin_scope)
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
-        return param.get_params(self.evaluator, self.parent_context, self.funcdef, self.var_args)
+        return param.get_params(self.evaluator, self.parent_context, self.tree_node, self.var_args)
 
 
 class AnonymousFunctionExecution(FunctionExecutionContext):
@@ -395,7 +389,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
         # We need to do a dynamic search here.
-        return search_params(self.evaluator, self.parent_context, self.funcdef)
+        return search_params(self.evaluator, self.parent_context, self.tree_node)
 
 
 class ModuleAttributeName(AbstractNameDefinition):
@@ -420,20 +414,17 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def __init__(self, evaluator, module_node):
         super(ModuleContext, self).__init__(evaluator, parent_context=None)
-        self.module_node = module_node
-
-    def get_node(self):
-        return self.module_node
+        self.tree_node = module_node
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
             self.evaluator,
             self,
-            self.module_node,
+            self.tree_node,
             until_position,
             origin_scope=origin_scope
         )
-        yield GlobalNameFilter(self, self.module_node)
+        yield GlobalNameFilter(self, self.tree_node)
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         for star_module in self.star_imports():
@@ -445,7 +436,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     @memoize_default([])
     def star_imports(self):
         modules = []
-        for i in self.module_node.imports:
+        for i in self.tree_node.imports:
             if i.is_star_import():
                 name = i.star_import_name()
                 new = imports.infer_import(self, name)
@@ -464,7 +455,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     @property
     @memoize_default()
     def name(self):
-        return ContextName(self, self.module_node.name)
+        return ContextName(self, self.tree_node.name)
 
     def _get_init_directory(self):
         """
@@ -490,10 +481,10 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         In contrast to Python's __file__ can be None.
         """
-        if self.module_node.path is None:
+        if self.tree_node.path is None:
             return None
 
-        return os.path.abspath(self.module_node.path)
+        return os.path.abspath(self.tree_node.path)
 
     def py__package__(self):
         if self._get_init_directory() is None:
@@ -551,7 +542,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         Lists modules in the directory of this module (if this module is a
         package).
         """
-        path = self.module_node.path
+        path = self.tree_node.path
         names = {}
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
             mods = pkgutil.iter_modules([os.path.dirname(path)])

@@ -367,7 +367,8 @@ class BaseDefinition(object):
         if isinstance(context, er.FunctionExecutionContext):
             # TODO the function context should be a part of the function
             # execution context.
-            context = er.FunctionContext(self._evaluator, context.parent_context, context.funcdef)
+            context = er.FunctionContext(
+                self._evaluator, context.parent_context, context.tree_node)
         return Definition(self._evaluator, context.name)
 
     def __repr__(self):
@@ -690,7 +691,7 @@ class _Help(object):
             if followed:
                 # TODO: Use all of the followed objects as input to Documentation.
                 context = next(iter(followed))
-                return context.get_node()
+                return context.tree_node
         if self._name.tree_name is None:
             return None
         return self._name.tree_name.get_definition()

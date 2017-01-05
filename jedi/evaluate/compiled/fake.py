@@ -190,9 +190,9 @@ def _get_faked(module, obj, name=None):
 
 
 def get_faked(evaluator, module, obj, name=None, parent_context=None):
-    if parent_context and parent_context.classdef is not None:
+    if parent_context and parent_context.tree_node is not None:
         # Try to search in already clearly defined stuff.
-        found = _search_scope(parent_context.classdef, name)
+        found = _search_scope(parent_context.tree_node, name)
         if found is not None:
             return found
         else:

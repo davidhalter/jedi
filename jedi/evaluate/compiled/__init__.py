@@ -56,7 +56,7 @@ class CompiledObject(Context):
         super(CompiledObject, self).__init__(evaluator, parent_context)
         self.obj = obj
         # This attribute will not be set for most classes, except for fakes.
-        self.classdef = faked_class
+        self.tree_node = faked_class
 
     def get_root_node(self):
         # To make things a bit easier with filters we add this method here.

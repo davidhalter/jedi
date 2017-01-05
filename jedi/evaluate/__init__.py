@@ -570,7 +570,7 @@ class Evaluator(object):
                 return iterable.CompForContext.from_comp_for(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 
-        base_node = base_context.get_node()
+        base_node = base_context.tree_node
 
         if node_is_context and node.is_scope():
             scope_node = node

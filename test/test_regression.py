@@ -175,7 +175,7 @@ class TestRegression(TestCase):
             completions = Script('').completions()
             c = get_str_completion(completions)
             str_context, = c._name.infer()
-            n = len(str_context.classdef.children[-1].children)
+            n = len(str_context.tree_node.children[-1].children)
             if i == 0:
                 limit = n
             else:

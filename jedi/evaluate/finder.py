@@ -55,7 +55,7 @@ class NameFinder(object):
         names = self.filter_name(filters)
         if self._found_predefined_types is not None and names:
             check = flow_analysis.reachability_check(
-                self._context, self._context.get_node(), self._name)
+                self._context, self._context.tree_node, self._name)
             if check is flow_analysis.UNREACHABLE:
                 return set()
             return self._found_predefined_types
@@ -148,7 +148,7 @@ class NameFinder(object):
         if not types and isinstance(self._name, tree.Name) and \
                 not isinstance(self._name_context, AbstractInstanceContext):
             flow_scope = self._name
-            base_node = self._name_context.get_node()
+            base_node = self._name_context.tree_node
             if base_node.type == 'comp_for':
                 return types
             while True:

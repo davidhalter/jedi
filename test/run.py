@@ -195,7 +195,7 @@ class IntegrationTestCase(object):
                 user_context = get_user_scope(module_context, (self.line_nr, 0))
                 if user_context.api_type == 'function':
                     user_context = user_context.get_function_execution()
-                element.parent = user_context.get_node()
+                element.parent = user_context.tree_node
                 results = evaluator.eval_element(user_context, element)
                 if not results:
                     raise Exception('Could not resolve %s on line %s'

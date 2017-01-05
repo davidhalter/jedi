@@ -33,7 +33,7 @@ def test_fake_loading():
 
 
 def test_fake_docstr():
-    assert compiled.create(_evaluator(), next).get_node().raw_doc == next.__doc__
+    assert compiled.create(_evaluator(), next).tree_node.raw_doc == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():

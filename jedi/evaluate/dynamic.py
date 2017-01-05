@@ -137,7 +137,7 @@ def _search_function_executions(evaluator, module_context, funcdef):
 
 def _get_possible_nodes(module_context, func_string_name):
     try:
-        names = module_context.module_node.used_names[func_string_name]
+        names = module_context.tree_node.used_names[func_string_name]
     except KeyError:
         return
 
@@ -169,7 +169,7 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
                 yield execution
 
     for value in evaluator.goto_definitions(context, name):
-        value_node = value.get_node()
+        value_node = value.tree_node
         if compare_node == value_node:
             for func_execution in create_func_excs():
                 yield func_execution
@@ -182,7 +182,7 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
             if len(params) != 1:
                 continue
             values = params[0].infer()
-            nodes = [v.get_node() for v in values]
+            nodes = [v.tree_node for v in values]
             if nodes == [compare_node]:
                 # Found a decorator.
                 module_context = context.get_root_context()

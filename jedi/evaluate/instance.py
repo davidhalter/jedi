@@ -82,7 +82,7 @@ class AbstractInstanceContext(Context):
         if include_self_names:
             for cls in self.class_context.py__mro__():
                 if isinstance(cls, compiled.CompiledObject):
-                    if cls.classdef is not None:
+                    if cls.tree_node is not None:
                         # In this case we're talking about a fake object, it
                         # doesn't make sense for normal compiled objects to
                         # search for self variables.
@@ -152,7 +152,7 @@ class AbstractInstanceContext(Context):
         if node.parent.type in ('funcdef', 'classdef'):
             node = node.parent
         scope = node.get_parent_scope()
-        if scope == class_context.classdef:
+        if scope == class_context.tree_node:
             return class_context
         else:
             parent_context = self.create_instance_context(class_context, scope)
@@ -225,7 +225,7 @@ class CompiledInstanceName(compiled.CompiledName):
 
                 yield BoundMethod(
                     result_context.evaluator, self._instance, self.parent_context,
-                    parent_context, result_context.funcdef
+                    parent_context, result_context.tree_node
                 )
             else:
                 if result_context.api_type == 'function':
@@ -268,7 +268,7 @@ class BoundMethod(er.FunctionContext):
 class CompiledBoundMethod(compiled.CompiledObject):
     def __init__(self, func):
         super(CompiledBoundMethod, self).__init__(
-            func.evaluator, func.obj, func.parent_context, func.classdef)
+            func.evaluator, func.obj, func.parent_context, func.tree_node)
 
     def get_param_names(self):
         return list(super(CompiledBoundMethod, self).get_param_names())[1:]
@@ -308,7 +308,7 @@ class LazyInstanceClassName(LazyInstanceName):
 
                 yield BoundMethod(
                     result_context.evaluator, self._instance, self.class_context,
-                    parent_context, result_context.funcdef
+                    parent_context, result_context.tree_node
                 )
             else:
                 for c in er.apply_py__get__(result_context, self._instance):
@@ -322,7 +322,7 @@ class InstanceClassFilter(filters.ParserTreeFilter):
         super(InstanceClassFilter, self).__init__(
             evaluator=evaluator,
             context=context,
-            parser_scope=class_context.classdef,
+            parser_scope=class_context.tree_node,
             origin_scope=origin_scope
         )
         self._class_context = class_context
@@ -431,7 +431,7 @@ class InstanceVarArgs(object):
 class InstanceFunctionExecution(er.FunctionExecutionContext):
     def __init__(self, instance, parent_context, function_context, var_args):
         self.instance = instance
-        var_args = InstanceVarArgs(instance, function_context.funcdef, var_args)
+        var_args = InstanceVarArgs(instance, function_context.tree_node, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
             instance.evaluator, parent_context, function_context, var_args)

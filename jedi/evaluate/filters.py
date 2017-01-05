@@ -165,7 +165,8 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
-    def __init__(self, evaluator, context, parser_scope, until_position=None, origin_scope=None):
+    def __init__(self, evaluator, context, parser_scope, until_position=None,
+                 origin_scope=None, ):
         super(ParserTreeFilter, self).__init__(context, parser_scope)
         self._origin_scope = origin_scope
         self._until_position = until_position

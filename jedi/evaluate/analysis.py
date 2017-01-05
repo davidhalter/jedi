@@ -97,7 +97,7 @@ def _check_for_setattr(instance):
     if not isinstance(module, ModuleContext):
         return False
 
-    node = module.module_node
+    node = module.tree_node
     try:
         stmts = node.used_names['setattr']
     except KeyError:

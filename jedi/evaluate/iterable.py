@@ -184,13 +184,13 @@ class CompForContext(context.TreeContext):
 
     def __init__(self, evaluator, parent_context, comp_for):
         super(CompForContext, self).__init__(evaluator, parent_context)
-        self.node = comp_for
+        self.tree_node = comp_for
 
     def get_node(self):
-        return self.node
+        return self.tree_node
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield ParserTreeFilter(self.evaluator, self, self.node)
+        yield ParserTreeFilter(self.evaluator, self, self.tree_node)
 
 
 class Comprehension(AbstractSequence):
@@ -758,12 +758,12 @@ def _check_array_additions(context, sequence):
     added_types = set()
     for add_name in search_names:
         try:
-            possible_names = module_context.module_node.used_names[add_name]
+            possible_names = module_context.tree_node.used_names[add_name]
         except KeyError:
             continue
         else:
             for name in possible_names:
-                context_node = context.get_node()
+                context_node = context.tree_node
                 if not (context_node.start_pos < name.start_pos < context_node.end_pos):
                     continue
                 trailer = name.parent

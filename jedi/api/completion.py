@@ -51,7 +51,7 @@ def get_user_scope(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
     """
-    user_stmt = module_context.module_node.get_statement_for_position(position)
+    user_stmt = module_context.tree_node.get_statement_for_position(position)
     if user_stmt is None:
         def scan(scope):
             for s in scope.children:
@@ -62,7 +62,7 @@ def get_user_scope(module_context, position):
                         return scan(s)
             return None
 
-        scanned_node = scan(module_context.module_node)
+        scanned_node = scan(module_context.tree_node)
         if scanned_node:
             return module_context.create_context(scanned_node, node_is_context=True)
         return module_context
@@ -74,7 +74,7 @@ class Completion:
     def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
         self._module_context = module
-        self._module_node = module.module_node
+        self._module_node = module.tree_node
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
@@ -197,7 +197,7 @@ class Completion:
         debug.dbg('trailer completion contexts: %s', contexts)
         for context in contexts:
             for filter in context.get_filters(
-                    search_global=False, origin_scope=user_context.get_node()):
+                    search_global=False, origin_scope=user_context.tree_node):
                 completion_names += filter.values()
         return completion_names
 

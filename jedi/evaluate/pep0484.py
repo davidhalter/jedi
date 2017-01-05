@@ -71,7 +71,7 @@ def _fix_forward_reference(context, node):
         else:
             module = node.get_parent_until()
             new_node.move(module.end_pos[0])
-            new_node.parent = context.get_node()
+            new_node.parent = context.tree_node
             return new_node
     else:
         return node
@@ -154,7 +154,7 @@ def py__getitem__(context, typ, node):
     assert len(factories) == 1
     factory = list(factories)[0]
     assert factory
-    function_body_nodes = factory.funcdef.children[4].children
+    function_body_nodes = factory.tree_node.children[4].children
     valid_classnames = set(child.name.value
                            for child in function_body_nodes
                            if isinstance(child, tree.Class))
