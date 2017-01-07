@@ -18,6 +18,7 @@ complexity of the ``Parser`` (there's another parser sitting inside
 import os
 import re
 
+from jedi._compatibility import FileNotFoundError
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
@@ -40,7 +41,7 @@ class ParseError(Exception):
     """
 
 
-def load_grammar(version='3.4'):
+def load_grammar(version='3.6'):
     # For now we only support two different Python syntax versions: The latest
     # Python 3 and Python 2. This may change.
     if version in ('3.2', '3.3'):
@@ -55,7 +56,11 @@ def load_grammar(version='3.4'):
     try:
         return _loaded_grammars[path]
     except KeyError:
-        return _loaded_grammars.setdefault(path, generate_grammar(path))
+        try:
+            return _loaded_grammars.setdefault(path, generate_grammar(path))
+        except FileNotFoundError:
+            # Just load the default if the file does not exist.
+            return load_grammar()
 
 
 class ParserSyntaxError(object):

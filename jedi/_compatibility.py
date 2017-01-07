@@ -233,6 +233,11 @@ try:
 except ImportError:
     from itertools import izip_longest as zip_longest  # Python 2
 
+try:
+    FileNotFoundError = FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 
 def no_unicode_pprint(dct):
     """

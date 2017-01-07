@@ -234,3 +234,12 @@ def test_python3_octal():
         assert module.children[0].children[0].type == 'number'
     else:
         assert module.children[0].type == 'error_node'
+
+
+def test_load_newer_grammar():
+    # This version shouldn't be out for a while, but if we somehow get this it
+    # should just take the latest Python grammar.
+    load_grammar('15.8')
+    # The same is true for very old grammars (even though this is probably not
+    # going to be an issue.
+    load_grammar('1.5')
