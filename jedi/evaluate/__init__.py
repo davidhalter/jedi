@@ -280,13 +280,15 @@ class Evaluator(object):
         elif element.type == 'expr_stmt':
             types = self.eval_statement(context, element)
         elif element.type in ('power', 'atom_expr'):
-            types = self._eval_atom(context, element.children[0])
-            for trailer in element.children[1:]:
-                if trailer == '**':  # has a power operation.
-                    right = self.eval_element(context, element.children[2])
-                    types = set(precedence.calculate(self, context, types, trailer, right))
-                    break
-                types = self.eval_trailer(context, types, trailer)
+            first_child = element.children[0]
+            if not (first_child.type == 'keyword' and first_child.value == 'await'):
+                types = self._eval_atom(context, first_child)
+                for trailer in element.children[1:]:
+                    if trailer == '**':  # has a power operation.
+                        right = self.eval_element(context, element.children[2])
+                        types = set(precedence.calculate(self, context, types, trailer, right))
+                        break
+                    types = self.eval_trailer(context, types, trailer)
         elif element.type in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
             types = set([iterable.SequenceLiteralContext(self, context, element)])
