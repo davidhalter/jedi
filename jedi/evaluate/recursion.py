@@ -27,7 +27,7 @@ def execution_allowed(evaluator, node):
     pushed_nodes = evaluator.recursion_detector.pushed_nodes
 
     if node in pushed_nodes:
-        debug.warning('catched stmt recursion: %s against %s @%s', node,
+        debug.warning('catched stmt recursion: %s @%s', node,
                       node.start_pos)
         yield False
     else:
@@ -36,17 +36,21 @@ def execution_allowed(evaluator, node):
         pushed_nodes.pop()
 
 
-def execution_recursion_decorator(func):
-    def run(execution, **kwargs):
-        detector = execution.evaluator.execution_recursion_detector
-        if detector.push_execution(execution):
-            result = set()
-        else:
-            result = func(execution, **kwargs)
-        detector.pop_execution()
-        return result
-
-    return run
+def execution_recursion_decorator(default=set()):
+    def decorator(func):
+        def wrapper(execution, **kwargs):
+            detector = execution.evaluator.execution_recursion_detector
+            allowed = detector.push_execution(execution)
+            try:
+                if allowed:
+                    result = default
+                else:
+                    result = func(execution, **kwargs)
+            finally:
+                detector.pop_execution()
+            return result
+        return wrapper
+    return decorator
 
 
 class ExecutionRecursionDetector(object):

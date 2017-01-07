@@ -295,7 +295,7 @@ class FunctionExecutionContext(Executed):
         self.tree_node = function_context.tree_node
 
     @memoize_default(default=set())
-    @recursion.execution_recursion_decorator
+    @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
         if funcdef.type == 'lambda':
@@ -321,8 +321,6 @@ class FunctionExecutionContext(Executed):
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
-        if check_yields:
-            return context.get_merged_lazy_context(list(types))
         return types
 
     def _eval_yield(self, yield_expr):
@@ -334,7 +332,7 @@ class FunctionExecutionContext(Executed):
         else:
             yield context.LazyTreeContext(self, node)
 
-    @recursion.execution_recursion_decorator
+    @recursion.execution_recursion_decorator(default=iter([]))
     def get_yield_values(self):
         for_parents = [(y, tree.search_ancestor(y, ('for_stmt', 'funcdef',
                                                     'while_stmt', 'if_stmt')))
@@ -358,7 +356,9 @@ class FunctionExecutionContext(Executed):
             elif for_stmt == self.tree_node:
                 yields_order.append((None, [yield_]))
             else:
-                yield self.get_return_values(check_yields=True)
+                types = self.get_return_values(check_yields=True)
+                if types:
+                    yield context.get_merged_lazy_context(list(types))
                 return
             last_for_stmt = for_stmt
 
@@ -373,6 +373,7 @@ class FunctionExecutionContext(Executed):
                 input_node = for_stmt.get_input_node()
                 for_types = self.eval_node(input_node)
                 ordered = iterable.py__iter__(evaluator, for_types, input_node)
+                ordered = list(ordered)
                 for lazy_context in ordered:
                     dct = {str(for_stmt.children[1]): lazy_context.infer()}
                     with helpers.predefine_names(self, for_stmt, dct):

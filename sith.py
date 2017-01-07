@@ -173,7 +173,7 @@ class TestCase(object):
                 self.show_location(completion.line, completion.column)
 
     def show_errors(self):
-        print(self.traceback)
+        sys.stderr.write(self.traceback)
         print(("Error with running Script(...).{operation}() with\n"
               "\tpath:   {path}\n"
               "\tline:   {line}\n"
