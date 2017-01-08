@@ -12,11 +12,12 @@ try:
 except ImportError:
     pass
 
-is_py3 = sys.version_info[0] >= 3
+is_py3 = sys.version_info.major >= 3
 is_py33 = is_py3 and sys.version_info.minor >= 3
 is_py34 = is_py3 and sys.version_info.minor >= 4
 is_py35 = is_py3 and sys.version_info.minor >= 5
 is_py26 = not is_py3 and sys.version_info[1] < 7
+py_version = int(str(sys.version_info.major) + str(sys.version_info.minor))
 
 
 class DummyFile(object):

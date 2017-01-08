@@ -5,7 +5,7 @@ from textwrap import dedent
 
 import pytest
 
-from jedi._compatibility import u, is_py3
+from jedi._compatibility import u, is_py3, py_version
 from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
 from jedi.parser import ParserWithRecovery, load_grammar, tokenize
 
@@ -129,24 +129,32 @@ def test_ur_literals():
     Decided to parse `u''` literals regardless of Python version. This makes
     probably sense:
 
-    - Python 3.2 doesn't support it and is still supported by Jedi, but might
+    - Python 3+ doesn't support it, but it doesn't hurt
       not be. While this is incorrect, it's just incorrect for one "old" and in
       the future not very important version.
     - All the other Python versions work very well with it.
     """
-    def check(literal):
+    def check(literal, is_literal=True):
         io = StringIO(u(literal))
         tokens = tokenize.generate_tokens(io.readline)
         token_list = list(tokens)
         typ, result_literal, _, _ = token_list[0]
-        assert typ == STRING
-        assert result_literal == literal
+        if is_literal:
+            assert typ == STRING
+            assert result_literal == literal
+        else:
+            assert typ == NAME
 
     check('u""')
-    check('ur""')
-    check('Ur""')
-    check('UR""')
+    check('ur""', is_literal=not is_py3)
+    check('Ur""', is_literal=not is_py3)
+    check('UR""', is_literal=not is_py3)
     check('bR""')
-    # Must be in the right order.
-    with pytest.raises(AssertionError):
-        check('Rb""')
+    # Starting with Python 3.3 this ordering is also possible, but we just
+    # enable it for all versions. It doesn't hurt.
+    check('Rb""')
+    # Starting with Python 3.6 format strings where introduced.
+    check('fr""', is_literal=py_version >= 36)
+    check('rF""', is_literal=py_version >= 36)
+    check('f""', is_literal=py_version >= 36)
+    check('F""', is_literal=py_version >= 36)
