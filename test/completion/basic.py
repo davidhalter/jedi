@@ -20,6 +20,17 @@ str..
 a(0):.
 
 # -----------------
+# _ separators (for older versions than 3.6, a = 1_2_3 will just be 1, the rest
+#               gets ignored.)
+# -----------------
+#? int()
+1_2_3
+#? int()
+123_345_345
+#? int()
+0x3_4
+
+# -----------------
 # if/else/elif
 # -----------------
 

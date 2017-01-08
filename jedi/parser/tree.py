@@ -41,8 +41,25 @@ import abc
 
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
-from jedi.parser import token
 from jedi.parser.utils import underscore_memoization
+
+
+def _safe_literal_eval(value):
+    first_two = value[:2].lower()
+    if first_two[0] == 'f' or first_two in ('fr', 'rf'):
+        # literal_eval is not able to resovle f literals. We have to do that
+        # manually in a later stage
+        return ''
+
+    try:
+        return literal_eval(value)
+    except SyntaxError:
+        # It's possible to create syntax errors with literals like rb'' in
+        # Python 2. This should not be possible and in that case just return an
+        # empty string.
+        # Before Python 3.3 there was a more strict definition in which order
+        # you could define literals.
+        return ''
 
 
 def is_node(node, *symbol_names):
@@ -98,7 +115,7 @@ class DocstringMixin(object):
             # leaves anymore that might be part of the docstring. A
             # docstring can also look like this: ``'foo' 'bar'
             # Returns a literal cleaned version of the ``Token``.
-            cleaned = cleandoc(literal_eval(node.value))
+            cleaned = cleandoc(_safe_literal_eval(node.value))
             # Since we want the docstr output to be always unicode, just
             # force it.
             if is_py3 or isinstance(cleaned, unicode):
@@ -422,7 +439,7 @@ class Literal(LeafWithNewLines):
     __slots__ = ()
 
     def eval(self):
-        return literal_eval(self.value)
+        return _safe_literal_eval(self.value)
 
 
 class Number(Literal):

@@ -270,7 +270,7 @@ class Evaluator(object):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         types = set()
         if isinstance(element, (tree.Name, tree.Literal)) or tree.is_node(element, 'atom'):
-            types = self._eval_atom(context, element)
+            types = self.eval_atom(context, element)
         elif isinstance(element, tree.Keyword):
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
@@ -283,7 +283,7 @@ class Evaluator(object):
         elif element.type in ('power', 'atom_expr'):
             first_child = element.children[0]
             if not (first_child.type == 'keyword' and first_child.value == 'await'):
-                types = self._eval_atom(context, first_child)
+                types = self.eval_atom(context, first_child)
                 for trailer in element.children[1:]:
                     if trailer == '**':  # has a power operation.
                         right = self.eval_element(context, element.children[2])
@@ -306,7 +306,7 @@ class Evaluator(object):
             assert element.value == '...'
             types = set([compiled.create(self, Ellipsis)])
         elif element.type == 'dotted_name':
-            types = self._eval_atom(context, element.children[0])
+            types = self.eval_atom(context, element.children[0])
             for next_name in element.children[2::2]:
                 # TODO add search_global=True?
                 types = unite(
@@ -325,7 +325,7 @@ class Evaluator(object):
         debug.dbg('eval_element result %s', types)
         return types
 
-    def _eval_atom(self, context, atom):
+    def eval_atom(self, context, atom):
         """
         Basically to process ``atom`` nodes. The parser sometimes doesn't
         generate the node (because it has just one child). In that case an atom
@@ -351,9 +351,9 @@ class Evaluator(object):
             c = atom.children
             if c[0].type == 'string':
                 # Will be one string.
-                types = self._eval_atom(context, c[0])
+                types = self.eval_atom(context, c[0])
                 for string in c[1:]:
-                    right = self._eval_atom(context, string)
+                    right = self.eval_atom(context, string)
                     types = precedence.calculate(self, context, types, '+', right)
                 return types
             # Parentheses without commas are not tuples.

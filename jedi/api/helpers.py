@@ -7,6 +7,7 @@ from collections import namedtuple
 from jedi._compatibility import u
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi import parser
+from jedi.parser import tree
 from jedi.parser import tokenize
 from jedi.cache import time_cache
 from jedi import common
@@ -203,6 +204,8 @@ def evaluate_goto_definition(evaluator, context, leaf):
         return context.eval_node(leaf.parent)
     elif parent.type == 'trailer':
         return evaluate_call_of_leaf(context, leaf)
+    elif isinstance(leaf, tree.Literal):
+        return context.evaluator.eval_atom(context, leaf)
     return []
 
 
