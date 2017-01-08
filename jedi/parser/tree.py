@@ -1531,9 +1531,14 @@ class ExprStmt(BaseNode, DocstringMixin):
     __slots__ = ()
 
     def get_defined_names(self):
-        return list(chain.from_iterable(_defined_names(self.children[i])
-                                        for i in range(0, len(self.children) - 2, 2)
-                                        if '=' in self.children[i + 1].value))
+        names = []
+        if self.children[1].type == 'annassign':
+            names = _defined_names(self.children[0])
+        return list(chain.from_iterable(
+            _defined_names(self.children[i])
+            for i in range(0, len(self.children) - 2, 2)
+            if '=' in self.children[i + 1].value)
+        ) + names
 
     def get_rhs(self):
         """Returns the right-hand-side of the equals."""

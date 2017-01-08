@@ -77,6 +77,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import helpers
+from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 
@@ -152,7 +153,7 @@ class Evaluator(object):
             types = finder.check_tuple_assignments(self, types, seek_name)
 
         first_operation = stmt.first_operation()
-        if first_operation not in ('=', None):
+        if first_operation not in ('=', None) and first_operation.type == 'operator':
             # `=` is always the last character in aug assignments -> -1
             operator = copy.copy(first_operation)
             operator.value = operator.value[:-1]
@@ -315,6 +316,10 @@ class Evaluator(object):
             types = types
         elif element.type == 'eval_input':
             types = self._eval_element_not_cached(context, element.children[0])
+        elif element.type == 'annassign':
+            print(element.children[1])
+            types = pep0484._evaluate_for_annotation(context, element.children[1])
+            print('xxx')
         else:
             types = precedence.calculate_children(self, context, element.children)
         debug.dbg('eval_element result %s', types)
