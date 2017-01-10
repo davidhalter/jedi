@@ -1,7 +1,9 @@
 """
-Basically a parser that is faster, because it tries to parse only parts and if
-anything changes, it only reparses the changed parts. But because it's not
-finished (and still not working as I want), I won't document it any further.
+Basically a contains parser that is faster, because it tries to parse only
+parts and if anything changes, it only reparses the changed parts.
+
+It works with a simple diff in the beginning and will try to reuse old parser
+fragments.
 """
 import copy
 import re
