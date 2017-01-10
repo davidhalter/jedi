@@ -15,7 +15,7 @@ import sys
 
 from jedi.parser import load_grammar
 from jedi.parser import tree
-from jedi.parser.fast import FastParser
+from jedi.parser.diff import FastParser
 from jedi.parser.utils import save_parser
 from jedi import debug
 from jedi import settings

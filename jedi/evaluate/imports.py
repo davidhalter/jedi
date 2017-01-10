@@ -20,7 +20,7 @@ from jedi._compatibility import find_module, unicode
 from jedi import debug
 from jedi import settings
 from jedi.common import source_to_unicode, unite
-from jedi.parser import fast
+from jedi.parser.diff import FastParser
 from jedi.parser import tree
 from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
@@ -449,7 +449,7 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
         else:
             return compiled.load_module(evaluator, path)
         p = path
-        p = fast.FastParser(evaluator.grammar, source_to_unicode(source), p)
+        p = FastParser(evaluator.grammar, source_to_unicode(source), p)
         save_parser(path, p)
         return p.module
 

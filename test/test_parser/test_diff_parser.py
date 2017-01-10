@@ -8,7 +8,7 @@ from jedi._compatibility import u
 from jedi.common import splitlines
 from jedi import cache
 from jedi.parser import load_grammar
-from jedi.parser.fast import DiffParser
+from jedi.parser.diff import DiffParser
 from jedi.parser import ParserWithRecovery
 
 
