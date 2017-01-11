@@ -131,6 +131,7 @@ class DiffParser(object):
         self._new_module.path = self._old_module.path
         self._new_module.used_names = {}
         self._prefix = ''
+        self._last_prefix = ''
 
     def update(self, lines_new):
         '''
@@ -253,8 +254,20 @@ class DiffParser(object):
 
         last_leaf = nodes[-1].last_leaf()
         is_endmarker = last_leaf.type == self.endmarker_type
+        self._last_prefix = ''
         if is_endmarker:
             self._parsed_until_line = last_leaf.start_pos[0]
+            try:
+                separation = last_leaf.prefix.rindex('\n')
+            except ValueError:
+                pass
+            else:
+                # Remove the whitespace part of the prefix after a newline.
+                # That is not relevant if parentheses were opened. Always parse
+                # until the end of a line.
+                last_leaf.prefix, self._last_prefix = \
+                    last_leaf.prefix[:separation + 1], last_leaf.prefix[separation + 1:]
+
             if _last_leaf_is_newline(last_leaf):
                 self._parsed_until_line -= 1
         else:
@@ -269,6 +282,7 @@ class DiffParser(object):
         first_leaf = nodes[0].first_leaf()
         first_leaf.prefix = self._prefix + first_leaf.prefix
         self._prefix = ''
+
         if is_endmarker:
             self._prefix = last_leaf.prefix
 
@@ -325,7 +339,7 @@ class DiffParser(object):
             parent = node.parent
             if parent.type in ('suite', 'file_input'):
                 assert node.end_pos[0] <= line
-                assert node.end_pos[1] == 0
+                assert node.end_pos[1] == 0 or '\n' in self._prefix
                 return node
             node = parent
 
@@ -377,25 +391,23 @@ class DiffParser(object):
             last_node = check_nodes[-1]
 
         drop_node_count = 0
-        if last_node.type in ('error_leaf', 'error_node'):
+        if last_node.type in ('error_leaf', 'error_node') or _is_flow_node(last_node):
             # Error leafs/nodes don't have a defined start/end. Error
             # nodes might not end with a newline (e.g. if there's an
             # open `(`). Therefore ignore all of them unless they are
             # succeeded with valid parser state.
+            # If we copy flows at the end, they might be continued
+            # after the copy limit (in the new parser).
             n = last_node
             # In this while loop we try to remove until we find a newline.
             while True:
                 drop_node_count += 1
                 try:
-                    n = check_nodes[drop_node_count]
+                    n = check_nodes[-drop_node_count - 1]
                 except IndexError:
                     break
                 if n.last_leaf().type == 'newline':
                     break
-        elif _is_flow_node(last_node):
-            # If we just copy flows at the end, they might be continued
-            # after the copy limit (in the new parser).
-            drop_node_count += 1
 
         if drop_node_count:
             node = self._drop_last_node(nodes[-1], last_node, drop_node_count)
@@ -529,7 +541,7 @@ class DiffParser(object):
             end_pos[0] += len(lines) - 1
             end_pos[1] = len(lines[-1])
 
-        endmarker = EndMarker('', tuple(end_pos), self._prefix)
+        endmarker = EndMarker('', tuple(end_pos), self._prefix + self._last_prefix)
         endmarker.parent = self._new_module
         self._new_children.append(endmarker)
 

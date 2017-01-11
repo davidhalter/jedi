@@ -330,3 +330,57 @@ def test_nested_if_and_scopes(differ):
     code2 = code + '    else:\n        3'
     differ.initialize(code)
     differ.parse(code2, parsers=1, copies=0)
+
+
+def test_word_before_def(differ):
+    code1 = 'blub def x():\n'
+    code2 = code1 + ' s'
+    differ.initialize(code1)
+    differ.parse(code2, parsers=1, copies=0, expect_error_leaves=True)
+
+
+def test_classes_with_error_leaves(differ):
+    code1 = dedent('''
+        class X():
+            def x(self):
+                blablabla
+                assert 3
+                self.
+
+        class Y():
+            pass
+    ''')
+    code2 = dedent('''
+        class X():
+            def x(self):
+                blablabla
+                assert 3
+                str(
+
+        class Y():
+            pass
+    ''')
+
+    differ.initialize(code1)
+    differ.parse(code2, parsers=2, copies=1, expect_error_leaves=True)
+
+
+def test_totally_wrong_whitespace(differ):
+    code1 = '''
+        class X():
+            raise n
+
+        class Y():
+            pass
+    '''
+    code2 = '''
+        class X():
+            raise n
+            str(
+
+        class Y():
+            pass
+    '''
+
+    differ.initialize(code1)
+    differ.parse(code2, parsers=3, copies=1, expect_error_leaves=True)
