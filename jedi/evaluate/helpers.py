@@ -5,53 +5,25 @@ from contextlib import contextmanager
 from jedi.parser import tree
 
 
-def deep_ast_copy(obj, parent=None, new_elements=None):
+def deep_ast_copy(obj):
     """
-    Much, much faster than copy.deepcopy, but just for Parser elements (Doesn't
-    copy parents).
+    Much, much faster than copy.deepcopy, but just for parser tree nodes.
     """
+    # If it's already in the cache, just return it.
+    new_obj = copy.copy(obj)
 
-    if new_elements is None:
-        new_elements = {}
+    # Copy children
+    new_children = []
+    for child in obj.children:
+        if isinstance(child, tree.Leaf):
+            new_child = copy.copy(child)
+            new_child.parent = new_obj
+        else:
+            new_child = deep_ast_copy(child)
+            new_child.parent = new_obj
+        new_children.append(new_child)
+    new_obj.children = new_children
 
-    def copy_node(obj):
-        # If it's already in the cache, just return it.
-        try:
-            return new_elements[obj]
-        except KeyError:
-            # Actually copy and set attributes.
-            new_obj = copy.copy(obj)
-            new_elements[obj] = new_obj
-
-        # Copy children
-        new_children = []
-        for child in obj.children:
-            typ = child.type
-            if typ in ('newline', 'operator', 'keyword', 'number', 'string',
-                       'endmarker', 'error_leaf'):
-                # At the moment we're not actually copying those primitive
-                # elements, because there's really no need to. The parents are
-                # obviously wrong, but that's not an issue.
-                new_child = child
-            elif typ == 'name':
-                new_elements[child] = new_child = copy.copy(child)
-                new_child.parent = new_obj
-            else:  # Is a BaseNode.
-                new_child = copy_node(child)
-                new_child.parent = new_obj
-            new_children.append(new_child)
-        new_obj.children = new_children
-
-        return new_obj
-
-    if isinstance(obj, tree.BaseNode):
-        new_obj = copy_node(obj)
-    else:
-        # Special case of a Name object.
-        new_elements[obj] = new_obj = copy.copy(obj)
-
-    if parent is not None:
-        new_obj.parent = parent
     return new_obj
 
 
