@@ -8,6 +8,7 @@ fragments.
 import copy
 import re
 import difflib
+from collections import namedtuple
 
 from jedi._compatibility import use_metaclass
 from jedi import settings
@@ -93,7 +94,10 @@ def _last_leaf_is_newline(last_leaf):
         return True
     if last_leaf.prefix:
         return False
-    previous_leaf = last_leaf.get_previous_leaf()
+    try:
+        previous_leaf = last_leaf.get_previous_leaf()
+    except IndexError:
+        return False
     return (previous_leaf.type == 'newline' or
             previous_leaf.type == 'error_leaf' and
             previous_leaf.original_type == 'newline')
@@ -132,6 +136,8 @@ class DiffParser(object):
         self._new_module.used_names = {}
         self._prefix = ''
         self._last_prefix = ''
+
+        self._nodes_stack = _NodesStack(self._old_module)
 
     def update(self, lines_new):
         '''
@@ -184,7 +190,10 @@ class DiffParser(object):
             else:
                 assert operation == 'delete'
 
-        # Cleanup (setting endmarker, used_names)
+        # With this action all change will finally be applied and we have a
+        # changed module.
+        self._nodes_stack.close()
+
         self._cleanup()
         if self._added_newline:
             self._parser.module = self._parser._parsed = self._new_module
@@ -216,6 +225,7 @@ class DiffParser(object):
                 if nodes:
                     self._copy_count += 1
                     _update_positions(nodes, line_offset)
+
                     self._insert_nodes(nodes)
 
                     from_ = nodes[0].get_start_pos_of_prefix()[0]
@@ -249,9 +259,6 @@ class DiffParser(object):
         """
         Returns the scope that a node is a part of.
         """
-        # Needs to be done before resetting the parsed
-        before_node = self._get_before_insertion_node()
-
         last_leaf = nodes[-1].last_leaf()
         is_endmarker = last_leaf.type == self.endmarker_type
         self._last_prefix = ''
@@ -280,6 +287,7 @@ class DiffParser(object):
         debug.dbg('set parsed_until %s', self._parsed_until_line)
 
         first_leaf = nodes[0].first_leaf()
+        before_node = self._get_before_insertion_node()
         first_leaf.prefix = self._prefix + first_leaf.prefix
         self._prefix = ''
 
@@ -288,7 +296,9 @@ class DiffParser(object):
 
             nodes = nodes[:-1]
             if not nodes:
-                return self._new_module
+                return
+
+        #self._nodes_stack.add_nodes(nodes, self._parsed_until_line + 1)
 
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
@@ -324,10 +334,10 @@ class DiffParser(object):
         # Reset the parents
         for node in nodes:
             node.parent = new_parent
-        if new_parent.type == 'suite':
-            return new_parent.get_parent_scope()
+        #if new_parent.type == 'suite':
+        #    return new_parent.get_parent_scope()
 
-        return new_parent
+        #return new_parent
 
     def _get_before_insertion_node(self):
         if not self._new_children:
@@ -592,3 +602,71 @@ class DiffParser(object):
                     continue
 
             yield TokenInfo(typ, string, start_pos, prefix)
+
+
+class _NodesStackNode(namedtuple('_NodesStackNode', 'tree_node children parent')):
+    def close(self):
+        self.tree_node.children = self.children
+        # Reset the parents
+        for node in self.children:
+            node.parent = self.tree_node
+
+
+class _NodesStack(object):
+    def __init__(self, module):
+        # Top of stack
+        self._tos = _NodesStackNode(module, [], None)
+
+    def _get_insertion_node(self, indentation, insertion_line):
+        # find insertion node
+        node = self._tos
+        while True:
+            tree_node = node.tree_node
+            if tree_node.type == 'suite':
+                # A suite starts with NEWLINE, ...
+                node_indentation = tree_node.children[1].start_pos[1]
+
+                if indentation >= node_indentation:  # Not a Dedent
+                    # We might be at the most outer layer: modules. We
+                    # don't want to depend on the first statement
+                    # having the right indentation.
+                    return node
+
+                break
+            elif tree_node.type == 'file_input':
+                return node
+
+            node.close()
+            node = node.parent
+
+    def add_nodes(self, nodes, insertion_line):
+        """insertion_line is simply here for debugging."""
+        if not nodes:
+            return
+
+        assert nodes[0].type != 'newline'
+        last_node = self._tos.tree_node
+        assert last_node.end_pos[0] <= insertion_line
+
+        indentation = nodes[0].start_pos[1]
+        node = self._get_insertion_node(indentation, insertion_line)
+        assert node.tree_node.type in ('suite', 'file_input')
+        node.children += nodes
+        self._update_tos(nodes[-1])
+
+    def _update_tos(self, tree_node):
+        if tree_node.type in ('suite', 'file_input'):
+            self._tos = _NodesStackNode(tree_node, list(tree_node.children), self._tos)
+
+        try:
+            last_child = tree_node.children[-1]
+        except AttributeError:
+            pass
+        else:
+            self._update_tos(last_child)
+
+    def close(self):
+        node = self._tos
+        while node is not None:
+            node.close()
+            node = node.parent

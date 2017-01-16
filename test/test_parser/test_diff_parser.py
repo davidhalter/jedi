@@ -384,3 +384,28 @@ def test_totally_wrong_whitespace(differ):
 
     differ.initialize(code1)
     differ.parse(code2, parsers=3, copies=1, expect_error_leaves=True)
+
+
+def test_node_insertion(differ):
+    code1 = dedent('''
+        class X():
+            def y(self):
+                a = 1
+                b = 2
+
+                c = 3
+                d = 4
+    ''')
+    code2 = dedent('''
+        class X():
+            def y(self):
+                a = 1
+                b = 2
+                str
+
+                c = 3
+                d = 4
+    ''')
+
+    differ.initialize(code1)
+    differ.parse(code2, parsers=1, copies=2)
