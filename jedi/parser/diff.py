@@ -114,8 +114,6 @@ def _update_positions(nodes, line_offset):
 
 
 class DiffParser(object):
-    endmarker_type = 'endmarker'
-
     def __init__(self, parser):
         self._parser = parser
         self._grammar = self._parser._grammar
@@ -130,7 +128,6 @@ class DiffParser(object):
 
         self._old_children = self._old_module.children
         self._new_used_names = {}
-        self._prefix = ''
         self._last_prefix = ''
 
         self._nodes_stack = _NodesStack(self._old_module)
@@ -193,7 +190,7 @@ class DiffParser(object):
         self._cleanup()
         if self._added_newline:
             self._parser.remove_last_newline()
-            self._parsed_until_line -= 1
+            self._nodes_stack.parsed_until_line -= 1
 
         self._parser.source = ''.join(lines_new)
 
@@ -205,13 +202,13 @@ class DiffParser(object):
         copied_nodes = [None]
 
         while until_line_new > self._parsed_until_line:
-            parsed_until_line_old = self._parsed_until_line - line_offset
+            parsed_until_line_old = self._nodes_stack.parsed_until_line - line_offset
             line_stmt = self._get_old_line_stmt(parsed_until_line_old + 1)
             if line_stmt is None:
                 # Parse 1 line at least. We don't need more, because we just
                 # want to get into a state where the old parser has statements
                 # again that can be copied (e.g. not lines within parentheses).
-                self._parse(self._parsed_until_line + 1)
+                self._parse(self._nodes_stack.parsed_until_line + 1)
             elif not copied_nodes:
                 # We have copied as much as possible (but definitely not too
                 # much). Therefore we just parse the rest.
@@ -219,18 +216,16 @@ class DiffParser(object):
                 # that is not finished.
                 self._parse(until_line_new)
             else:
+                p_children = line_stmt.parent.children
+                index = p_children.index(line_stmt)
+
                 copied_nodes = self._nodes_stack.copy_nodes(
-                    line_stmt.parent.children,
+                    p_children[index:],
                     until_line_old,
                     line_offset
                 )
-                #p_children = line_stmt.parent.children
-                #index = p_children.index(line_stmt)
-
                 # Match all the nodes that are in the wanted range.
-                #nodes = self._divide_nodes(p_children[index:], until_line_old)
                 if copied_nodes:
-                    #self._insert_nodes(nodes)
                     self._copy_count += 1
 
                     from_ = copied_nodes[0].get_start_pos_of_prefix()[0]
@@ -259,6 +254,8 @@ class DiffParser(object):
         """
         Returns the scope that a node is a part of.
         """
+        assert False
+
         last_leaf = nodes[-1].last_leaf()
         is_endmarker = last_leaf.type == self.endmarker_type
         self._last_prefix = ''
@@ -298,9 +295,10 @@ class DiffParser(object):
             if not nodes:
                 return
 
-        self._nodes_stack.add_nodes(nodes, self._parsed_until_line + 1)
+        self._nodes_stack.add_nodes(nodes)
         return
 
+        '''
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
             self._new_children += nodes
@@ -339,12 +337,13 @@ class DiffParser(object):
         #    return new_parent.get_parent_scope()
 
         #return new_parent
+'''
 
     def _get_before_insertion_node(self):
         if self._nodes_stack.is_empty():
             return None
 
-        line = self._parsed_until_line + 1
+        line = self._nodes_stack.parsed_until_line + 1
         node = self._new_module.last_leaf()
         while True:
             parent = node.parent
@@ -354,136 +353,16 @@ class DiffParser(object):
                 return node
             node = parent
 
-    def _divide_node(self, node, until_line):
-        if node.type not in ('classdef', 'funcdef'):
-            return None
-
-        suite = node.children[-1]
-        if suite.type != 'suite':
-            return None
-
-        nodes = self._divide_nodes(suite.children, until_line)
-
-        if len(nodes) < 2:
-            # A suite only with newline is not valid.
-            return None
-
-        new_node = copy.copy(node)
-        new_suite = copy.copy(suite)
-
-        # And now set the correct parents
-        for child in nodes:
-            child.parent = new_suite
-        new_suite.children = nodes
-
-        new_node.children = list(new_node.children)
-        new_node.children[-1] = new_suite
-        for child in new_node.children:
-            child.parent = new_node
-        return new_node
-
-    def _copy_divided_nodes(self, nodes):
-        parent = nodes[-1].last_leaf().get_parent_scope()
-        if parent == nodes[0].get_parent_scope():
-            check_nodes = nodes
-        else:
-            n = parent
-            while n is not None:
-                if isinstance(n, Flow):
-                    parent = n.get_parent_scope()
-                n = n.parent
-            check_nodes = parent.children
-
-        last_node = check_nodes[-1]
-
-        if last_node.type == 'suite':
-            parent = last_node
-            check_nodes = parent.children
-            last_node = check_nodes[-1]
-
-        drop_node_count = 0
-        if last_node.type in ('error_leaf', 'error_node') or _is_flow_node(last_node):
-            # Error leafs/nodes don't have a defined start/end. Error
-            # nodes might not end with a newline (e.g. if there's an
-            # open `(`). Therefore ignore all of them unless they are
-            # succeeded with valid parser state.
-            # If we copy flows at the end, they might be continued
-            # after the copy limit (in the new parser).
-            n = last_node
-            # In this while loop we try to remove until we find a newline.
-            while True:
-                drop_node_count += 1
-                try:
-                    n = check_nodes[-drop_node_count - 1]
-                except IndexError:
-                    break
-                if n.last_leaf().type == 'newline':
-                    break
-
-        if drop_node_count:
-            node = self._drop_last_node(nodes[-1], last_node, drop_node_count)
-            if node is None:
-                nodes = nodes[:-drop_node_count]
-            else:
-                nodes[-1] = node
-        return nodes
-
-    def _drop_last_node(self, base_node, last_node_to_drop, drop_node_count):
-        if base_node == last_node_to_drop:
-            return None
-
-        last_node = base_node.children[-1]
-        child = self._drop_last_node(last_node, last_node_to_drop, drop_node_count)
-
-        base_node = copy.copy(base_node)
-        if child is None:
-            if base_node.type == 'suite' and len(base_node.children) <= 1 + drop_node_count:
-                return None
-            if base_node.type in ('classdef', 'funcdef'):
-                return None
-
-            base_node.children = base_node.children[:-drop_node_count]
-        else:
-            base_node.children = list(base_node.children)
-            base_node.children[-1] = child
-            child.parent = base_node
-
-        for c in base_node.children:
-            c.parent = base_node
-        return base_node
-
-    def _divide_nodes(self, nodes, until_line):
-        """
-        Breaks up scopes and returns only the part until the given line.
-
-        Tries to get the parts it can safely get and ignores the rest.
-        """
-        new_nodes = []
-        for i, child in enumerate(nodes):
-            # TODO this check might take a bit of time for large files. We
-            # might want to change this to do more intelligent guessing or
-            # binary search.
-            if _get_last_line(child) > until_line:
-                node = self._divide_node(child, until_line)
-                if node is not None:
-                    new_nodes.append(node)
-                break
-            else:
-                new_nodes.append(child)
-
-        if new_nodes:
-            return self._copy_divided_nodes(new_nodes)
-        return new_nodes
-
     def _parse(self, until_line):
         """
         Parses at least until the given line, but might just parse more until a
         valid state is reached.
         """
-        while until_line > self._parsed_until_line:
+        while until_line > self._nodes_stack.parsed_until_line:
             node = self._try_parse_part(until_line)
             nodes = self._get_children_nodes(node)
-            self._insert_nodes(nodes)
+            #self._insert_nodes(nodes)
+            self._nodes_stack.add_nodes(nodes)
             _merge_used_names(
                 self._new_used_names,
                 node.used_names
@@ -496,9 +375,6 @@ class DiffParser(object):
         if first_element.type == 'error_leaf' and \
                 first_element.original_type == 'indent':
             assert False, str(nodes)
-            #assert nodes[-1].type == 'dedent'
-            ## This means that the start and end leaf
-            #nodes = nodes[1:-1] + [nodes[-1]]
 
         return nodes
 
@@ -511,12 +387,13 @@ class DiffParser(object):
         self._parser_count += 1
         # TODO speed up, shouldn't copy the whole list all the time.
         # memoryview?
-        lines_after = self._parser_lines_new[self._parsed_until_line:]
-        #print('parse_content', self._parsed_until_line, lines_after, until_line)
+        parsed_until_line = self._nodes_stack.parsed_until_line
+        lines_after = self._parser_lines_new[parsed_until_line:]
+        #print('parse_content', parsed_until_line, lines_after, until_line)
         tokenizer = self._diff_tokenize(
             lines_after,
             until_line,
-            line_offset=self._parsed_until_line
+            line_offset=parsed_until_line
         )
         self._active_parser = ParserWithRecovery(
             self._grammar,
@@ -537,24 +414,6 @@ class DiffParser(object):
             for name in names:
                 if name.start_pos[0] in copied_line_numbers:
                     new_used_names.setdefault(key, []).append(name)
-
-        # Add an endmarker.
-        try:
-            last_leaf = self._old_module.last_leaf()
-            end_pos = list(last_leaf.end_pos)
-        except IndexError:
-            end_pos = [1, 0]
-        lines = splitlines(self._prefix)
-        assert len(lines) > 0
-        if len(lines) == 1:
-            end_pos[1] += len(lines[0])
-        else:
-            end_pos[0] += len(lines) - 1
-            end_pos[1] = len(lines[-1])
-
-        endmarker = EndMarker('', tuple(end_pos), self._prefix + self._last_prefix)
-        endmarker.parent = self._old_module
-        self._old_module.children.append(endmarker)
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True
@@ -608,12 +467,12 @@ class DiffParser(object):
 class _NodesStackNode(object):
     def __init__(self, tree_node, parent):
         self.tree_node = tree_node
-        self.children_groups = []
+        self._children_groups = []
         self.parent = parent
 
     def close(self):
         children = []
-        for children_part, line_offset in self.children_groups:
+        for children_part, line_offset in self._children_groups:
             _update_positions(children_part, line_offset)
             children += children_part
         self.tree_node.children = children
@@ -622,26 +481,33 @@ class _NodesStackNode(object):
             node.parent = self.tree_node
 
     def add(self, children, line_offset=0):
-        self.children_groups.append((children, line_offset))
+        self._children_groups.append((children, line_offset))
+
+    def update_last_children_group(self, new_children):
+        self._children_groups[-1] = (new_children, self._children_groups[-1][1])
 
 
 
 class _NodesStack(object):
+    endmarker_type = 'endmarker'
+
     def __init__(self, module):
         # Top of stack
         self._tos = self._base_node = _NodesStackNode(module, None)
+        self._module = module
+        self.prefix = ''
+        self.parsed_until_line = 0
 
     def is_empty(self):
         return not self._base_node.children
 
-    def _get_insertion_node(self, indentation_node, insertion_line):
+    def _get_insertion_node(self, indentation_node):
         indentation = indentation_node.start_pos[1]
 
         # find insertion node
         node = self._tos
         while True:
             tree_node = node.tree_node
-            print(tree_node.type, node)
             if tree_node.type == 'suite':
                 # A suite starts with NEWLINE, ...
                 node_indentation = tree_node.children[1].start_pos[1]
@@ -658,29 +524,77 @@ class _NodesStack(object):
             node.close()
             node = node.parent
 
-    def add_nodes(self, tree_nodes, insertion_line):
-        """insertion_line is simply here for debugging."""
+    def add_nodes(self, tree_nodes):
+        tree_nodes = self._cleanup_nodes(tree_nodes)
         if not tree_nodes:
             return
 
         assert tree_nodes[0].type != 'newline'
         last_node = self._tos.tree_node
-        assert last_node.end_pos[0] <= insertion_line
+        assert last_node.end_pos[0] <= self.parsed_until_line
 
-        node = self._get_insertion_node(tree_nodes[0], insertion_line)
+        node = self._get_insertion_node(tree_nodes[0])
         assert node.tree_node.type in ('suite', 'file_input')
         node.add(tree_nodes)
         self._update_tos(tree_nodes[-1])
 
+    def _cleanup_nodes(self, tree_nodes):
+        """
+        Helps cleaning up the tree nodes that get inserted:
+
+        1. Sets parsed_until_line
+        2. Removes the endmarker
+        """
+        last_leaf = tree_nodes[-1].last_leaf()
+        is_endmarker = last_leaf.type == self.endmarker_type
+        self._last_prefix = ''
+        if is_endmarker:
+            self.parsed_until_line = last_leaf.start_pos[0]
+            try:
+                separation = last_leaf.prefix.rindex('\n')
+            except ValueError:
+                pass
+            else:
+                # Remove the whitespace part of the prefix after a newline.
+                # That is not relevant if parentheses were opened. Always parse
+                # until the end of a line.
+                last_leaf.prefix, self._last_prefix = \
+                    last_leaf.prefix[:separation + 1], last_leaf.prefix[separation + 1:]
+
+            if _last_leaf_is_newline(last_leaf):
+                self.parsed_until_line -= 1
+        else:
+            if last_leaf.type == 'newline':
+                # Newlines end on the next line, which means that they would cover
+                # the next line. That line is not fully parsed at this point.
+                self.parsed_until_line = last_leaf.start_pos[0]
+            else:
+                self.parsed_until_line = last_leaf.end_pos[0]
+        debug.dbg('set parsed_until %s', self.parsed_until_line)
+
+        first_leaf = tree_nodes[0].first_leaf()
+        #before_node = self._get_before_insertion_node()
+        first_leaf.prefix = self.prefix + first_leaf.prefix
+        self.prefix = ''
+
+        if is_endmarker:
+            self.prefix = last_leaf.prefix
+
+            tree_nodes = tree_nodes[:-1]
+
+        return tree_nodes
+
     def copy_nodes(self, tree_nodes, until_line, line_offset):
         """
-        Copies nodes from the old parser tree.
+        Copies tree nodes from the old parser tree.
 
-        Returns the number of nodes that were copied.
+        Returns the number of tree nodes that were copied.
         """
-        tos = self._get_insertion_node(tree_nodes[0], until_line)
+        tos = self._get_insertion_node(tree_nodes[0])
 
         new_nodes, self._tos = self._xyz(tos, tos.tree_node.children, until_line, line_offset)
+        if new_nodes:
+            self._tos.update_last_children_group(self._cleanup_nodes(new_nodes))
         return new_nodes
 
     def _xyz(self, tos, tree_nodes, until_line, line_offset):
@@ -765,21 +679,6 @@ class _NodesStack(object):
         if new_nodes:
             return self._copy_divided_nodes(new_nodes)
         return new_nodes
-    def _divide_node(self, node, until_line):
-
-        new_node = copy.copy(node)
-        new_suite = copy.copy(suite)
-
-        # And now set the correct parents
-        for child in nodes:
-            child.parent = new_suite
-        new_suite.children = nodes
-
-        new_node.children = list(new_node.children)
-        new_node.children[-1] = new_suite
-        for child in new_node.children:
-            child.parent = new_node
-        return new_node
     def _copy_divided_nodes(self, nodes):
         parent = nodes[-1].last_leaf().get_parent_scope()
         if parent == nodes[0].get_parent_scope():
@@ -847,3 +746,21 @@ class _NodesStack(object):
         while node is not None:
             node.close()
             node = node.parent
+
+        # Add an endmarker.
+        try:
+            last_leaf = self._module.last_leaf()
+            end_pos = list(last_leaf.end_pos)
+        except IndexError:
+            end_pos = [1, 0]
+        lines = splitlines(self.prefix)
+        assert len(lines) > 0
+        if len(lines) == 1:
+            end_pos[1] += len(lines[0])
+        else:
+            end_pos[0] += len(lines) - 1
+            end_pos[1] = len(lines[-1])
+
+        endmarker = EndMarker('', tuple(end_pos), self.prefix + self._last_prefix)
+        endmarker.parent = self._module
+        self._module.children.append(endmarker)
