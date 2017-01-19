@@ -250,59 +250,9 @@ class DiffParser(object):
         # Must be on the same line. Otherwise we need to parse that bit.
         return None
 
-    def _insert_nodes(self, nodes):
-        """
-        Returns the scope that a node is a part of.
-        """
-        assert False
-
-        last_leaf = nodes[-1].last_leaf()
-        is_endmarker = last_leaf.type == self.endmarker_type
-        self._last_prefix = ''
-        if is_endmarker:
-            self._parsed_until_line = last_leaf.start_pos[0]
-            try:
-                separation = last_leaf.prefix.rindex('\n')
-            except ValueError:
-                pass
-            else:
-                # Remove the whitespace part of the prefix after a newline.
-                # That is not relevant if parentheses were opened. Always parse
-                # until the end of a line.
-                last_leaf.prefix, self._last_prefix = \
-                    last_leaf.prefix[:separation + 1], last_leaf.prefix[separation + 1:]
-
-            if _last_leaf_is_newline(last_leaf):
-                self._parsed_until_line -= 1
-        else:
-            if last_leaf.type == 'newline':
-                # Newlines end on the next line, which means that they would cover
-                # the next line. That line is not fully parsed at this point.
-                self._parsed_until_line = last_leaf.start_pos[0]
-            else:
-                self._parsed_until_line = last_leaf.end_pos[0]
-        debug.dbg('set parsed_until %s', self._parsed_until_line)
-
-        first_leaf = nodes[0].first_leaf()
-        #before_node = self._get_before_insertion_node()
-        first_leaf.prefix = self._prefix + first_leaf.prefix
-        self._prefix = ''
-
-        if is_endmarker:
-            self._prefix = last_leaf.prefix
-
-            nodes = nodes[:-1]
-            if not nodes:
-                return
-
-        self._nodes_stack.add_nodes(nodes)
-        return
-
         '''
         # Now the preparations are done. We are inserting the nodes.
         if before_node is None:  # Everything is empty.
-            self._new_children += nodes
-            new_parent = self._new_module
         else:
             assert nodes[0].type != 'newline'
             line_indentation = nodes[0].start_pos[1]
@@ -645,40 +595,6 @@ class _NodesStack(object):
         tos.add(new_nodes)
         return new_nodes, new_tos
 
-    def _divide_nodes(self, nodes, until_line):
-        """
-        Breaks up scopes and returns only the part until the given line.
-
-        Tries to get the parts it can safely get and ignores the rest.
-        """
-        new_nodes = []
-        for i, child in enumerate(nodes):
-            # TODO this check might take a bit of time for large files. We
-            # might want to change this to do more intelligent guessing or
-            # binary search.
-            if _get_last_line(child) > until_line:
-                if node.type not in ('classdef', 'funcdef'):
-                    break
-
-                suite = node.children[-1]
-                if suite.type != 'suite':
-                    break
-                suite_nodes = self._divide_nodes(suite.children, until_line)
-
-                if len(suite_nodes) < 2:
-                    # A suite only with newline is not valid.
-                    break
-
-                node = self._divide_node(child, until_line)
-                if node is not None:
-                    new_nodes.append(node)
-                break
-            else:
-                new_nodes.append(child)
-
-        if new_nodes:
-            return self._copy_divided_nodes(new_nodes)
-        return new_nodes
     def _copy_divided_nodes(self, nodes):
         parent = nodes[-1].last_leaf().get_parent_scope()
         if parent == nodes[0].get_parent_scope():
@@ -693,39 +609,9 @@ class _NodesStack(object):
 
         last_node = check_nodes[-1]
 
-        if last_node.type == 'suite':
-            parent = last_node
-            check_nodes = parent.children
-            last_node = check_nodes[-1]
-
-        #------
-        drop_node_count = 0
-        if last_node.type in ('error_leaf', 'error_node') or _is_flow_node(last_node):
-            # Error leafs/nodes don't have a defined start/end. Error
-            # nodes might not end with a newline (e.g. if there's an
-            # open `(`). Therefore ignore all of them unless they are
-            # succeeded with valid parser state.
-            # If we copy flows at the end, they might be continued
-            # after the copy limit (in the new parser).
-            n = last_node
-            # In this while loop we try to remove until we find a newline.
-            while True:
-                drop_node_count += 1
-                try:
-                    n = check_nodes[-drop_node_count - 1]
-                except IndexError:
-                    break
-                if n.last_leaf().type == 'newline':
-                    break
         #------
 
-        if drop_node_count:
-            node = self._drop_last_node(nodes[-1], last_node, drop_node_count)
-            if node is None:
-                nodes = nodes[:-drop_node_count]
-            else:
-                nodes[-1] = node
-        return nodes
+        #------
 
 
 
