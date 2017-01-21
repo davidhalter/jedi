@@ -187,7 +187,7 @@ class DiffParser(object):
 
         self._parser.source = ''.join(lines_new)
 
-        assert self._module.end_pos[0] == line_length
+        #assert self._module.end_pos[0] == line_length
 
         return self._module
 
@@ -434,6 +434,8 @@ class _NodesStackNode(object):
     def add(self, children, line_offset=0):
         group = self.ChildrenGroup(children, line_offset)
         self.children_groups.append(group)
+        if len(self.children_groups) > 42:
+            raise NotImplementedError
 
     def update_last_children_group(self, new_children):
         group = self.ChildrenGroup(new_children, self.children_groups[-1].line_offset)
@@ -452,10 +454,15 @@ class _NodesStackNode(object):
         while element is not None:
             line += element.children_groups[-1].line_offset
             element = element.parent
+        print(last_leaf.end_pos, line, self.children_groups)
 
         # Newlines end on the next line, which means that they would cover
         # the next line. That line is not fully parsed at this point.
-        if last_leaf.type == 'newline':
+        if last_leaf.type == 'error_leaf':
+            typ = last_leaf.original_type
+        else:
+            typ = last_leaf.type
+        if typ == 'newline':
             line -= 1
         return line
 
@@ -475,6 +482,7 @@ class _NodesStack(object):
 
     @property
     def parsed_until_line(self):
+        print('until_line', self._tos.get_last_line() , self.prefix.count('\n'))
         return self._tos.get_last_line() + self.prefix.count('\n')
 
     def _get_insertion_node(self, indentation_node):
@@ -497,8 +505,12 @@ class _NodesStack(object):
             elif tree_node.type == 'file_input':
                 return node
 
-            node.close()
-            node = node.parent
+            node = self._close_tos()
+
+    def _close_tos(self):
+        self._tos.close()
+        self._tos = self._tos.parent
+        return self._tos
 
     def add_parsed_nodes(self, tree_nodes):
         tree_nodes = self._remove_endmarker(tree_nodes)
@@ -531,11 +543,7 @@ class _NodesStack(object):
                 last_leaf.prefix, self._last_prefix = \
                     last_leaf.prefix[:separation + 1], last_leaf.prefix[separation + 1:]
 
-        print([t.get_code() for t  in tree_nodes], is_endmarker,
-        repr(last_leaf.prefix))
-
         first_leaf = tree_nodes[0].first_leaf()
-        #before_node = self._get_before_insertion_node()
         first_leaf.prefix = self.prefix + first_leaf.prefix
         self.prefix = ''
 
@@ -555,41 +563,48 @@ class _NodesStack(object):
         tos = self._get_insertion_node(tree_nodes[0])
 
         new_nodes, self._tos = self._copy_nodes(tos, tree_nodes, until_line, line_offset)
-        if new_nodes:
-            new_nodes = self._remove_endmarker(new_nodes, line_offset)
-            tos.update_last_children_group(new_nodes)
         return new_nodes
 
-    def _copy_nodes(self, tos, tree_nodes, until_line, line_offset=0):
+    def _copy_nodes(self, tos, nodes, until_line, line_offset=0):
         new_nodes = []
+
         new_tos = tos
-        for tree_node in tree_nodes:
+        for node in nodes:
+            if node.type == 'endmarker':
+                # Endmarkers just distort all the checks below. Remove them.
+                break
+
             # TODO this check might take a bit of time for large files. We
             # might want to change this to do more intelligent guessing or
             # binary search.
-            if _get_last_line(tree_node) > until_line:
-                if tree_node.type not in ('classdef', 'funcdef'):
-                    break
+            if _get_last_line(node) > until_line:
+                # We can split up functions and classes later.
+                if node.type in ('classdef', 'funcdef') and node.children[-1].type == 'suite':
+                    new_nodes.append(node)
+                break
 
-                suite = tree_node.children[-1]
-                if suite.type != 'suite':
-                    break
+            new_nodes.append(node)
+
+        if not new_nodes:
+            return [], tos
+
+        last_node = new_nodes[-1]
+        if last_node.type in ('classdef', 'funcdef'):
+            suite = last_node.children[-1]
+            if suite.type == 'suite':
                 # Don't need to pass until_line here, it's already done by the
                 # parent.
                 suite_tos = _NodesStackNode(suite)
                 suite_nodes, recursive_tos = self._copy_nodes(suite_tos, suite.children, until_line)
-
+                print(suite_nodes)
                 if len(suite_nodes) < 2:
                     # A suite only with newline is not valid.
-                    break
+                    new_nodes.pop()
+                else:
+                    suite_tos.parent = tos
+                    new_tos = recursive_tos
 
-                suite_tos.parent = new_tos
-                new_tos = recursive_tos
-
-            new_nodes.append(tree_node)
-
-        print('x', new_nodes)
-        if new_nodes and (new_nodes[-1].type in ('error_leaf', 'error_node') or
+        elif (new_nodes[-1].type in ('error_leaf', 'error_node') or
                           _is_flow_node(new_nodes[-1])):
             # Error leafs/nodes don't have a defined start/end. Error
             # nodes might not end with a newline (e.g. if there's an
@@ -604,11 +619,10 @@ class _NodesStack(object):
                 new_nodes.pop()
                 if last_node.last_leaf().type == 'newline':
                     break
+        print('x', new_nodes)
 
-        if not new_nodes:
-            return [], tos
-
-        tos.add(new_nodes, line_offset)
+        if new_nodes:
+            tos.add(new_nodes, line_offset)
         return new_nodes, new_tos
 
     def _copy_divided_nodes(self, nodes):
@@ -640,10 +654,8 @@ class _NodesStack(object):
             self._update_tos(tree_node.children[-1])
 
     def close(self):
-        node = self._tos
-        while node is not None:
-            node.close()
-            node = node.parent
+        while self._tos is not None:
+            self._close_tos()
 
         # Add an endmarker.
         try:
