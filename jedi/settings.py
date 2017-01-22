@@ -16,7 +16,6 @@ Completion output
 ~~~~~~~~~~~~~~~~~
 
 .. autodata:: case_insensitive_completion
-.. autodata:: add_dot_after_module
 .. autodata:: add_bracket_after_function
 .. autodata:: no_completion_duplicates
 
