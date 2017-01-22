@@ -45,14 +45,19 @@ def _merge_used_names(base_dict, other_dict):
 
 def _get_last_line(node_or_leaf):
     last_leaf = node_or_leaf.last_leaf()
-    if last_leaf.type == 'error_leaf':
-        typ = last_leaf.original_type
-    else:
-        typ = last_leaf.type
-    if typ == 'newline':
+    if _ends_with_newline(last_leaf):
         return last_leaf.start_pos[0]
     else:
         return last_leaf.end_pos[0]
+
+
+def _ends_with_newline(leaf, suffix=''):
+    if leaf.type == 'error_leaf':
+        typ = leaf.original_type
+    else:
+        typ = leaf.type
+
+    return typ == 'newline' or suffix.endswith('\n')
 
 
 def _flows_finished(grammar, stack):
@@ -172,10 +177,15 @@ class DiffParser(object):
 
         self._parser.source = ''.join(lines_new)
 
-        if self._module.end_pos[0] == line_length:
-            # In case of failure.
-            assert self._module.get_code() == self._parser.source
-            assert self._module.end_pos[0] == line_length
+        # Good for debugging.
+        last_pos = self._module.end_pos[0]
+        if last_pos != line_length:
+            current_lines = splitlines(self._module.get_code(), keepends=True)
+            diff = difflib.unified_diff(current_lines, lines_new)
+            raise Exception(
+                "There's an issue (%s != %s) with the diff parser. Please report:\n%s"
+                % (last_pos, line_length, ''.join(diff))
+            )
 
         return self._module
 
@@ -214,7 +224,6 @@ class DiffParser(object):
                     self._copied_ranges.append((from_, to))
 
                     debug.dbg('diff actually copy %s to %s', from_, to)
-                break
 
     def _get_old_line_stmt(self, old_line):
         leaf = self._module.get_leaf_for_position((old_line, 0), include_prefixes=True)
@@ -407,12 +416,7 @@ class _NodesStackNode(object):
 
         # Newlines end on the next line, which means that they would cover
         # the next line. That line is not fully parsed at this point.
-        if last_leaf.type == 'error_leaf':
-            typ = last_leaf.original_type
-        else:
-            typ = last_leaf.type
-
-        if typ == 'newline' or suffix.endswith('\n'):
+        if _ends_with_newline(last_leaf, suffix):
             line -= 1
         line += suffix.count('\n')
         return line

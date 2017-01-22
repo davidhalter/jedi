@@ -411,3 +411,8 @@ def test_add_to_end():
     complete(a + b)
 
 
+def test_whitespace_at_end(differ):
+    code = dedent('str\n\n')
+
+    differ.initialize(code)
+    differ.parse(code, parsers=1, copies=1)
