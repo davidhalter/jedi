@@ -5,7 +5,6 @@ parts and if anything changes, it only reparses the changed parts.
 It works with a simple diff in the beginning and will try to reuse old parser
 fragments.
 """
-import copy
 import re
 import difflib
 from collections import namedtuple
@@ -14,7 +13,7 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
-from jedi.parser.tree import Module, search_ancestor, EndMarker, Flow
+from jedi.parser.tree import EndMarker
 from jedi.parser.utils import parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
@@ -89,22 +88,6 @@ def _is_flow_node(node):
     return value in ('if', 'for', 'while', 'try')
 
 
-'''
-def _last_leaf_is_newline(last_leaf):
-    if last_leaf.prefix.endswith('\n'):
-        return True
-    if last_leaf.prefix:
-        return False
-    try:
-        previous_leaf = last_leaf.get_previous_leaf()
-    except IndexError:
-        return False
-    return (previous_leaf.type == 'newline' or
-            previous_leaf.type == 'error_leaf' and
-            previous_leaf.original_type == 'newline')
-
-
-'''
 def _update_positions(nodes, line_offset):
     for node in nodes:
         try:
@@ -247,45 +230,6 @@ class DiffParser(object):
             return node
         # Must be on the same line. Otherwise we need to parse that bit.
         return None
-
-        '''
-        # Now the preparations are done. We are inserting the nodes.
-        if before_node is None:  # Everything is empty.
-        else:
-            assert nodes[0].type != 'newline'
-            line_indentation = nodes[0].start_pos[1]
-            new_parent = before_node.parent
-            while True:
-                p_children = new_parent.children
-                if new_parent.type == 'suite':
-                    # A suite starts with NEWLINE, ...
-                    indentation = p_children[1].start_pos[1]
-                else:
-                    indentation = p_children[0].start_pos[1]
-
-                if line_indentation < indentation:  # Dedent
-                    # We might be at the most outer layer: modules. We
-                    # don't want to depend on the first statement
-                    # having the right indentation.
-                    if new_parent.parent is not None:
-                        new_parent = search_ancestor(
-                            new_parent,
-                            ('suite', 'file_input')
-                        )
-                        continue
-
-                p_children += nodes
-                assert new_parent.type in ('suite', 'file_input')
-                break
-
-        # Reset the parents
-        for node in nodes:
-            node.parent = new_parent
-        #if new_parent.type == 'suite':
-        #    return new_parent.get_parent_scope()
-
-        #return new_parent
-'''
 
     def _get_before_insertion_node(self):
         if self._nodes_stack.is_empty():
@@ -629,26 +573,6 @@ class _NodesStack(object):
         if new_nodes:
             tos.add(new_nodes, line_offset)
         return new_nodes, new_tos
-
-    def _copy_divided_nodes(self, nodes):
-        parent = nodes[-1].last_leaf().get_parent_scope()
-        if parent == nodes[0].get_parent_scope():
-            check_nodes = nodes
-        else:
-            n = parent
-            while n is not None:
-                if isinstance(n, Flow):
-                    parent = n.get_parent_scope()
-                n = n.parent
-            check_nodes = parent.children
-
-        last_node = check_nodes[-1]
-
-        #------
-
-        #------
-
-
 
     def _update_tos(self, tree_node):
         if tree_node.type in ('suite', 'file_input'):
