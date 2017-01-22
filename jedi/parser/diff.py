@@ -89,6 +89,7 @@ def _is_flow_node(node):
     return value in ('if', 'for', 'while', 'try')
 
 
+'''
 def _last_leaf_is_newline(last_leaf):
     if last_leaf.prefix.endswith('\n'):
         return True
@@ -103,6 +104,7 @@ def _last_leaf_is_newline(last_leaf):
             previous_leaf.original_type == 'newline')
 
 
+'''
 def _update_positions(nodes, line_offset):
     for node in nodes:
         try:
@@ -187,7 +189,10 @@ class DiffParser(object):
 
         self._parser.source = ''.join(lines_new)
 
-        #assert self._module.end_pos[0] == line_length
+        if self._module.end_pos[0] == line_length:
+            # In case of failure.
+            assert self._module.get_code() == self._parser.source
+            assert self._module.end_pos[0] == line_length
 
         return self._module
 
@@ -222,7 +227,7 @@ class DiffParser(object):
                     self._copy_count += 1
 
                     from_ = copied_nodes[0].get_start_pos_of_prefix()[0]
-                    to = _get_last_line(copied_nodes[-1])
+                    to = self._nodes_stack.parsed_until_line
                     self._copied_ranges.append((from_, to))
 
                     debug.dbg('diff actually copy %s to %s', from_, to)
@@ -308,7 +313,7 @@ class DiffParser(object):
 
             debug.dbg(
                 'parse part %s to %s',
-                self._nodes_stack.parsed_until_line,
+                self._nodes_stack.parsed_until_line + 1,
                 node.end_pos[0] - 1
             )
             self._nodes_stack.add_parsed_nodes(nodes)
@@ -441,7 +446,7 @@ class _NodesStackNode(object):
         group = self.ChildrenGroup(new_children, self.children_groups[-1].line_offset)
         self.children_groups[-1] = group
 
-    def get_last_line(self):
+    def get_last_line(self, suffix):
         if not self.children_groups:
             assert not self.parent
             return 0
@@ -454,7 +459,6 @@ class _NodesStackNode(object):
         while element is not None:
             line += element.children_groups[-1].line_offset
             element = element.parent
-        print(last_leaf.end_pos, line, self.children_groups)
 
         # Newlines end on the next line, which means that they would cover
         # the next line. That line is not fully parsed at this point.
@@ -462,8 +466,10 @@ class _NodesStackNode(object):
             typ = last_leaf.original_type
         else:
             typ = last_leaf.type
-        if typ == 'newline':
+
+        if typ == 'newline' or suffix.endswith('\n'):
             line -= 1
+        line += suffix.count('\n')
         return line
 
 
@@ -481,9 +487,8 @@ class _NodesStack(object):
         return not self._base_node.children
 
     @property
-    def parsed_until_line(self):
-        print('until_line', self._tos.get_last_line() , self.prefix.count('\n'))
-        return self._tos.get_last_line() + self.prefix.count('\n')
+    def parsed_until_line(self, ):
+        return self._tos.get_last_line(self.prefix)
 
     def _get_insertion_node(self, indentation_node):
         indentation = indentation_node.start_pos[1]
@@ -574,6 +579,8 @@ class _NodesStack(object):
                 # Endmarkers just distort all the checks below. Remove them.
                 break
 
+            if node.start_pos[0] > until_line:
+                break
             # TODO this check might take a bit of time for large files. We
             # might want to change this to do more intelligent guessing or
             # binary search.
@@ -596,7 +603,6 @@ class _NodesStack(object):
                 # parent.
                 suite_tos = _NodesStackNode(suite)
                 suite_nodes, recursive_tos = self._copy_nodes(suite_tos, suite.children, until_line)
-                print(suite_nodes)
                 if len(suite_nodes) < 2:
                     # A suite only with newline is not valid.
                     new_nodes.pop()
@@ -616,10 +622,9 @@ class _NodesStack(object):
             new_nodes.pop()
             while new_nodes:
                 last_node = new_nodes[-1]
-                new_nodes.pop()
                 if last_node.last_leaf().type == 'newline':
                     break
-        print('x', new_nodes)
+                new_nodes.pop()
 
         if new_nodes:
             tos.add(new_nodes, line_offset)
