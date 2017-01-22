@@ -95,6 +95,11 @@ def _all_string_prefixes():
     _valid_string_prefixes = ['b', 'r', 'u', 'br']
     if py_version >= 36:
         _valid_string_prefixes += ['f', 'fr']
+    if py_version <= 27:
+        # TODO this is actually not 100% valid. ur is valid in Python 2.7,
+        # while ru is not.
+        _valid_string_prefixes.append('ur')
+
     # if we add binary f-strings, add: ['fb', 'fbr']
     result = set([''])
     for prefix in _valid_string_prefixes:
