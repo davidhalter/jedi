@@ -25,7 +25,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.parser import ParserWithRecovery, load_grammar
 from jedi.parser.tree import search_ancestor
 from jedi.common import indent_block
-from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence, AlreadyEvaluated
+from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 
 
 DOCSTRING_PARAM_PATTERNS = [

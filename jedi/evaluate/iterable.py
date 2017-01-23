@@ -25,7 +25,6 @@ from jedi import settings
 from jedi import common
 from jedi.common import unite, safe_property
 from jedi._compatibility import unicode, zip_longest, is_py3
-from jedi.parser import tree
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
@@ -523,22 +522,6 @@ class FakeSequence(_FakeArray):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._lazy_context_list)
-
-
-class AlreadyEvaluated(frozenset):
-    """A simple container to add already evaluated objects to an array."""
-    def __init__(self, *args, **kwargs):
-        raise DeprecationWarning
-
-    def get_code(self, normalized=False):
-        # For debugging purposes.
-        return str(self)
-
-
-class MergedNodes(frozenset):
-    def __init__(self, *args, **kwargs):
-        raise DeprecationWarning
-    pass
 
 
 class FakeDict(_FakeArray):
