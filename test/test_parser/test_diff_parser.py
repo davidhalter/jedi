@@ -206,6 +206,11 @@ def test_open_parentheses(differ):
     differ.parse('isinstance()\n' + func, parsers=2, copies=1)
 
 
+def test_open_parentheses_at_end(differ):
+    code = "a['"
+    differ.initialize(code)
+    differ.parse(code, parsers=1, expect_error_leaves=True)
+
 def test_backslash(differ):
     src = dedent(r"""
     a = 1\

@@ -232,14 +232,11 @@ class Parser(object):
                         # If there's a statement that fails to be parsed, there
                         # will be no previous leaf. So just ignore it.
                         break
-                elif newline.value != '\n':
-                    # TODO REMOVE, error recovery was simplified.
-                    # This may happen if error correction strikes and removes
-                    # a whole statement including '\n'.
-                    break
                 else:
-                    newline.value = ''
+                    assert newline.value.endswith('\n')
+                    newline.value = newline.value[:-1]
                     endmarker.start_pos = newline.start_pos
+                    break
 
 
 class ParserWithRecovery(Parser):

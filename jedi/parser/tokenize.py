@@ -259,8 +259,7 @@ def generate_tokens(readline, use_exact_op_types=False):
                     # line is an error token.
                     txt = line[pos:]
                 yield TokenInfo(ERRORTOKEN, txt, (lnum, pos), prefix)
-                pos += 1
-                continue
+                break
 
             prefix = additional_prefix + pseudomatch.group(1)
             additional_prefix = ''

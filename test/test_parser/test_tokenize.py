@@ -3,8 +3,6 @@
 from io import StringIO
 from textwrap import dedent
 
-import pytest
-
 from jedi._compatibility import u, is_py3, py_version
 from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
 from jedi.parser import ParserWithRecovery, load_grammar, tokenize
@@ -12,6 +10,9 @@ from jedi.parser import ParserWithRecovery, load_grammar, tokenize
 
 from ..helpers import unittest
 
+def _get_token_list(string):
+    io = StringIO(u(string))
+    return list(tokenize.generate_tokens(io.readline))
 
 class TokenTest(unittest.TestCase):
     def test_end_pos_one_line(self):
@@ -135,9 +136,7 @@ def test_ur_literals():
     - All the other Python versions work very well with it.
     """
     def check(literal, is_literal=True):
-        io = StringIO(u(literal))
-        tokens = tokenize.generate_tokens(io.readline)
-        token_list = list(tokens)
+        token_list = _get_token_list(literal)
         typ, result_literal, _, _ = token_list[0]
         if is_literal:
             assert typ == STRING
@@ -158,3 +157,19 @@ def test_ur_literals():
     check('rF""', is_literal=py_version >= 36)
     check('f""', is_literal=py_version >= 36)
     check('F""', is_literal=py_version >= 36)
+
+
+def test_error_literal():
+    error_token, endmarker = _get_token_list('"\n')
+    assert error_token.type == tokenize.ERRORTOKEN
+    assert endmarker.prefix == ''
+    assert error_token.string == '"\n'
+    assert endmarker.type == tokenize.ENDMARKER
+    assert endmarker.prefix == ''
+
+    bracket, error_token, endmarker = _get_token_list('( """')
+    assert error_token.type == tokenize.ERRORTOKEN
+    assert error_token.prefix == ' '
+    assert error_token.string == '"""'
+    assert endmarker.type == tokenize.ENDMARKER
+    assert endmarker.prefix == ''
