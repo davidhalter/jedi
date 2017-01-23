@@ -100,7 +100,7 @@ def _paths_from_assignment(module_context, expr_stmt):
     for assignee, operator in zip(expr_stmt.children[::2], expr_stmt.children[1::2]):
         try:
             assert operator in ['=', '+=']
-            assert tree.is_node(assignee, 'power', 'atom_expr') and \
+            assert assignee.type in ('power', 'atom_expr') and \
                 len(assignee.children) > 1
             c = assignee.children
             assert c[0].type == 'name' and c[0].value == 'sys'
@@ -133,8 +133,8 @@ def _paths_from_list_modifications(module_path, trailer1, trailer2):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
     # Guarantee that both are trailers, the first one a name and the second one
     # a function execution with at least one param.
-    if not (tree.is_node(trailer1, 'trailer') and trailer1.children[0] == '.'
-            and tree.is_node(trailer2, 'trailer') and trailer2.children[0] == '('
+    if not (trailer1.type == 'trailer' and trailer1.children[0] == '.'
+            and trailer2.type == 'trailer' and trailer2.children[0] == '('
             and len(trailer2.children) == 3):
         return []
 
@@ -154,10 +154,10 @@ def _check_module(module_context):
     def get_sys_path_powers(names):
         for name in names:
             power = name.parent.parent
-            if tree.is_node(power, 'power', 'atom_expr'):
+            if power.type in ('power', 'atom_expr'):
                 c = power.children
                 if isinstance(c[0], tree.Name) and c[0].value == 'sys' \
-                        and tree.is_node(c[1], 'trailer'):
+                        and c[1].type == 'trailer':
                     n = c[1].children[1]
                     if isinstance(n, tree.Name) and n.value == 'path':
                         yield name, power

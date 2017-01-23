@@ -129,7 +129,7 @@ def py__getitem__(context, typ, node):
     # should be replaced by that class. This is not 100%
     # airtight but I don't have a better idea to check that it's
     # actually the PEP-0484 typing module and not some other
-    if tree.is_node(node, "subscriptlist"):
+    if node.type == "subscriptlist":
         nodes = node.children[::2]  # skip the commas
     else:
         nodes = [node]

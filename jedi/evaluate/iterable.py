@@ -427,9 +427,9 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
         if array_node in (']', '}', ')'):
             return []  # Direct closing bracket, doesn't contain items.
 
-        if tree.is_node(array_node, 'testlist_comp'):
+        if array_node.type == 'testlist_comp':
             return array_node.children[::2]
-        elif tree.is_node(array_node, 'dictorsetmaker'):
+        elif array_node.type == 'dictorsetmaker':
             kv = []
             iterator = iter(array_node.children)
             for key in iterator:
@@ -889,14 +889,14 @@ def create_index_types(evaluator, context, index):
     if index == ':':
         # Like array[:]
         return set([Slice(context, None, None, None)])
-    elif tree.is_node(index, 'subscript'):  # subscript is a slice operation.
+    elif index.type == 'subscript':  # subscript is a slice operation.
         # Like array[:3]
         result = []
         for el in index.children:
             if el == ':':
                 if not result:
                     result.append(None)
-            elif tree.is_node(el, 'sliceop'):
+            elif el.type == 'sliceop':
                 if len(el.children) == 2:
                     result.append(el.children[1])
             else:

@@ -90,10 +90,10 @@ class TreeArguments(AbstractArguments):
             for el in self.argument_node:
                 yield 0, el
         else:
-            if not (tree.is_node(self.argument_node, 'arglist') or (
+            if not (self.argument_node.type == 'arglist' or (
                     # in python 3.5 **arg is an argument, not arglist
-                    (tree.is_node(self.argument_node, 'argument') and
-                     self.argument_node.children[0] in ('*', '**')))):
+                    (self.argument_node.type == 'argument') and
+                     self.argument_node.children[0] in ('*', '**'))):
                 yield 0, self.argument_node
                 return
 
@@ -103,7 +103,7 @@ class TreeArguments(AbstractArguments):
                     continue
                 elif child in ('*', '**'):
                     yield len(child.value), next(iterator)
-                elif tree.is_node(child, 'argument') and \
+                elif child.type == 'argument' and \
                         child.children[0] in ('*', '**'):
                     assert len(child.children) == 2
                     yield len(child.children[0].value), child.children[1]
@@ -130,7 +130,7 @@ class TreeArguments(AbstractArguments):
                     for key, values in _star_star_dict(self.context, dct, el, func):
                         yield key, values
             else:
-                if tree.is_node(el, 'argument'):
+                if el.type == 'argument':
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
                         named_args.append((c[0].value, context.LazyTreeContext(self.context, c[2]),))
@@ -149,7 +149,7 @@ class TreeArguments(AbstractArguments):
 
     def as_tree_tuple_objects(self):
         for stars, argument in self._split():
-            if tree.is_node(argument, 'argument'):
+            if argument.type == 'argument':
                 argument, default = argument.children[::2]
             else:
                 default = None

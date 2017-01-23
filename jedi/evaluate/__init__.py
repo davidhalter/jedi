@@ -269,7 +269,7 @@ class Evaluator(object):
     def _eval_element_not_cached(self, context, element):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         types = set()
-        if isinstance(element, (tree.Name, tree.Literal)) or tree.is_node(element, 'atom'):
+        if isinstance(element, (tree.Name, tree.Literal)) or element.type == 'atom':
             types = self.eval_atom(context, element)
         elif isinstance(element, tree.Keyword):
             # For False/True/None
@@ -358,7 +358,7 @@ class Evaluator(object):
                 return types
             # Parentheses without commas are not tuples.
             elif c[0] == '(' and not len(c) == 2 \
-                    and not(tree.is_node(c[1], 'testlist_comp') and
+                    and not(c[1].type == 'testlist_comp' and
                             len(c[1].children) > 1):
                 return self.eval_element(context, c[1])
 
@@ -508,7 +508,7 @@ class Evaluator(object):
                     for value in values
                 )
 
-        if tree.is_node(par, 'trailer') and par.children[0] == '.':
+        if par.type == 'trailer' and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
             return unite(
                 value.py__getattribute__(name, name_context=context, is_goto=True)

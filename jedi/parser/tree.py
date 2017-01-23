@@ -41,7 +41,6 @@ import abc
 
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, unicode)
-from jedi.parser.utils import underscore_memoization
 
 
 def _safe_literal_eval(value):
@@ -60,15 +59,6 @@ def _safe_literal_eval(value):
         # Before Python 3.3 there was a more strict definition in which order
         # you could define literals.
         return ''
-
-
-def is_node(node, *symbol_names):
-    try:
-        type = node.type
-    except AttributeError:
-        return False
-    else:
-        return type in symbol_names
 
 
 def search_ancestor(node, node_type_or_types):
@@ -91,7 +81,7 @@ class DocstringMixin(object):
             node = self.children[0]
         elif isinstance(self, ClassOrFunc):
             node = self.children[self.children.index(':') + 1]
-            if is_node(node, 'suite'):  # Normally a suite
+            if node.type == 'suite':  # Normally a suite
                 node = node.children[1]  # -> NEWLINE stmt
         else:  # ExprStmt
             simple_stmt = self.parent
@@ -101,7 +91,7 @@ class DocstringMixin(object):
                 return ''
             node = c[index - 1]
 
-        if is_node(node, 'simple_stmt'):
+        if node.type == 'simple_stmt':
             node = node.children[0]
 
         if node.type == 'string':
@@ -203,7 +193,7 @@ class Base(object):
         node = self.parent
         compare = self
         while node is not None:
-            if is_node(node, 'testlist_comp', 'testlist_star_expr', 'exprlist'):
+            if node.type in ('testlist_comp', 'testlist_star_expr', 'exprlist'):
                 for i, child in enumerate(node.children):
                     if child == compare:
                         indexes.insert(0, (int(i / 2), node))
@@ -746,7 +736,7 @@ class Scope(BaseNode, DocstringMixin):
             for element in children:
                 if isinstance(element, typ):
                     elements.append(element)
-                if is_node(element, 'suite', 'simple_stmt', 'decorated') \
+                if element.type in ('suite', 'simple_stmt', 'decorated') \
                         or isinstance(element, Flow):
                     elements += scan(element.children)
             return elements
@@ -807,7 +797,6 @@ class Module(Scope):
         self.path = None  # Set later.
 
     @property
-    @underscore_memoization
     def name(self):
         """ This is used for the goto functions. """
         if self.path is None:
@@ -869,8 +858,8 @@ class ClassOrFunc(Scope):
 
     def get_decorators(self):
         decorated = self.parent
-        if is_node(decorated, 'decorated'):
-            if is_node(decorated.children[0], 'decorators'):
+        if decorated.type == 'decorated':
+            if decorated.children[0].type == 'decorators':
                 return decorated.children[0].children
             else:
                 return decorated.children[:1]
@@ -1264,7 +1253,7 @@ class WithStmt(Flow):
         names = []
         for with_item in self.children[1:-2:2]:
             # Check with items for 'as' names.
-            if is_node(with_item, 'with_item'):
+            if with_item.type == 'with_item':
                 names += _defined_names(with_item.children[2])
         return names
 
@@ -1272,7 +1261,7 @@ class WithStmt(Flow):
         node = name
         while True:
             node = node.parent
-            if is_node(node, 'with_item'):
+            if node.type == 'with_item':
                 return node.children[0]
 
     def nodes_to_execute(self, last_added=False):
@@ -1332,7 +1321,7 @@ class ImportFrom(Import):
         for n in self.children[1:]:
             if n not in ('.', '...'):
                 break
-        if is_node(n, 'dotted_name'):  # from x.y import
+        if n.type == 'dotted_name':  # from x.y import
             return n.children[::2]
         elif n == 'import':  # from . import
             return []
@@ -1357,7 +1346,7 @@ class ImportFrom(Import):
         elif last == '*':
             return  # No names defined directly.
 
-        if is_node(last, 'import_as_names'):
+        if last.type == 'import_as_names':
             as_names = last.children[::2]
         else:
             as_names = [last]
@@ -1404,13 +1393,13 @@ class ImportName(Import):
     def _dotted_as_names(self):
         """Generator of (list(path), alias) where alias may be None."""
         dotted_as_names = self.children[1]
-        if is_node(dotted_as_names, 'dotted_as_names'):
+        if dotted_as_names.type == 'dotted_as_names':
             as_names = dotted_as_names.children[::2]
         else:
             as_names = [dotted_as_names]
 
         for as_name in as_names:
-            if is_node(as_name, 'dotted_as_name'):
+            if as_name.type == 'dotted_as_name':
                 alias = as_name.children[2]
                 as_name = as_name.children[0]
             else:
@@ -1513,12 +1502,12 @@ def _defined_names(current):
     list comprehensions.
     """
     names = []
-    if is_node(current, 'testlist_star_expr', 'testlist_comp', 'exprlist'):
+    if current.type in ('testlist_star_expr', 'testlist_comp', 'exprlist'):
         for child in current.children[::2]:
             names += _defined_names(child)
-    elif is_node(current, 'atom', 'star_expr'):
+    elif current.type in ('atom', 'star_expr'):
         names += _defined_names(current.children[1])
-    elif is_node(current, 'power', 'atom_expr'):
+    elif current.type in ('power', 'atom_expr'):
         if current.children[-2] != '**':  # Just if there's no operation
             trailer = current.children[-1]
             if trailer.children[0] == '.':
@@ -1594,7 +1583,7 @@ class Param(BaseNode):
 
     def annotation(self):
         tfpdef = self._tfpdef()
-        if is_node(tfpdef, 'tfpdef'):
+        if tfpdef.type == 'tfpdef':
             assert tfpdef.children[1] == ":"
             assert len(tfpdef.children) == 3
             annotation = tfpdef.children[2]
@@ -1611,7 +1600,7 @@ class Param(BaseNode):
 
     @property
     def name(self):
-        if is_node(self._tfpdef(), 'tfpdef'):
+        if self._tfpdef().type == 'tfpdef':
             return self._tfpdef().children[0]
         else:
             return self._tfpdef()
@@ -1644,7 +1633,7 @@ class CompFor(BaseNode):
         while True:
             if isinstance(last, CompFor):
                 yield last
-            elif not is_node(last, 'comp_if'):
+            elif not last.type == 'comp_if':
                 break
             last = last.children[-1]
 

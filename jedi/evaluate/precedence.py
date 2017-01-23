@@ -45,7 +45,7 @@ def calculate_children(evaluator, context, children):
     types = context.eval_node(next(iterator))
     for operator in iterator:
         right = next(iterator)
-        if tree.is_node(operator, 'comp_op'):  # not in / is not
+        if operator.type == 'comp_op':  # not in / is not
             operator = ' '.join(str(c.value) for c in operator.children)
 
         # handle lazy evaluation of and/or here.
