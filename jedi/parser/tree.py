@@ -711,15 +711,6 @@ class ErrorLeaf(LeafWithNewLines):
             (type(self).__name__, self.original_type, repr(self.value), self.start_pos)
 
 
-class IsScopeMeta(type):
-    def __instancecheck__(self, other):
-        return other.is_scope()
-
-
-class IsScope(use_metaclass(IsScopeMeta)):
-    pass
-
-
 class Scope(BaseNode, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
@@ -1635,9 +1626,8 @@ class Param(BaseNode):
     def position_nr(self):
         return self.parent.children.index(self) - 1
 
-    @property
-    def parent_function(self):
-        return self.get_parent_until(IsScope)
+    def get_parent_function(self):
+        return search_ancestor(self, ('funcdef', 'lambda'))
 
     def __repr__(self):
         default = '' if self.default is None else '=%s' % self.default.get_code()

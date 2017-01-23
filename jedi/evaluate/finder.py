@@ -98,7 +98,7 @@ class NameFinder(object):
         if self._context.predefined_names:
             # TODO is this ok? node might not always be a tree.Name
             node = self._name
-            while node is not None and not isinstance(node, tree.IsScope):
+            while node is not None and not node.is_scope():
                 node = node.parent
                 if node.type in ("if_stmt", "for_stmt", "comp_for"):
                     try:

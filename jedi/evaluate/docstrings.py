@@ -191,7 +191,7 @@ def follow_param(module_context, param):
             [p for param_str in _search_param_in_docstr(docstring, str(param.name))
                 for p in _evaluate_for_statement_string(module_context, param_str)]
         )
-    func = param.parent_function
+    func = param.get_parent_function()
     types = eval_docstring(func.raw_doc)
     if func.name.value == '__init__':
         cls = search_ancestor(func, 'classdef')
