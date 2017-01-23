@@ -12,12 +12,14 @@ try:
 except ImportError:
     pass
 
-is_py3 = sys.version_info.major >= 3
-is_py33 = is_py3 and sys.version_info.minor >= 3
-is_py34 = is_py3 and sys.version_info.minor >= 4
-is_py35 = is_py3 and sys.version_info.minor >= 5
+# Cannot use sys.version.major and minor names, because in Python 2.6 it's not
+# a namedtuple.
+is_py3 = sys.version_info[0] >= 3
+is_py33 = is_py3 and sys.version_info[1] >= 3
+is_py34 = is_py3 and sys.version_info[1] >= 4
+is_py35 = is_py3 and sys.version_info[1] >= 5
 is_py26 = not is_py3 and sys.version_info[1] < 7
-py_version = int(str(sys.version_info.major) + str(sys.version_info.minor))
+py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
 class DummyFile(object):
