@@ -432,22 +432,35 @@ class Completion(BaseDefinition):
         """
         Return the rest of the word, e.g. completing ``isinstance``::
 
-            # <-- Cursor is here
+            isinstan# <-- Cursor is here
 
         would return the string 'ce'. It also adds additional stuff, depending
         on your `settings.py`.
+
+        Assuming the following function definition::
+
+            def foo(param=0):
+                pass
+
+        completing ``foo(par`` would give a ``Completion`` which `complete`
+        would be `am=`
+
+
         """
         return self._complete(True)
 
     @property
     def name_with_symbols(self):
         """
-        Similar to :attr:`name`, but like :attr:`name`
-        returns also the symbols, for example::
+        Similar to :attr:`name`, but like :attr:`name` returns also the
+        symbols, for example assuming the following function definition::
 
-            list()
+            def foo(param=0):
+                pass
 
-        would return ``.append`` and others (which means it adds a dot).
+        completing ``foo(`` would give a ``Completion`` which
+        ``name_with_symbols`` would be "param=".
+
         """
         return self._complete(False)
 
