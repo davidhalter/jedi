@@ -62,19 +62,6 @@ from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 
 
-class Executed(context.TreeContext):
-    """
-    An instance is also an executable - because __init__ is called
-    :param var_args: The param input array, consist of a parser node or a list.
-    """
-    def __init__(self, evaluator, parent_context, var_args):
-        super(Executed, self).__init__(evaluator, parent_context=parent_context)
-        self.var_args = var_args
-
-    def is_scope(self):
-        return True
-
-
 def apply_py__get__(context, base_context):
     try:
         method = context.py__get__
@@ -278,7 +265,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         return [ParamName(function_execution, param.name) for param in self.tree_node.params]
 
 
-class FunctionExecutionContext(Executed):
+class FunctionExecutionContext(context.TreeContext):
     """
     This class is used to evaluate functions and their returns.
 
@@ -290,9 +277,10 @@ class FunctionExecutionContext(Executed):
     function_execution_filter = FunctionExecutionFilter
 
     def __init__(self, evaluator, parent_context, function_context, var_args):
-        super(FunctionExecutionContext, self).__init__(evaluator, parent_context, var_args)
+        super(FunctionExecutionContext, self).__init__(evaluator, parent_context)
         self.function_context = function_context
         self.tree_node = function_context.tree_node
+        self.var_args = var_args
 
     @memoize_default(default=set())
     @recursion.execution_recursion_decorator()
