@@ -265,7 +265,7 @@ def test_issues_with_error_leaves(differ):
         str
     ''')
     differ.initialize(code)
-    differ.parse(code2, parsers=2, copies=0, expect_error_leaves=True)
+    differ.parse(code2, parsers=1, copies=1, expect_error_leaves=True)
 
 
 def test_unfinished_nodes(differ):

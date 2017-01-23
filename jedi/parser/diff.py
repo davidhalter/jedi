@@ -228,7 +228,7 @@ class DiffParser(object):
     def _get_old_line_stmt(self, old_line):
         leaf = self._module.get_leaf_for_position((old_line, 0), include_prefixes=True)
 
-        if leaf.type == 'newline':
+        if _ends_with_newline(leaf):
             leaf = leaf.get_next_leaf()
         if leaf.get_start_pos_of_prefix()[0] == old_line:
             node = leaf
