@@ -40,7 +40,7 @@ import textwrap
 import abc
 
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
-                                 literal_eval, use_metaclass, unicode)
+                                 literal_eval, unicode)
 from jedi.parser.utils import underscore_memoization
 
 
@@ -79,12 +79,6 @@ def search_ancestor(node, node_type_or_types):
         node = node.parent
         if node is None or node.type in node_type_or_types:
             return node
-
-
-class PositionModifier(object):
-    """A start_pos modifier for the fast parser."""
-    def __init__(self):
-        self.line = 0
 
 
 class DocstringMixin(object):
