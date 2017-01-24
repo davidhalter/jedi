@@ -248,6 +248,14 @@ def test_type():
     for c in Script('import os; os.path.').completions():
         assert c.type
 
+def test_type_II():
+    """
+    GitHub Issue #833, `keyword`s are seen as `module`s
+    """
+    for c in Script('f').completions():
+        if c.name == 'for':
+            assert c.type == 'keyword'
+
 
 class TestGotoAssignments(TestCase):
     """
