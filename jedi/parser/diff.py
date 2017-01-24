@@ -134,6 +134,7 @@ class DiffParser(object):
 
         Returns the new module node.
         '''
+        debug.speed('diff parser start')
         self._parser_lines_new = lines_new
         self._added_newline = False
         if lines_new[-1] != '':
@@ -148,6 +149,7 @@ class DiffParser(object):
         line_length = len(lines_new)
         lines_old = splitlines(self._parser.source, keepends=True)
         sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
+        debug.speed('diff parser calculated')
         debug.dbg('diff: line_lengths old: %s, new: %s' % (len(lines_old), line_length))
         for operation, i1, i2, j1, j2 in sm.get_opcodes():
             debug.dbg('diff %s old[%s:%s] new[%s:%s]',
@@ -187,6 +189,7 @@ class DiffParser(object):
                 % (last_pos, line_length, ''.join(diff))
             )
 
+        debug.speed('diff parser end')
         return self._module
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
