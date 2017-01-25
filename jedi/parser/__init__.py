@@ -223,20 +223,11 @@ class Parser(object):
                 newline = endmarker.get_previous_leaf()
             except IndexError:
                 return  # This means that the parser is empty.
-            while True:
-                if newline.value == '':
-                    # Must be a DEDENT, just continue.
-                    try:
-                        newline = newline.get_previous_leaf()
-                    except IndexError:
-                        # If there's a statement that fails to be parsed, there
-                        # will be no previous leaf. So just ignore it.
-                        break
-                else:
-                    assert newline.value.endswith('\n')
-                    newline.value = newline.value[:-1]
-                    endmarker.start_pos = newline.start_pos
-                    break
+
+            assert newline.value.endswith('\n')
+            newline.value = newline.value[:-1]
+            endmarker.start_pos = \
+                newline.start_pos[0], newline.start_pos[1] + len(newline.value)
 
 
 class ParserWithRecovery(Parser):

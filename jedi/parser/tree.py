@@ -543,19 +543,29 @@ class BaseNode(Base):
         return None
 
     def get_leaf_for_position(self, position, include_prefixes=False):
-        for c in self.children:
-            if include_prefixes:
-                start_pos = c.get_start_pos_of_prefix()
-            else:
-                start_pos = c.start_pos
-
-            if start_pos <= position <= c.end_pos:
+        def binary_search(lower, upper):
+            if lower == upper:
+                element = self.children[lower]
+                if not include_prefixes and position < element.start_pos:
+                    # We're on a prefix.
+                    return None
+                # In case we have prefixes, a leaf always matches
                 try:
-                    return c.get_leaf_for_position(position, include_prefixes)
+                    return element.get_leaf_for_position(position, include_prefixes)
                 except AttributeError:
-                    return c
+                    return element
 
-        return None
+
+            index = int((lower + upper) / 2)
+            element = self.children[index]
+            if position <= element.end_pos:
+                return binary_search(lower, index)
+            else:
+                return binary_search(index + 1, upper)
+
+        if not ((1, 0) <= position <= self.children[-1].end_pos):
+            raise ValueError('Please provide a position that exists within this node.')
+        return binary_search(0, len(self.children) - 1)
 
     @Python3Method
     def get_statement_for_position(self, pos):

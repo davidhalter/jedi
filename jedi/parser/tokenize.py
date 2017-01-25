@@ -258,6 +258,8 @@ def generate_tokens(readline, use_exact_op_types=False):
                     # If a literal starts but doesn't end the whole rest of the
                     # line is an error token.
                     txt = line[pos:]
+                if txt.endswith('\n'):
+                    new_line = True
                 yield TokenInfo(ERRORTOKEN, txt, (lnum, pos), prefix)
                 break
 
