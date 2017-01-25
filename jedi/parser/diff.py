@@ -322,7 +322,7 @@ class DiffParser(object):
         new_used_names = self._new_used_names
         for key, names in self._module.used_names.items():
             for name in names:
-                if name.start_pos[0] in copied_line_numbers:
+                if name.line in copied_line_numbers:
                     new_used_names.setdefault(key, []).append(name)
         self._module.used_names = new_used_names
 
