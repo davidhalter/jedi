@@ -72,6 +72,8 @@ keywords_only_valid_as_leaf = (
 
 
 class KeywordName(AbstractNameDefinition):
+    api_type = 'keyword'
+
     def __init__(self, evaluator, name):
         self.string_name = name
         self.parent_context = evaluator.BUILTINS
