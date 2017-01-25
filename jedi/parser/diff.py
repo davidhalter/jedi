@@ -99,7 +99,7 @@ def _update_positions(nodes, line_offset):
             children = node.children
         except AttributeError:
             # Is a leaf
-            node.start_pos = node.start_pos[0] + line_offset, node.start_pos[1]
+            node.line += line_offset
         else:
             _update_positions(children, line_offset)
 
@@ -386,7 +386,8 @@ class _NodesStackNode(object):
     def close(self):
         children = []
         for children_part, line_offset in self.children_groups:
-            _update_positions(children_part, line_offset)
+            if line_offset != 0:
+                _update_positions(children_part, line_offset)
             children += children_part
         self.tree_node.children = children
         # Reset the parents
