@@ -93,15 +93,21 @@ def _is_flow_node(node):
     return value in ('if', 'for', 'while', 'try')
 
 
-def _update_positions(nodes, line_offset):
+class _PositionUpdatingFinished(Exception):
+    pass
+
+
+def _update_positions(nodes, line_offset, last_leaf):
     for node in nodes:
         try:
             children = node.children
         except AttributeError:
             # Is a leaf
             node.line += line_offset
+            if node is last_leaf:
+                raise _PositionUpdatingFinished
         else:
-            _update_positions(children, line_offset)
+            _update_positions(children, line_offset, last_leaf)
 
 
 class DiffParser(object):
@@ -117,6 +123,28 @@ class DiffParser(object):
         self._copied_ranges = []
         self._new_used_names = {}
         self._nodes_stack = _NodesStack(self._module)
+
+    def __update(self, lines_new):
+        """For now we use this function for better error reporting."""
+        old_source = self._parser.source
+        try:
+            return self._update(lines_new)
+        except Exception:
+            # Only log for linux, it's easier.
+            import sys
+            if 'linux' in sys.platform:
+                lines_old = splitlines(old_source, keepends=True)
+                import traceback
+                with open('/tmp/jedi_error.log', 'w') as f:
+                    f.write(
+                        'parser issue, please report:\n%s\n%s\n%s' % (
+                            repr(''.join(lines_old)),
+                            repr(''.join(lines_new)),
+                            traceback.format_exc()
+                         )
+                    )
+                raise Exception("There's a parser issue. Please report /tmp/jedi_error.log")
+            raise
 
     def update(self, lines_new):
         '''
@@ -180,6 +208,8 @@ class DiffParser(object):
         self._parser.source = ''.join(lines_new)
 
         # Good for debugging.
+        if debug.debug_function:
+            self._enable_debugging(lines_old, lines_new)
         last_pos = self._module.end_pos[0]
         if last_pos != line_length:
             current_lines = splitlines(self._module.get_code(), keepends=True)
@@ -191,6 +221,11 @@ class DiffParser(object):
 
         debug.speed('diff parser end')
         return self._module
+
+    def _enable_debugging(self, lines_old, lines_new):
+        if self._module.get_code() != ''.join(lines_new):
+            debug.warning('parser issue:\n%s\n%s', repr(''.join(lines_old)),
+                          repr(''.join(lines_new)))
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
         copied_nodes = [None]
@@ -222,7 +257,7 @@ class DiffParser(object):
                 if copied_nodes:
                     self._copy_count += 1
 
-                    from_ = copied_nodes[0].get_start_pos_of_prefix()[0]
+                    from_ = copied_nodes[0].get_start_pos_of_prefix()[0] + line_offset
                     to = self._nodes_stack.parsed_until_line
                     self._copied_ranges.append((from_, to))
 
@@ -267,12 +302,13 @@ class DiffParser(object):
             nodes = self._get_children_nodes(node)
             #self._insert_nodes(nodes)
 
+            self._nodes_stack.add_parsed_nodes(nodes)
             debug.dbg(
-                'parse part %s to %s',
-                self._nodes_stack.parsed_until_line + 1,
+                'parse part %s to %s (to %s in parser)',
+                nodes[0].get_start_pos_of_prefix()[0],
+                self._nodes_stack.parsed_until_line,
                 node.end_pos[0] - 1
             )
-            self._nodes_stack.add_parsed_nodes(nodes)
             _merge_used_names(
                 self._new_used_names,
                 node.used_names
@@ -313,8 +349,7 @@ class DiffParser(object):
         return self._active_parser.parse(tokenizer=tokenizer)
 
     def _cleanup(self):
-        """Add used names and an end marker."""
-        # Add the used names from the old parser to the new one.
+        """Add the used names from the old parser to the new one."""
         copied_line_numbers = set()
         for l1, l2 in self._copied_ranges:
             copied_line_numbers.update(range(l1, l2 + 1))
@@ -376,7 +411,7 @@ class DiffParser(object):
 
 
 class _NodesStackNode(object):
-    ChildrenGroup = namedtuple('ChildrenGroup', 'children line_offset')
+    ChildrenGroup = namedtuple('ChildrenGroup', 'children line_offset last_line_offset_leaf')
 
     def __init__(self, tree_node, parent=None):
         self.tree_node = tree_node
@@ -385,24 +420,24 @@ class _NodesStackNode(object):
 
     def close(self):
         children = []
-        for children_part, line_offset in self.children_groups:
+        for children_part, line_offset, last_line_offset_leaf in self.children_groups:
             if line_offset != 0:
-                _update_positions(children_part, line_offset)
+                try:
+                    _update_positions(
+                        children_part, line_offset, last_line_offset_leaf)
+                except _PositionUpdatingFinished:
+                    pass
             children += children_part
         self.tree_node.children = children
         # Reset the parents
         for node in children:
             node.parent = self.tree_node
 
-    def add(self, children, line_offset=0):
-        group = self.ChildrenGroup(children, line_offset)
+    def add(self, children, line_offset=0, last_line_offset_leaf=None):
+        group = self.ChildrenGroup(children, line_offset, last_line_offset_leaf)
         self.children_groups.append(group)
-        if len(self.children_groups) > 42:
+        if len(self.children_groups) > 12:
             raise NotImplementedError
-
-    def update_last_children_group(self, new_children):
-        group = self.ChildrenGroup(new_children, self.children_groups[-1].line_offset)
-        self.children_groups[-1] = group
 
     def get_last_line(self, suffix):
         if not self.children_groups:
@@ -413,10 +448,7 @@ class _NodesStackNode(object):
         line = last_leaf.end_pos[0]
 
         # Calculate the line offsets
-        element = self
-        while element is not None:
-            line += element.children_groups[-1].line_offset
-            element = element.parent
+        line += self.children_groups[-1].line_offset
 
         # Newlines end on the next line, which means that they would cover
         # the next line. That line is not fully parsed at this point.
@@ -482,7 +514,7 @@ class _NodesStack(object):
         node.add(tree_nodes)
         self._update_tos(tree_nodes[-1])
 
-    def _remove_endmarker(self, tree_nodes, line_offset=0):
+    def _remove_endmarker(self, tree_nodes):
         """
         Helps cleaning up the tree nodes that get inserted.
         """
@@ -523,7 +555,7 @@ class _NodesStack(object):
         new_nodes, self._tos = self._copy_nodes(tos, tree_nodes, until_line, line_offset)
         return new_nodes
 
-    def _copy_nodes(self, tos, nodes, until_line, line_offset=0):
+    def _copy_nodes(self, tos, nodes, until_line, line_offset):
         new_nodes = []
 
         new_tos = tos
@@ -549,19 +581,22 @@ class _NodesStack(object):
             return [], tos
 
         last_node = new_nodes[-1]
+        line_offset_index = -1
         if last_node.type in ('classdef', 'funcdef'):
             suite = last_node.children[-1]
             if suite.type == 'suite':
-                # Don't need to pass until_line here, it's already done by the
-                # parent.
                 suite_tos = _NodesStackNode(suite)
-                suite_nodes, recursive_tos = self._copy_nodes(suite_tos, suite.children, until_line)
+                # Don't need to pass line_offset here, it's already done by the
+                # parent.
+                suite_nodes, recursive_tos = self._copy_nodes(
+                    suite_tos, suite.children, until_line, line_offset)
                 if len(suite_nodes) < 2:
                     # A suite only with newline is not valid.
                     new_nodes.pop()
                 else:
                     suite_tos.parent = tos
                     new_tos = recursive_tos
+                    line_offset_index = -2
 
         elif (new_nodes[-1].type in ('error_leaf', 'error_node') or
                           _is_flow_node(new_nodes[-1])):
@@ -580,7 +615,14 @@ class _NodesStack(object):
                 new_nodes.pop()
 
         if new_nodes:
-            tos.add(new_nodes, line_offset)
+            try:
+                last_line_offset_leaf = new_nodes[line_offset_index].last_leaf()
+            except IndexError:
+                line_offset = 0
+                # In this case we don't have to calculate an offset, because
+                # there's no children to be managed.
+                last_line_offset_leaf = None
+            tos.add(new_nodes, line_offset, last_line_offset_leaf)
         return new_nodes, new_tos
 
     def _update_tos(self, tree_node):

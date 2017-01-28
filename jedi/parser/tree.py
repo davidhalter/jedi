@@ -310,7 +310,7 @@ class Leaf(Base):
         try:
             return self.get_previous_leaf().end_pos
         except IndexError:
-            return 1, 0  # It's the first leaf.
+            return self.line - self.prefix.count('\n'), 0  # It's the first leaf.
 
     @property
     def end_pos(self):

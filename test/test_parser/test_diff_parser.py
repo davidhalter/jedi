@@ -421,3 +421,30 @@ def test_whitespace_at_end(differ):
 
     differ.initialize(code)
     differ.parse(code, parsers=1, copies=1)
+
+
+def test_in_class_movements(differ):
+    code1 = dedent("""\
+        class PlaybookExecutor:
+            p
+            b
+            def run(self):
+                1
+                try:
+                    x
+                except:
+                    pass
+    """)
+    code2 = dedent("""\
+        class PlaybookExecutor:
+            b
+            def run(self):
+                1
+                try:
+                    x
+                except:
+                    pass
+    """)
+
+    differ.initialize(code1)
+    differ.parse(code2, parsers=2, copies=1)
