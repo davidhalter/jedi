@@ -28,3 +28,13 @@ def test_in_empty_space():
     assert self.name == 'self'
     def_, = self._goto_definitions()
     assert def_.name == 'X'
+
+
+def test_indent_context():
+    """
+    If an INDENT is the next supposed token, we should still be able to
+    complete.
+    """
+    code = 'if 1:\nisinstanc'
+    comp, = Script(code).completions()
+    assert comp.name == 'isinstance'

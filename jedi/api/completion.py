@@ -130,7 +130,7 @@ class Completion:
 
         completion_names = list(self._get_keyword_completion_names(allowed_keywords))
 
-        if token.NAME in allowed_tokens:
+        if token.NAME in allowed_tokens or token.INDENT in allowed_tokens:
             # This means that we actually have to do type inference.
 
             symbol_names = list(self.stack.get_node_names(grammar))
