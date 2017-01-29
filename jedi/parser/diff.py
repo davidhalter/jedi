@@ -155,9 +155,15 @@ class DiffParser(object):
         line_length = len(lines_new)
         lines_old = splitlines(self._parser.source, keepends=True)
         sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
+        opcodes = sm.get_opcodes()
         debug.speed('diff parser calculated')
         debug.dbg('diff: line_lengths old: %s, new: %s' % (len(lines_old), line_length))
-        for operation, i1, i2, j1, j2 in sm.get_opcodes():
+
+        if len(opcodes) == 1 and opcodes[0][0] == 'equal':
+            self._copy_count = 1
+            return self._module
+
+        for operation, i1, i2, j1, j2 in opcodes:
             debug.dbg('diff %s old[%s:%s] new[%s:%s]',
                       operation, i1 + 1, i2, j1 + 1, j2)
 
