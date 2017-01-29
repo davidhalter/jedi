@@ -242,6 +242,11 @@ if 0:
     #?
     nested
 
+if False:
+    in_false = 1
+    #? ['in_false']
+    in_false
+
 # -----------------
 # True objects like modules
 # -----------------

@@ -70,6 +70,14 @@ def get_user_scope(module_context, position):
         return module_context.create_context(user_stmt)
 
 
+def get_flow_scope_node(module_node, position):
+    node = module_node.get_leaf_for_position(position, include_prefixes=True)
+    while not isinstance(node, (tree.Scope, tree.Flow)):
+        node = node.parent
+
+    return node
+
+
 class Completion:
     def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
         self._evaluator = evaluator
@@ -176,11 +184,12 @@ class Completion:
     def _global_completions(self):
         context = get_user_scope(self._module_context, self._position)
         debug.dbg('global completion scope: %s', context)
+        flow_scope_node = get_flow_scope_node(self._module_node, self._position)
         filters = get_global_filters(
             self._evaluator,
             context,
             self._position,
-            origin_scope=self._module_node
+            origin_scope=flow_scope_node
         )
         completion_names = []
         for filter in filters:
