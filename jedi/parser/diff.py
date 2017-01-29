@@ -436,7 +436,7 @@ class _NodesStackNode(object):
     def add(self, children, line_offset=0, last_line_offset_leaf=None):
         group = self.ChildrenGroup(children, line_offset, last_line_offset_leaf)
         self.children_groups.append(group)
-        if len(self.children_groups) > 12:
+        if len(self.children_groups) > 42:
             raise NotImplementedError
 
     def get_last_line(self, suffix):
