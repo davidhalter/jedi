@@ -386,3 +386,37 @@ def test_lambda_params():
     assert sig.index == 0
     assert sig.name == '<lambda>'
     assert [p.name for p in sig.params] == ['x']
+
+
+def test_class_creation():
+    code = dedent('''\
+    class X():
+        def __init__(self, foo, bar):
+            self.foo = foo
+    ''')
+    sig, = Script(code + 'X(').call_signatures()
+    assert sig.index == 0
+    assert sig.name == 'X'
+    assert [p.name for p in sig.params] == ['foo', 'bar']
+
+    sig, = Script(code + 'X.__init__(').call_signatures()
+    assert [p.name for p in sig.params] == ['self', 'foo', 'bar']
+    sig, = Script(code + 'X().__init__(').call_signatures()
+    assert [p.name for p in sig.params] == ['foo', 'bar']
+
+
+def test_call_magic_method():
+    code = dedent('''\
+    class X():
+        def __call__(self, baz):
+            pass
+    ''')
+    sig, = Script(code + 'X()(').call_signatures()
+    assert sig.index == 0
+    assert sig.name == 'X'
+    assert [p.name for p in sig.params] == ['baz']
+
+    sig, = Script(code + 'X.__call__(').call_signatures()
+    assert [p.name for p in sig.params] == ['self', 'baz']
+    sig, = Script(code + 'X().__call__(').call_signatures()
+    assert [p.name for p in sig.params] == ['baz']

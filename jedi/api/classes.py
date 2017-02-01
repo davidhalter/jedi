@@ -347,7 +347,10 @@ class BaseDefinition(object):
                 # Just take the first one here, not optimal, but currently
                 # there's no better solution.
                 inferred = names[0].infer()
-                return get_param_names(next(iter(inferred)))
+                param_names = get_param_names(next(iter(inferred)))
+                if isinstance(context, er.ClassContext):
+                    param_names = param_names[1:]
+                return param_names
             elif isinstance(context, compiled.CompiledObject):
                 return context.get_param_names()
             return param_names
