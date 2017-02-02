@@ -62,7 +62,6 @@ definitely worse in some cases. But a completion should also be fast.
 .. autodata:: max_function_recursion_level
 .. autodata:: max_executions_without_builtins
 .. autodata:: max_executions
-.. autodata:: max_dynamic_params_depth
 .. autodata:: scale_call_signatures
 
 

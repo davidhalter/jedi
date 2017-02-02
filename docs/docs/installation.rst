@@ -42,8 +42,8 @@ The specified Python version just refers to the *runtime environment* for
 use) under Python 2. Otherwise, use the Python 3 version. But whatever version
 you choose, both are able to complete both Python 2 and 3 *code*.
 
-(There is also a packaged version of the vim plugin available: `vim-jedi at
-Arch Linux<https://www.archlinux.org/packages/community/any/vim-jedi/>`__.)
+(There is also a packaged version of the vim plugin available: 
+`vim-jedi at Arch Linux <https://www.archlinux.org/packages/community/any/vim-jedi/>`__.)
 
 Debian
 ~~~~~~

@@ -92,7 +92,7 @@ and one that uses ``PYTHONSTARTUP``.
 Using ``PYTHONSTARTUP``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.replstartup
+.. automodule:: jedi.api.replstartup
 
 Using a custom ``$HOME/.pythonrc.py``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

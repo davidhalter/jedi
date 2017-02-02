@@ -34,7 +34,6 @@ py__get__(call_object)                 Only on instances. Simulates
                                        descriptors.
 ====================================== ========================================
 
-__
 """
 import os
 import pkgutil
