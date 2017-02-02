@@ -3,15 +3,15 @@
 Changelog
 ---------
 
-0.10.0 (2016-06-)
-+++++++++++++++++
+0.10.0 (2017-02-03)
++++++++++++++++++++
 
 - Actual semantic completions for the complete Python syntax.
 - Basic type inference for ``yield from`` PEP 380.
 - PEP 484 support (most of the important features of it). Thanks Claude! (@reinhrst)
 - Added ``get_line_code`` to ``Definition`` and ``Completion`` objects.
 - Completely rewritten the type inference engine.
-- A new and better parser for parsing parts of Python code.
+- A new and better parser for (fast) parsing diffs of Python code.
 
 0.9.0 (2015-04-10)
 ++++++++++++++++++
