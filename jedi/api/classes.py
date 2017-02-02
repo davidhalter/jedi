@@ -332,7 +332,7 @@ class BaseDefinition(object):
         def get_param_names(context):
             param_names = []
             if context.api_type == 'function':
-                param_names = context.get_param_names()
+                param_names = list(context.get_param_names())
                 if isinstance(context, instance.BoundMethod):
                     param_names = param_names[1:]
             elif isinstance(context, (instance.AbstractInstanceContext, er.ClassContext)):
@@ -352,7 +352,7 @@ class BaseDefinition(object):
                     param_names = param_names[1:]
                 return param_names
             elif isinstance(context, compiled.CompiledObject):
-                return context.get_param_names()
+                return list(context.get_param_names())
             return param_names
 
         followed = list(self._name.infer())
