@@ -232,7 +232,7 @@ class Base(object):
             if i == 0:
                 node = node.parent
                 if node.parent is None:
-                    raise IndexError('Cannot access the previous element of the first one.')
+                    return None
             else:
                 node = c[i - 1]
                 break
@@ -286,10 +286,10 @@ class Leaf(Base):
         self.indent = value[1]
 
     def get_start_pos_of_prefix(self):
-        try:
-            return self.get_previous_leaf().end_pos
-        except IndexError:
+        previous_leaf = self.get_previous_leaf()
+        if previous_leaf is None:
             return self.line - self.prefix.count('\n'), 0  # It's the first leaf.
+        return previous_leaf.end_pos
 
     @property
     def end_pos(self):

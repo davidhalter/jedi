@@ -212,16 +212,14 @@ class Parser(object):
             if '\n' not in prefix:
                 # Basically if the last line doesn't end with a newline. we
                 # have to add the previous line's end_position.
-                try:
-                    last_end = endmarker.get_previous_leaf().end_pos[1]
-                except IndexError:
-                    pass
+                previous_leaf = endmarker.get_previous_leaf()
+                if previous_leaf is not None:
+                    last_end = previous_leaf.end_pos[1]
             last_line = re.sub('.*\n', '', prefix)
             endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
         else:
-            try:
-                newline = endmarker.get_previous_leaf()
-            except IndexError:
+            newline = endmarker.get_previous_leaf()
+            if newline is None:
                 return  # This means that the parser is empty.
 
             assert newline.value.endswith('\n')

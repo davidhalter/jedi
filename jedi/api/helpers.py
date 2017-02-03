@@ -74,16 +74,14 @@ def _get_code_for_stack(code_lines, module_node, position):
             return u('')
 
         # If we're not on a comment simply get the previous leaf and proceed.
-        try:
-            leaf = leaf.get_previous_leaf()
-        except IndexError:
+        leaf = leaf.get_previous_leaf()
+        if leaf is None:
             return u('')  # At the beginning of the file.
 
     is_after_newline = leaf.type == 'newline'
     while leaf.type == 'newline':
-        try:
-            leaf = leaf.get_previous_leaf()
-        except IndexError:
+        leaf = leaf.get_previous_leaf()
+        if leaf is None:
             return u('')
 
     if leaf.type == 'error_leaf' or leaf.type == 'string':
@@ -244,6 +242,8 @@ def _get_call_signature_details_from_error_node(node, position):
             # until the parentheses is enough.
             children = node.children[index:]
             name = element.get_previous_leaf()
+            if name is None:
+                continue
             if name.type == 'name' or name.parent.type in ('trailer', 'atom'):
                 return CallSignatureDetails(
                     element,
@@ -255,9 +255,8 @@ def get_call_signature_details(module, position):
     leaf = module.get_leaf_for_position(position, include_prefixes=True)
     if leaf.start_pos >= position:
         # Whitespace / comments after the leaf count towards the previous leaf.
-        try:
-            leaf = leaf.get_previous_leaf()
-        except IndexError:
+        leaf = leaf.get_previous_leaf()
+        if leaf is None:
             return None
 
     if leaf == ')':
@@ -281,6 +280,8 @@ def get_call_signature_details(module, position):
 
         if node.type == 'trailer' and node.children[0] == '(':
             leaf = node.get_previous_leaf()
+            if leaf is None:
+                return None
             return CallSignatureDetails(
                 node.children[0], *_get_index_and_key(node.children, position))
 
