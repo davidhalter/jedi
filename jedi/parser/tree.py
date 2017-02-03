@@ -298,10 +298,10 @@ class Leaf(Base):
     def move(self, line_offset):
         self.line += line_offset
 
-    def first_leaf(self):
+    def get_first_leaf(self):
         return self
 
-    def last_leaf(self):
+    def get_last_leaf(self):
         return self
 
     def get_code(self, normalized=False, include_prefix=True):
@@ -560,14 +560,11 @@ class BaseNode(Base):
                         pass  # Must be a non-scope
         return None
 
-    def first_leaf(self):
-        try:
-            return self.children[0].first_leaf()
-        except AttributeError:
-            return self.children[0]
+    def get_first_leaf(self):
+        return self.children[0].get_first_leaf()
 
-    def last_leaf(self):
-        return self.children[-1].last_leaf()
+    def get_last_leaf(self):
+        return self.children[-1].get_last_leaf()
 
     def get_following_comment_same_line(self):
         """
@@ -576,11 +573,11 @@ class BaseNode(Base):
         """
         try:
             if self.type == 'for_stmt':
-                whitespace = self.children[5].first_leaf().prefix
+                whitespace = self.children[5].get_first_leaf().prefix
             elif self.type == 'with_stmt':
-                whitespace = self.children[3].first_leaf().prefix
+                whitespace = self.children[3].get_first_leaf().prefix
             else:
-                whitespace = self.last_leaf().get_next_leaf().prefix
+                whitespace = self.get_last_leaf().get_next_leaf().prefix
         except AttributeError:
             return None
         except ValueError:
@@ -1120,7 +1117,7 @@ class Flow(BaseNode):
         for i, child in enumerate(self.children):
             if start_pos < child.start_pos:
                 return keyword
-            first_leaf = child.first_leaf()
+            first_leaf = child.get_first_leaf()
             if first_leaf in self.FLOW_KEYWORDS:
                 keyword = first_leaf
         return 0

@@ -44,7 +44,7 @@ def _merge_used_names(base_dict, other_dict):
 
 
 def _get_last_line(node_or_leaf):
-    last_leaf = node_or_leaf.last_leaf()
+    last_leaf = node_or_leaf.get_last_leaf()
     if _ends_with_newline(last_leaf):
         return last_leaf.start_pos[0]
     else:
@@ -267,7 +267,7 @@ class DiffParser(object):
             return None
 
         line = self._nodes_stack.parsed_until_line + 1
-        node = self._new_module.last_leaf()
+        node = self._new_module.get_last_leaf()
         while True:
             parent = node.parent
             if parent.type in ('suite', 'file_input'):
@@ -426,7 +426,7 @@ class _NodesStackNode(object):
             assert not self.parent
             return 0
 
-        last_leaf = self.children_groups[-1].children[-1].last_leaf()
+        last_leaf = self.children_groups[-1].children[-1].get_last_leaf()
         line = last_leaf.end_pos[0]
 
         # Calculate the line offsets
@@ -500,7 +500,7 @@ class _NodesStack(object):
         """
         Helps cleaning up the tree nodes that get inserted.
         """
-        last_leaf = tree_nodes[-1].last_leaf()
+        last_leaf = tree_nodes[-1].get_last_leaf()
         is_endmarker = last_leaf.type == self.endmarker_type
         self._last_prefix = ''
         if is_endmarker:
@@ -515,7 +515,7 @@ class _NodesStack(object):
                 last_leaf.prefix, self._last_prefix = \
                     last_leaf.prefix[:separation + 1], last_leaf.prefix[separation + 1:]
 
-        first_leaf = tree_nodes[0].first_leaf()
+        first_leaf = tree_nodes[0].get_first_leaf()
         first_leaf.prefix = self.prefix + first_leaf.prefix
         self.prefix = ''
 
@@ -592,13 +592,13 @@ class _NodesStack(object):
             new_nodes.pop()
             while new_nodes:
                 last_node = new_nodes[-1]
-                if last_node.last_leaf().type == 'newline':
+                if last_node.get_last_leaf().type == 'newline':
                     break
                 new_nodes.pop()
 
         if new_nodes:
             try:
-                last_line_offset_leaf = new_nodes[line_offset_index].last_leaf()
+                last_line_offset_leaf = new_nodes[line_offset_index].get_last_leaf()
             except IndexError:
                 line_offset = 0
                 # In this case we don't have to calculate an offset, because
@@ -621,7 +621,7 @@ class _NodesStack(object):
 
         # Add an endmarker.
         try:
-            last_leaf = self._module.last_leaf()
+            last_leaf = self._module.get_last_leaf()
             end_pos = list(last_leaf.end_pos)
         except IndexError:
             end_pos = [1, 0]
