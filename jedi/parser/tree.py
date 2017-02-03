@@ -255,7 +255,7 @@ class Base(object):
             if i == len(c) - 1:
                 node = node.parent
                 if node.parent is None:
-                    raise IndexError('Cannot access the next element of the last one.')
+                    return None
             else:
                 node = c[i + 1]
                 break
@@ -565,18 +565,6 @@ class BaseNode(Base):
             return self.children[0].first_leaf()
         except AttributeError:
             return self.children[0]
-
-    def get_next_leaf(self):
-        """
-        Raises an IndexError if it's the last node. (Would be the module)
-        """
-        c = self.parent.children
-        index = c.index(self)
-        if index == len(c) - 1:
-            # TODO WTF? recursion?
-            return self.get_next_leaf()
-        else:
-            return c[index + 1]
 
     def last_leaf(self):
         return self.children[-1].last_leaf()
