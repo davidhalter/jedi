@@ -165,11 +165,11 @@ class NameFinder(object):
 def _name_to_types(evaluator, context, tree_name):
     types = []
     node = tree_name.get_definition()
-    if node.isinstance(tree.ForStmt):
+    if node.type == 'for_stmt':
         types = pep0484.find_type_from_comment_hint_for(context, node, tree_name)
         if types:
             return types
-    if node.isinstance(tree.WithStmt):
+    if node.type == 'with_stmt':
         types = pep0484.find_type_from_comment_hint_with(context, node, tree_name)
         if types:
             return types
@@ -180,9 +180,9 @@ def _name_to_types(evaluator, context, tree_name):
             container_types = context.eval_node(node.children[3])
             for_types = iterable.py__iter__types(evaluator, container_types, node.children[3])
             types = check_tuple_assignments(evaluator, for_types, tree_name)
-    elif node.isinstance(tree.ExprStmt):
+    elif node.type == 'expr_stmt':
         types = _remove_statements(evaluator, context, node, tree_name)
-    elif node.isinstance(tree.WithStmt):
+    elif node.type == 'with_stmt':
         types = context.eval_node(node.node_from_name(tree_name))
     elif isinstance(node, tree.Import):
         types = imports.infer_import(context, tree_name)

@@ -120,9 +120,6 @@ class Base(object):
     """
     __slots__ = ()
 
-    def isinstance(self, *cls):
-        return isinstance(self, cls)
-
     def get_root_node(self):
         scope = self
         while scope.parent is not None:
@@ -142,7 +139,7 @@ class Base(object):
         scope = self if include_current else self.parent
         while scope.parent is not None:
             # TODO why if classes?
-            if classes and reverse != scope.isinstance(*classes):
+            if classes and reverse != isinstance(scope, classes):
                 break
             scope = scope.parent
         return scope
@@ -166,7 +163,7 @@ class Base(object):
         scope = self
         while scope.parent is not None:
             parent = scope.parent
-            if scope.isinstance(Node, Leaf) and parent.type != 'simple_stmt':
+            if isinstance(scope, (Node, Leaf)) and parent.type != 'simple_stmt':
                 if scope.type == 'testlist_comp':
                     try:
                         if isinstance(scope.children[1], CompFor):
@@ -608,9 +605,9 @@ class BaseNode(Base):
         after the node, including the #
         """
         try:
-            if self.isinstance(ForStmt):
+            if self.type == 'for_stmt':
                 whitespace = self.children[5].first_leaf().prefix
-            elif self.isinstance(WithStmt):
+            elif self.type == 'with_stmt':
                 whitespace = self.children[3].first_leaf().prefix
             else:
                 whitespace = self.last_leaf().get_next_leaf().prefix

@@ -203,10 +203,10 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
     while obj is not None and not isinstance(obj, (tree.Function, tree.Class)):
         if isinstance(obj, tree.Flow):
             # try/except catch check
-            if obj.isinstance(tree.TryStmt) and check_try_for_except(obj, exception):
+            if obj.type == 'try_stmt' and check_try_for_except(obj, exception):
                 return True
             # hasattr check
-            if exception == AttributeError and obj.isinstance(tree.IfStmt, tree.WhileStmt):
+            if exception == AttributeError and obj.type in ('if_stmt', 'while_stmt'):
                 if check_hasattr(obj.children[1], obj.children[3]):
                     return True
         obj = obj.parent
