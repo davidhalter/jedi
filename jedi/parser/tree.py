@@ -126,24 +126,6 @@ class Base(object):
             scope = scope.parent
         return scope
 
-    @Python3Method
-    def get_parent_until(self, classes=(), reverse=False,
-                         include_current=True):
-        """
-        Searches the parent "chain" until the object is an instance of
-        classes. If classes is empty return the last parent in the chain
-        (is without a parent).
-        """
-        if type(classes) not in (tuple, list):
-            classes = (classes,)
-        scope = self if include_current else self.parent
-        while scope.parent is not None:
-            # TODO why if classes?
-            if classes and reverse != isinstance(scope, classes):
-                break
-            scope = scope.parent
-        return scope
-
     def get_parent_scope(self, include_flows=False):
         """
         Returns the underlying scope.

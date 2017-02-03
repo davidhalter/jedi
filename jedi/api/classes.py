@@ -669,7 +669,7 @@ class CallSignature(Definition):
            Use :attr:`.module_name` for the module name.
         .. todo:: Remove!
         """
-        return self._executable.get_parent_until()
+        return self._executable.get_root_node()
 
     def __repr__(self):
         return '<%s: %s index %s>' % \

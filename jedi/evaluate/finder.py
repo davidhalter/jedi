@@ -78,7 +78,13 @@ class NameFinder(object):
 
     def _get_origin_scope(self):
         if isinstance(self._name, tree.Name):
-            return self._name.get_parent_until(tree.Scope, reverse=True)
+            scope = self._name
+            while scope.parent is not None:
+                # TODO why if classes?
+                if not isinstance(scope, tree.Scope):
+                    break
+                scope = scope.parent
+            return scope
         else:
             return None
 

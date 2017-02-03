@@ -235,7 +235,7 @@ class Completion:
         Autocomplete inherited methods when overriding in child class.
         """
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
-        cls = leaf.get_parent_until(tree.Class)
+        cls = tree.search_ancestor(leaf, 'classdef')
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.
             random_context = self._module_context.create_context(

@@ -69,7 +69,7 @@ def _fix_forward_reference(context, node):
             debug.warning('Annotation not parsed: %s' % evaled_node.obj)
             return node
         else:
-            module = node.get_parent_until()
+            module = node.get_root_node()
             new_node.move(module.end_pos[0])
             new_node.parent = context.tree_node
             return new_node

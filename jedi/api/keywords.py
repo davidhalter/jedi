@@ -90,9 +90,6 @@ class Keyword(object):
         self.start_pos = pos
         self.parent = evaluator.BUILTINS
 
-    def get_parent_until(self):
-        return self.parent
-
     @property
     def only_valid_as_leaf(self):
         return self.name.value in keywords_only_valid_as_leaf

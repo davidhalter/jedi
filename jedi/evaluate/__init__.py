@@ -161,7 +161,7 @@ class Evaluator(object):
             left = context.py__getattribute__(
                 name, position=stmt.start_pos, search_global=True)
 
-            for_stmt = stmt.get_parent_until(tree.ForStmt)
+            for_stmt = tree.search_ancestor(stmt, 'for_stmt')
             if isinstance(for_stmt, tree.ForStmt) and types \
                     and for_stmt.defines_one_name():
                 # Iterate through result and add the values, that's possible
@@ -335,8 +335,8 @@ class Evaluator(object):
             # This is the first global lookup.
             stmt = atom.get_definition()
             if isinstance(stmt, tree.CompFor):
-                stmt = stmt.get_parent_until((tree.ClassOrFunc, tree.ExprStmt))
-            if stmt.type != 'expr_stmt':
+                stmt = tree.search_ancestor(stmt, ('expr_stmt', 'lambda', 'funcdef', 'classdef'))
+            if stmt is None or stmt.type != 'expr_stmt':
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
                 stmt = atom
