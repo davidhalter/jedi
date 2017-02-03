@@ -969,10 +969,10 @@ class Function(ClassOrFunc):
       0) <Keyword: def>
       1) <Name>
       2) parameter list (including open-paren and close-paren <Operator>s)
-      3) <Operator: :>
-      4) Node() representing function body
-      5) ??
-      6) annotation (if present)
+      3 or 5) <Operator: :>
+      4 or 6) Node() representing function body
+      3) -> (if annotation is also present)
+      4) annotation (if present)
     """
     type = 'funcdef'
 
