@@ -40,6 +40,7 @@ Guido van Rossum (@gvanrossum) <guido@python.org>
 Dmytro Sadovnychyi (@sadovnychyi) <jedi@dmit.ro>
 Cristi Burcă (@scribu)
 bstaint (@bstaint)
+Mathias Rav (@Mortal) <rav@cs.au.dk>
 
 
 Note: (@user) means a github user name.
