@@ -83,19 +83,3 @@ def test_method_completion():
     else:
         result = ['__func__']
     assert [c.name for c in Script(code).completions()] == result
-
-
-def test_decorator_global():
-    code = dedent('''
-    import abc
-    @abc''')
-    result = ['abc']
-    assert [c.name for c in Script(code).completions()] == result
-
-
-def test_decorator_dotted():
-    code = dedent('''
-    import abc
-    @abc.abstractmethod''')
-    result = ['abstractmethod']
-    assert [c.name for c in Script(code).completions()] == result
