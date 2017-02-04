@@ -315,4 +315,4 @@ import abc
 @abc
 
 #? ['abstractmethod']
-@abc.abstractmethod''')
+@abc.abstractmethod
