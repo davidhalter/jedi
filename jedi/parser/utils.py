@@ -7,6 +7,7 @@ import hashlib
 import gc
 import shutil
 import pickle
+import pickletools
 
 from jedi import settings
 from jedi import debug
@@ -62,23 +63,24 @@ def load_parser(path):
     """
     Returns the module or None, if it fails.
     """
+
     p_time = os.path.getmtime(path) if path else None
+
     try:
         parser_cache_item = parser_cache[path]
         if not path or p_time <= parser_cache_item.change_time:
             return parser_cache_item.parser
     except KeyError:
-        if settings.use_filesystem_cache:
+        if settings.use_filesystem_cache and p_time is not None:
             return ParserPickling.load_parser(path, p_time)
 
 
 def save_parser(path, parser, pickling=True):
     try:
-        p_time = None if path is None else os.path.getmtime(path)
+        p_time = None if (path is None) else os.path.getmtime(path)
     except OSError:
         p_time = None
         pickling = False
-
     item = ParserCacheItem(parser, p_time)
     parser_cache[path] = item
     if settings.use_filesystem_cache and pickling:
@@ -113,6 +115,11 @@ class ParserPickling(object):
         """
 
     def load_parser(self, path, original_changed_time):
+        """
+        Try to load the parser for `path`, unless `original_changed_time` is
+        greater than the original pickling time. In which case the pickled
+        parser is not up to date.
+        """
         try:
             pickle_changed_time = self._index[path]
         except KeyError:
@@ -121,8 +128,10 @@ class ParserPickling(object):
                 and pickle_changed_time < original_changed_time:
             # the pickle file is outdated
             return None
-
-        with open(self._get_hashed_path(path), 'rb') as f:
+        pklpath=self._get_hashed_path(path)
+        if not os.path.exists(pklpath):
+            return None
+        with open(pklpath, 'rb') as f:
             try:
                 gc.disable()
                 parser_cache_item = pickle.load(f)
@@ -142,7 +151,12 @@ class ParserPickling(object):
             self._index = files
 
         with open(self._get_hashed_path(path), 'wb') as f:
-            pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
+            data = pickle.dumps(parser_cache_item, pickle.HIGHEST_PROTOCOL)
+            # optimising is slower on write, but gains across multiple reload, 
+            # TODO provide a "reoptimize all jedi function that load all pickled
+            # file and optimize and re-write."
+            opt = pickletools.optimize(data)
+            f.write(opt)
             files[path] = parser_cache_item.change_time
 
         self._flush_index()

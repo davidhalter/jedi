@@ -3,6 +3,7 @@ Used only for REPL Completion.
 """
 
 import inspect
+import functools
 import os
 
 from jedi import common
@@ -11,6 +12,9 @@ from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
 from jedi.evaluate.context import Context
+
+
+lru_cache = getattr(functools, 'lru_cache', lambda:(lambda x:x))
 
 
 class MixedObject(object):
@@ -115,6 +119,7 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
         #return MixedName(self._evaluator, self._compiled_object, name)
 
 
+@lru_cache()
 def parse(grammar, path):
     with open(path) as f:
         source = f.read()

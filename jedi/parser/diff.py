@@ -14,7 +14,7 @@ from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
 from jedi.parser.tree import EndMarker
-from jedi.parser.utils import parser_cache
+from jedi.parser.utils import parser_cache, ParserCacheItem, save_parser, load_parser, ParserPickling
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
                                   ENDMARKER, INDENT, DEDENT)
@@ -23,11 +23,16 @@ from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
 class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, grammar, source, module_path=None):
-        pi = parser_cache.get(module_path, None)
+        if module_path:
+            pi = ParserPickling.load_parser(module_path, None)
+        else:
+            pi = None
         if pi is None or not settings.fast_parser:
-            return ParserWithRecovery(grammar, source, module_path)
-
-        parser = pi.parser
+            p = ParserWithRecovery(grammar, source, module_path)
+            if (grammar and source and module_path):
+                ParserPickling.save_parser(module_path, ParserCacheItem(p))
+            return p
+        parser = pi
         d = DiffParser(parser)
         new_lines = splitlines(source, keepends=True)
         parser.module = parser._parsed = d.update(new_lines)
@@ -154,6 +159,9 @@ class DiffParser(object):
 
         line_length = len(lines_new)
         lines_old = splitlines(self._parser.source, keepends=True)
+        if lines_old == self._parser_lines_new:
+            self._copy_count = 1
+            return self._module
         sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
         opcodes = sm.get_opcodes()
         debug.speed('diff parser calculated')
