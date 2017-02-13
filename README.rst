@@ -32,7 +32,7 @@ It's really easy.
 
 Jedi can currently be used with the following editors/projects:
 
-- Vim (jedi-vim_, YouCompleteMe_, deoplete-jedi_)
+- Vim (jedi-vim_, YouCompleteMe_, deoplete-jedi_, completor.vim_)
 - Emacs (Jedi.el_, company-mode_, elpy_, anaconda-mode_, ycmd_)
 - Sublime Text (SublimeJEDI_ [ST2 + ST3], anaconda_ [only ST3])
 - TextMate_ (Not sure if it's actually working)
@@ -191,6 +191,7 @@ Acknowledgements
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
 .. _youcompleteme: http://valloric.github.io/YouCompleteMe/
 .. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
+.. _completor.vim: https://github.com/maralla/completor.vim
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _company-mode: https://github.com/syohex/emacs-company-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
