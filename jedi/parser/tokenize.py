@@ -233,6 +233,8 @@ def generate_tokens(readline, use_exact_op_types=False):
         if not line:
             if contstr:
                 yield TokenInfo(ERRORTOKEN, contstr, contstr_start, prefix)
+                if contstr.endswith('\n'):
+                    new_line = True
             break
 
         lnum += 1
