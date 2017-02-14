@@ -1,11 +1,12 @@
 """
 Docstrings are another source of information for functions and classes.
 :mod:`jedi.evaluate.dynamic` tries to find all executions of functions, while
-the docstring parsing is much easier. There are two different types of
+the docstring parsing is much easier. There are three different types of
 docstrings that |jedi| understands:
 
 - `Sphinx <http://sphinx-doc.org/markup/desc.html#info-field-lists>`_
 - `Epydoc <http://epydoc.sourceforge.net/manual-fields.html>`_
+- `Numpydoc <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_
 
 For example, the sphinx annotation ``:type foo: str`` clearly states that the
 type of ``foo`` is ``str``.
@@ -46,22 +47,66 @@ try:
 except ImportError:
     def _search_param_in_numpydocstr(docstr, param_str):
         return []
+
+    def _search_return_in_numpydocstr(docstr):
+        return []
 else:
     def _search_param_in_numpydocstr(docstr, param_str):
         """Search `docstr` (in numpydoc format) for type(-s) of `param_str`."""
-        params = NumpyDocString(docstr)._parsed_data['Parameters']
+        try:
+            # This is a non-public API. If it ever changes we should be 
+            # prepared and return gracefully.
+            params = NumpyDocString(docstr)._parsed_data['Parameters']
+        except (KeyError, AttributeError):
+            return []
         for p_name, p_type, p_descr in params:
             if p_name == param_str:
                 m = re.match('([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
                 if m:
                     p_type = m.group(1)
-
-                if p_type.startswith('{'):
-                    types = set(type(x).__name__ for x in literal_eval(p_type))
-                    return list(types)
-                else:
-                    return [p_type]
+                return _expand_typestr(p_type)
         return []
+
+    def _search_return_in_numpydocstr(docstr):
+        """
+        Search `docstr` (in numpydoc format) for type(-s) of function returns.
+        """
+        doc = NumpyDocString(docstr)
+        try:
+            # This is a non-public API. If it ever changes we should be 
+            # prepared and return gracefully.
+            returns = doc._parsed_data['Returns']
+            returns += doc._parsed_data['Yields']
+        except (KeyError, AttributeError):
+            raise StopIteration
+        for r_name, r_type, r_descr in returns:
+            #Return names are optional and if so the type is in the name
+            if not r_type:
+                r_type = r_name
+            for type_ in _expand_typestr(r_type):
+                yield type_
+
+
+def _expand_typestr(type_str):
+    """
+    Attempts to interpret the possible types in `type_str`
+    """
+    # Check if alternative types are specified with 'or'
+    if re.search('\\bor\\b', type_str):
+        types = [t.split('of')[0].strip() for t in type_str.split('or')]
+    # Check if like "list of `type`" and set type to list
+    elif re.search('\\bof\\b', type_str):
+        types = [type_str.split('of')[0]]
+    # Check if type has is a set of valid literal values eg: {'C', 'F', 'A'}
+    elif type_str.startswith('{'):
+        # python2 does not support literal set evals
+        # workaround this by using lists instead
+        type_str = type_str.replace('{', '[').replace('}', ']')
+        types = set(type(x).__name__ for x in literal_eval(type_str))
+    # Otherwise just return the typestr wrapped in a list
+    else:
+        types = [type_str]
+    return types
 
 
 def _search_param_in_docstr(docstr, param_str):
@@ -213,7 +258,12 @@ def infer_return_types(function_context):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
             if match:
-                return _strip_rst_role(match.group(1))
+                yield _strip_rst_role(match.group(1))
+        # Check for numpy style return hint
+        for type_ in _search_return_in_numpydocstr(code):
+            yield type_
 
-    type_str = search_return_in_docstr(function_context.py__doc__())
-    return _evaluate_for_statement_string(function_context.get_root_context(), type_str)
+    for type_str in search_return_in_docstr(function_context.py__doc__()):
+        for type_eval in _evaluate_for_statement_string(function_context.get_root_context(), type_str):
+            yield type_eval
+

@@ -205,9 +205,9 @@ class CompiledObject(Context):
         return CompiledContextName(self, name)
 
     def _execute_function(self, params):
+        from jedi.evaluate import docstrings
         if self.type != 'funcdef':
             return
-
         for name in self._parse_function_doc()[1].split():
             try:
                 bltn_obj = getattr(_builtins, name)
@@ -221,6 +221,8 @@ class CompiledObject(Context):
                 bltn_obj = create(self.evaluator, bltn_obj)
                 for result in self.evaluator.execute(bltn_obj, params):
                     yield result
+        for type_ in docstrings.infer_return_types(self):
+            yield type_
 
     def get_self_attributes(self):
         return []  # Instance compatibility
