@@ -132,7 +132,7 @@ def _faked(module, obj, name):
                     return None, None
                 return _search_scope(cls, obj.__name__), faked_mod
     else:
-        if obj == module:
+        if obj is module:
             return _search_scope(faked_mod, name), faked_mod
         else:
             try:
@@ -156,7 +156,7 @@ def memoize_faked(obj):
         key = (obj, args, frozenset(kwargs.items()))
         try:
             result = cache[key]
-        except TypeError:
+        except (TypeError, ValueError):
             return obj(*args, **kwargs)
         except KeyError:
             result = obj(*args, **kwargs)
