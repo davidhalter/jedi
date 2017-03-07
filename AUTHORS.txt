@@ -41,6 +41,7 @@ Dmytro Sadovnychyi (@sadovnychyi) <jedi@dmit.ro>
 Cristi Burcă (@scribu)
 bstaint (@bstaint)
 Mathias Rav (@Mortal) <rav@cs.au.dk>
+Daniel Fiterman (@dfit99) <fitermandaniel2@gmail.com>
 
 
 Note: (@user) means a github user name.

@@ -82,6 +82,39 @@ class TokenTest(unittest.TestCase):
             if value == 'if':
                 assert prefix == '    '
 
+    def test_tokenize_multiline_I(self):
+        # Make sure multiline string having newlines have the end marker on the
+        # next line
+        from jedi.parser.tokenize import TokenInfo, ERRORTOKEN, ENDMARKER
+        fundef = u('''""""\n''')
+        fundef_io = StringIO(fundef)
+        tokens = tokenize.generate_tokens(fundef_io.readline)
+        token_list = list(tokens)
+        assert token_list == [TokenInfo(ERRORTOKEN, '""""\n', (1, 0), ''),
+                              TokenInfo(ENDMARKER ,       '', (2, 0), '')]
+
+    def test_tokenize_multiline_II(self):
+        # Make sure multiline string having no newlines have the end marker on
+        # same line
+        from jedi.parser.tokenize import TokenInfo, ERRORTOKEN, ENDMARKER
+        fundef = u('''""""''')
+        fundef_io = StringIO(fundef)
+        tokens = tokenize.generate_tokens(fundef_io.readline)
+        token_list = list(tokens)
+        assert token_list == [TokenInfo(ERRORTOKEN, '""""', (1, 0), ''),
+                              TokenInfo(ENDMARKER,      '', (1, 4), '')]
+
+    def test_tokenize_multiline_III(self):
+        # Make sure multiline string having newlines have the end marker on the
+        # next line even if several newline
+        from jedi.parser.tokenize import TokenInfo, ERRORTOKEN, ENDMARKER
+        fundef = u('''""""\n\n''')
+        fundef_io = StringIO(fundef)
+        tokens = tokenize.generate_tokens(fundef_io.readline)
+        token_list = list(tokens)
+        assert token_list == [TokenInfo(ERRORTOKEN, '""""\n\n', (1, 0), ''),
+                              TokenInfo(ENDMARKER,          '', (3, 0), '')]
+
     def test_identifier_contains_unicode(self):
         fundef = dedent(u('''
         def 我あφ():

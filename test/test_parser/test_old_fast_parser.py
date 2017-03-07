@@ -257,7 +257,7 @@ def test_string_literals():
     """)
 
     script = jedi.Script(dedent(source))
-    script._get_module().tree_node.end_pos == (6, 0)
+    assert script._get_module().tree_node.end_pos == (6, 0)
     assert script.completions()
 
 

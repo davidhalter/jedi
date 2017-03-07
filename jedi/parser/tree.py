@@ -317,7 +317,7 @@ class Leaf(Base):
 
     @utf8_repr
     def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.value)
+        return "<%s: %s start=%s>" % (type(self).__name__, self.value, self.start_pos)
 
 
 class LeafWithNewLines(Leaf):
