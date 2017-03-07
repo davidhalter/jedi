@@ -19,7 +19,7 @@ import itertools as _itertools
 
 from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, opmap,
                                NAME, OP, ERRORTOKEN, NEWLINE, INDENT, DEDENT)
-from jedi._compatibility import is_py3, py_version
+from jedi._compatibility import is_py3, py_version, u
 from jedi.common import splitlines
 
 
@@ -165,10 +165,10 @@ for _prefix in _all_string_prefixes():
 single_quoted = set()
 triple_quoted = set()
 for t in _all_string_prefixes():
-    for u in (t + '"', t + "'"):
-        single_quoted.add(u)
-    for u in (t + '"""', t + "'''"):
-        triple_quoted.add(u)
+    for p in (t + '"', t + "'"):
+        single_quoted.add(p)
+    for p in (t + '"""', t + "'''"):
+        triple_quoted.add(p)
 
 
 # TODO add with?
@@ -179,9 +179,15 @@ pseudo_token_compiled = _compile(PseudoToken)
 
 class TokenInfo(namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])):
     def __repr__(self):
-        annotated_type = tok_name[self.type]
         return ('TokenInfo(type=%s, string=%r, start=%r, prefix=%r)' %
-                self._replace(type=annotated_type))
+                self._replace(type=self.get_type_name()))
+
+    def get_type_name(self, exact=True):
+        if exact:
+            typ = self.exact_type
+        else:
+            typ = self.type
+        return tok_name[typ]
 
     @property
     def exact_type(self):
@@ -360,3 +366,15 @@ def generate_tokens(readline, use_exact_op_types=False):
     for indent in indents[1:]:
         yield TokenInfo(DEDENT, '', end_pos, '')
     yield TokenInfo(ENDMARKER, '', end_pos, additional_prefix)
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) >= 2:
+        path = sys.argv[1]
+        with open(path) as f:
+            code = u(f.read())
+    else:
+        code = u(sys.stdin.read())
+    for token in source_tokens(code, use_exact_op_types=True):
+        print(token)
