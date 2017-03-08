@@ -281,6 +281,7 @@ class DiffParser(object):
         Parses at least until the given line, but might just parse more until a
         valid state is reached.
         """
+        last_until_line = 0
         while until_line > self._nodes_stack.parsed_until_line:
             node = self._try_parse_part(until_line)
             nodes = self._get_children_nodes(node)
@@ -297,6 +298,12 @@ class DiffParser(object):
                 self._new_used_names,
                 node.used_names
             )
+
+            # Since the tokenizer sometimes has bugs, we cannot be sure that
+            # this loop terminates. Therefore assert that there's always a
+            # change.
+            assert last_until_line != self._nodes_stack.parsed_until_line, last_until_line
+            last_until_line = self._nodes_stack.parsed_until_line
 
     def _get_children_nodes(self, node):
         nodes = node.children
