@@ -159,7 +159,7 @@ def splitlines(string, keepends=False):
     also on form feeds.
     """
     if keepends:
-        lst = string.splitlines(keepends=True)
+        lst = string.splitlines(True)
 
         # We have to merge lines that were broken by form feed characters.
         merge = []
