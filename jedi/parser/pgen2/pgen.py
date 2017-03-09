@@ -12,18 +12,13 @@ from jedi.parser import tokenize
 
 
 class ParserGenerator(object):
-    def __init__(self, filename, stream=None):
-        close_stream = None
-        if stream is None:
-            stream = open(filename)
-            close_stream = stream.close
+    def __init__(self, filename):
+        with open(filename) as f:
+            code = f.read()
         self.filename = filename
-        self.stream = stream
-        self.generator = tokenize.generate_tokens(stream.readline)
+        self.generator = tokenize.source_tokens(code)
         self.gettoken()  # Initialize lookahead
         self.dfas, self.startsymbol = self.parse()
-        if close_stream is not None:
-            close_stream()
         self.first = {}  # map from symbol name to set of tokens
         self.addfirstsets()
 

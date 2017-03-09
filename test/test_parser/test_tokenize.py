@@ -1,18 +1,19 @@
 # -*- coding: utf-8    # This file contains Unicode characters.
 
-from io import StringIO
 from textwrap import dedent
 
 from jedi._compatibility import u, is_py3, py_version
-from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT
+from jedi.parser.token import NAME, OP, NEWLINE, STRING, INDENT, ERRORTOKEN, ENDMARKER
 from jedi.parser import ParserWithRecovery, load_grammar, tokenize
+from jedi.common import splitlines
+from jedi.parser.tokenize import TokenInfo
 
 
 from ..helpers import unittest
 
 def _get_token_list(string):
-    io = StringIO(u(string))
-    return list(tokenize.generate_tokens(io.readline))
+    return list(tokenize.source_tokens(string))
+
 
 class TokenTest(unittest.TestCase):
     def test_end_pos_one_line(self):
@@ -35,8 +36,7 @@ class TokenTest(unittest.TestCase):
     def test_simple_no_whitespace(self):
         # Test a simple one line string, no preceding whitespace
         simple_docstring = u('"""simple one line docstring"""')
-        simple_docstring_io = StringIO(simple_docstring)
-        tokens = tokenize.generate_tokens(simple_docstring_io.readline)
+        tokens = tokenize.source_tokens(simple_docstring)
         token_list = list(tokens)
         _, value, _, prefix = token_list[0]
         assert prefix == ''
@@ -45,8 +45,7 @@ class TokenTest(unittest.TestCase):
     def test_simple_with_whitespace(self):
         # Test a simple one line string with preceding whitespace and newline
         simple_docstring = u('  """simple one line docstring""" \r\n')
-        simple_docstring_io = StringIO(simple_docstring)
-        tokens = tokenize.generate_tokens(simple_docstring_io.readline)
+        tokens = tokenize.source_tokens(simple_docstring)
         token_list = list(tokens)
         assert token_list[0][0] == INDENT
         typ, value, start_pos, prefix = token_list[1]
@@ -65,8 +64,7 @@ class TokenTest(unittest.TestCase):
             if x > 0:
                 print(True)
         '''))
-        fundef_io = StringIO(fundef)
-        tokens = tokenize.generate_tokens(fundef_io.readline)
+        tokens = tokenize.source_tokens(fundef)
         token_list = list(tokens)
         for _, value, _, prefix in token_list:
             if value == 'test_whitespace':
@@ -85,10 +83,8 @@ class TokenTest(unittest.TestCase):
     def test_tokenize_multiline_I(self):
         # Make sure multiline string having newlines have the end marker on the
         # next line
-        from jedi.parser.tokenize import TokenInfo, ERRORTOKEN, ENDMARKER
         fundef = u('''""""\n''')
-        fundef_io = StringIO(fundef)
-        tokens = tokenize.generate_tokens(fundef_io.readline)
+        tokens = tokenize.source_tokens(fundef)
         token_list = list(tokens)
         assert token_list == [TokenInfo(ERRORTOKEN, '""""\n', (1, 0), ''),
                               TokenInfo(ENDMARKER ,       '', (2, 0), '')]
@@ -96,10 +92,8 @@ class TokenTest(unittest.TestCase):
     def test_tokenize_multiline_II(self):
         # Make sure multiline string having no newlines have the end marker on
         # same line
-        from jedi.parser.tokenize import TokenInfo, ERRORTOKEN, ENDMARKER
         fundef = u('''""""''')
-        fundef_io = StringIO(fundef)
-        tokens = tokenize.generate_tokens(fundef_io.readline)
+        tokens = tokenize.source_tokens(fundef)
         token_list = list(tokens)
         assert token_list == [TokenInfo(ERRORTOKEN, '""""', (1, 0), ''),
                               TokenInfo(ENDMARKER,      '', (1, 4), '')]
@@ -107,10 +101,8 @@ class TokenTest(unittest.TestCase):
     def test_tokenize_multiline_III(self):
         # Make sure multiline string having newlines have the end marker on the
         # next line even if several newline
-        from jedi.parser.tokenize import TokenInfo, ERRORTOKEN, ENDMARKER
         fundef = u('''""""\n\n''')
-        fundef_io = StringIO(fundef)
-        tokens = tokenize.generate_tokens(fundef_io.readline)
+        tokens = tokenize.source_tokens(fundef)
         token_list = list(tokens)
         assert token_list == [TokenInfo(ERRORTOKEN, '""""\n\n', (1, 0), ''),
                               TokenInfo(ENDMARKER,          '', (3, 0), '')]
@@ -120,8 +112,7 @@ class TokenTest(unittest.TestCase):
         def 我あφ():
             pass
         '''))
-        fundef_io = StringIO(fundef)
-        tokens = tokenize.generate_tokens(fundef_io.readline)
+        tokens = tokenize.source_tokens(fundef)
         token_list = list(tokens)
         unicode_token = token_list[1]
         if is_py3:
@@ -206,3 +197,17 @@ def test_error_literal():
     assert error_token.string == '"""'
     assert endmarker.type == tokenize.ENDMARKER
     assert endmarker.prefix == ''
+
+
+def test_endmarker_end_pos():
+    def check(code):
+        tokens = _get_token_list(code)
+        lines = splitlines(code)
+        assert tokens[-1].end_pos == (len(lines), len(lines[-1]))
+
+    check('#c')
+    check('#c\n')
+    check('a\n')
+    check('a')
+    check(r'a\\n')
+    check('a\\')

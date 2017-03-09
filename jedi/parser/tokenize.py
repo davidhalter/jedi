@@ -14,7 +14,6 @@ from __future__ import absolute_import
 import string
 import re
 from collections import namedtuple
-from io import StringIO
 import itertools as _itertools
 
 from jedi.parser.token import (tok_name, N_TOKENS, ENDMARKER, STRING, NUMBER, opmap,
@@ -207,12 +206,11 @@ class TokenInfo(namedtuple('Token', ['type', 'string', 'start_pos', 'prefix'])):
 
 def source_tokens(source, use_exact_op_types=False):
     """Generate tokens from a the source code (string)."""
-    source = source
-    readline = StringIO(source).readline
-    return generate_tokens(readline, use_exact_op_types)
+    lines = splitlines(source, keepends=True)
+    return generate_tokens(lines, use_exact_op_types)
 
 
-def generate_tokens(readline, use_exact_op_types=False):
+def generate_tokens(lines, use_exact_op_types=False):
     """
     A heavily modified Python standard library tokenizer.
 
@@ -222,7 +220,6 @@ def generate_tokens(readline, use_exact_op_types=False):
     """
     paren_level = 0  # count parentheses
     indents = [0]
-    lnum = 0
     max = 0
     numchars = '0123456789'
     contstr = ''
@@ -234,16 +231,7 @@ def generate_tokens(readline, use_exact_op_types=False):
     new_line = True
     prefix = ''  # Should never be required, but here for safety
     additional_prefix = ''
-    while True:            # loop over lines in stream
-        line = readline()  # readline returns empty when finished. See StringIO
-        if not line:
-            if contstr:
-                yield TokenInfo(ERRORTOKEN, contstr, contstr_start, prefix)
-                if contstr.endswith('\n'):
-                    new_line = True
-            break
-
-        lnum += 1
+    for lnum, line in enumerate(lines, 1):  # loop over lines in stream
         pos, max = 0, len(line)
 
         if contstr:                                         # continued string
@@ -359,10 +347,12 @@ def generate_tokens(readline, use_exact_op_types=False):
                     typ = OP
                 yield TokenInfo(typ, token, spos, prefix)
 
-    if new_line or additional_prefix[-1:] == '\n':
-        end_pos = lnum + 1, 0
-    else:
-        end_pos = lnum, max
+    if contstr:
+        yield TokenInfo(ERRORTOKEN, contstr, contstr_start, prefix)
+        if contstr.endswith('\n'):
+            new_line = True
+
+    end_pos = lnum, max
     # As the last position we just take the maximally possible position. We
     # remove -1 for the last new line.
     for indent in indents[1:]:
