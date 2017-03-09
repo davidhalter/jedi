@@ -423,6 +423,21 @@ def test_whitespace_at_end(differ):
     differ.parse(code + '\n', parsers=1, copies=1)
 
 
+def test_endless_while_loop(differ):
+    """
+    This was a bug in Jedi #878.
+    """
+    code = '#dead'
+    differ.initialize(code)
+    module = differ.parse(code, parsers=1)
+    assert module.end_pos == (1, 5)
+
+    code = '#dead\n'
+    differ.initialize(code)
+    module = differ.parse(code + '\n', parsers=1)
+    assert module.end_pos == (3, 0)
+
+
 def test_in_class_movements(differ):
     code1 = dedent("""\
         class PlaybookExecutor:

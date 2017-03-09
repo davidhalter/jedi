@@ -148,6 +148,7 @@ class DiffParser(object):
             # everything else we keep working with lines_new here.
             self._parser_lines_new = list(lines_new)
             self._parser_lines_new[-1] += '\n'
+            self._parser_lines_new.append('')
             self._added_newline = True
 
         self._reset()
@@ -428,20 +429,18 @@ class _NodesStackNode(object):
         self.children_groups.append(group)
 
     def get_last_line(self, suffix):
-        if not self.children_groups:
-            assert not self.parent
-            return 0
+        line = 0
+        if self.children_groups:
+            last_leaf = self.children_groups[-1].children[-1].get_last_leaf()
+            line = last_leaf.end_pos[0]
 
-        last_leaf = self.children_groups[-1].children[-1].get_last_leaf()
-        line = last_leaf.end_pos[0]
+            # Calculate the line offsets
+            line += self.children_groups[-1].line_offset
 
-        # Calculate the line offsets
-        line += self.children_groups[-1].line_offset
-
-        # Newlines end on the next line, which means that they would cover
-        # the next line. That line is not fully parsed at this point.
-        if _ends_with_newline(last_leaf, suffix):
-            line -= 1
+            # Newlines end on the next line, which means that they would cover
+            # the next line. That line is not fully parsed at this point.
+            if _ends_with_newline(last_leaf, suffix):
+                line -= 1
         line += suffix.count('\n')
         return line
 
@@ -460,7 +459,7 @@ class _NodesStack(object):
         return not self._base_node.children
 
     @property
-    def parsed_until_line(self, ):
+    def parsed_until_line(self):
         return self._tos.get_last_line(self.prefix)
 
     def _get_insertion_node(self, indentation_node):
