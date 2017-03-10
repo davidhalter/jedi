@@ -11,7 +11,7 @@ from contextlib import contextmanager
 
 from jedi import debug
 from jedi import settings
-
+from jedi.stop_signal import poll_and_handle_stop_execution_signal_at_start
 
 class RecursionDetector(object):
     def __init__(self):
@@ -78,6 +78,7 @@ class ExecutionRecursionDetector(object):
         self.parent_execution_funcs.pop()
         self.recursion_level -= 1
 
+    @poll_and_handle_stop_execution_signal_at_start
     def push_execution(self, execution):
         in_par_execution_funcs = execution.tree_node in self.parent_execution_funcs
         in_execution_funcs = execution.tree_node in self.execution_funcs
