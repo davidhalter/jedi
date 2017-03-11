@@ -194,7 +194,7 @@ class DiffParser(object):
 
         # Good for debugging.
         if debug.debug_function:
-            self._enable_debugging(lines_old, lines_new)
+            self._enabled_debugging(lines_old, lines_new)
         last_pos = self._module.end_pos[0]
         if last_pos != line_length:
             current_lines = splitlines(self._module.get_code(), keepends=True)
@@ -207,14 +207,15 @@ class DiffParser(object):
         debug.speed('diff parser end')
         return self._module
 
-    def _enable_debugging(self, lines_old, lines_new):
+    def _enabled_debugging(self, lines_old, lines_new):
         if self._module.get_code() != ''.join(lines_new):
-            debug.warning('parser issue:\n%s\n%s', repr(''.join(lines_old)),
-                          repr(''.join(lines_new)))
+            debug.warning('parser issue:\n%s\n%s', ''.join(lines_old),
+                          ''.join(lines_new))
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):
         copied_nodes = [None]
 
+        last_until_line = -1
         while until_line_new > self._nodes_stack.parsed_until_line:
             parsed_until_line_old = self._nodes_stack.parsed_until_line - line_offset
             line_stmt = self._get_old_line_stmt(parsed_until_line_old + 1)
@@ -247,6 +248,11 @@ class DiffParser(object):
                     self._copied_ranges.append((from_, to))
 
                     debug.dbg('diff actually copy %s to %s', from_, to)
+            # Since there are potential bugs that might loop here endlessly, we
+            # just stop here.
+            assert last_until_line != self._nodes_stack.parsed_until_line \
+                or not copied_nodes, last_until_line
+            last_until_line = self._nodes_stack.parsed_until_line
 
     def _get_old_line_stmt(self, old_line):
         leaf = self._module.get_leaf_for_position((old_line, 0), include_prefixes=True)
