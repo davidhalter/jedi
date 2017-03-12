@@ -488,12 +488,6 @@ def test_in_parentheses_newlines(differ):
     b = 2""")
 
 
-    script = jedi.Script(code1, line=2, column=8)
-    assert script.call_signatures()
-    script = jedi.Script(code2, line=2, column=9)
-    assert script.call_signatures()
-    script = jedi.Script(code1, line=2, column=8)
-    assert script.call_signatures()
     differ.initialize(code1)
-    differ.parse(code2, parsers=1, copies=1)
-    differ.parse(code1, parsers=1, copies=1)
+    differ.parse(code2, parsers=2, copies=1)
+    differ.parse(code1, parsers=2, copies=1)

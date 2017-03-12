@@ -437,11 +437,17 @@ class _NodesStackNode(object):
     def get_last_line(self, suffix):
         line = 0
         if self.children_groups:
-            last_leaf = self.children_groups[-1].children[-1].get_last_leaf()
+            children_group = self.children_groups[-1]
+            last_leaf = children_group.children[-1].get_last_leaf()
             line = last_leaf.end_pos[0]
 
             # Calculate the line offsets
-            line += self.children_groups[-1].line_offset
+            offset = children_group.line_offset
+            if offset:
+                # In case the line_offset is not applied to this specific leaf,
+                # just ignore it.
+                if last_leaf.line <= children_group.last_line_offset_leaf.line:
+                    line += children_group.line_offset
 
             # Newlines end on the next line, which means that they would cover
             # the next line. That line is not fully parsed at this point.
