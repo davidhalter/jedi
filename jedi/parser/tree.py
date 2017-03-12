@@ -4,7 +4,7 @@ is pretty much that. The classes represent syntax elements like functions and
 imports.
 
 This is the "business logic" part of the parser. There's a lot of logic here
-that makes it easier for Jedi (and other libraries to deal with a Python syntax
+that makes it easier for Jedi (and other libraries) to deal with a Python syntax
 tree.
 
 By using `get_code` on a module, you can get back the 1-to-1 representation of
