@@ -26,11 +26,6 @@ from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
 
-OPERATOR_KEYWORDS = 'and', 'for', 'if', 'else', 'in', 'is', 'lambda', 'not', 'or'
-# Not used yet. In the future I intend to add something like KeywordStatement
-STATEMENT_KEYWORDS = 'assert', 'del', 'global', 'nonlocal', 'raise', \
-    'return', 'yield', 'pass', 'continue', 'break'
-
 
 _loaded_grammars = {}
 
