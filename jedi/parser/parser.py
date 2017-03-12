@@ -15,47 +15,19 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
-import os
 import re
 
-from jedi._compatibility import FileNotFoundError
 from jedi.parser import tree as pt
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, tok_name)
-from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.pgen2.parse import PgenParser
-
-
-_loaded_grammars = {}
 
 
 class ParseError(Exception):
     """
     Signals you that the code you fed the Parser was not correct Python code.
     """
-
-
-def load_grammar(version='3.6'):
-    # For now we only support two different Python syntax versions: The latest
-    # Python 3 and Python 2. This may change.
-    if version in ('3.2', '3.3'):
-        version = '3.4'
-    elif version == '2.6':
-        version = '2.7'
-
-    file = 'grammar' + version + '.txt'
-
-    global _loaded_grammars
-    path = os.path.join(os.path.dirname(__file__), file)
-    try:
-        return _loaded_grammars[path]
-    except KeyError:
-        try:
-            return _loaded_grammars.setdefault(path, generate_grammar(path))
-        except FileNotFoundError:
-            # Just load the default if the file does not exist.
-            return load_grammar()
 
 
 class ParserSyntaxError(object):
