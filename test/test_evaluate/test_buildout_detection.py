@@ -8,15 +8,15 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _check_module)
 from jedi.evaluate import Evaluator
 from jedi.evaluate.representation import ModuleContext
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser.python import parse, load_grammar
+from jedi.parser.parser import ParserWithRecovery
 
 from ..helpers import cwd_at
 
 
 def check_module_test(code):
     grammar = load_grammar()
-    p = ParserWithRecovery(grammar, code)
-    module_context = ModuleContext(Evaluator(grammar), p.module)
+    module_context = ModuleContext(Evaluator(grammar), parse(code))
     return _check_module(module_context)
 
 

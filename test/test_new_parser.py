@@ -1,11 +1,11 @@
 from jedi._compatibility import u
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser.python import parse
 
 
 def test_basic_parsing():
     def compare(string):
         """Generates the AST object and then regenerates the code."""
-        assert ParserWithRecovery(load_grammar(), string).module.get_code() == string
+        assert parse(string).get_code() == string
 
     compare(u('\na #pass\n'))
     compare(u('wblabla* 1\t\n'))

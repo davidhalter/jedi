@@ -14,7 +14,8 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 :attr:`parsing.Parser.module` holds an instance of :class:`Module`:
 
 >>> from jedi._compatibility import u
->>> from jedi.parser import ParserWithRecovery, load_grammar
+>>> from jedi.parser.python import load_grammar
+>>> from jedi.parser import ParserWithRecovery
 >>> parser = ParserWithRecovery(load_grammar(), u('import os'), 'example.py')
 >>> submodule = parser.module
 >>> submodule

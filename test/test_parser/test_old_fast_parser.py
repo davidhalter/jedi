@@ -10,7 +10,7 @@ from textwrap import dedent
 
 import jedi
 from jedi._compatibility import u
-from jedi.parser import load_grammar
+from jedi.parser.python import load_grammar
 from jedi.parser.diff import FastParser
 from jedi.parser.utils import save_parser
 

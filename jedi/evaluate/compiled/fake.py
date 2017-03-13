@@ -9,7 +9,8 @@ import inspect
 import types
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser import ParserWithRecovery
+from jedi.parser.python import load_grammar
 from jedi.parser import tree as pt
 
 modules = {}

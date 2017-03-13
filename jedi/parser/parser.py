@@ -68,7 +68,7 @@ class Parser(object):
     }
 
     def __init__(self, grammar, source, start_symbol='file_input',
-                 tokenizer=None, start_parsing=True):
+                 tokens=None, start_parsing=True):
         # Todo Remove start_parsing (with False)
 
         self._used_names = {}
@@ -86,11 +86,11 @@ class Parser(object):
         self._parsed = None
 
         if start_parsing:
-            if tokenizer is None:
-                tokenizer = tokenize.source_tokens(source, use_exact_op_types=True)
-            self.parse(tokenizer)
+            if tokens is None:
+                tokens = tokenize.source_tokens(source, use_exact_op_types=True)
+            self.parse(tokens)
 
-    def parse(self, tokenizer):
+    def parse(self, tokens):
         if self._parsed is not None:
             return self._parsed
 
@@ -100,7 +100,7 @@ class Parser(object):
             self.error_recovery, start_number
         )
 
-        self._parsed = self.pgen_parser.parse(tokenizer)
+        self._parsed = self.pgen_parser.parse(tokens)
 
         if self._start_symbol == 'file_input' != self._parsed.type:
             # If there's only one statement, we get back a non-module. That's
@@ -205,7 +205,7 @@ class ParserWithRecovery(Parser):
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
     """
-    def __init__(self, grammar, source, module_path=None, tokenizer=None,
+    def __init__(self, grammar, source, module_path=None, tokens=None,
                  start_parsing=True):
         self.syntax_errors = []
 
@@ -224,7 +224,7 @@ class ParserWithRecovery(Parser):
         # else:
         super(ParserWithRecovery, self).__init__(
             grammar, source,
-            tokenizer=tokenizer,
+            tokens=tokens,
             start_parsing=start_parsing
         )
 

@@ -4,10 +4,9 @@ import pytest
 
 import jedi
 from jedi import debug
-from jedi._compatibility import u
 from jedi.common import splitlines
 from jedi import cache
-from jedi.parser import load_grammar
+from jedi.parser.python import load_grammar
 from jedi.parser.diff import DiffParser
 from jedi.parser import ParserWithRecovery
 
@@ -45,7 +44,7 @@ class Differ(object):
     def initialize(self, source):
         debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
-        self.parser = ParserWithRecovery(grammar, u(source))
+        self.parser = ParserWithRecovery(grammar, source)
         return self.parser.module
 
     def parse(self, source, copies=0, parsers=0, expect_error_leaves=False):

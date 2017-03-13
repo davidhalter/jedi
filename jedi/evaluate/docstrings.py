@@ -22,7 +22,8 @@ from jedi._compatibility import u
 from jedi.common import unite
 from jedi.evaluate import context
 from jedi.evaluate.cache import memoize_default
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser import ParserWithRecovery
+from jedi.parser.python import load_grammar
 from jedi.parser.tree import search_ancestor
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence

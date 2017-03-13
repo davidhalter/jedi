@@ -4,18 +4,19 @@ from textwrap import dedent
 
 import jedi
 from jedi._compatibility import u, is_py3
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser import ParserWithRecovery
+from jedi.parser.python import parse, load_grammar
 from jedi.parser import tree as pt
 
 
 def test_user_statement_on_import():
     """github #285"""
-    s = u("from datetime import (\n"
-          "    time)")
+    s = "from datetime import (\n" \
+        "    time)"
 
     for pos in [(2, 1), (2, 4)]:
-        p = ParserWithRecovery(load_grammar(), s)
-        stmt = p.module.get_statement_for_position(pos)
+        p = parse(s)
+        stmt = p.get_statement_for_position(pos)
         assert isinstance(stmt, pt.Import)
         assert [str(n) for n in stmt.get_defined_names()] == ['time']
 
@@ -23,7 +24,7 @@ def test_user_statement_on_import():
 class TestCallAndName():
     def get_call(self, source):
         # Get the simple_stmt and then the first one.
-        simple_stmt = ParserWithRecovery(load_grammar(), u(source)).module.children[0]
+        simple_stmt = parse(source).children[0]
         return simple_stmt.children[0]
 
     def test_name_and_call_positions(self):
@@ -58,7 +59,7 @@ class TestCallAndName():
 
 class TestSubscopes():
     def get_sub(self, source):
-        return ParserWithRecovery(load_grammar(), u(source)).module.subscopes[0]
+        return parse(source).subscopes[0]
 
     def test_subscope_names(self):
         name = self.get_sub('class Foo: pass').name
@@ -74,7 +75,7 @@ class TestSubscopes():
 
 class TestImports():
     def get_import(self, source):
-        return ParserWithRecovery(load_grammar(), source).module.imports[0]
+        return parse(source).imports[0]
 
     def test_import_names(self):
         imp = self.get_import(u('import math\n'))
@@ -103,25 +104,25 @@ def test_module():
 
 
 def test_end_pos():
-    s = u(dedent('''
-                 x = ['a', 'b', 'c']
-                 def func():
-                     y = None
-                 '''))
-    parser = ParserWithRecovery(load_grammar(), s)
-    scope = parser.module.subscopes[0]
+    s = dedent('''
+               x = ['a', 'b', 'c']
+               def func():
+                   y = None
+               ''')
+    parser = parse(s)
+    scope = parser.subscopes[0]
     assert scope.start_pos == (3, 0)
     assert scope.end_pos == (5, 0)
 
 
 def test_carriage_return_statements():
-    source = u(dedent('''
+    source = dedent('''
         foo = 'ns1!'
 
         # this is a namespace package
-    '''))
+    ''')
     source = source.replace('\n', '\r\n')
-    stmt = ParserWithRecovery(load_grammar(), source).module.statements[0]
+    stmt = parse(source).statements[0]
     assert '#' not in stmt.get_code()
 
 
@@ -129,7 +130,7 @@ def test_incomplete_list_comprehension():
     """ Shouldn't raise an error, same bug as #418. """
     # With the old parser this actually returned a statement. With the new
     # parser only valid statements generate one.
-    assert ParserWithRecovery(load_grammar(), u('(1 for def')).module.statements == []
+    assert parse('(1 for def').statements == []
 
 
 def test_hex_values_in_docstring():
@@ -141,7 +142,7 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    doc = ParserWithRecovery(load_grammar(), dedent(u(source))).module.subscopes[0].raw_doc
+    doc = parse(source).subscopes[0].raw_doc
     if is_py3:
         assert doc == '\xff'
     else:
@@ -160,7 +161,7 @@ def test_error_correction_with():
 
 
 def test_newline_positions():
-    endmarker = ParserWithRecovery(load_grammar(), u('a\n')).module.children[-1]
+    endmarker = parse('a\n').children[-1]
     assert endmarker.end_pos == (2, 0)
     new_line = endmarker.get_previous_leaf()
     assert new_line.start_pos == (1, 1)
@@ -173,8 +174,8 @@ def test_end_pos_error_correction():
     grammar needs it. However, they are removed again. We still want the right
     end_pos, even if something breaks in the parser (error correction).
     """
-    s = u('def x():\n .')
-    m = ParserWithRecovery(load_grammar(), s).module
+    s = 'def x():\n .'
+    m = parse(s)
     func = m.children[0]
     assert func.type == 'funcdef'
     assert func.end_pos == (2, 2)
@@ -208,19 +209,17 @@ def test_unicode_string():
 
 
 def test_backslash_dos_style():
-    grammar = load_grammar()
-    m = ParserWithRecovery(grammar, u('\\\r\n')).module
-    assert m
+    assert parse('\\\r\n')
 
 
 def test_started_lambda_stmt():
-    p = ParserWithRecovery(load_grammar(), u'lambda a, b: a i')
-    assert p.get_parsed_node().children[0].type == 'error_node'
+    m = parse(u'lambda a, b: a i')
+    assert m.children[0].type == 'error_node'
 
 
 def test_python2_octal():
-    parser = ParserWithRecovery(load_grammar(), u'0660')
-    first = parser.get_parsed_node().children[0]
+    module = parse('0660')
+    first = module.children[0]
     if is_py3:
         assert first.type == 'error_node'
     else:
@@ -228,8 +227,7 @@ def test_python2_octal():
 
 
 def test_python3_octal():
-    parser = ParserWithRecovery(load_grammar(), u'0o660')
-    module = parser.get_parsed_node()
+    module = parse('0o660')
     if is_py3:
         assert module.children[0].children[0].type == 'number'
     else:

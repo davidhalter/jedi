@@ -22,8 +22,8 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 import itertools
 
 import os
-from jedi.parser import \
-    Parser, load_grammar, ParseError, ParserWithRecovery, tree
+from jedi.parser import Parser, ParseError, ParserWithRecovery, tree
+from jedi.parser.python import load_grammar
 from jedi.common import unite
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import compiled

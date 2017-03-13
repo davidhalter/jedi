@@ -41,13 +41,20 @@ def load_grammar(version=None):
             return load_grammar()
 
 
-def parse(source, grammar=None, error_recovery=False):
+def parse(code, grammar=None, error_recovery=True):
+    added_newline = not code.endswith('\n')
+    if added_newline:
+        code += '\n'
+
     if grammar is None:
         grammar = load_grammar()
 
-    tokens = source_tokens(source)
+    tokens = source_tokens(code, use_exact_op_types=True)
     if error_recovery:
         parser = ParserWithRecovery
     else:
         parser = Parser
-    return parser(grammar, tokens).get_root_node()
+    p = parser(grammar, code, tokens=tokens)
+    if added_newline:
+        p.remove_last_newline()
+    return p.get_root_node()

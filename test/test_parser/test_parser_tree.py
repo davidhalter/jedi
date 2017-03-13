@@ -5,7 +5,7 @@ from textwrap import dedent
 import pytest
 
 from jedi._compatibility import u, unicode
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser.python import parse
 from jedi.parser import tree as pt
 
 
@@ -27,9 +27,9 @@ class TestsFunctionAndLambdaParsing(object):
 
     @pytest.fixture(params=FIXTURES)
     def node(self, request):
-        parsed = ParserWithRecovery(load_grammar(), dedent(u(request.param[0])))
+        parsed = parse(dedent(request.param[0]))
         request.keywords['expected'] = request.param[1]
-        return parsed.module.subscopes[0]
+        return parsed.subscopes[0]
 
     @pytest.fixture()
     def expected(self, request, node):
