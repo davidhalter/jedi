@@ -12,11 +12,8 @@ from jedi.parser import tokenize
 
 
 class ParserGenerator(object):
-    def __init__(self, filename):
-        with open(filename) as f:
-            code = f.read()
-        self.filename = filename
-        self.generator = tokenize.source_tokens(code)
+    def __init__(self, bnf_text):
+        self.generator = tokenize.source_tokens(bnf_text)
         self.gettoken()  # Initialize lookahead
         self.dfas, self.startsymbol = self.parse()
         self.first = {}  # map from symbol name to set of tokens
@@ -384,6 +381,6 @@ class DFAState(object):
     __hash__ = None  # For Py3 compatibility.
 
 
-def generate_grammar(filename="Grammar.txt"):
-    p = ParserGenerator(filename)
+def generate_grammar(bnf_text):
+    p = ParserGenerator(bnf_text)
     return p.make_grammar()

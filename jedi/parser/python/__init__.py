@@ -9,9 +9,16 @@ from jedi.parser.tokenize import source_tokens
 _loaded_grammars = {}
 
 
-def load_grammar(version='3.6'):
-    # For now we only support two different Python syntax versions: The latest
-    # Python 3 and Python 2. This may change.
+def load_grammar(version=None):
+    """
+    Loads a Python grammar. The default version is always the latest.
+
+    If you need support for a specific version, please use e.g.
+    `version='3.3'`.
+    """
+    if version is None:
+        version = '3.6'
+
     if version in ('3.2', '3.3'):
         version = '3.4'
     elif version == '2.6':
@@ -25,7 +32,10 @@ def load_grammar(version='3.6'):
         return _loaded_grammars[path]
     except KeyError:
         try:
-            return _loaded_grammars.setdefault(path, generate_grammar(path))
+            with open(path) as f:
+                bnf_text = f.read()
+            grammar = generate_grammar(bnf_text)
+            return _loaded_grammars.setdefault(path, grammar)
         except FileNotFoundError:
             # Just load the default if the file does not exist.
             return load_grammar()
@@ -40,4 +50,4 @@ def parse(source, grammar=None, error_recovery=False):
         parser = ParserWithRecovery
     else:
         parser = Parser
-    parser(grammar, tokens)
+    return parser(grammar, tokens).get_root_node()
