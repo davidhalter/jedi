@@ -13,7 +13,7 @@ from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
 from jedi.evaluate.context import Context
 
-if sys.version_info > (2, 6):
+if sys.version_info > (2, 7):
     from collections import OrderedDict
 else:
     class OrderedDict(object):
@@ -29,6 +29,9 @@ else:
         def __getitem__(self, key):
             return self._dict[key]
 
+        def __contains__(self, key):
+            return (key in self._dict)
+
         def __delitem__(self, key):
             del self._dict[key]
             self._list.remove(key)
@@ -37,8 +40,8 @@ else:
         def __setitem__(self, key, value):
             if key not in self._dict:
                 self._list.append(key)
-            assert len(self._list) == len(self._dict)
             self._dict[key] = value
+            assert len(self._list) == len(self._dict)
 
         def __len__(self):
             return len(self._list)
