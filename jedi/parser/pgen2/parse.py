@@ -135,22 +135,27 @@ class PgenParser(object):
         ilabel = token_to_ilabel(self.grammar, type_, value)
 
         # Loop until the token is shifted; may raise exceptions
+        _gram = self.grammar
+        _labels = _gram.labels
+        _push = self.push
+        _pop = self.pop
+        _shift = self.shift
         while True:
             dfa, state, node = self.stack[-1]
             states, first = dfa
             arcs = states[state]
             # Look for a state with this label
             for i, newstate in arcs:
-                t, v = self.grammar.labels[i]
+                t, v = _labels[i]
                 if ilabel == i:
                     # Look it up in the list of labels
                     assert t < 256
                     # Shift a token; we're done with it
-                    self.shift(type_, value, newstate, prefix, start_pos)
+                    _shift(type_, value, newstate, prefix, start_pos)
                     # Pop while we are in an accept-only state
                     state = newstate
                     while states[state] == [(0, state)]:
-                        self.pop()
+                        _pop()
                         if not self.stack:
                             # Done parsing!
                             return True
@@ -160,16 +165,16 @@ class PgenParser(object):
                     return False
                 elif t >= 256:
                     # See if it's a symbol and if we're in its first set
-                    itsdfa = self.grammar.dfas[t]
+                    itsdfa = _gram.dfas[t]
                     itsstates, itsfirst = itsdfa
                     if ilabel in itsfirst:
                         # Push a symbol
-                        self.push(t, itsdfa, newstate)
+                        _push(t, itsdfa, newstate)
                         break  # To continue the outer while loop
             else:
                 if (0, state) in arcs:
                     # An accepting state, pop it and try something else
-                    self.pop()
+                    _pop()
                     if not self.stack:
                         # Done parsing, but another token is input
                         raise InternalParseError("too much input", type_, value, start_pos)
