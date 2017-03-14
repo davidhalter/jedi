@@ -1,8 +1,11 @@
+"""
+Parsers for Python
+"""
 import os
 
 from jedi._compatibility import FileNotFoundError
 from jedi.parser.pgen2.pgen import generate_grammar
-from jedi.parser.parser import Parser, ParserWithRecovery
+from jedi.parser.parser import Parser, ParserWithRecovery, ParseError
 from jedi.parser.tokenize import source_tokens
 
 
@@ -42,6 +45,22 @@ def load_grammar(version=None):
 
 
 def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
+    """
+    If you want to parse a Python file you want to start here, most likely.
+
+    If you need finer grained control over the parsed instance, there will be
+    other ways to access it.
+
+    :param code: A unicode string that contains Python code.
+    :param grammar: A Python grammar file, created with load_grammar.
+    :param error_recovery: If enabled, any code will be returned. If it is
+        invalid, it will be returned as an error node. If disabled, you will
+        get a ParseError when encountering syntax errors in your code.
+    :param start_symbol: The grammar symbol that you want to parse. Only
+        allowed to be used when error_recovery is disabled.
+
+    :return: A syntax tree node. Typically the module.
+    """
     if start_symbol != 'file_input' and error_recovery:
         raise Exception(
             'The start_symbol is only allowed when error recovery is disabled.')
