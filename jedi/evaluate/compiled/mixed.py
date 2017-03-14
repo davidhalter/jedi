@@ -12,6 +12,8 @@ from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
 from jedi.evaluate.context import Context
 
+from collections import OrderedDict
+
 
 class MixedObject(object):
     """
@@ -115,11 +117,40 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
         #return MixedName(self._evaluator, self._compiled_object, name)
 
 
+_cache = OrderedDict()
+
+_capacity = 256
+# chosen as follow:
+#In [2]: import matplotlib
+#   ...: import matplotlib.pyplot
+#   ...: import numpy as np
+#   ...: import pandas as pd
+#   following by inferring the types of all the completions of
+# np.<tab>
+# matplotlib.<tab>
+# matplotlib.pyplot.<tab>
+# pd.<tab>
+# needs to inspect 193 modules.
+# round to above power of 2.
+
 def parse(grammar, path):
-    with open(path) as f:
-        source = f.read()
-    source = common.source_to_unicode(source)
-    return FastParser(grammar, source, path)
+    """
+    Return a FastParser instanciated from `grammar` and `path`
+
+    Use a LRU cache of (by default) 256 items
+    """
+    key = (grammar, path)
+    if key in _cache:
+        fp = _cache.pop(key)
+    else:
+        with open(path) as f:
+            source = f.read()
+        source = common.source_to_unicode(source)
+        fp = FastParser(grammar, source, path)
+    _cache[key] = fp
+    if len(_cache) > _capacity:
+        _cache.popitem()
+    return fp
 
 
 def _load_module(evaluator, path, python_object):
