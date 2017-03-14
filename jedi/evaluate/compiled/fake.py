@@ -9,8 +9,7 @@ import inspect
 import types
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
-from jedi.parser import ParserWithRecovery
-from jedi.parser.python import load_grammar
+from jedi.parser.python import parse
 from jedi.parser import tree as pt
 
 modules = {}
@@ -62,9 +61,7 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        grammar = load_grammar(version='3.4')
-        module = ParserWithRecovery(grammar, unicode(source), module_name).module
-        modules[module_name] = module
+        modules[module_name] = parse(unicode(source))
 
         if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
