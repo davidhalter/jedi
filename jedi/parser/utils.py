@@ -68,13 +68,13 @@ def load_parser(path):
         if not path or p_time <= parser_cache_item.change_time:
             return parser_cache_item.parser
     except KeyError:
-        if settings.use_filesystem_cache:
+        if settings.use_filesystem_cache and p_time is not None:
             return ParserPickling.load_parser(path, p_time)
 
 
 def save_parser(path, parser, pickling=True):
     try:
-        p_time = None if path is None else os.path.getmtime(path)
+        p_time = None if (path is None) else os.path.getmtime(path)
     except OSError:
         p_time = None
         pickling = False
@@ -121,8 +121,10 @@ class ParserPickling(object):
                 and pickle_changed_time < original_changed_time:
             # the pickle file is outdated
             return None
-
-        with open(self._get_hashed_path(path), 'rb') as f:
+        pklpath = self._get_hashed_path(path)
+        if not os.path.exists(pklpath):
+            return None
+        with open(pklpath, 'rb') as f:
             try:
                 gc.disable()
                 parser_cache_item = pickle.load(f)
