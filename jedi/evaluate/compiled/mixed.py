@@ -3,6 +3,7 @@ Used only for REPL Completion.
 """
 
 import inspect
+import sys
 import os
 
 from jedi import common
@@ -12,7 +13,49 @@ from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
 from jedi.evaluate.context import Context
 
-from collections import OrderedDict
+if sys.version_info > (2, 6):
+    from collections import OrderedDict
+else:
+    class OrderedDict(object):
+        """limited OrderedDict implementation for python 2.6
+
+        Enough of the implementation to support LRU cache.
+        """
+
+        def __init__(self):
+            self._list = []
+            self._dict = {}
+
+        def __getitem__(self, key):
+            return self._dict[key]
+
+        def __delitem__(self, key):
+            del self._dict[key]
+            self._list.remove(key)
+            assert len(self._list) == len(self._dict)
+
+        def __setitem__(self, key, value):
+            if key not in self._dict:
+                self._list.append(key)
+            assert len(self._list) == len(self._dict)
+            self._dict[key] = value
+
+        def __len__(self):
+            return len(self._list)
+
+        def popitem(self):
+            key = self._list.pop(0)
+            res = self._dict[key]
+            del self._dict[key]
+            assert len(self._list) == len(self._dict)
+            return res
+
+        def pop(self, key):
+            self._list.remove(key)
+            res = self._dict[key]
+            del self._dict[key]
+            assert len(self._list) == len(self._dict)
+            return res
 
 
 class MixedObject(object):
