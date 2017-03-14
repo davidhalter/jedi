@@ -41,7 +41,11 @@ def load_grammar(version=None):
             return load_grammar()
 
 
-def parse(code, grammar=None, error_recovery=True):
+def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
+    if start_symbol != 'file_input' and error_recovery:
+        raise Exception(
+            'The start_symbol is only allowed when error recovery is disabled.')
+
     added_newline = not code.endswith('\n')
     if added_newline:
         code += '\n'
@@ -50,11 +54,14 @@ def parse(code, grammar=None, error_recovery=True):
         grammar = load_grammar()
 
     tokens = source_tokens(code, use_exact_op_types=True)
+    kwargs = {}
     if error_recovery:
         parser = ParserWithRecovery
     else:
+        kwargs = dict(start_symbol=start_symbol)
         parser = Parser
-    p = parser(grammar, code, tokens=tokens)
+    p = parser(grammar, code, tokens=tokens, **kwargs)
     if added_newline:
         p.remove_last_newline()
+
     return p.get_root_node()

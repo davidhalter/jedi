@@ -22,8 +22,8 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 import itertools
 
 import os
-from jedi.parser import Parser, ParseError, ParserWithRecovery, tree
-from jedi.parser.python import load_grammar
+from jedi.parser import ParseError, tree
+from jedi.parser.python import parse
 from jedi.common import unite
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import compiled
@@ -62,9 +62,11 @@ def _fix_forward_reference(context, node):
     if isinstance(evaled_node, compiled.CompiledObject) and \
             isinstance(evaled_node.obj, str):
         try:
-            p = Parser(load_grammar(), _compatibility.unicode(evaled_node.obj),
-                       start_symbol='eval_input')
-            new_node = p.get_parsed_node()
+            new_node = parse(
+                _compatibility.unicode(evaled_node.obj),
+                start_symbol='eval_input',
+                error_recovery=False
+            )
         except ParseError:
             debug.warning('Annotation not parsed: %s' % evaled_node.obj)
             return node
@@ -116,8 +118,7 @@ def _get_typing_replacement_module():
             os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
         with open(typing_path) as f:
             code = _compatibility.unicode(f.read())
-        p = ParserWithRecovery(load_grammar(), code)
-        _typing_module = p.module
+        _typing_module = parse(code)
     return _typing_module
 
 
