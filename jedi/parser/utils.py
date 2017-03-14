@@ -7,6 +7,7 @@ import hashlib
 import gc
 import shutil
 import pickle
+import pickletools
 
 from jedi import settings
 from jedi import debug
@@ -142,7 +143,13 @@ class ParserPickling(object):
             self._index = files
 
         with open(self._get_hashed_path(path), 'wb') as f:
-            pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
+            data = pickle.dumps(parser_cache_item, pickle.HIGHEST_PROTOCOL)
+            # optimising is slower on write, but gains across multiple reload,
+            # accumulate.
+            # TODO provide a "reoptimize all jedi function that load all pickled
+            # file and optimize and re-write."
+            opt = pickletools.optimize(data)
+            f.write(opt)
             files[path] = parser_cache_item.change_time
 
         self._flush_index()
