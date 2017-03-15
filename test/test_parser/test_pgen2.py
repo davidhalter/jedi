@@ -10,7 +10,7 @@ from textwrap import dedent
 
 from jedi._compatibility import is_py3
 from jedi.parser.python import parse as _parse, load_grammar
-from jedi.parser import ParseError
+from jedi.parser import ParserSyntaxError
 import pytest
 
 from test.helpers import TestCase
@@ -37,7 +37,7 @@ class GrammarTest(TestCase):
     def invalid_syntax(self, code, **kwargs):
         try:
             parse(code, **kwargs)
-        except ParseError:
+        except ParserSyntaxError:
             pass
         else:
             raise AssertionError("Syntax shouldn't have been valid")

@@ -1,5 +1,6 @@
-from jedi.parser.parser import Parser, ParserWithRecovery, ParseError
+from jedi.parser.parser import Parser, ParserWithRecovery, ParserSyntaxError
 from jedi.parser.pgen2.pgen import generate_grammar
+from jedi.parser import python
 
 
 def parse(grammar, code):

@@ -22,7 +22,7 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 import itertools
 
 import os
-from jedi.parser import ParseError, tree
+from jedi.parser import ParserSyntaxError, tree
 from jedi.parser.python import parse
 from jedi.common import unite
 from jedi.evaluate.cache import memoize_default
@@ -67,7 +67,7 @@ def _fix_forward_reference(context, node):
                 start_symbol='eval_input',
                 error_recovery=False
             )
-        except ParseError:
+        except ParserSyntaxError:
             debug.warning('Annotation not parsed: %s' % evaled_node.obj)
             return node
         else:

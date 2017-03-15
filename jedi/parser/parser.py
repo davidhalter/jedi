@@ -24,13 +24,12 @@ from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
 from jedi.parser.pgen2.parse import PgenParser
 
 
-class ParseError(Exception):
+class ParserSyntaxError(Exception):
     """
-    Signals you that the code you fed the Parser was not correct Python code.
+    Contains error information about the parser tree.
+
+    May be raised as an exception.
     """
-
-
-class ParserSyntaxError(object):
     def __init__(self, message, position):
         self.message = message
         self.position = position
@@ -124,7 +123,7 @@ class Parser(object):
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
-        raise ParseError
+        raise ParserSyntaxError('SyntaxError: invalid syntax', start_pos)
 
     def convert_node(self, grammar, type, children):
         """
