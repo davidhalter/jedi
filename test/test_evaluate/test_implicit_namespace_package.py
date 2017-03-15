@@ -29,7 +29,7 @@ def test_implicit_namespace_package():
 
     # completion
     completions = script_with_path('from pkg import ').completions()
-    names = [str(c.name) for c in completions]  # str because of unicode
+    names = [c.name for c in completions]
     compare = ['ns1_file', 'ns2_file']
     # must at least contain these items, other items are not important
     assert set(compare) == set(names)
