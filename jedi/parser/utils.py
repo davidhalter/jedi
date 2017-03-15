@@ -113,6 +113,11 @@ class ParserPickling(object):
         """
 
     def load_parser(self, path, original_changed_time):
+        """
+        Try to load the parser for `path`, unless `original_changed_time` is
+        greater than the original pickling time. In which case the pickled
+        parser is not up to date.
+        """
         try:
             pickle_changed_time = self._index[path]
         except KeyError:
