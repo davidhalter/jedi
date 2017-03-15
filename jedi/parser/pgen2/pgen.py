@@ -382,5 +382,13 @@ class DFAState(object):
 
 
 def generate_grammar(bnf_text):
+    """
+    ``bnf_text`` is a grammar in extended BNF (using * for repetition, + for
+    at-least-once repetition, [] for optional parts, | for alternatives and ()
+    for grouping).
+
+    It's not EBNF according to ISO/IEC 14977. It's a dialect Python uses in its
+    own parser.
+    """
     p = ParserGenerator(bnf_text)
     return p.make_grammar()
