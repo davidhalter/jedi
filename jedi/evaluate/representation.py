@@ -617,7 +617,9 @@ class ImplicitNamespaceContext(use_metaclass(CachedMetaClass, context.TreeContex
         file_names = chain.from_iterable(os.listdir(path) for path in paths)
         mods = [
             file_name.rpartition('.')[0] if '.' in file_name else file_name
-            for file_name in file_names]
+            for file_name in file_names
+            if file_name != '__pycache__'
+        ]
 
         for name in mods:
             names[name] = imports.SubModuleName(self, name)
