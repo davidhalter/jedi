@@ -61,16 +61,16 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        modules[module_name] = parse(unicode(source))
+        modules[module_name] = m = parse(unicode(source))
 
         if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
             # -> Rename the python2 version (`look at fake/builtins.pym`).
-            open_func = _search_scope(module, 'open')
+            open_func = _search_scope(m, 'open')
             open_func.children[1].value = 'open_python3'
-            open_func = _search_scope(module, 'open_python2')
+            open_func = _search_scope(m, 'open_python2')
             open_func.children[1].value = 'open'
-        return module
+        return m
 
 
 def _search_scope(scope, obj_name):
