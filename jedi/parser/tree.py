@@ -115,10 +115,6 @@ class Leaf(_NodeOrLeaf):
             return self.line - self.prefix.count('\n'), 0  # It's the first leaf.
         return previous_leaf.end_pos
 
-    @property
-    def end_pos(self):
-        return self.line, self.indent + len(self.value)
-
     def move(self, line_offset):
         self.line += line_offset
 
@@ -139,14 +135,6 @@ class Leaf(_NodeOrLeaf):
     def nodes_to_execute(self, last_added=False):
         return []
 
-    @utf8_repr
-    def __repr__(self):
-        return "<%s: %s start=%s>" % (type(self).__name__, self.value, self.start_pos)
-
-
-class LeafWithNewlines(Leaf):
-    __slots__ = ()
-
     @property
     def end_pos(self):
         """
@@ -164,7 +152,7 @@ class LeafWithNewlines(Leaf):
 
     @utf8_repr
     def __repr__(self):
-        return "<%s: %r>" % (type(self).__name__, self.value)
+        return "<%s: %s start=%s>" % (type(self).__name__, self.value, self.start_pos)
 
 
 class BaseNode(_NodeOrLeaf):
@@ -335,7 +323,7 @@ class ErrorNode(BaseNode):
         return []
 
 
-class ErrorLeaf(LeafWithNewlines):
+class ErrorLeaf(Leaf):
     """
     TODO doc
     """

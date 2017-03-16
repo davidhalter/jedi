@@ -41,8 +41,7 @@ import abc
 
 from jedi._compatibility import (Python3Method, is_py3, utf8_repr,
                                  literal_eval, unicode)
-from jedi.parser.tree import (Node, BaseNode, Leaf, LeafWithNewlines,
-                              ErrorNode, ErrorLeaf)
+from jedi.parser.tree import Node, BaseNode, Leaf, ErrorNode, ErrorLeaf
 
 
 def _safe_literal_eval(value):
@@ -211,8 +210,12 @@ class PythonLeaf(Leaf, PythonMixin):
     pass
 
 
-class PythonLeafWithNewlines(LeafWithNewlines, PythonMixin):
-    pass
+class _LeafWithoutNewlines(PythonLeaf):
+    __slots__ = ()
+
+    @property
+    def end_pos(self):
+        return self.line, self.indent + len(self.value)
 
 
 class PythonBaseNode(BaseNode, PythonMixin):
@@ -231,12 +234,12 @@ class PythonNode(Node, PythonMixin):
     pass
 
 
-class EndMarker(PythonLeaf):
+class EndMarker(_LeafWithoutNewlines):
     __slots__ = ()
     type = 'endmarker'
 
 
-class Newline(PythonLeafWithNewlines):
+class Newline(PythonLeaf):
     """Contains NEWLINE and ENDMARKER tokens."""
     __slots__ = ()
     type = 'newline'
@@ -246,7 +249,7 @@ class Newline(PythonLeafWithNewlines):
         return "<%s: %s>" % (type(self).__name__, repr(self.value))
 
 
-class Name(PythonLeaf):
+class Name(_LeafWithoutNewlines):
     """
     A string. Sometimes it is important to know if the string belongs to a name
     or not.
@@ -286,7 +289,7 @@ class Name(PythonLeaf):
             yield self
 
 
-class Literal(PythonLeafWithNewlines):
+class Literal(PythonLeaf):
     __slots__ = ()
 
     def eval(self):
@@ -303,7 +306,7 @@ class String(Literal):
     __slots__ = ()
 
 
-class Operator(PythonLeaf):
+class Operator(_LeafWithoutNewlines):
     type = 'operator'
     __slots__ = ()
 
@@ -328,7 +331,7 @@ class Operator(PythonLeaf):
         return hash(self.value)
 
 
-class Keyword(PythonLeaf):
+class Keyword(_LeafWithoutNewlines):
     type = 'keyword'
     __slots__ = ()
 
