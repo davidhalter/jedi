@@ -5,7 +5,7 @@ import os
 
 from jedi._compatibility import FileNotFoundError
 from jedi.parser.pgen2.pgen import generate_grammar
-from jedi.parser.parser import Parser, ParserWithRecovery
+from jedi.parser.python.parser import Parser, ParserWithRecovery
 from jedi.parser.tokenize import source_tokens
 
 

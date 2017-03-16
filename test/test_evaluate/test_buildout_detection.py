@@ -9,7 +9,7 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
 from jedi.evaluate import Evaluator
 from jedi.evaluate.representation import ModuleContext
 from jedi.parser.python import parse, load_grammar
-from jedi.parser.parser import ParserWithRecovery
+from jedi.parser.python.parser import ParserWithRecovery
 
 from ..helpers import cwd_at
 
