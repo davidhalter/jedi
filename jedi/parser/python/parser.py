@@ -100,7 +100,7 @@ class Parser(object):
 
     def convert_node(self, grammar, type, children):
         """
-        Convert raw node information to a Node instance.
+        Convert raw node information to a PythonBaseNode instance.
 
         This is passed to the parser driver which calls it whenever a reduction of a
         grammar rule produces a new complete node, so that the tree is build
@@ -116,7 +116,7 @@ class Parser(object):
                 # ones and therefore have pseudo start/end positions and no
                 # prefixes. Just ignore them.
                 children = [children[0]] + children[2:-1]
-            return tree.Node(symbol, children)
+            return tree.PythonNode(symbol, children)
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
         # print('leaf', repr(value), token.tok_name[type])
@@ -226,8 +226,8 @@ class ParserWithRecovery(Parser):
                     # suites without an indent in them get discarded.
                     break
                 elif symbol == 'simple_stmt' and len(nodes) > 1:
-                    # simple_stmt can just be turned into a Node, if there are
-                    # enough statements. Ignore the rest after that.
+                    # simple_stmt can just be turned into a PythonNode, if
+                    # there are enough statements. Ignore the rest after that.
                     break
             return index, symbol, nodes
 
@@ -236,7 +236,7 @@ class ParserWithRecovery(Parser):
             index -= 2
             (_, _, (type_, suite_nodes)) = stack[index]
             symbol = grammar.number2symbol[type_]
-            suite_nodes.append(tree.Node(symbol, list(nodes)))
+            suite_nodes.append(tree.PythonNode(symbol, list(nodes)))
             # Remove
             nodes[:] = []
             nodes = suite_nodes
@@ -251,7 +251,7 @@ class ParserWithRecovery(Parser):
                 # Otherwise the parser will get into trouble and DEDENT too early.
                 self._omit_dedent_list.append(self._indent_counter)
             else:
-                error_leaf = tree.ErrorLeaf(tok_name[typ].lower(), value, start_pos, prefix)
+                error_leaf = tree.PythonErrorLeaf(tok_name[typ].lower(), value, start_pos, prefix)
                 stack[-1][2][1].append(error_leaf)
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
@@ -266,7 +266,7 @@ class ParserWithRecovery(Parser):
                 failed_stack.append((symbol, nodes))
                 all_nodes += nodes
         if failed_stack:
-            stack[start_index - 1][2][1].append(tree.ErrorNode(all_nodes))
+            stack[start_index - 1][2][1].append(tree.PythonErrorNode(all_nodes))
 
         stack[start_index:] = []
         return failed_stack
