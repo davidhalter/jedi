@@ -2,7 +2,7 @@ import copy
 from itertools import chain
 from contextlib import contextmanager
 
-from jedi.parser import tree
+from jedi.parser.python import tree
 
 
 def deep_ast_copy(obj):

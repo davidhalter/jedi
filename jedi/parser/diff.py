@@ -13,7 +13,7 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
-from jedi.parser.tree import EndMarker
+from jedi.parser.python.tree import EndMarker
 from jedi.parser.utils import parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,

@@ -4,7 +4,7 @@ import sys
 from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.parser import ParserWithRecovery
 from jedi.evaluate.cache import memoize_default
 from jedi import debug

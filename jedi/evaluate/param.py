@@ -3,7 +3,7 @@ from collections import defaultdict
 from jedi._compatibility import zip_longest
 from jedi import debug
 from jedi import common
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import context

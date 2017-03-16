@@ -17,7 +17,7 @@ It works as follows:
 - execute these calls and check the input. This work with a ``ParamListener``.
 """
 
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.cache import memoize_default

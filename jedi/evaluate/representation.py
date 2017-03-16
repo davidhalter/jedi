@@ -1,5 +1,5 @@
 """
-Like described in the :mod:`jedi.parser.tree` module,
+Like described in the :mod:`jedi.parser.python.tree` module,
 there's a need for an ast like module to represent the states of parsed
 modules.
 
@@ -42,7 +42,7 @@ import re
 from itertools import chain
 
 from jedi._compatibility import use_metaclass
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi import debug
 from jedi import common
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT

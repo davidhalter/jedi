@@ -1,6 +1,6 @@
 import re
 
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, tok_name)

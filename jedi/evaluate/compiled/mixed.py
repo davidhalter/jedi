@@ -17,7 +17,7 @@ class MixedObject(object):
     """
     A ``MixedObject`` is used in two ways:
 
-    1. It uses the default logic of ``parser.tree`` objects,
+    1. It uses the default logic of ``parser.python.tree`` objects,
     2. except for getattr calls. The names dicts are generated in a fashion
        like ``CompiledObject``.
 

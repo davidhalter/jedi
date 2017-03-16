@@ -23,7 +23,7 @@ from jedi.common import unite
 from jedi.evaluate import context
 from jedi.evaluate.cache import memoize_default
 from jedi.parser.python import parse
-from jedi.parser.tree import search_ancestor
+from jedi.parser.python.tree import search_ancestor
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 

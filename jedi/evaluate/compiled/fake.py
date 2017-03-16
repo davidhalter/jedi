@@ -10,7 +10,7 @@ import types
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
 from jedi.parser.python import parse
-from jedi.parser import tree as pt
+from jedi.parser.python import tree as pt
 
 modules = {}
 
@@ -113,7 +113,7 @@ def _faked(module, obj, name):
     if faked_mod is None:
         return None, None
 
-    # Having the module as a `parser.tree.Module`, we need to scan
+    # Having the module as a `parser.python.tree.Module`, we need to scan
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj) or inspect.isclass(obj):

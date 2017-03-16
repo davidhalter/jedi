@@ -14,7 +14,7 @@ import warnings
 import sys
 
 from jedi.parser.python import load_grammar
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.parser.diff import FastParser
 from jedi.parser.utils import save_parser
 from jedi import debug

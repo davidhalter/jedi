@@ -21,7 +21,7 @@ from jedi import debug
 from jedi import settings
 from jedi.common import source_to_unicode, unite
 from jedi.parser.diff import FastParser
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers

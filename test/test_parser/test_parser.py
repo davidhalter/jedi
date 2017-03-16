@@ -6,7 +6,7 @@ import jedi
 from jedi._compatibility import u, is_py3
 from jedi.parser import ParserWithRecovery
 from jedi.parser.python import parse, load_grammar
-from jedi.parser import tree as pt
+from jedi.parser.python import tree
 
 
 def test_user_statement_on_import():
@@ -17,7 +17,7 @@ def test_user_statement_on_import():
     for pos in [(2, 1), (2, 4)]:
         p = parse(s)
         stmt = p.get_statement_for_position(pos)
-        assert isinstance(stmt, pt.Import)
+        assert isinstance(stmt, tree.Import)
         assert [str(n) for n in stmt.get_defined_names()] == ['time']
 
 
@@ -41,19 +41,19 @@ class TestCallAndName():
 
     def test_call_type(self):
         call = self.get_call('hello')
-        assert isinstance(call, pt.Name)
+        assert isinstance(call, tree.Name)
 
     def test_literal_type(self):
         literal = self.get_call('1.0')
-        assert isinstance(literal, pt.Literal)
+        assert isinstance(literal, tree.Literal)
         assert type(literal.eval()) == float
 
         literal = self.get_call('1')
-        assert isinstance(literal, pt.Literal)
+        assert isinstance(literal, tree.Literal)
         assert type(literal.eval()) == int
 
         literal = self.get_call('"hello"')
-        assert isinstance(literal, pt.Literal)
+        assert isinstance(literal, tree.Literal)
         assert literal.eval() == 'hello'
 
 
@@ -204,7 +204,7 @@ def test_param_splitting():
 
 
 def test_unicode_string():
-    s = pt.String(None, u('bö'), (0, 0))
+    s = tree.String(None, u('bö'), (0, 0))
     assert repr(s)  # Should not raise an Error!
 
 
