@@ -1,6 +1,6 @@
 import re
 
-from jedi.parser import tree as pt
+from jedi.parser import tree
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, tok_name)
@@ -10,33 +10,33 @@ from jedi.parser.parser import ParserSyntaxError
 
 class Parser(object):
     AST_MAPPING = {
-        'expr_stmt': pt.ExprStmt,
-        'classdef': pt.Class,
-        'funcdef': pt.Function,
-        'file_input': pt.Module,
-        'import_name': pt.ImportName,
-        'import_from': pt.ImportFrom,
-        'break_stmt': pt.KeywordStatement,
-        'continue_stmt': pt.KeywordStatement,
-        'return_stmt': pt.ReturnStmt,
-        'raise_stmt': pt.KeywordStatement,
-        'yield_expr': pt.YieldExpr,
-        'del_stmt': pt.KeywordStatement,
-        'pass_stmt': pt.KeywordStatement,
-        'global_stmt': pt.GlobalStmt,
-        'nonlocal_stmt': pt.KeywordStatement,
-        'print_stmt': pt.KeywordStatement,
-        'assert_stmt': pt.AssertStmt,
-        'if_stmt': pt.IfStmt,
-        'with_stmt': pt.WithStmt,
-        'for_stmt': pt.ForStmt,
-        'while_stmt': pt.WhileStmt,
-        'try_stmt': pt.TryStmt,
-        'comp_for': pt.CompFor,
-        'decorator': pt.Decorator,
-        'lambdef': pt.Lambda,
-        'old_lambdef': pt.Lambda,
-        'lambdef_nocond': pt.Lambda,
+        'expr_stmt': tree.ExprStmt,
+        'classdef': tree.Class,
+        'funcdef': tree.Function,
+        'file_input': tree.Module,
+        'import_name': tree.ImportName,
+        'import_from': tree.ImportFrom,
+        'break_stmt': tree.KeywordStatement,
+        'continue_stmt': tree.KeywordStatement,
+        'return_stmt': tree.ReturnStmt,
+        'raise_stmt': tree.KeywordStatement,
+        'yield_expr': tree.YieldExpr,
+        'del_stmt': tree.KeywordStatement,
+        'pass_stmt': tree.KeywordStatement,
+        'global_stmt': tree.GlobalStmt,
+        'nonlocal_stmt': tree.KeywordStatement,
+        'print_stmt': tree.KeywordStatement,
+        'assert_stmt': tree.AssertStmt,
+        'if_stmt': tree.IfStmt,
+        'with_stmt': tree.WithStmt,
+        'for_stmt': tree.ForStmt,
+        'while_stmt': tree.WhileStmt,
+        'try_stmt': tree.TryStmt,
+        'comp_for': tree.CompFor,
+        'decorator': tree.Decorator,
+        'lambdef': tree.Lambda,
+        'old_lambdef': tree.Lambda,
+        'lambdef_nocond': tree.Lambda,
     }
 
     def __init__(self, grammar, source, start_symbol='file_input',
@@ -116,29 +116,29 @@ class Parser(object):
                 # ones and therefore have pseudo start/end positions and no
                 # prefixes. Just ignore them.
                 children = [children[0]] + children[2:-1]
-            return pt.Node(symbol, children)
+            return tree.Node(symbol, children)
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
         # print('leaf', repr(value), token.tok_name[type])
         if type == tokenize.NAME:
             if value in grammar.keywords:
-                return pt.Keyword(value, start_pos, prefix)
+                return tree.Keyword(value, start_pos, prefix)
             else:
-                name = pt.Name(value, start_pos, prefix)
+                name = tree.Name(value, start_pos, prefix)
                 # Keep a listing of all used names
                 arr = self._used_names.setdefault(name.value, [])
                 arr.append(name)
                 return name
         elif type == STRING:
-            return pt.String(value, start_pos, prefix)
+            return tree.String(value, start_pos, prefix)
         elif type == NUMBER:
-            return pt.Number(value, start_pos, prefix)
+            return tree.Number(value, start_pos, prefix)
         elif type == NEWLINE:
-            return pt.Newline(value, start_pos, prefix)
+            return tree.Newline(value, start_pos, prefix)
         elif type == ENDMARKER:
-            return pt.EndMarker(value, start_pos, prefix)
+            return tree.EndMarker(value, start_pos, prefix)
         else:
-            return pt.Operator(value, start_pos, prefix)
+            return tree.Operator(value, start_pos, prefix)
 
     def remove_last_newline(self):
         endmarker = self._parsed.children[-1]
@@ -236,7 +236,7 @@ class ParserWithRecovery(Parser):
             index -= 2
             (_, _, (type_, suite_nodes)) = stack[index]
             symbol = grammar.number2symbol[type_]
-            suite_nodes.append(pt.Node(symbol, list(nodes)))
+            suite_nodes.append(tree.Node(symbol, list(nodes)))
             # Remove
             nodes[:] = []
             nodes = suite_nodes
@@ -251,7 +251,7 @@ class ParserWithRecovery(Parser):
                 # Otherwise the parser will get into trouble and DEDENT too early.
                 self._omit_dedent_list.append(self._indent_counter)
             else:
-                error_leaf = pt.ErrorLeaf(tok_name[typ].lower(), value, start_pos, prefix)
+                error_leaf = tree.ErrorLeaf(tok_name[typ].lower(), value, start_pos, prefix)
                 stack[-1][2][1].append(error_leaf)
 
     def _stack_removal(self, grammar, stack, arcs, start_index, value, start_pos):
@@ -266,7 +266,7 @@ class ParserWithRecovery(Parser):
                 failed_stack.append((symbol, nodes))
                 all_nodes += nodes
         if failed_stack:
-            stack[start_index - 1][2][1].append(pt.ErrorNode(all_nodes))
+            stack[start_index - 1][2][1].append(tree.ErrorNode(all_nodes))
 
         stack[start_index:] = []
         return failed_stack
