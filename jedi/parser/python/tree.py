@@ -442,7 +442,7 @@ class Module(Scope):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', 'used_names', '_name')
+    __slots__ = ('path', '_used_names', '_name')
     type = 'file_input'
 
     def __init__(self, children):
@@ -456,6 +456,7 @@ class Module(Scope):
         """
         super(Module, self).__init__(children)
         self.path = None  # Set later.
+        self._used_names = None
 
     @property
     def name(self):
@@ -496,6 +497,27 @@ class Module(Scope):
         for child in self.children:
             result += child.nodes_to_execute()
         return result
+
+    @property
+    def used_names(self):
+        if self._used_names is None:
+            # Don't directly use self._used_names to eliminate a lookup.
+            dct = {}
+
+            def recurse(node):
+                try:
+                    children = node.children
+                except AttributeError:
+                    if node.type == 'name':
+                        arr = dct.setdefault(node.value, [])
+                        arr.append(node)
+                else:
+                    for child in children:
+                        recurse(child)
+
+            recurse(self)
+            self._used_names = dct
+        return self._used_names
 
 
 class Decorator(PythonBaseNode):

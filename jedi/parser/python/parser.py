@@ -43,8 +43,6 @@ class Parser(object):
                  tokens=None, start_parsing=True):
         # Todo Remove start_parsing (with False)
 
-        self._used_names = {}
-
         self.source = source
         self._added_newline = False
         # The Python grammar needs a newline at the end of each statement.
@@ -124,11 +122,7 @@ class Parser(object):
             if value in grammar.keywords:
                 return tree.Keyword(value, start_pos, prefix)
             else:
-                name = tree.Name(value, start_pos, prefix)
-                # Keep a listing of all used names
-                arr = self._used_names.setdefault(name.value, [])
-                arr.append(name)
-                return name
+                return tree.Name(value, start_pos, prefix)
         elif type == STRING:
             return tree.String(value, start_pos, prefix)
         elif type == NUMBER:
@@ -203,7 +197,6 @@ class ParserWithRecovery(Parser):
     def parse(self, tokenizer):
         root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokenizer))
         self.module = root_node
-        self.module.used_names = self._used_names
         self.module.path = self._module_path
         return root_node
 

@@ -357,7 +357,7 @@ class DiffParser(object):
             for name in names:
                 if name.line in copied_line_numbers:
                     new_used_names.setdefault(key, []).append(name)
-        self._module.used_names = new_used_names
+        self._module._used_names = new_used_names
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True
