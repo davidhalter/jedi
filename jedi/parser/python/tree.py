@@ -207,10 +207,13 @@ class PythonMixin():
 
 
 class PythonLeaf(Leaf, PythonMixin):
-    pass
+    __slots__ = ()
 
 
 class _LeafWithoutNewlines(PythonLeaf):
+    """
+    Simply here to optimize performance.
+    """
     __slots__ = ()
 
     @property
@@ -218,20 +221,21 @@ class _LeafWithoutNewlines(PythonLeaf):
         return self.line, self.indent + len(self.value)
 
 
+# Python base classes
 class PythonBaseNode(BaseNode, PythonMixin):
-    pass
-
-
-class PythonErrorNode(ErrorNode, PythonMixin):
-    pass
-
-
-class PythonErrorLeaf(ErrorLeaf, PythonMixin):
-    pass
+    __slots__ = ()
 
 
 class PythonNode(Node, PythonMixin):
-    pass
+    __slots__ = ()
+
+
+class PythonErrorNode(ErrorNode, PythonMixin):
+    __slots__ = ()
+
+
+class PythonErrorLeaf(ErrorLeaf, PythonMixin):
+    __slots__ = ()
 
 
 class EndMarker(_LeafWithoutNewlines):
