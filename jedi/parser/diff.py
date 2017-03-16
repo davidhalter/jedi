@@ -38,11 +38,6 @@ class FastParser(use_metaclass(CachedFastParser)):
     pass
 
 
-def _merge_used_names(base_dict, other_dict):
-    for key, names in other_dict.items():
-        base_dict.setdefault(key, []).extend(names)
-
-
 def _get_last_line(node_or_leaf):
     last_leaf = node_or_leaf.get_last_leaf()
     if _ends_with_newline(last_leaf):
@@ -120,8 +115,6 @@ class DiffParser(object):
         self._copy_count = 0
         self._parser_count = 0
 
-        self._copied_ranges = []
-        self._new_used_names = {}
         self._nodes_stack = _NodesStack(self._module)
 
     def update(self, lines_new):
@@ -141,6 +134,9 @@ class DiffParser(object):
         Returns the new module node.
         '''
         debug.speed('diff parser start')
+        # Reset the used names cache so they get regenerated.
+        self._module._used_names = None
+
         self._parser_lines_new = lines_new
         self._added_newline = False
         if lines_new[-1] != '':
@@ -186,7 +182,6 @@ class DiffParser(object):
         # changed module.
         self._nodes_stack.close()
 
-        self._cleanup()
         if self._added_newline:
             self._parser.remove_last_newline()
 
@@ -245,7 +240,6 @@ class DiffParser(object):
 
                     from_ = copied_nodes[0].get_start_pos_of_prefix()[0] + line_offset
                     to = self._nodes_stack.parsed_until_line
-                    self._copied_ranges.append((from_, to))
 
                     debug.dbg('diff actually copy %s to %s', from_, to)
             # Since there are potential bugs that might loop here endlessly, we
@@ -301,11 +295,6 @@ class DiffParser(object):
                 self._nodes_stack.parsed_until_line,
                 node.end_pos[0] - 1
             )
-            _merge_used_names(
-                self._new_used_names,
-                node.used_names
-            )
-
             # Since the tokenizer sometimes has bugs, we cannot be sure that
             # this loop terminates. Therefore assert that there's always a
             # change.
@@ -345,19 +334,6 @@ class DiffParser(object):
             start_parsing=False
         )
         return self._active_parser.parse(tokenizer=tokenizer)
-
-    def _cleanup(self):
-        """Add the used names from the old parser to the new one."""
-        copied_line_numbers = set()
-        for l1, l2 in self._copied_ranges:
-            copied_line_numbers.update(range(l1, l2 + 1))
-
-        new_used_names = self._new_used_names
-        for key, names in self._module.used_names.items():
-            for name in names:
-                if name.line in copied_line_numbers:
-                    new_used_names.setdefault(key, []).append(name)
-        self._module._used_names = new_used_names
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True

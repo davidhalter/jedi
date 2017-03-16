@@ -26,6 +26,8 @@ import jedi
 def run(parser, lines):
     diff_parser = DiffParser(parser)
     diff_parser.update(lines)
+    # Make sure used_names is loaded
+    parser.module.used_names
 
 
 def main(args):
@@ -36,6 +38,8 @@ def main(args):
         code = f.read()
     grammar = load_grammar()
     parser = ParserWithRecovery(grammar, u(code))
+    # Make sure used_names is loaded
+    parser.module.used_names
 
     code =  code + '\na\n'  # Add something so the diff parser needs to run.
     lines = splitlines(code, keepends=True)
