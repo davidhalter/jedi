@@ -81,6 +81,6 @@ def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
         parser = Parser
     p = parser(grammar, code, tokens=tokens, **kwargs)
     if added_newline:
-        p.remove_last_newline()
+        p._remove_last_newline()
 
     return p.get_root_node()

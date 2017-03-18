@@ -80,7 +80,7 @@ class Parser(object):
                                              [self._parsed])
 
         if self._added_newline:
-            self.remove_last_newline()
+            self._remove_last_newline()
         # The stack is empty now, we don't need it anymore.
         del self.pgen_parser
         return self._parsed
@@ -134,7 +134,7 @@ class Parser(object):
         else:
             return tree.Operator(value, start_pos, prefix)
 
-    def remove_last_newline(self):
+    def _remove_last_newline(self):
         endmarker = self._parsed.children[-1]
         # The newline is either in the endmarker as a prefix or the previous
         # leaf as a newline token.

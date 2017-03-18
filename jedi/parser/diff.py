@@ -183,7 +183,7 @@ class DiffParser(object):
         self._nodes_stack.close()
 
         if self._added_newline:
-            self._parser.remove_last_newline()
+            self._parser._remove_last_newline()
 
         self._parser.source = ''.join(lines_new)
 
