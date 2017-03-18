@@ -461,13 +461,13 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
         p = path
         p = FastParser(evaluator.grammar, source_to_unicode(source), p)
         save_parser(path, p)
-        return p.module
+        return p.get_root_node()
 
     if sys_path is None:
         sys_path = evaluator.sys_path
 
     cached = load_parser(path)
-    module_node = load(source) if cached is None else cached.module
+    module_node = load(source) if cached is None else cached.get_root_node()
     if isinstance(module_node, compiled.CompiledObject):
         return module_node
 
@@ -499,7 +499,8 @@ def get_modules_containing_name(evaluator, modules, name):
             except IOError:
                 return None
         else:
-            return er.ModuleContext(evaluator, parser_cache_item.parser.module)
+            module_node = parser_cache_item.parser.get_root_node()
+            return er.ModuleContext(evaluator, module_node)
 
     def check_fs(path):
         with open(path, 'rb') as f:

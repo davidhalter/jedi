@@ -123,7 +123,7 @@ def parse(grammar, path):
 
 
 def _load_module(evaluator, path, python_object):
-    module = parse(evaluator.grammar, path).module
+    module = parse(evaluator.grammar, path).get_root_node()
     python_module = inspect.getmodule(python_object)
 
     evaluator.modules[python_module.__name__] = module

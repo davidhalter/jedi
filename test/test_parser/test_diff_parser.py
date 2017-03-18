@@ -45,7 +45,7 @@ class Differ(object):
         debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
         self.parser = ParserWithRecovery(grammar, source)
-        return self.parser.module
+        return self.parser.get_root_node()
 
     def parse(self, source, copies=0, parsers=0, expect_error_leaves=False):
         debug.dbg('differ: parse copies=%s parsers=%s', copies, parsers, color='YELLOW')

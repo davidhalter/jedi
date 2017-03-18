@@ -136,7 +136,7 @@ class Script(object):
         parser = FastParser(self._grammar, self._source, self.path)
         save_parser(self.path, parser, pickling=False)
 
-        return parser.module
+        return parser.get_root_node()
 
     @cache.memoize_method
     def _get_module(self):

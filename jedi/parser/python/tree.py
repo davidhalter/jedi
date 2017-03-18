@@ -16,14 +16,14 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 >>> from jedi.parser.python import load_grammar
 >>> from jedi.parser import ParserWithRecovery
 >>> parser = ParserWithRecovery(load_grammar(), u('import os'), 'example.py')
->>> submodule = parser.module
->>> submodule
+>>> module = parser.get_root_node()
+>>> module
 <Module: example.py@1-1>
 
 Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 :attr:`imports <Scope.imports>`:
 
->>> submodule.imports
+>>> module.imports
 [<ImportName: import os@1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.

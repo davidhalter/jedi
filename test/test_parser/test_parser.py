@@ -90,13 +90,13 @@ class TestImports():
 
 
 def test_module():
-    module = ParserWithRecovery(load_grammar(), u('asdf'), 'example.py').module
+    module = ParserWithRecovery(load_grammar(), u('asdf'), 'example.py').get_root_node()
     name = module.name
     assert str(name) == 'example'
     assert name.start_pos == (1, 0)
     assert name.end_pos == (1, 7)
 
-    module = ParserWithRecovery(load_grammar(), u('asdf')).module
+    module = ParserWithRecovery(load_grammar(), u('asdf')).get_root_node()
     name = module.name
     assert str(name) == ''
     assert name.start_pos == (1, 0)
@@ -190,7 +190,7 @@ def test_param_splitting():
     def check(src, result):
         # Python 2 tuple params should be ignored for now.
         grammar = load_grammar('%s.%s' % sys.version_info[:2])
-        m = ParserWithRecovery(grammar, u(src)).module
+        m = ParserWithRecovery(grammar, u(src)).get_root_node()
         if is_py3:
             assert not m.subscopes
         else:

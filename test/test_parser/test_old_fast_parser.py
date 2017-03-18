@@ -27,7 +27,8 @@ def test_carriage_return_splitting():
         '''))
     source = source.replace('\n', '\r\n')
     p = FastParser(load_grammar(), source)
-    assert [n.value for lst in p.module.used_names.values() for n in lst] == ['Foo']
+    module = p.get_root_node()
+    assert [n.value for lst in module.used_names.values() for n in lst] == ['Foo']
 
 
 def test_class_in_docstr():
@@ -48,8 +49,8 @@ def check_p(src, number_parsers_used, number_of_splits=None, number_of_misses=0)
     p = FastParser(load_grammar(), u(src))
     save_parser(None, p, pickling=False)
 
-    assert src == p.module.get_code()
-    return p.module
+    assert src == p.get_root_node().get_code()
+    return p.get_root_node()
 
 
 def test_if():

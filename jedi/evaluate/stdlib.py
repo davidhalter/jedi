@@ -19,7 +19,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate.instance import InstanceFunctionExecution, \
     AbstractInstanceContext, CompiledInstance, BoundMethod
 from jedi.evaluate import iterable
-from jedi.parser import ParserWithRecovery
+from jedi.parser.python import parse
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
@@ -265,7 +265,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     )
 
     # Parse source
-    generated_class = ParserWithRecovery(evaluator.grammar, unicode(source)).module.subscopes[0]
+    generated_class = parse(source, grammar=evaluator.grammar).subscopes[0]
     return set([er.ClassContext(evaluator, generated_class, evaluator.BUILTINS)])
 
 

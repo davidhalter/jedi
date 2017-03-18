@@ -222,7 +222,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script):
 
         p = ParserWithRecovery(evaluator.grammar, source, buildout_script)
         save_parser(buildout_script, p)
-        return p.module
+        return p.get_root_node()
 
     cached = load_parser(buildout_script)
     module_node = cached and cached.module or load(buildout_script)

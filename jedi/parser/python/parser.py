@@ -197,7 +197,6 @@ class ParserWithRecovery(Parser):
     def parse(self, tokenizer):
         root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokenizer))
         root_node.path = self._module_path
-        self.module = root_node
         return root_node
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,

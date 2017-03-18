@@ -69,7 +69,7 @@ def test_sys_path_with_modifications():
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
     grammar = load_grammar()
     p = ParserWithRecovery(grammar, code, module_path=path)
-    module_context = ModuleContext(Evaluator(grammar), p.module)
+    module_context = ModuleContext(Evaluator(grammar), p.get_root_node())
     paths = sys_path_with_modifications(module_context.evaluator, module_context)
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 
