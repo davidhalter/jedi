@@ -85,10 +85,6 @@ class Parser(object):
         del self.pgen_parser
         return self._parsed
 
-    def get_parsed_node(self):
-        # TODO remove in favor of get_root_node
-        return self._parsed
-
     def get_root_node(self):
         return self._parsed
 

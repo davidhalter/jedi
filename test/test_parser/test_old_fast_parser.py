@@ -286,7 +286,7 @@ def test_round_trip():
     func''')
 
     f = FastParser(load_grammar(), u(source))
-    assert f.get_parsed_node().get_code() == source
+    assert f.get_root_node().get_code() == source
 
 
 def test_parentheses_in_string():

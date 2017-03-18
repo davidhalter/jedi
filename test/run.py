@@ -190,7 +190,7 @@ class IntegrationTestCase(object):
                 string = match.group(0)
                 parser = Parser(load_grammar(), string, start_symbol='eval_input')
                 parser.get_root_node().move(self.line_nr)
-                element = parser.get_parsed_node()
+                element = parser.get_root_node()
                 module_context = script._get_module()
                 # The context shouldn't matter for the test results.
                 user_context = get_user_scope(module_context, (self.line_nr, 0))
