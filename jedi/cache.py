@@ -90,31 +90,3 @@ def memoize_method(method):
             dct[key] = result
             return result
     return wrapper
-
-
-def _invalidate_star_import_cache_module(module, only_main=False):
-    """ Important if some new modules are being reparsed """
-    try:
-        t, modules = _time_caches['star_import_cache_validity'][module]
-    except KeyError:
-        pass
-    else:
-        del _time_caches['star_import_cache_validity'][module]
-
-        # This stuff was part of load_parser. However since we're most likely
-        # not going to use star import caching anymore, just ignore it.
-        #else:
-            # In case there is already a module cached and this module
-            # has to be reparsed, we also need to invalidate the import
-            # caches.
-        #    _invalidate_star_import_cache_module(parser_cache_item.parser.module)
-
-
-def invalidate_star_import_cache(path):
-    """On success returns True."""
-    try:
-        parser_cache_item = parser_cache[path]
-    except KeyError:
-        pass
-    else:
-        _invalidate_star_import_cache_module(parser_cache_item.parser.module)

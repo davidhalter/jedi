@@ -68,7 +68,6 @@ definitely worse in some cases. But a completion should also be fast.
 Caching
 ~~~~~~~
 
-.. autodata:: star_import_cache_validity
 .. autodata:: call_signatures_validity
 
 
@@ -216,13 +215,6 @@ scale `max_executions` and `max_until_execution_unique`:
 # ----------------
 # caching validity (time)
 # ----------------
-
-star_import_cache_validity = 60.0
-"""
-In huge packages like numpy, checking all star imports on every completion
-might be slow, therefore we do a star import caching, that lasts a certain
-time span (in seconds).
-"""
 
 call_signatures_validity = 3.0
 """

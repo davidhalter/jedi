@@ -133,7 +133,6 @@ class Script(object):
 
     @cache.memoize_method
     def _get_module_node(self):
-        cache.invalidate_star_import_cache(self._path)
         parser = FastParser(self._grammar, self._source, self.path)
         save_parser(self.path, parser, pickling=False)
 
