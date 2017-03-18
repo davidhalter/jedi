@@ -5,10 +5,10 @@ from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, tok_name)
 from jedi.parser.pgen2.parse import PgenParser
-from jedi.parser.parser import ParserSyntaxError
+from jedi.parser.parser import ParserSyntaxError, Parser as BaseParser
 
 
-class Parser(object):
+class Parser(BaseParser):
     AST_MAPPING = {
         'expr_stmt': tree.ExprStmt,
         'classdef': tree.Class,
@@ -41,6 +41,7 @@ class Parser(object):
 
     def __init__(self, grammar, source, start_symbol='file_input',
                  tokens=None, start_parsing=True):
+        super(Parser, self).__init__(grammar, tokens, start_symbol)
         # Todo Remove start_parsing (with False)
 
         self.source = source
@@ -49,11 +50,6 @@ class Parser(object):
         if not source.endswith('\n') and start_symbol == 'file_input':
             source += '\n'
             self._added_newline = True
-
-        self._start_symbol = start_symbol
-        self._grammar = grammar
-
-        self._parsed = None
 
         if start_parsing:
             if tokens is None:

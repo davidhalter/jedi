@@ -27,3 +27,11 @@ class ParserSyntaxError(Exception):
         self.position = position
 
 
+class Parser(object):
+    AST_MAPPING = {}
+
+    def __init__(self, grammar, tokens, start_symbol='file_input'):
+        self._grammar = grammar
+        self._start_symbol = start_symbol
+        self._parsed = None
+
