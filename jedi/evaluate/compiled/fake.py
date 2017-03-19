@@ -9,8 +9,8 @@ import inspect
 import types
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
-from jedi.parser import ParserWithRecovery, load_grammar
-from jedi.parser import tree as pt
+from jedi.parser.python import parse
+from jedi.parser.python import tree as pt
 
 modules = {}
 
@@ -61,18 +61,16 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        grammar = load_grammar(version='3.4')
-        module = ParserWithRecovery(grammar, unicode(source), module_name).module
-        modules[module_name] = module
+        modules[module_name] = m = parse(unicode(source))
 
         if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
             # -> Rename the python2 version (`look at fake/builtins.pym`).
-            open_func = _search_scope(module, 'open')
+            open_func = _search_scope(m, 'open')
             open_func.children[1].value = 'open_python3'
-            open_func = _search_scope(module, 'open_python2')
+            open_func = _search_scope(m, 'open_python2')
             open_func.children[1].value = 'open'
-        return module
+        return m
 
 
 def _search_scope(scope, obj_name):
@@ -115,7 +113,7 @@ def _faked(module, obj, name):
     if faked_mod is None:
         return None, None
 
-    # Having the module as a `parser.tree.Module`, we need to scan
+    # Having the module as a `parser.python.tree.Module`, we need to scan
     # for methods.
     if name is None:
         if inspect.isbuiltin(obj) or inspect.isclass(obj):
@@ -132,7 +130,7 @@ def _faked(module, obj, name):
                     return None, None
                 return _search_scope(cls, obj.__name__), faked_mod
     else:
-        if obj == module:
+        if obj is module:
             return _search_scope(faked_mod, name), faked_mod
         else:
             try:
@@ -156,7 +154,7 @@ def memoize_faked(obj):
         key = (obj, args, frozenset(kwargs.items()))
         try:
             result = cache[key]
-        except TypeError:
+        except (TypeError, ValueError):
             return obj(*args, **kwargs)
         except KeyError:
             result = obj(*args, **kwargs)

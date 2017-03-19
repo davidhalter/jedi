@@ -22,8 +22,8 @@ from jedi._compatibility import u
 from jedi.common import unite
 from jedi.evaluate import context
 from jedi.evaluate.cache import memoize_default
-from jedi.parser import ParserWithRecovery, load_grammar
-from jedi.parser.tree import search_ancestor
+from jedi.parser.python import parse
+from jedi.parser.python.tree import search_ancestor
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 
@@ -133,9 +133,9 @@ def _evaluate_for_statement_string(module_context, string):
     # Take the default grammar here, if we load the Python 2.7 grammar here, it
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
-    p = ParserWithRecovery(load_grammar(), code.format(indent_block(string)))
+    module = parse(code.format(indent_block(string)))
     try:
-        funcdef = p.module.subscopes[0]
+        funcdef = module.subscopes[0]
         # First pick suite, then simple_stmt and then the node,
         # which is also not the last item, because there's a newline.
         stmt = funcdef.children[-1].children[-1].children[-2]

@@ -9,15 +9,15 @@ Usage:
 Options:
   -h --help     Show this screen.
   -d --debug    Enable Jedi internal debugging.
-  -s <sort>     Sort the profile results, e.g. cum, name [default: time].
+  -s <sort>     Sort the profile results, e.g. cumtime, name [default: time].
 """
 
 import cProfile
 
 from docopt import docopt
-from jedi.parser import load_grammar
+from jedi.parser.python import load_grammar
 from jedi.parser.diff import DiffParser
-from jedi.parser import ParserWithRecovery
+from jedi.parser.python import ParserWithRecovery
 from jedi._compatibility import u
 from jedi.common import splitlines
 import jedi
@@ -26,14 +26,20 @@ import jedi
 def run(parser, lines):
     diff_parser = DiffParser(parser)
     diff_parser.update(lines)
+    # Make sure used_names is loaded
+    parser.module.used_names
 
 
 def main(args):
-    jedi.set_debug_function(notices=args['--debug'])
+    if args['--debug']:
+        jedi.set_debug_function(notices=True)
+
     with open(args['<file>']) as f:
         code = f.read()
     grammar = load_grammar()
     parser = ParserWithRecovery(grammar, u(code))
+    # Make sure used_names is loaded
+    parser.module.used_names
 
     code =  code + '\na\n'  # Add something so the diff parser needs to run.
     lines = splitlines(code, keepends=True)

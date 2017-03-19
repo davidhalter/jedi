@@ -1,5 +1,5 @@
 from jedi.api import classes
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.evaluate import imports
 from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.representation import ModuleContext
@@ -14,8 +14,9 @@ def usages(evaluator, definition_names, mods):
             if name.api_type == 'module':
                 found = False
                 for context in name.infer():
-                    found = True
-                    yield context.name
+                    if isinstance(context, ModuleContext):
+                        found = True
+                        yield context.name
                 if not found:
                     yield name
             else:

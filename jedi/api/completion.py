@@ -1,5 +1,5 @@
 from jedi.parser import token
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi import debug
 from jedi import settings
 from jedi.api import classes

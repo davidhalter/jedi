@@ -12,18 +12,10 @@ from jedi.parser import tokenize
 
 
 class ParserGenerator(object):
-    def __init__(self, filename, stream=None):
-        close_stream = None
-        if stream is None:
-            stream = open(filename)
-            close_stream = stream.close
-        self.filename = filename
-        self.stream = stream
-        self.generator = tokenize.generate_tokens(stream.readline)
+    def __init__(self, bnf_text):
+        self.generator = tokenize.source_tokens(bnf_text)
         self.gettoken()  # Initialize lookahead
         self.dfas, self.startsymbol = self.parse()
-        if close_stream is not None:
-            close_stream()
         self.first = {}  # map from symbol name to set of tokens
         self.addfirstsets()
 
@@ -389,6 +381,14 @@ class DFAState(object):
     __hash__ = None  # For Py3 compatibility.
 
 
-def generate_grammar(filename="Grammar.txt"):
-    p = ParserGenerator(filename)
+def generate_grammar(bnf_text):
+    """
+    ``bnf_text`` is a grammar in extended BNF (using * for repetition, + for
+    at-least-once repetition, [] for optional parts, | for alternatives and ()
+    for grouping).
+
+    It's not EBNF according to ISO/IEC 14977. It's a dialect Python uses in its
+    own parser.
+    """
+    p = ParserGenerator(bnf_text)
     return p.make_grammar()

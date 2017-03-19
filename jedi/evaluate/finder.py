@@ -15,7 +15,7 @@ Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
 
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi import debug
 from jedi.common import unite
 from jedi import settings

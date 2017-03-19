@@ -16,12 +16,12 @@ import os
 import pkgutil
 import sys
 
-from jedi._compatibility import find_module, unicode
+from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
 from jedi.common import source_to_unicode, unite
 from jedi.parser.diff import FastParser
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -306,8 +306,10 @@ class Importer(object):
                     # At the moment we are only using one path. So this is
                     # not important to be correct.
                     try:
+                        if not isinstance(path, list):
+                            path = [path]
                         module_file, module_path, is_pkg = \
-                            find_module(import_parts[-1], [path])
+                            find_module(import_parts[-1], path, fullname=module_name)
                         break
                     except ImportError:
                         module_path = None
@@ -323,7 +325,7 @@ class Importer(object):
                 sys.path, temp = sys_path, sys.path
                 try:
                     module_file, module_path, is_pkg = \
-                        find_module(import_parts[-1])
+                        find_module(import_parts[-1], fullname=module_name)
                 finally:
                     sys.path = temp
             except ImportError:
@@ -343,7 +345,12 @@ class Importer(object):
             source = module_file.read()
             module_file.close()
 
-        if module_file is None and not module_path.endswith(('.py', '.zip', '.egg')):
+        if isinstance(module_path, ImplicitNSInfo):
+            from jedi.evaluate.representation import ImplicitNamespaceContext
+            fullname, paths = module_path.name, module_path.paths
+            module = ImplicitNamespaceContext(self._evaluator, fullname=fullname)
+            module.paths = paths
+        elif module_file is None and not module_path.endswith(('.py', '.zip', '.egg')):
             module = compiled.load_module(self._evaluator, module_path)
         else:
             module = _load_module(self._evaluator, module_path, source, sys_path, parent_module)
@@ -384,7 +391,7 @@ class Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
-        from jedi.evaluate.representation import ModuleContext
+        from jedi.evaluate.representation import ModuleContext, ImplicitNamespaceContext
         names = []
         if self.import_path:
             # flask
@@ -405,12 +412,15 @@ class Importer(object):
                 # Non-modules are not completable.
                 if context.api_type != 'module':  # not a module
                     continue
-
                 # namespace packages
-                if isinstance(context, ModuleContext) and \
-                        context.py__file__().endswith('__init__.py'):
+                if isinstance(context, ModuleContext) and context.py__file__().endswith('__init__.py'):
                     paths = context.py__path__()
                     names += self._get_module_names(paths, in_module=context)
+
+                # implicit namespace packages
+                elif isinstance(context, ImplicitNamespaceContext):
+                    paths = context.paths
+                    names += self._get_module_names(paths)
 
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to

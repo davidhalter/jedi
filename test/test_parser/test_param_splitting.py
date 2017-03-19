@@ -5,7 +5,7 @@ instead of simple parser objects.
 
 from textwrap import dedent
 
-from jedi.parser import Parser, load_grammar
+from jedi.parser.python import parse
 
 
 def assert_params(param_string, **wanted_dct):
@@ -14,12 +14,12 @@ def assert_params(param_string, **wanted_dct):
         pass
     ''') % param_string
 
-    parser = Parser(load_grammar(), dedent(source))
-    funcdef = parser.get_parsed_node().subscopes[0]
+    module = parse(source)
+    funcdef = module.subscopes[0]
     dct = dict((p.name.value, p.default and p.default.get_code())
                for p in funcdef.params)
     assert dct == wanted_dct
-    assert parser.get_parsed_node().get_code() == source
+    assert module.get_code() == source
 
 
 def test_split_params_with_separation_star():

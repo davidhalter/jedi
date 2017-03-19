@@ -2,10 +2,9 @@ import difflib
 
 import pytest
 
-from jedi._compatibility import u
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser.python import parse
 
-code_basic_features = u('''
+code_basic_features = '''
 """A mod docstring"""
 
 def a_function(a_argument, a_default = "default"):
@@ -22,7 +21,7 @@ to""" + "huhu"
         return str(a_result)
     else
         return None
-''')
+'''
 
 
 def diff_code_assert(a, b, n=4):
@@ -44,22 +43,22 @@ def diff_code_assert(a, b, n=4):
 def test_basic_parsing():
     """Validate the parsing features"""
 
-    prs = ParserWithRecovery(load_grammar(), code_basic_features)
+    m = parse(code_basic_features)
     diff_code_assert(
         code_basic_features,
-        prs.module.get_code()
+        m.get_code()
     )
 
 
 def test_operators():
-    src = u('5  * 3')
-    prs = ParserWithRecovery(load_grammar(), src)
-    diff_code_assert(src, prs.module.get_code())
+    src = '5  * 3'
+    module = parse(src)
+    diff_code_assert(src, module.get_code())
 
 
 def test_get_code():
     """Use the same code that the parser also generates, to compare"""
-    s = u('''"""a docstring"""
+    s = '''"""a docstring"""
 class SomeClass(object, mixin):
     def __init__(self):
         self.xy = 3.0
@@ -81,8 +80,8 @@ class WithDocstring:
 def method_with_docstring():
     """class docstr"""
     pass
-''')
-    assert ParserWithRecovery(load_grammar(), s).module.get_code() == s
+'''
+    assert parse(s).get_code() == s
 
 
 def test_end_newlines():
@@ -92,7 +91,7 @@ def test_end_newlines():
     line the parser needs.
     """
     def test(source, end_pos):
-        module = ParserWithRecovery(load_grammar(), u(source)).module
+        module = parse(source)
         assert module.get_code() == source
         assert module.end_pos == end_pos
 

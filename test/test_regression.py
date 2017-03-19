@@ -7,16 +7,14 @@ import os
 import sys
 import textwrap
 
-from .helpers import TestCase, cwd_at
-
 import pytest
-import jedi
-from jedi._compatibility import u
+
 from jedi import Script
 from jedi import api
 from jedi import common
 from jedi.evaluate import imports
-from jedi.parser import ParserWithRecovery, load_grammar
+from jedi.parser.python import parse
+from .helpers import TestCase, cwd_at
 
 #jedi.set_debug_function()
 
@@ -102,9 +100,9 @@ class TestRegression(TestCase):
 
     def test_end_pos_line(self):
         # jedi issue #150
-        s = u("x()\nx( )\nx(  )\nx (  )")
-        parser = ParserWithRecovery(load_grammar(), s)
-        for i, s in enumerate(parser.module.statements):
+        s = "x()\nx( )\nx(  )\nx (  )"
+        module = parse(s)
+        for i, s in enumerate(module.statements):
             assert s.end_pos == (i + 1, i + 3)
 
     def check_definition_by_marker(self, source, after_cursor, names):

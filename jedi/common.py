@@ -159,24 +159,29 @@ def splitlines(string, keepends=False):
     also on form feeds.
     """
     if keepends:
-        # If capturing parentheses are used in pattern, then the text of all
-        # groups in the pattern are also returned as part of the resulting
-        # list.
-        lst = re.split('(\n|\r\n)', string)
+        lst = string.splitlines(True)
 
-        # Need to merge the new lines with the actual lines.
-        odd = False
-        lines = []
-        for string in lst:
-            if odd:
-                line += string
-                lines.append(line)
-            else:
-                line = string
-            odd = not odd
-        if odd:
-            lines.append(line)
-        return lines
+        # We have to merge lines that were broken by form feed characters.
+        merge = []
+        for i, line in enumerate(lst):
+            if line.endswith('\f'):
+                merge.append(i)
+
+        for index in reversed(merge):
+            try:
+                lst[index] = lst[index] + lst[index + 1]
+                del lst[index + 1]
+            except IndexError:
+                # index + 1 can be empty and therefore there's no need to
+                # merge.
+                pass
+
+        # The stdlib's implementation of the end is inconsistent when calling
+        # it with/without keepends. One time there's an empty string in the
+        # end, one time there's none.
+        if string.endswith('\n') or string == '':
+            lst.append('')
+        return lst
     else:
         return re.split('\n|\r\n', string)
 

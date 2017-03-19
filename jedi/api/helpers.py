@@ -7,7 +7,7 @@ from collections import namedtuple
 from jedi._compatibility import u
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi import parser
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi.parser import tokenize
 from jedi.cache import time_cache
 from jedi import common

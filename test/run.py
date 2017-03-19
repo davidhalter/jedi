@@ -120,7 +120,8 @@ from functools import reduce
 import jedi
 from jedi import debug
 from jedi._compatibility import unicode, is_py3
-from jedi.parser import Parser, load_grammar
+from jedi.parser import Parser
+from jedi.parser.python import load_grammar
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 

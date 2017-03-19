@@ -10,7 +10,7 @@ from functools import partial
 from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
-from jedi.parser.tree import Param, Operator
+from jedi.parser.python.tree import Param, Operator
 from jedi.evaluate.helpers import FakeName
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
@@ -346,7 +346,7 @@ class CompiledObjectFilter(AbstractFilter):
 
         is_instance = self._is_instance or fake.is_class_instance(obj)
         # ``dir`` doesn't include the type names.
-        if not inspect.ismodule(obj) and obj != type and not is_instance:
+        if not inspect.ismodule(obj) and (obj is not type) and not is_instance:
             for filter in create(self._evaluator, type).get_filters():
                 names += filter.values()
         return names

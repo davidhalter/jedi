@@ -1,5 +1,5 @@
 """
-Like described in the :mod:`jedi.parser.tree` module,
+Like described in the :mod:`jedi.parser.python.tree` module,
 there's a need for an ast like module to represent the states of parsed
 modules.
 
@@ -39,9 +39,10 @@ import os
 import pkgutil
 import imp
 import re
+from itertools import chain
 
 from jedi._compatibility import use_metaclass
-from jedi.parser import tree
+from jedi.parser.python import tree
 from jedi import debug
 from jedi import common
 from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
@@ -557,3 +558,69 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
+
+
+class ImplicitNSName(AbstractNameDefinition):
+    """
+    Accessing names for implicit namespace packages should infer to nothing.
+    This object will prevent Jedi from raising exceptions
+    """
+    def __init__(self, implicit_ns_context, string_name):
+        self.implicit_ns_context = implicit_ns_context
+        self.string_name = string_name
+
+    def infer(self):
+        return []
+
+    def get_root_context(self):
+        return self.implicit_ns_context
+
+
+class ImplicitNamespaceContext(use_metaclass(CachedMetaClass, context.TreeContext)):
+    """
+    Provides support for implicit namespace packages
+    """
+    api_type = 'module'
+    parent_context = None
+
+    def __init__(self, evaluator, fullname):
+        super(ImplicitNamespaceContext, self).__init__(evaluator, parent_context=None)
+        self.evaluator = evaluator
+        self.fullname = fullname
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        yield DictFilter(self._sub_modules_dict())
+
+    @property
+    @memoize_default()
+    def name(self):
+        string_name = self.py__package__().rpartition('.')[-1]
+        return ImplicitNSName(self, string_name)
+
+    def py__file__(self):
+        return None
+
+    def py__package__(self):
+        """Return the fullname
+        """
+        return self.fullname
+
+    @property
+    def py__path__(self):
+        return lambda: [self.paths]
+
+    @memoize_default()
+    def _sub_modules_dict(self):
+        names = {}
+
+        paths = self.paths
+        file_names = chain.from_iterable(os.listdir(path) for path in paths)
+        mods = [
+            file_name.rpartition('.')[0] if '.' in file_name else file_name
+            for file_name in file_names
+            if file_name != '__pycache__'
+        ]
+
+        for name in mods:
+            names[name] = imports.SubModuleName(self, name)
+        return names

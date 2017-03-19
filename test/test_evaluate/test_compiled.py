@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 from jedi._compatibility import builtins, is_py3
-from jedi.parser import load_grammar
+from jedi.parser.python import load_grammar
 from jedi.evaluate import compiled, instance
 from jedi.evaluate.representation import FunctionContext
 from jedi.evaluate import Evaluator
