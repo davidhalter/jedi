@@ -57,30 +57,20 @@ class Parser(BaseParser):
             self.parse(tokens)
 
     def parse(self, tokens):
-        if self._parsed is not None:
-            return self._parsed
+        node = super(Parser, self).parse(tokens)
 
-        from jedi.parser.pgen2.parse import PgenParser
-        start_number = self._grammar.symbol2number[self._start_symbol]
-        self.pgen_parser = PgenParser(
-            self._grammar, self.convert_node, self.convert_leaf,
-            self.error_recovery, start_number
-        )
-
-        self._parsed = self.pgen_parser.parse(tokens)
-
-        if self._start_symbol == 'file_input' != self._parsed.type:
+        if self._start_symbol == 'file_input' != node.type:
             # If there's only one statement, we get back a non-module. That's
             # not what we want, we want a module, so we add it here:
-            self._parsed = self.convert_node(self._grammar,
-                                             self._grammar.symbol2number['file_input'],
-                                             [self._parsed])
+            self._parsed = node = self.convert_node(
+                self._grammar,
+                self._grammar.symbol2number['file_input'],
+                [node]
+            )
 
         if self._added_newline:
             self._remove_last_newline()
-        # The stack is empty now, we don't need it anymore.
-        del self.pgen_parser
-        return self._parsed
+        return node
 
     def get_root_node(self):
         return self._parsed
