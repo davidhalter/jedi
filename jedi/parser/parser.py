@@ -15,6 +15,9 @@ within the statement. This lowers memory usage and cpu time and reduces the
 complexity of the ``Parser`` (there's another parser sitting inside
 ``Statement``, which produces ``Array`` and ``Call``).
 """
+from jedi.parser import tree
+from jedi.parser.pgen2.parse import PgenParser
+
 
 class ParserSyntaxError(Exception):
     """
@@ -27,11 +30,46 @@ class ParserSyntaxError(Exception):
         self.position = position
 
 
-class Parser(object):
-    AST_MAPPING = {}
+class BaseParser(object):
+    ast_mapping = {}
+    default_node = tree.Node
 
-    def __init__(self, grammar, tokens, start_symbol='file_input'):
+    def __init__(self, grammar, tokens, start_symbol='file_input',
+                 error_recovery=False):
         self._grammar = grammar
         self._start_symbol = start_symbol
+        self._error_recovery = error_recovery
         self._parsed = None
 
+    def parse(self, tokens):
+        if self._parsed is not None:
+            return self._parsed
+
+        start_number = self._grammar.symbol2number[self._start_symbol]
+        self.pgen_parser = PgenParser(
+            self._grammar, self.convert_node, self.convert_leaf,
+            self.error_recovery, start_number
+        )
+
+        self._parsed = self.pgen_parser.parse(tokens)
+        # The stack is empty now, we don't need it anymore.
+        del self.pgen_parser
+        return self._parsed
+
+    def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
+                       add_token_callback):
+        if self._error_recovery:
+            raise NotImplementedError("Error Recovery is not implemented")
+        else:
+            raise ParserSyntaxError('SyntaxError: invalid syntax', start_pos)
+
+    def convert_node(self, grammar, type, children):
+        # TODO REMOVE symbol, we don't want type here.
+        symbol = grammar.number2symbol[type]
+        try:
+            return self.ast_mapping[symbol](children)
+        except KeyError:
+            return self.default_node(symbol, children)
+
+    def convert_leaf(self, grammar, type, value, prefix, start_pos):
+        raise NotImplementedError

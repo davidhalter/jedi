@@ -5,7 +5,7 @@ from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, tok_name)
 from jedi.parser.pgen2.parse import PgenParser
-from jedi.parser.parser import ParserSyntaxError, Parser as BaseParser
+from jedi.parser.parser import ParserSyntaxError, BaseParser
 
 
 class Parser(BaseParser):
