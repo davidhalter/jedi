@@ -13,8 +13,10 @@ from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
 from jedi.parser import ParserWithRecovery
-from jedi.parser.python.tree import EndMarker
-from jedi.parser.utils import parser_cache
+
+from jedi.parser.tree import EndMarker
+from jedi.parser.utils import parser_cache, ParserCacheItem, save_parser, load_parser, ParserPickling
+
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
                                   ENDMARKER, INDENT, DEDENT)
@@ -23,11 +25,16 @@ from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
 class CachedFastParser(type):
     """ This is a metaclass for caching `FastParser`. """
     def __call__(self, grammar, source, module_path=None):
-        pi = parser_cache.get(module_path, None)
+        if module_path:
+            pi = ParserPickling.load_parser(module_path, None)
+        else:
+            pi = None
         if pi is None or not settings.fast_parser:
-            return ParserWithRecovery(grammar, source, module_path)
-
-        parser = pi.parser
+            p = ParserWithRecovery(grammar, source, module_path)
+            if (grammar and source and module_path):
+                ParserPickling.save_parser(module_path, ParserCacheItem(p))
+            return p
+        parser = pi
         d = DiffParser(parser)
         new_lines = splitlines(source, keepends=True)
         parser.module = parser._parsed = d.update(new_lines)
