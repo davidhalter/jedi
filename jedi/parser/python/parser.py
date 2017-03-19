@@ -4,12 +4,11 @@ from jedi.parser.python import tree
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, tok_name)
-from jedi.parser.pgen2.parse import PgenParser
-from jedi.parser.parser import ParserSyntaxError, BaseParser
+from jedi.parser.parser import BaseParser
 
 
 class Parser(BaseParser):
-    AST_MAPPING = {
+    ast_mapping = {
         'expr_stmt': tree.ExprStmt,
         'classdef': tree.Class,
         'funcdef': tree.Function,
@@ -38,6 +37,7 @@ class Parser(BaseParser):
         'old_lambdef': tree.Lambda,
         'lambdef_nocond': tree.Lambda,
     }
+    default_node = tree.PythonNode
 
     def __init__(self, grammar, source, start_symbol='file_input',
                  tokens=None, start_parsing=True):
@@ -60,6 +60,7 @@ class Parser(BaseParser):
         if self._parsed is not None:
             return self._parsed
 
+        from jedi.parser.pgen2.parse import PgenParser
         start_number = self._grammar.symbol2number[self._start_symbol]
         self.pgen_parser = PgenParser(
             self._grammar, self.convert_node, self.convert_leaf,
@@ -84,10 +85,6 @@ class Parser(BaseParser):
     def get_root_node(self):
         return self._parsed
 
-    def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
-                       add_token_callback):
-        raise ParserSyntaxError('SyntaxError: invalid syntax', start_pos)
-
     def convert_node(self, grammar, type, children):
         """
         Convert raw node information to a PythonBaseNode instance.
@@ -96,9 +93,10 @@ class Parser(BaseParser):
         grammar rule produces a new complete node, so that the tree is build
         strictly bottom-up.
         """
+        # TODO REMOVE symbol, we don't want type here.
         symbol = grammar.number2symbol[type]
         try:
-            return Parser.AST_MAPPING[symbol](children)
+            return self.ast_mapping[symbol](children)
         except KeyError:
             if symbol == 'suite':
                 # We don't want the INDENT/DEDENT in our parser tree. Those
@@ -106,7 +104,7 @@ class Parser(BaseParser):
                 # ones and therefore have pseudo start/end positions and no
                 # prefixes. Just ignore them.
                 children = [children[0]] + children[2:-1]
-            return tree.PythonNode(symbol, children)
+            return self.default_node(symbol, children)
 
     def convert_leaf(self, grammar, type, value, prefix, start_pos):
         # print('leaf', repr(value), token.tok_name[type])
@@ -271,6 +269,3 @@ class ParserWithRecovery(Parser):
                 self._indent_counter += 1
 
             yield typ, value, start_pos, prefix
-
-    def __repr__(self):
-        return "<%s: %s>" % (type(self).__name__, self.module)
