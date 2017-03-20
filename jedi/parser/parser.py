@@ -34,8 +34,7 @@ class BaseParser(object):
     ast_mapping = {}
     default_node = tree.Node
 
-    def __init__(self, grammar, tokens, start_symbol='file_input',
-                 error_recovery=False):
+    def __init__(self, grammar, start_symbol='file_input', error_recovery=False):
         self._grammar = grammar
         self._start_symbol = start_symbol
         self._error_recovery = error_recovery

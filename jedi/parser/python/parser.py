@@ -41,7 +41,7 @@ class Parser(BaseParser):
 
     def __init__(self, grammar, source, start_symbol='file_input',
                  tokens=None, start_parsing=True):
-        super(Parser, self).__init__(grammar, tokens, start_symbol)
+        super(Parser, self).__init__(grammar, start_symbol)
         # Todo Remove start_parsing (with False)
 
         self.source = source
@@ -170,7 +170,6 @@ class ParserWithRecovery(Parser):
         # else:
         super(ParserWithRecovery, self).__init__(
             grammar, source,
-            tokens=tokens,
             start_parsing=start_parsing
         )
 
