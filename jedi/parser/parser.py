@@ -34,6 +34,10 @@ class BaseParser(object):
     node_map = {}
     default_node = tree.Node
 
+    leaf_map = {
+    }
+    default_leaf = tree.Leaf
+
     def __init__(self, grammar, start_symbol='file_input', error_recovery=False):
         self._grammar = grammar
         self._start_symbol = start_symbol
@@ -62,13 +66,16 @@ class BaseParser(object):
         else:
             raise ParserSyntaxError('SyntaxError: invalid syntax', start_pos)
 
-    def convert_node(self, grammar, type, children):
+    def convert_node(self, grammar, type_, children):
         # TODO REMOVE symbol, we don't want type here.
-        symbol = grammar.number2symbol[type]
+        symbol = grammar.number2symbol[type_]
         try:
             return self.node_map[symbol](children)
         except KeyError:
             return self.default_node(symbol, children)
 
-    def convert_leaf(self, grammar, type, value, prefix, start_pos):
-        raise NotImplementedError
+    def convert_leaf(self, grammar, type_, value, prefix, start_pos):
+        try:
+            return self.leaf_map[type_](value, start_pos, prefix)
+        except KeyError:
+            return self.default_leaf(value, start_pos, prefix)
