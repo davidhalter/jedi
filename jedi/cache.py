@@ -3,8 +3,6 @@ This caching is very important for speed and memory optimizations. There's
 nothing really spectacular, just some decorators. The following cache types are
 available:
 
-- module caching (`load_parser` and `save_parser`), which uses pickle and is
-  really important to assure low load times of modules like ``numpy``.
 - ``time_cache`` can be used to cache something for just a limited time span,
   which can be useful if there's user interaction and the user cannot react
   faster than a certain time.
