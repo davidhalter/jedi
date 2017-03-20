@@ -8,7 +8,7 @@ from jedi.parser.parser import BaseParser
 
 
 class Parser(BaseParser):
-    ast_mapping = {
+    node_map = {
         'expr_stmt': tree.ExprStmt,
         'classdef': tree.Class,
         'funcdef': tree.Function,
@@ -86,7 +86,7 @@ class Parser(BaseParser):
         # TODO REMOVE symbol, we don't want type here.
         symbol = grammar.number2symbol[type]
         try:
-            return self.ast_mapping[symbol](children)
+            return self.node_map[symbol](children)
         except KeyError:
             if symbol == 'suite':
                 # We don't want the INDENT/DEDENT in our parser tree. Those

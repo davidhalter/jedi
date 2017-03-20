@@ -31,7 +31,7 @@ class ParserSyntaxError(Exception):
 
 
 class BaseParser(object):
-    ast_mapping = {}
+    node_map = {}
     default_node = tree.Node
 
     def __init__(self, grammar, start_symbol='file_input', error_recovery=False):
@@ -66,7 +66,7 @@ class BaseParser(object):
         # TODO REMOVE symbol, we don't want type here.
         symbol = grammar.number2symbol[type]
         try:
-            return self.ast_mapping[symbol](children)
+            return self.node_map[symbol](children)
         except KeyError:
             return self.default_node(symbol, children)
 
