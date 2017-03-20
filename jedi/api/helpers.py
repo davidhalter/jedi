@@ -134,7 +134,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
 
     p = parser.ParserWithRecovery(grammar, code, start_parsing=False)
     try:
-        p.parse(tokenizer=tokenize_without_endmarker(code))
+        p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
         return Stack(p.pgen_parser.stack)
     raise SystemError("This really shouldn't happen. There's a bug in Jedi.")

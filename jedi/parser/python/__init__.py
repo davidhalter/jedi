@@ -79,8 +79,9 @@ def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
     else:
         kwargs = dict(start_symbol=start_symbol)
         parser = Parser
-    p = parser(grammar, code, tokens=tokens, **kwargs)
+    p = parser(grammar, code, start_parsing=False, **kwargs)
+    module = p.parse(tokens=tokens)
     if added_newline:
         p._remove_last_newline()
 
-    return p.get_root_node()
+    return module

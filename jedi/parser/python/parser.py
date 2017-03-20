@@ -173,8 +173,8 @@ class ParserWithRecovery(Parser):
             start_parsing=start_parsing
         )
 
-    def parse(self, tokenizer):
-        root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokenizer))
+    def parse(self, tokens):
+        root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokens))
         root_node.path = self._module_path
         return root_node
 
@@ -242,8 +242,8 @@ class ParserWithRecovery(Parser):
         stack[start_index:] = []
         return failed_stack
 
-    def _tokenize(self, tokenizer):
-        for typ, value, start_pos, prefix in tokenizer:
+    def _tokenize(self, tokens):
+        for typ, value, start_pos, prefix in tokens:
             # print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
             if typ == DEDENT:
                 # We need to count indents, because if we just omit any DEDENT,

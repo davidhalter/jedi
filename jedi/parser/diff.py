@@ -323,7 +323,7 @@ class DiffParser(object):
         parsed_until_line = self._nodes_stack.parsed_until_line
         lines_after = self._parser_lines_new[parsed_until_line:]
         #print('parse_content', parsed_until_line, lines_after, until_line)
-        tokenizer = self._diff_tokenize(
+        tokens = self._diff_tokenize(
             lines_after,
             until_line,
             line_offset=parsed_until_line
@@ -333,7 +333,7 @@ class DiffParser(object):
             source='\n',
             start_parsing=False
         )
-        return self._active_parser.parse(tokenizer=tokenizer)
+        return self._active_parser.parse(tokens=tokens)
 
     def _diff_tokenize(self, lines, until_line, line_offset=0):
         is_first_token = True
