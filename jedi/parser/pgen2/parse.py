@@ -137,9 +137,9 @@ class PgenParser(object):
         # Loop until the token is shifted; may raise exceptions
         _gram = self.grammar
         _labels = _gram.labels
-        _push = self.push
-        _pop = self.pop
-        _shift = self.shift
+        _push = self._push
+        _pop = self._pop
+        _shift = self._shift
         while True:
             dfa, state, node = self.stack[-1]
             states, first = dfa
@@ -183,21 +183,21 @@ class PgenParser(object):
                                         value, start_pos, prefix, self.addtoken)
                     break
 
-    def shift(self, type_, value, newstate, prefix, start_pos):
+    def _shift(self, type_, value, newstate, prefix, start_pos):
         """Shift a token.  (Internal)"""
         dfa, state, node = self.stack[-1]
         newnode = self.convert_leaf(self.grammar, type_, value, prefix, start_pos)
         node[-1].append(newnode)
         self.stack[-1] = (dfa, newstate, node)
 
-    def push(self, type_, newdfa, newstate):
+    def _push(self, type_, newdfa, newstate):
         """Push a nonterminal.  (Internal)"""
         dfa, state, node = self.stack[-1]
         newnode = (type_, [])
         self.stack[-1] = (dfa, newstate, node)
         self.stack.append((newdfa, 0, newnode))
 
-    def pop(self):
+    def _pop(self):
         """Pop a nonterminal.  (Internal)"""
         popdfa, popstate, (type_, children) = self.stack.pop()
         # If there's exactly one child, return that child instead of creating a
