@@ -69,7 +69,7 @@ class Parser(BaseParser):
             )
 
         if self._added_newline:
-            self._remove_last_newline()
+            _remove_last_newline(node)
         return node
 
     def get_root_node(self):
@@ -114,31 +114,32 @@ class Parser(BaseParser):
         else:
             return tree.Operator(value, start_pos, prefix)
 
-    def _remove_last_newline(self):
-        endmarker = self._parsed.children[-1]
-        # The newline is either in the endmarker as a prefix or the previous
-        # leaf as a newline token.
-        prefix = endmarker.prefix
-        if prefix.endswith('\n'):
-            endmarker.prefix = prefix = prefix[:-1]
-            last_end = 0
-            if '\n' not in prefix:
-                # Basically if the last line doesn't end with a newline. we
-                # have to add the previous line's end_position.
-                previous_leaf = endmarker.get_previous_leaf()
-                if previous_leaf is not None:
-                    last_end = previous_leaf.end_pos[1]
-            last_line = re.sub('.*\n', '', prefix)
-            endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
-        else:
-            newline = endmarker.get_previous_leaf()
-            if newline is None:
-                return  # This means that the parser is empty.
 
-            assert newline.value.endswith('\n')
-            newline.value = newline.value[:-1]
-            endmarker.start_pos = \
-                newline.start_pos[0], newline.start_pos[1] + len(newline.value)
+def _remove_last_newline(node):
+    endmarker = node.children[-1]
+    # The newline is either in the endmarker as a prefix or the previous
+    # leaf as a newline token.
+    prefix = endmarker.prefix
+    if prefix.endswith('\n'):
+        endmarker.prefix = prefix = prefix[:-1]
+        last_end = 0
+        if '\n' not in prefix:
+            # Basically if the last line doesn't end with a newline. we
+            # have to add the previous line's end_position.
+            previous_leaf = endmarker.get_previous_leaf()
+            if previous_leaf is not None:
+                last_end = previous_leaf.end_pos[1]
+        last_line = re.sub('.*\n', '', prefix)
+        endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
+    else:
+        newline = endmarker.get_previous_leaf()
+        if newline is None:
+            return  # This means that the parser is empty.
+
+        assert newline.value.endswith('\n')
+        newline.value = newline.value[:-1]
+        endmarker.start_pos = \
+            newline.start_pos[0], newline.start_pos[1] + len(newline.value)
 
 
 class ParserWithRecovery(Parser):

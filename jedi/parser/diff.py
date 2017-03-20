@@ -12,7 +12,7 @@ from collections import namedtuple
 from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
-from jedi.parser import ParserWithRecovery
+from jedi.parser.python.parser import ParserWithRecovery, _remove_last_newline
 from jedi.parser.python.tree import EndMarker
 from jedi.parser.utils import parser_cache
 from jedi import debug
@@ -183,7 +183,7 @@ class DiffParser(object):
         self._nodes_stack.close()
 
         if self._added_newline:
-            self._parser._remove_last_newline()
+            _remove_last_newline(self._parser.get_root_node())
 
         self._parser.source = ''.join(lines_new)
 

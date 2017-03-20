@@ -5,7 +5,8 @@ import os
 
 from jedi._compatibility import FileNotFoundError
 from jedi.parser.pgen2.pgen import generate_grammar
-from jedi.parser.python.parser import Parser, ParserWithRecovery
+from jedi.parser.python.parser import Parser, ParserWithRecovery, \
+    _remove_last_newline
 from jedi.parser.tokenize import source_tokens
 
 
@@ -82,6 +83,6 @@ def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
     p = parser(grammar, code, start_parsing=False, **kwargs)
     module = p.parse(tokens=tokens)
     if added_newline:
-        p._remove_last_newline()
+        _remove_last_newline(module)
 
     return module
