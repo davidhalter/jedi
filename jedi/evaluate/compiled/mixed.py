@@ -6,7 +6,7 @@ import inspect
 import os
 
 from jedi import common
-from jedi.parser.diff import FastParser
+from jedi.parser.python.diff import FastParser
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports

@@ -20,7 +20,7 @@ from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
 from jedi.common import source_to_unicode, unite
-from jedi.parser.diff import FastParser
+from jedi.parser.python.diff import FastParser
 from jedi.parser.python import tree
 from jedi.parser.utils import save_parser, load_parser, parser_cache
 from jedi.evaluate import sys_path
