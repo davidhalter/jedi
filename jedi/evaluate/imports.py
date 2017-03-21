@@ -449,30 +449,29 @@ class Importer(object):
 
 
 def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module=None):
-    def load(source):
-        dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
-        if path is not None and path.endswith(('.py', '.zip', '.egg')) \
-                and dotted_path not in settings.auto_import_modules:
-            if source is None:
-                with open(path, 'rb') as f:
-                    source = f.read()
-        else:
-            return compiled.load_module(evaluator, path)
-        p = path
-        p = FastParser(evaluator.grammar, source_to_unicode(source), p)
-        save_parser(path, p)
-        return p.get_root_node()
-
     if sys_path is None:
         sys_path = evaluator.sys_path
 
-    cached = load_parser(path)
-    module_node = load(source) if cached is None else cached.get_root_node()
-    if isinstance(module_node, compiled.CompiledObject):
-        return module_node
+    dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
+    if path is not None and path.endswith(('.py', '.zip', '.egg')) \
+            and dotted_path not in settings.auto_import_modules:
 
-    from jedi.evaluate.representation import ModuleContext
-    return ModuleContext(evaluator, module_node)
+        cached = load_parser(path)
+        if cached is None:
+            if source is None:
+                with open(path, 'rb') as f:
+                    source = f.read()
+
+            p = FastParser(evaluator.grammar, source_to_unicode(source), path)
+            save_parser(path, p)
+            module_node = p.get_root_node()
+        else:
+            module_node = cached.get_root_node()
+
+        from jedi.evaluate.representation import ModuleContext
+        return ModuleContext(evaluator, module_node)
+    else:
+        return compiled.load_module(evaluator, path)
 
 
 def add_module(evaluator, module_name, module):
