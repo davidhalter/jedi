@@ -5,7 +5,6 @@
 # Copyright 2014 David Halter. Integration into Jedi.
 # Modifications are dual-licensed: MIT and PSF.
 
-# Pgen imports
 from . import grammar
 from jedi.parser import token
 from jedi.parser import tokenize
@@ -13,6 +12,7 @@ from jedi.parser import tokenize
 
 class ParserGenerator(object):
     def __init__(self, bnf_text):
+        self._bnf_text = bnf_text
         self.generator = tokenize.source_tokens(bnf_text)
         self.gettoken()  # Initialize lookahead
         self.dfas, self.startsymbol = self.parse()
@@ -20,7 +20,7 @@ class ParserGenerator(object):
         self.addfirstsets()
 
     def make_grammar(self):
-        c = grammar.Grammar()
+        c = grammar.Grammar(self._bnf_text)
         names = list(self.dfas.keys())
         names.sort()
         names.remove(self.startsymbol)

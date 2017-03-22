@@ -134,7 +134,7 @@ class Script(object):
     @cache.memoize_method
     def _get_module_node(self):
         parser = FastParser(self._grammar, self._source, self.path)
-        save_parser(self.path, parser, pickling=False)
+        save_parser(self._grammar, self.path, parser, pickling=False)
 
         return parser.get_root_node()
 

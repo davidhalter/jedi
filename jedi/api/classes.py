@@ -391,7 +391,7 @@ class BaseDefinition(object):
             return ''
 
         path = self._name.get_root_context().py__file__()
-        parser = load_parser(path)
+        parser = load_parser(self._evaluator.grammar, path)
         lines = common.splitlines(parser.source)
 
         line_nr = self._name.start_pos[0]

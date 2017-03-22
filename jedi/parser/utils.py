@@ -58,7 +58,7 @@ class ParserCacheItem(object):
         self.change_time = change_time
 
 
-def load_parser(path):
+def load_parser(grammar, path):
     """
     Returns the module or None, if it fails.
     """
@@ -69,10 +69,10 @@ def load_parser(path):
             return parser_cache_item.parser
     except KeyError:
         if settings.use_filesystem_cache:
-            return ParserPickling.load_parser(path, p_time)
+            return ParserPickling.load_parser(grammar, path, p_time)
 
 
-def save_parser(path, parser, pickling=True):
+def save_parser(grammar, path, parser, pickling=True):
     try:
         p_time = None if path is None else os.path.getmtime(path)
     except OSError:
@@ -82,11 +82,11 @@ def save_parser(path, parser, pickling=True):
     item = ParserCacheItem(parser, p_time)
     parser_cache[path] = item
     if settings.use_filesystem_cache and pickling:
-        ParserPickling.save_parser(path, item)
+        ParserPickling.save_parser(grammar, path, item)
 
 
 class ParserPickling(object):
-    version = 27
+    version = 28
     """
     Version number (integer) for file system cache.
 
@@ -112,7 +112,7 @@ class ParserPickling(object):
         .. todo:: Detect interpreter (e.g., PyPy).
         """
 
-    def load_parser(self, path, original_changed_time):
+    def load_parser(self, grammar, path, original_changed_time):
         """
         Try to load the parser for `path`, unless `original_changed_time` is
         greater than the original pickling time. In which case the pickled
@@ -127,7 +127,7 @@ class ParserPickling(object):
             # the pickle file is outdated
             return None
 
-        with open(self._get_hashed_path(path), 'rb') as f:
+        with open(self._get_hashed_path(grammar, path), 'rb') as f:
             try:
                 gc.disable()
                 parser_cache_item = pickle.load(f)
@@ -138,7 +138,7 @@ class ParserPickling(object):
         parser_cache[path] = parser_cache_item
         return parser_cache_item.parser
 
-    def save_parser(self, path, parser_cache_item):
+    def save_parser(self, grammar, path, parser_cache_item):
         self.__index = None
         try:
             files = self._index
@@ -146,7 +146,7 @@ class ParserPickling(object):
             files = {}
             self._index = files
 
-        with open(self._get_hashed_path(path), 'wb') as f:
+        with open(self._get_hashed_path(grammar, path), 'wb') as f:
             pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
             files[path] = parser_cache_item.change_time
 
@@ -185,8 +185,9 @@ class ParserPickling(object):
         shutil.rmtree(self._cache_directory())
         self.__index = {}
 
-    def _get_hashed_path(self, path):
-        return self._get_path('%s.pkl' % hashlib.md5(path.encode("utf-8")).hexdigest())
+    def _get_hashed_path(self, grammar, path):
+        file_hash = hashlib.sha256(path.encode("utf-8")).hexdigest()
+        return self._get_path('%s-%s.pkl' % (grammar.sha256, file_hash))
 
     def _get_path(self, file):
         dir = self._cache_directory()

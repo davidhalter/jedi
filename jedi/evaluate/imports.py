@@ -456,14 +456,14 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
             and dotted_path not in settings.auto_import_modules:
 
-        cached = load_parser(path)
+        cached = load_parser(evaluator.grammar, path)
         if cached is None:
             if source is None:
                 with open(path, 'rb') as f:
                     source = f.read()
 
             p = FastParser(evaluator.grammar, source_to_unicode(source), path)
-            save_parser(path, p)
+            save_parser(evaluator.grammar, path, p)
             module_node = p.get_root_node()
         else:
             module_node = cached.get_root_node()

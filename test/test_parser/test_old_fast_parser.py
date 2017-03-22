@@ -46,8 +46,9 @@ def check_p(src, number_parsers_used, number_of_splits=None, number_of_misses=0)
     if number_of_splits is None:
         number_of_splits = number_parsers_used
 
-    p = FastParser(load_grammar(), u(src))
-    save_parser(None, p, pickling=False)
+    grammar = load_grammar()
+    p = FastParser(grammar, u(src))
+    save_parser(grammar, None, p, pickling=False)
 
     assert src == p.get_root_node().get_code()
     return p.get_root_node()

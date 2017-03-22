@@ -9,6 +9,7 @@ import pytest
 import jedi
 from jedi import settings, cache
 from jedi.parser.utils import ParserCacheItem, ParserPickling
+from jedi.parser.python import load_grammar
 
 
 ParserPicklingCls = type(ParserPickling)
@@ -30,19 +31,20 @@ def test_modulepickling_change_cache_dir(monkeypatch, tmpdir):
     path_2 = 'fake path 2'
 
     monkeypatch.setattr(settings, 'cache_directory', dir_1)
-    ParserPickling.save_parser(path_1, item_1)
-    cached = load_stored_item(ParserPickling, path_1, item_1)
+    grammar = load_grammar()
+    ParserPickling.save_parser(grammar, path_1, item_1)
+    cached = load_stored_item(grammar, ParserPickling, path_1, item_1)
     assert cached == item_1.parser
 
     monkeypatch.setattr(settings, 'cache_directory', dir_2)
-    ParserPickling.save_parser(path_2, item_2)
-    cached = load_stored_item(ParserPickling, path_1, item_1)
+    ParserPickling.save_parser(grammar, path_2, item_2)
+    cached = load_stored_item(grammar, ParserPickling, path_1, item_1)
     assert cached is None
 
 
-def load_stored_item(cache, path, item):
+def load_stored_item(grammar, cache, path, item):
     """Load `item` stored at `path` in `cache`."""
-    return cache.load_parser(path, item.change_time - 1)
+    return cache.load_parser(grammar, path, item.change_time - 1)
 
 
 @pytest.mark.usefixtures("isolated_jedi_cache")
@@ -52,13 +54,14 @@ def test_modulepickling_delete_incompatible_cache():
 
     cache1 = ParserPicklingCls()
     cache1.version = 1
-    cache1.save_parser(path, item)
-    cached1 = load_stored_item(cache1, path, item)
+    grammar = load_grammar()
+    cache1.save_parser(grammar, path, item)
+    cached1 = load_stored_item(grammar, cache1, path, item)
     assert cached1 == item.parser
 
     cache2 = ParserPicklingCls()
     cache2.version = 2
-    cached2 = load_stored_item(cache2, path, item)
+    cached2 = load_stored_item(grammar, cache2, path, item)
     assert cached2 is None
 
 

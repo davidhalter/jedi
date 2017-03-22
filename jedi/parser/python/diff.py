@@ -146,10 +146,10 @@ class NewDiffParser(object):
         lines##### TODO
         tokens = tokenize(lines)
         if self._module is None:
-            self._module = load_parser(self._path)
+            self._module = load_parser(grammar, self._path)
             if self._module is None:
                 self._module = self._parser.parse(tokens)
-                save_parser(self._path, self._module)
+                save_parser(grammar, self._path, self._module)
             return self._module
 
         return bla
