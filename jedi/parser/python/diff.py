@@ -12,6 +12,7 @@ from collections import namedtuple
 from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
+from jedi.parser.python import load_grammar
 from jedi.parser.python.parser import ParserWithRecovery, _remove_last_newline
 from jedi.parser.python.tree import EndMarker
 from jedi.parser.utils import parser_cache
@@ -103,6 +104,55 @@ def _update_positions(nodes, line_offset, last_leaf):
                 raise _PositionUpdatingFinished
         else:
             _update_positions(children, line_offset, last_leaf)
+
+
+diff_parser_cache = {}
+
+
+def diff_parse(path, python_version=None, lines=None):
+    """
+    An advanced form of caching a parser. Diffs the given lines with a
+    previously parsed module and tries to reuse the nodes that have not
+    changed.
+
+    May raise an error if the path does not exist.
+    """
+    if lines is None:
+        with open(path) as f:
+            lines = f.read()
+
+    diff_parser = load_diff_parser(path, python_version)
+    return diff_parser.parse(lines)
+
+
+def load_diff_parser(path, python_version=None):
+    language_cache = python_version=None
+    try:
+        return diff_parser_cache[path]
+    except KeyError:
+        dp = DiffParser(path, python_version)
+        diff_parser_cache[path] = dp
+        return dp
+
+
+class NewDiffParser(object):
+    def __init__(self, path, python_version=None):
+        self._path = path
+        grammar = load_grammar(version=python_version)
+        self._parser = ParserWithRecovery(grammar)
+        self._module = None
+
+    def update(self, lines):
+        lines##### TODO
+        tokens = tokenize(lines)
+        if self._module is None:
+            self._module = load_parser(self._path)
+            if self._module is None:
+                self._module = self._parser.parse(tokens)
+                save_parser(self._path, self._module)
+            return self._module
+
+        return bla
 
 
 class DiffParser(object):
