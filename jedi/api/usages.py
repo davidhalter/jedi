@@ -5,6 +5,10 @@ from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.representation import ModuleContext
 
 
+def compare_contexts(c1, c2):
+    return c1 == c2 or (c1[1] == c2[1] and c1[0].tree_node == c2[0].tree_node)
+
+
 def usages(evaluator, definition_names, mods):
     """
     :param definitions: list of Name
@@ -40,7 +44,9 @@ def usages(evaluator, definition_names, mods):
             for name_node in m.tree_node.used_names.get(search_name, []):
                 context = evaluator.create_context(m, name_node)
                 result = evaluator.goto(context, name_node)
-                if [c for c in compare_array(result) if c in compare_definitions]:
+                if any(compare_contexts(c1, c2)
+                       for c1 in compare_array(result)
+                       for c2 in compare_definitions):
                     name = TreeNameDefinition(context, name_node)
                     definition_names.add(name)
                     # Previous definitions might be imports, so include them
