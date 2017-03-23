@@ -3,6 +3,7 @@ Test all things related to the ``jedi.cache`` module.
 """
 
 import time
+from os import unlink
 
 import pytest
 
@@ -62,6 +63,37 @@ def test_modulepickling_delete_incompatible_cache():
     cache2 = ParserPicklingCls()
     cache2.version = 2
     cached2 = load_stored_item(grammar, cache2, path, item)
+    assert cached2 is None
+
+
+@pytest.mark.usefixtures("isolated_jedi_cache")
+def test_modulepickling_simulate_deleted_cache():
+    """
+    Tests loading from a cache file after it is deleted.
+    According to macOS `dev docs`__,
+
+        Note that the system may delete the Caches/ directory to free up disk
+        space, so your app must be able to re-create or download these files as
+        needed.
+
+    It is possible that other supported platforms treat cache files the same
+    way.
+
+    __ https://developer.apple.com/library/content/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html
+    """
+    item = ParserCacheItem('fake parser')
+    path = 'fake path'
+
+    cache = ParserPicklingCls()
+    cache.version = 1
+    grammar = load_grammar()
+    cache.save_parser(grammar, path, item)
+    cached1 = load_stored_item(grammar, cache, path, item)
+    assert cached1 == item.parser
+
+    unlink(cache._get_hashed_path(grammar, path))
+
+    cached2 = load_stored_item(grammar, cache, path, item)
     assert cached2 is None
 
 
