@@ -19,7 +19,7 @@ from test.helpers import TestCase
 def parse(code, version='3.4'):
     code = dedent(code) + "\n\n"
     grammar = load_grammar(version=version)
-    return _parse(code, grammar, error_recovery=False)
+    return _parse(code, grammar=grammar, error_recovery=False)
 
 
 class TestDriver(TestCase):

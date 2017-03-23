@@ -45,7 +45,8 @@ def load_grammar(version=None):
             return load_grammar()
 
 
-def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
+def parse(code=None, path=None, grammar=None, error_recovery=True,
+          start_symbol='file_input', cache=False):
     """
     If you want to parse a Python file you want to start here, most likely.
 
@@ -53,6 +54,7 @@ def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
     other ways to access it.
 
     :param code: A unicode string that contains Python code.
+    :param path: The path to the file you want to open. Only needed for caching.
     :param grammar: A Python grammar file, created with load_grammar.
     :param error_recovery: If enabled, any code will be returned. If it is
         invalid, it will be returned as an error node. If disabled, you will
@@ -73,6 +75,9 @@ def parse(code, grammar=None, error_recovery=True, start_symbol='file_input'):
     if grammar is None:
         grammar = load_grammar()
 
+    if cache and path and not code:
+        # In this case we do actual caching
+        path = os.path.expanduser(path)
     tokens = source_tokens(code, use_exact_op_types=True)
     kwargs = {}
     if error_recovery:
