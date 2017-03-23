@@ -3,7 +3,7 @@ from textwrap import dedent
 
 from jedi._compatibility import u
 from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
-                                    _get_buildout_scripts,
+                                    _get_buildout_script_paths,
                                     sys_path_with_modifications,
                                     _check_module)
 from jedi.evaluate import Evaluator
@@ -30,7 +30,7 @@ def test_parent_dir_with_file():
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name')
 def test_buildout_detection():
-    scripts = _get_buildout_scripts(os.path.abspath('./module_name.py'))
+    scripts = _get_buildout_script_paths(os.path.abspath('./module_name.py'))
     assert len(scripts) == 1
     curdir = os.path.abspath(os.curdir)
     appdir_path = os.path.normpath(os.path.join(curdir, '../../bin/app'))
