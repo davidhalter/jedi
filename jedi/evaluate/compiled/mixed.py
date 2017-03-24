@@ -3,6 +3,7 @@ Used only for REPL Completion.
 """
 
 import inspect
+import sys
 import os
 
 from jedi import common
@@ -11,6 +12,53 @@ from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
 from jedi.evaluate.context import Context
+
+if sys.version_info > (2, 7):
+    from collections import OrderedDict
+else:
+    class OrderedDict(object):
+        """limited OrderedDict implementation for python 2.6
+
+        Enough of the implementation to support LRU cache.
+        """
+
+        def __init__(self):
+            self._list = []
+            self._dict = {}
+
+        def __getitem__(self, key):
+            return self._dict[key]
+
+        def __contains__(self, key):
+            return (key in self._dict)
+
+        def __delitem__(self, key):
+            del self._dict[key]
+            self._list.remove(key)
+            assert len(self._list) == len(self._dict)
+
+        def __setitem__(self, key, value):
+            if key not in self._dict:
+                self._list.append(key)
+            self._dict[key] = value
+            assert len(self._list) == len(self._dict)
+
+        def __len__(self):
+            return len(self._list)
+
+        def popitem(self):
+            key = self._list.pop(0)
+            res = self._dict[key]
+            del self._dict[key]
+            assert len(self._list) == len(self._dict)
+            return res
+
+        def pop(self, key):
+            self._list.remove(key)
+            res = self._dict[key]
+            del self._dict[key]
+            assert len(self._list) == len(self._dict)
+            return res
 
 
 class MixedObject(object):
@@ -115,11 +163,40 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
         #return MixedName(self._evaluator, self._compiled_object, name)
 
 
+_cache = OrderedDict()
+
+_capacity = 256
+# chosen as follow:
+#In [2]: import matplotlib
+#   ...: import matplotlib.pyplot
+#   ...: import numpy as np
+#   ...: import pandas as pd
+#   following by inferring the types of all the completions of
+# np.<tab>
+# matplotlib.<tab>
+# matplotlib.pyplot.<tab>
+# pd.<tab>
+# needs to inspect 193 modules.
+# round to above power of 2.
+
 def parse(grammar, path):
-    with open(path) as f:
-        source = f.read()
-    source = common.source_to_unicode(source)
-    return FastParser(grammar, source, path)
+    """
+    Return a FastParser instanciated from `grammar` and `path`
+
+    Use a LRU cache of (by default) 256 items
+    """
+    key = (grammar, path)
+    if key in _cache:
+        fp = _cache.pop(key)
+    else:
+        with open(path) as f:
+            source = f.read()
+        source = common.source_to_unicode(source)
+        fp = FastParser(grammar, source, path)
+    _cache[key] = fp
+    if len(_cache) > _capacity:
+        _cache.popitem()
+    return fp
 
 
 def _load_module(evaluator, path, python_object):
