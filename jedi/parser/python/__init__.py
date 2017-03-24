@@ -8,6 +8,7 @@ from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.python.parser import Parser, ParserWithRecovery, \
     _remove_last_newline
 from jedi.parser.tokenize import source_tokens
+from jedi.parser import utils
 
 
 _loaded_grammars = {}
@@ -46,7 +47,7 @@ def load_grammar(version=None):
 
 
 def parse(code=None, path=None, grammar=None, error_recovery=True,
-          start_symbol='file_input', cache=False):
+          start_symbol='file_input', cache=False, diff_cache=False):
     """
     If you want to parse a Python file you want to start here, most likely.
 
@@ -64,20 +65,30 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
 
     :return: A syntax tree node. Typically the module.
     """
-    if start_symbol != 'file_input' and error_recovery:
-        raise Exception(
-            'The start_symbol is only allowed when error recovery is disabled.')
+    if code is None and path is None:
+        raise TypeError("Please provide either code or a path.")
+
+    if grammar is None:
+        grammar = load_grammar()
+
+    if path is not None:
+        path = os.path.expanduser(path)
+
+    use_cache = cache and path is not None and not code
+    if use_cache:
+        # In this case we do actual caching. We just try to load it.
+        p = utils.load_parser(grammar, path)
+        if p is not None:
+            return p.get_root_node()
+
+    if code is None:
+        with open(path) as f:
+            code = f.read()
 
     added_newline = not code.endswith('\n')
     if added_newline:
         code += '\n'
 
-    if grammar is None:
-        grammar = load_grammar()
-
-    if cache and path and not code:
-        # In this case we do actual caching
-        path = os.path.expanduser(path)
     tokens = source_tokens(code, use_exact_op_types=True)
     kwargs = {}
     if error_recovery:
@@ -90,4 +101,6 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     if added_newline:
         _remove_last_newline(module)
 
+    if use_cache:
+        utils.save_parser(grammar, path, parser)
     return module

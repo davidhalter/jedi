@@ -5,12 +5,11 @@ from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
 from jedi.parser.python import tree
-from jedi.parser import ParserWithRecovery
+from jedi.parser.python import parse
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
 from jedi.evaluate.compiled import CompiledObject
-from jedi.parser.utils import load_parser, save_parser
 
 
 def get_venv_path(venv):
@@ -211,22 +210,15 @@ def sys_path_with_modifications(evaluator, module_context):
     return list(result) + list(buildout_script_paths)
 
 
-def _get_paths_from_buildout_script(evaluator, buildout_script):
-    def load(buildout_script):
-        try:
-            with open(buildout_script, 'rb') as f:
-                source = common.source_to_unicode(f.read())
-        except IOError:
-            debug.dbg('Error trying to read buildout_script: %s', buildout_script)
-            return
-
-        p = ParserWithRecovery(evaluator.grammar, source, buildout_script)
-        save_parser(evaluator.grammar, buildout_script, p)
-        return p.get_root_node()
-
-    cached = load_parser(evaluator.grammar, buildout_script)
-    module_node = cached and cached.module or load(buildout_script)
-    if module_node is None:
+def _get_paths_from_buildout_script(evaluator, buildout_script_path):
+    try:
+        module_node = parse(
+            path=buildout_script_path,
+            grammar=evaluator.grammar,
+            cache=True
+        )
+    except IOError:
+        debug.warning('Error trying to read buildout_script: %s', buildout_script_path)
         return
 
     from jedi.evaluate.representation import ModuleContext

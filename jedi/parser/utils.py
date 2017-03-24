@@ -119,7 +119,6 @@ class ParserPickling(object):
         greater than the original pickling time. In which case the pickled
         parser is not up to date.
         """
-        path = self._clean_path(path)
         try:
             pickle_changed_time = self._index[path]
         except KeyError:
@@ -144,7 +143,6 @@ class ParserPickling(object):
         return parser_cache_item.parser
 
     def save_parser(self, grammar, path, parser_cache_item):
-        path = self._clean_path(path)
         self.__index = None
         try:
             files = self._index
@@ -190,9 +188,6 @@ class ParserPickling(object):
     def clear_cache(self):
         shutil.rmtree(self._cache_directory())
         self.__index = {}
-
-    def _clean_path(self, path):
-        return os.path.expanduser(path)
 
     def _get_hashed_path(self, grammar, path):
         file_hash = hashlib.sha256(path.encode("utf-8")).hexdigest()
