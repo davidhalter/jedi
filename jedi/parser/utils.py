@@ -65,6 +65,7 @@ def load_parser(grammar, path):
     """
     p_time = os.path.getmtime(path) if path else None
     try:
+        # TODO Add grammar sha256
         parser_cache_item = parser_cache[path]
         if not path or p_time <= parser_cache_item.change_time:
             return parser_cache_item.parser
@@ -82,7 +83,7 @@ def save_parser(grammar, path, parser, pickling=True):
 
     item = ParserCacheItem(parser, p_time)
     parser_cache[path] = item
-    if settings.use_filesystem_cache and pickling:
+    if settings.use_filesystem_cache and pickling and path is not None:
         ParserPickling.save_parser(grammar, path, item)
 
 

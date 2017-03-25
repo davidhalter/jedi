@@ -15,8 +15,7 @@ import sys
 
 from jedi.parser.python import load_grammar
 from jedi.parser.python import tree
-from jedi.parser.python.diff import FastParser
-from jedi.parser.utils import save_parser
+from jedi.parser.python import parse
 from jedi import debug
 from jedi import settings
 from jedi import common
@@ -133,10 +132,13 @@ class Script(object):
 
     @cache.memoize_method
     def _get_module_node(self):
-        parser = FastParser(self._grammar, self._source, self.path)
-        save_parser(self._grammar, self.path, parser, pickling=False)
-
-        return parser.get_root_node()
+        return parse(
+            code=self._source,
+            path=self.path,
+            grammar=self._grammar,
+            cache=True,
+            diff_cache=True,
+        )
 
     @cache.memoize_method
     def _get_module(self):

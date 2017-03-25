@@ -7,8 +7,10 @@ from jedi._compatibility import FileNotFoundError
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.python.parser import Parser, ParserWithRecovery, \
     _remove_last_newline
+from jedi.parser.python.diff import DiffParser
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import utils
+from jedi.common import splitlines
 
 
 _loaded_grammars = {}
@@ -93,14 +95,28 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     kwargs = {}
     if error_recovery:
         parser = ParserWithRecovery
+        kwargs = dict(module_path=path)
     else:
         kwargs = dict(start_symbol=start_symbol)
         parser = Parser
+    # TODO add recovery
+    if diff_cache:
+        try:
+            parser_cache_item = utils.parser_cache[path]
+        except KeyError:
+            pass
+        else:
+            p = parser_cache_item.parser
+            lines = splitlines(code, keepends=True)
+            new_node = DiffParser(p).update(lines)
+            p._parsed = new_node
+            utils.save_parser(grammar, path, p, pickling=False)
+            return new_node
     p = parser(grammar, code, start_parsing=False, **kwargs)
     module = p.parse(tokens=tokens)
     if added_newline:
         _remove_last_newline(module)
 
-    if use_cache:
-        utils.save_parser(grammar, path, parser)
+    if use_cache or diff_cache:
+        utils.save_parser(grammar, path, p)
     return module

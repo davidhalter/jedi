@@ -12,7 +12,6 @@ from collections import namedtuple
 from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
-from jedi.parser.python import load_grammar
 from jedi.parser.python.parser import ParserWithRecovery, _remove_last_newline
 from jedi.parser.python.tree import EndMarker
 from jedi.parser.utils import parser_cache
@@ -138,6 +137,7 @@ def load_diff_parser(path, python_version=None):
 class NewDiffParser(object):
     def __init__(self, path, python_version=None):
         self._path = path
+        from jedi.parser.python import load_grammar
         grammar = load_grammar(version=python_version)
         self._parser = ParserWithRecovery(grammar)
         self._module = None
