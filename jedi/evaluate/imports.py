@@ -20,9 +20,9 @@ from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
 from jedi.common import source_to_unicode, unite
-from jedi.parser.python.diff import FastParser
+from jedi.parser.python import parse
 from jedi.parser.python import tree
-from jedi.parser.utils import save_parser, load_parser, parser_cache
+from jedi.parser.utils import parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
@@ -456,17 +456,7 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
             and dotted_path not in settings.auto_import_modules:
 
-        cached = load_parser(evaluator.grammar, path)
-        if cached is None:
-            if source is None:
-                with open(path, 'rb') as f:
-                    source = f.read()
-
-            p = FastParser(evaluator.grammar, source_to_unicode(source), path)
-            save_parser(evaluator.grammar, path, p)
-            module_node = p.get_root_node()
-        else:
-            module_node = cached.get_root_node()
+        module_node = parse(code=source, path=path, cache=True, diff_cache=True)
 
         from jedi.evaluate.representation import ModuleContext
         return ModuleContext(evaluator, module_node)

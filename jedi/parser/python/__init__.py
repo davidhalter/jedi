@@ -10,7 +10,7 @@ from jedi.parser.python.parser import Parser, ParserWithRecovery, \
 from jedi.parser.python.diff import DiffParser
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import utils
-from jedi.common import splitlines
+from jedi.common import splitlines, source_to_unicode
 
 
 _loaded_grammars = {}
@@ -84,8 +84,8 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
             return p.get_root_node()
 
     if code is None:
-        with open(path) as f:
-            code = f.read()
+        with open(path, 'rb') as f:
+            code = source_to_unicode(f.read())
 
     added_newline = not code.endswith('\n')
     if added_newline:
@@ -119,8 +119,8 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     p = parser(grammar, code, start_parsing=False, **kwargs)
     new_node = p.parse(tokens=tokens)
     if added_newline:
-        p.source = code[:-1]
         _remove_last_newline(new_node)
+        p.source = code[:-1]
 
     if use_cache or diff_cache:
         utils.save_parser(grammar, path, p)
