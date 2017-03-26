@@ -120,8 +120,7 @@ from functools import reduce
 import jedi
 from jedi import debug
 from jedi._compatibility import unicode, is_py3
-from jedi.parser import Parser
-from jedi.parser.python import load_grammar
+from jedi.parser.python import parse
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 
@@ -188,7 +187,7 @@ class IntegrationTestCase(object):
             should_be = set()
             for match in re.finditer('(?:[^ ]+)', correct):
                 string = match.group(0)
-                parser = Parser(load_grammar(), string, start_symbol='eval_input')
+                parser = parse(string, start_symbol='eval_input', error_recovery=False)
                 parser.get_root_node().move(self.line_nr)
                 element = parser.get_root_node()
                 module_context = script._get_module()
@@ -364,9 +363,6 @@ if __name__ == '__main__':
 
     import time
     t_start = time.time()
-    # Sorry I didn't use argparse here. It's because argparse is not in the
-    # stdlib in 2.5.
-    import sys
 
     if arguments['--debug']:
         jedi.set_debug_function()
