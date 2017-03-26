@@ -333,16 +333,16 @@ class Importer(object):
                 _add_error(self.module_context, import_path[-1])
                 return set()
 
-        source = None
+        code = None
         if is_pkg:
             # In this case, we don't have a file yet. Search for the
             # __init__ file.
             if module_path.endswith(('.zip', '.egg')):
-                source = module_file.loader.get_source(module_name)
+                code = module_file.loader.get_source(module_name)
             else:
                 module_path = get_init_path(module_path)
         elif module_file:
-            source = module_file.read()
+            code = module_file.read()
             module_file.close()
 
         if isinstance(module_path, ImplicitNSInfo):
@@ -353,7 +353,7 @@ class Importer(object):
         elif module_file is None and not module_path.endswith(('.py', '.zip', '.egg')):
             module = compiled.load_module(self._evaluator, module_path)
         else:
-            module = _load_module(self._evaluator, module_path, source, sys_path, parent_module)
+            module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
 
         if module is None:
             # The file might raise an ImportError e.g. and therefore not be
@@ -448,7 +448,7 @@ class Importer(object):
         return names
 
 
-def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module=None):
+def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=None):
     if sys_path is None:
         sys_path = evaluator.sys_path
 
@@ -456,7 +456,7 @@ def _load_module(evaluator, path=None, source=None, sys_path=None, parent_module
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
             and dotted_path not in settings.auto_import_modules:
 
-        module_node = parse(code=source, path=path, cache=True, diff_cache=True)
+        module_node = parse(code=code, path=path, cache=True, diff_cache=True)
 
         from jedi.evaluate.representation import ModuleContext
         return ModuleContext(evaluator, module_node)
@@ -493,10 +493,10 @@ def get_modules_containing_name(evaluator, modules, name):
 
     def check_fs(path):
         with open(path, 'rb') as f:
-            source = source_to_unicode(f.read())
-            if name in source:
+            code = source_to_unicode(f.read())
+            if name in code:
                 module_name = os.path.basename(path)[:-3]  # Remove `.py`.
-                module = _load_module(evaluator, path, source)
+                module = _load_module(evaluator, path, code)
                 add_module(evaluator, module_name, module)
                 return module
 
