@@ -10,9 +10,7 @@ from textwrap import dedent
 
 import jedi
 from jedi._compatibility import u
-from jedi.parser.python import load_grammar
-from jedi.parser.python.diff import FastParser
-from jedi.parser.utils import save_parser
+from jedi.parser.python import parse
 
 
 def test_carriage_return_splitting():
@@ -26,8 +24,7 @@ def test_carriage_return_splitting():
             pass
         '''))
     source = source.replace('\n', '\r\n')
-    p = FastParser(load_grammar(), source)
-    module = p.get_root_node()
+    module = parse(source)
     assert [n.value for lst in module.used_names.values() for n in lst] == ['Foo']
 
 
@@ -46,12 +43,10 @@ def check_p(src, number_parsers_used, number_of_splits=None, number_of_misses=0)
     if number_of_splits is None:
         number_of_splits = number_parsers_used
 
-    grammar = load_grammar()
-    p = FastParser(grammar, u(src))
-    save_parser(grammar, None, p, pickling=False)
+    module_node = parse(src)
 
-    assert src == p.get_root_node().get_code()
-    return p.get_root_node()
+    assert src == module_node.get_code()
+    return module_node
 
 
 def test_if():
@@ -281,13 +276,12 @@ def test_decorator_string_issue():
 
 
 def test_round_trip():
-    source = dedent('''
+    code = dedent('''
     def x():
         """hahaha"""
     func''')
 
-    f = FastParser(load_grammar(), u(source))
-    assert f.get_root_node().get_code() == source
+    assert parse(code).get_code() == code
 
 
 def test_parentheses_in_string():

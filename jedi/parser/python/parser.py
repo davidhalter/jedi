@@ -51,6 +51,7 @@ class Parser(BaseParser):
             source += '\n'
             self._added_newline = True
 
+        self.new_code = source
         if start_parsing:
             if tokens is None:
                 tokens = tokenize.source_tokens(source, use_exact_op_types=True)

@@ -4,7 +4,6 @@ from textwrap import dedent
 
 import jedi
 from jedi._compatibility import u, is_py3
-from jedi.parser import ParserWithRecovery
 from jedi.parser.python import parse, load_grammar
 from jedi.parser.python import tree
 
@@ -90,13 +89,13 @@ class TestImports():
 
 
 def test_module():
-    module = ParserWithRecovery(load_grammar(), u('asdf'), 'example.py').get_root_node()
+    module = parse('asdf', path='example.py')
     name = module.name
     assert str(name) == 'example'
     assert name.start_pos == (1, 0)
     assert name.end_pos == (1, 7)
 
-    module = ParserWithRecovery(load_grammar(), u('asdf')).get_root_node()
+    module = parse('asdf')
     name = module.name
     assert str(name) == ''
     assert name.start_pos == (1, 0)
@@ -190,7 +189,7 @@ def test_param_splitting():
     def check(src, result):
         # Python 2 tuple params should be ignored for now.
         grammar = load_grammar('%s.%s' % sys.version_info[:2])
-        m = ParserWithRecovery(grammar, u(src)).get_root_node()
+        m = parse(src, grammar=grammar)
         if is_py3:
             assert not m.subscopes
         else:

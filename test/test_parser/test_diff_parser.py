@@ -9,6 +9,7 @@ from jedi import cache
 from jedi.parser.python import load_grammar
 from jedi.parser.python.diff import DiffParser
 from jedi.parser import ParserWithRecovery
+from jedi.parser.tokenize import source_tokens
 
 
 def _check_error_leaves_nodes(node):
@@ -41,11 +42,12 @@ def _assert_valid_graph(node):
 
 
 class Differ(object):
-    def initialize(self, source):
+    def initialize(self, code):
         debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
-        self.parser = ParserWithRecovery(grammar, source)
-        return self.parser.get_root_node()
+        self.parser = ParserWithRecovery(grammar, code, start_parsing=False)
+        tokens = source_tokens(self.parser.new_code, use_exact_op_types=True)
+        return self.parser.parse(tokens)
 
     def parse(self, source, copies=0, parsers=0, expect_error_leaves=False):
         debug.dbg('differ: parse copies=%s parsers=%s', copies, parsers, color='YELLOW')

@@ -5,8 +5,7 @@ Used only for REPL Completion.
 import inspect
 import os
 
-from jedi import common
-from jedi.parser.python.diff import FastParser
+from jedi.parser.python import parse
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
@@ -115,15 +114,13 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
         #return MixedName(self._evaluator, self._compiled_object, name)
 
 
-def parse(grammar, path):
-    with open(path) as f:
-        source = f.read()
-    source = common.source_to_unicode(source)
-    return FastParser(grammar, source, path)
-
-
 def _load_module(evaluator, path, python_object):
-    module = parse(evaluator.grammar, path).get_root_node()
+    module = parse(
+        grammar=evaluator.grammar,
+        path=path,
+        cache=True,
+        diff_cache=True
+    ).get_root_node()
     python_module = inspect.getmodule(python_object)
 
     evaluator.modules[python_module.__name__] = module

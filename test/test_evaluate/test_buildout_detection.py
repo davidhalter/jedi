@@ -9,7 +9,6 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
 from jedi.evaluate import Evaluator
 from jedi.evaluate.representation import ModuleContext
 from jedi.parser.python import parse, load_grammar
-from jedi.parser.python.parser import ParserWithRecovery
 
 from ..helpers import cwd_at
 
@@ -62,14 +61,14 @@ def test_path_from_invalid_sys_path_assignment():
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name/')
 def test_sys_path_with_modifications():
-    code = dedent(u("""
+    code = dedent("""
         import os
-    """))
+    """)
 
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
     grammar = load_grammar()
-    p = ParserWithRecovery(grammar, code, module_path=path)
-    module_context = ModuleContext(Evaluator(grammar), p.get_root_node())
+    module_node = parse(code, path=path)
+    module_context = ModuleContext(Evaluator(grammar), module_node)
     paths = sys_path_with_modifications(module_context.evaluator, module_context)
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 
