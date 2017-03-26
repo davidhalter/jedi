@@ -100,6 +100,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
         kwargs = dict(start_symbol=start_symbol)
         parser = Parser
     # TODO add recovery
+    p = None
     if diff_cache:
         try:
             parser_cache_item = utils.parser_cache[path]
@@ -111,12 +112,16 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
             new_node = DiffParser(p).update(lines)
             p._parsed = new_node
             utils.save_parser(grammar, path, p, pickling=False)
+            if added_newline:
+                p.source = code[:-1]
+                _remove_last_newline(new_node)
             return new_node
     p = parser(grammar, code, start_parsing=False, **kwargs)
-    module = p.parse(tokens=tokens)
+    new_node = p.parse(tokens=tokens)
     if added_newline:
-        _remove_last_newline(module)
+        p.source = code[:-1]
+        _remove_last_newline(new_node)
 
     if use_cache or diff_cache:
         utils.save_parser(grammar, path, p)
-    return module
+    return new_node
