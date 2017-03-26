@@ -39,10 +39,8 @@ class Parser(BaseParser):
     }
     default_node = tree.PythonNode
 
-    def __init__(self, grammar, source, start_symbol='file_input',
-                 tokens=None, start_parsing=True):
+    def __init__(self, grammar, source, start_symbol='file_input'):
         super(Parser, self).__init__(grammar, start_symbol)
-        # Todo Remove start_parsing (with False)
 
         self.source = source
         self._added_newline = False
@@ -52,10 +50,6 @@ class Parser(BaseParser):
             self._added_newline = True
 
         self.new_code = source
-        if start_parsing:
-            if tokens is None:
-                tokens = tokenize.source_tokens(source, use_exact_op_types=True)
-            self.parse(tokens)
 
     def parse(self, tokens):
         node = super(Parser, self).parse(tokens)
@@ -153,10 +147,12 @@ class ParserWithRecovery(Parser):
     :param module_path: The path of the module in the file system, may be None.
     :type module_path: str
     """
-    def __init__(self, grammar, source, module_path=None, tokens=None,
-                 start_parsing=True):
-        self.syntax_errors = []
+    def __init__(self, grammar, source, module_path=None):
+        super(ParserWithRecovery, self).__init__(
+            grammar, source,
+        )
 
+        self.syntax_errors = []
         self._omit_dedent_list = []
         self._indent_counter = 0
         self._module_path = module_path
@@ -170,10 +166,6 @@ class ParserWithRecovery(Parser):
         # if self.options["print_function"]:
         #     python_grammar = pygram.python_grammar_no_print_statement
         # else:
-        super(ParserWithRecovery, self).__init__(
-            grammar, source,
-            start_parsing=start_parsing
-        )
 
     def parse(self, tokens):
         root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokens))

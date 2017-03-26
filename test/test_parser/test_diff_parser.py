@@ -45,7 +45,7 @@ class Differ(object):
     def initialize(self, code):
         debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
-        self.parser = ParserWithRecovery(grammar, code, start_parsing=False)
+        self.parser = ParserWithRecovery(grammar, code)
         tokens = source_tokens(self.parser.new_code, use_exact_op_types=True)
         return self.parser.parse(tokens)
 

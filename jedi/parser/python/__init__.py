@@ -116,7 +116,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
                 p.source = code[:-1]
                 _remove_last_newline(new_node)
             return new_node
-    p = parser(grammar, code, start_parsing=False, **kwargs)
+    p = parser(grammar, code, **kwargs)
     new_node = p.parse(tokens=tokens)
     if added_newline:
         _remove_last_newline(new_node)
