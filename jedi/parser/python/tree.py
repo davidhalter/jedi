@@ -32,8 +32,7 @@ For static analysis purposes there exists a method called
 ``nodes_to_execute`` on all nodes and leaves. It's documented in the static
 anaylsis documentation.
 """
-import os
-import re
+
 from inspect import cleandoc
 from itertools import chain
 import textwrap
@@ -277,7 +276,7 @@ class Name(_LeafWithoutNewlines):
             return False
 
         stmt = self.get_definition()
-        if stmt.type in ('funcdef', 'classdef', 'file_input', 'param'):
+        if stmt.type in ('funcdef', 'classdef', 'param'):
             return self == stmt.name
         elif stmt.type == 'for_stmt':
             return self.start_pos < stmt.children[2].start_pos
@@ -413,12 +412,9 @@ class Scope(PythonBaseNode, DocstringMixin):
 
     def __repr__(self):
         try:
-            name = self.path
+            name = self.name
         except AttributeError:
-            try:
-                name = self.name
-            except AttributeError:
-                name = self.command
+            name = ''
 
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
                                    self.start_pos[0], self.end_pos[0])
@@ -442,37 +438,12 @@ class Module(Scope):
     Depending on the underlying parser this may be a full module or just a part
     of a module.
     """
-    __slots__ = ('path', '_used_names', '_name')
+    __slots__ = ('_used_names', '_name')
     type = 'file_input'
 
     def __init__(self, children):
-        """
-        Initialize :class:`Module`.
-
-        :type path: str
-        :arg  path: File path to this module.
-
-        .. todo:: Document `top_module`.
-        """
         super(Module, self).__init__(children)
-        self.path = None  # Set later.
         self._used_names = None
-
-    @property
-    def name(self):
-        """ This is used for the goto functions. """
-        if self.path is None:
-            string = ''  # no path -> empty name
-        else:
-            sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self.path)
-            # Remove PEP 3149 names
-            string = re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
-        # Positions are not real, but a module starts at (1, 0)
-        p = (1, 0)
-        name = Name(string, p)
-        name.parent = self
-        return name
 
     @property
     def has_explicit_absolute_import(self):

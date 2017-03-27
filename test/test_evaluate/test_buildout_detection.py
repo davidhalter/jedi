@@ -15,7 +15,7 @@ from ..helpers import cwd_at
 
 def check_module_test(code):
     grammar = load_grammar()
-    module_context = ModuleContext(Evaluator(grammar), parse(code))
+    module_context = ModuleContext(Evaluator(grammar), parse(code), path=None)
     return _check_module(module_context)
 
 
@@ -68,7 +68,7 @@ def test_sys_path_with_modifications():
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
     grammar = load_grammar()
     module_node = parse(code, path=path)
-    module_context = ModuleContext(Evaluator(grammar), module_node)
+    module_context = ModuleContext(Evaluator(grammar), module_node, path=path)
     paths = sys_path_with_modifications(module_context.evaluator, module_context)
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 

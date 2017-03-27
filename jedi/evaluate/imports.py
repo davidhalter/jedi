@@ -459,7 +459,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
         module_node = parse(code=code, path=path, cache=True, diff_cache=True)
 
         from jedi.evaluate.representation import ModuleContext
-        return ModuleContext(evaluator, module_node)
+        return ModuleContext(evaluator, module_node, path=path)
     else:
         return compiled.load_module(evaluator, path)
 
@@ -489,7 +489,7 @@ def get_modules_containing_name(evaluator, modules, name):
                 return None
         else:
             module_node = parser_cache_item.parser.get_root_node()
-            return er.ModuleContext(evaluator, module_node)
+            return er.ModuleContext(evaluator, module_node, path=path)
 
     def check_fs(path):
         with open(path, 'rb') as f:

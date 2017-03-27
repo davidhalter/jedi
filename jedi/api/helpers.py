@@ -300,7 +300,7 @@ def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos
     whole = '\n'.join(other_lines + [before_cursor])
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
-    module_path = bracket_leaf.get_root_node().path
+    module_path = context.get_root_context().py__file__()
     if module_path is None:
         yield None  # Don't cache!
     else:

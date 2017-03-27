@@ -88,20 +88,6 @@ class TestImports():
         assert imp.end_pos == (1, len('import math'))
 
 
-def test_module():
-    module = parse('asdf', path='example.py')
-    name = module.name
-    assert str(name) == 'example'
-    assert name.start_pos == (1, 0)
-    assert name.end_pos == (1, 7)
-
-    module = parse('asdf')
-    name = module.name
-    assert str(name) == ''
-    assert name.start_pos == (1, 0)
-    assert name.end_pos == (1, 0)
-
-
 def test_end_pos():
     s = dedent('''
                x = ['a', 'b', 'c']

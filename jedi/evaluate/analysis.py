@@ -5,8 +5,6 @@ from jedi import debug
 from jedi.parser.python import tree
 from jedi.evaluate.compiled import CompiledObject
 
-from jedi.common import unite
-
 
 CODES = {
     'attribute-error': (1, AttributeError, 'Potential AttributeError.'),
@@ -82,7 +80,9 @@ def add(node_context, error_name, node, message=None, typ=Error, payload=None):
     if _check_for_exception_catch(node_context, node, exception, payload):
         return
 
-    module_path = node.get_root_node().path
+    # TODO this path is probably not right
+    module_context = node_context.get_root_context()
+    module_path = module_context.py__file__()
     instance = typ(error_name, module_path, node.start_pos, message)
     debug.warning(str(instance), format=False)
     node_context.evaluator.analysis.append(instance)

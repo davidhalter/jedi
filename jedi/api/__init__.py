@@ -142,7 +142,11 @@ class Script(object):
 
     @cache.memoize_method
     def _get_module(self):
-        module = er.ModuleContext(self._evaluator, self._get_module_node())
+        module = er.ModuleContext(
+            self._evaluator,
+            self._get_module_node(),
+            self.path
+        )
         imports.add_module(self._evaluator, module.name.string_name, module)
         return module
 
@@ -398,7 +402,8 @@ class Interpreter(Script):
         return interpreter.MixedModuleContext(
             self._evaluator,
             parser_module,
-            self.namespaces
+            self.namespaces,
+            path=self.path
         )
 
 

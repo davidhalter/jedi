@@ -150,7 +150,11 @@ def py__getitem__(context, typ, node):
         return context.eval_node(nodes[0])
 
     from jedi.evaluate.representation import ModuleContext
-    typing = ModuleContext(context.evaluator, _get_typing_replacement_module())
+    typing = ModuleContext(
+        context.evaluator,
+        module_node=_get_typing_replacement_module(),
+        path=None
+    )
     factories = typing.py__getattribute__("factory")
     assert len(factories) == 1
     factory = list(factories)[0]

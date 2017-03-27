@@ -222,7 +222,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         return
 
     from jedi.evaluate.representation import ModuleContext
-    for path in _check_module(ModuleContext(evaluator, module_node)):
+    for path in _check_module(ModuleContext(evaluator, module_node, buildout_script_path)):
         yield path
 
 

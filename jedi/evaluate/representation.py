@@ -57,7 +57,8 @@ from jedi.evaluate import imports
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
-    ParamName, AnonymousInstanceParamName, TreeNameDefinition
+    ParamName, AnonymousInstanceParamName, TreeNameDefinition, \
+    ContextNameMixin
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 
@@ -406,13 +407,26 @@ class ModuleAttributeName(AbstractNameDefinition):
         )
 
 
+class ModuleName(ContextNameMixin, AbstractNameDefinition):
+    start_pos = 1, 0
+
+    def __init__(self, context, name):
+        self._context = context
+        self._name = name
+
+    @property
+    def string_name(self):
+        return self._name
+
+
 class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     api_type = 'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node):
+    def __init__(self, evaluator, module_node, path):
         super(ModuleContext, self).__init__(evaluator, parent_context=None)
         self.tree_node = module_node
+        self._path = path
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
@@ -450,9 +464,20 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         return dict((n, ModuleAttributeName(self, n)) for n in names)
 
     @property
+    def _string_name(self):
+        """ This is used for the goto functions. """
+        if self._path is None:
+            return ''  # no path -> empty name
+        else:
+            sep = (re.escape(os.path.sep),) * 2
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self._path)
+            # Remove PEP 3149 names
+            return re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+
+    @property
     @memoize_default()
     def name(self):
-        return ContextName(self, self.tree_node.name)
+        return ModuleName(self, self._string_name)
 
     def _get_init_directory(self):
         """
@@ -478,10 +503,10 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         In contrast to Python's __file__ can be None.
         """
-        if self.tree_node.path is None:
+        if self._path is None:
             return None
 
-        return os.path.abspath(self.tree_node.path)
+        return os.path.abspath(self._path)
 
     def py__package__(self):
         if self._get_init_directory() is None:
@@ -539,7 +564,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         Lists modules in the directory of this module (if this module is a
         package).
         """
-        path = self.tree_node.path
+        path = self._path
         names = {}
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
             mods = pkgutil.iter_modules([os.path.dirname(path)])
@@ -558,6 +583,11 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
+
+    def __repr__(self):
+        return "<%s: %s@%s-%s>" % (
+            self.__class__.__name__, self._string_name,
+            self.tree_node.start_pos[0], self.tree_node.end_pos[0])
 
 
 class ImplicitNSName(AbstractNameDefinition):

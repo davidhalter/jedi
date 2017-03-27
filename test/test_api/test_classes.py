@@ -338,7 +338,7 @@ class TestGotoAssignments(TestCase):
         n = nms[0].goto_assignments()[0]
         assert n.name == 'json'
         assert n.type == 'module'
-        assert n._name.tree_name.get_definition().type == 'file_input'
+        assert n._name._context.tree_node.type == 'file_input'
 
         assert nms[1].name == 'foo'
         assert nms[1].type == 'module'
@@ -347,7 +347,7 @@ class TestGotoAssignments(TestCase):
         assert len(ass) == 1
         assert ass[0].name == 'json'
         assert ass[0].type == 'module'
-        assert ass[0]._name.tree_name.get_definition().type == 'file_input'
+        assert ass[0]._name._context.tree_node.type == 'file_input'
 
 
 def test_added_equals_to_params():

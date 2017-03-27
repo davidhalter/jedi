@@ -144,8 +144,6 @@ class ParserWithRecovery(Parser):
 
     :param grammar: The grammar object of pgen2. Loaded by load_grammar.
     :param source: The codebase for the parser. Must be unicode.
-    :param module_path: The path of the module in the file system, may be None.
-    :type module_path: str
     """
     def __init__(self, grammar, source, module_path=None):
         super(ParserWithRecovery, self).__init__(
@@ -155,7 +153,6 @@ class ParserWithRecovery(Parser):
         self.syntax_errors = []
         self._omit_dedent_list = []
         self._indent_counter = 0
-        self._module_path = module_path
 
         # TODO do print absolute import detection here.
         # try:
@@ -169,7 +166,6 @@ class ParserWithRecovery(Parser):
 
     def parse(self, tokens):
         root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokens))
-        root_node.path = self._module_path
         return root_node
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
