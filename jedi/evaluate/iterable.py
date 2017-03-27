@@ -492,16 +492,6 @@ class _FakeArray(SequenceLiteralContext):
         # TODO is this class really needed?
 
 
-class ImplicitTuple(_FakeArray):
-    def __init__(self, evaluator, testlist):
-        super(ImplicitTuple, self).__init__(evaluator, testlist, 'tuple')
-        raise NotImplementedError
-        self._testlist = testlist
-
-    def _items(self):
-        return self._testlist.children[::2]
-
-
 class FakeSequence(_FakeArray):
     def __init__(self, evaluator, array_type, lazy_context_list):
         """
