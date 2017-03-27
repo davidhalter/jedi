@@ -141,35 +141,6 @@ class PythonMixin():
                 break
         return scope
 
-    def assignment_indexes(self):
-        """
-        Returns an array of tuple(int, node) of the indexes that are used in
-        tuple assignments.
-
-        For example if the name is ``y`` in the following code::
-
-            x, (y, z) = 2, ''
-
-        would result in ``[(1, xyz_node), (0, yz_node)]``.
-        """
-        indexes = []
-        node = self.parent
-        compare = self
-        while node is not None:
-            if node.type in ('testlist_comp', 'testlist_star_expr', 'exprlist'):
-                for i, child in enumerate(node.children):
-                    if child == compare:
-                        indexes.insert(0, (int(i / 2), node))
-                        break
-                else:
-                    raise LookupError("Couldn't find the assignment.")
-            elif isinstance(node, (ExprStmt, CompFor)):
-                break
-
-            compare = node
-            node = node.parent
-        return indexes
-
     def is_scope(self):
         # Default is not being a scope. Just inherit from Scope.
         return False

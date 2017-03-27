@@ -297,7 +297,7 @@ class Importer(object):
                 method = parent_module.py__path__
             except AttributeError:
                 # The module is not a package.
-                _add_error(parent_module, import_path[-1])
+                _add_error(self.module_context, import_path[-1])
                 return set()
             else:
                 paths = method()
@@ -314,7 +314,7 @@ class Importer(object):
                     except ImportError:
                         module_path = None
                 if module_path is None:
-                    _add_error(parent_module, import_path[-1])
+                    _add_error(self.module_context, import_path[-1])
                     return set()
         else:
             parent_module = None

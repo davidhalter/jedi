@@ -10,6 +10,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common
 from jedi.evaluate.compiled import CompiledObject
+from jedi.evaluate.context import ContextualizedNode
 
 
 def get_venv_path(venv):
@@ -121,8 +122,8 @@ def _paths_from_assignment(module_context, expr_stmt):
 
         from jedi.evaluate.iterable import py__iter__
         from jedi.evaluate.precedence import is_string
-        types = module_context.create_context(expr_stmt).eval_node(expr_stmt)
-        for lazy_context in py__iter__(module_context.evaluator, types, expr_stmt):
+        cn = ContextualizedNode(module_context.create_context(expr_stmt), expr_stmt)
+        for lazy_context in py__iter__(module_context.evaluator, cn.infer(), cn):
             for context in lazy_context.infer():
                 if is_string(context):
                     yield context.obj

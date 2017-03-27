@@ -30,6 +30,7 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import get_global_filters
+from jedi.evaluate.context import ContextualizedName, ContextualizedNode
 
 
 class NameFinder(object):
@@ -183,9 +184,10 @@ def _name_to_types(evaluator, context, tree_name):
         try:
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
-            container_types = context.eval_node(node.children[3])
-            for_types = iterable.py__iter__types(evaluator, container_types, node.children[3])
-            types = check_tuple_assignments(evaluator, for_types, tree_name)
+            cn = ContextualizedNode(context, node.children[3])
+            for_types = iterable.py__iter__types(evaluator, cn.infer(), cn)
+            c_node = ContextualizedName(context, tree_name)
+            types = check_tuple_assignments(evaluator, c_node, for_types)
     elif node.type == 'expr_stmt':
         types = _remove_statements(evaluator, context, node, tree_name)
     elif node.type == 'with_stmt':
@@ -360,13 +362,14 @@ def _check_isinstance_type(context, element, search_name):
     return result
 
 
-def check_tuple_assignments(evaluator, types, name):
+def check_tuple_assignments(evaluator, contextualized_name, types):
     """
     Checks if tuples are assigned.
     """
     lazy_context = None
-    for index, node in name.assignment_indexes():
-        iterated = iterable.py__iter__(evaluator, types, node)
+    for index, node in contextualized_name.assignment_indexes():
+        cn = ContextualizedNode(contextualized_name.context, node)
+        iterated = iterable.py__iter__(evaluator, types, cn)
         for _ in range(index + 1):
             try:
                 lazy_context = next(iterated)

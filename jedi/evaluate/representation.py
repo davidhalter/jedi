@@ -61,6 +61,7 @@ from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ContextNameMixin
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
+from jedi.evaluate.context import ContextualizedNode
 
 
 def apply_py__get__(context, base_context):
@@ -315,8 +316,8 @@ class FunctionExecutionContext(context.TreeContext):
     def _eval_yield(self, yield_expr):
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
-            yield_from_types = self.eval_node(node.children[1])
-            for lazy_context in iterable.py__iter__(self.evaluator, yield_from_types, node):
+            cn = ContextualizedNode(self, node.children[1])
+            for lazy_context in iterable.py__iter__(self.evaluator, cn.infer(), cn):
                 yield lazy_context
         else:
             yield context.LazyTreeContext(self, node)
@@ -360,8 +361,8 @@ class FunctionExecutionContext(context.TreeContext):
                         yield result
             else:
                 input_node = for_stmt.get_input_node()
-                for_types = self.eval_node(input_node)
-                ordered = iterable.py__iter__(evaluator, for_types, input_node)
+                cn = ContextualizedNode(self, input_node)
+                ordered = iterable.py__iter__(evaluator, cn.infer(), cn)
                 ordered = list(ordered)
                 for lazy_context in ordered:
                     dct = {str(for_stmt.children[1]): lazy_context.infer()}

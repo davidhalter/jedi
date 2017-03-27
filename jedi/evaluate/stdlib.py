@@ -12,7 +12,6 @@ compiled module that returns the types for C-builtins.
 import collections
 import re
 
-from jedi._compatibility import unicode
 from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
@@ -24,6 +23,7 @@ from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import analysis
+from jedi.evaluate.context import LazyTreeContext, ContextualizedNode
 
 
 class NotInStdLib(LookupError):
@@ -176,7 +176,11 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # want static analysis to work well. Therefore we need to generated the
     # values again.
     key, lazy_context = next(arguments.unpack())
-    ordered = list(iterable.py__iter__(evaluator, sequences, lazy_context.data))
+    cn = None
+    if isinstance(lazy_context, LazyTreeContext):
+        # TODO access private
+        cn = ContextualizedNode(lazy_context._context, lazy_context.data)
+    ordered = list(iterable.py__iter__(evaluator, sequences, cn))
 
     rev = list(reversed(ordered))
     # Repack iterator values and then run it the normal way. This is
@@ -215,11 +219,12 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                 bool_results.add(any(cls in mro for cls in classes))
             else:
                 _, lazy_context = list(arguments.unpack())[1]
-                node = lazy_context.data
-                message = 'TypeError: isinstance() arg 2 must be a ' \
-                          'class, type, or tuple of classes and types, ' \
-                          'not %s.' % cls_or_tup
-                analysis.add(cls_or_tup, 'type-error-isinstance', node, message)
+                if isinstance(lazy_context, LazyTreeContext):
+                    node = lazy_context.data
+                    message = 'TypeError: isinstance() arg 2 must be a ' \
+                              'class, type, or tuple of classes and types, ' \
+                              'not %s.' % cls_or_tup
+                    analysis.add(lazy_context._context, 'type-error-isinstance', node, message)
 
     return set(compiled.create(evaluator, x) for x in bool_results)
 

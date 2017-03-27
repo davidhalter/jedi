@@ -73,9 +73,6 @@ class ContextName(ContextNameMixin, AbstractTreeName):
 
 
 class TreeNameDefinition(AbstractTreeName):
-    def get_parent_flow_context(self):
-        return self.parent_context
-
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.evaluate.finder import _name_to_types

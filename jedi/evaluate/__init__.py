@@ -80,6 +80,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
+from jedi.evaluate.context import ContextualizedName, ContextualizedNode
 
 
 class Evaluator(object):
@@ -150,7 +151,8 @@ class Evaluator(object):
         types = self.eval_element(context, rhs)
 
         if seek_name:
-            types = finder.check_tuple_assignments(self, types, seek_name)
+            c_node = ContextualizedName(context, seek_name)
+            types = finder.check_tuple_assignments(self, c_node, types)
 
         first_operation = stmt.first_operation()
         if first_operation not in ('=', None) and first_operation.type == 'operator':
@@ -168,8 +170,8 @@ class Evaluator(object):
                 # only in for loops without clutter, because they are
                 # predictable. Also only do it, if the variable is not a tuple.
                 node = for_stmt.get_input_node()
-                for_iterables = self.eval_element(context, node)
-                ordered = list(iterable.py__iter__(self, for_iterables, node))
+                cn = ContextualizedNode(context, node)
+                ordered = list(iterable.py__iter__(self, cn.infer(), cn))
 
                 for lazy_context in ordered:
                     dct = {str(for_stmt.children[1]): lazy_context.infer()}
@@ -451,8 +453,10 @@ class Evaluator(object):
                 return self.eval_statement(context, def_, name)
             elif def_.type == 'for_stmt':
                 container_types = self.eval_element(context, def_.children[3])
-                for_types = iterable.py__iter__types(self, container_types, def_.children[3])
-                return finder.check_tuple_assignments(self, for_types, name)
+                cn = ContextualizedNode(context, def_.children[3])
+                for_types = iterable.py__iter__types(self, container_types, cn)
+                c_node = ContextualizedName(context, name)
+                return finder.check_tuple_assignments(self, c_node, for_types)
             elif def_.type in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
 

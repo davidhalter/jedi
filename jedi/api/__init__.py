@@ -348,7 +348,7 @@ class Script(object):
                     types = context.eval_node(node)
                     for testlist in node.children[:-1:2]:
                         # Iterate tuples.
-                        unpack_tuple_to_dict(self._evaluator, types, testlist)
+                        unpack_tuple_to_dict(context, types, testlist)
                 else:
                     try_iter_content(self._evaluator.goto_definitions(context, node))
                 self._evaluator.reset_recursion_limitations()

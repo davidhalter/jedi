@@ -1,5 +1,6 @@
 from jedi._compatibility import Python3Method
 from jedi.common import unite
+from jedi.parser.python.tree import ExprStmt, CompFor
 
 
 class Context(object):
@@ -13,9 +14,6 @@ class Context(object):
     def __init__(self, evaluator, parent_context=None):
         self.evaluator = evaluator
         self.parent_context = parent_context
-
-    def get_parent_flow_context(self):
-        return self.parent_context
 
     def get_root_context(self):
         context = self
@@ -74,12 +72,6 @@ class TreeContext(Context):
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.tree_node)
-
-
-class FlowContext(TreeContext):
-    def get_parent_flow_context(self):
-        if 1:
-            return self.parent_context
 
 
 class AbstractLazyContext(object):
@@ -141,3 +133,51 @@ class MergedLazyContexts(AbstractLazyContext):
     """data is a list of lazy contexts."""
     def infer(self):
         return unite(l.infer() for l in self.data)
+
+
+class ContextualizedNode(object):
+    def __init__(self, context, node):
+        self.context = context
+        self._node = node
+
+    def get_root_context(self):
+        return self.context.get_root_context()
+
+    def infer(self):
+        return self.context.eval_node(self._node)
+
+
+class ContextualizedName(ContextualizedNode):
+    # TODO merge with TreeNameDefinition?!
+    @property
+    def name(self):
+        return self._node
+
+    def assignment_indexes(self):
+        """
+        Returns an array of tuple(int, node) of the indexes that are used in
+        tuple assignments.
+
+        For example if the name is ``y`` in the following code::
+
+            x, (y, z) = 2, ''
+
+        would result in ``[(1, xyz_node), (0, yz_node)]``.
+        """
+        indexes = []
+        node = self._node.parent
+        compare = self._node
+        while node is not None:
+            if node.type in ('testlist_comp', 'testlist_star_expr', 'exprlist'):
+                for i, child in enumerate(node.children):
+                    if child == compare:
+                        indexes.insert(0, (int(i / 2), node))
+                        break
+                else:
+                    raise LookupError("Couldn't find the assignment.")
+            elif isinstance(node, (ExprStmt, CompFor)):
+                break
+
+            compare = node
+            node = node.parent
+        return indexes

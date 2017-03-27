@@ -240,23 +240,24 @@ class Comprehension(AbstractSequence):
         parent_context = parent_context or self._defining_context
         input_types = parent_context.eval_node(input_node)
 
-        iterated = py__iter__(evaluator, input_types, input_node)
+        cn = context.ContextualizedNode(parent_context, input_node)
+        iterated = py__iter__(evaluator, input_types, cn)
         exprlist = comp_for.children[1]
         for i, lazy_context in enumerate(iterated):
             types = lazy_context.infer()
-            dct = unpack_tuple_to_dict(evaluator, types, exprlist)
-            context = self._get_comp_for_context(
+            dct = unpack_tuple_to_dict(parent_context, types, exprlist)
+            context_ = self._get_comp_for_context(
                 parent_context,
                 comp_for,
             )
-            with helpers.predefine_names(context, comp_for, dct):
+            with helpers.predefine_names(context_, comp_for, dct):
                 try:
-                    for result in self._nested(comp_fors[1:], context):
+                    for result in self._nested(comp_fors[1:], context_):
                         yield result
                 except IndexError:
-                    iterated = context.eval_node(self._eval_node())
+                    iterated = context_.eval_node(self._eval_node())
                     if self.array_type == 'dict':
-                        yield iterated, context.eval_node(self._eval_node(2))
+                        yield iterated, context_.eval_node(self._eval_node(2))
                     else:
                         yield iterated
 
@@ -561,33 +562,33 @@ class MergedArray(_FakeArray):
         return sum(len(a) for a in self._arrays)
 
 
-def unpack_tuple_to_dict(evaluator, types, exprlist):
+def unpack_tuple_to_dict(context, types, exprlist):
     """
     Unpacking tuple assignments in for statements and expr_stmts.
     """
     if exprlist.type == 'name':
         return {exprlist.value: types}
     elif exprlist.type == 'atom' and exprlist.children[0] in '([':
-        return unpack_tuple_to_dict(evaluator, types, exprlist.children[1])
+        return unpack_tuple_to_dict(context, types, exprlist.children[1])
     elif exprlist.type in ('testlist', 'testlist_comp', 'exprlist',
                            'testlist_star_expr'):
         dct = {}
         parts = iter(exprlist.children[::2])
         n = 0
-        for lazy_context in py__iter__(evaluator, types, exprlist):
+        for lazy_context in py__iter__(context.evaluator, types, exprlist):
             n += 1
             try:
                 part = next(parts)
             except StopIteration:
                 # TODO this context is probably not right.
-                analysis.add(next(iter(types)), 'value-error-too-many-values', part,
+                analysis.add(context, 'value-error-too-many-values', part,
                              message="ValueError: too many values to unpack (expected %s)" % n)
             else:
-                dct.update(unpack_tuple_to_dict(evaluator, lazy_context.infer(), part))
+                dct.update(unpack_tuple_to_dict(context, lazy_context.infer(), part))
         has_parts = next(parts, None)
         if types and has_parts is not None:
             # TODO this context is probably not right.
-            analysis.add(next(iter(types)), 'value-error-too-few-values', has_parts,
+            analysis.add(context, 'value-error-too-few-values', has_parts,
                          message="ValueError: need more than %s values to unpack" % n)
         return dct
     elif exprlist.type == 'power' or exprlist.type == 'atom_expr':
@@ -601,17 +602,19 @@ def unpack_tuple_to_dict(evaluator, types, exprlist):
     raise NotImplementedError
 
 
-def py__iter__(evaluator, types, node=None):
+def py__iter__(evaluator, types, contextualized_node=None):
     debug.dbg('py__iter__')
     type_iters = []
     for typ in types:
         try:
             iter_method = typ.py__iter__
         except AttributeError:
-            if node is not None:
-                # TODO this context is probably not right.
-                analysis.add(typ, 'type-error-not-iterable', node,
-                             message="TypeError: '%s' object is not iterable" % typ)
+            if contextualized_node is not None:
+                analysis.add(
+                    contextualized_node.context,
+                    'type-error-not-iterable',
+                    contextualized_node._node,
+                    message="TypeError: '%s' object is not iterable" % typ)
         else:
             type_iters.append(iter_method())
 
@@ -621,12 +624,15 @@ def py__iter__(evaluator, types, node=None):
         )
 
 
-def py__iter__types(evaluator, types, node=None):
+def py__iter__types(evaluator, types, contextualized_node=None):
     """
     Calls `py__iter__`, but ignores the ordering in the end and just returns
     all types that it contains.
     """
-    return unite(lazy_context.infer() for lazy_context in py__iter__(evaluator, types, node))
+    return unite(
+        lazy_context.infer()
+        for lazy_context in py__iter__(evaluator, types, contextualized_node)
+    )
 
 
 def py__getitem__(evaluator, context, types, trailer):
