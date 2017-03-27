@@ -145,7 +145,7 @@ class ParserWithRecovery(Parser):
     :param grammar: The grammar object of pgen2. Loaded by load_grammar.
     :param source: The codebase for the parser. Must be unicode.
     """
-    def __init__(self, grammar, source, module_path=None):
+    def __init__(self, grammar, source):
         super(ParserWithRecovery, self).__init__(
             grammar, source,
         )

@@ -95,7 +95,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     kwargs = {}
     if error_recovery:
         parser = ParserWithRecovery
-        kwargs = dict(module_path=path)
+        kwargs = dict()
     else:
         kwargs = dict(start_symbol=start_symbol)
         parser = Parser
