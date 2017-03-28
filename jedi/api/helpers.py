@@ -132,7 +132,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
     code = code + safeword
 
-    p = parser.ParserWithRecovery(grammar, code)
+    p = parser.Parser(grammar, code, error_recovery=True)
     try:
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:

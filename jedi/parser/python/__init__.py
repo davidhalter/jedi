@@ -5,8 +5,7 @@ import os
 
 from jedi._compatibility import FileNotFoundError
 from jedi.parser.pgen2.pgen import generate_grammar
-from jedi.parser.python.parser import Parser, ParserWithRecovery, \
-    _remove_last_newline
+from jedi.parser.python.parser import Parser, _remove_last_newline
 from jedi.parser.python.diff import DiffParser
 from jedi.parser.tokenize import source_tokens
 from jedi.parser import utils
@@ -92,13 +91,6 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
         code += '\n'
 
     tokens = source_tokens(code, use_exact_op_types=True)
-    kwargs = {}
-    if error_recovery:
-        parser = ParserWithRecovery
-        kwargs = dict()
-    else:
-        kwargs = dict(start_symbol=start_symbol)
-        parser = Parser
     # TODO add recovery
     p = None
     if diff_cache:
@@ -116,7 +108,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
                 p.source = code[:-1]
                 _remove_last_newline(new_node)
             return new_node
-    p = parser(grammar, code, **kwargs)
+    p = Parser(grammar, code, error_recovery=error_recovery, start_symbol=start_symbol)
     new_node = p.parse(tokens=tokens)
     if added_newline:
         _remove_last_newline(new_node)

@@ -8,6 +8,14 @@ from jedi.parser.parser import BaseParser
 
 
 class Parser(BaseParser):
+    """
+    This class is used to parse a Python file, it then divides them into a
+    class structure of different scopes.
+
+    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
+    :param source: The codebase for the parser. Must be unicode.
+    """
+
     node_map = {
         'expr_stmt': tree.ExprStmt,
         'classdef': tree.Class,
@@ -39,8 +47,8 @@ class Parser(BaseParser):
     }
     default_node = tree.PythonNode
 
-    def __init__(self, grammar, source, start_symbol='file_input'):
-        super(Parser, self).__init__(grammar, start_symbol)
+    def __init__(self, grammar, source, error_recovery=True, start_symbol='file_input'):
+        super(Parser, self).__init__(grammar, start_symbol, error_recovery=error_recovery)
 
         self.source = source
         self._added_newline = False
@@ -51,7 +59,27 @@ class Parser(BaseParser):
 
         self.new_code = source
 
+        self.syntax_errors = []
+        self._omit_dedent_list = []
+        self._indent_counter = 0
+
+        # TODO do print absolute import detection here.
+        # try:
+        #     del python_grammar_no_print_statement.keywords["print"]
+        # except KeyError:
+        #     pass  # Doesn't exist in the Python 3 grammar.
+
+        # if self.options["print_function"]:
+        #     python_grammar = pygram.python_grammar_no_print_statement
+        # else:
+
     def parse(self, tokens):
+        if self._error_recovery:
+            if self._start_symbol != 'file_input':
+                raise NotImplementedError
+
+            tokens = self._recovery_tokenize(tokens)
+
         node = super(Parser, self).parse(tokens)
 
         if self._start_symbol == 'file_input' != node.type:
@@ -109,65 +137,6 @@ class Parser(BaseParser):
         else:
             return tree.Operator(value, start_pos, prefix)
 
-
-def _remove_last_newline(node):
-    endmarker = node.children[-1]
-    # The newline is either in the endmarker as a prefix or the previous
-    # leaf as a newline token.
-    prefix = endmarker.prefix
-    if prefix.endswith('\n'):
-        endmarker.prefix = prefix = prefix[:-1]
-        last_end = 0
-        if '\n' not in prefix:
-            # Basically if the last line doesn't end with a newline. we
-            # have to add the previous line's end_position.
-            previous_leaf = endmarker.get_previous_leaf()
-            if previous_leaf is not None:
-                last_end = previous_leaf.end_pos[1]
-        last_line = re.sub('.*\n', '', prefix)
-        endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
-    else:
-        newline = endmarker.get_previous_leaf()
-        if newline is None:
-            return  # This means that the parser is empty.
-
-        assert newline.value.endswith('\n')
-        newline.value = newline.value[:-1]
-        endmarker.start_pos = \
-            newline.start_pos[0], newline.start_pos[1] + len(newline.value)
-
-
-class ParserWithRecovery(Parser):
-    """
-    This class is used to parse a Python file, it then divides them into a
-    class structure of different scopes.
-
-    :param grammar: The grammar object of pgen2. Loaded by load_grammar.
-    :param source: The codebase for the parser. Must be unicode.
-    """
-    def __init__(self, grammar, source):
-        super(ParserWithRecovery, self).__init__(
-            grammar, source,
-        )
-
-        self.syntax_errors = []
-        self._omit_dedent_list = []
-        self._indent_counter = 0
-
-        # TODO do print absolute import detection here.
-        # try:
-        #     del python_grammar_no_print_statement.keywords["print"]
-        # except KeyError:
-        #     pass  # Doesn't exist in the Python 3 grammar.
-
-        # if self.options["print_function"]:
-        #     python_grammar = pygram.python_grammar_no_print_statement
-        # else:
-
-    def parse(self, tokens):
-        root_node = super(ParserWithRecovery, self).parse(self._tokenize(tokens))
-        return root_node
-
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
         """
@@ -175,6 +144,11 @@ class ParserWithRecovery(Parser):
         allows using different grammars (even non-Python). However, error
         recovery is purely written for Python.
         """
+        if not self._error_recovery:
+            return super(Parser, self).error_recovery(
+                grammar, stack, arcs, typ, value, start_pos, prefix,
+                add_token_callback)
+
         def current_suite(stack):
             # For now just discard everything that is not a suite or
             # file_input, if we detect an error.
@@ -232,7 +206,7 @@ class ParserWithRecovery(Parser):
         stack[start_index:] = []
         return failed_stack
 
-    def _tokenize(self, tokens):
+    def _recovery_tokenize(self, tokens):
         for typ, value, start_pos, prefix in tokens:
             # print(tokenize.tok_name[typ], repr(value), start_pos, repr(prefix))
             if typ == DEDENT:
@@ -248,3 +222,30 @@ class ParserWithRecovery(Parser):
                 self._indent_counter += 1
 
             yield typ, value, start_pos, prefix
+
+
+def _remove_last_newline(node):
+    endmarker = node.children[-1]
+    # The newline is either in the endmarker as a prefix or the previous
+    # leaf as a newline token.
+    prefix = endmarker.prefix
+    if prefix.endswith('\n'):
+        endmarker.prefix = prefix = prefix[:-1]
+        last_end = 0
+        if '\n' not in prefix:
+            # Basically if the last line doesn't end with a newline. we
+            # have to add the previous line's end_position.
+            previous_leaf = endmarker.get_previous_leaf()
+            if previous_leaf is not None:
+                last_end = previous_leaf.end_pos[1]
+        last_line = re.sub('.*\n', '', prefix)
+        endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
+    else:
+        newline = endmarker.get_previous_leaf()
+        if newline is None:
+            return  # This means that the parser is empty.
+
+        assert newline.value.endswith('\n')
+        newline.value = newline.value[:-1]
+        endmarker.start_pos = \
+            newline.start_pos[0], newline.start_pos[1] + len(newline.value)

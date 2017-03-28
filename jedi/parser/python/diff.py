@@ -12,7 +12,7 @@ from collections import namedtuple
 from jedi._compatibility import use_metaclass
 from jedi import settings
 from jedi.common import splitlines
-from jedi.parser.python.parser import ParserWithRecovery, _remove_last_newline
+from jedi.parser.python.parser import Parser, _remove_last_newline
 from jedi.parser.python.tree import EndMarker
 from jedi.parser.utils import parser_cache
 from jedi import debug
@@ -25,7 +25,7 @@ class CachedFastParser(type):
     def __call__(self, grammar, source, module_path=None):
         pi = parser_cache.get(module_path, None)
         if pi is None or not settings.fast_parser:
-            return ParserWithRecovery(grammar, source, module_path)
+            return Parser(grammar, source, module_path)
 
         parser = pi.parser
         d = DiffParser(parser)
@@ -139,7 +139,7 @@ class NewDiffParser(object):
         self._path = path
         from jedi.parser.python import load_grammar
         grammar = load_grammar(version=python_version)
-        self._parser = ParserWithRecovery(grammar)
+        self._parser = Parser(grammar, error_recovery=True)
         self._module = None
 
     def update(self, lines):
@@ -374,9 +374,10 @@ class DiffParser(object):
             until_line,
             line_offset=parsed_until_line
         )
-        self._active_parser = ParserWithRecovery(
+        self._active_parser = Parser(
             self._grammar,
             source='\n',
+            error_recovery=True
         )
         return self._active_parser.parse(tokens=tokens)
 

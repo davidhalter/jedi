@@ -8,7 +8,7 @@ from jedi.common import splitlines
 from jedi import cache
 from jedi.parser.python import load_grammar
 from jedi.parser.python.diff import DiffParser
-from jedi.parser import ParserWithRecovery
+from jedi.parser import Parser
 from jedi.parser.tokenize import source_tokens
 
 
@@ -45,7 +45,7 @@ class Differ(object):
     def initialize(self, code):
         debug.dbg('differ: initialize', color='YELLOW')
         grammar = load_grammar()
-        self.parser = ParserWithRecovery(grammar, code)
+        self.parser = Parser(grammar, code, error_recovery=True)
         tokens = source_tokens(self.parser.new_code, use_exact_op_types=True)
         return self.parser.parse(tokens)
 
