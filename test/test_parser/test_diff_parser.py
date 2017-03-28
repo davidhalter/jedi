@@ -8,7 +8,7 @@ from jedi.common import splitlines
 from jedi import cache
 from jedi.parser.python import load_grammar
 from jedi.parser.python.diff import DiffParser
-from jedi.parser import Parser
+from jedi.parser.python.parser import Parser
 from jedi.parser.tokenize import source_tokens
 
 

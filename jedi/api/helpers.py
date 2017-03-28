@@ -6,7 +6,7 @@ from collections import namedtuple
 
 from jedi._compatibility import u
 from jedi.evaluate.helpers import evaluate_call_of_leaf
-from jedi import parser
+from jedi.parser.python.parser import Parser
 from jedi.parser.python import tree
 from jedi.parser import tokenize
 from jedi.cache import time_cache
@@ -132,7 +132,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
     code = code + safeword
 
-    p = parser.Parser(grammar, code, error_recovery=True)
+    p = Parser(grammar, code, error_recovery=True)
     try:
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
