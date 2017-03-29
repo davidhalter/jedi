@@ -9,7 +9,7 @@ import re
 from jedi._compatibility import u
 from jedi import settings
 from jedi import common
-from jedi.parser import utils as parser_utils
+from jedi.parser.cache import parser_cache
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import instance
@@ -391,7 +391,7 @@ class BaseDefinition(object):
             return ''
 
         path = self._name.get_root_context().py__file__()
-        lines = parser_utils.parser_cache[path].lines
+        lines = parser_cache[path].lines
 
         line_nr = self._name.start_pos[0]
         start_line_nr = line_nr - before

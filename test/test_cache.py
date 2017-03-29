@@ -9,7 +9,7 @@ import pytest
 
 import jedi
 from jedi import settings, cache
-from jedi.parser.utils import _NodeCacheItem
+from jedi.parser.cache import _NodeCacheItem
 from jedi.parser.python import load_grammar
 
 

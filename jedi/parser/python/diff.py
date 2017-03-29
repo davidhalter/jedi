@@ -14,7 +14,7 @@ from jedi import settings
 from jedi.common import splitlines
 from jedi.parser.python.parser import Parser, _remove_last_newline
 from jedi.parser.python.tree import EndMarker
-from jedi.parser.utils import parser_cache
+from jedi.parser.cache import parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
                                   ENDMARKER, INDENT, DEDENT)

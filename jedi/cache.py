@@ -15,7 +15,7 @@ import time
 import inspect
 
 from jedi import settings
-from jedi.parser.utils import parser_cache
+from jedi.parser.cache import parser_cache
 
 _time_caches = {}
 

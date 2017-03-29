@@ -8,7 +8,7 @@ from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.python.parser import Parser, _remove_last_newline
 from jedi.parser.python.diff import DiffParser
 from jedi.parser.tokenize import generate_tokens
-from jedi.parser import utils
+from jedi.parser.cache import parser_cache, load_module, save_module
 from jedi.common import splitlines, source_to_unicode
 
 
@@ -78,7 +78,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     use_cache = cache and path is not None and not code
     if use_cache:
         # In this case we do actual caching. We just try to load it.
-        module_node = utils.load_module(grammar, path)
+        module_node = load_module(grammar, path)
         if module_node is not None:
             return module_node
 
@@ -88,7 +88,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
 
     if diff_cache:
         try:
-            module_cache_item = utils.parser_cache[path]
+            module_cache_item = parser_cache[path]
         except KeyError:
             pass
         else:
@@ -98,7 +98,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
                 old_lines=module_cache_item.lines,
                 new_lines=lines
             )
-            utils.save_module(grammar, path, module_node, lines, pickling=False)
+            save_module(grammar, path, module_node, lines, pickling=False)
             return new_node
 
     added_newline = not code.endswith('\n')
@@ -117,5 +117,5 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
         _remove_last_newline(root_node)
 
     if use_cache or diff_cache:
-        utils.save_module(grammar, path, root_node, lines)
+        save_module(grammar, path, root_node, lines)
     return root_node

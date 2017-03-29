@@ -6,7 +6,7 @@ import jedi
 from jedi import debug
 from jedi.common import splitlines
 from jedi import cache
-from jedi.parser.utils import parser_cache
+from jedi.parser.cache import parser_cache
 from jedi.parser.python import load_grammar
 from jedi.parser.python.diff import DiffParser
 from jedi.parser.python import parse

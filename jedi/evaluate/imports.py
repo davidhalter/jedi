@@ -22,7 +22,7 @@ from jedi import settings
 from jedi.common import source_to_unicode, unite
 from jedi.parser.python import parse
 from jedi.parser.python import tree
-from jedi.parser.utils import parser_cache
+from jedi.parser.cache import parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
