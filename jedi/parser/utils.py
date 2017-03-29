@@ -1,4 +1,3 @@
-import inspect
 import time
 import os
 import sys
@@ -43,40 +42,6 @@ http://docs.python.org/3/library/sys.html#sys.implementation
 # for fast_parser, should not be deleted
 parser_cache = {}
 
-
-
-def underscore_memoization(func):
-    """
-    Decorator for methods::
-
-        class A(object):
-            def x(self):
-                if self._x:
-                    self._x = 10
-                return self._x
-
-    Becomes::
-
-        class A(object):
-            @underscore_memoization
-            def x(self):
-                return 10
-
-    A now has an attribute ``_x`` written by this decorator.
-    """
-    name = '_' + func.__name__
-
-    def wrapper(self):
-        try:
-            return getattr(self, name)
-        except AttributeError:
-            result = func(self)
-            if inspect.isgenerator(result):
-                result = list(result)
-            setattr(self, name, result)
-            return result
-
-    return wrapper
 
 
 class _NodeCacheItem(object):
