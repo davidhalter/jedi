@@ -9,12 +9,8 @@ import pytest
 
 import jedi
 from jedi import settings, cache
-from jedi.parser.utils import NodeCacheItem, ParserPickling
+from jedi.parser.utils import _NodeCacheItem
 from jedi.parser.python import load_grammar
-
-
-ParserPicklingCls = type(ParserPickling)
-ParserPickling = ParserPicklingCls()
 
 
 def test_modulepickling_change_cache_dir(monkeypatch, tmpdir):
@@ -26,8 +22,8 @@ def test_modulepickling_change_cache_dir(monkeypatch, tmpdir):
     dir_1 = str(tmpdir.mkdir('first'))
     dir_2 = str(tmpdir.mkdir('second'))
 
-    item_1 = NodeCacheItem('bla', [])
-    item_2 = NodeCacheItem('bla', [])
+    item_1 = _NodeCacheItem('bla', [])
+    item_2 = _NodeCacheItem('bla', [])
     path_1 = 'fake path 1'
     path_2 = 'fake path 2'
 
@@ -51,7 +47,7 @@ def load_stored_item(grammar, cache, path, item):
 
 @pytest.mark.usefixtures("isolated_jedi_cache")
 def test_modulepickling_delete_incompatible_cache():
-    item = NodeCacheItem('fake parser', [])
+    item = _NodeCacheItem('fake parser', [])
     path = 'fake path'
 
     cache1 = ParserPicklingCls()
@@ -82,7 +78,7 @@ def test_modulepickling_simulate_deleted_cache():
 
     __ https://developer.apple.com/library/content/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html
     """
-    item = NodeCacheItem('fake parser', [])
+    item = _NodeCacheItem('fake parser', [])
     path = 'fake path'
 
     cache = ParserPicklingCls()

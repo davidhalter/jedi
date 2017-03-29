@@ -2,15 +2,47 @@ import inspect
 import time
 import os
 import sys
-import json
 import hashlib
 import gc
 import shutil
 import pickle
+import platform
 
 from jedi import settings
 from jedi import debug
 from jedi._compatibility import FileNotFoundError
+
+
+_PICKLE_VERSION = 30
+"""
+Version number (integer) for file system cache.
+
+Increment this number when there are any incompatible changes in
+the parser tree classes.  For example, the following changes
+are regarded as incompatible.
+
+- A class name is changed.
+- A class is moved to another module.
+- A __slot__ of a class is changed.
+"""
+
+_VERSION_TAG = '%s-%s%s-%s' % (
+    platform.python_implementation(),
+    sys.version_info[0],
+    sys.version_info[1],
+    _PICKLE_VERSION
+)
+"""
+Short name for distinguish Python implementations and versions.
+
+It's like `sys.implementation.cache_tag` but for Python < 3.3
+we generate something similar.  See:
+http://docs.python.org/3/library/sys.html#sys.implementation
+"""
+
+# for fast_parser, should not be deleted
+parser_cache = {}
+
 
 
 def underscore_memoization(func):
@@ -47,11 +79,7 @@ def underscore_memoization(func):
     return wrapper
 
 
-# for fast_parser, should not be deleted
-parser_cache = {}
-
-
-class NodeCacheItem(object):
+class _NodeCacheItem(object):
     def __init__(self, node, lines, change_time=None):
         self.node = node
         self.lines = lines
@@ -64,15 +92,35 @@ def load_module(grammar, path):
     """
     Returns a module or None, if it fails.
     """
-    p_time = os.path.getmtime(path) if path else None
+    p_time = os.path.getmtime(path)
     try:
         # TODO Add grammar sha256
         module_cache_item = parser_cache[path]
-        if not path or p_time <= module_cache_item.change_time:
+        if p_time <= module_cache_item.change_time:
             return module_cache_item.node
     except KeyError:
-        if settings.use_filesystem_cache:
-            return ParserPickling.load_item(grammar, path, p_time)
+        if not settings.use_filesystem_cache:
+            return None
+
+        cache_path = _get_hashed_path(grammar, path)
+        try:
+            if p_time > os.path.getmtime(cache_path):
+                # Cache is outdated
+                return None
+
+            with open(cache_path, 'rb') as f:
+                gc.disable()
+                try:
+                    module_cache_item = pickle.load(f)
+                finally:
+                    gc.enable()
+        except FileNotFoundError:
+            return None
+        else:
+            parser_cache[path] = module_cache_item
+            debug.dbg('pickle loaded: %s', path)
+            return module_cache_item.node
+
 
 
 def save_module(grammar, path, module, lines, pickling=True):
@@ -82,128 +130,34 @@ def save_module(grammar, path, module, lines, pickling=True):
         p_time = None
         pickling = False
 
-    item = NodeCacheItem(module, lines, p_time)
+    item = _NodeCacheItem(module, lines, p_time)
     parser_cache[path] = item
     if settings.use_filesystem_cache and pickling and path is not None:
-        ParserPickling.save_item(grammar, path, item)
+        with open(_get_hashed_path(grammar, path), 'wb') as f:
+            pickle.dump(item, f, pickle.HIGHEST_PROTOCOL)
 
 
-class ParserPickling(object):
-    version = 29
+def remove_old_modules(self):
     """
-    Version number (integer) for file system cache.
-
-    Increment this number when there are any incompatible changes in
-    parser representation classes.  For example, the following changes
-    are regarded as incompatible.
-
-    - Class name is changed.
-    - Class is moved to another module.
-    - Defined slot of the class is changed.
+    # TODO Might want to use such a function to clean up the cache (if it's
+    # too old). We could potentially also scan for old files in the
+    # directory and delete those.
     """
 
-    def __init__(self):
-        self.__index = None
-        self.py_tag = 'cpython-%s%s' % sys.version_info[:2]
-        """
-        Short name for distinguish Python implementations and versions.
 
-        It's like `sys.implementation.cache_tag` but for Python < 3.3
-        we generate something similar.  See:
-        http://docs.python.org/3/library/sys.html#sys.implementation
-
-        .. todo:: Detect interpreter (e.g., PyPy).
-        """
-
-    def load_item(self, grammar, path, original_changed_time):
-        """
-        Try to load the parser for `path`, unless `original_changed_time` is
-        greater than the original pickling time. In which case the pickled
-        parser is not up to date.
-        """
-        try:
-            pickle_changed_time = self._index[path]
-        except KeyError:
-            return None
-        if original_changed_time is not None \
-                and pickle_changed_time < original_changed_time:
-            # the pickle file is outdated
-            return None
-
-        try:
-            with open(self._get_hashed_path(grammar, path), 'rb') as f:
-                try:
-                    gc.disable()
-                    module_cache_item = pickle.load(f)
-                finally:
-                    gc.enable()
-        except FileNotFoundError:
-            return None
-
-        debug.dbg('pickle loaded: %s', path)
-        parser_cache[path] = module_cache_item
-        return module_cache_item
-
-    def save_item(self, grammar, path, module_cache_item):
-        self.__index = None
-        try:
-            files = self._index
-        except KeyError:
-            files = {}
-            self._index = files
-
-        with open(self._get_hashed_path(grammar, path), 'wb') as f:
-            pickle.dump(module_cache_item, f, pickle.HIGHEST_PROTOCOL)
-            files[path] = module_cache_item.change_time
-
-        self._flush_index()
-
-    @property
-    def _index(self):
-        if self.__index is None:
-            try:
-                with open(self._get_path('index.json')) as f:
-                    data = json.load(f)
-            except (IOError, ValueError):
-                self.__index = {}
-            else:
-                # 0 means version is not defined (= always delete cache):
-                if data.get('version', 0) != self.version:
-                    self.clear_cache()
-                else:
-                    self.__index = data['index']
-        return self.__index
-
-    def _remove_old_modules(self):
-        # TODO use
-        change = False
-        if change:
-            self._flush_index(self)
-            self._index  # reload index
-
-    def _flush_index(self):
-        data = {'version': self.version, 'index': self._index}
-        with open(self._get_path('index.json'), 'w') as f:
-            json.dump(data, f)
-        self.__index = None
-
-    def clear_cache(self):
-        shutil.rmtree(self._cache_directory())
-        self.__index = {}
-
-    def _get_hashed_path(self, grammar, path):
-        file_hash = hashlib.sha256(path.encode("utf-8")).hexdigest()
-        return self._get_path('%s-%s.pkl' % (grammar.sha256, file_hash))
-
-    def _get_path(self, file):
-        dir = self._cache_directory()
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        return os.path.join(dir, file)
-
-    def _cache_directory(self):
-        return os.path.join(settings.cache_directory, self.py_tag)
+def clear_cache(self):
+    shutil.rmtree(settings.cache_directory)
+    parser_cache.clear()
 
 
-# is a singleton
-ParserPickling = ParserPickling()
+def _get_hashed_path(grammar, path):
+    file_hash = hashlib.sha256(path.encode("utf-8")).hexdigest()
+    directory = _get_cache_directory_path()
+    return os.path.join(directory, '%s-%s.pkl' % (grammar.sha256, file_hash))
+
+
+def _get_cache_directory_path():
+    directory = os.path.join(settings.cache_directory, _VERSION_TAG)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    return directory
