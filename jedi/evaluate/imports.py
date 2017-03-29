@@ -481,14 +481,14 @@ def get_modules_containing_name(evaluator, modules, name):
 
     def check_python_file(path):
         try:
-            parser_cache_item = parser_cache[path]
+            node_cache_item = parser_cache[path]
         except KeyError:
             try:
                 return check_fs(path)
             except IOError:
                 return None
         else:
-            module_node = parser_cache_item.parser.get_root_node()
+            module_node = node_cache_item.node
             return er.ModuleContext(evaluator, module_node, path=path)
 
     def check_fs(path):

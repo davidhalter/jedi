@@ -166,7 +166,7 @@ def test_get_line_code():
     # With before/after
     line = '    foo'
     source = 'def foo():\n%s\nother_line' % line
-    assert get_line_code(source, line=2) == line
+    assert get_line_code(source, line=2) == line + '\n'
     assert get_line_code(source, line=2, after=1) == line + '\nother_line'
     assert get_line_code(source, line=2, after=1, before=1) == source
 

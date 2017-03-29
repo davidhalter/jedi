@@ -6,10 +6,10 @@ import jedi
 from jedi import debug
 from jedi.common import splitlines
 from jedi import cache
+from jedi.parser.utils import parser_cache
 from jedi.parser.python import load_grammar
 from jedi.parser.python.diff import DiffParser
-from jedi.parser.python.parser import Parser
-from jedi.parser.tokenize import source_tokens
+from jedi.parser.python import parse
 
 
 def _check_error_leaves_nodes(node):
@@ -42,23 +42,24 @@ def _assert_valid_graph(node):
 
 
 class Differ(object):
+    grammar = load_grammar()
+
     def initialize(self, code):
         debug.dbg('differ: initialize', color='YELLOW')
-        grammar = load_grammar()
-        self.parser = Parser(grammar, code, error_recovery=True)
-        tokens = source_tokens(self.parser.new_code, use_exact_op_types=True)
-        return self.parser.parse(tokens)
+        self.lines = splitlines(code, keepends=True)
+        parser_cache.pop(None, None)
+        self.module = parse(code, diff_cache=True, cache=True)
+        return self.module
 
-    def parse(self, source, copies=0, parsers=0, expect_error_leaves=False):
+    def parse(self, code, copies=0, parsers=0, expect_error_leaves=False):
         debug.dbg('differ: parse copies=%s parsers=%s', copies, parsers, color='YELLOW')
-        lines = splitlines(source, keepends=True)
-        diff_parser = DiffParser(self.parser)
-        new_module = diff_parser.update(lines)
-        assert source == new_module.get_code()
+        lines = splitlines(code, keepends=True)
+        diff_parser = DiffParser(self.grammar, self.module)
+        new_module = diff_parser.update(self.lines, lines)
+        self.lines = lines
+        assert code == new_module.get_code()
         assert diff_parser._copy_count == copies
         assert diff_parser._parser_count == parsers
-        self.parser.module = new_module
-        self.parser._parsed = new_module
 
         assert expect_error_leaves == _check_error_leaves_nodes(new_module)
         _assert_valid_graph(new_module)

@@ -156,10 +156,9 @@ class NewDiffParser(object):
 
 
 class DiffParser(object):
-    def __init__(self, parser):
-        self._parser = parser
-        self._grammar = self._parser._grammar
-        self._module = parser.get_root_node()
+    def __init__(self, grammar, module):
+        self._grammar = grammar
+        self._module = module
 
     def _reset(self):
         self._copy_count = 0
@@ -167,7 +166,7 @@ class DiffParser(object):
 
         self._nodes_stack = _NodesStack(self._module)
 
-    def update(self, lines_new):
+    def update(self, old_lines, new_lines):
         '''
         The algorithm works as follows:
 
@@ -187,24 +186,23 @@ class DiffParser(object):
         # Reset the used names cache so they get regenerated.
         self._module._used_names = None
 
-        self._parser_lines_new = lines_new
+        self._parser_lines_new = new_lines
         self._added_newline = False
-        if lines_new[-1] != '':
+        if new_lines[-1] != '':
             # The Python grammar needs a newline at the end of a file, but for
-            # everything else we keep working with lines_new here.
-            self._parser_lines_new = list(lines_new)
+            # everything else we keep working with new_lines here.
+            self._parser_lines_new = list(new_lines)
             self._parser_lines_new[-1] += '\n'
             self._parser_lines_new.append('')
             self._added_newline = True
 
         self._reset()
 
-        line_length = len(lines_new)
-        lines_old = splitlines(self._parser.source, keepends=True)
-        sm = difflib.SequenceMatcher(None, lines_old, self._parser_lines_new)
+        line_length = len(new_lines)
+        sm = difflib.SequenceMatcher(None, old_lines, self._parser_lines_new)
         opcodes = sm.get_opcodes()
         debug.speed('diff parser calculated')
-        debug.dbg('diff: line_lengths old: %s, new: %s' % (len(lines_old), line_length))
+        debug.dbg('diff: line_lengths old: %s, new: %s' % (len(old_lines), line_length))
 
         for operation, i1, i2, j1, j2 in opcodes:
             debug.dbg('diff %s old[%s:%s] new[%s:%s]',
@@ -229,17 +227,15 @@ class DiffParser(object):
         self._nodes_stack.close()
 
         if self._added_newline:
-            _remove_last_newline(self._parser.get_root_node())
-
-        self._parser.source = ''.join(lines_new)
+            _remove_last_newline(self._module)
 
         # Good for debugging.
         if debug.debug_function:
-            self._enabled_debugging(lines_old, lines_new)
+            self._enabled_debugging(old_lines, new_lines)
         last_pos = self._module.end_pos[0]
         if last_pos != line_length:
             current_lines = splitlines(self._module.get_code(), keepends=True)
-            diff = difflib.unified_diff(current_lines, lines_new)
+            diff = difflib.unified_diff(current_lines, new_lines)
             raise Exception(
                 "There's an issue (%s != %s) with the diff parser. Please report:\n%s"
                 % (last_pos, line_length, ''.join(diff))
@@ -248,9 +244,9 @@ class DiffParser(object):
         debug.speed('diff parser end')
         return self._module
 
-    def _enabled_debugging(self, lines_old, lines_new):
+    def _enabled_debugging(self, old_lines, lines_new):
         if self._module.get_code() != ''.join(lines_new):
-            debug.warning('parser issue:\n%s\n%s', ''.join(lines_old),
+            debug.warning('parser issue:\n%s\n%s', ''.join(old_lines),
                           ''.join(lines_new))
 
     def _copy_from_old_parser(self, line_offset, until_line_old, until_line_new):

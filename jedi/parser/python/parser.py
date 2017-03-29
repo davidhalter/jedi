@@ -53,9 +53,9 @@ class Parser(BaseParser):
         self.source = source
         self._added_newline = False
         # The Python grammar needs a newline at the end of each statement.
-        if not source.endswith('\n') and start_symbol == 'file_input':
-            source += '\n'
-            self._added_newline = True
+        #if not source.endswith('\n') and start_symbol == 'file_input':
+        #    source += '\n'
+        #    self._added_newline = True
 
         self.new_code = source
 
@@ -91,8 +91,8 @@ class Parser(BaseParser):
                 [node]
             )
 
-        if self._added_newline:
-            _remove_last_newline(node)
+        #if self._added_newline:
+        #    _remove_last_newline(node)
         return node
 
     def get_root_node(self):

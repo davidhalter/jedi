@@ -7,7 +7,7 @@ from jedi._compatibility import FileNotFoundError
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.python.parser import Parser, _remove_last_newline
 from jedi.parser.python.diff import DiffParser
-from jedi.parser.tokenize import source_tokens
+from jedi.parser.tokenize import generate_tokens
 from jedi.parser import utils
 from jedi.common import splitlines, source_to_unicode
 
@@ -78,42 +78,44 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     use_cache = cache and path is not None and not code
     if use_cache:
         # In this case we do actual caching. We just try to load it.
-        p = utils.load_parser(grammar, path)
-        if p is not None:
-            return p.get_root_node()
+        module_node = utils.load_module(grammar, path)
+        if module_node is not None:
+            return module_node
 
     if code is None:
         with open(path, 'rb') as f:
             code = source_to_unicode(f.read())
 
-    added_newline = not code.endswith('\n')
-    if added_newline:
-        code += '\n'
-
-    tokens = source_tokens(code, use_exact_op_types=True)
-    # TODO add recovery
-    p = None
     if diff_cache:
         try:
-            parser_cache_item = utils.parser_cache[path]
+            module_cache_item = utils.parser_cache[path]
         except KeyError:
             pass
         else:
-            p = parser_cache_item.parser
             lines = splitlines(code, keepends=True)
-            new_node = DiffParser(p).update(lines)
-            p._parsed = new_node
-            utils.save_parser(grammar, path, p, pickling=False)
-            if added_newline:
-                p.source = code[:-1]
-                _remove_last_newline(new_node)
+            module_node = module_cache_item.node
+            new_node = DiffParser(grammar, module_node).update(
+                old_lines=module_cache_item.lines,
+                new_lines=lines
+            )
+            utils.save_module(grammar, path, module_node, lines, pickling=False)
             return new_node
-    p = Parser(grammar, code, error_recovery=error_recovery, start_symbol=start_symbol)
-    new_node = p.parse(tokens=tokens)
+
+    added_newline = not code.endswith('\n')
+    lines = tokenize_lines = splitlines(code, keepends=True)
     if added_newline:
-        _remove_last_newline(new_node)
-        p.source = code[:-1]
+        code += '\n'
+        tokenize_lines = list(tokenize_lines)
+        tokenize_lines[-1] += '\n'
+        tokenize_lines.append([])
+
+    tokens = generate_tokens(tokenize_lines, use_exact_op_types=True)
+
+    p = Parser(grammar, code, error_recovery=error_recovery, start_symbol=start_symbol)
+    root_node = p.parse(tokens=tokens)
+    if added_newline:
+        _remove_last_newline(root_node)
 
     if use_cache or diff_cache:
-        utils.save_parser(grammar, path, p)
-    return new_node
+        utils.save_module(grammar, path, root_node, lines)
+    return root_node

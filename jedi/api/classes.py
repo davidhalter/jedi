@@ -9,7 +9,7 @@ import re
 from jedi._compatibility import u
 from jedi import settings
 from jedi import common
-from jedi.parser.utils import load_parser
+from jedi.parser import utils as parser_utils
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import instance
@@ -391,12 +391,11 @@ class BaseDefinition(object):
             return ''
 
         path = self._name.get_root_context().py__file__()
-        parser = load_parser(self._evaluator.grammar, path)
-        lines = common.splitlines(parser.source)
+        lines = parser_utils.parser_cache[path].lines
 
         line_nr = self._name.start_pos[0]
         start_line_nr = line_nr - before
-        return '\n'.join(lines[start_line_nr:line_nr + after + 1])
+        return ''.join(lines[start_line_nr:line_nr + after + 1])
 
 
 class Completion(BaseDefinition):

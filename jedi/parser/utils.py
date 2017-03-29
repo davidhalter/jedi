@@ -51,44 +51,45 @@ def underscore_memoization(func):
 parser_cache = {}
 
 
-class ParserCacheItem(object):
-    def __init__(self, parser, change_time=None):
-        self.parser = parser
+class NodeCacheItem(object):
+    def __init__(self, node, lines, change_time=None):
+        self.node = node
+        self.lines = lines
         if change_time is None:
             change_time = time.time()
         self.change_time = change_time
 
 
-def load_parser(grammar, path):
+def load_module(grammar, path):
     """
-    Returns the module or None, if it fails.
+    Returns a module or None, if it fails.
     """
     p_time = os.path.getmtime(path) if path else None
     try:
         # TODO Add grammar sha256
-        parser_cache_item = parser_cache[path]
-        if not path or p_time <= parser_cache_item.change_time:
-            return parser_cache_item.parser
+        module_cache_item = parser_cache[path]
+        if not path or p_time <= module_cache_item.change_time:
+            return module_cache_item.node
     except KeyError:
         if settings.use_filesystem_cache:
-            return ParserPickling.load_parser(grammar, path, p_time)
+            return ParserPickling.load_item(grammar, path, p_time)
 
 
-def save_parser(grammar, path, parser, pickling=True):
+def save_module(grammar, path, module, lines, pickling=True):
     try:
         p_time = None if path is None else os.path.getmtime(path)
     except OSError:
         p_time = None
         pickling = False
 
-    item = ParserCacheItem(parser, p_time)
+    item = NodeCacheItem(module, lines, p_time)
     parser_cache[path] = item
     if settings.use_filesystem_cache and pickling and path is not None:
-        ParserPickling.save_parser(grammar, path, item)
+        ParserPickling.save_item(grammar, path, item)
 
 
 class ParserPickling(object):
-    version = 28
+    version = 29
     """
     Version number (integer) for file system cache.
 
@@ -114,7 +115,7 @@ class ParserPickling(object):
         .. todo:: Detect interpreter (e.g., PyPy).
         """
 
-    def load_parser(self, grammar, path, original_changed_time):
+    def load_item(self, grammar, path, original_changed_time):
         """
         Try to load the parser for `path`, unless `original_changed_time` is
         greater than the original pickling time. In which case the pickled
@@ -133,17 +134,17 @@ class ParserPickling(object):
             with open(self._get_hashed_path(grammar, path), 'rb') as f:
                 try:
                     gc.disable()
-                    parser_cache_item = pickle.load(f)
+                    module_cache_item = pickle.load(f)
                 finally:
                     gc.enable()
         except FileNotFoundError:
             return None
 
         debug.dbg('pickle loaded: %s', path)
-        parser_cache[path] = parser_cache_item
-        return parser_cache_item.parser
+        parser_cache[path] = module_cache_item
+        return module_cache_item
 
-    def save_parser(self, grammar, path, parser_cache_item):
+    def save_item(self, grammar, path, module_cache_item):
         self.__index = None
         try:
             files = self._index
@@ -152,8 +153,8 @@ class ParserPickling(object):
             self._index = files
 
         with open(self._get_hashed_path(grammar, path), 'wb') as f:
-            pickle.dump(parser_cache_item, f, pickle.HIGHEST_PROTOCOL)
-            files[path] = parser_cache_item.change_time
+            pickle.dump(module_cache_item, f, pickle.HIGHEST_PROTOCOL)
+            files[path] = module_cache_item.change_time
 
         self._flush_index()
 
