@@ -57,7 +57,11 @@ def load_module(grammar, path):
     """
     Returns a module or None, if it fails.
     """
-    p_time = os.path.getmtime(path)
+    try:
+        p_time = os.path.getmtime(path)
+    except FileNotFoundError:
+        return None
+
     try:
         # TODO Add grammar sha256
         module_cache_item = parser_cache[path]
@@ -67,25 +71,28 @@ def load_module(grammar, path):
         if not settings.use_filesystem_cache:
             return None
 
-        cache_path = _get_hashed_path(grammar, path)
-        try:
-            if p_time > os.path.getmtime(cache_path):
-                # Cache is outdated
-                return None
+        return _load_from_file_system(grammar, path, p_time)
 
-            with open(cache_path, 'rb') as f:
-                gc.disable()
-                try:
-                    module_cache_item = pickle.load(f)
-                finally:
-                    gc.enable()
-        except FileNotFoundError:
+
+def _load_from_file_system(grammar, path, p_time):
+    cache_path = _get_hashed_path(grammar, path)
+    try:
+        if p_time > os.path.getmtime(cache_path):
+            # Cache is outdated
             return None
-        else:
-            parser_cache[path] = module_cache_item
-            debug.dbg('pickle loaded: %s', path)
-            return module_cache_item.node
 
+        with open(cache_path, 'rb') as f:
+            gc.disable()
+            try:
+                module_cache_item = pickle.load(f)
+            finally:
+                gc.enable()
+    except FileNotFoundError:
+        return None
+    else:
+        parser_cache[path] = module_cache_item
+        debug.dbg('pickle loaded: %s', path)
+        return module_cache_item.node
 
 
 def save_module(grammar, path, module, lines, pickling=True):
@@ -98,8 +105,12 @@ def save_module(grammar, path, module, lines, pickling=True):
     item = _NodeCacheItem(module, lines, p_time)
     parser_cache[path] = item
     if settings.use_filesystem_cache and pickling and path is not None:
-        with open(_get_hashed_path(grammar, path), 'wb') as f:
-            pickle.dump(item, f, pickle.HIGHEST_PROTOCOL)
+        _save_to_file_system(grammar, path, item)
+
+
+def _save_to_file_system(grammar, path, item):
+    with open(_get_hashed_path(grammar, path), 'wb') as f:
+        pickle.dump(item, f, pickle.HIGHEST_PROTOCOL)
 
 
 def remove_old_modules(self):

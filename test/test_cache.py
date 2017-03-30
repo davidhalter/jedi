@@ -9,7 +9,9 @@ import pytest
 
 import jedi
 from jedi import settings, cache
-from jedi.parser.cache import _NodeCacheItem
+from jedi.parser.cache import _NodeCacheItem, save_module, load_module, \
+    _get_hashed_path, parser_cache, _load_from_file_system, \
+    _save_to_file_system
 from jedi.parser.python import load_grammar
 
 
@@ -29,22 +31,24 @@ def test_modulepickling_change_cache_dir(monkeypatch, tmpdir):
 
     monkeypatch.setattr(settings, 'cache_directory', dir_1)
     grammar = load_grammar()
-    ParserPickling.save_item(grammar, path_1, item_1)
-    cached = load_stored_item(grammar, ParserPickling, path_1, item_1)
+    _save_to_file_system(grammar, path_1, item_1)
+    parser_cache.clear()
+    cached = load_stored_item(grammar, path_1, item_1)
     assert cached == item_1.node
 
     monkeypatch.setattr(settings, 'cache_directory', dir_2)
-    ParserPickling.save_item(grammar, path_2, item_2)
-    cached = load_stored_item(grammar, ParserPickling, path_1, item_1)
+    _save_to_file_system(grammar, path_2, item_2)
+    cached = load_stored_item(grammar, path_1, item_1)
     assert cached is None
 
 
-def load_stored_item(grammar, cache, path, item):
+def load_stored_item(grammar, path, item):
     """Load `item` stored at `path` in `cache`."""
-    item = cache.load_item(grammar, path, item.change_time - 1)
-    return item and item.node
+    item = _load_from_file_system(grammar, path, item.change_time - 1)
+    return item
 
 
+@pytest.mark.skip("This is currently not something we have implemented.")
 @pytest.mark.usefixtures("isolated_jedi_cache")
 def test_modulepickling_delete_incompatible_cache():
     item = _NodeCacheItem('fake parser', [])
@@ -64,7 +68,7 @@ def test_modulepickling_delete_incompatible_cache():
 
 
 @pytest.mark.usefixtures("isolated_jedi_cache")
-def test_modulepickling_simulate_deleted_cache():
+def test_modulepickling_simulate_deleted_cache(tmpdir):
     """
     Tests loading from a cache file after it is deleted.
     According to macOS `dev docs`__,
@@ -78,19 +82,21 @@ def test_modulepickling_simulate_deleted_cache():
 
     __ https://developer.apple.com/library/content/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/FileSystemOverview/FileSystemOverview.html
     """
-    item = _NodeCacheItem('fake parser', [])
-    path = 'fake path'
-
-    cache = ParserPicklingCls()
-    cache.version = 1
     grammar = load_grammar()
-    cache.save_item(grammar, path, item)
-    cached1 = load_stored_item(grammar, cache, path, item)
-    assert cached1 == item.node
+    module = 'fake parser'
 
-    unlink(cache._get_hashed_path(grammar, path))
+    # Create the file
+    path = tmpdir.dirname + '/some_path'
+    with open(path, 'w'):
+        pass
 
-    cached2 = load_stored_item(grammar, cache, path, item)
+    save_module(grammar, path, module, [])
+    assert load_module(grammar, path) == module
+
+    unlink(_get_hashed_path(grammar, path))
+    parser_cache.clear()
+
+    cached2 = load_module(grammar, path)
     assert cached2 is None
 
 
