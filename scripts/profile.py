@@ -45,5 +45,5 @@ def main(args):
 if __name__ == '__main__':
     args = docopt(__doc__)
     if args['<code>'] is None:
-        args['<code>'] = 'import numpy; numpy.array([0])'
+        args['<code>'] = 'import numpy; numpy.array([0]).'
     main(args)
