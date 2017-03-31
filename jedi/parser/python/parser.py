@@ -51,12 +51,6 @@ class Parser(BaseParser):
         super(Parser, self).__init__(grammar, start_symbol, error_recovery=error_recovery)
 
         self.source = source
-        self._added_newline = False
-        # The Python grammar needs a newline at the end of each statement.
-        #if not source.endswith('\n') and start_symbol == 'file_input':
-        #    source += '\n'
-        #    self._added_newline = True
-
         self.new_code = source
 
         self.syntax_errors = []
@@ -85,18 +79,13 @@ class Parser(BaseParser):
         if self._start_symbol == 'file_input' != node.type:
             # If there's only one statement, we get back a non-module. That's
             # not what we want, we want a module, so we add it here:
-            self._parsed = node = self.convert_node(
+            node = self.convert_node(
                 self._grammar,
                 self._grammar.symbol2number['file_input'],
                 [node]
             )
 
-        #if self._added_newline:
-        #    _remove_last_newline(node)
         return node
-
-    def get_root_node(self):
-        return self._parsed
 
     def convert_node(self, grammar, type, children):
         """
