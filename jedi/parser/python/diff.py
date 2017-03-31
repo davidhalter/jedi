@@ -9,33 +9,12 @@ import re
 import difflib
 from collections import namedtuple
 
-from jedi._compatibility import use_metaclass
-from jedi import settings
 from jedi.common import splitlines
 from jedi.parser.python.parser import Parser, _remove_last_newline
 from jedi.parser.python.tree import EndMarker
-from jedi.parser.cache import parser_cache
 from jedi import debug
 from jedi.parser.tokenize import (generate_tokens, NEWLINE, TokenInfo,
                                   ENDMARKER, INDENT, DEDENT)
-
-
-class CachedFastParser(type):
-    """ This is a metaclass for caching `FastParser`. """
-    def __call__(self, grammar, source, module_path=None):
-        pi = parser_cache.get(module_path, None)
-        if pi is None or not settings.fast_parser:
-            return Parser(grammar, source, module_path)
-
-        parser = pi.parser
-        d = DiffParser(parser)
-        new_lines = splitlines(source, keepends=True)
-        parser.module = parser._parsed = d.update(new_lines)
-        return parser
-
-
-class FastParser(use_metaclass(CachedFastParser)):
-    pass
 
 
 def _get_last_line(node_or_leaf):

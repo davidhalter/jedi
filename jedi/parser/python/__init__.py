@@ -3,6 +3,7 @@ Parsers for Python
 """
 import os
 
+from jedi import settings
 from jedi._compatibility import FileNotFoundError
 from jedi.parser.pgen2.pgen import generate_grammar
 from jedi.parser.python.parser import Parser, _remove_last_newline
@@ -86,7 +87,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
         with open(path, 'rb') as f:
             code = source_to_unicode(f.read())
 
-    if diff_cache:
+    if diff_cache and settings.fast_parser:
         try:
             module_cache_item = parser_cache[path]
         except KeyError:
