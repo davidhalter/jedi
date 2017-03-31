@@ -42,22 +42,18 @@ class BaseParser(object):
         self._grammar = grammar
         self._start_symbol = start_symbol
         self._error_recovery = error_recovery
-        self._parsed = None
 
     def parse(self, tokens):
-        if self._parsed is not None:
-            return self._parsed
-
         start_number = self._grammar.symbol2number[self._start_symbol]
         self.pgen_parser = PgenParser(
             self._grammar, self.convert_node, self.convert_leaf,
             self.error_recovery, start_number
         )
 
-        self._parsed = self.pgen_parser.parse(tokens)
+        node = self.pgen_parser.parse(tokens)
         # The stack is empty now, we don't need it anymore.
         del self.pgen_parser
-        return self._parsed
+        return node
 
     def error_recovery(self, grammar, stack, arcs, typ, value, start_pos, prefix,
                        add_token_callback):
