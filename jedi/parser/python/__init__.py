@@ -111,7 +111,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
 
     tokens = generate_tokens(tokenize_lines, use_exact_op_types=True)
 
-    p = Parser(grammar, code, error_recovery=error_recovery, start_symbol=start_symbol)
+    p = Parser(grammar, error_recovery=error_recovery, start_symbol=start_symbol)
     root_node = p.parse(tokens=tokens)
     if added_newline:
         _remove_last_newline(root_node)

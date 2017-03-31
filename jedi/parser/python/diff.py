@@ -372,7 +372,6 @@ class DiffParser(object):
         )
         self._active_parser = Parser(
             self._grammar,
-            source='\n',
             error_recovery=True
         )
         return self._active_parser.parse(tokens=tokens)

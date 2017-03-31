@@ -13,7 +13,6 @@ class Parser(BaseParser):
     class structure of different scopes.
 
     :param grammar: The grammar object of pgen2. Loaded by load_grammar.
-    :param source: The codebase for the parser. Must be unicode.
     """
 
     node_map = {
@@ -47,11 +46,8 @@ class Parser(BaseParser):
     }
     default_node = tree.PythonNode
 
-    def __init__(self, grammar, source, error_recovery=True, start_symbol='file_input'):
+    def __init__(self, grammar, error_recovery=True, start_symbol='file_input'):
         super(Parser, self).__init__(grammar, start_symbol, error_recovery=error_recovery)
-
-        self.source = source
-        self.new_code = source
 
         self.syntax_errors = []
         self._omit_dedent_list = []
