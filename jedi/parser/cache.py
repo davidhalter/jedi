@@ -6,6 +6,7 @@ import gc
 import shutil
 import pickle
 import platform
+import errno
 
 from jedi import settings
 from jedi import debug
@@ -77,9 +78,16 @@ def load_module(grammar, path):
 def _load_from_file_system(grammar, path, p_time):
     cache_path = _get_hashed_path(grammar, path)
     try:
-        if p_time > os.path.getmtime(cache_path):
-            # Cache is outdated
-            return None
+        try:
+            if p_time > os.path.getmtime(cache_path):
+                # Cache is outdated
+                return None
+        except OSError as e:
+            if e.errno == errno.ENOENT:
+                # In Python 2 instead of an IOError here we get an OSError.
+                raise FileNotFoundError
+            else:
+                raise
 
         with open(cache_path, 'rb') as f:
             gc.disable()
