@@ -76,8 +76,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     if path is not None:
         path = os.path.expanduser(path)
 
-    use_cache = cache and path is not None and not code
-    if use_cache:
+    if cache and not code and path is not None:
         # In this case we do actual caching. We just try to load it.
         module_node = load_module(grammar, path)
         if module_node is not None:
@@ -95,11 +94,16 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
         else:
             lines = splitlines(code, keepends=True)
             module_node = module_cache_item.node
+            old_lines = module_cache_item.lines
+            if old_lines == lines:
+                save_module(grammar, path, module_node, lines, pickling=False)
+                return module_node
+
             new_node = DiffParser(grammar, module_node).update(
-                old_lines=module_cache_item.lines,
+                old_lines=old_lines,
                 new_lines=lines
             )
-            save_module(grammar, path, module_node, lines, pickling=False)
+            save_module(grammar, path, new_node, lines, pickling=cache)
             return new_node
 
     added_newline = not code.endswith('\n')
@@ -117,6 +121,6 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     if added_newline:
         _remove_last_newline(root_node)
 
-    if use_cache or diff_cache:
-        save_module(grammar, path, root_node, lines)
+    if cache or diff_cache:
+        save_module(grammar, path, root_node, lines, pickling=cache)
     return root_node

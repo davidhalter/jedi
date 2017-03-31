@@ -136,7 +136,7 @@ class Script(object):
             code=self._source,
             path=self.path,
             grammar=self._grammar,
-            cache=True,
+            cache=False,  # No disk cache, because the current script often changes.
             diff_cache=True,
         )
 
