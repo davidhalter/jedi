@@ -84,57 +84,11 @@ def _update_positions(nodes, line_offset, last_leaf):
             _update_positions(children, line_offset, last_leaf)
 
 
-diff_parser_cache = {}
-
-
-def diff_parse(path, python_version=None, lines=None):
-    """
-    An advanced form of caching a parser. Diffs the given lines with a
-    previously parsed module and tries to reuse the nodes that have not
-    changed.
-
-    May raise an error if the path does not exist.
-    """
-    if lines is None:
-        with open(path) as f:
-            lines = f.read()
-
-    diff_parser = load_diff_parser(path, python_version)
-    return diff_parser.parse(lines)
-
-
-def load_diff_parser(path, python_version=None):
-    language_cache = python_version=None
-    try:
-        return diff_parser_cache[path]
-    except KeyError:
-        dp = DiffParser(path, python_version)
-        diff_parser_cache[path] = dp
-        return dp
-
-
-class NewDiffParser(object):
-    def __init__(self, path, python_version=None):
-        self._path = path
-        from jedi.parser.python import load_grammar
-        grammar = load_grammar(version=python_version)
-        self._parser = Parser(grammar, error_recovery=True)
-        self._module = None
-
-    def update(self, lines):
-        lines##### TODO
-        tokens = tokenize(lines)
-        if self._module is None:
-            self._module = load_parser(grammar, self._path)
-            if self._module is None:
-                self._module = self._parser.parse(tokens)
-                save_parser(grammar, self._path, self._module)
-            return self._module
-
-        return bla
-
-
 class DiffParser(object):
+    """
+    An advanced form of parsing a file faster. Unfortunately comes with huge
+    side effects. It changes the given module.
+    """
     def __init__(self, grammar, module):
         self._grammar = grammar
         self._module = module
