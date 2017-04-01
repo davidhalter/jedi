@@ -172,15 +172,16 @@ class NameFinder(object):
 def _name_to_types(evaluator, context, tree_name):
     types = []
     node = tree_name.get_definition()
-    if node.type == 'for_stmt':
+    typ = node.type
+    if typ == 'for_stmt':
         types = pep0484.find_type_from_comment_hint_for(context, node, tree_name)
         if types:
             return types
-    if node.type == 'with_stmt':
+    if typ == 'with_stmt':
         types = pep0484.find_type_from_comment_hint_with(context, node, tree_name)
         if types:
             return types
-    if node.type in ('for_stmt', 'comp_for'):
+    if typ in ('for_stmt', 'comp_for'):
         try:
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
@@ -188,15 +189,15 @@ def _name_to_types(evaluator, context, tree_name):
             for_types = iterable.py__iter__types(evaluator, cn.infer(), cn)
             c_node = ContextualizedName(context, tree_name)
             types = check_tuple_assignments(evaluator, c_node, for_types)
-    elif node.type == 'expr_stmt':
+    elif typ == 'expr_stmt':
         types = _remove_statements(evaluator, context, node, tree_name)
-    elif node.type == 'with_stmt':
+    elif typ == 'with_stmt':
         types = context.eval_node(node.node_from_name(tree_name))
-    elif isinstance(node, tree.Import):
+    elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
-    elif node.type in ('funcdef', 'classdef'):
+    elif typ in ('funcdef', 'classdef'):
         types = _apply_decorators(evaluator, context, node)
-    elif node.type == 'global_stmt':
+    elif typ == 'global_stmt':
         context = evaluator.create_context(context, tree_name)
         finder = NameFinder(evaluator, context, context, str(tree_name))
         filters = finder.get_filters(search_global=True)
@@ -204,7 +205,7 @@ def _name_to_types(evaluator, context, tree_name):
         # which means the function itself.
         filters = [next(filters)]
         types += finder.find(filters, attribute_lookup=False)
-    elif isinstance(node, tree.TryStmt):
+    elif typ == 'try_stmt':
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
         # the static analysis report.
@@ -279,8 +280,7 @@ def _remove_statements(evaluator, context, stmt, name):
     if check_instance is not None:
         # class renames
         types = set([er.get_instance_el(evaluator, check_instance, a, True)
-                     if isinstance(a, (er.Function, tree.Function))
-                     else a for a in types])
+                     if isinstance(a, er.Function) else a for a in types])
     return types
 
 
@@ -316,7 +316,7 @@ def _check_flow_information(context, flow, search_name, pos):
                 if result is not None:
                     return result
 
-    if isinstance(flow, (tree.IfStmt, tree.WhileStmt)):
+    if flow.type in ('if_stmt', 'while_stmt'):
         potential_ifs = [c for c in flow.children[1::4] if c != ':']
         for if_test in reversed(potential_ifs):
             if search_name.start_pos > if_test.end_pos:
@@ -330,7 +330,7 @@ def _check_isinstance_type(context, element, search_name):
         # this might be removed if we analyze and, etc
         assert len(element.children) == 2
         first, trailer = element.children
-        assert isinstance(first, tree.Name) and first.value == 'isinstance'
+        assert first.type == 'name' and first.value == 'isinstance'
         assert trailer.type == 'trailer' and trailer.children[0] == '('
         assert len(trailer.children) == 3
 
