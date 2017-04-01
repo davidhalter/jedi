@@ -242,7 +242,7 @@ def _apply_decorators(evaluator, context, node):
         trailer_nodes = dec.children[2:-1]
         if trailer_nodes:
             # Create a trailer and evaluate it.
-            trailer = tree.Node('trailer', trailer_nodes)
+            trailer = tree.PythonNode('trailer', trailer_nodes)
             trailer.parent = dec
             dec_values = evaluator.eval_trailer(context, dec_values, trailer)
 

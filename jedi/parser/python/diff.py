@@ -230,8 +230,6 @@ class DiffParser(object):
             leaf = leaf.get_next_leaf()
         if leaf.get_start_pos_of_prefix()[0] == old_line:
             node = leaf
-            # TODO use leaf.get_definition one day when that one is working
-            # well.
             while node.parent.type not in ('file_input', 'suite'):
                 node = node.parent
             return node

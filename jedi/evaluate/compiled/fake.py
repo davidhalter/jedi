@@ -10,7 +10,7 @@ import types
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
 from jedi.parser.python import parse
-from jedi.parser.python import tree as pt
+from jedi.parser.python import tree
 
 modules = {}
 
@@ -180,9 +180,9 @@ def _get_faked(module, obj, name=None):
         assert result.type == 'funcdef'
         doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
         suite = result.children[-1]
-        string = pt.String(doc, (0, 0), '')
-        new_line = pt.Newline('\n', (0, 0))
-        docstr_node = pt.Node('simple_stmt', [string, new_line])
+        string = tree.String(doc, (0, 0), '')
+        new_line = tree.Newline('\n', (0, 0))
+        docstr_node = tree.PythonNode('simple_stmt', [string, new_line])
         suite.children.insert(1, docstr_node)
         return result, fake_module
 
