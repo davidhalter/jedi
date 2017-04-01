@@ -320,9 +320,7 @@ class Evaluator(object):
         elif typ == 'eval_input':
             types = self._eval_element_not_cached(context, element.children[0])
         elif typ == 'annassign':
-            print(element.children[1])
             types = pep0484._evaluate_for_annotation(context, element.children[1])
-            print('xxx')
         else:
             types = precedence.calculate_children(self, context, element.children)
         debug.dbg('eval_element result %s', types)

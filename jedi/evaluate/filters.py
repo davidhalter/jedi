@@ -284,7 +284,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     First we get the names names from the function scope.
 
     >>> no_unicode_pprint(filters[0])
-    <ParserTreeFilter: <ModuleContext: <Module: None@2-5>>>
+    <ParserTreeFilter: <ModuleContext: @2-5>>
     >>> sorted(str(n) for n in filters[0].values())
     ['<TreeNameDefinition: func@(3, 4)>', '<TreeNameDefinition: x@(2, 0)>']
     >>> filters[0]._until_position

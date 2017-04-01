@@ -82,7 +82,6 @@ def add(node_context, error_name, node, message=None, typ=Error, payload=None):
 
     # TODO this path is probably not right
     module_context = node_context.get_root_context()
-    print(module_context, node)
     module_path = module_context.py__file__()
     instance = typ(error_name, module_path, node.start_pos, message)
     debug.warning(str(instance), format=False)

@@ -12,13 +12,11 @@ the input given to the parser. This is important if you are using refactoring.
 The easiest way to play with this module is to use :class:`parsing.Parser`.
 :attr:`parsing.Parser.module` holds an instance of :class:`Module`:
 
->>> from jedi._compatibility import u
->>> from jedi.parser.python import load_grammar
->>> from jedi.parser import ParserWithRecovery
->>> parser = ParserWithRecovery(load_grammar(), u('import os'), 'example.py')
+>>> from jedi.parser.python import parse
+>>> parser = parse('import os')
 >>> module = parser.get_root_node()
 >>> module
-<Module: example.py@1-1>
+<Module: @1-1>
 
 Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 :attr:`imports <Scope.imports>`:
@@ -77,7 +75,7 @@ class DocstringMixin(object):
     @property
     def raw_doc(self):
         """ Returns a cleaned version of the docstring token. """
-        if isinstance(self, Module):
+        if self.type == 'file_input':
             node = self.children[0]
         elif isinstance(self, ClassOrFunc):
             node = self.children[self.children.index(':') + 1]
@@ -132,7 +130,7 @@ class PythonMixin():
             if isinstance(scope, (PythonNode, PythonLeaf)) and parent.type != 'simple_stmt':
                 if scope.type == 'testlist_comp':
                     try:
-                        if isinstance(scope.children[1], CompFor):
+                        if scope.children[1].type == 'comp_for':
                             return scope.children[1]
                     except IndexError:
                         pass
