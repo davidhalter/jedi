@@ -272,7 +272,7 @@ class Evaluator(object):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         types = set()
         typ = element.type
-        if isinstance(element, (tree.Name, tree.Literal)) or typ == 'atom':
+        if typ in ('name', 'number', 'string', 'atom'):
             types = self.eval_atom(context, element)
         elif typ == 'keyword':
             # For False/True/None
