@@ -123,7 +123,6 @@ class TestRegression(TestCase):
                 break
         column = len(line) - len(after_cursor)
         defs = Script(source, i + 1, column).goto_definitions()
-        print(defs)
         assert [d.name for d in defs] == names
 
     def test_backslash_continuation(self):

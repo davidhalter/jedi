@@ -24,8 +24,8 @@ class TestSpeed(TestCase):
                 for i in range(number):
                     func(self)
                 single_time = (time.time() - first) / number
-                print('\nspeed', func, single_time)
-                assert single_time < time_per_run
+                message = 'speed issue %s, %s' % (func, single_time)
+                assert single_time < time_per_run, message
             return wrapper
         return decorated
 
