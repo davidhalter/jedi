@@ -228,7 +228,6 @@ def _remove_last_newline(node):
     text = text[:-1]
     if prefix:
         endmarker.prefix = text
-        print(endmarker.start_pos)
 
         if leaf is None:
             end_pos = (1, 0)
@@ -241,7 +240,6 @@ def _remove_last_newline(node):
         else:
             end_pos = end_pos[0] + len(lines) - 1,  len(lines[-1])
         endmarker.start_pos = end_pos
-        print(endmarker.start_pos)
     else:
         leaf.value = text
         endmarker.start_pos = leaf.end_pos
