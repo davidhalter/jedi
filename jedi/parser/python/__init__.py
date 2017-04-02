@@ -112,7 +112,7 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
         code += '\n'
         tokenize_lines = list(tokenize_lines)
         tokenize_lines[-1] += '\n'
-        tokenize_lines.append([])
+        tokenize_lines.append('')
 
     tokens = generate_tokens(tokenize_lines, use_exact_op_types=True)
 

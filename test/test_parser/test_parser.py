@@ -2,10 +2,13 @@
 import sys
 from textwrap import dedent
 
+import pytest
+
 import jedi
 from jedi._compatibility import u, is_py3
 from jedi.parser.python import parse, load_grammar
 from jedi.parser.python import tree
+from jedi.common import splitlines
 
 
 def test_user_statement_on_import():
@@ -226,3 +229,15 @@ def test_load_newer_grammar():
     # The same is true for very old grammars (even though this is probably not
     # going to be an issue.
     load_grammar('1.5')
+
+
+@pytest.mark.parametrize('code', ['foo "', 'foo """\n', 'foo """\nbar'])
+def test_open_string_literal(code):
+    """
+    Testing mostly if removing the last newline works.
+    """
+    lines = splitlines(code, keepends=True)
+    end_pos = (len(lines), len(lines[-1]))
+    module = parse(code)
+    assert module.get_code() == code
+    assert module.end_pos == end_pos == module.children[1].end_pos

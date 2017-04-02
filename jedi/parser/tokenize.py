@@ -249,11 +249,7 @@ def generate_tokens(lines, use_exact_op_types=False):
         while pos < max:
             pseudomatch = pseudo_token_compiled.match(line, pos)
             if not pseudomatch:                             # scan for tokens
-                txt = line[pos]
-                if line[pos] in '"\'':
-                    # If a literal starts but doesn't end the whole rest of the
-                    # line is an error token.
-                    txt = line[pos:]
+                txt = line[pos:]
                 if txt.endswith('\n'):
                     new_line = True
                 yield TokenInfo(ERRORTOKEN, txt, (lnum, pos), prefix)
@@ -263,7 +259,8 @@ def generate_tokens(lines, use_exact_op_types=False):
             additional_prefix = ''
             start, pos = pseudomatch.span(2)
             spos = (lnum, start)
-            token, initial = line[start:pos], line[start]
+            token = pseudomatch.group(2)
+            initial = token[0]
 
             if new_line and initial not in '\r\n#':
                 new_line = False

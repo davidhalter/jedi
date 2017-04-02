@@ -1,10 +1,9 @@
-import re
-
 from jedi.parser.python import tree
 from jedi.parser import tokenize
 from jedi.parser.token import (DEDENT, INDENT, ENDMARKER, NEWLINE, NUMBER,
                                STRING, tok_name)
 from jedi.parser.parser import BaseParser
+from jedi.common import splitlines
 
 
 class Parser(BaseParser):
@@ -214,23 +213,35 @@ def _remove_last_newline(node):
     # The newline is either in the endmarker as a prefix or the previous
     # leaf as a newline token.
     prefix = endmarker.prefix
-    if prefix.endswith('\n'):
-        endmarker.prefix = prefix = prefix[:-1]
-        last_end = 0
-        if '\n' not in prefix:
-            # Basically if the last line doesn't end with a newline. we
-            # have to add the previous line's end_position.
-            previous_leaf = endmarker.get_previous_leaf()
-            if previous_leaf is not None:
-                last_end = previous_leaf.end_pos[1]
-        last_line = re.sub('.*\n', '', prefix)
-        endmarker.start_pos = endmarker.line - 1, last_end + len(last_line)
+    leaf = endmarker.get_previous_leaf()
+    if prefix:
+        text = prefix
     else:
-        newline = endmarker.get_previous_leaf()
-        if newline is None:
-            return  # This means that the parser is empty.
+        if leaf is None:
+            raise ValueError("You're trying to remove a newline from an empty module.")
 
-        assert newline.value.endswith('\n')
-        newline.value = newline.value[:-1]
-        endmarker.start_pos = \
-            newline.start_pos[0], newline.start_pos[1] + len(newline.value)
+        text = leaf.value
+
+    if not text.endswith('\n'):
+        raise ValueError("There's no newline at the end, cannot remove it.")
+
+    text = text[:-1]
+    if prefix:
+        endmarker.prefix = text
+        print(endmarker.start_pos)
+
+        if leaf is None:
+            end_pos = (1, 0)
+        else:
+            end_pos = leaf.end_pos
+
+        lines = splitlines(text, keepends=True)
+        if len(lines) == 1:
+            end_pos = end_pos[0], end_pos[1] + len(lines[0])
+        else:
+            end_pos = end_pos[0] + len(lines) - 1,  len(lines[-1])
+        endmarker.start_pos = end_pos
+        print(endmarker.start_pos)
+    else:
+        leaf.value = text
+        endmarker.start_pos = leaf.end_pos
