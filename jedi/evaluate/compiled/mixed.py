@@ -132,7 +132,12 @@ def find_syntax_node_name(evaluator, python_object):
         # be something like ``email.utils``).
         return module, path
 
-    name_str = python_object.__name__
+    try:
+        name_str = python_object.__name__
+    except AttributeError:
+        # Stuff like python_function.__code__.
+        return None, None
+
     if name_str == '<lambda>':
         return None, None  # It's too hard to find lambdas.
 
