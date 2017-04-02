@@ -83,3 +83,9 @@ def test_method_completion():
     else:
         result = ['__func__']
     assert [c.name for c in Script(code).completions()] == result
+
+
+def test_time_docstring():
+    import time
+    comp, = Script('import time\ntime.sleep').completions()
+    assert comp.docstring() == time.sleep.__doc__

@@ -701,6 +701,12 @@ class _Help(object):
 
     @memoize_method
     def _get_node(self, fast):
+        if isinstance(self._name, (compiled.CompiledContextName, compiled.CompiledName)):
+            followed = self._name.infer()
+            if followed:
+                return next(iter(followed))
+            return None
+
         if self._name.api_type == 'module' and not fast:
             followed = self._name.infer()
             if followed:
