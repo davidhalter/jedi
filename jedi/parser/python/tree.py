@@ -1230,7 +1230,15 @@ class Param(PythonBaseNode):
 
     @property
     def position_nr(self):
-        return self.parent.children.index(self) - 1
+        index = self.parent.children.index(self)
+        try:
+            keyword_only_index = self.parent.children.index('*')
+            if index > keyword_only_index:
+                # Skip the ` *, `
+                index -= 2
+        except ValueError:
+            pass
+        return index - 1
 
     def get_parent_function(self):
         return search_ancestor(self, ('funcdef', 'lambda'))

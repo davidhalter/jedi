@@ -158,3 +158,10 @@ Y = int
 def just_because_we_can(x: "flo" + "at"):
     #? float()
     x
+
+
+def keyword_only(a: str, *, b: str):
+    #? ['startswith']
+    a.startswi
+    #? ['startswith']
+    b.startswi
