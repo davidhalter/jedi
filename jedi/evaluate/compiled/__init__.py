@@ -413,7 +413,7 @@ def load_module(evaluator, path=None, name=None):
         raise
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        debug.warning('Module %s not importable.', path)
+        debug.warning('Module %s not importable in path %s.', dotted_path, path)
         return None
     finally:
         sys.path = temp
