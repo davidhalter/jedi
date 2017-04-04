@@ -131,3 +131,9 @@ def isolated_jedi_cache(monkeypatch, tmpdir):
     each test case (scope='function').
     """
     monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
+
+
+@pytest.fixture()
+def cwd_tmpdir(monkeypatch, tmpdir):
+    with helpers.set_cwd(tmpdir.dirpath):
+        yield tmpdir

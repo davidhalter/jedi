@@ -4,6 +4,8 @@ A helper module for testing, improves compatibility for testing (as
 """
 
 import sys
+from contextlib import contextmanager
+
 if sys.hexversion < 0x02070000:
     import unittest2 as unittest
 else:
@@ -29,12 +31,19 @@ def cwd_at(path):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwds):
-            try:
-                oldcwd = os.getcwd()
-                repo_root = os.path.dirname(test_dir)
-                os.chdir(os.path.join(repo_root, path))
+            with set_cwd(path):
                 return func(*args, **kwds)
-            finally:
-                os.chdir(oldcwd)
         return wrapper
     return decorator
+
+
+@contextmanager
+def set_cwd(path, absolute_path=False):
+    repo_root = os.path.dirname(test_dir)
+
+    oldcwd = os.getcwd()
+    os.chdir(os.path.join(repo_root, path))
+    try:
+        yield
+    finally:
+        os.chdir(oldcwd)
