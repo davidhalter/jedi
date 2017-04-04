@@ -493,3 +493,19 @@ B().a
 B.b
 #? int()
 B().b
+
+
+# -----------------
+# With import
+# -----------------
+
+from import_tree.classes import Config2, BaseClass
+
+class Config(BaseClass):
+    """#884"""
+
+#? Config2()
+Config.mode
+
+#? int()
+Config.mode2

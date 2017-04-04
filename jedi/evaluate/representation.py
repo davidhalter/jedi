@@ -75,14 +75,29 @@ def apply_py__get__(context, base_context):
 
 
 class ClassName(TreeNameDefinition):
+    def __init__(self, parent_context, tree_name, name_context):
+        super(ClassName, self).__init__(parent_context, tree_name)
+        self._name_context = name_context
+
     def infer(self):
-        for result_context in super(ClassName, self).infer():
+        # TODO this _name_to_types might get refactored and be a part of the
+        # parent class. Once it is, we can probably just overwrite method to
+        # achieve this.
+        from jedi.evaluate.finder import _name_to_types
+        inferred = _name_to_types(
+            self.parent_context.evaluator, self._name_context, self.tree_name)
+
+        for result_context in inferred:
             for c in apply_py__get__(result_context, self.parent_context):
                 yield c
 
 
 class ClassFilter(ParserTreeFilter):
     name_class = ClassName
+
+    def _convert_names(self, names):
+        return [self.name_class(self.context, name, self._node_context)
+                for name in names]
 
 
 class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
@@ -162,13 +177,13 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                 origin_scope=origin_scope
             )
         else:
-            for scope in self.py__mro__():
-                if isinstance(scope, compiled.CompiledObject):
-                    for filter in scope.get_filters(is_instance=is_instance):
+            for cls in self.py__mro__():
+                if isinstance(cls, compiled.CompiledObject):
+                    for filter in cls.get_filters(is_instance=is_instance):
                         yield filter
                 else:
                     yield ClassFilter(
-                        self.evaluator, self, node_context=scope,
+                        self.evaluator, self, node_context=cls,
                         origin_scope=origin_scope)
 
     def is_class(self):
