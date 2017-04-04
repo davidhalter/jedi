@@ -201,14 +201,21 @@ class Importer(object):
                 path = module_context.py__file__()
                 if path is not None:
                     import_path = list(import_path)
+                    p = path
                     for i in range(level):
-                        path = os.path.dirname(path)
-                    dir_name = os.path.basename(path)
+                        p = os.path.dirname(p)
+                    dir_name = os.path.basename(p)
                     # This is not the proper way to do relative imports. However, since
                     # Jedi cannot be sure about the entry point, we just calculate an
                     # absolute path here.
                     if dir_name:
-                        import_path.insert(0, dir_name)
+                        # TODO those sys.modules modifications are getting
+                        # really stupid. this is the 3rd time that we're using
+                        # this. We should probably refactor.
+                        if path.endswith(os.path.sep + 'os.py'):
+                            import_path.insert(0, 'os')
+                        else:
+                            import_path.insert(0, dir_name)
                     else:
                         _add_error(module_context, import_path[-1])
                         import_path = []
@@ -428,7 +435,7 @@ class Importer(object):
                     if ('os',) == self.str_import_path and not self.level:
                         # os.path is a hardcoded exception, because it's a
                         # ``sys.modules`` modification.
-                        names.append(self._generate_name('path'))
+                        names.append(self._generate_name('path', context))
 
                     continue
 

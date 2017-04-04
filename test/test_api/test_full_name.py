@@ -89,3 +89,10 @@ def test_sub_module():
     assert [d.full_name for d in defs] == ['jedi.api.classes']
     defs = jedi.Script('import jedi.api; jedi.api').goto_definitions()
     assert [d.full_name for d in defs] == ['jedi.api']
+
+
+def test_os_path():
+    d, = jedi.Script('from os.path import join').completions()
+    assert d.full_name == 'os.path.join'
+    d, = jedi.Script('import os.p').completions()
+    assert d.full_name == 'os.path'
