@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.10.2 (2017-04-05)
++++++++++++++++++++
+
+- Python Packaging sucks. Some files were not included in 0.10.1.
+
 0.10.1 (2017-04-05)
 +++++++++++++++++++
 
