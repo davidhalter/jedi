@@ -3,6 +3,17 @@
 Changelog
 ---------
 
+0.10.2 (2017-04-05)
++++++++++++++++++++
+
+- Python Packaging sucks. Some files were not included in 0.10.1.
+
+0.10.1 (2017-04-05)
++++++++++++++++++++
+
+- Fixed a few very annoying bugs.
+- Prepared the parser to be factored out of Jedi.
+
 0.10.0 (2017-02-03)
 +++++++++++++++++++
 
