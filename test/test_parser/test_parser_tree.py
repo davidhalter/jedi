@@ -58,9 +58,9 @@ class TestsFunctionAndLambdaParsing(object):
     def test_annotation(self, node, expected):
         expected_annotation = expected.get('annotation', None)
         if expected_annotation is None:
-            assert node.get_annotation() is None
+            assert node.annotation is None
         else:
-            assert node.get_annotation().value == expected_annotation
+            assert node.annotation.value == expected_annotation
 
     def test_get_call_signature(self, node, expected):
         assert node.get_call_signature() == expected['call_sig']

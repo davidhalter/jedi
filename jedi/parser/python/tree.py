@@ -588,7 +588,8 @@ class Function(ClassOrFunc):
     def is_generator(self):
         return bool(self.yields)
 
-    def get_annotation(self):
+    @property
+    def annotation(self):
         try:
             if self.children[3] == "->":
                 return self.children[4]
@@ -656,7 +657,8 @@ class Lambda(Function):
     def is_generator(self):
         return False
 
-    def get_annotation(self):
+    @property
+    def annotation(self):
         # lambda functions do not support annotations
         return None
 
@@ -1066,7 +1068,8 @@ class Param(PythonBaseNode):
         except IndexError:
             return None
 
-    def get_annotation(self):
+    @property
+    def annotation(self):
         tfpdef = self._tfpdef()
         if tfpdef.type == 'tfpdef':
             assert tfpdef.children[1] == ":"
