@@ -450,7 +450,8 @@ class Evaluator(object):
                 raise NotImplementedError
             if def_.type == 'expr_stmt' and name in def_.get_defined_names():
                 return self.eval_statement(context, def_, name)
-            elif def_.type == 'for_stmt':
+            elif def_.type == 'for_stmt' and \
+                    name.start_pos < def_.children[1].end_pos:
                 container_types = self.eval_element(context, def_.children[3])
                 cn = ContextualizedNode(context, def_.children[3])
                 for_types = iterable.py__iter__types(self, container_types, cn)

@@ -16,6 +16,7 @@ import sys
 from jedi.parser.python import load_grammar
 from jedi.parser.python import tree
 from jedi.parser.python import parse
+from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
 from jedi import common
@@ -331,7 +332,7 @@ class Script(object):
         module_node = self._get_module_node()
         self._evaluator.analysis_modules = [module_node]
         try:
-            for node in module_node.nodes_to_execute():
+            for node in get_executable_nodes(module_node):
                 context = self._get_module().create_context(node)
                 if node.type in ('funcdef', 'classdef'):
                     # TODO This is stupid, should be private

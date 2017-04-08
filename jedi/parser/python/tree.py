@@ -25,16 +25,11 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 [<ImportName: import os@1,0>]
 
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
-
-For static analysis purposes there exists a method called
-``nodes_to_execute`` on all nodes and leaves. It's documented in the static
-anaylsis documentation.
 """
 
 from inspect import cleandoc
 from itertools import chain
 import textwrap
-import abc
 
 from jedi._compatibility import (Python3Method, is_py3, utf8_repr,
                                  literal_eval, unicode)
@@ -142,10 +137,6 @@ class PythonMixin():
     def is_scope(self):
         # Default is not being a scope. Just inherit from Scope.
         return False
-
-    @abc.abstractmethod
-    def nodes_to_execute(self, last_added=False):
-        raise NotImplementedError()
 
     @Python3Method
     def name_for_position(self, position):
@@ -255,10 +246,6 @@ class Name(_LeafWithoutNewlines):
             return stmt.type in ('expr_stmt', 'import_name', 'import_from',
                                  'comp_for', 'with_stmt') \
                 and self in stmt.get_defined_names()
-
-    def nodes_to_execute(self, last_added=False):
-        if last_added is False:
-            yield self
 
 
 class Literal(PythonLeaf):
@@ -431,13 +418,6 @@ class Module(Scope):
                         return True
         return False
 
-    def nodes_to_execute(self, last_added=False):
-        # Yield itself, class needs to be executed for decorator checks.
-        result = []
-        for child in self.children:
-            result += child.nodes_to_execute()
-        return result
-
     @property
     def used_names(self):
         if self._used_names is None:
@@ -463,13 +443,6 @@ class Module(Scope):
 class Decorator(PythonBaseNode):
     type = 'decorator'
     __slots__ = ()
-
-    def nodes_to_execute(self, last_added=False):
-        if self.children[-2] == ')':
-            node = self.children[-3]
-            if node != '(':
-                return node.nodes_to_execute()
-        return []
 
 
 class ClassOrFunc(Scope):
@@ -527,34 +500,6 @@ class Class(ClassOrFunc):
                 return '%s\n\n%s' % (
                     sub.get_call_signature(func_name=self.name), docstr)
         return docstr
-
-    def nodes_to_execute(self, last_added=False):
-        # Yield itself, class needs to be executed for decorator checks.
-        yield self
-        # Super arguments.
-        arglist = self.get_super_arglist()
-        try:
-            children = arglist.children
-        except AttributeError:
-            if arglist is not None:
-                for node_to_execute in arglist.nodes_to_execute():
-                    yield node_to_execute
-        else:
-            for argument in children:
-                if argument.type == 'argument':
-                    # metaclass= or list comprehension or */**
-                    raise NotImplementedError('Metaclasses not implemented')
-                else:
-                    for node_to_execute in argument.nodes_to_execute():
-                        yield node_to_execute
-
-        # care for the class suite:
-        for node in self.children[self.children.index(':'):]:
-            # This could be easier without the fast parser. But we need to find
-            # the position of the colon, because everything after it can be a
-            # part of the class, not just its suite.
-            for node_to_execute in node.nodes_to_execute():
-                yield node_to_execute
 
 
 def _create_params(parent, argslist_list):
@@ -676,21 +621,6 @@ class Function(ClassOrFunc):
         docstr = self.raw_doc
         return '%s\n\n%s' % (self.get_call_signature(), docstr)
 
-    def nodes_to_execute(self, last_added=False):
-        # Yield itself, functions needs to be executed for decorator checks.
-        yield self
-        for param in self.params:
-            if param.default is not None:
-                yield param.default
-        # care for the function suite:
-        for node in self.children[4:]:
-            # This could be easier without the fast parser. The fast parser
-            # allows that the 4th position is empty or that there's even a
-            # fifth element (another function/class). So just scan everything
-            # after colon.
-            for node_to_execute in node.nodes_to_execute():
-                yield node_to_execute
-
 
 class Lambda(Function):
     """
@@ -734,14 +664,6 @@ class Lambda(Function):
     def yields(self):
         return []
 
-    def nodes_to_execute(self, last_added=False):
-        for param in self.params:
-            if param.default is not None:
-                yield param.default
-        # Care for the lambda test (last child):
-        for node_to_execute in self.children[-1].nodes_to_execute():
-            yield node_to_execute
-
     def __repr__(self):
         return "<%s@%s>" % (self.__class__.__name__, self.start_pos)
 
@@ -751,11 +673,6 @@ class Flow(PythonBaseNode):
     FLOW_KEYWORDS = (
         'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
     )
-
-    def nodes_to_execute(self, last_added=False):
-        for child in self.children:
-            for node_to_execute in child.nodes_to_execute():
-                yield node_to_execute
 
     def get_branch_keyword(self, node):
         start_pos = node.start_pos
@@ -857,16 +774,6 @@ class TryStmt(Flow):
             elif node == 'except':
                 yield None
 
-    def nodes_to_execute(self, last_added=False):
-        result = []
-        for child in self.children[2::3]:
-            result += child.nodes_to_execute()
-        for child in self.children[0::3]:
-            if child.type == 'except_clause':
-                # Add the test node and ignore the `as NAME` definition.
-                result += child.children[1].nodes_to_execute()
-        return result
-
 
 class WithStmt(Flow):
     type = 'with_stmt'
@@ -886,16 +793,6 @@ class WithStmt(Flow):
             node = node.parent
             if node.type == 'with_item':
                 return node.children[0]
-
-    def nodes_to_execute(self, last_added=False):
-        result = []
-        for child in self.children[1::2]:
-            if child.type == 'with_item':
-                # Just ignore the `as EXPR` part - at least for now, because
-                # most times it's just a name.
-                child = child.children[0]
-            result += child.nodes_to_execute()
-        return result
 
 
 class Import(PythonBaseNode):
@@ -918,14 +815,6 @@ class Import(PythonBaseNode):
 
     def is_star_import(self):
         return self.children[-1] == '*'
-
-    def nodes_to_execute(self, last_added=False):
-        """
-        `nodes_to_execute` works a bit different for imports, because the names
-        itself cannot directly get resolved (except on itself).
-        """
-        # TODO couldn't we return the names? Would be nicer.
-        return [self]
 
 
 class ImportFrom(Import):
@@ -1070,12 +959,6 @@ class KeywordStatement(PythonBaseNode):
     def keyword(self):
         return self.children[0].value
 
-    def nodes_to_execute(self, last_added=False):
-        result = []
-        for child in self.children:
-            result += child.nodes_to_execute()
-        return result
-
 
 class AssertStmt(KeywordStatement):
     __slots__ = ()
@@ -1093,13 +976,6 @@ class GlobalStmt(KeywordStatement):
     def get_global_names(self):
         return self.children[1::2]
 
-    def nodes_to_execute(self, last_added=False):
-        """
-        The global keyword allows to define any name. Even if it doesn't
-        exist.
-        """
-        return []
-
 
 class ReturnStmt(KeywordStatement):
     __slots__ = ()
@@ -1111,12 +987,6 @@ class YieldExpr(PythonBaseNode):
     @property
     def type(self):
         return 'yield_expr'
-
-    def nodes_to_execute(self, last_added=False):
-        if len(self.children) > 1:
-            return self.children[1].nodes_to_execute()
-        else:
-            return []
 
 
 def _defined_names(current):
@@ -1166,14 +1036,6 @@ class ExprStmt(PythonBaseNode, DocstringMixin):
             return self.children[1]
         except IndexError:
             return None
-
-    def nodes_to_execute(self, last_added=False):
-        # I think evaluating the statement (and possibly returned arrays),
-        # should be enough for static analysis.
-        result = [self]
-        for child in self.children:
-            result += child.nodes_to_execute(last_added=True)
-        return result
 
 
 class Param(PythonBaseNode):
@@ -1273,16 +1135,3 @@ class CompFor(PythonBaseNode):
 
     def get_defined_names(self):
         return _defined_names(self.children[1])
-
-    def nodes_to_execute(self, last_added=False):
-        last = self.children[-1]
-        if last.type == 'comp_if':
-            for node in last.children[-1].nodes_to_execute():
-                yield node
-            last = self.children[-2]
-        elif last.type == 'comp_for':
-            for node in last.nodes_to_execute():
-                yield node
-            last = self.children[-2]
-        for node in last.nodes_to_execute():
-            yield node

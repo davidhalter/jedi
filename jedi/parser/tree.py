@@ -132,9 +132,6 @@ class Leaf(_NodeOrLeaf):
         else:
             return self.value
 
-    def nodes_to_execute(self, last_added=False):
-        return []
-
     @property
     def end_pos(self):
         """
@@ -276,13 +273,6 @@ class Node(BaseNode):
     """Concrete implementation for interior nodes."""
     __slots__ = ('type',)
 
-    _IGNORE_EXECUTE_NODES = set([
-        'suite', 'subscriptlist', 'subscript', 'simple_stmt', 'sliceop',
-        'testlist_comp', 'dictorsetmaker', 'trailer', 'decorators',
-        'decorated', 'arglist', 'argument', 'exprlist', 'testlist',
-        'testlist_safe', 'testlist1'
-    ])
-
     def __init__(self, type, children):
         """
         Initializer.
@@ -295,19 +285,6 @@ class Node(BaseNode):
         super(Node, self).__init__(children)
         self.type = type
 
-    def nodes_to_execute(self, last_added=False):
-        """
-        For static analysis.
-        """
-        result = []
-        if self.type not in Node._IGNORE_EXECUTE_NODES and not last_added:
-            result.append(self)
-            last_added = True
-
-        for child in self.children:
-            result += child.nodes_to_execute(last_added)
-        return result
-
     def __repr__(self):
         return "%s(%s, %r)" % (self.__class__.__name__, self.type, self.children)
 
@@ -318,9 +295,6 @@ class ErrorNode(BaseNode):
     """
     __slots__ = ()
     type = 'error_node'
-
-    def nodes_to_execute(self, last_added=False):
-        return []
 
 
 class ErrorLeaf(Leaf):
@@ -337,5 +311,3 @@ class ErrorLeaf(Leaf):
     def __repr__(self):
         return "<%s: %s:%s, %s)>" % \
             (type(self).__name__, self.original_type, repr(self.value), self.start_pos)
-
-
