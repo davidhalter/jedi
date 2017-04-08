@@ -1,13 +1,7 @@
-from jedi.parser.python.tree import PythonLeaf
-_IGNORE_EXECUTE_NODES = set([
-    'suite', 'subscriptlist', 'subscript', 'simple_stmt', 'sliceop',
-    'testlist_comp', 'dictorsetmaker', 'trailer', 'decorators',
-    'decorated', 'arglist', 'argument', 'exprlist', 'testlist',
-    'testlist_safe', 'testlist1', 'global_stmt', 'file_input', 'for_stmt',
-    'while_stmt', 'if_stmt', 'try_stmt', 'with_stmt', 'comp_for', 'comp_if',
-    'param', 'except_clause', 'dotted_name', 'keyword_stmt', 'return_stmt',
-    'del_stmt', 'pass_stmt', 'nonlocal_stmt', 'assert_stmt', 'break_stmt',
-    'continue_stmt', 'raise_stmt', 'yield_stmt'
+_EXECUTE_NODES = set([
+    'funcdef', 'classdef', 'import_from', 'import_name', 'test', 'or_test',
+    'and_test', 'not_test', 'comparison', 'expr', 'xor_expr', 'and_expr',
+    'shift_expr', 'arith_expr', 'atom_expr', 'term', 'factor', 'power', 'atom'
 ])
 
 return_ = 'import_name', 'import_from'
@@ -22,32 +16,7 @@ def get_executable_nodes(node, last_added=False):
     """
     result = []
     typ = node.type
-    if typ == 'classdef':
-        # Yield itself, class needs to be executed for decorator checks.
-        result.append(node)
-        # Super arguments.
-        arglist = node.get_super_arglist()
-        try:
-            children = arglist.children
-        except AttributeError:
-            if arglist is not None:
-                result += get_executable_nodes(arglist)
-        else:
-            for argument in children:
-                if argument.type == 'argument':
-                    # metaclass= or list comprehension or */**
-                    raise NotImplementedError('Metaclasses not implemented, yet.')
-                else:
-                    result += get_executable_nodes(argument)
-
-        # Care for the class suite:
-        suite = node.children[-1]
-        result += get_executable_nodes(suite)
-    elif typ == 'yield_expr':
-        if len(node.children) > 1:
-            # TODO delete?
-            result += get_executable_nodes(node.children[1])
-    elif typ == 'name':
+    if typ == 'name':
         next_leaf = node.get_next_leaf()
         if last_added is False and node.parent.type != 'param' and next_leaf != '=':
             result.append(node)
@@ -57,20 +26,22 @@ def get_executable_nodes(node, last_added=False):
         result.append(node)
         for child in node.children:
             result += get_executable_nodes(child, last_added=True)
-    elif isinstance(node, PythonLeaf):
-        pass
     elif typ == 'decorator':
         # decorator
         if node.children[-2] == ')':
-            node = children[-3]
+            node = node.children[-3]
             if node != '(':
                 result += get_executable_nodes(node)
     else:
-        if node.type not in _IGNORE_EXECUTE_NODES and not last_added:
-            result.append(node)
-            #last_added = True
+        try:
+            children = node.children
+        except AttributeError:
+            pass
+        else:
+            if node.type in _EXECUTE_NODES and not last_added:
+                result.append(node)
 
-        for child in node.children:
-            result += get_executable_nodes(child, last_added)
+            for child in children:
+                result += get_executable_nodes(child, last_added)
 
     return result
