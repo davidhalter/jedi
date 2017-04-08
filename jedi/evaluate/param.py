@@ -112,8 +112,8 @@ class TreeArguments(AbstractArguments):
 
     def unpack(self, func=None):
         named_args = []
-        for stars, el in self._split():
-            if stars == 1:
+        for star_count, el in self._split():
+            if star_count == 1:
                 arrays = self.context.eval_node(el)
                 iterators = [_iterate_star_args(self.context, a, el, func)
                              for a in arrays]
@@ -124,7 +124,7 @@ class TreeArguments(AbstractArguments):
                     yield None, context.get_merged_lazy_context(
                         [v for v in values if v is not None]
                     )
-            elif stars == 2:
+            elif star_count == 2:
                 arrays = self._evaluator.eval_element(self.context, el)
                 for dct in arrays:
                     for key, values in _star_star_dict(self.context, dct, el, func):
@@ -148,12 +148,12 @@ class TreeArguments(AbstractArguments):
             yield named_arg
 
     def as_tree_tuple_objects(self):
-        for stars, argument in self._split():
+        for star_count, argument in self._split():
             if argument.type == 'argument':
                 argument, default = argument.children[::2]
             else:
                 default = None
-            yield argument, default, stars
+            yield argument, default, star_count
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
@@ -168,8 +168,8 @@ class TreeArguments(AbstractArguments):
                 break
 
             old_arguments_list.append(arguments)
-            for name, default, stars in reversed(list(arguments.as_tree_tuple_objects())):
-                if not stars or not isinstance(name, tree.Name):
+            for name, default, star_count in reversed(list(arguments.as_tree_tuple_objects())):
+                if not star_count or not isinstance(name, tree.Name):
                     continue
 
                 names = self._evaluator.goto(arguments.context, name)
@@ -274,7 +274,7 @@ def get_params(evaluator, parent_context, func, var_args):
         except KeyError:
             pass
 
-        if param.stars == 1:
+        if param.star_count == 1:
             # *args param
             lazy_context_list = []
             if argument is not None:
@@ -287,7 +287,7 @@ def get_params(evaluator, parent_context, func, var_args):
                     lazy_context_list.append(argument)
             seq = iterable.FakeSequence(evaluator, 'tuple', lazy_context_list)
             result_arg = context.LazyKnownContext(seq)
-        elif param.stars == 2:
+        elif param.star_count == 2:
             # **kwargs param
             dct = iterable.FakeDict(evaluator, dict(non_matching_keys))
             result_arg = context.LazyKnownContext(dct)
@@ -320,7 +320,7 @@ def get_params(evaluator, parent_context, func, var_args):
             param = param_dict[k]
 
             if not (non_matching_keys or had_multiple_value_error or
-                    param.stars or param.default):
+                    param.star_count or param.default):
                 # add a warning only if there's not another one.
                 for node in var_args.get_calling_nodes():
                     m = _error_argument_count(func, len(unpacked_va))
@@ -380,7 +380,7 @@ def _star_star_dict(context, array, input_node, func):
 
 
 def _error_argument_count(func, actual_count):
-    default_arguments = sum(1 for p in func.params if p.default or p.stars)
+    default_arguments = sum(1 for p in func.params if p.default or p.star_count)
 
     if default_arguments == 0:
         before = 'exactly '
@@ -391,11 +391,11 @@ def _error_argument_count(func, actual_count):
 
 
 def create_default_param(parent_context, param):
-    if param.stars == 1:
+    if param.star_count == 1:
         result_arg = context.LazyKnownContext(
             iterable.FakeSequence(parent_context.evaluator, 'tuple', [])
         )
-    elif param.stars == 2:
+    elif param.star_count == 2:
         result_arg = context.LazyKnownContext(
             iterable.FakeDict(parent_context.evaluator, {})
         )

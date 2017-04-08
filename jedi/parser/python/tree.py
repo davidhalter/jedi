@@ -588,7 +588,7 @@ class Function(ClassOrFunc):
     def is_generator(self):
         return bool(self.yields)
 
-    def annotation(self):
+    def get_annotation(self):
         try:
             if self.children[3] == "->":
                 return self.children[4]
@@ -656,7 +656,7 @@ class Lambda(Function):
     def is_generator(self):
         return False
 
-    def annotation(self):
+    def get_annotation(self):
         # lambda functions do not support annotations
         return None
 
@@ -1053,7 +1053,7 @@ class Param(PythonBaseNode):
             child.parent = self
 
     @property
-    def stars(self):
+    def star_count(self):
         first = self.children[0]
         if first in ('*', '**'):
             return len(first.value)
@@ -1066,7 +1066,7 @@ class Param(PythonBaseNode):
         except IndexError:
             return None
 
-    def annotation(self):
+    def get_annotation(self):
         tfpdef = self._tfpdef()
         if tfpdef.type == 'tfpdef':
             assert tfpdef.children[1] == ":"
@@ -1105,15 +1105,15 @@ class Param(PythonBaseNode):
     def get_parent_function(self):
         return search_ancestor(self, ('funcdef', 'lambda'))
 
-    def __repr__(self):
-        default = '' if self.default is None else '=%s' % self.default.get_code()
-        return '<%s: %s>' % (type(self).__name__, str(self._tfpdef()) + default)
-
     def get_description(self):
         children = self.children
         if children[-1] == ',':
             children = children[:-1]
         return self._get_code_for_children(children, False, False)
+
+    def __repr__(self):
+        default = '' if self.default is None else '=%s' % self.default.get_code()
+        return '<%s: %s>' % (type(self).__name__, str(self._tfpdef()) + default)
 
 
 class CompFor(PythonBaseNode):

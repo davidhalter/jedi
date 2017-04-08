@@ -81,18 +81,18 @@ def _fix_forward_reference(context, node):
 
 @memoize_default()
 def follow_param(context, param):
-    annotation = param.annotation()
+    annotation = param.get_annotation()
     return _evaluate_for_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):
-    return_annotation = funcdef.annotation()
+    return_annotation = funcdef.get_annotation()
     if return_annotation:
         dct = {'return': return_annotation}
     else:
         dct = {}
     for function_param in funcdef.params:
-        param_annotation = function_param.annotation()
+        param_annotation = function_param.get_annotation()
         if param_annotation is not None:
             dct[function_param.name.value] = param_annotation
     return dct

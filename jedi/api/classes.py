@@ -627,7 +627,7 @@ class CallSignature(Definition):
             if self.params:
                 param_name = self.params[-1]._name
                 if param_name.tree_name is not None:
-                    if param_name.tree_name.get_definition().stars == 2:
+                    if param_name.tree_name.get_definition().star_count == 2:
                         return i
             return None
 
@@ -636,7 +636,7 @@ class CallSignature(Definition):
                 tree_name = param._name.tree_name
                 if tree_name is not None:
                     # *args case
-                    if tree_name.get_definition().stars == 1:
+                    if tree_name.get_definition().star_count == 1:
                         return i
             return None
         return self._index
