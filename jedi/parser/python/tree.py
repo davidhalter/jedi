@@ -1120,16 +1120,6 @@ class CompFor(PythonBaseNode):
     type = 'comp_for'
     __slots__ = ()
 
-    def get_comp_fors(self):
-        yield self
-        last = self.children[-1]
-        while True:
-            if isinstance(last, CompFor):
-                yield last
-            elif not last.type == 'comp_if':
-                break
-            last = last.children[-1]
-
     def is_scope(self):
         return True
 

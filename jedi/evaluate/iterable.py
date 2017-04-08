@@ -35,6 +35,7 @@ from jedi.evaluate import recursion
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
     ParserTreeFilter
+from jedi.parser_utils import get_comp_fors
 
 
 class AbstractSequence(context.Context):
@@ -264,7 +265,7 @@ class Comprehension(AbstractSequence):
     @memoize_default(default=[])
     @common.to_list
     def _iterate(self):
-        comp_fors = tuple(self._get_comp_for().get_comp_fors())
+        comp_fors = tuple(get_comp_fors(self._get_comp_for()))
         for result in self._nested(comp_fors):
             yield result
 

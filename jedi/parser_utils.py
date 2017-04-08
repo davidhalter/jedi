@@ -1,3 +1,5 @@
+from jedi.parser.python import tree
+
 _EXECUTE_NODES = set([
     'funcdef', 'classdef', 'import_from', 'import_name', 'test', 'or_test',
     'and_test', 'not_test', 'comparison', 'expr', 'xor_expr', 'and_expr',
@@ -45,3 +47,14 @@ def get_executable_nodes(node, last_added=False):
                 result += get_executable_nodes(child, last_added)
 
     return result
+
+
+def get_comp_fors(comp_for):
+    yield comp_for
+    last = comp_for.children[-1]
+    while True:
+        if last.type == 'comp_for':
+            yield last
+        elif not last.type == 'comp_if':
+            break
+        last = last.children[-1]
