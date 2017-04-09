@@ -789,12 +789,11 @@ class WithStmt(Flow):
                 names += _defined_names(with_item.children[2])
         return names
 
-    def node_from_name(self, name):
-        node = name
-        while True:
-            node = node.parent
-            if node.type == 'with_item':
-                return node.children[0]
+    def get_context_manager_from_name(self, name):
+        node = name.parent
+        if node.type != 'with_item':
+            raise ValueError('The name is not actually part of a with statement.')
+        return node.children[0]
 
 
 class Import(PythonBaseNode):
