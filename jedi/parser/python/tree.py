@@ -965,15 +965,13 @@ class KeywordStatement(PythonBaseNode):
 class AssertStmt(KeywordStatement):
     __slots__ = ()
 
+    @property
     def assertion(self):
         return self.children[1]
 
 
 class GlobalStmt(KeywordStatement):
     __slots__ = ()
-
-    def get_defined_names(self):
-        return []
 
     def get_global_names(self):
         return self.children[1::2]
@@ -984,11 +982,8 @@ class ReturnStmt(KeywordStatement):
 
 
 class YieldExpr(PythonBaseNode):
+    type = 'yield_expr'
     __slots__ = ()
-
-    @property
-    def type(self):
-        return 'yield_expr'
 
 
 def _defined_names(current):
@@ -1030,14 +1025,20 @@ class ExprStmt(PythonBaseNode, DocstringMixin):
         """Returns the right-hand-side of the equals."""
         return self.children[-1]
 
-    def first_operation(self):
+    def yield_operators(self):
         """
-        Returns `+=`, `=`, etc or None if there is no operation.
+        Returns a generator of `+=`, `=`, etc. or None if there is no operation.
         """
-        try:
-            return self.children[1]
-        except IndexError:
-            return None
+        first = self.children[1]
+        if first.type == 'annassign':
+            if len(first.children) <= 2:
+                return  # No operator is available, it's just PEP 484.
+
+            first = first.children[2]
+        yield first
+
+        for operator in self.children[3::2]:
+            yield operator
 
 
 class Param(PythonBaseNode):
@@ -1109,6 +1110,7 @@ class Param(PythonBaseNode):
         return search_ancestor(self, ('funcdef', 'lambda'))
 
     def get_description(self):
+        # TODO Remove?
         children = self.children
         if children[-1] == ',':
             children = children[:-1]

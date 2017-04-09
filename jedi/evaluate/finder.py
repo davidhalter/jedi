@@ -312,7 +312,7 @@ def _check_flow_information(context, flow, search_name, pos):
         for name in names:
             ass = tree.search_ancestor(name, 'assert_stmt')
             if ass is not None:
-                result = _check_isinstance_type(context, ass.assertion(), search_name)
+                result = _check_isinstance_type(context, ass.assertion, search_name)
                 if result is not None:
                     return result
 

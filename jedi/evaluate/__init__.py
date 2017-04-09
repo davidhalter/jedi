@@ -154,10 +154,10 @@ class Evaluator(object):
             c_node = ContextualizedName(context, seek_name)
             types = finder.check_tuple_assignments(self, c_node, types)
 
-        first_operation = stmt.first_operation()
-        if first_operation not in ('=', None) and first_operation.type == 'operator':
+        first_operator = next(stmt.yield_operators(), None)
+        if first_operator not in ('=', None) and first_operator.type == 'operator':
             # `=` is always the last character in aug assignments -> -1
-            operator = copy.copy(first_operation)
+            operator = copy.copy(first_operator)
             operator.value = operator.value[:-1]
             name = str(stmt.get_defined_names()[0])
             left = context.py__getattribute__(
