@@ -78,13 +78,13 @@ def _break_check(context, context_scope, flow_scope, node):
     reachable = REACHABLE
     if flow_scope.type == 'if_stmt':
         if flow_scope.is_node_after_else(node):
-            for check_node in flow_scope.get_check_nodes():
+            for check_node in flow_scope.get_test_nodes():
                 reachable = _check_if(context, check_node)
                 if reachable in (REACHABLE, UNSURE):
                     break
             reachable = reachable.invert()
         else:
-            flow_node = flow_scope.node_in_which_check_node(node)
+            flow_node = flow_scope.in_which_test_node(node)
             if flow_node is not None:
                 reachable = _check_if(context, flow_node)
     elif flow_scope.type in ('try_stmt', 'while_stmt'):

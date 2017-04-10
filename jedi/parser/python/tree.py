@@ -678,9 +678,9 @@ class IfStmt(Flow):
     type = 'if_stmt'
     __slots__ = ()
 
-    def get_check_nodes(self):
+    def get_test_nodes(self):
         """
-        Returns all the `test` nodes that are defined as x, here:
+        E.g. returns all the `test` nodes that are named as x, below:
 
             if x:
                 pass
@@ -691,14 +691,14 @@ class IfStmt(Flow):
             if c in ('elif', 'if'):
                 yield self.children[i + 1]
 
-    def node_in_which_check_node(self, node):
+    def in_which_test_node(self, node):
         """
-        Returns the check node (see function above) that a node is contained
-        in. However if it the node is in the check node itself and not in the
+        Returns the test node (see function above) that a node is contained
+        in. However if the node is in the test node itself and not in the
         suite return None.
         """
         start_pos = node.start_pos
-        for check_node in reversed(list(self.get_check_nodes())):
+        for check_node in reversed(list(self.get_test_nodes())):
             if check_node.start_pos < start_pos:
                 if start_pos < check_node.end_pos:
                     return None
