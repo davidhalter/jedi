@@ -672,30 +672,13 @@ class Lambda(Function):
 
 class Flow(PythonBaseNode):
     __slots__ = ()
-    FLOW_KEYWORDS = (
-        'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
-    )
-
-    def get_branch_keyword(self, node):
-        start_pos = node.start_pos
-        if not (self.start_pos < start_pos <= self.end_pos):
-            raise ValueError('The node is not part of the flow.')
-
-        keyword = None
-        for i, child in enumerate(self.children):
-            if start_pos < child.start_pos:
-                return keyword
-            first_leaf = child.get_first_leaf()
-            if first_leaf in self.FLOW_KEYWORDS:
-                keyword = first_leaf
-        return 0
 
 
 class IfStmt(Flow):
     type = 'if_stmt'
     __slots__ = ()
 
-    def check_nodes(self):
+    def get_check_nodes(self):
         """
         Returns all the `test` nodes that are defined as x, here:
 
@@ -715,7 +698,7 @@ class IfStmt(Flow):
         suite return None.
         """
         start_pos = node.start_pos
-        for check_node in reversed(list(self.check_nodes())):
+        for check_node in reversed(list(self.get_check_nodes())):
             if check_node.start_pos < start_pos:
                 if start_pos < check_node.end_pos:
                     return None
@@ -724,7 +707,7 @@ class IfStmt(Flow):
                 else:
                     return check_node
 
-    def node_after_else(self, node):
+    def is_node_after_else(self, node):
         """
         Checks if a node is defined after `else`.
         """

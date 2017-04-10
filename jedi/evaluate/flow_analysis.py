@@ -1,3 +1,4 @@
+from jedi.parser_utils import get_flow_branch_keyword
 class Status(object):
     lookup_table = {}
 
@@ -46,8 +47,8 @@ def reachability_check(context, context_scope, node, origin_scope=None):
         branch_matches = True
         for flow_scope in origin_flow_scopes:
             if flow_scope in node_flow_scopes:
-                node_keyword = flow_scope.get_branch_keyword(node)
-                origin_keyword = flow_scope.get_branch_keyword(origin_scope)
+                node_keyword = get_flow_branch_keyword(flow_scope, node)
+                origin_keyword = get_flow_branch_keyword(flow_scope, origin_scope)
                 branch_matches = node_keyword == origin_keyword
                 if flow_scope.type == 'if_stmt':
                     if not branch_matches:
@@ -76,8 +77,8 @@ def reachability_check(context, context_scope, node, origin_scope=None):
 def _break_check(context, context_scope, flow_scope, node):
     reachable = REACHABLE
     if flow_scope.type == 'if_stmt':
-        if flow_scope.node_after_else(node):
-            for check_node in flow_scope.check_nodes():
+        if flow_scope.is_node_after_else(node):
+            for check_node in flow_scope.get_check_nodes():
                 reachable = _check_if(context, check_node)
                 if reachable in (REACHABLE, UNSURE):
                     break

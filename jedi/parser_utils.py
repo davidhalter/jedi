@@ -6,10 +6,9 @@ _EXECUTE_NODES = set([
     'shift_expr', 'arith_expr', 'atom_expr', 'term', 'factor', 'power', 'atom'
 ])
 
-return_ = 'import_name', 'import_from'
-
-
-# last added: Flow, KeywordStatement
+_FLOW_KEYWORDS = (
+    'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
+)
 
 
 def get_executable_nodes(node, last_added=False):
@@ -68,3 +67,18 @@ def for_stmt_defines_one_name(for_stmt):
     :returns: bool
     """
     return for_stmt.children[1].type == 'name'
+
+
+def get_flow_branch_keyword(flow_node, node):
+    start_pos = node.start_pos
+    if not (flow_node.start_pos < start_pos <= flow_node.end_pos):
+        raise ValueError('The node is not part of the flow.')
+
+    keyword = None
+    for i, child in enumerate(flow_node.children):
+        if start_pos < child.start_pos:
+            return keyword
+        first_leaf = child.get_first_leaf()
+        if first_leaf in _FLOW_KEYWORDS:
+            keyword = first_leaf
+    return 0
