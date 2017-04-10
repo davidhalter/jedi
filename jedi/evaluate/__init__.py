@@ -81,6 +81,7 @@ from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode
+from jedi import parser_utils
 
 
 class Evaluator(object):
@@ -165,11 +166,11 @@ class Evaluator(object):
 
             for_stmt = tree.search_ancestor(stmt, 'for_stmt')
             if for_stmt is not None and for_stmt.type == 'for_stmt' and types \
-                    and for_stmt.defines_one_name():
+                    and parser_utils.for_stmt_defines_one_name(for_stmt):
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
                 # predictable. Also only do it, if the variable is not a tuple.
-                node = for_stmt.get_input_node()
+                node = for_stmt.get_testlist()
                 cn = ContextualizedNode(context, node)
                 ordered = list(iterable.py__iter__(self, cn.infer(), cn))
 

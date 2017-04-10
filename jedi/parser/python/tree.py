@@ -745,32 +745,24 @@ class ForStmt(Flow):
     type = 'for_stmt'
     __slots__ = ()
 
-    def get_input_node(self):
+    def get_testlist(self):
         """
         Returns the input node ``y`` from: ``for x in y:``.
         """
         return self.children[3]
-
-    def defines_one_name(self):
-        """
-        Returns True if only one name is returned: ``for x in y``.
-        Returns False if the for loop is more complicated: ``for x, z in y``.
-
-        :returns: bool
-        """
-        return self.children[1].type == 'name'
 
 
 class TryStmt(Flow):
     type = 'try_stmt'
     __slots__ = ()
 
-    def except_clauses(self):
+    def get_except_clauses(self):
         """
         Returns the ``test`` nodes found in ``except_clause`` nodes.
         Returns ``[None]`` for except clauses without an exception given.
         """
         for node in self.children:
+            # TODO this is not correct. We're not returning an except clause.
             if node.type == 'except_clause':
                 yield node.children[1]
             elif node == 'except':
@@ -790,6 +782,7 @@ class WithStmt(Flow):
         return names
 
     def get_context_manager_from_name(self, name):
+        # TODO Replace context_manager with test?
         node = name.parent
         if node.type != 'with_item':
             raise ValueError('The name is not actually part of a with statement.')

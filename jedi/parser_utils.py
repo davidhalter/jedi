@@ -58,3 +58,13 @@ def get_comp_fors(comp_for):
         elif not last.type == 'comp_if':
             break
         last = last.children[-1]
+
+
+def for_stmt_defines_one_name(for_stmt):
+    """
+    Returns True if only one name is returned: ``for x in y``.
+    Returns False if the for loop is more complicated: ``for x, z in y``.
+
+    :returns: bool
+    """
+    return for_stmt.children[1].type == 'name'

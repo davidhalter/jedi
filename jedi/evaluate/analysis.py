@@ -153,7 +153,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
                     and not (branch_type.start_pos < jedi_name.start_pos <= suite.end_pos):
                 return False
 
-        for node in obj.except_clauses():
+        for node in obj.get_except_clauses():
             if node is None:
                 return True  # An exception block that catches everything.
             else:

@@ -62,6 +62,7 @@ from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 from jedi.evaluate.context import ContextualizedNode
+from jedi import parser_utils
 
 
 def apply_py__get__(context, base_context):
@@ -353,7 +354,7 @@ class FunctionExecutionContext(context.TreeContext):
             if parent.type == 'suite':
                 parent = parent.parent
             if for_stmt.type == 'for_stmt' and parent == self.tree_node \
-                    and for_stmt.defines_one_name():  # Simplicity for now.
+                    and parser_utils.for_stmt_defines_one_name(for_stmt):  # Simplicity for now.
                 if for_stmt == last_for_stmt:
                     yields_order[-1][1].append(yield_)
                 else:
@@ -375,7 +376,7 @@ class FunctionExecutionContext(context.TreeContext):
                     for result in self._eval_yield(yield_):
                         yield result
             else:
-                input_node = for_stmt.get_input_node()
+                input_node = for_stmt.get_testlist()
                 cn = ContextualizedNode(self, input_node)
                 ordered = iterable.py__iter__(evaluator, cn.infer(), cn)
                 ordered = list(ordered)
