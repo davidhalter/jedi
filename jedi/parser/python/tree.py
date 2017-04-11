@@ -609,7 +609,8 @@ class Function(ClassOrFunc):
 
         :rtype: str
         """
-        func_name = func_name or self.name
+        # Lambdas have no name.
+        func_name = func_name or getattr(self, 'name', '<lambda>')
         code = unicode(func_name) + self._get_paramlist_code()
         return '\n'.join(textwrap.wrap(code, width))
 
@@ -639,13 +640,12 @@ class Lambda(Function):
     def __init__(self, children):
         # We don't want to call the Function constructor, call its parent.
         super(Function, self).__init__(children)
-        lst = self.children[1:-2]  # Everything between `lambda` and the `:` operator is a parameter.
-        self.children[1:-2] = _create_params(self, lst)
+        # Everything between `lambda` and the `:` operator is a parameter.
+        self.children[1:-2] = _create_params(self, self.children[1:-2])
 
     @property
     def name(self):
-        # Borrow the position of the <Keyword: lambda> AST node.
-        return Name('<lambda>', self.children[0].start_pos)
+        raise AttributeError("lambda is not named.")
 
     def _get_paramlist_code(self):
         return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'
@@ -664,6 +664,7 @@ class Lambda(Function):
 
     @property
     def yields(self):
+        # TODO rename
         return []
 
     def __repr__(self):

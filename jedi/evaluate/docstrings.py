@@ -192,6 +192,9 @@ def follow_param(module_context, param):
                 for p in _evaluate_for_statement_string(module_context, param_str)]
         )
     func = param.get_parent_function()
+    if func.type == 'lambda':
+        return set()
+
     types = eval_docstring(func.raw_doc)
     if func.name.value == '__init__':
         cls = search_ancestor(func, 'classdef')

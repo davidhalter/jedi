@@ -221,6 +221,20 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         return ContextName(self, self.tree_node.name)
 
 
+class LambdaName(AbstractNameDefinition):
+    string_name = '<lambda>'
+
+    def __init__(self, lambda_context):
+        self._lambda_context = lambda_context
+        self.parent_context = lambda_context.parent_context
+
+    def start_pos(self):
+        return self._lambda_context.tree_node.start_pos
+
+    def infer(self):
+        return set([self._lambda_context])
+
+
 class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     """
     Needed because of decorators. Decorators are evaluated here.
@@ -276,6 +290,8 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     @property
     def name(self):
+        if self.tree_node.type == 'lambda':
+            return LambdaName(self)
         return ContextName(self, self.tree_node.name)
 
     def get_param_names(self):
