@@ -280,7 +280,7 @@ class Evaluator(object):
             if element.value in ('False', 'True', 'None'):
                 types.add(compiled.builtin_from_name(self, element.value))
             # else: print e.g. could be evaluated like this in Python 2.7
-        elif typ == 'lambda':
+        elif typ == 'lambdef':
             types = set([er.FunctionContext(self, context, element)])
         elif typ == 'expr_stmt':
             types = self.eval_statement(context, element)
@@ -337,7 +337,7 @@ class Evaluator(object):
             # This is the first global lookup.
             stmt = atom.get_definition()
             if stmt.type == 'comp_for':
-                stmt = tree.search_ancestor(stmt, ('expr_stmt', 'lambda', 'funcdef', 'classdef'))
+                stmt = tree.search_ancestor(stmt, ('expr_stmt', 'lambdef', 'funcdef', 'classdef'))
             if stmt is None or stmt.type != 'expr_stmt':
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
@@ -551,7 +551,7 @@ class Evaluator(object):
             if scope_node == base_node:
                 return base_context
 
-            is_funcdef = scope_node.type in ('funcdef', 'lambda')
+            is_funcdef = scope_node.type in ('funcdef', 'lambdef')
             parent_scope = scope_node.get_parent_scope()
             parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
 

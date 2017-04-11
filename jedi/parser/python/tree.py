@@ -634,7 +634,7 @@ class Lambda(Function):
       -2) <Operator: :>
       -1) Node() representing body
     """
-    type = 'lambda'
+    type = 'lambdef'
     __slots__ = ()
 
     def __init__(self, children):
@@ -1084,7 +1084,7 @@ class Param(PythonBaseNode):
         return index - 1
 
     def get_parent_function(self):
-        return search_ancestor(self, ('funcdef', 'lambda'))
+        return search_ancestor(self, ('funcdef', 'lambdef'))
 
     def get_description(self):
         # TODO Remove?

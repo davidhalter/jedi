@@ -36,7 +36,7 @@ class TestsFunctionAndLambdaParsing(object):
         return request.keywords['expected']
 
     def test_name(self, node, expected):
-        if node.type != 'lambda':
+        if node.type != 'lambdef':
             assert isinstance(node.name, tree.Name)
             assert unicode(node.name) == u(expected['name'])
 

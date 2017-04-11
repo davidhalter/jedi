@@ -290,7 +290,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     @property
     def name(self):
-        if self.tree_node.type == 'lambda':
+        if self.tree_node.type == 'lambdef':
             return LambdaName(self)
         return ContextName(self, self.tree_node.name)
 
@@ -320,7 +320,7 @@ class FunctionExecutionContext(context.TreeContext):
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
-        if funcdef.type == 'lambda':
+        if funcdef.type == 'lambdef':
             return self.evaluator.eval_element(self, funcdef.children[-1])
 
         if check_yields:
