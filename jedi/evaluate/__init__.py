@@ -497,7 +497,7 @@ class Evaluator(object):
             return [TreeNameDefinition(context, name)]
         elif par.type == 'param' and par.name:
             return [ParamName(context, name)]
-        elif isinstance(par, (tree.Param, tree.Function, tree.Class)) and par.name is name:
+        elif par.type in ('param', 'funcdef', 'classdef') and par.name is name:
             return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
             module_names = imports.infer_import(context, name, is_goto=True)
