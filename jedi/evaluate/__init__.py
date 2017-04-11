@@ -466,7 +466,8 @@ class Evaluator(object):
     def goto(self, context, name):
         stmt = name.get_definition()
         par = name.parent
-        if par.type == 'argument' and par.children[1] == '=' and par.children[0] == name:
+        typ = par.type
+        if typ == 'argument' and par.children[1] == '=' and par.children[0] == name:
             # Named param goto.
             trailer = par.parent
             if trailer.type == 'arglist':
@@ -491,18 +492,18 @@ class Evaluator(object):
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names
-        elif par.type == 'expr_stmt' and name in par.get_defined_names():
+        elif typ == 'expr_stmt' and name in par.get_defined_names():
             # Only take the parent, because if it's more complicated than just
             # a name it's something you can "goto" again.
             return [TreeNameDefinition(context, name)]
-        elif par.type == 'param' and par.name:
+        elif typ == 'param' and par.name:
             return [ParamName(context, name)]
-        elif par.type in ('param', 'funcdef', 'classdef') and par.name is name:
+        elif typ in ('param', 'funcdef', 'classdef') and par.name is name:
             return [TreeNameDefinition(context, name)]
         elif isinstance(stmt, tree.Import):
             module_names = imports.infer_import(context, name, is_goto=True)
             return module_names
-        elif par.type == 'dotted_name':  # Is a decorator.
+        elif typ == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
@@ -513,7 +514,7 @@ class Evaluator(object):
                     for value in values
                 )
 
-        if par.type == 'trailer' and par.children[0] == '.':
+        if typ == 'trailer' and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
             return unite(
                 value.py__getattribute__(name, name_context=context, is_goto=True)
