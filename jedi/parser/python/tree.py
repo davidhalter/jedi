@@ -417,8 +417,7 @@ class Module(Scope):
                         return True
         return False
 
-    @property
-    def used_names(self):
+    def get_used_names(self):
         if self._used_names is None:
             # Don't directly use self._used_names to eliminate a lookup.
             dct = {}

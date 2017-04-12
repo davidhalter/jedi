@@ -137,7 +137,7 @@ def get_module_names(module, all_scopes):
     Returns a dictionary with name parts as keys and their call paths as
     values.
     """
-    names = chain.from_iterable(module.used_names.values())
+    names = chain.from_iterable(module.get_used_names().values())
     if not all_scopes:
         # We have to filter all the names that don't have the module as a
         # parent_scope. There's None as a parent, because nodes in the module

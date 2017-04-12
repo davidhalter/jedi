@@ -139,7 +139,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
     def __init__(self, context, parser_scope):
         self._parser_scope = parser_scope
-        self._used_names = self._parser_scope.get_root_node().used_names
+        self._used_names = self._parser_scope.get_root_node().get_used_names()
         self.context = context
 
     def get(self, name):

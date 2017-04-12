@@ -301,7 +301,7 @@ def _check_flow_information(context, flow, search_name, pos):
         # Check for asserts.
         module_node = flow.get_root_node()
         try:
-            names = module_node.used_names[search_name.value]
+            names = module_node.get_used_names()[search_name.value]
         except KeyError:
             return None
         names = reversed([

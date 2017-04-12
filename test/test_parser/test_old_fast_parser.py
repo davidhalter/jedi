@@ -25,7 +25,7 @@ def test_carriage_return_splitting():
         '''))
     source = source.replace('\n', '\r\n')
     module = parse(source)
-    assert [n.value for lst in module.used_names.values() for n in lst] == ['Foo']
+    assert [n.value for lst in module.get_used_names().values() for n in lst] == ['Foo']
 
 
 def test_class_in_docstr():

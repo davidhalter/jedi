@@ -137,7 +137,7 @@ def _search_function_executions(evaluator, module_context, funcdef):
 
 def _get_possible_nodes(module_context, func_string_name):
     try:
-        names = module_context.tree_node.used_names[func_string_name]
+        names = module_context.tree_node.get_used_names()[func_string_name]
     except KeyError:
         return
 

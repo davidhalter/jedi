@@ -50,7 +50,7 @@ class CheckAttribute(object):
 
 class CompiledObject(Context):
     path = None  # modules have this attribute - set it to None.
-    used_names = {}  # To be consistent with modules.
+    used_names = lambda self: {}  # To be consistent with modules.
 
     def __init__(self, evaluator, obj, parent_context=None, faked_class=None):
         super(CompiledObject, self).__init__(evaluator, parent_context)

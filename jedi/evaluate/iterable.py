@@ -738,7 +738,7 @@ def _check_array_additions(context, sequence):
     added_types = set()
     for add_name in search_names:
         try:
-            possible_names = module_context.tree_node.used_names[add_name]
+            possible_names = module_context.tree_node.get_used_names()[add_name]
         except KeyError:
             continue
         else:

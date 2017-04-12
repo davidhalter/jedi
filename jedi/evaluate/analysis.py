@@ -99,7 +99,7 @@ def _check_for_setattr(instance):
 
     node = module.tree_node
     try:
-        stmts = node.used_names['setattr']
+        stmts = node.get_used_names()['setattr']
     except KeyError:
         return False
 

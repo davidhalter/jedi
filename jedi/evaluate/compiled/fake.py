@@ -198,7 +198,7 @@ def get_faked(evaluator, module, obj, name=None, parent_context=None):
 
     faked, fake_module = _get_faked(module and module.obj, obj, name)
     if module is not None:
-        module.used_names = fake_module.used_names
+        module.get_used_names = fake_module.get_used_names
     return faked
 
 

@@ -167,10 +167,8 @@ def _check_module(module_context):
         return sys_path
 
     try:
-        possible_names = module_context.tree_node.used_names['path']
+        possible_names = module_context.tree_node.get_used_names()['path']
     except KeyError:
-        # module.used_names is MergedNamesDict whose getitem never throws
-        # keyerror, this is superfluous.
         pass
     else:
         for name, power in get_sys_path_powers(possible_names):
