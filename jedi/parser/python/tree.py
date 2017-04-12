@@ -265,43 +265,16 @@ class String(Literal):
     __slots__ = ()
 
 
-class Operator(_LeafWithoutNewlines):
-    type = 'operator'
-    __slots__ = ()
-
-    def __str__(self):
-        return self.value
-
+class _StringComparisonMixin:
     def __eq__(self, other):
         """
         Make comparisons with strings easy.
         Improves the readability of the parser.
         """
-        if isinstance(other, Operator):
-            return self is other
-        else:
+        if isinstance(other, (str, unicode)):
             return self.value == other
 
-    def __ne__(self, other):
-        """Python 2 compatibility."""
-        return self.value != other
-
-    def __hash__(self):
-        return hash(self.value)
-
-
-class Keyword(_LeafWithoutNewlines):
-    type = 'keyword'
-    __slots__ = ()
-
-    def __eq__(self, other):
-        """
-        Make comparisons with strings easy.
-        Improves the readability of the parser.
-        """
-        if isinstance(other, Keyword):
-            return self is other
-        return self.value == other
+        return self is other
 
     def __ne__(self, other):
         """Python 2 compatibility."""
@@ -309,6 +282,16 @@ class Keyword(_LeafWithoutNewlines):
 
     def __hash__(self):
         return hash(self.value)
+
+
+class Operator(_LeafWithoutNewlines, _StringComparisonMixin):
+    type = 'operator'
+    __slots__ = ()
+
+
+class Keyword(_LeafWithoutNewlines, _StringComparisonMixin):
+    type = 'keyword'
+    __slots__ = ()
 
 
 class Scope(PythonBaseNode, DocstringMixin):
