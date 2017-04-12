@@ -693,11 +693,11 @@ class IfStmt(Flow):
             if c in ('elif', 'if'):
                 yield self.children[i + 1]
 
-    def in_which_test_node(self, node):
+    def get_corresponding_test_node(self, node):
         """
-        Returns the test node (see function above) that a node is contained
-        in. However if the node is in the test node itself and not in the
-        suite return None.
+        Searches for the branch in which the node is and returns the
+        corresponding test node (see function above). However if the node is in
+        the test node itself and not in the suite return None.
         """
         start_pos = node.start_pos
         for check_node in reversed(list(self.get_test_nodes())):
