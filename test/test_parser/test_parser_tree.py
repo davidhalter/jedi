@@ -4,7 +4,6 @@ from textwrap import dedent
 
 import pytest
 
-from jedi._compatibility import u, unicode
 from jedi.parser.python import parse
 from jedi.parser.python import tree
 
@@ -38,12 +37,12 @@ class TestsFunctionAndLambdaParsing(object):
     def test_name(self, node, expected):
         if node.type != 'lambdef':
             assert isinstance(node.name, tree.Name)
-            assert unicode(node.name) == u(expected['name'])
+            assert node.name.value == expected['name']
 
     def test_params(self, node, expected):
         assert isinstance(node.params, list)
         assert all(isinstance(x, tree.Param) for x in node.params)
-        assert [unicode(x.name) for x in node.params] == [u(x) for x in expected['params']]
+        assert [str(x.name.value) for x in node.params] == [x for x in expected['params']]
 
     def test_is_generator(self, node, expected):
         assert node.is_generator() is expected.get('is_generator', False)

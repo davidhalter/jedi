@@ -188,8 +188,9 @@ def _execute_array_values(evaluator, array):
 def follow_param(module_context, param):
     def eval_docstring(docstring):
         return set(
-            [p for param_str in _search_param_in_docstr(docstring, str(param.name))
-                for p in _evaluate_for_statement_string(module_context, param_str)]
+            p
+            for param_str in _search_param_in_docstr(docstring, param.name.value)
+            for p in _evaluate_for_statement_string(module_context, param_str)
         )
     func = param.get_parent_function()
     if func.type == 'lambdef':

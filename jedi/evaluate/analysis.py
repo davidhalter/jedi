@@ -190,7 +190,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             key, lazy_context = args[1]
             names = list(lazy_context.infer())
             assert len(names) == 1 and isinstance(names[0], CompiledObject)
-            assert names[0].obj == str(payload[1])
+            assert names[0].obj == payload[1].value
 
             # Check objects
             key, lazy_context = args[0]

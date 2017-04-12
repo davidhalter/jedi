@@ -236,7 +236,7 @@ def get_params(evaluator, parent_context, func, var_args):
     result_params = []
     param_dict = {}
     for param in func.params:
-        param_dict[str(param.name)] = param
+        param_dict[param.name.value] = param
     unpacked_va = list(var_args.unpack(func))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 

@@ -63,7 +63,7 @@ def infer_import(context, tree_name, is_goto=False):
     if from_import_name is not None:
         types = unite(
             t.py__getattribute__(
-                unicode(from_import_name),
+                from_import_name.value if isinstance(from_import_name, tree.Name) else from_import_name,
                 name_context=context,
                 is_goto=is_goto
             ) for t in types
@@ -229,7 +229,9 @@ class Importer(object):
     @property
     def str_import_path(self):
         """Returns the import path as pure strings instead of `Name`."""
-        return tuple(str(name) for name in self.import_path)
+        return tuple(
+            name.value if isinstance(name, tree.Name) else name
+            for name in self.import_path)
 
     def sys_path_with_modifications(self):
         in_path = []
@@ -262,7 +264,10 @@ class Importer(object):
         """
         This method is very similar to importlib's `_gcd_import`.
         """
-        import_parts = [str(i) for i in import_path]
+        import_parts = [
+            i.value if isinstance(i, tree.Name) else i
+            for i in import_path
+        ]
 
         # Handle "magic" Flask extension imports:
         # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
@@ -297,7 +302,7 @@ class Importer(object):
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
-            if [str(i) for i in import_path] == ['os', 'path']:
+            if import_parts == ['os', 'path']:
                 return parent_module.py__getattribute__('path')
 
             try:

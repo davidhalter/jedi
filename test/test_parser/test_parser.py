@@ -20,7 +20,7 @@ def test_user_statement_on_import():
         p = parse(s)
         stmt = p.get_statement_for_position(pos)
         assert isinstance(stmt, tree.Import)
-        assert [str(n) for n in stmt.get_defined_names()] == ['time']
+        assert [n.value for n in stmt.get_defined_names()] == ['time']
 
 
 class TestCallAndName():
@@ -31,7 +31,7 @@ class TestCallAndName():
 
     def test_name_and_call_positions(self):
         name = self.get_call('name\nsomething_else')
-        assert str(name) == 'name'
+        assert name.value == 'name'
         assert name.start_pos == (1, 0)
         assert name.end_pos == (1, 4)
 
@@ -67,12 +67,12 @@ class TestSubscopes():
         name = self.get_sub('class Foo: pass').name
         assert name.start_pos == (1, len('class '))
         assert name.end_pos == (1, len('class Foo'))
-        assert str(name) == 'Foo'
+        assert name.value == 'Foo'
 
         name = self.get_sub('def foo(): pass').name
         assert name.start_pos == (1, len('def '))
         assert name.end_pos == (1, len('def foo'))
-        assert str(name) == 'foo'
+        assert name.value == 'foo'
 
 
 class TestImports():
@@ -83,7 +83,7 @@ class TestImports():
         imp = self.get_import(u('import math\n'))
         names = imp.get_defined_names()
         assert len(names) == 1
-        assert str(names[0]) == 'math'
+        assert names[0].value == 'math'
         assert names[0].start_pos == (1, len('import '))
         assert names[0].end_pos == (1, len('import math'))
 

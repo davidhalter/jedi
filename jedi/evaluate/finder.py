@@ -118,7 +118,7 @@ class NameFinder(object):
                         break
 
         for filter in filters:
-            names = filter.get(self._name)
+            names = filter.get(self._string_name)
             if names:
                 break
         debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self._string_name,
@@ -199,7 +199,7 @@ def _name_to_types(evaluator, context, tree_name):
         types = _apply_decorators(evaluator, context, node)
     elif typ == 'global_stmt':
         context = evaluator.create_context(context, tree_name)
-        finder = NameFinder(evaluator, context, context, str(tree_name))
+        finder = NameFinder(evaluator, context, context, tree_name.value)
         filters = finder.get_filters(search_global=True)
         # For global_stmt lookups, we only need the first possible scope,
         # which means the function itself.

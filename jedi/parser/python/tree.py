@@ -220,12 +220,6 @@ class Name(_LeafWithoutNewlines):
     type = 'name'
     __slots__ = ()
 
-    def __str__(self):
-        return self.value
-
-    def __unicode__(self):
-        return self.value
-
     def __repr__(self):
         return "<%s: %s@%s,%s>" % (type(self).__name__, self.value,
                                    self.line, self.indent)
@@ -351,7 +345,7 @@ class Scope(PythonBaseNode, DocstringMixin):
 
     def __repr__(self):
         try:
-            name = self.name
+            name = self.name.value
         except AttributeError:
             name = ''
 
@@ -396,7 +390,7 @@ class Module(Scope):
         for imp in self.imports:
             if imp.type == 'import_from' and imp.level == 0:
                 for path in imp.paths():
-                    if [str(name) for name in path] == ['__future__', 'absolute_import']:
+                    if [name.value for name in path] == ['__future__', 'absolute_import']:
                         return True
         return False
 
@@ -477,9 +471,9 @@ class Class(ClassOrFunc):
         """
         docstr = self.raw_doc
         for sub in self.subscopes:
-            if str(sub.name) == '__init__':
+            if sub.name.value == '__init__':
                 return '%s\n\n%s' % (
-                    sub.get_call_signature(func_name=self.name), docstr)
+                    sub.get_call_signature(call_string=self.name.value), docstr)
         return docstr
 
 
@@ -579,7 +573,7 @@ class Function(ClassOrFunc):
         except IndexError:
             return None
 
-    def get_call_signature(self, width=72, func_name=None):
+    def get_call_signature(self, width=72, call_string=None):
         """
         Generate call signature of this function.
 
@@ -591,8 +585,12 @@ class Function(ClassOrFunc):
         :rtype: str
         """
         # Lambdas have no name.
-        func_name = func_name or getattr(self, 'name', '<lambda>')
-        code = unicode(func_name) + self._get_paramlist_code()
+        if call_string is None:
+            if self.type == 'lambdef':
+                call_string = '<lambda>'
+            else:
+                call_string = self.name.value
+        code = call_string + self._get_paramlist_code()
         return '\n'.join(textwrap.wrap(code, width))
 
     def _get_paramlist_code(self):

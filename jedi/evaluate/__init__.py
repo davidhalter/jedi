@@ -160,7 +160,7 @@ class Evaluator(object):
             # `=` is always the last character in aug assignments -> -1
             operator = copy.copy(first_operator)
             operator.value = operator.value[:-1]
-            name = str(stmt.get_defined_names()[0])
+            name = stmt.get_defined_names()[0].value
             left = context.py__getattribute__(
                 name, position=stmt.start_pos, search_global=True)
 
@@ -175,7 +175,7 @@ class Evaluator(object):
                 ordered = list(iterable.py__iter__(self, cn.infer(), cn))
 
                 for lazy_context in ordered:
-                    dct = {str(for_stmt.children[1]): lazy_context.infer()}
+                    dct = {for_stmt.children[1].value: lazy_context.infer()}
                     with helpers.predefine_names(context, for_stmt, dct):
                         t = self.eval_element(context, rhs)
                         left = precedence.calculate(self, context, left, operator, t)
@@ -210,8 +210,8 @@ class Evaluator(object):
                 # names in the suite.
                 if_names = helpers.get_names_of_node(if_stmt_test)
                 element_names = helpers.get_names_of_node(element)
-                str_element_names = [str(e) for e in element_names]
-                if any(str(i) in str_element_names for i in if_names):
+                str_element_names = [e.value for e in element_names]
+                if any(i.value in str_element_names for i in if_names):
                     for if_name in if_names:
                         definitions = self.goto_definitions(context, if_name)
                         # Every name that has multiple different definitions
@@ -232,12 +232,12 @@ class Evaluator(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][str(if_name)] = set([definition])
+                                    new_name_dicts[i][if_name.value] = set([definition])
 
                                 name_dicts += new_name_dicts
                         else:
                             for name_dict in name_dicts:
-                                name_dict[str(if_name)] = definitions
+                                name_dict[if_name.value] = definitions
             if len(name_dicts) > 1:
                 result = set()
                 for name_dict in name_dicts:

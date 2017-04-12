@@ -397,7 +397,7 @@ class FunctionExecutionContext(context.TreeContext):
                 ordered = iterable.py__iter__(evaluator, cn.infer(), cn)
                 ordered = list(ordered)
                 for lazy_context in ordered:
-                    dct = {str(for_stmt.children[1]): lazy_context.infer()}
+                    dct = {str(for_stmt.children[1].value): lazy_context.infer()}
                     with helpers.predefine_names(self, for_stmt, dct):
                         for yield_in_same_for_stmt in yields:
                             for result in self._eval_yield(yield_in_same_for_stmt):
