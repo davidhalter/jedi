@@ -741,7 +741,7 @@ class TryStmt(Flow):
     type = 'try_stmt'
     __slots__ = ()
 
-    def get_except_clauses(self):
+    def get_except_clause_tests(self):
         """
         Returns the ``test`` nodes found in ``except_clause`` nodes.
         Returns ``[None]`` for except clauses without an exception given.
