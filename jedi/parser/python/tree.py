@@ -401,7 +401,6 @@ class Module(Scope):
         super(Module, self).__init__(children)
         self._used_names = None
 
-    @property
     def has_explicit_absolute_import(self):
         """
         Checks if imports in this module are explicitly absolute, i.e. there
