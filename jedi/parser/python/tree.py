@@ -31,8 +31,7 @@ from inspect import cleandoc
 from itertools import chain
 import textwrap
 
-from jedi._compatibility import (Python3Method, is_py3, utf8_repr,
-                                 literal_eval, unicode)
+from jedi._compatibility import is_py3, utf8_repr, literal_eval, unicode
 from jedi.parser.tree import Node, BaseNode, Leaf, ErrorNode, ErrorLeaf
 
 
@@ -138,7 +137,6 @@ class PythonMixin(object):
         # Default is not being a scope. Just inherit from Scope.
         return False
 
-    @Python3Method
     def name_for_position(self, position):
         for c in self.children:
             if isinstance(c, Leaf):
@@ -150,7 +148,6 @@ class PythonMixin(object):
                     return result
         return None
 
-    @Python3Method
     def get_statement_for_position(self, pos):
         for c in self.children:
             if c.start_pos <= pos <= c.end_pos:
@@ -322,7 +319,6 @@ class Scope(PythonBaseNode, DocstringMixin):
     def imports(self):
         return self._search_in_scope(Import)
 
-    @Python3Method
     def _search_in_scope(self, typ):
         def scan(children):
             elements = []

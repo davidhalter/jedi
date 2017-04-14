@@ -39,7 +39,6 @@ class Context(object):
     def eval_stmt(self, stmt, seek_name=None):
         return self.evaluator.eval_statement(self, stmt, seek_name)
 
-    @Python3Method
     def eval_trailer(self, types, trailer):
         return self.evaluator.eval_trailer(self, types, trailer)
 
