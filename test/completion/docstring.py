@@ -39,15 +39,47 @@ def sphinxy2(a, b, x):
     :param x: Just something without type
     :rtype:
     """
-    #? 
+    #?
     a
-    #? 
+    #?
     b
     #?
     x
 
-#? 
+#?
 sphinxy2()
+
+# -----------------
+# google style
+# -----------------
+def sphinx_google(a, b, c, d, x):
+    """ asdfasdf
+
+    Args:
+        a (str): blablabla
+        b (str, int): b
+        c (random.Random): c
+        d (random.Random): d
+        x: blablabla
+
+    Returns:
+        dict: Some dict
+    """
+    #? str()
+    a
+    #? str()
+    b[0]
+    #? int()
+    b[1]
+    #? ['seed']
+    c.seed
+    #? ['seed']
+    d.seed
+    #?
+    x.lower
+
+#? dict()
+sphinx_google()
 
 # local classes -> github #370
 class ProgramNode():
