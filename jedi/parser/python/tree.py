@@ -102,7 +102,7 @@ class DocstringMixin(object):
         return ''
 
 
-class PythonMixin():
+class PythonMixin(object):
     def get_parent_scope(self, include_flows=False):
         """
         Returns the underlying scope.
@@ -259,7 +259,7 @@ class String(Literal):
     __slots__ = ()
 
 
-class _StringComparisonMixin:
+class _StringComparisonMixin(object):
     def __eq__(self, other):
         """
         Make comparisons with strings easy.
