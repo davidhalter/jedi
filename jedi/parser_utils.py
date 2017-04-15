@@ -82,3 +82,16 @@ def get_flow_branch_keyword(flow_node, node):
         if first_leaf in _FLOW_KEYWORDS:
             keyword = first_leaf
     return 0
+
+def get_statement_of_position(node, pos):
+    for c in node.children:
+        if c.start_pos <= pos <= c.end_pos:
+            if c.type not in ('decorated', 'simple_stmt', 'suite') \
+                    and not isinstance(c, (tree.Flow, tree.ClassOrFunc)):
+                return c
+            else:
+                try:
+                    return get_statement_of_position(c, pos)
+                except AttributeError:
+                    pass  # Must be a non-scope
+    return None

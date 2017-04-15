@@ -9,6 +9,7 @@ from jedi._compatibility import u, is_py3
 from jedi.parser.python import parse, load_grammar
 from jedi.parser.python import tree
 from jedi.common import splitlines
+from jedi.parser_utils import get_statement_of_position
 
 
 def test_user_statement_on_import():
@@ -18,7 +19,7 @@ def test_user_statement_on_import():
 
     for pos in [(2, 1), (2, 4)]:
         p = parse(s)
-        stmt = p.get_statement_for_position(pos)
+        stmt = get_statement_of_position(p, pos)
         assert isinstance(stmt, tree.Import)
         assert [n.value for n in stmt.get_defined_names()] == ['time']
 

@@ -137,28 +137,15 @@ class PythonMixin(object):
         # Default is not being a scope. Just inherit from Scope.
         return False
 
-    def name_for_position(self, position):
+    def get_name_of_position(self, position):
         for c in self.children:
             if isinstance(c, Leaf):
                 if isinstance(c, Name) and c.start_pos <= position <= c.end_pos:
                     return c
             else:
-                result = c.name_for_position(position)
+                result = c.get_name_of_position(position)
                 if result is not None:
                     return result
-        return None
-
-    def get_statement_for_position(self, pos):
-        for c in self.children:
-            if c.start_pos <= pos <= c.end_pos:
-                if c.type not in ('decorated', 'simple_stmt', 'suite') \
-                        and not isinstance(c, (Flow, ClassOrFunc)):
-                    return c
-                else:
-                    try:
-                        return c.get_statement_for_position(pos)
-                    except AttributeError:
-                        pass  # Must be a non-scope
         return None
 
 

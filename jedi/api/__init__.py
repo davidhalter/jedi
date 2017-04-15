@@ -16,7 +16,7 @@ import sys
 from jedi.parser.python import load_grammar
 from jedi.parser.python import tree
 from jedi.parser.python import parse
-from jedi.parser_utils import get_executable_nodes
+from jedi.parser_utils import get_executable_nodes, get_statement_of_position
 from jedi import debug
 from jedi import settings
 from jedi import common
@@ -194,7 +194,7 @@ class Script(object):
         :rtype: list of :class:`classes.Definition`
         """
         module_node = self._get_module_node()
-        leaf = module_node.name_for_position(self._pos)
+        leaf = module_node.get_name_of_position(self._pos)
         if leaf is None:
             leaf = module_node.get_leaf_for_position(self._pos)
             if leaf is None:
@@ -238,7 +238,7 @@ class Script(object):
         """
         Used for goto_assignments and usages.
         """
-        name = self._get_module_node().name_for_position(self._pos)
+        name = self._get_module_node().get_name_of_position(self._pos)
         if name is None:
             return []
         context = self._evaluator.create_context(self._get_module(), name)
@@ -259,13 +259,13 @@ class Script(object):
             settings.dynamic_flow_information, False
         try:
             module_node = self._get_module_node()
-            user_stmt = module_node.get_statement_for_position(self._pos)
+            user_stmt = get_statement_of_position(module_node, self._pos)
             definition_names = self._goto()
             if not definition_names and isinstance(user_stmt, tree.Import):
                 # For not defined imports (goto doesn't find something, we take
                 # the name as a definition. This is enough, because every name
                 # points to it.
-                name = user_stmt.name_for_position(self._pos)
+                name = user_stmt.get_name_of_position(self._pos)
                 if name is None:
                     # Must be syntax
                     return []
