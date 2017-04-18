@@ -17,6 +17,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParamName
 from jedi.api.keywords import KeywordName
+from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 
 
 def _sort_names_by_start_pos(names):
@@ -244,10 +245,7 @@ class BaseDefinition(object):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        if raw:
-            return _Help(self._name).raw(fast=fast)
-        else:
-            return _Help(self._name).full(fast=fast)
+        return _Help(self._name).docstring(fast=fast, raw=raw)
 
     @property
     def doc(self):
@@ -717,24 +715,20 @@ class _Help(object):
             return None
         return self._name.tree_name.get_definition()
 
-    def full(self, fast=True):
-        node = self._get_node(fast)
-        try:
-            return node.doc
-        except AttributeError:
-            return self.raw(fast)
-
-    def raw(self, fast=True):
+    def docstring(self, fast=True, raw=True):
         """
-        The raw docstring ``__doc__`` for any object.
+        The docstring ``__doc__`` for any object.
 
         See :attr:`doc` for example.
         """
         node = self._get_node(fast)
-        if node is None:
-            return ''
 
         try:
-            return node.raw_doc
+            node.get_doc_node
         except AttributeError:
             return ''
+        else:
+            if raw:
+                return clean_scope_docstring(node)
+            else:
+                return get_doc_with_call_signature(node)

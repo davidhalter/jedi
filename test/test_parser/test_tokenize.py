@@ -8,6 +8,7 @@ from jedi.parser import tokenize
 from jedi.parser.python import parse
 from jedi.common import splitlines
 from jedi.parser.tokenize import TokenInfo
+from jedi.parser_utils import safe_literal_eval
 
 
 from ..helpers import unittest
@@ -141,7 +142,7 @@ class TokenTest(unittest.TestCase):
             string_tok = expr_stmt.children[2]
             assert string_tok.type == 'string'
             assert string_tok.value == s
-            assert string_tok.eval() == 'test'
+            assert safe_literal_eval(string_tok.value) == 'test'
 
 
 def test_tokenizer_with_string_literal_backslash():

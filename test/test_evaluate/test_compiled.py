@@ -5,6 +5,7 @@ from jedi.parser.python import load_grammar
 from jedi.evaluate import compiled, instance
 from jedi.evaluate.representation import FunctionContext
 from jedi.evaluate import Evaluator
+from jedi.parser_utils import clean_scope_docstring
 from jedi import Script
 
 
@@ -33,7 +34,8 @@ def test_fake_loading():
 
 
 def test_fake_docstr():
-    assert compiled.create(_evaluator(), next).tree_node.raw_doc == next.__doc__
+    node = compiled.create(_evaluator(), next).tree_node
+    assert clean_scope_docstring(node) == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():

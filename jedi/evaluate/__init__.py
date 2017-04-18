@@ -348,7 +348,8 @@ class Evaluator(object):
                 search_global=True
             )
         elif isinstance(atom, tree.Literal):
-            return set([compiled.create(self, atom.eval())])
+            string = parser_utils.safe_literal_eval(atom.value)
+            return set([compiled.create(self, string)])
         else:
             c = atom.children
             if c[0].type == 'string':

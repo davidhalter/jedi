@@ -27,30 +27,10 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 """
 
-from inspect import cleandoc
 from itertools import chain
-import textwrap
 
-from jedi._compatibility import is_py3, utf8_repr, literal_eval, unicode
+from jedi._compatibility import utf8_repr, unicode
 from jedi.parser.tree import Node, BaseNode, Leaf, ErrorNode, ErrorLeaf
-
-
-def _safe_literal_eval(value):
-    first_two = value[:2].lower()
-    if first_two[0] == 'f' or first_two in ('fr', 'rf'):
-        # literal_eval is not able to resovle f literals. We have to do that
-        # manually in a later stage
-        return ''
-
-    try:
-        return literal_eval(value)
-    except SyntaxError:
-        # It's possible to create syntax errors with literals like rb'' in
-        # Python 2. This should not be possible and in that case just return an
-        # empty string.
-        # Before Python 3.3 there was a more strict definition in which order
-        # you could define literals.
-        return ''
 
 
 def search_ancestor(node, node_type_or_types):
@@ -66,9 +46,7 @@ def search_ancestor(node, node_type_or_types):
 class DocstringMixin(object):
     __slots__ = ()
 
-    @property
-    def raw_doc(self):
-        """ Returns a cleaned version of the docstring token. """
+    def get_doc_node(self):
         if self.type == 'file_input':
             node = self.children[0]
         elif isinstance(self, ClassOrFunc):
@@ -80,25 +58,14 @@ class DocstringMixin(object):
             c = simple_stmt.parent.children
             index = c.index(simple_stmt)
             if not index:
-                return ''
+                return None
             node = c[index - 1]
 
         if node.type == 'simple_stmt':
             node = node.children[0]
-
         if node.type == 'string':
-            # TODO We have to check next leaves until there are no new
-            # leaves anymore that might be part of the docstring. A
-            # docstring can also look like this: ``'foo' 'bar'
-            # Returns a literal cleaned version of the ``Token``.
-            cleaned = cleandoc(_safe_literal_eval(node.value))
-            # Since we want the docstr output to be always unicode, just
-            # force it.
-            if is_py3 or isinstance(cleaned, unicode):
-                return cleaned
-            else:
-                return unicode(cleaned, 'UTF-8', 'replace')
-        return ''
+            return node
+        return None
 
 
 class PythonMixin(object):
@@ -228,9 +195,6 @@ class Name(_LeafWithoutNewlines):
 
 class Literal(PythonLeaf):
     __slots__ = ()
-
-    def eval(self):
-        return _safe_literal_eval(self.value)
 
 
 class Number(Literal):
@@ -447,18 +411,6 @@ class Class(ClassOrFunc):
             else:
                 return self.children[3]
 
-    @property
-    def doc(self):
-        """
-        Return a document string including call signature of __init__.
-        """
-        docstr = self.raw_doc
-        for sub in self.subscopes:
-            if sub.name.value == '__init__':
-                return '%s\n\n%s' % (
-                    sub.get_call_signature(call_string=self.name.value), docstr)
-        return docstr
-
 
 def _create_params(parent, argslist_list):
     """
@@ -556,34 +508,8 @@ class Function(ClassOrFunc):
         except IndexError:
             return None
 
-    def get_call_signature(self, width=72, call_string=None):
-        """
-        Generate call signature of this function.
-
-        :param width: Fold lines if a line is longer than this value.
-        :type width: int
-        :arg func_name: Override function name when given.
-        :type func_name: str
-
-        :rtype: str
-        """
-        # Lambdas have no name.
-        if call_string is None:
-            if self.type == 'lambdef':
-                call_string = '<lambda>'
-            else:
-                call_string = self.name.value
-        code = call_string + self._get_paramlist_code()
-        return '\n'.join(textwrap.wrap(code, width))
-
     def _get_paramlist_code(self):
         return self.children[2].get_code()
-
-    @property
-    def doc(self):
-        """ Return a document string including call signature. """
-        docstr = self.raw_doc
-        return '%s\n\n%s' % (self.get_call_signature(), docstr)
 
 
 class Lambda(Function):

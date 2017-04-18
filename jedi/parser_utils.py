@@ -1,3 +1,7 @@
+import textwrap
+from inspect import cleandoc
+
+from jedi._compatibility import literal_eval, is_py3
 from jedi.parser.python import tree
 
 _EXECUTE_NODES = set([
@@ -95,3 +99,79 @@ def get_statement_of_position(node, pos):
                 except AttributeError:
                     pass  # Must be a non-scope
     return None
+
+
+def clean_scope_docstring(scope_node):
+    """ Returns a cleaned version of the docstring token. """
+    node = scope_node.get_doc_node()
+    if node is not None:
+        # TODO We have to check next leaves until there are no new
+        # leaves anymore that might be part of the docstring. A
+        # docstring can also look like this: ``'foo' 'bar'
+        # Returns a literal cleaned version of the ``Token``.
+        cleaned = cleandoc(safe_literal_eval(node.value))
+        # Since we want the docstr output to be always unicode, just
+        # force it.
+        if is_py3 or isinstance(cleaned, unicode):
+            return cleaned
+        else:
+            return unicode(cleaned, 'UTF-8', 'replace')
+    return ''
+
+
+def safe_literal_eval(value):
+    first_two = value[:2].lower()
+    if first_two[0] == 'f' or first_two in ('fr', 'rf'):
+        # literal_eval is not able to resovle f literals. We have to do that
+        # manually, but that's right now not implemented.
+        return ''
+
+    try:
+        return literal_eval(value)
+    except SyntaxError:
+        # It's possible to create syntax errors with literals like rb'' in
+        # Python 2. This should not be possible and in that case just return an
+        # empty string.
+        # Before Python 3.3 there was a more strict definition in which order
+        # you could define literals.
+        return ''
+
+
+def get_call_signature(funcdef, width=72, call_string=None):
+    """
+    Generate call signature of this function.
+
+    :param width: Fold lines if a line is longer than this value.
+    :type width: int
+    :arg func_name: Override function name when given.
+    :type func_name: str
+
+    :rtype: str
+    """
+    # Lambdas have no name.
+    if call_string is None:
+        if funcdef.type == 'lambdef':
+            call_string = '<lambda>'
+        else:
+            call_string = funcdef.name.value
+    code = call_string + funcdef._get_paramlist_code()
+    return '\n'.join(textwrap.wrap(code, width))
+
+
+def get_doc_with_call_signature(scope_node):
+    """
+    Return a document string including call signature.
+    """
+    call_signature = None
+    if scope_node.type == 'classdef':
+        for sub in scope_node.subscopes:
+            if sub.name.value == '__init__':
+                call_signature = \
+                    get_call_signature(sub, call_string=scope_node.name.value)
+    elif scope_node.type in ('funcdef', 'lambdef'):
+        call_signature = get_call_signature(scope_node)
+
+    doc = clean_scope_docstring(scope_node)
+    if call_signature is None:
+        return doc
+    return '%s\n\n%s' % (call_signature, doc)

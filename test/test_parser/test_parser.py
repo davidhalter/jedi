@@ -9,7 +9,8 @@ from jedi._compatibility import u, is_py3
 from jedi.parser.python import parse, load_grammar
 from jedi.parser.python import tree
 from jedi.common import splitlines
-from jedi.parser_utils import get_statement_of_position
+from jedi.parser_utils import get_statement_of_position, \
+    clean_scope_docstring, safe_literal_eval
 
 
 def test_user_statement_on_import():
@@ -38,7 +39,7 @@ class TestCallAndName():
 
         leaf = self.get_call('1.0\n')
         assert leaf.value == '1.0'
-        assert leaf.eval() == 1.0
+        assert safe_literal_eval(leaf.value) == 1.0
         assert leaf.start_pos == (1, 0)
         assert leaf.end_pos == (1, 3)
 
@@ -49,15 +50,15 @@ class TestCallAndName():
     def test_literal_type(self):
         literal = self.get_call('1.0')
         assert isinstance(literal, tree.Literal)
-        assert type(literal.eval()) == float
+        assert type(safe_literal_eval(literal.value)) == float
 
         literal = self.get_call('1')
         assert isinstance(literal, tree.Literal)
-        assert type(literal.eval()) == int
+        assert type(safe_literal_eval(literal.value)) == int
 
         literal = self.get_call('"hello"')
         assert isinstance(literal, tree.Literal)
-        assert literal.eval() == 'hello'
+        assert safe_literal_eval(literal.value) == 'hello'
 
 
 class TestSubscopes():
@@ -131,7 +132,7 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    doc = parse(source).subscopes[0].raw_doc
+    doc = clean_scope_docstring(parse(source).subscopes[0])
     if is_py3:
         assert doc == '\xff'
     else:

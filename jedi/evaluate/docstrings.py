@@ -26,6 +26,7 @@ from jedi.parser.python import parse
 from jedi.parser.python.tree import search_ancestor
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
+from jedi.parser_utils import clean_scope_docstring
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -196,11 +197,11 @@ def follow_param(module_context, param):
     if func.type == 'lambdef':
         return set()
 
-    types = eval_docstring(func.raw_doc)
+    types = eval_docstring(clean_scope_docstring(func))
     if func.name.value == '__init__':
         cls = search_ancestor(func, 'classdef')
         if cls is not None:
-            types |= eval_docstring(cls.raw_doc)
+            types |= eval_docstring(clean_scope_docstring(cls))
 
     return types
 
@@ -213,5 +214,5 @@ def find_return_types(module_context, func):
             if match:
                 return _strip_rst_role(match.group(1))
 
-    type_str = search_return_in_docstr(func.raw_doc)
+    type_str = search_return_in_docstr(clean_scope_docstring(func))
     return _evaluate_for_statement_string(module_context, type_str)
