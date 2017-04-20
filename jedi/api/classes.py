@@ -15,9 +15,9 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import instance
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
-from jedi.evaluate.filters import ParamName
+from jedi.evaluate.filters import ParamName, TreeNameDefinition
+from jedi.evaluate.imports import ImportName
 from jedi.api.keywords import KeywordName
-from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 
 
 def _sort_names_by_start_pos(names):
@@ -255,7 +255,7 @@ class BaseDefinition(object):
         .. todo:: Remove!
         """
         warnings.warn("Use docstring() instead.", DeprecationWarning)
-        return self.docstring()
+        return self.docstring(raw=False)
 
     @property
     def raw_doc(self):
@@ -469,7 +469,7 @@ class Completion(BaseDefinition):
             # In this case we can just resolve the like name, because we
             # wouldn't load like > 100 Python modules anymore.
             fast = False
-        return super(Completion, self,).docstring(raw, fast)
+        return super(Completion, self).docstring(raw=raw, fast=fast)
 
     @property
     def description(self):
@@ -698,22 +698,14 @@ class _Help(object):
         self._name = definition
 
     @memoize_method
-    def _get_node(self, fast):
-        if isinstance(self._name, (compiled.CompiledContextName, compiled.CompiledName)):
-            followed = self._name.infer()
-            if followed:
-                return next(iter(followed))
-            return None
+    def _get_contexts(self, fast):
+        if isinstance(self._name, ImportName) and fast:
+            return {}
 
-        if self._name.api_type == 'module' and not fast:
-            followed = self._name.infer()
-            if followed:
-                # TODO: Use all of the followed objects as input to Documentation.
-                context = next(iter(followed))
-                return context.tree_node
-        if self._name.tree_name is None:
-            return None
-        return self._name.tree_name.get_definition()
+        if self._name.api_type == 'statement':
+            return {}
+
+        return self._name.infer()
 
     def docstring(self, fast=True, raw=True):
         """
@@ -721,14 +713,9 @@ class _Help(object):
 
         See :attr:`doc` for example.
         """
-        node = self._get_node(fast)
+        # TODO: Use all of the followed objects as output. Possibly divinding
+        # them by a few dashes.
+        for context in self._get_contexts(fast=fast):
+            return context.py__doc__(include_call_signature=not raw)
 
-        try:
-            node.get_doc_node
-        except AttributeError:
-            return ''
-        else:
-            if raw:
-                return clean_scope_docstring(node)
-            else:
-                return get_doc_with_call_signature(node)
+        return ''

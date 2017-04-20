@@ -94,8 +94,7 @@ class CompiledObject(Context):
     def is_class(self):
         return inspect.isclass(self.obj)
 
-    @property
-    def doc(self):
+    def py__doc__(self, include_call_signature=False):
         return inspect.getdoc(self.obj) or ''
 
     @property
@@ -129,10 +128,11 @@ class CompiledObject(Context):
 
     @underscore_memoization
     def _parse_function_doc(self):
-        if self.doc is None:
+        doc = self.py__doc__()
+        if doc is None:
             return '', ''
 
-        return _parse_function_doc(self.doc)
+        return _parse_function_doc(doc)
 
     @property
     def api_type(self):

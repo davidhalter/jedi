@@ -53,7 +53,7 @@ def test_doc():
     just a Jedi API definition.
     """
     obj = compiled.CompiledObject(_evaluator(), ''.__getnewargs__)
-    assert obj.doc == ''
+    assert obj.py__doc__() == ''
 
 
 def test_string_literals():

@@ -1,6 +1,7 @@
 from jedi._compatibility import Python3Method
 from jedi.common import unite
 from jedi.parser.python.tree import ExprStmt, CompFor
+from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 
 
 class Context(object):
@@ -62,6 +63,18 @@ class Context(object):
         the return value will always be true.
         """
         return True
+
+    def py__doc__(self, include_call_signature=False):
+        try:
+            self.tree_node.get_doc_node
+        except AttributeError:
+            return ''
+        else:
+            if include_call_signature:
+                return get_doc_with_call_signature(self.tree_node)
+            else:
+                return clean_scope_docstring(self.tree_node)
+        return None
 
 
 class TreeContext(Context):
