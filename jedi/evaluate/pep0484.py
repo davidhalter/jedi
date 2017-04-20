@@ -99,7 +99,7 @@ def py__annotations__(funcdef):
 
 
 @memoize_default()
-def find_return_types(context, func):
+def infer_return_types(context, func):
     annotation = py__annotations__(func).get("return", None)
     return _evaluate_for_annotation(context, annotation)
 

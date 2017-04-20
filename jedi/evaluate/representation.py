@@ -330,8 +330,8 @@ class FunctionExecutionContext(context.TreeContext):
             returns = funcdef.yields
         else:
             returns = funcdef.returns
-            types = set(docstrings.find_return_types(self.get_root_context(), funcdef))
-            types |= set(pep0484.find_return_types(self.get_root_context(), funcdef))
+            types = set(docstrings.infer_return_types(self.get_root_context(), funcdef))
+            types |= set(pep0484.infer_return_types(self.get_root_context(), funcdef))
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)

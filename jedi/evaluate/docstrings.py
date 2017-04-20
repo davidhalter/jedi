@@ -207,7 +207,7 @@ def follow_param(module_context, param):
 
 
 @memoize_default()
-def find_return_types(module_context, func):
+def infer_return_types(module_context, func):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
