@@ -99,9 +99,10 @@ def py__annotations__(funcdef):
 
 
 @memoize_default()
-def infer_return_types(context, func):
-    annotation = py__annotations__(func).get("return", None)
-    return _evaluate_for_annotation(context, annotation)
+def infer_return_types(function_context):
+    annotation = py__annotations__(function_context.tree_node).get("return", None)
+    module_context = function_context.get_root_context()
+    return _evaluate_for_annotation(module_context, annotation)
 
 
 _typing_module = None

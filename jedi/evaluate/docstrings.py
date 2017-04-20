@@ -207,12 +207,12 @@ def follow_param(module_context, param):
 
 
 @memoize_default()
-def infer_return_types(module_context, func):
+def infer_return_types(function_context):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
             if match:
                 return _strip_rst_role(match.group(1))
 
-    type_str = search_return_in_docstr(clean_scope_docstring(func))
-    return _evaluate_for_statement_string(module_context, type_str)
+    type_str = search_return_in_docstr(function_context.py__doc__())
+    return _evaluate_for_statement_string(function_context.get_root_context(), type_str)
