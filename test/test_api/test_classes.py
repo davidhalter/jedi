@@ -150,6 +150,14 @@ def test_completion_docstring():
         x'''),
         ''
     )
+    # Should also not work if we rename something.
+    docstr(dedent('''
+        def x():
+            "hello"
+        y = x
+        y'''),
+        ''
+    )
 
 
 def test_completion_params():
