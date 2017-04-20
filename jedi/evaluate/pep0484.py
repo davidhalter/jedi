@@ -80,7 +80,7 @@ def _fix_forward_reference(context, node):
 
 
 @memoize_default()
-def follow_param(context, param):
+def infer_param(context, param):
     annotation = param.annotation
     return _evaluate_for_annotation(context, annotation)
 

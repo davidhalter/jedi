@@ -186,7 +186,7 @@ def _execute_array_values(evaluator, array):
 
 
 @memoize_default()
-def follow_param(module_context, param):
+def infer_param(module_context, param):
     def eval_docstring(docstring):
         return set(
             p
