@@ -556,7 +556,7 @@ def create(evaluator, obj, parent_context=None, module=None, faked=None):
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
     else:
-        if parent_context is None and obj != _builtins:
+        if parent_context is None and obj is not _builtins:
             return create(evaluator, obj, create(evaluator, _builtins))
 
         try:
