@@ -254,7 +254,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use docstring() instead.", DeprecationWarning)
+        warnings.warn("Deprecated since Jedi 0.8. Use docstring() instead.", DeprecationWarning, stacklevel=2)
         return self.docstring(raw=False)
 
     @property
@@ -264,7 +264,7 @@ class BaseDefinition(object):
            Use :meth:`.docstring` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use docstring() instead.", DeprecationWarning)
+        warnings.warn("Deprecated since Jedi 0.8. Use docstring() instead.", DeprecationWarning, stacklevel=2)
         return self.docstring(raw=True)
 
     @property
@@ -656,7 +656,7 @@ class CallSignature(Definition):
 
         The name (e.g. 'isinstance') as a string.
         """
-        warnings.warn("Use name instead.", DeprecationWarning)
+        warnings.warn("Deprecated since Jedi 0.8. Use name instead.", DeprecationWarning, stacklevel=2)
         return self.name
 
     @property
@@ -685,7 +685,7 @@ class _Param(Definition):
 
         A function to get the whole code of the param.
         """
-        warnings.warn("Use description instead.", DeprecationWarning)
+        warnings.warn("Deprecated since version 0.8. Use description instead.", DeprecationWarning, stacklevel=2)
         return self.description
 
 
