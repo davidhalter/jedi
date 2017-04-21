@@ -93,10 +93,10 @@ class Script(object):
                  encoding='utf-8', source_path=None, source_encoding=None,
                  sys_path=None):
         if source_path is not None:
-            warnings.warn("Use path instead of source_path.", DeprecationWarning)
+            warnings.warn("Deprecated since version 0.7. Use path instead of source_path.", DeprecationWarning, stacklevel=2)
             path = source_path
         if source_encoding is not None:
-            warnings.warn("Use encoding instead of source_encoding.", DeprecationWarning)
+            warnings.warn("Deprecated since version 0.8. Use encoding instead of source_encoding.", DeprecationWarning, stacklevel=2)
             encoding = source_encoding
 
         self._orig_path = path
@@ -158,7 +158,7 @@ class Script(object):
            Use :attr:`.path` instead.
         .. todo:: Remove!
         """
-        warnings.warn("Use path instead of source_path.", DeprecationWarning)
+        warnings.warn("Deprecated since version 0.7. Use path instead of source_path.", DeprecationWarning, stacklevel=2)
         return self.path
 
     def __repr__(self):
