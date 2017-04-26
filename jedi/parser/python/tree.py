@@ -47,6 +47,9 @@ class DocstringMixin(object):
     __slots__ = ()
 
     def get_doc_node(self):
+        """
+        Returns the string leaf of a docstring. e.g. `r'foo'`
+        """
         if self.type == 'file_input':
             node = self.children[0]
         elif isinstance(self, ClassOrFunc):

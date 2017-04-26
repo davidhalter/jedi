@@ -291,7 +291,9 @@ class Node(BaseNode):
 
 class ErrorNode(BaseNode):
     """
-    TODO doc
+    A node that containes valid nodes/leaves that we're follow by a token that
+    was invalid. This basically means that the leaf after this node is where
+    Python would mark a syntax error.
     """
     __slots__ = ()
     type = 'error_node'
@@ -299,7 +301,8 @@ class ErrorNode(BaseNode):
 
 class ErrorLeaf(Leaf):
     """
-    TODO doc
+    A leaf that is either completely invalid in a language (like `$` in Python)
+    or is invalid at that position. Like the star in `1 +* 1`.
     """
     __slots__ = ('original_type')
     type = 'error_leaf'
