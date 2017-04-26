@@ -61,7 +61,7 @@ class AbstractArguments():
                 raise ValueError
             yield values
 
-    def eval_all(self, func=None):
+    def eval_all(self, funcdef=None):
         """
         Evaluates all arguments as a support for static analysis
         (normally Jedi).
@@ -110,12 +110,12 @@ class TreeArguments(AbstractArguments):
                 else:
                     yield 0, child
 
-    def unpack(self, func=None):
+    def unpack(self, funcdef=None):
         named_args = []
         for star_count, el in self._split():
             if star_count == 1:
                 arrays = self.context.eval_node(el)
-                iterators = [_iterate_star_args(self.context, a, el, func)
+                iterators = [_iterate_star_args(self.context, a, el, funcdef)
                              for a in arrays]
                 iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
@@ -127,7 +127,7 @@ class TreeArguments(AbstractArguments):
             elif star_count == 2:
                 arrays = self._evaluator.eval_element(self.context, el)
                 for dct in arrays:
-                    for key, values in _star_star_dict(self.context, dct, el, func):
+                    for key, values in _star_star_dict(self.context, dct, el, funcdef):
                         yield key, values
             else:
                 if el.type == 'argument':
@@ -195,7 +195,7 @@ class ValuesArguments(AbstractArguments):
     def __init__(self, values_list):
         self._values_list = values_list
 
-    def unpack(self, func=None):
+    def unpack(self, funcdef=None):
         for values in self._values_list:
             yield None, context.LazyKnownContexts(values)
 
@@ -208,16 +208,16 @@ class ValuesArguments(AbstractArguments):
 
 class ExecutedParam(object):
     """Fake a param and give it values."""
-    def __init__(self, var_args_context, original_param, var_args, lazy_context):
-        self._root_context = var_args_context.get_root_context()
-        self._original_param = original_param
-        self.var_args = var_args
+    def __init__(self, execution_context, param_node, lazy_context):
+        self._execution_context = execution_context
+        self._param_node = param_node
         self._lazy_context = lazy_context
-        self.string_name = self._original_param.name.value
+        self.string_name = param_node.name.value
 
     def infer(self):
-        pep0484_hints = pep0484.infer_param(self._root_context, self._original_param)
-        doc_params = docstrings.infer_param(self._root_context, self._original_param)
+        root_context = self._execution_context.get_root_context()
+        pep0484_hints = pep0484.infer_param(root_context, self._param_node)
+        doc_params = docstrings.infer_param(root_context, self._param_node)
         if pep0484_hints or doc_params:
             return list(set(pep0484_hints) | set(doc_params))
 
@@ -226,25 +226,32 @@ class ExecutedParam(object):
     @property
     def position_nr(self):
         # Need to use the original logic here, because it uses the parent.
-        return self._original_param.position_nr
+        return self._param_node.position_nr
+
+    @property
+    def var_args(self):
+        return self._execution_context.var_args
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
-def get_params(evaluator, parent_context, func, var_args):
+def get_params(execution_context, var_args):
     result_params = []
     param_dict = {}
-    for param in func.params:
+    funcdef = execution_context.tree_node
+    parent_context = execution_context.parent_context
+
+    for param in funcdef.params:
         param_dict[param.name.value] = param
-    unpacked_va = list(var_args.unpack(func))
+    unpacked_va = list(var_args.unpack(funcdef))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
     keys_used = {}
     keys_only = False
     had_multiple_value_error = False
-    for param in func.params:
+    for param in funcdef.params:
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
@@ -260,12 +267,12 @@ def get_params(evaluator, parent_context, func, var_args):
                 if key in keys_used:
                     had_multiple_value_error = True
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
-                         % (func.name, key))
+                         % (funcdef.name, key))
                     for node in var_args.get_calling_nodes():
                         analysis.add(parent_context, 'type-error-multiple-values',
                                      node, message=m)
                 else:
-                    keys_used[key] = ExecutedParam(parent_context, key_param, var_args, argument)
+                    keys_used[key] = ExecutedParam(execution_context, key_param, argument)
             key, argument = next(var_arg_iterator, (None, None))
 
         try:
@@ -285,11 +292,11 @@ def get_params(evaluator, parent_context, func, var_args):
                         var_arg_iterator.push_back((key, argument))
                         break
                     lazy_context_list.append(argument)
-            seq = iterable.FakeSequence(evaluator, 'tuple', lazy_context_list)
+            seq = iterable.FakeSequence(execution_context.evaluator, 'tuple', lazy_context_list)
             result_arg = context.LazyKnownContext(seq)
         elif param.star_count == 2:
             # **kwargs param
-            dct = iterable.FakeDict(evaluator, dict(non_matching_keys))
+            dct = iterable.FakeDict(execution_context.evaluator, dict(non_matching_keys))
             result_arg = context.LazyKnownContext(dct)
             non_matching_keys = {}
         else:
@@ -300,7 +307,7 @@ def get_params(evaluator, parent_context, func, var_args):
                     result_arg = context.LazyUnknownContext()
                     if not keys_only:
                         for node in var_args.get_calling_nodes():
-                            m = _error_argument_count(func, len(unpacked_va))
+                            m = _error_argument_count(funcdef, len(unpacked_va))
                             analysis.add(parent_context, 'type-error-too-few-arguments',
                                          node, message=m)
                 else:
@@ -308,7 +315,7 @@ def get_params(evaluator, parent_context, func, var_args):
             else:
                 result_arg = argument
 
-        result_params.append(ExecutedParam(parent_context, param, var_args, result_arg))
+        result_params.append(ExecutedParam(execution_context, param, result_arg))
         if not isinstance(result_arg, context.LazyUnknownContext):
             keys_used[param.name.value] = result_params[-1]
 
@@ -323,13 +330,13 @@ def get_params(evaluator, parent_context, func, var_args):
                     param.star_count or param.default):
                 # add a warning only if there's not another one.
                 for node in var_args.get_calling_nodes():
-                    m = _error_argument_count(func, len(unpacked_va))
+                    m = _error_argument_count(funcdef, len(unpacked_va))
                     analysis.add(parent_context, 'type-error-too-few-arguments',
                                  node, message=m)
 
     for key, lazy_context in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
-            % (func.name, key)
+            % (funcdef.name, key)
         add_argument_issue(
             parent_context,
             'type-error-keyword-argument',
@@ -339,7 +346,7 @@ def get_params(evaluator, parent_context, func, var_args):
 
     remaining_arguments = list(var_arg_iterator)
     if remaining_arguments:
-        m = _error_argument_count(func, len(unpacked_va))
+        m = _error_argument_count(funcdef, len(unpacked_va))
         # Just report an error for the first param that is not needed (like
         # cPython).
         first_key, lazy_context = remaining_arguments[0]
@@ -349,21 +356,21 @@ def get_params(evaluator, parent_context, func, var_args):
     return result_params
 
 
-def _iterate_star_args(context, array, input_node, func=None):
+def _iterate_star_args(context, array, input_node, funcdef=None):
     try:
         iter_ = array.py__iter__
     except AttributeError:
-        if func is not None:
-            # TODO this func should not be needed.
+        if funcdef is not None:
+            # TODO this funcdef should not be needed.
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
-                % (func.name.value, array)
+                % (funcdef.name.value, array)
             analysis.add(context, 'type-error-star', input_node, message=m)
     else:
         for lazy_context in iter_():
             yield lazy_context
 
 
-def _star_star_dict(context, array, input_node, func):
+def _star_star_dict(context, array, input_node, funcdef):
     from jedi.evaluate.instance import CompiledInstance
     if isinstance(array, CompiledInstance) and array.name.string_name == 'dict':
         # For now ignore this case. In the future add proper iterators and just
@@ -372,35 +379,35 @@ def _star_star_dict(context, array, input_node, func):
     elif isinstance(array, iterable.AbstractSequence) and array.array_type == 'dict':
         return array.exact_key_items()
     else:
-        if func is not None:
+        if funcdef is not None:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
-                % (func.name.value, array)
+                % (funcdef.name.value, array)
             analysis.add(context, 'type-error-star-star', input_node, message=m)
         return {}
 
 
-def _error_argument_count(func, actual_count):
-    default_arguments = sum(1 for p in func.params if p.default or p.star_count)
+def _error_argument_count(funcdef, actual_count):
+    default_arguments = sum(1 for p in funcdef.params if p.default or p.star_count)
 
     if default_arguments == 0:
         before = 'exactly '
     else:
-        before = 'from %s to ' % (len(func.params) - default_arguments)
+        before = 'from %s to ' % (len(funcdef.params) - default_arguments)
     return ('TypeError: %s() takes %s%s arguments (%s given).'
-            % (func.name, before, len(func.params), actual_count))
+            % (funcdef.name, before, len(funcdef.params), actual_count))
 
 
-def create_default_param(parent_context, param):
+def create_default_param(execution_context, param):
     if param.star_count == 1:
         result_arg = context.LazyKnownContext(
-            iterable.FakeSequence(parent_context.evaluator, 'tuple', [])
+            iterable.FakeSequence(execution_context.evaluator, 'tuple', [])
         )
     elif param.star_count == 2:
         result_arg = context.LazyKnownContext(
-            iterable.FakeDict(parent_context.evaluator, {})
+            iterable.FakeDict(execution_context.evaluator, {})
         )
     elif param.default is None:
         result_arg = context.LazyUnknownContext()
     else:
-        result_arg = context.LazyTreeContext(parent_context, param.default)
-    return ExecutedParam(parent_context, param, None, result_arg)
+        result_arg = context.LazyTreeContext(execution_context.parent_context, param.default)
+    return ExecutedParam(execution_context, param, result_arg)

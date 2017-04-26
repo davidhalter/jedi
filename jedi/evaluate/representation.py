@@ -412,7 +412,7 @@ class FunctionExecutionContext(context.TreeContext):
 
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
-        return param.get_params(self.evaluator, self.parent_context, self.tree_node, self.var_args)
+        return param.get_params(self, self.var_args)
 
 
 class AnonymousFunctionExecution(FunctionExecutionContext):
@@ -423,7 +423,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
     @memoize_default(default=NO_DEFAULT)
     def get_params(self):
         # We need to do a dynamic search here.
-        return search_params(self.evaluator, self.parent_context, self.tree_node)
+        return search_params(self.evaluator, self, self.tree_node)
 
 
 class ModuleAttributeName(AbstractNameDefinition):

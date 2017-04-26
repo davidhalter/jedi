@@ -383,14 +383,14 @@ class ParamArguments(object):
         def infer(self):
             return self._param.infer()
 
-    def __init__(self, class_context, funcdef):
-        self._class_context = class_context
+    def __init__(self, execution_context, funcdef):
+        self._execution_context = execution_context
         self._funcdef = funcdef
 
     def unpack(self, func=None):
         params = search_params(
-            self._class_context.evaluator,
-            self._class_context,
+            self._execution_context.evaluator,
+            self._execution_context,
             self._funcdef
         )
         is_first = True
@@ -403,8 +403,8 @@ class ParamArguments(object):
 
 
 class InstanceVarArgs(object):
-    def __init__(self, instance, funcdef, var_args):
-        self._instance = instance
+    def __init__(self, execution_context, funcdef, var_args):
+        self._execution_context = execution_context
         self._funcdef = funcdef
         self._var_args = var_args
 
@@ -412,12 +412,12 @@ class InstanceVarArgs(object):
     def _get_var_args(self):
         if self._var_args is None:
             # TODO this parent_context might be wrong. test?!
-            return ParamArguments(self._instance.class_context, self._funcdef)
+            return ParamArguments(self._execution_context, self._funcdef)
 
         return self._var_args
 
     def unpack(self, func=None):
-        yield None, LazyKnownContext(self._instance)
+        yield None, LazyKnownContext(self._execution_context.instance)
         for values in self._get_var_args().unpack(func):
             yield values
 
@@ -431,7 +431,7 @@ class InstanceVarArgs(object):
 class InstanceFunctionExecution(er.FunctionExecutionContext):
     def __init__(self, instance, parent_context, function_context, var_args):
         self.instance = instance
-        var_args = InstanceVarArgs(instance, function_context.tree_node, var_args)
+        var_args = InstanceVarArgs(self, function_context.tree_node, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
             instance.evaluator, parent_context, function_context, var_args)

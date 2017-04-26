@@ -52,7 +52,7 @@ class MergedExecutedParams(object):
 
 
 @debug.increase_indent
-def search_params(evaluator, parent_context, funcdef):
+def search_params(evaluator, execution_context, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -71,7 +71,7 @@ def search_params(evaluator, parent_context, funcdef):
     evaluator.dynamic_params_depth += 1
     try:
         debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
-        module_context = parent_context.get_root_context()
+        module_context = execution_context.get_root_context()
         function_executions = _search_function_executions(
             evaluator,
             module_context,
@@ -85,7 +85,7 @@ def search_params(evaluator, parent_context, funcdef):
             params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
             # Evaluate the ExecutedParams to types.
         else:
-            params = [create_default_param(parent_context, p) for p in funcdef.params]
+            params = [create_default_param(execution_context, p) for p in funcdef.params]
         debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
     finally:
