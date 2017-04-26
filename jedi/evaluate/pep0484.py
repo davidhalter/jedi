@@ -80,9 +80,10 @@ def _fix_forward_reference(context, node):
 
 
 @memoize_default()
-def infer_param(context, param):
+def infer_param(execution_context, param):
     annotation = param.annotation
-    return _evaluate_for_annotation(context, annotation)
+    module_context = execution_context.get_root_context()
+    return _evaluate_for_annotation(module_context, annotation)
 
 
 def py__annotations__(funcdef):

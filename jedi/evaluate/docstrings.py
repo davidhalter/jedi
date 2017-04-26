@@ -23,10 +23,8 @@ from jedi.common import unite
 from jedi.evaluate import context
 from jedi.evaluate.cache import memoize_default
 from jedi.parser.python import parse
-from jedi.parser.python.tree import search_ancestor
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
-from jedi.parser_utils import clean_scope_docstring
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -186,22 +184,25 @@ def _execute_array_values(evaluator, array):
 
 
 @memoize_default()
-def infer_param(module_context, param):
+def infer_param(execution_context, param):
+    from jedi.evaluate.instance import InstanceFunctionExecution
+
     def eval_docstring(docstring):
         return set(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _evaluate_for_statement_string(module_context, param_str)
         )
+    module_context = execution_context.get_root_context()
     func = param.get_parent_function()
     if func.type == 'lambdef':
         return set()
 
-    types = eval_docstring(clean_scope_docstring(func))
-    if func.name.value == '__init__':
-        cls = search_ancestor(func, 'classdef')
-        if cls is not None:
-            types |= eval_docstring(clean_scope_docstring(cls))
+    types = eval_docstring(execution_context.py__doc__())
+    if isinstance(execution_context, InstanceFunctionExecution) and \
+            execution_context.function_context.name.string_name == '__init__':
+        class_context = execution_context.instance.class_context
+        types |= eval_docstring(class_context.py__doc__())
 
     return types
 

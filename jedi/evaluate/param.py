@@ -215,9 +215,8 @@ class ExecutedParam(object):
         self.string_name = param_node.name.value
 
     def infer(self):
-        root_context = self._execution_context.get_root_context()
-        pep0484_hints = pep0484.infer_param(root_context, self._param_node)
-        doc_params = docstrings.infer_param(root_context, self._param_node)
+        pep0484_hints = pep0484.infer_param(self._execution_context, self._param_node)
+        doc_params = docstrings.infer_param(self._execution_context, self._param_node)
         if pep0484_hints or doc_params:
             return list(set(pep0484_hints) | set(doc_params))
 
