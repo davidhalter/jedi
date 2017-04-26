@@ -175,3 +175,17 @@ def get_doc_with_call_signature(scope_node):
     if call_signature is None:
         return doc
     return '%s\n\n%s' % (call_signature, doc)
+
+
+def move(node, line_offset):
+    """
+    Move the `Node` start_pos.
+    """
+    try:
+        children = node.children
+    except AttributeError:
+        node.line += line_offset
+    else:
+        for c in children:
+            move(c, line_offset)
+

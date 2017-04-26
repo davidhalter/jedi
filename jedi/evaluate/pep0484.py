@@ -30,6 +30,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.context import LazyTreeContext
 from jedi import debug
 from jedi import _compatibility
+from jedi import parser_utils
 import re
 
 
@@ -72,7 +73,7 @@ def _fix_forward_reference(context, node):
             return node
         else:
             module = node.get_root_node()
-            new_node.move(module.end_pos[0])
+            parser_utils.move(new_node, module.end_pos[0])
             new_node.parent = context.tree_node
             return new_node
     else:

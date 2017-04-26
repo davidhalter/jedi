@@ -115,9 +115,6 @@ class Leaf(_NodeOrLeaf):
             return self.line - self.prefix.count('\n'), 0  # It's the first leaf.
         return previous_leaf.end_pos
 
-    def move(self, line_offset):
-        self.line += line_offset
-
     def get_first_leaf(self):
         return self
 
@@ -172,13 +169,6 @@ class BaseNode(_NodeOrLeaf):
             c.parent = self
         self.children = children
         self.parent = None
-
-    def move(self, line_offset):
-        """
-        Move the Node's start_pos.
-        """
-        for c in self.children:
-            c.move(line_offset)
 
     @property
     def start_pos(self):

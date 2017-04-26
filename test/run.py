@@ -123,6 +123,7 @@ from jedi._compatibility import unicode, is_py3
 from jedi.parser.python import parse
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
+from jedi import parser_utils
 
 
 TEST_COMPLETIONS = 0
@@ -188,7 +189,7 @@ class IntegrationTestCase(object):
             for match in re.finditer('(?:[^ ]+)', correct):
                 string = match.group(0)
                 parser = parse(string, start_symbol='eval_input', error_recovery=False)
-                parser.get_root_node().move(self.line_nr)
+                parser_utils.move(parser.get_root_node(), self.line_nr)
                 element = parser.get_root_node()
                 module_context = script._get_module()
                 # The context shouldn't matter for the test results.
