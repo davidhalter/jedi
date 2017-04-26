@@ -41,6 +41,36 @@ def test_builtin_details():
     assert m.type == 'module'
 
 
+def test_numpy_like_non_zero():
+    """
+    Numpy-like array can't be caster to bool and need to be compacre with
+    `is`/`is not` and not `==`/`!=`
+    """
+
+    class NumpyNonZero:
+
+        def __zero__(self):
+            raise ValueError('Numpy arrays would raise and tell you to use .any() or all()')
+        def __bool__(self):
+            raise ValueError('Numpy arrays would raise and tell you to use .any() or all()')
+
+    class NumpyLike:
+
+        def __eq__(self, other):
+            return NumpyNonZero()
+
+        def something(self):
+            pass
+
+    x = NumpyLike()
+    d = {'a': x}
+
+    # just assert these do not raise. They (strangely) trigger different
+    # codepath
+    get_completion('d["a"].some', {'d':d})
+    get_completion('x.some', {'x':x})
+
+
 def test_nested_resolve():
     class XX():
         def x():
