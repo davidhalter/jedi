@@ -461,13 +461,13 @@ class Function(ClassOrFunc):
     Used to store the parsed contents of a python function.
 
     Children:
-      0) <Keyword: def>
-      1) <Name>
-      2) parameter list (including open-paren and close-paren <Operator>s)
-      3 or 5) <Operator: :>
-      4 or 6) Node() representing function body
-      3) -> (if annotation is also present)
-      4) annotation (if present)
+      0. <Keyword: def>
+      1. <Name>
+      2. parameter list (including open-paren and close-paren <Operator>s)
+      3. or 5. <Operator: :>
+      4. or 6. Node() representing function body
+      3. -> (if annotation is also present)
+      4. annotation (if present)
     """
     type = 'funcdef'
 
@@ -511,10 +511,11 @@ class Lambda(Function):
     Lambdas are basically trimmed functions, so give it the same interface.
 
     Children:
-       0) <Keyword: lambda>
-       *) <Param x> for each argument x
-      -2) <Operator: :>
-      -1) Node() representing body
+
+       0. <Keyword: lambda>
+       *. <Param x> for each argument x
+      -2. <Operator: :>
+      -1. Node() representing body
     """
     type = 'lambdef'
     __slots__ = ()
