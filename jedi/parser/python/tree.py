@@ -257,10 +257,6 @@ class Scope(PythonBaseNode, DocstringMixin):
         return self._search_in_scope(Scope)
 
     @property
-    def flows(self):
-        return self._search_in_scope(Flow)
-
-    @property
     def imports(self):
         return self._search_in_scope(Import)
 
