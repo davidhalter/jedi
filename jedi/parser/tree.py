@@ -2,6 +2,16 @@ from abc import abstractmethod, abstractproperty
 from jedi._compatibility import utf8_repr, encoding, is_py3
 
 
+def search_ancestor(node, node_type_or_types):
+    if not isinstance(node_type_or_types, (list, tuple)):
+        node_type_or_types = (node_type_or_types,)
+
+    while True:
+        node = node.parent
+        if node is None or node.type in node_type_or_types:
+            return node
+
+
 class NodeOrLeaf(object):
     """
     The base class for nodes and leaves.

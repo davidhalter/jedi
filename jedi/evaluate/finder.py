@@ -16,6 +16,7 @@ check for -> a is a string). There's big potential in these checks.
 """
 
 from jedi.parser.python import tree
+from jedi.parser.tree import search_ancestor
 from jedi import debug
 from jedi.common import unite
 from jedi import settings
@@ -310,7 +311,7 @@ def _check_flow_information(context, flow, search_name, pos):
         ])
 
         for name in names:
-            ass = tree.search_ancestor(name, 'assert_stmt')
+            ass = search_ancestor(name, 'assert_stmt')
             if ass is not None:
                 result = _check_isinstance_type(context, ass.assertion, search_name)
                 if result is not None:

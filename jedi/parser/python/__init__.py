@@ -58,7 +58,8 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
 
     :param code: A unicode string that contains Python code.
     :param path: The path to the file you want to open. Only needed for caching.
-    :param grammar: A Python grammar file, created with load_grammar.
+    :param grammar: A Python grammar file, created with load_grammar. You may
+        not specify it. In that case it's the current Python version.
     :param error_recovery: If enabled, any code will be returned. If it is
         invalid, it will be returned as an error node. If disabled, you will
         get a ParseError when encountering syntax errors in your code.

@@ -22,6 +22,7 @@ from jedi import settings
 from jedi.common import source_to_unicode, unite
 from jedi.parser.python import parse
 from jedi.parser.python import tree
+from jedi.parser.tree import search_ancestor
 from jedi.parser.cache import parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -36,7 +37,7 @@ from jedi.evaluate.filters import AbstractNameDefinition
 @memoize_default(default=set())
 def infer_import(context, tree_name, is_goto=False):
     module_context = context.get_root_context()
-    import_node = tree.search_ancestor(tree_name, ('import_name', 'import_from'))
+    import_node = search_ancestor(tree_name, ('import_name', 'import_from'))
     import_path = import_node.path_for_name(tree_name)
     from_import_name = None
     evaluator = context.evaluator
