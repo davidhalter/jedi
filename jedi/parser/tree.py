@@ -1,3 +1,4 @@
+from abc import abstractmethod, abstractproperty
 from jedi._compatibility import utf8_repr, encoding, is_py3
 
 
@@ -89,6 +90,53 @@ class _NodeOrLeaf(object):
             except AttributeError:  # A Leaf doesn't have children.
                 return node
 
+    @abstractproperty
+    def start_pos(self):
+        """
+        Returns the starting position of the prefix as a tuple, e.g. `(3, 4)`.
+
+        :return tuple of int: (line, column)
+        """
+
+    @abstractproperty
+    def end_pos(self):
+        """
+        Returns the end position of the prefix as a tuple, e.g. `(3, 4)`.
+
+        :return tuple of int: (line, column)
+        """
+
+    @abstractmethod
+    def get_start_pos_of_prefix(self):
+        """
+        Returns the start_pos of the prefix. This means basically it returns
+        the end_pos of the last prefix. The `get_start_pos_of_prefix()` of the
+        prefix `+` in `2 + 1` would be `(1, 1)`, while the start_pos is
+        `(1, 2)`.
+
+        :return tuple of int: (line, column)
+        """
+
+    @abstractmethod
+    def get_first_leaf(self):
+        """
+        Returns the first leaf of a node or itself it's a leaf.
+        """
+
+    @abstractmethod
+    def get_last_leaf(self):
+        """
+        Returns the last leaf of a node or itself it's a leaf.
+        """
+
+    @abstractmethod
+    def get_code(self, normalized=False, include_prefix=True):
+        """
+        Returns x.
+
+        :param include_prefix: The module in which this Python object locates.
+        """
+
 
 class Leaf(_NodeOrLeaf):
     __slots__ = ('value', 'parent', 'line', 'indent', 'prefix')
@@ -130,10 +178,6 @@ class Leaf(_NodeOrLeaf):
 
     @property
     def end_pos(self):
-        """
-        Literals and whitespace end_pos are more complicated than normal
-        end_pos, because the containing newlines may change the indexes.
-        """
         lines = self.value.split('\n')
         end_pos_line = self.line + len(lines) - 1
         # Check for multiline token
@@ -159,11 +203,6 @@ class BaseNode(_NodeOrLeaf):
     type = None
 
     def __init__(self, children):
-        """
-        Initialize :class:`BaseNode`.
-
-        :param children: The module in which this Python object locates.
-        """
         for c in children:
             c.parent = self
         self.children = children
@@ -236,14 +275,6 @@ class Node(BaseNode):
     __slots__ = ('type',)
 
     def __init__(self, type, children):
-        """
-        Initializer.
-
-        Takes a type constant (a symbol number >= 256), a sequence of
-        child nodes, and an optional context keyword argument.
-
-        As a side effect, the parent pointers of the children are updated.
-        """
         super(Node, self).__init__(children)
         self.type = type
 
