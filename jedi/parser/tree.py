@@ -3,16 +3,15 @@ from jedi._compatibility import utf8_repr, encoding, is_py3
 
 class _NodeOrLeaf(object):
     """
-    This is just here to have an isinstance check, which is also used on
-    evaluate classes. But since they have sometimes a special type of
-    delegation, it is important for those classes to override this method.
-
-    I know that there is a chance to do such things with __instancecheck__, but
-    since Python 2.5 doesn't support it, I decided to do it this way.
+    The base class for nodes and leaves.
     """
     __slots__ = ()
 
     def get_root_node(self):
+        """
+        Returns the root node of a parser tree. The returned node doesn't have
+        a parent node like all the other nodes/leaves.
+        """
         scope = self
         while scope.parent is not None:
             scope = scope.parent
@@ -47,7 +46,7 @@ class _NodeOrLeaf(object):
     def get_previous_leaf(self):
         """
         Returns the previous leaf in the parser tree.
-        Raises an IndexError if it's the first element.
+        Raises an IndexError if it's the first element in the parser tree.
         """
         node = self
         while True:
@@ -69,8 +68,8 @@ class _NodeOrLeaf(object):
 
     def get_next_leaf(self):
         """
-        Returns the previous leaf in the parser tree.
-        Raises an IndexError if it's the last element.
+        Returns the next leaf in the parser tree.
+        Returns `None` if it's the last element in the parser tree.
         """
         node = self
         while True:
