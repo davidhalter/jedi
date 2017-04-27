@@ -132,9 +132,13 @@ class _NodeOrLeaf(object):
     @abstractmethod
     def get_code(self, normalized=False, include_prefix=True):
         """
-        Returns x.
+        Returns the code that was the input of the parser.
 
-        :param include_prefix: The module in which this Python object locates.
+        If a normalizer is given, the returned code will be normalized and will
+        not be equal to the input.
+
+        :param include_prefix: Removes the prefix (whitespace and comments) of e.g. a statement.
+        :param normalized: Deprecated. Please don't use. Will be replaced with something more powerful.
         """
 
 
