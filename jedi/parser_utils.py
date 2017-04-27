@@ -189,3 +189,31 @@ def move(node, line_offset):
         for c in children:
             move(c, line_offset)
 
+
+def get_following_comment_same_line(node):
+    """
+    returns (as string) any comment that appears on the same line,
+    after the node, including the #
+    """
+    try:
+        if node.type == 'for_stmt':
+            whitespace = node.children[5].get_first_leaf().prefix
+        elif node.type == 'with_stmt':
+            whitespace = node.children[3].get_first_leaf().prefix
+        else:
+            whitespace = node.get_last_leaf().get_next_leaf().prefix
+    except AttributeError:
+        return None
+    except ValueError:
+        # TODO in some particular cases, the tree doesn't seem to be linked
+        # correctly
+        return None
+    if "#" not in whitespace:
+        return None
+    comment = whitespace[whitespace.index("#"):]
+    if "\r" in comment:
+        comment = comment[:comment.index("\r")]
+    if "\n" in comment:
+        comment = comment[:comment.index("\n")]
+    return comment
+

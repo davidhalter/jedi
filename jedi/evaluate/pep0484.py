@@ -210,7 +210,7 @@ def _find_type_from_comment_hint(context, node, varlist, name):
         else:
             return []
 
-    comment = node.get_following_comment_same_line()
+    comment = parser_utils.get_following_comment_same_line(node)
     if comment is None:
         return []
     match = re.match(r"^#\s*type:\s*([^#]*)", comment)

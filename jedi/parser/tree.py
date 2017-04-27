@@ -223,33 +223,6 @@ class BaseNode(_NodeOrLeaf):
     def get_last_leaf(self):
         return self.children[-1].get_last_leaf()
 
-    def get_following_comment_same_line(self):
-        """
-        returns (as string) any comment that appears on the same line,
-        after the node, including the #
-        """
-        try:
-            if self.type == 'for_stmt':
-                whitespace = self.children[5].get_first_leaf().prefix
-            elif self.type == 'with_stmt':
-                whitespace = self.children[3].get_first_leaf().prefix
-            else:
-                whitespace = self.get_last_leaf().get_next_leaf().prefix
-        except AttributeError:
-            return None
-        except ValueError:
-            # TODO in some particular cases, the tree doesn't seem to be linked
-            # correctly
-            return None
-        if "#" not in whitespace:
-            return None
-        comment = whitespace[whitespace.index("#"):]
-        if "\r" in comment:
-            comment = comment[:comment.index("\r")]
-        if "\n" in comment:
-            comment = comment[:comment.index("\n")]
-        return comment
-
     @utf8_repr
     def __repr__(self):
         code = self.get_code().replace('\n', ' ').strip()
