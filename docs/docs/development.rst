@@ -161,7 +161,7 @@ Parameter completion (evaluate/dynamic.py)
 Diff Parser (parser/diff.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.parser.diff
+.. automodule:: jedi.parser.python.diff
 
 .. _docstrings:
 
