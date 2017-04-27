@@ -82,8 +82,11 @@ and many more!
 
 .. _repl-completion:
 
-Tab completion in the Python Shell
+Tab Completion in the Python Shell
 ----------------------------------
+
+Starting with Ipython `6.0.0` Jedi is a dependency of IPython. Autocompletion
+in IPython is therefore possible without additional configuration.
 
 There are two different options how you can use Jedi autocompletion in
 your Python interpreter. One with your custom ``$HOME/.pythonrc.py`` file
