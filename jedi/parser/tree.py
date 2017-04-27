@@ -2,7 +2,7 @@ from abc import abstractmethod, abstractproperty
 from jedi._compatibility import utf8_repr, encoding, is_py3
 
 
-class _NodeOrLeaf(object):
+class NodeOrLeaf(object):
     """
     The base class for nodes and leaves.
     """
@@ -142,7 +142,7 @@ class _NodeOrLeaf(object):
         """
 
 
-class Leaf(_NodeOrLeaf):
+class Leaf(NodeOrLeaf):
     __slots__ = ('value', 'parent', 'line', 'indent', 'prefix')
 
     def __init__(self, value, start_pos, prefix=''):
@@ -196,7 +196,7 @@ class Leaf(_NodeOrLeaf):
         return "<%s: %s start=%s>" % (type(self).__name__, self.value, self.start_pos)
 
 
-class BaseNode(_NodeOrLeaf):
+class BaseNode(NodeOrLeaf):
     """
     The super class for all nodes.
 
