@@ -101,7 +101,7 @@ class PythonMixin(object):
     def get_name_of_position(self, position):
         for c in self.children:
             if isinstance(c, Leaf):
-                if isinstance(c, Name) and c.start_pos <= position <= c.end_pos:
+                if c.type == 'name' and c.start_pos <= position <= c.end_pos:
                     return c
             else:
                 result = c.get_name_of_position(position)
