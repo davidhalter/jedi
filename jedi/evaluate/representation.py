@@ -192,14 +192,6 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def is_class(self):
         return True
 
-    def get_subscope_by_name(self, name):
-        raise DeprecationWarning
-        for s in self.py__mro__():
-            for sub in reversed(s.subscopes):
-                if sub.name.value == name:
-                    return sub
-        raise KeyError("Couldn't find subscope.")
-
     def get_function_slot_names(self, name):
         for filter in self.get_filters(search_global=False):
             names = filter.get(name)

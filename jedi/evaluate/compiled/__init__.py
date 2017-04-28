@@ -173,12 +173,6 @@ class CompiledObject(Context):
         """
         return CompiledObjectFilter(self.evaluator, self, is_instance)
 
-    def get_subscope_by_name(self, name):
-        if name in dir(self.obj):
-            return CompiledName(self.evaluator, self, name).parent
-        else:
-            raise KeyError("CompiledObject doesn't have an attribute '%s'." % name)
-
     @CheckAttribute
     def py__getitem__(self, index):
         if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
