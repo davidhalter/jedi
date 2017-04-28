@@ -291,18 +291,6 @@ class Scope(PythonBaseNode, DocstringMixin):
         return "<%s: %s@%s-%s>" % (type(self).__name__, name,
                                    self.start_pos[0], self.end_pos[0])
 
-    def walk(self):
-        yield self
-        for s in self.subscopes:
-            for scope in s.walk():
-                yield scope
-
-        for r in self.statements:
-            while isinstance(r, Flow):
-                for scope in r.walk():
-                    yield scope
-                r = r.next
-
 
 class Module(Scope):
     """
