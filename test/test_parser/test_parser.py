@@ -112,7 +112,7 @@ def test_carriage_return_statements():
         # this is a namespace package
     ''')
     source = source.replace('\n', '\r\n')
-    stmt = parse(source).statements[0]
+    stmt = parse(source).children[0]
     assert '#' not in stmt.get_code()
 
 
@@ -120,7 +120,9 @@ def test_incomplete_list_comprehension():
     """ Shouldn't raise an error, same bug as #418. """
     # With the old parser this actually returned a statement. With the new
     # parser only valid statements generate one.
-    assert parse('(1 for def').statements == []
+    children = parse('(1 for def').children
+    assert [c.type for c in children] == \
+        ['error_node', 'error_node', 'newline', 'endmarker']
 
 
 def test_hex_values_in_docstring():

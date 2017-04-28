@@ -102,8 +102,9 @@ class TestRegression(TestCase):
         # jedi issue #150
         s = "x()\nx( )\nx(  )\nx (  )"
         module = parse(s)
-        for i, s in enumerate(module.statements):
-            assert s.end_pos == (i + 1, i + 3)
+        for i, simple_stmt in enumerate(module.children[:-1]):
+            expr_stmt = simple_stmt.children[0]
+            assert expr_stmt.end_pos == (i + 1, i + 3)
 
     def check_definition_by_marker(self, source, after_cursor, names):
         r"""

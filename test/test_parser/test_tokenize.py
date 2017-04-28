@@ -23,8 +23,9 @@ class TokenTest(unittest.TestCase):
         def testit():
             a = "huhu"
         '''))
-        tok = parsed.subscopes[0].statements[0].children[2]
-        assert tok.end_pos == (3, 14)
+        simple_stmt = parsed.subscopes[0].get_suite().children[-1]
+        string = simple_stmt.children[0].get_rhs()
+        assert string.end_pos == (3, 14)
 
     def test_end_pos_multi_line(self):
         parsed = parse(dedent('''
@@ -32,8 +33,9 @@ class TokenTest(unittest.TestCase):
             a = """huhu
         asdfasdf""" + "h"
         '''))
-        tok = parsed.subscopes[0].statements[0].children[2].children[0]
-        assert tok.end_pos == (4, 11)
+        expr_stmt = parsed.subscopes[0].get_suite().children[1].children[0]
+        string_leaf = expr_stmt.get_rhs().children[0]
+        assert string_leaf.end_pos == (4, 11)
 
     def test_simple_no_whitespace(self):
         # Test a simple one line string, no preceding whitespace

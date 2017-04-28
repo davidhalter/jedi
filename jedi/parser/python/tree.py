@@ -273,12 +273,14 @@ class Scope(PythonBaseNode, DocstringMixin):
 
         return scan(self.children)
 
-    @property
-    def statements(self):
-        return self._search_in_scope((ExprStmt, KeywordStatement))
-
     def is_scope(self):
         return True
+
+    def get_suite(self):
+        """
+        Returns the part that is executed by the function.
+        """
+        return self.children[-1]
 
     def __repr__(self):
         try:

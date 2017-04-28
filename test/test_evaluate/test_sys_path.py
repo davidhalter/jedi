@@ -11,8 +11,8 @@ from jedi import Script
 def test_paths_from_assignment():
     def paths(src):
         script = Script(src)
-        stmt = script._get_module_node().statements[0]
-        return set(sys_path._paths_from_assignment(script._get_module(), stmt))
+        expr_stmt = script._get_module_node().children[0].children[0]
+        return set(sys_path._paths_from_assignment(script._get_module(), expr_stmt))
 
     assert paths('sys.path[0:0] = ["a"]') == set(['a'])
     assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == set(['b', 'c'])
