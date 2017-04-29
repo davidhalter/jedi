@@ -63,7 +63,7 @@ class TestCallAndName():
 
 class TestSubscopes():
     def get_sub(self, source):
-        return parse(source).subscopes[0]
+        return parse(source).children[0]
 
     def test_subscope_names(self):
         name = self.get_sub('class Foo: pass').name
@@ -100,7 +100,7 @@ def test_end_pos():
                    y = None
                ''')
     parser = parse(s)
-    scope = parser.subscopes[0]
+    scope = next(parser.iter_funcdefs())
     assert scope.start_pos == (3, 0)
     assert scope.end_pos == (5, 0)
 
@@ -134,7 +134,7 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    doc = clean_scope_docstring(parse(source).subscopes[0])
+    doc = clean_scope_docstring(next(parse(source).iter_funcdefs()))
     if is_py3:
         assert doc == '\xff'
     else:
@@ -184,12 +184,12 @@ def test_param_splitting():
         grammar = load_grammar('%s.%s' % sys.version_info[:2])
         m = parse(src, grammar=grammar)
         if is_py3:
-            assert not m.subscopes
+            assert not list(m.iter_funcdefs())
         else:
             # We don't want b and c to be a part of the param enumeration. Just
             # ignore them, because it's not what we want to support in the
             # future.
-            assert [param.name.value for param in m.subscopes[0].params] == result
+            assert [param.name.value for param in next(m.iter_funcdefs()).params] == result
 
     check('def x(a, (b, c)):\n pass', ['a'])
     check('def x((b, c)):\n pass', [])

@@ -29,7 +29,10 @@ class TestsFunctionAndLambdaParsing(object):
     def node(self, request):
         parsed = parse(dedent(request.param[0]))
         request.keywords['expected'] = request.param[1]
-        return parsed.subscopes[0]
+        child = parsed.children[0]
+        if child.type == 'simple_stmt':
+            child = child.children[0]
+        return child
 
     @pytest.fixture()
     def expected(self, request, node):

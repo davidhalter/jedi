@@ -270,7 +270,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     )
 
     # Parse source
-    generated_class = parse(source, grammar=evaluator.grammar).subscopes[0]
+    generated_class = next(parse(source, grammar=evaluator.grammar).iter_classdefs())
     return set([er.ClassContext(evaluator, generated_class, evaluator.BUILTINS)])
 
 

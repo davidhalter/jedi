@@ -23,7 +23,7 @@ class TokenTest(unittest.TestCase):
         def testit():
             a = "huhu"
         '''))
-        simple_stmt = parsed.subscopes[0].get_suite().children[-1]
+        simple_stmt = next(parsed.iter_funcdefs()).get_suite().children[-1]
         string = simple_stmt.children[0].get_rhs()
         assert string.end_pos == (3, 14)
 
@@ -33,7 +33,7 @@ class TokenTest(unittest.TestCase):
             a = """huhu
         asdfasdf""" + "h"
         '''))
-        expr_stmt = parsed.subscopes[0].get_suite().children[1].children[0]
+        expr_stmt = next(parsed.iter_funcdefs()).get_suite().children[1].children[0]
         string_leaf = expr_stmt.get_rhs().children[0]
         assert string_leaf.end_pos == (4, 11)
 

@@ -164,10 +164,10 @@ def get_doc_with_call_signature(scope_node):
     """
     call_signature = None
     if scope_node.type == 'classdef':
-        for sub in scope_node.subscopes:
-            if sub.name.value == '__init__':
+        for funcdef in scope_node.iter_funcdefs():
+            if funcdef.name.value == '__init__':
                 call_signature = \
-                    get_call_signature(sub, call_string=scope_node.name.value)
+                    get_call_signature(funcdef, call_string=scope_node.name.value)
     elif scope_node.type in ('funcdef', 'lambdef'):
         call_signature = get_call_signature(scope_node)
 

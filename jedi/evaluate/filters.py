@@ -275,7 +275,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     ...     y = None
     ... '''))
     >>> module_node = script._get_module_node()
-    >>> scope = module_node.subscopes[0]
+    >>> scope = next(module_node.iter_funcdefs())
     >>> scope
     <Function: func@3-5>
     >>> context = script._get_module().create_context(scope)

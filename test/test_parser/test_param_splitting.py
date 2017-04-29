@@ -15,7 +15,7 @@ def assert_params(param_string, **wanted_dct):
     ''') % param_string
 
     module = parse(source)
-    funcdef = module.subscopes[0]
+    funcdef = next(module.iter_funcdefs())
     dct = dict((p.name.value, p.default and p.default.get_code())
                for p in funcdef.params)
     assert dct == wanted_dct

@@ -134,7 +134,7 @@ def _evaluate_for_statement_string(module_context, string):
     # don't need to conform with the current grammar.
     module = parse(code.format(indent_block(string)))
     try:
-        funcdef = module.subscopes[0]
+        funcdef = next(module.iter_funcdefs())
         # First pick suite, then simple_stmt and then the node,
         # which is also not the last item, because there's a newline.
         stmt = funcdef.children[-1].children[-1].children[-2]

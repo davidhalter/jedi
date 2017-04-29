@@ -23,8 +23,6 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 
 >>> module.imports
 [<ImportName: import os@1,0>]
-
-See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 """
 
 from itertools import chain
@@ -234,12 +232,7 @@ class Scope(PythonBaseNode, DocstringMixin):
     """
     Super class for the parser tree, which represents the state of a python
     text file.
-    A Scope manages and owns its subscopes, which are classes and functions, as
-    well as variables and imports. It is used to access the structure of python
-    files.
-
-    :param start_pos: The position (line and column) of the scope.
-    :type start_pos: tuple(int, int)
+    A Scope is either a function, class or lambda.
     """
     __slots__ = ()
 
@@ -250,26 +243,27 @@ class Scope(PythonBaseNode, DocstringMixin):
     def returns(self):
         # Needed here for fast_parser, because the fast_parser splits and
         # returns will be in "normal" modules.
-        return self._search_in_scope(ReturnStmt)
+        return list(self._search_in_scope(ReturnStmt))
 
-    @property
-    def subscopes(self):
-        return self._search_in_scope(Scope)
+    def iter_funcdefs(self):
+        return self._search_in_scope(Function)
+
+    def iter_classdefs(self):
+        return self._search_in_scope(Class)
 
     @property
     def imports(self):
-        return self._search_in_scope(Import)
+        return list(self._search_in_scope(Import))
 
     def _search_in_scope(self, typ):
         def scan(children):
-            elements = []
             for element in children:
                 if isinstance(element, typ):
-                    elements.append(element)
+                    yield element
                 if element.type in ('suite', 'simple_stmt', 'decorated') \
                         or isinstance(element, Flow):
-                    elements += scan(element.children)
-            return elements
+                    for e in scan(element.children):
+                        yield e
 
         return scan(self.children)
 
@@ -473,7 +467,7 @@ class Function(ClassOrFunc):
     @property
     def yields(self):
         # TODO This is incorrect, yields are also possible in a statement.
-        return self._search_in_scope(YieldExpr)
+        return list(self._search_in_scope(YieldExpr))
 
     def is_generator(self):
         return bool(self.yields)
