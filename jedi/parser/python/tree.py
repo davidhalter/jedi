@@ -239,11 +239,8 @@ class Scope(PythonBaseNode, DocstringMixin):
     def __init__(self, children):
         super(Scope, self).__init__(children)
 
-    @property
-    def returns(self):
-        # Needed here for fast_parser, because the fast_parser splits and
-        # returns will be in "normal" modules.
-        return list(self._search_in_scope(ReturnStmt))
+    def iter_return_stmts(self):
+        return self._search_in_scope(ReturnStmt)
 
     def iter_funcdefs(self):
         return self._search_in_scope(Function)

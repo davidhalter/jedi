@@ -321,7 +321,7 @@ class FunctionExecutionContext(context.TreeContext):
             types = set()
             returns = funcdef.yields
         else:
-            returns = funcdef.returns
+            returns = funcdef.iter_return_stmts()
             types = set(docstrings.infer_return_types(self.function_context))
             types |= set(pep0484.infer_return_types(self.function_context))
 
