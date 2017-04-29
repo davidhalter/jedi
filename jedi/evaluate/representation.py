@@ -319,7 +319,7 @@ class FunctionExecutionContext(context.TreeContext):
 
         if check_yields:
             types = set()
-            returns = funcdef.yields
+            returns = funcdef.iter_yield_exprs()
         else:
             returns = funcdef.iter_return_stmts()
             types = set(docstrings.infer_return_types(self.function_context))
@@ -352,7 +352,7 @@ class FunctionExecutionContext(context.TreeContext):
     def get_yield_values(self):
         for_parents = [(y, tree.search_ancestor(y, ('for_stmt', 'funcdef',
                                                     'while_stmt', 'if_stmt')))
-                       for y in self.tree_node.yields]
+                       for y in self.tree_node.iter_yield_exprs()]
 
         # Calculate if the yields are placed within the same for loop.
         yields_order = []

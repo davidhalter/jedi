@@ -239,9 +239,6 @@ class Scope(PythonBaseNode, DocstringMixin):
     def __init__(self, children):
         super(Scope, self).__init__(children)
 
-    def iter_return_stmts(self):
-        return self._search_in_scope(ReturnStmt)
-
     def iter_funcdefs(self):
         return self._search_in_scope(Function)
 
@@ -461,13 +458,15 @@ class Function(ClassOrFunc):
     def name(self):
         return self.children[1]  # First token after `def`
 
-    @property
-    def yields(self):
+    def iter_yield_exprs(self):
         # TODO This is incorrect, yields are also possible in a statement.
-        return list(self._search_in_scope(YieldExpr))
+        return self._search_in_scope(YieldExpr)
+
+    def iter_return_stmts(self):
+        return self._search_in_scope(ReturnStmt)
 
     def is_generator(self):
-        return bool(self.yields)
+        return next(self.iter_yield_exprs(), None) is not None
 
     @property
     def annotation(self):
