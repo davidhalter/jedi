@@ -240,18 +240,18 @@ class Scope(PythonBaseNode, DocstringMixin):
         super(Scope, self).__init__(children)
 
     def iter_funcdefs(self):
-        return self._search_in_scope(Function)
+        return self._search_in_scope('funcdef')
 
     def iter_classdefs(self):
-        return self._search_in_scope(Class)
+        return self._search_in_scope('classdef')
 
     def iter_imports(self):
-        return self._search_in_scope(Import)
+        return self._search_in_scope('import_name', 'import_from')
 
-    def _search_in_scope(self, typ):
+    def _search_in_scope(self, *names):
         def scan(children):
             for element in children:
-                if isinstance(element, typ):
+                if element.type in names:
                     yield element
                 if element.type in ('suite', 'simple_stmt', 'decorated') \
                         or isinstance(element, Flow):
@@ -459,10 +459,10 @@ class Function(ClassOrFunc):
 
     def iter_yield_exprs(self):
         # TODO This is incorrect, yields are also possible in a statement.
-        return self._search_in_scope(YieldExpr)
+        return self._search_in_scope('yield_expr')
 
     def iter_return_stmts(self):
-        return self._search_in_scope(ReturnStmt)
+        return self._search_in_scope('return_stmt')
 
     def is_generator(self):
         return next(self.iter_yield_exprs(), None) is not None
