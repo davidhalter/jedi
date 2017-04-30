@@ -19,9 +19,9 @@ The easiest way to play with this module is to use :class:`parsing.Parser`.
 <Module: @1-1>
 
 Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
-:attr:`imports <Scope.imports>`:
+:attr:`iter_imports <Scope.iter_imports>`:
 
->>> module.imports
+>>> list(module.iter_imports())
 [<ImportName: import os@1,0>]
 """
 
