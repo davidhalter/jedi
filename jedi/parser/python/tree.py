@@ -533,11 +533,6 @@ class Lambda(Function):
         # lambda functions do not support annotations
         return None
 
-    @property
-    def yields(self):
-        # TODO rename
-        return []
-
     def __repr__(self):
         return "<%s@%s>" % (self.__class__.__name__, self.start_pos)
 
