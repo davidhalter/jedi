@@ -963,7 +963,10 @@ class Param(PythonBaseNode):
             return self._tfpdef()
 
     @property
-    def position_nr(self):
+    def position_index(self):
+        """
+        Returns the positional index of a paramter.
+        """
         index = self.parent.children.index(self)
         try:
             keyword_only_index = self.parent.children.index('*')
@@ -975,6 +978,9 @@ class Param(PythonBaseNode):
         return index - 1
 
     def get_parent_function(self):
+        """
+        Returns the function/lambda a paramter is defined in.
+        """
         return search_ancestor(self, ('funcdef', 'lambdef'))
 
     def get_description(self):

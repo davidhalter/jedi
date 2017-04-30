@@ -223,11 +223,6 @@ class ExecutedParam(object):
         return self._lazy_context.infer()
 
     @property
-    def position_nr(self):
-        # Need to use the original logic here, because it uses the parent.
-        return self._param_node.position_nr
-
-    @property
     def var_args(self):
         return self._execution_context.var_args
 

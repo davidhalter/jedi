@@ -103,13 +103,13 @@ class ParamName(AbstractTreeName):
     def get_param(self):
         params = self.parent_context.get_params()
         param_node = search_ancestor(self.tree_name, 'param')
-        return params[param_node.position_nr]
+        return params[param_node.position_index]
 
 
 class AnonymousInstanceParamName(ParamName):
     def infer(self):
         param_node = search_ancestor(self.tree_name, 'param')
-        if param_node.position_nr == 0:
+        if param_node.position_index == 0:
             # This is a speed optimization, to return the self param (because
             # it's known). This only affects anonymous instances.
             return set([self.parent_context.instance])
