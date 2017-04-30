@@ -74,9 +74,6 @@ def parse(code=None, path=None, grammar=None, error_recovery=True,
     if grammar is None:
         grammar = load_grammar()
 
-    if path is not None:
-        path = os.path.expanduser(path)
-
     if cache and not code and path is not None:
         # In this case we do actual caching. We just try to load it.
         module_node = load_module(grammar, path)
