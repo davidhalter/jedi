@@ -292,10 +292,9 @@ class Module(Scope):
         super(Module, self).__init__(children)
         self._used_names = None
 
-    def has_explicit_absolute_import(self):
+    def iter_future_import_names(self):
         """
-        Checks if imports in this module are explicitly absolute, i.e. there
-        is a ``__future__`` import.
+        :return list of str: A list of future import names.
         """
         # TODO this is a strange scan and not fully correct. I think Python's
         # parser does it in a different way and scans for the first
@@ -304,8 +303,19 @@ class Module(Scope):
         for imp in self.iter_imports():
             if imp.type == 'import_from' and imp.level == 0:
                 for path in imp.paths():
-                    if [name.value for name in path] == ['__future__', 'absolute_import']:
-                        return True
+                    names = [name.value for name in path]
+                    if len(names) == 2 and names[0] == '__future__':
+                        yield names[1]
+
+    def has_explicit_absolute_import(self):
+        """
+        Checks if imports in this module are explicitly absolute, i.e. there
+        is a ``__future__`` import.
+        :return bool:
+        """
+        for name in self.iter_future_import_names():
+            if name == 'absolute_import':
+                return True
         return False
 
     def get_used_names(self):
