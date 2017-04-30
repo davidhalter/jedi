@@ -642,7 +642,7 @@ class WithStmt(Flow):
 class Import(PythonBaseNode):
     __slots__ = ()
 
-    def path_for_name(self, name):
+    def get_path_for_name(self, name):
         try:
             # The name may be an alias. If it is, just map it back to the name.
             name = self.aliases()[name]

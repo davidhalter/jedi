@@ -38,7 +38,7 @@ from jedi.evaluate.filters import AbstractNameDefinition
 def infer_import(context, tree_name, is_goto=False):
     module_context = context.get_root_context()
     import_node = search_ancestor(tree_name, ('import_name', 'import_from'))
-    import_path = import_node.path_for_name(tree_name)
+    import_path = import_node.get_path_for_name(tree_name)
     from_import_name = None
     evaluator = context.evaluator
     try:
