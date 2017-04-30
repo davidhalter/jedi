@@ -49,6 +49,17 @@ def sphinxy2(a, b, x):
 #? 
 sphinxy2()
 
+
+def sphinxy_param_type_wrapped(a):
+    """
+    :param str a:
+        Some description wrapped onto the next line with no space after the
+        colon.
+    """
+    #? str()
+    a
+
+
 # local classes -> github #370
 class ProgramNode():
     pass

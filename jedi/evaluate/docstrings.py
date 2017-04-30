@@ -29,7 +29,7 @@ from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 
 DOCSTRING_PARAM_PATTERNS = [
     r'\s*:type\s+%s:\s*([^\n]+)',  # Sphinx
-    r'\s*:param\s+(\w+)\s+%s:[^\n]+',  # Sphinx param with type
+    r'\s*:param\s+(\w+)\s+%s:[^\n]*',  # Sphinx param with type
     r'\s*@type\s+%s:\s*([^\n]+)',  # Epydoc
 ]
 
