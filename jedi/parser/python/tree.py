@@ -37,7 +37,7 @@ class DocstringMixin(object):
 
     def get_doc_node(self):
         """
-        Returns the string leaf of a docstring. e.g. `r'foo'`
+        Returns the string leaf of a docstring. e.g. ``r'''foo'''``.
         """
         if self.type == 'file_input':
             node = self.children[0]
@@ -240,12 +240,21 @@ class Scope(PythonBaseNode, DocstringMixin):
         super(Scope, self).__init__(children)
 
     def iter_funcdefs(self):
+        """
+        Returns a generator of `funcdef` nodes.
+        """
         return self._search_in_scope('funcdef')
 
     def iter_classdefs(self):
+        """
+        Returns a generator of `classdef` nodes.
+        """
         return self._search_in_scope('classdef')
 
     def iter_imports(self):
+        """
+        Returns a generator of `import_name` and `import_from` nodes.
+        """
         return self._search_in_scope('import_name', 'import_from')
 
     def _search_in_scope(self, *names):
@@ -464,6 +473,9 @@ class Function(ClassOrFunc):
 
     @property
     def params(self):
+        """
+        Returns a list of `Param()`.
+        """
         return [p for p in self._get_param_nodes() if p.type == 'param']
 
     @property
@@ -471,17 +483,29 @@ class Function(ClassOrFunc):
         return self.children[1]  # First token after `def`
 
     def iter_yield_exprs(self):
+        """
+        Returns a generator of `yield_expr`.
+        """
         # TODO This is incorrect, yields are also possible in a statement.
         return self._search_in_scope('yield_expr')
 
     def iter_return_stmts(self):
+        """
+        Returns a generator of `return_stmt`.
+        """
         return self._search_in_scope('return_stmt')
 
     def is_generator(self):
+        """
+        :return bool: Checks if a function is a generator or not.
+        """
         return next(self.iter_yield_exprs(), None) is not None
 
     @property
     def annotation(self):
+        """
+        Returns the test node after `->` or `None` if there is no annotation.
+        """
         try:
             if self.children[3] == "->":
                 return self.children[4]
@@ -516,6 +540,9 @@ class Lambda(Function):
 
     @property
     def name(self):
+        """
+        Raises an AttributeError. Lambdas don't have a defined name.
+        """
         raise AttributeError("lambda is not named.")
 
     def _get_paramlist_code(self):
@@ -526,6 +553,9 @@ class Lambda(Function):
 
     @property
     def annotation(self):
+        """
+        Returns `None`, lambdas don't have annotations.
+        """
         # lambda functions do not support annotations
         return None
 
