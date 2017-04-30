@@ -524,10 +524,6 @@ class Lambda(Function):
     def _get_param_nodes(self):
         return self.children[1:-2]
 
-    def is_generator(self):
-        # TODO this is actually not 100% true.
-        return False
-
     @property
     def annotation(self):
         # lambda functions do not support annotations
