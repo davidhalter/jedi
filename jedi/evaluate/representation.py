@@ -474,7 +474,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     @memoize_default([])
     def star_imports(self):
         modules = []
-        for i in self.tree_node.imports:
+        for i in self.tree_node.iter_imports():
             if i.is_star_import():
                 name = i.star_import_name()
                 new = imports.infer_import(self, name)

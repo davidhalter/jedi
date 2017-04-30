@@ -79,7 +79,7 @@ class TestSubscopes():
 
 class TestImports():
     def get_import(self, source):
-        return parse(source).imports[0]
+        return next(parse(source).iter_imports())
 
     def test_import_names(self):
         imp = self.get_import(u('import math\n'))

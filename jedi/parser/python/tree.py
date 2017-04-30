@@ -245,9 +245,8 @@ class Scope(PythonBaseNode, DocstringMixin):
     def iter_classdefs(self):
         return self._search_in_scope(Class)
 
-    @property
-    def imports(self):
-        return list(self._search_in_scope(Import))
+    def iter_imports(self):
+        return self._search_in_scope(Import)
 
     def _search_in_scope(self, typ):
         def scan(children):
@@ -302,7 +301,7 @@ class Module(Scope):
         # parser does it in a different way and scans for the first
         # statement/import with a tokenizer (to check for syntax changes like
         # the future print statement).
-        for imp in self.imports:
+        for imp in self.iter_imports():
             if imp.type == 'import_from' and imp.level == 0:
                 for path in imp.paths():
                     if [name.value for name in path] == ['__future__', 'absolute_import']:
