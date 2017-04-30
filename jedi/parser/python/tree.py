@@ -459,9 +459,12 @@ class Function(ClassOrFunc):
         parameters = self.children[2]  # After `def foo`
         parameters.children[1:-1] = _create_params(parameters, parameters.children[1:-1])
 
+    def _get_param_nodes(self):
+        return self.children[2].children
+
     @property
     def params(self):
-        return [p for p in self.children[2].children if p.type == 'param']
+        return [p for p in self._get_param_nodes() if p.type == 'param']
 
     @property
     def name(self):
@@ -518,8 +521,7 @@ class Lambda(Function):
     def _get_paramlist_code(self):
         return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'
 
-    @property
-    def params(self):
+    def _get_param_nodes(self):
         return self.children[1:-2]
 
     def is_generator(self):
