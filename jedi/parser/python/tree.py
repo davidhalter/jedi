@@ -984,6 +984,12 @@ class Param(PythonBaseNode):
         return search_ancestor(self, ('funcdef', 'lambdef'))
 
     def get_code(self, normalized=False, include_prefix=True, include_comma=True):
+        """
+        Like all the other get_code functions, but includes the param
+        `include_comma`.
+
+        :param include_comma bool: If enabled includes the comma in the string output.
+        """
         if include_comma:
             return super(Param, self).get_code(normalized, include_prefix)
 
