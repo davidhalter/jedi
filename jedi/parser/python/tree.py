@@ -983,12 +983,18 @@ class Param(PythonBaseNode):
         """
         return search_ancestor(self, ('funcdef', 'lambdef'))
 
-    def get_description(self):
-        # TODO Remove?
+    def get_code(self, normalized=False, include_prefix=True, include_comma=True):
+        if include_comma:
+            return super(Param, self).get_code(normalized, include_prefix)
+
         children = self.children
         if children[-1] == ',':
             children = children[:-1]
-        return self._get_code_for_children(children, False, False)
+        return self._get_code_for_children(
+            children,
+            normalized=False,
+            include_prefix=include_prefix
+        )
 
     def __repr__(self):
         default = '' if self.default is None else '=%s' % self.default.get_code()

@@ -15,7 +15,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import instance
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
-from jedi.evaluate.filters import ParamName, TreeNameDefinition
+from jedi.evaluate.filters import ParamName
 from jedi.evaluate.imports import ImportName
 from jedi.api.keywords import KeywordName
 
@@ -538,7 +538,12 @@ class Definition(BaseDefinition):
                 typ = 'def'
             return typ + ' ' + u(self._name.string_name)
         elif typ == 'param':
-            return typ + ' ' + tree_name.get_definition().get_description()
+            code = tree_name.get_definition().get_code(
+                include_prefix=False,
+                include_comma=False
+            )
+            return typ + ' ' + code
+
 
         definition = tree_name.get_definition()
         # Remove the prefix, because that's not what we want for get_code
