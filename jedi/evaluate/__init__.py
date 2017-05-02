@@ -337,7 +337,7 @@ class Evaluator(object):
             # This is the first global lookup.
             stmt = atom.get_definition()
             if stmt.type == 'comp_for':
-                stmt = tree.search_ancestor(stmt, ('expr_stmt', 'lambdef', 'funcdef', 'classdef'))
+                stmt = tree.search_ancestor(stmt, 'expr_stmt', 'lambdef', 'funcdef', 'classdef')
             if stmt is None or stmt.type != 'expr_stmt':
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.

@@ -1013,7 +1013,7 @@ class Param(PythonBaseNode):
         """
         Returns the function/lambda of a parameter.
         """
-        return search_ancestor(self, ('funcdef', 'lambdef'))
+        return search_ancestor(self, 'funcdef', 'lambdef')
 
     def get_code(self, normalized=False, include_prefix=True, include_comma=True):
         """
