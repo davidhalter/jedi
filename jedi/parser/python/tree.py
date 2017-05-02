@@ -25,8 +25,6 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 [<ImportName: import os@1,0>]
 """
 
-from itertools import chain
-
 from jedi._compatibility import utf8_repr, unicode
 from jedi.parser.tree import Node, BaseNode, Leaf, ErrorNode, ErrorLeaf, \
     search_ancestor
@@ -650,6 +648,10 @@ class WithStmt(Flow):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the with statement defines. The
+        defined names are set after `as`.
+        """
         names = []
         for with_item in self.children[1:-2:2]:
             # Check with items for 'as' names.
@@ -692,6 +694,11 @@ class ImportFrom(Import):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the import defines. The
+        defined names are set after `import` or in case an alias - `as` - is
+        present that name is returned.
+        """
         return [alias or name for name, alias in self._as_name_tuples()]
 
     def aliases(self):
@@ -762,6 +769,11 @@ class ImportName(Import):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the import defines. The defined names
+        is always the first name after `import` or in case an alias - `as` - is
+        present that name is returned.
+        """
         return [alias or path[0] for path, alias in self._dotted_as_names()]
 
     @property
@@ -880,14 +892,18 @@ class ExprStmt(PythonBaseNode, DocstringMixin):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns a list of `Name` defined before the `=` sign.
+        """
         names = []
         if self.children[1].type == 'annassign':
             names = _defined_names(self.children[0])
-        return list(chain.from_iterable(
-            _defined_names(self.children[i])
+        return [
+            name
             for i in range(0, len(self.children) - 2, 2)
-            if '=' in self.children[i + 1].value)
-        ) + names
+            if '=' in self.children[i + 1].value
+            for name in _defined_names(self.children[i])
+        ] + names
 
     def get_rhs(self):
         """Returns the right-hand-side of the equals."""
@@ -1030,4 +1046,7 @@ class CompFor(PythonBaseNode):
         return True
 
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the comprehension defines.
+        """
         return _defined_names(self.children[1])
