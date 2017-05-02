@@ -925,6 +925,10 @@ class Param(PythonBaseNode):
 
     @property
     def star_count(self):
+        """
+        Is `0` in case of `foo`, `1` in case of `*foo` or `2` in case of
+        `**foo`.
+        """
         first = self.children[0]
         if first in ('*', '**'):
             return len(first.value)
@@ -932,6 +936,10 @@ class Param(PythonBaseNode):
 
     @property
     def default(self):
+        """
+        The default is the test node that appears after the `=`. Is `None` in
+        case no default is present.
+        """
         try:
             return self.children[int(self.children[0] in ('*', '**')) + 2]
         except IndexError:
@@ -939,6 +947,10 @@ class Param(PythonBaseNode):
 
     @property
     def annotation(self):
+        """
+        The default is the test node that appears after `->`. Is `None` in case
+        no annotation is present.
+        """
         tfpdef = self._tfpdef()
         if tfpdef.type == 'tfpdef':
             assert tfpdef.children[1] == ":"
@@ -957,6 +969,9 @@ class Param(PythonBaseNode):
 
     @property
     def name(self):
+        """
+        The `Name` leaf of the param.
+        """
         if self._tfpdef().type == 'tfpdef':
             return self._tfpdef().children[0]
         else:
@@ -965,7 +980,7 @@ class Param(PythonBaseNode):
     @property
     def position_index(self):
         """
-        Returns the positional index of a paramter.
+        Property for the positional index of a paramter.
         """
         index = self.parent.children.index(self)
         try:
@@ -979,7 +994,7 @@ class Param(PythonBaseNode):
 
     def get_parent_function(self):
         """
-        Returns the function/lambda a paramter is defined in.
+        Returns the function/lambda of a parameter.
         """
         return search_ancestor(self, ('funcdef', 'lambdef'))
 
