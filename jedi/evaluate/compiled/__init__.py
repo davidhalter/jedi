@@ -222,9 +222,6 @@ class CompiledObject(Context):
                 for result in self.evaluator.execute(bltn_obj, params):
                     yield result
 
-    def is_scope(self):
-        return True
-
     def get_self_attributes(self):
         return []  # Instance compatibility
 
