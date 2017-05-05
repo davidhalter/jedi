@@ -326,6 +326,10 @@ class Module(Scope):
         return False
 
     def get_used_names(self):
+        """
+        Returns all the `Name` leafs that exist in this module. Tihs includes
+        both definitions and references of names.
+        """
         if self._used_names is None:
             # Don't directly use self._used_names to eliminate a lookup.
             dct = {}
@@ -356,9 +360,15 @@ class ClassOrFunc(Scope):
 
     @property
     def name(self):
+        """
+        Returns the `Name` leaf that defines the function or class name.
+        """
         return self.children[1]
 
     def get_decorators(self):
+        """
+        :return list of Decorator:
+        """
         decorated = self.parent
         if decorated.type == 'decorated':
             if decorated.children[0].type == 'decorators':
@@ -387,6 +397,10 @@ class Class(ClassOrFunc):
         super(Class, self).__init__(children)
 
     def get_super_arglist(self):
+        """
+        Returns the `arglist` node that defines the super classes. It returns
+        None if there are no arguments.
+        """
         if self.children[2] != '(':  # Has no parentheses
             return None
         else:
