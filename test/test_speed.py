@@ -59,11 +59,11 @@ class TestSpeed(TestCase):
         unwanted computation of repr(). Exemple : big pandas data.
         See issue #919.
         """
-        class Slow_repr():
+        class SlowRepr():
             "class to test what happens if __repr__ is very slow."
             def some_method(self):
                 pass
             def __repr__(self):
                 time.sleep(0.2)
-        test = Slow_repr()
+        test = SlowRepr()
         jedi.Interpreter('test.som', [locals()]).completions()
