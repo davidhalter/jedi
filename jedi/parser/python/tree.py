@@ -512,10 +512,6 @@ class Function(ClassOrFunc):
         except IndexError:
             return None
 
-    def _get_paramlist_code(self):
-        return self.children[2].get_code()
-
-
 class Lambda(Function):
     """
     Lambdas are basically trimmed functions, so give it the same interface.
@@ -543,9 +539,6 @@ class Lambda(Function):
         """
         raise AttributeError("lambda is not named.")
 
-    def _get_paramlist_code(self):
-        return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'
-
     def _get_param_nodes(self):
         return self.children[1:-2]
 
@@ -554,7 +547,6 @@ class Lambda(Function):
         """
         Returns `None`, lambdas don't have annotations.
         """
-        # lambda functions do not support annotations
         return None
 
     def __repr__(self):

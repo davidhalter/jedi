@@ -154,7 +154,12 @@ def get_call_signature(funcdef, width=72, call_string=None):
             call_string = '<lambda>'
         else:
             call_string = funcdef.name.value
-    code = call_string + funcdef._get_paramlist_code()
+    if funcdef.type == 'lambdef':
+        p = '(' + ''.join(param.get_code() for param in funcdef.params).strip() + ')'
+    else:
+        p = funcdef.children[2].get_code()
+    code = call_string + p
+
     return '\n'.join(textwrap.wrap(code, width))
 
 
