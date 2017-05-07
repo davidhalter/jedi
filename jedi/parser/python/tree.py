@@ -663,9 +663,14 @@ class Import(PythonBaseNode):
     __slots__ = ()
 
     def get_path_for_name(self, name):
+        """
+        The path is the list of names that leads to the searched name.
+
+        :return list of Name:
+        """
         try:
             # The name may be an alias. If it is, just map it back to the name.
-            name = self.aliases()[name]
+            name = self._aliases()[name]
         except KeyError:
             pass
 
@@ -693,7 +698,7 @@ class ImportFrom(Import):
         """
         return [alias or name for name, alias in self._as_name_tuples()]
 
-    def aliases(self):
+    def _aliases(self):
         """Mapping from alias to its corresponding name."""
         return dict((alias, name) for name, alias in self._as_name_tuples()
                     if alias is not None)
@@ -803,10 +808,13 @@ class ImportName(Import):
 
             import foo.bar
         """
-        return [1 for path, alias in self._dotted_as_names()
-                if alias is None and len(path) > 1]
+        return bool([1 for path, alias in self._dotted_as_names()
+                    if alias is None and len(path) > 1])
 
-    def aliases(self):
+    def _aliases(self):
+        """
+        :return list of Name: Returns all the alias
+        """
         return dict((alias, path[-1]) for path, alias in self._dotted_as_names()
                     if alias is not None)
 
