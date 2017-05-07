@@ -7,6 +7,7 @@ from abc import abstractmethod
 from jedi.parser.tree import search_ancestor
 from jedi.evaluate import flow_analysis
 from jedi.common import to_list, unite
+from jedi.parser_utils import get_parent_scope
 
 
 class AbstractNameDefinition(object):
@@ -189,7 +190,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         if parent.type == 'trailer':
             return False
         base_node = parent if parent.type in ('classdef', 'funcdef') else name
-        return base_node.get_parent_scope() == self._parser_scope
+        return get_parent_scope(base_node) == self._parser_scope
 
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):

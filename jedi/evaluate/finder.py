@@ -32,6 +32,7 @@ from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import get_global_filters
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode
+from jedi.parser_utils import is_scope, get_parent_scope
 
 
 class NameFinder(object):
@@ -106,7 +107,7 @@ class NameFinder(object):
         if self._context.predefined_names:
             # TODO is this ok? node might not always be a tree.Name
             node = self._name
-            while node is not None and not node.is_scope():
+            while node is not None and not is_scope(node):
                 node = node.parent
                 if node.type in ("if_stmt", "for_stmt", "comp_for"):
                     try:
@@ -160,7 +161,7 @@ class NameFinder(object):
             if base_node.type == 'comp_for':
                 return types
             while True:
-                flow_scope = flow_scope.get_parent_scope(include_flows=True)
+                flow_scope = get_parent_scope(flow_scope, include_flows=True)
                 n = _check_flow_information(self._name_context, flow_scope,
                                             self._name, self._position)
                 if n is not None:
@@ -298,7 +299,7 @@ def _check_flow_information(context, flow, search_name, pos):
         return None
 
     result = None
-    if flow.is_scope():
+    if is_scope(flow):
         # Check for asserts.
         module_node = flow.get_root_node()
         try:

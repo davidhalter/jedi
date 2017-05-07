@@ -11,6 +11,7 @@ from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import iterable
+from jedi.parser_utils import get_parent_scope
 
 
 class AbstractInstanceContext(Context):
@@ -151,7 +152,7 @@ class AbstractInstanceContext(Context):
     def create_instance_context(self, class_context, node):
         if node.parent.type in ('funcdef', 'classdef'):
             node = node.parent
-        scope = node.get_parent_scope()
+        scope = get_parent_scope(node)
         if scope == class_context.tree_node:
             return class_context
         else:
@@ -189,7 +190,7 @@ class CompiledInstance(AbstractInstanceContext):
         return compiled.CompiledContextName(self, self.class_context.name.string_name)
 
     def create_instance_context(self, class_context, node):
-        if node.get_parent_scope().type == 'classdef':
+        if get_parent_scope(node).type == 'classdef':
             return class_context
         else:
             return super(CompiledInstance, self).create_instance_context(class_context, node)
@@ -332,7 +333,7 @@ class InstanceClassFilter(filters.ParserTreeFilter):
         while node is not None:
             if node == self._parser_scope or node == self.context:
                 return True
-            node = node.get_parent_scope()
+            node = get_parent_scope(node)
         return False
 
     def _access_possible(self, name):

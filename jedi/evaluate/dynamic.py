@@ -24,6 +24,7 @@ from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import imports
 from jedi.evaluate.param import TreeArguments, create_default_param
 from jedi.common import to_list, unite
+from jedi.parser_utils import get_parent_scope
 
 
 MAX_PARAM_SEARCHES = 20
@@ -103,7 +104,7 @@ def _search_function_executions(evaluator, module_context, funcdef):
     func_string_name = funcdef.name.value
     compare_node = funcdef
     if func_string_name == '__init__':
-        cls = funcdef.get_parent_scope()
+        cls = get_parent_scope(funcdef)
         if isinstance(cls, tree.Class):
             func_string_name = cls.name.value
             compare_node = cls

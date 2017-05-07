@@ -217,3 +217,21 @@ def get_following_comment_same_line(node):
         comment = comment[:comment.index("\n")]
     return comment
 
+
+def is_scope(node):
+    return node.type in ('file_input', 'classdef', 'funcdef', 'lambdef', 'comp_for')
+
+
+def get_parent_scope(node, include_flows=False):
+    """
+    Returns the underlying scope.
+    """
+    scope = node.parent
+    while scope is not None:
+        if include_flows and isinstance(scope, tree.Flow):
+            return scope
+        if is_scope(scope):
+            break
+        scope = scope.parent
+    return scope
+

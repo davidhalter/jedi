@@ -59,19 +59,6 @@ class DocstringMixin(object):
 
 
 class PythonMixin(object):
-    def get_parent_scope(self, include_flows=False):
-        """
-        Returns the underlying scope.
-        """
-        scope = self.parent
-        while scope is not None:
-            if include_flows and isinstance(scope, Flow):
-                return scope
-            if scope.is_scope():
-                break
-            scope = scope.parent
-        return scope
-
     def get_definition(self):
         if self.type in ('newline', 'endmarker'):
             raise ValueError('Cannot get the indentation of whitespace or indentation.')
@@ -89,10 +76,6 @@ class PythonMixin(object):
             else:
                 break
         return scope
-
-    def is_scope(self):
-        # Default is not being a scope. Just inherit from Scope.
-        return False
 
     def get_name_of_position(self, position):
         for c in self.children:
@@ -266,9 +249,6 @@ class Scope(PythonBaseNode, DocstringMixin):
                         yield e
 
         return scan(self.children)
-
-    def is_scope(self):
-        return True
 
     def get_suite(self):
         """
@@ -1056,9 +1036,6 @@ class Param(PythonBaseNode):
 class CompFor(PythonBaseNode):
     type = 'comp_for'
     __slots__ = ()
-
-    def is_scope(self):
-        return True
 
     def get_defined_names(self):
         """
