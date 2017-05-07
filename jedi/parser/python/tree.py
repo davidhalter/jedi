@@ -294,7 +294,7 @@ class Module(Scope):
         # the future print statement).
         for imp in self.iter_imports():
             if imp.type == 'import_from' and imp.level == 0:
-                for path in imp.paths():
+                for path in imp.get_paths():
                     names = [name.value for name in path]
                     if len(names) == 2 and names[0] == '__future__':
                         yield names[1]
@@ -674,7 +674,7 @@ class Import(PythonBaseNode):
         except KeyError:
             pass
 
-        for path in self.paths():
+        for path in self.get_paths():
             if name in path:
                 return path[:path.index(name) + 1]
         raise ValueError('Name should be defined in the import itself')
@@ -746,9 +746,9 @@ class ImportFrom(Import):
         """
         The last name defined in a star import.
         """
-        return self.paths()[-1][-1]
+        return self.get_paths()[-1][-1]
 
-    def paths(self):
+    def get_paths(self):
         """
         The import paths defined in an import statement. Typically an array
         like this: ``[<Name: datetime>, <Name: date>]``.
@@ -778,7 +778,7 @@ class ImportName(Import):
         """The level parameter of ``__import__``."""
         return 0  # Obviously 0 for imports without from.
 
-    def paths(self):
+    def get_paths(self):
         return [path for path, alias in self._dotted_as_names()]
 
     def _dotted_as_names(self):

@@ -342,7 +342,7 @@ class Script(object):
                 elif isinstance(node, tree.Import):
                     import_names = set(node.get_defined_names())
                     if node.is_nested():
-                        import_names |= set(path[-1] for path in node.paths())
+                        import_names |= set(path[-1] for path in node.get_paths())
                     for n in import_names:
                         imports.infer_import(context, n)
                 elif node.type == 'expr_stmt':
