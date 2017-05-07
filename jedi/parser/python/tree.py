@@ -742,16 +742,12 @@ class ImportFrom(Import):
             else:
                 yield as_name.children[::2]  # yields x, y -> ``x as y``
 
-    def star_import_name(self):
-        """
-        The last name defined in a star import.
-        """
-        return self.get_paths()[-1][-1]
-
     def get_paths(self):
         """
         The import paths defined in an import statement. Typically an array
         like this: ``[<Name: datetime>, <Name: date>]``.
+
+        :return list of list of Name:
         """
         dotted = self.get_from_names()
 

@@ -476,7 +476,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         modules = []
         for i in self.tree_node.iter_imports():
             if i.is_star_import():
-                name = i.star_import_name()
+                name = i.get_paths()[-1][-1]
                 new = imports.infer_import(self, name)
                 for module in new:
                     if isinstance(module, ModuleContext):
