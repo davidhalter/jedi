@@ -59,6 +59,11 @@ class DocstringMixin(object):
 
 
 class PythonMixin(object):
+    """
+    Some Python specific utitilies.
+    """
+    __slots__ = ()
+
     def get_definition(self):
         if self.type in ('newline', 'endmarker'):
             raise ValueError('Cannot get the indentation of whitespace or indentation.')
