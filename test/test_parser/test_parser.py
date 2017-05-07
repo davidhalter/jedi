@@ -13,6 +13,16 @@ from jedi.parser_utils import get_statement_of_position, \
     clean_scope_docstring, safe_literal_eval
 
 
+def test_basic_parsing():
+    def compare(string):
+        """Generates the AST object and then regenerates the code."""
+        assert parse(string).get_code() == string
+
+    compare('\na #pass\n')
+    compare('wblabla* 1\t\n')
+    compare('def x(a, b:3): pass\n')
+    compare('assert foo\n')
+
 def test_user_statement_on_import():
     """github #285"""
     s = "from datetime import (\n" \
