@@ -56,7 +56,8 @@ def _get_venv_path_dirs(venv):
     venv = os.path.abspath(venv)
     sitedir = _get_venv_sitepackages(venv)
     sys_path = []
-    addsitedir(sys_path, sitedir)
+    if sitedir:
+        addsitedir(sys_path, sitedir)
     return sys_path
 
 
@@ -64,8 +65,14 @@ def _get_venv_sitepackages(venv):
     if os.name == 'nt':
         p = os.path.join(venv, 'lib', 'site-packages')
     else:
-        p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
-                         'site-packages')
+        # NOTE: not using sys.version here, since that is from the running
+        # interpreter (e.g. Neovim's host as 3.6), but we're looking at a
+        # virtualenv (e.g. 3.5.2).
+        p = glob.glob(os.path.join(venv, 'lib', 'python*', 'site-packages'))
+        if len(p) != 1:
+            debug.warning('Unexpected site-packages for venv: {}'.format(p))
+            return
+        p = p[0]
     return p
 
 
