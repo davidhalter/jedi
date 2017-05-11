@@ -166,14 +166,6 @@ try:
 except NameError:
     unicode = str
 
-if is_py3:
-    u = lambda s: s
-else:
-    u = lambda s: s.decode('utf-8')
-
-u.__doc__ = """
-Decode a raw string into unicode object.  Do nothing in Python 3.
-"""
 
 # exec function
 if is_py3:
