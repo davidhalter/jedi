@@ -147,12 +147,6 @@ class TokenTest(unittest.TestCase):
             assert safe_literal_eval(string_tok.value) == 'test'
 
 
-def test_tokenizer_with_string_literal_backslash():
-    import jedi
-    c = jedi.Script("statement = u'foo\\\n'; statement").goto_definitions()
-    assert c[0]._name._context.obj == 'foo'
-
-
 def test_ur_literals():
     """
     Decided to parse `u''` literals regardless of Python version. This makes

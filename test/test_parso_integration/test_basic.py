@@ -50,3 +50,38 @@ def test_class_and_if():
     assert [d.name for d in jedi.Script(src).goto_definitions()] == ['int']
 
 
+def test_add_to_end():
+    """
+    The diff parser doesn't parse everything again. It just updates with the
+    help of caches, this is an example that didn't work.
+    """
+
+    a = dedent("""\
+    class Abc():
+        def abc(self):
+            self.x = 3
+
+    class Two(Abc):
+        def g(self):
+            self
+    """)      # ^ here is the first completion
+
+    b = "    def h(self):\n" \
+        "        self."
+
+    def complete(code, line=None, column=None):
+        script = jedi.Script(code, line, column, 'example.py')
+        assert script.completions()
+
+    complete(a, 7, 12)
+    complete(a + b)
+
+    a = a[:-1] + '.\n'
+    complete(a, 7, 13)
+    complete(a + b)
+
+
+def test_tokenizer_with_string_literal_backslash():
+    import jedi
+    c = jedi.Script("statement = u'foo\\\n'; statement").goto_definitions()
+    assert c[0]._name._context.obj == 'foo'
