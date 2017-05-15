@@ -28,17 +28,6 @@ def test_carriage_return_splitting():
     assert [n.value for lst in module.get_used_names().values() for n in lst] == ['Foo']
 
 
-def test_class_in_docstr():
-    """
-    Regression test for a problem with classes in docstrings.
-    """
-    a = '"\nclasses\n"'
-    jedi.Script(a, 1, 0)._get_module()
-
-    b = a + '\nimport os'
-    assert jedi.Script(b, 4, 8).goto_assignments()
-
-
 def check_p(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
     if number_of_splits is None:
         number_of_splits = number_parsers_used
