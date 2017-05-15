@@ -1,8 +1,9 @@
 from jedi._compatibility import u, is_py3
-from jedi.parser_utils import get_statement_of_position, \
-    clean_scope_docstring, safe_literal_eval
+from jedi import parser_utils
 from jedi.parser.python import parse
 from jedi.parser.python import tree
+
+import pytest
 
 
 class TestCallAndName():
@@ -19,7 +20,7 @@ class TestCallAndName():
 
         leaf = self.get_call('1.0\n')
         assert leaf.value == '1.0'
-        assert safe_literal_eval(leaf.value) == 1.0
+        assert parser_utils.safe_literal_eval(leaf.value) == 1.0
         assert leaf.start_pos == (1, 0)
         assert leaf.end_pos == (1, 3)
 
@@ -30,15 +31,15 @@ class TestCallAndName():
     def test_literal_type(self):
         literal = self.get_call('1.0')
         assert isinstance(literal, tree.Literal)
-        assert type(safe_literal_eval(literal.value)) == float
+        assert type(parser_utils.safe_literal_eval(literal.value)) == float
 
         literal = self.get_call('1')
         assert isinstance(literal, tree.Literal)
-        assert type(safe_literal_eval(literal.value)) == int
+        assert type(parser_utils.safe_literal_eval(literal.value)) == int
 
         literal = self.get_call('"hello"')
         assert isinstance(literal, tree.Literal)
-        assert safe_literal_eval(literal.value) == 'hello'
+        assert parser_utils.safe_literal_eval(literal.value) == 'hello'
 
 
 def test_user_statement_on_import():
@@ -48,7 +49,7 @@ def test_user_statement_on_import():
 
     for pos in [(2, 1), (2, 4)]:
         p = parse(s)
-        stmt = get_statement_of_position(p, pos)
+        stmt = parser_utils.get_statement_of_position(p, pos)
         assert isinstance(stmt, tree.Import)
         assert [n.value for n in stmt.get_defined_names()] == ['time']
 
@@ -62,8 +63,22 @@ def test_hex_values_in_docstring():
             return 1
         '''
 
-    doc = clean_scope_docstring(next(parse(source).iter_funcdefs()))
+    doc = parser_utils.clean_scope_docstring(next(parse(source).iter_funcdefs()))
     if is_py3:
         assert doc == '\xff'
     else:
         assert doc == u('�')
+
+
+@pytest.mark.parametrize(
+    'code,call_signature', [
+        ('def my_function(x, y, z) -> str:\n return', 'my_function(x, y, z)'),
+        ('lambda x, y, z: x + y * z\n', '<lambda>(x, y, z)')
+    ])
+def test_get_call_signature(code, call_signature):
+    node = parse(code).children[0]
+    if node.type == 'simple_stmt':
+        node = node.children[0]
+    assert parser_utils.get_call_signature(node) == call_signature
+
+    assert parser_utils.get_doc_with_call_signature(node) == (call_signature + '\n\n')

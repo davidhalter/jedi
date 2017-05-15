@@ -6,7 +6,6 @@ import pytest
 
 from jedi.parser.python import parse
 from jedi.parser.python import tree
-from jedi.parser_utils import get_doc_with_call_signature, get_call_signature
 
 
 class TestsFunctionAndLambdaParsing(object):
@@ -14,13 +13,11 @@ class TestsFunctionAndLambdaParsing(object):
     FIXTURES = [
         ('def my_function(x, y, z) -> str:\n    return x + y * z\n', {
             'name': 'my_function',
-            'call_sig': 'my_function(x, y, z)',
             'params': ['x', 'y', 'z'],
             'annotation': "str",
         }),
         ('lambda x, y, z: x + y * z\n', {
             'name': '<lambda>',
-            'call_sig': '<lambda>(x, y, z)',
             'params': ['x', 'y', 'z'],
         }),
     ]
@@ -62,9 +59,3 @@ class TestsFunctionAndLambdaParsing(object):
             assert node.annotation is None
         else:
             assert node.annotation.value == expected_annotation
-
-    def test_get_call_signature(self, node, expected):
-        assert get_call_signature(node) == expected['call_sig']
-
-    def test_doc(self, node, expected):
-        assert get_doc_with_call_signature(node) == (expected['call_sig'] + '\n\n')
