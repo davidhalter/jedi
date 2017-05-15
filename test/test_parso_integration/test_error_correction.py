@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 import jedi
 
 
@@ -10,3 +12,41 @@ def test_error_correction_with():
     assert len(comps) > 30
     # `open` completions have a closed attribute.
     assert [1 for c in comps if c.name == 'closed']
+
+
+def test_string_literals():
+    """Simplified case of jedi-vim#377."""
+    source = dedent("""
+    x = ur'''
+
+    def foo():
+        pass
+    """)
+
+    script = jedi.Script(dedent(source))
+    assert script._get_module().tree_node.end_pos == (6, 0)
+    assert script.completions()
+
+
+def test_incomplete_function():
+    source = '''return ImportErr'''
+
+    script = jedi.Script(dedent(source), 1, 3)
+    assert script.completions()
+
+
+def test_decorator_string_issue():
+    """
+    Test case from #589
+    """
+    source = dedent('''\
+    """
+      @"""
+    def bla():
+      pass
+
+    bla.''')
+
+    s = jedi.Script(source)
+    assert s.completions()
+    assert s._get_module().tree_node.get_code() == source
