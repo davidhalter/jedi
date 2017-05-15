@@ -9,7 +9,7 @@ def test_form_feed_characters():
     jedi.Script(s, line=2, column=18).call_signatures()
 
 
-def check_p(src, number_parsers_used):
+def check_p(src):
     module_node = parse(src)
     assert src == module_node.get_code()
     return module_node
@@ -28,7 +28,7 @@ def test_if():
     ''')
 
     # Two parsers needed, one for pass and one for the function.
-    check_p(src, 2)
+    check_p(src)
     assert [d.name for d in jedi.Script(src, 8, 6).goto_definitions()] == ['int']
 
 
@@ -46,7 +46,7 @@ def test_class_and_if():
 
     # COMMENT
     a_func()""")
-    check_p(src, 5, 5)
+    check_p(src)
     assert [d.name for d in jedi.Script(src).goto_definitions()] == ['int']
 
 

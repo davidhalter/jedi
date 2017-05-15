@@ -26,7 +26,7 @@ def test_carriage_return_splitting():
     assert [n.value for lst in module.get_used_names().values() for n in lst] == ['Foo']
 
 
-def check_p(src, number_parsers_used):
+def check_p(src):
     module_node = parse(src)
     assert src == module_node.get_code()
     return module_node
@@ -40,7 +40,7 @@ def test_for():
     for a1 in 1,"":
         a1
     """)
-    check_p(src, 1)
+    check_p(src)
 
 
 def test_class_with_class_var():
@@ -51,7 +51,7 @@ def test_class_with_class_var():
             self.foo = 4
     pass
     """)
-    check_p(src, 3)
+    check_p(src)
 
 
 def test_func_with_if():
@@ -65,7 +65,7 @@ def test_func_with_if():
             else:
                 return a
     """)
-    check_p(src, 1)
+    check_p(src)
 
 
 def test_decorator():
@@ -75,7 +75,7 @@ def test_decorator():
         def dec(self, a):
             return a
     """)
-    check_p(src, 2)
+    check_p(src)
 
 
 def test_nested_funcs():
@@ -85,7 +85,7 @@ def test_nested_funcs():
             return func(*args, **kwargs)
         return wrapper
     """)
-    check_p(src, 3)
+    check_p(src)
 
 
 def test_multi_line_params():
@@ -96,7 +96,7 @@ def test_multi_line_params():
 
     foo = 1
     """)
-    check_p(src, 2)
+    check_p(src)
 
 
 def test_class_func_if():
@@ -110,7 +110,7 @@ def test_class_func_if():
 
     pass
     """)
-    check_p(src, 3)
+    check_p(src)
 
 
 def test_multi_line_for():
@@ -121,7 +121,7 @@ def test_multi_line_for():
 
     pass
     """)
-    check_p(src, 1)
+    check_p(src)
 
 
 def test_wrong_indentation():
@@ -131,7 +131,7 @@ def test_wrong_indentation():
          b
         a
     """)
-    #check_p(src, 1)
+    check_p(src)
 
     src = dedent("""\
     def complex():
@@ -143,7 +143,7 @@ def test_wrong_indentation():
         def other():
             pass
     """)
-    check_p(src, 3)
+    check_p(src)
 
 
 def test_strange_parentheses():
@@ -154,7 +154,7 @@ def test_strange_parentheses():
         def x():
             pass
     """)
-    check_p(src, 2)
+    check_p(src)
 
 
 def test_fake_parentheses():
@@ -172,7 +172,7 @@ def test_fake_parentheses():
         def z():
             pass
     """)
-    check_p(src, 3, 2, 1)
+    check_p(src)
 
 
 def test_additional_indent():
@@ -182,7 +182,7 @@ def test_additional_indent():
           pass
     ''')
 
-    check_p(source, 2)
+    check_p(source)
 
 
 def test_round_trip():
@@ -202,4 +202,4 @@ def test_parentheses_in_string():
     import abc
 
     abc.''')
-    check_p(code, 2, 1, 1)
+    check_p(code)
