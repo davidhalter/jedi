@@ -9,7 +9,6 @@ from . import refactor
 
 import jedi
 from jedi.evaluate.analysis import Warning
-from jedi import settings
 
 
 def pytest_addoption(parser):
@@ -120,17 +119,6 @@ class StaticAnalysisCase(object):
 
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))
-
-
-@pytest.fixture()
-def isolated_jedi_cache(monkeypatch, tmpdir):
-    """
-    Set `jedi.settings.cache_directory` to a temporary directory during test.
-
-    Same as `clean_jedi_cache`, but create the temporary directory for
-    each test case (scope='function').
-    """
-    monkeypatch.setattr(settings, 'cache_directory', str(tmpdir))
 
 
 @pytest.fixture()
