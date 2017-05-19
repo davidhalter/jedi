@@ -4,7 +4,6 @@ Handles operator precedence.
 import operator as op
 
 from jedi._compatibility import unicode
-from jedi.parser.python import tree
 from jedi import debug
 from jedi.evaluate.compiled import CompiledObject, create, builtin_from_name
 from jedi.evaluate import analysis

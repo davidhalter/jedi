@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from jedi.parser.python import parse
+from parso.python import parse
 import jedi
 
 

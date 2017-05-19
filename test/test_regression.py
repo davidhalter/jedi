@@ -13,7 +13,7 @@ from jedi import Script
 from jedi import api
 from jedi import common
 from jedi.evaluate import imports
-from jedi.parser.python import parse
+from parso.python import parse
 from .helpers import TestCase, cwd_at
 
 #jedi.set_debug_function()

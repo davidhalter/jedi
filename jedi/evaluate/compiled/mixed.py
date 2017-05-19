@@ -5,7 +5,7 @@ Used only for REPL Completion.
 import inspect
 import os
 
-from jedi.parser.python import parse
+from parso.python import parse
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports

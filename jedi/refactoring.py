@@ -16,7 +16,6 @@ import difflib
 
 from jedi import common
 from jedi.evaluate import helpers
-from jedi.parser.python import tree as pt
 
 
 class Refactoring(object):

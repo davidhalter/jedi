@@ -2,7 +2,7 @@
 Module for statical analysis.
 """
 from jedi import debug
-from jedi.parser.python import tree
+from parso.python import tree
 from jedi.evaluate.compiled import CompiledObject
 
 

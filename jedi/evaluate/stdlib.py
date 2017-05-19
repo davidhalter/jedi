@@ -18,7 +18,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate.instance import InstanceFunctionExecution, \
     AbstractInstanceContext, CompiledInstance, BoundMethod
 from jedi.evaluate import iterable
-from jedi.parser.python import parse
+from parso.python import parse
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param

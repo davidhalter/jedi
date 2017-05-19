@@ -6,9 +6,9 @@ from collections import namedtuple
 
 from jedi._compatibility import u
 from jedi.evaluate.helpers import evaluate_call_of_leaf
-from jedi.parser.python.parser import Parser
-from jedi.parser.python import tree
-from jedi.parser import tokenize
+from parso.python.parser import Parser
+from parso.python import tree
+from parso import tokenize
 from jedi.cache import time_cache
 from jedi import common
 

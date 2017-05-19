@@ -2,7 +2,7 @@ import copy
 from itertools import chain
 from contextlib import contextmanager
 
-from jedi.parser.python import tree
+from parso.python import tree
 from jedi.parser_utils import get_parent_scope
 
 

@@ -22,8 +22,8 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 import itertools
 
 import os
-from jedi.parser import ParserSyntaxError
-from jedi.parser.python import parse, tree
+from parso import ParserSyntaxError
+from parso.python import parse, tree
 from jedi.common import unite
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate import compiled

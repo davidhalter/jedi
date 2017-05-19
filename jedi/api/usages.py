@@ -1,5 +1,5 @@
 from jedi.api import classes
-from jedi.parser.python import tree
+from parso.python import tree
 from jedi.evaluate import imports
 from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.representation import ModuleContext

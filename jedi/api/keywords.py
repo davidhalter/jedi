@@ -4,7 +4,7 @@ import keyword
 from jedi._compatibility import is_py3, is_py35
 from jedi import common
 from jedi.evaluate.filters import AbstractNameDefinition
-from jedi.parser.python.tree import Leaf
+from parso.python.tree import Leaf
 
 try:
     from pydoc_data import topics as pydoc_topics

@@ -1,6 +1,6 @@
 from jedi._compatibility import Python3Method
 from jedi.common import unite
-from jedi.parser.python.tree import ExprStmt, CompFor
+from parso.python.tree import ExprStmt, CompFor
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 
 

@@ -10,8 +10,8 @@ import types
 from itertools import chain
 
 from jedi._compatibility import is_py3, builtins, unicode, is_py34
-from jedi.parser.python import parse
-from jedi.parser.python import tree
+from parso.python import parse
+from parso.python import tree
 
 modules = {}
 

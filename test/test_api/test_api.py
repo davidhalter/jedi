@@ -7,7 +7,7 @@ from textwrap import dedent
 from jedi import api
 from jedi._compatibility import is_py3
 from pytest import raises
-from jedi.parser import cache
+from parso import cache
 
 
 def test_preload_modules():

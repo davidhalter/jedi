@@ -20,10 +20,10 @@ from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
 from jedi.common import source_to_unicode, unite
-from jedi.parser.python import parse
-from jedi.parser.python import tree
-from jedi.parser.tree import search_ancestor
-from jedi.parser.cache import parser_cache
+from parso.python import parse
+from parso.python import tree
+from parso.tree import search_ancestor
+from parso.cache import parser_cache
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled

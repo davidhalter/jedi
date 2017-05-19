@@ -4,8 +4,8 @@ import sys
 from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
-from jedi.parser.python import tree
-from jedi.parser.python import parse
+from parso.python import tree
+from parso.python import parse
 from jedi.evaluate.cache import memoize_default
 from jedi import debug
 from jedi import common

@@ -2,7 +2,7 @@ import textwrap
 from inspect import cleandoc
 
 from jedi._compatibility import literal_eval, is_py3
-from jedi.parser.python import tree
+from parso.python import tree
 
 _EXECUTE_NODES = set([
     'funcdef', 'classdef', 'import_from', 'import_name', 'test', 'or_test',

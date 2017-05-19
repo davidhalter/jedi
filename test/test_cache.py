@@ -9,10 +9,9 @@ import pytest
 
 import jedi
 from jedi import settings, cache
-from jedi.parser.cache import _NodeCacheItem, save_module, load_module, \
-    _get_hashed_path, parser_cache, _load_from_file_system, \
-    _save_to_file_system
-from jedi.parser.python import load_grammar
+from parso.cache import _NodeCacheItem, save_module, load_module, \
+    _get_hashed_path, parser_cache, _load_from_file_system
+from parso.python import load_grammar
 
 
 def test_modulepickling_change_cache_dir(monkeypatch, tmpdir):

@@ -4,7 +4,7 @@ are needed for name resolution.
 """
 from abc import abstractmethod
 
-from jedi.parser.tree import search_ancestor
+from parso.tree import search_ancestor
 from jedi.evaluate import flow_analysis
 from jedi.common import to_list, unite
 from jedi.parser_utils import get_parent_scope

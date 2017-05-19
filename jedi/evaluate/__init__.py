@@ -63,7 +63,7 @@ that are not used are just being ignored.
 import copy
 import sys
 
-from jedi.parser.python import tree
+from parso.python import tree
 from jedi import debug
 from jedi.common import unite
 from jedi.evaluate import representation as er

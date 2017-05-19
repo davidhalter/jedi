@@ -13,9 +13,9 @@ import os
 import warnings
 import sys
 
-from jedi.parser.python import load_grammar
-from jedi.parser.python import tree
-from jedi.parser.python import parse
+from parso.python import load_grammar
+from parso.python import tree
+from parso.python import parse
 from jedi.parser_utils import get_executable_nodes, get_statement_of_position
 from jedi import debug
 from jedi import settings

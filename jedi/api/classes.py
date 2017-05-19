@@ -9,7 +9,7 @@ import re
 from jedi._compatibility import u
 from jedi import settings
 from jedi import common
-from jedi.parser.cache import parser_cache
+from parso.cache import parser_cache
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import instance
@@ -60,7 +60,7 @@ class BaseDefinition(object):
         self._evaluator = evaluator
         self._name = name
         """
-        An instance of :class:`jedi.parser.reprsentation.Name` subclass.
+        An instance of :class:`parso.reprsentation.Name` subclass.
         """
         self.is_keyword = isinstance(self._name, KeywordName)
 
