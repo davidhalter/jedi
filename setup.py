@@ -11,8 +11,7 @@ __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
-packages = ['jedi', 'jedi.parser', 'jedi.parser.pgen2', 'jedi.parser.python',
-            'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api']
+packages = ['jedi', 'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api']
 
 import jedi
 
