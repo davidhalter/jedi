@@ -2,13 +2,12 @@
 Test all things related to the ``jedi.cache`` module.
 """
 
-import time
 from os import unlink
 
 import pytest
 
 import jedi
-from jedi import settings, cache
+from jedi import settings
 from parso.cache import _NodeCacheItem, save_module, load_module, \
     _get_hashed_path, parser_cache, _load_from_file_system
 from parso.python import load_grammar
@@ -97,27 +96,6 @@ def test_modulepickling_simulate_deleted_cache(tmpdir):
 
     cached2 = load_module(grammar, path)
     assert cached2 is None
-
-
-@pytest.mark.skipif('True', message='Currently the star import cache is not enabled.')
-def test_star_import_cache_duration():
-    new = 0.01
-    old, jedi.settings.star_import_cache_validity = \
-        jedi.settings.star_import_cache_validity, new
-
-    dct = cache._time_caches['star_import_cache_validity']
-    old_dct = dict(dct)
-    dct.clear()  # first empty...
-    # path needs to be not-None (otherwise caching effects are not visible)
-    jedi.Script('', 1, 0, '').completions()
-    time.sleep(2 * new)
-    jedi.Script('', 1, 0, '').completions()
-
-    # reset values
-    jedi.settings.star_import_cache_validity = old
-    assert len(dct) == 1
-    dct = old_dct
-    cache._star_import_cache = {}
 
 
 def test_cache_call_signatures():
