@@ -46,25 +46,6 @@ def load_stored_item(grammar, path, item):
     return item
 
 
-@pytest.mark.skip("This is currently not something we have implemented.")
-@pytest.mark.usefixtures("isolated_jedi_cache")
-def test_modulepickling_delete_incompatible_cache():
-    item = _NodeCacheItem('fake parser', [])
-    path = 'fake path'
-
-    cache1 = ParserPicklingCls()
-    cache1.version = 1
-    grammar = load_grammar()
-    cache1.save_item(grammar, path, item)
-    cached1 = load_stored_item(grammar, cache1, path, item)
-    assert cached1 == item.node
-
-    cache2 = ParserPicklingCls()
-    cache2.version = 2
-    cached2 = load_stored_item(grammar, cache2, path, item)
-    assert cached2 is None
-
-
 @pytest.mark.usefixtures("isolated_jedi_cache")
 def test_modulepickling_simulate_deleted_cache(tmpdir):
     """
