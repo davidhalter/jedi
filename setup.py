@@ -2,14 +2,15 @@
 
 from setuptools import setup
 
+import jedi
+
+
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 packages = ['jedi', 'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api']
 install_requires = ['parso==0.0.1']
-
-import jedi
 
 setup(name='jedi',
       version=jedi.__version__,
