@@ -16,6 +16,8 @@ import sys
 from parso.python import load_grammar
 from parso.python import tree
 from parso.python import parse
+from parso.utils import source_to_unicode, splitlines
+
 from jedi.parser_utils import get_executable_nodes, get_statement_of_position
 from jedi import debug
 from jedi import settings
@@ -108,8 +110,8 @@ class Script(object):
             with open(path, 'rb') as f:
                 source = f.read()
 
-        self._source = common.source_to_unicode(source, encoding)
-        self._code_lines = common.splitlines(self._source)
+        self._source = source_to_unicode(source, encoding)
+        self._code_lines = splitlines(self._source)
         line = max(len(self._code_lines), 1) if line is None else line
         if not (0 < line <= len(self._code_lines)):
             raise ValueError('`line` parameter is not in a valid range.')

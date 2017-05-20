@@ -179,15 +179,6 @@ class TestRegression(TestCase):
             else:
                 assert n == limit
 
-    def test_source_to_unicode_unicode_text(self):
-        source = (
-            b"# vim: fileencoding=utf-8\n"
-            b"# \xe3\x81\x82\xe3\x81\x84\xe3\x81\x86\xe3\x81\x88\xe3\x81\x8a\n"
-        )
-        actual = common.source_to_unicode(source)
-        expected = source.decode('utf-8')
-        assert actual == expected
-
 
 def test_loading_unicode_files_with_bad_global_charset(monkeypatch, tmpdir):
     dirname = str(tmpdir.mkdir('jedi-test'))
