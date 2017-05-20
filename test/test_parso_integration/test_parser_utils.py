@@ -1,4 +1,6 @@
-from jedi._compatibility import u, is_py3
+# -*- coding: utf-8 -*-
+
+from jedi._compatibility import is_py3
 from jedi import parser_utils
 from parso.python import parse
 from parso.python import tree
@@ -67,7 +69,7 @@ def test_hex_values_in_docstring():
     if is_py3:
         assert doc == '\xff'
     else:
-        assert doc == u('�')
+        assert doc == u'�'
 
 
 @pytest.mark.parametrize(
