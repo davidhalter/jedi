@@ -471,7 +471,9 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
             and dotted_path not in settings.auto_import_modules:
 
-        module_node = parse(code=code, path=path, cache=True, diff_cache=True)
+        module_node = parse(
+            code=code, path=path, cache=True, diff_cache=True,
+            cache_path=settings.cache_directory)
 
         from jedi.evaluate.representation import ModuleContext
         return ModuleContext(evaluator, module_node, path=path)

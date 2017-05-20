@@ -141,6 +141,7 @@ class Script(object):
             grammar=self._grammar,
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=True,
+            cache_path=settings.cache_directory
         )
 
     @cache.memoize_method

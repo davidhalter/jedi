@@ -7,10 +7,11 @@ from jedi._compatibility import exec_function, unicode
 from parso.python import tree
 from parso.python import parse
 from jedi.evaluate.cache import memoize_default
-from jedi import debug
-from jedi import common
 from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.context import ContextualizedNode
+from jedi import settings
+from jedi import debug
+from jedi import common
 
 
 def get_venv_path(venv):
@@ -214,7 +215,8 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         module_node = parse(
             path=buildout_script_path,
             grammar=evaluator.grammar,
-            cache=True
+            cache=True,
+            cache_path=settings.cache_directory
         )
     except IOError:
         debug.warning('Error trying to read buildout_script: %s', buildout_script_path)

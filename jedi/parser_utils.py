@@ -239,4 +239,3 @@ def get_parent_scope(node, include_flows=False):
             break
         scope = scope.parent
     return scope
-

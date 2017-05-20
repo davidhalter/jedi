@@ -6,6 +6,7 @@ import inspect
 import os
 
 from parso.python import parse
+from jedi import settings
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
@@ -108,7 +109,8 @@ def _load_module(evaluator, path, python_object):
         grammar=evaluator.grammar,
         path=path,
         cache=True,
-        diff_cache=True
+        diff_cache=True,
+        cache_path=settings.cache_directory
     ).get_root_node()
     python_module = inspect.getmodule(python_object)
 
