@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 
-from __future__ import with_statement
-try:
-    from setuptools import setup
-except ImportError:
-    # Distribute is not actually required to install
-    from distutils.core import setup
+from setuptools import setup
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 packages = ['jedi', 'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api']
+install_requires = ['parso==0.0.1']
 
 import jedi
 
@@ -28,7 +24,7 @@ setup(name='jedi',
       keywords='python completion refactoring vim',
       long_description=readme,
       packages=packages,
-      install_requires=['parso==0.0.1'],
+      install_requires=install_requires,
       package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
       platforms=['any'],
       classifiers=[
