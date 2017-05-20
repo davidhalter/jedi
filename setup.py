@@ -2,11 +2,16 @@
 
 from setuptools import setup
 
-import jedi
+import ast
 
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
+
+# Get the version from within jedi. It's defined in exactly one place now.
+with open('jedi/__init__.py') as f:
+    tree = ast.parse(f.read())
+version = tree.body[1].value.s
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 packages = ['jedi', 'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api']
@@ -14,7 +19,7 @@ with open('requirements.txt') as f:
     install_requires = f.read().splitlines()
 
 setup(name='jedi',
-      version=jedi.__version__,
+      version=version,
       description='An autocompletion tool for Python that can be used for text editors.',
       author=__AUTHOR__,
       author_email=__AUTHOR_EMAIL__,
