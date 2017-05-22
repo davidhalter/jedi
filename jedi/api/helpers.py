@@ -133,7 +133,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
     code = code + safeword
 
-    p = Parser(grammar, error_recovery=True)
+    p = Parser(grammar._pgen_grammar, error_recovery=True)
     try:
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
@@ -152,7 +152,7 @@ class Stack(list):
                 yield node
 
 
-def get_possible_completion_types(grammar, stack):
+def get_possible_completion_types(pgen_grammar, stack):
     def add_results(label_index):
         try:
             grammar_labels.append(inversed_tokens[label_index])
@@ -160,17 +160,17 @@ def get_possible_completion_types(grammar, stack):
             try:
                 keywords.append(inversed_keywords[label_index])
             except KeyError:
-                t, v = grammar.labels[label_index]
+                t, v = pgen_grammar.labels[label_index]
                 assert t >= 256
                 # See if it's a symbol and if we're in its first set
                 inversed_keywords
-                itsdfa = grammar.dfas[t]
+                itsdfa = pgen_grammar.dfas[t]
                 itsstates, itsfirst = itsdfa
                 for first_label_index in itsfirst.keys():
                     add_results(first_label_index)
 
-    inversed_keywords = dict((v, k) for k, v in grammar.keywords.items())
-    inversed_tokens = dict((v, k) for k, v in grammar.tokens.items())
+    inversed_keywords = dict((v, k) for k, v in pgen_grammar.keywords.items())
+    inversed_tokens = dict((v, k) for k, v in pgen_grammar.tokens.items())
 
     keywords = []
     grammar_labels = []

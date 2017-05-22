@@ -18,7 +18,6 @@ from jedi.evaluate import representation as er
 from jedi.evaluate.instance import InstanceFunctionExecution, \
     AbstractInstanceContext, CompiledInstance, BoundMethod
 from jedi.evaluate import iterable
-from parso.python import parse
 from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
@@ -270,7 +269,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     )
 
     # Parse source
-    generated_class = next(parse(source, grammar=evaluator.grammar).iter_classdefs())
+    generated_class = next(evaluator.grammar.parse(source).iter_classdefs())
     return set([er.ClassContext(evaluator, generated_class, evaluator.BUILTINS)])
 
 

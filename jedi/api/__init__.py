@@ -13,9 +13,8 @@ import os
 import warnings
 import sys
 
-from parso.python import load_grammar
+from parso import load_python_grammar
 from parso.python import tree
-from parso.python import parse
 from parso.utils import source_to_unicode, splitlines
 
 from jedi.parser_utils import get_executable_nodes, get_statement_of_position
@@ -125,7 +124,7 @@ class Script(object):
 
         cache.clear_time_caches()
         debug.reset_time()
-        self._grammar = load_grammar(version='%s.%s' % sys.version_info[:2])
+        self._grammar = load_python_grammar(version='%s.%s' % sys.version_info[:2])
         if sys_path is None:
             venv = os.getenv('VIRTUAL_ENV')
             if venv:
@@ -135,10 +134,9 @@ class Script(object):
 
     @cache.memoize_method
     def _get_module_node(self):
-        return parse(
+        return self._grammar.parse(
             code=self._source,
             path=self.path,
-            grammar=self._grammar,
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=True,
             cache_path=settings.cache_directory

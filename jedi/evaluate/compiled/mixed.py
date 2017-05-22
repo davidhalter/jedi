@@ -105,8 +105,7 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
 
 @memoize_default(evaluator_is_first_arg=True)
 def _load_module(evaluator, path, python_object):
-    module = parse(
-        grammar=evaluator.grammar,
+    module = evaluator.grammar.parse(
         path=path,
         cache=True,
         diff_cache=True,

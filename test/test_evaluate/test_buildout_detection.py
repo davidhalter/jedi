@@ -8,13 +8,14 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _check_module)
 from jedi.evaluate import Evaluator
 from jedi.evaluate.representation import ModuleContext
-from parso.python import parse, load_grammar
+from parso.python import parse
+from parso import load_python_grammar
 
 from ..helpers import cwd_at
 
 
 def check_module_test(code):
-    grammar = load_grammar()
+    grammar = load_python_grammar()
     module_context = ModuleContext(Evaluator(grammar), parse(code), path=None)
     return _check_module(module_context)
 
@@ -66,7 +67,7 @@ def test_sys_path_with_modifications():
     """)
 
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
-    grammar = load_grammar()
+    grammar = load_python_grammar()
     module_node = parse(code, path=path)
     module_context = ModuleContext(Evaluator(grammar), module_node, path=path)
     paths = sys_path_with_modifications(module_context.evaluator, module_context)

@@ -5,7 +5,6 @@ from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
 from parso.python import tree
-from parso.python import parse
 from jedi.evaluate.cache import memoize_default
 from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.context import ContextualizedNode
@@ -212,9 +211,8 @@ def sys_path_with_modifications(evaluator, module_context):
 
 def _get_paths_from_buildout_script(evaluator, buildout_script_path):
     try:
-        module_node = parse(
+        module_node = evaluator.grammar.parse(
             path=buildout_script_path,
-            grammar=evaluator.grammar,
             cache=True,
             cache_path=settings.cache_directory
         )

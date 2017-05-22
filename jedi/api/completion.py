@@ -135,14 +135,14 @@ class Completion:
             return self._global_completions()
 
         allowed_keywords, allowed_tokens = \
-            helpers.get_possible_completion_types(grammar, self.stack)
+            helpers.get_possible_completion_types(grammar._pgen_grammar, self.stack)
 
         completion_names = list(self._get_keyword_completion_names(allowed_keywords))
 
         if token.NAME in allowed_tokens or token.INDENT in allowed_tokens:
             # This means that we actually have to do type inference.
 
-            symbol_names = list(self.stack.get_node_names(grammar))
+            symbol_names = list(self.stack.get_node_names(grammar._pgen_grammar))
 
             nodes = list(self.stack.get_nodes())
 

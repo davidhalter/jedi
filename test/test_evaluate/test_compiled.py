@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 from jedi._compatibility import builtins, is_py3
-from parso.python import load_grammar
+from parso import load_python_grammar
 from jedi.evaluate import compiled, instance
 from jedi.evaluate.representation import FunctionContext
 from jedi.evaluate import Evaluator
@@ -10,7 +10,7 @@ from jedi import Script
 
 
 def _evaluator():
-    return Evaluator(load_grammar())
+    return Evaluator(load_python_grammar())
 
 
 def test_simple():
