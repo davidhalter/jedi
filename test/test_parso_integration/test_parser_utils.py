@@ -2,7 +2,7 @@
 
 from jedi._compatibility import is_py3
 from jedi import parser_utils
-from parso.python import parse
+from parso import parse
 from parso.python import tree
 
 import pytest

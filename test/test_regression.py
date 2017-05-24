@@ -12,7 +12,6 @@ import pytest
 from jedi import Script
 from jedi import api
 from jedi.evaluate import imports
-from parso.python import parse
 from .helpers import TestCase, cwd_at
 
 #jedi.set_debug_function()
@@ -96,14 +95,6 @@ class TestRegression(TestCase):
         defs = sorted(defs, key=lambda d: d.line)
         self.assertEqual([d.description for d in defs],
                          ['def f', 'class C'])
-
-    def test_end_pos_line(self):
-        # jedi issue #150
-        s = "x()\nx( )\nx(  )\nx (  )"
-        module = parse(s)
-        for i, simple_stmt in enumerate(module.children[:-1]):
-            expr_stmt = simple_stmt.children[0]
-            assert expr_stmt.end_pos == (i + 1, i + 3)
 
     def check_definition_by_marker(self, source, after_cursor, names):
         r"""
