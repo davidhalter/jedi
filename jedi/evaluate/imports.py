@@ -16,7 +16,6 @@ import os
 import pkgutil
 import sys
 
-from parso.python import parse
 from parso.python import tree
 from parso.tree import search_ancestor
 from parso.cache import parser_cache
@@ -471,7 +470,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
             and dotted_path not in settings.auto_import_modules:
 
-        module_node = parse(
+        module_node = evaluator.grammar.parse(
             code=code, path=path, cache=True, diff_cache=True,
             cache_path=settings.cache_directory)
 

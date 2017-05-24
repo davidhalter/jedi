@@ -22,7 +22,6 @@ from jedi._compatibility import u
 from jedi.common import unite
 from jedi.evaluate import context
 from jedi.evaluate.cache import memoize_default
-from parso.python import parse
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 
@@ -132,7 +131,8 @@ def _evaluate_for_statement_string(module_context, string):
     # Take the default grammar here, if we load the Python 2.7 grammar here, it
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
-    module = parse(code.format(indent_block(string)))
+    grammar = module_context.evaluator.latest_grammar
+    module = grammar.parse(code.format(indent_block(string)))
     try:
         funcdef = next(module.iter_funcdefs())
         # First pick suite, then simple_stmt and then the node,

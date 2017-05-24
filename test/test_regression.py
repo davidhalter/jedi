@@ -11,7 +11,6 @@ import pytest
 
 from jedi import Script
 from jedi import api
-from jedi import common
 from jedi.evaluate import imports
 from parso.python import parse
 from .helpers import TestCase, cwd_at

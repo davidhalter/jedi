@@ -8,7 +8,7 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _check_module)
 from jedi.evaluate import Evaluator
 from jedi.evaluate.representation import ModuleContext
-from parso.python import parse
+from parso import parse
 from parso import load_python_grammar
 
 from ..helpers import cwd_at

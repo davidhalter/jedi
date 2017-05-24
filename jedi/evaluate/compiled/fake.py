@@ -9,9 +9,9 @@ import inspect
 import types
 from itertools import chain
 
-from jedi._compatibility import is_py3, builtins, unicode, is_py34
-from parso.python import parse
 from parso.python import tree
+
+from jedi._compatibility import is_py3, builtins, unicode, is_py34
 
 modules = {}
 
@@ -47,7 +47,7 @@ class FakeDoesNotExist(Exception):
     pass
 
 
-def _load_faked_module(module):
+def _load_faked_module(grammar, module):
     module_name = module.__name__
     if module_name == '__builtin__' and not is_py3:
         module_name = 'builtins'
@@ -62,7 +62,7 @@ def _load_faked_module(module):
         except IOError:
             modules[module_name] = None
             return
-        modules[module_name] = m = parse(unicode(source))
+        modules[module_name] = m = grammar.parse(unicode(source))
 
         if module_name == 'builtins' and not is_py3:
             # There are two implementations of `open` for either python 2/3.
@@ -105,12 +105,12 @@ def get_module(obj):
                 return builtins
 
 
-def _faked(module, obj, name):
+def _faked(grammar, module, obj, name):
     # Crazy underscore actions to try to escape all the internal madness.
     if module is None:
         module = get_module(obj)
 
-    faked_mod = _load_faked_module(module)
+    faked_mod = _load_faked_module(grammar, module)
     if faked_mod is None:
         return None, None
 
@@ -168,8 +168,8 @@ def memoize_faked(obj):
 
 
 @memoize_faked
-def _get_faked(module, obj, name=None):
-    result, fake_module = _faked(module, obj, name)
+def _get_faked(grammar, module, obj, name=None):
+    result, fake_module = _faked(grammar, module, obj, name)
     if result is None:
         # We're not interested in classes. What we want is functions.
         raise FakeDoesNotExist
@@ -197,7 +197,7 @@ def get_faked(evaluator, module, obj, name=None, parent_context=None):
         else:
             raise FakeDoesNotExist
 
-    faked, fake_module = _get_faked(module and module.obj, obj, name)
+    faked, fake_module = _get_faked(evaluator.latest_grammar, module and module.obj, obj, name)
     if module is not None:
         module.get_used_names = fake_module.get_used_names
     return faked
