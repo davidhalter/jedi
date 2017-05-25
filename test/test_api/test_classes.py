@@ -94,7 +94,7 @@ def test_function_call_signature_in_doc():
     def f(x, y=1, z='a'):
         pass
     f""").goto_definitions()
-    doc = defs[0].doc
+    doc = defs[0].docstring()
     assert "f(x, y=1, z='a')" in str(doc)
 
 
@@ -104,7 +104,7 @@ def test_class_call_signature():
         def __init__(self, x, y=1, z='a'):
             pass
     Foo""").goto_definitions()
-    doc = defs[0].doc
+    doc = defs[0].docstring()
     assert "Foo(self, x, y=1, z='a')" in str(doc)
 
 

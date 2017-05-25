@@ -425,7 +425,7 @@ def defined_names(source, path=None, encoding='utf-8'):
        Use :func:`names` instead.
     .. todo:: Remove!
     """
-    warnings.warn("Use call_signatures instead.", DeprecationWarning)
+    warnings.warn("Use names instead.", DeprecationWarning)
     return names(source, path, encoding)
 
 

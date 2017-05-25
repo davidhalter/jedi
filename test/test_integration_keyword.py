@@ -18,7 +18,7 @@ def test_keyword():
     """ github jedi-vim issue #44 """
     defs = Script("print").goto_definitions()
     if is_py3:
-        assert [d.doc for d in defs]
+        assert [d.docstring() for d in defs]
     else:
         assert defs == []
 

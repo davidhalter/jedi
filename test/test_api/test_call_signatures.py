@@ -1,5 +1,6 @@
 from textwrap import dedent
 import inspect
+import warnings
 
 from ..helpers import TestCase
 from jedi import Script
@@ -267,12 +268,15 @@ def test_signature_is_definition():
         dont_scan = ['defined_names', 'parent', 'goto_assignments', 'params']
         if attr_name.startswith('_') or attr_name in dont_scan:
             continue
-        attribute = getattr(definition, attr_name)
-        signature_attribute = getattr(signature, attr_name)
-        if inspect.ismethod(attribute):
-            assert attribute() == signature_attribute()
-        else:
-            assert attribute == signature_attribute
+
+        # Might trigger some deprecation warnings.
+        with warnings.catch_warnings(record=True):
+            attribute = getattr(definition, attr_name)
+            signature_attribute = getattr(signature, attr_name)
+            if inspect.ismethod(attribute):
+                assert attribute() == signature_attribute()
+            else:
+                assert attribute == signature_attribute
 
 
 def test_no_signature():

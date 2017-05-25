@@ -20,7 +20,7 @@ class TestDocstring(unittest.TestCase):
         def func():
             '''Docstring of `func`.'''
         func""").goto_definitions()
-        self.assertEqual(defs[0].raw_doc, 'Docstring of `func`.')
+        self.assertEqual(defs[0].docstring(raw=True), 'Docstring of `func`.')
 
     @unittest.skip('need evaluator class for that')
     def test_attribute_docstring(self):
@@ -28,7 +28,7 @@ class TestDocstring(unittest.TestCase):
         x = None
         '''Docstring of `x`.'''
         x""").goto_definitions()
-        self.assertEqual(defs[0].raw_doc, 'Docstring of `x`.')
+        self.assertEqual(defs[0].docstring(raw=True), 'Docstring of `x`.')
 
     @unittest.skip('need evaluator class for that')
     def test_multiple_docstrings(self):
@@ -38,7 +38,7 @@ class TestDocstring(unittest.TestCase):
         x = func
         '''Docstring of `x`.'''
         x""").goto_definitions()
-        docs = [d.raw_doc for d in defs]
+        docs = [d.docstring(raw=True) for d in defs]
         self.assertEqual(docs, ['Original docstring.', 'Docstring of `x`.'])
 
     def test_completion(self):

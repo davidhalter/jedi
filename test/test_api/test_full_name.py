@@ -61,7 +61,7 @@ class TestFullDefinedName(TestCase):
     """
 
     def check(self, source, desired):
-        definitions = jedi.defined_names(textwrap.dedent(source))
+        definitions = jedi.names(textwrap.dedent(source))
         full_names = [d.full_name for d in definitions]
         self.assertEqual(full_names, desired)
 

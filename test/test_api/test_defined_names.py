@@ -4,7 +4,7 @@ Tests for `api.defined_names`.
 
 from textwrap import dedent
 
-from jedi import defined_names, names
+from jedi import names
 from ..helpers import TestCase
 
 
@@ -76,7 +76,7 @@ class TestDefinedNames(TestCase):
 
 def test_follow_imports():
     # github issue #344
-    imp = defined_names('import datetime')[0]
+    imp = names('import datetime')[0]
     assert imp.name == 'datetime'
     datetime_names = [str(d.name) for d in imp.defined_names()]
     assert 'timedelta' in datetime_names
