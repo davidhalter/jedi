@@ -1,6 +1,8 @@
 import os
 from textwrap import dedent
 
+import parso
+
 from jedi._compatibility import u
 from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _get_buildout_script_paths,
@@ -8,15 +10,13 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _check_module)
 from jedi.evaluate import Evaluator
 from jedi.evaluate.representation import ModuleContext
-from parso import parse
-from parso import load_python_grammar
 
 from ..helpers import cwd_at
 
 
 def check_module_test(code):
-    grammar = load_python_grammar()
-    module_context = ModuleContext(Evaluator(grammar), parse(code), path=None)
+    grammar = parso.load_grammar()
+    module_context = ModuleContext(Evaluator(grammar), parso.parse(code), path=None)
     return _check_module(module_context)
 
 
@@ -67,8 +67,8 @@ def test_sys_path_with_modifications():
     """)
 
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
-    grammar = load_python_grammar()
-    module_node = parse(code, path=path)
+    grammar = parso.load_grammar()
+    module_node = parso.parse(code, path=path)
     module_context = ModuleContext(Evaluator(grammar), module_node, path=path)
     paths = sys_path_with_modifications(module_context.evaluator, module_context)
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
