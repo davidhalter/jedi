@@ -117,7 +117,11 @@ def _strip_rst_role(type_str):
 def _evaluate_for_statement_string(module_context, string):
     code = dedent(u("""
     def pseudo_docstring_stuff():
-        # Create a pseudo function for docstring statements.
+        '''
+        Create a pseudo function for docstring statements.
+        Need this docstring so that if the below part is not valid Python this
+        is still a function.
+        '''
     {0}
     """))
     if string is None:
