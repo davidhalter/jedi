@@ -64,7 +64,7 @@ import copy
 import sys
 
 from parso.python import tree
-from parso import load_python_grammar
+import parso
 
 from jedi import debug
 from jedi.common import unite
@@ -89,7 +89,7 @@ from jedi import parser_utils
 class Evaluator(object):
     def __init__(self, grammar, sys_path=None):
         self.grammar = grammar
-        self.latest_grammar = load_python_grammar('3.6')
+        self.latest_grammar = parso.load_grammar('3.6')
         self.memoize_cache = {}  # for memoize decorators
         # To memorize modules -> equals `sys.modules`.
         self.modules = {}  # like `sys.modules`.
