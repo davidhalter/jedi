@@ -124,7 +124,9 @@ class Script(object):
 
         cache.clear_time_caches()
         debug.reset_time()
-        self._grammar = parso.load_grammar(version='%s.%s' % sys.version_info[:2])
+
+        # Load the Python grammar of the current interpreter.
+        self._grammar = parso.load_grammar()
         if sys_path is None:
             venv = os.getenv('VIRTUAL_ENV')
             if venv:

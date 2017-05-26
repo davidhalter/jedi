@@ -89,7 +89,7 @@ from jedi import parser_utils
 class Evaluator(object):
     def __init__(self, grammar, sys_path=None):
         self.grammar = grammar
-        self.latest_grammar = parso.load_grammar('3.6')
+        self.latest_grammar = parso.load_grammar(version='3.6')
         self.memoize_cache = {}  # for memoize decorators
         # To memorize modules -> equals `sys.modules`.
         self.modules = {}  # like `sys.modules`.
