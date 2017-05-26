@@ -119,7 +119,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         pass
 
     def tokenize_without_endmarker(code):
-        tokens = tokenize.source_tokens(code, use_exact_op_types=True)
+        tokens = tokenize.source_tokens(code)
         for token_ in tokens:
             if token_.string == safeword:
                 raise EndMarkerReached()
