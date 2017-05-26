@@ -6,7 +6,7 @@ from collections import namedtuple
 
 from parso.python.parser import Parser
 from parso.python import tree
-from parso import tokenize
+from parso.tokenize import tokenize
 from parso.utils import splitlines
 
 from jedi._compatibility import u
@@ -119,7 +119,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         pass
 
     def tokenize_without_endmarker(code):
-        tokens = tokenize.source_tokens(code)
+        tokens = tokenize(code)
         for token_ in tokens:
             if token_.string == safeword:
                 raise EndMarkerReached()
