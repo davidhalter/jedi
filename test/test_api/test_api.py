@@ -13,20 +13,21 @@ from parso import cache
 def test_preload_modules():
     def check_loaded(*modules):
         # +1 for None module (currently used)
-        grammar_cache = next(iter(parser_cache.values()))
+        grammar_cache = next(iter(cache.parser_cache.values()))
         assert len(grammar_cache) == len(modules) + 1
         for i in modules:
             assert [i in k for k in grammar_cache.keys() if k is not None]
 
-    temp_cache, cache.parser_cache = cache.parser_cache, {}
-    parser_cache = cache.parser_cache
+    old_cache = cache.parser_cache.copy()
+    cache.parser_cache.clear()
 
-    api.preload_module('sys')
-    check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
-    api.preload_module('types', 'token')
-    check_loaded('types', 'token')
-
-    cache.parser_cache = temp_cache
+    try:
+        api.preload_module('sys')
+        check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
+        api.preload_module('types', 'token')
+        check_loaded('types', 'token')
+    finally:
+        cache.parser_cache.update(old_cache)
 
 
 def test_empty_script():

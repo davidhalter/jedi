@@ -497,7 +497,8 @@ def get_modules_containing_name(evaluator, modules, name):
 
     def check_python_file(path):
         try:
-            node_cache_item = parser_cache[path]
+            # TODO I don't think we should use the cache here?!
+            node_cache_item = parser_cache[evaluator.grammar._hashed][path]
         except KeyError:
             try:
                 return check_fs(path)
