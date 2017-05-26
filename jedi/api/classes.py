@@ -389,7 +389,7 @@ class BaseDefinition(object):
             return ''
 
         path = self._name.get_root_context().py__file__()
-        lines = parser_cache[path].lines
+        lines = parser_cache[self._evaluator.grammar._hashed][path].lines
 
         line_nr = self._name.start_pos[0]
         start_line_nr = line_nr - before

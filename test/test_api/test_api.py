@@ -13,9 +13,10 @@ from parso import cache
 def test_preload_modules():
     def check_loaded(*modules):
         # +1 for None module (currently used)
-        assert len(parser_cache) == len(modules) + 1
+        grammar_cache = next(iter(parser_cache.values()))
+        assert len(grammar_cache) == len(modules) + 1
         for i in modules:
-            assert [i in k for k in parser_cache.keys() if k is not None]
+            assert [i in k for k in grammar_cache.keys() if k is not None]
 
     temp_cache, cache.parser_cache = cache.parser_cache, {}
     parser_cache = cache.parser_cache
