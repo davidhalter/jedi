@@ -315,6 +315,7 @@ class Importer(object):
             else:
                 paths = method()
                 debug.dbg('search_module %s in paths %s', module_name, paths)
+                module_path = None
                 for path in paths:
                     # At the moment we are only using one path. So this is
                     # not important to be correct.
