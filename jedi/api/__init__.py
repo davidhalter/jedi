@@ -458,7 +458,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         classes.Definition(
             script._evaluator,
             TreeNameDefinition(
-                module_context.create_context(name.parent),
+                module_context.create_context(name if name.parent.type == 'file_input' else name.parent),
                 name
             )
         ) for name in get_module_names(script._get_module_node(), all_scopes)

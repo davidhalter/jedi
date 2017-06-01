@@ -449,10 +449,9 @@ class Evaluator(object):
         if is_simple_name:
             if name.parent.type == 'classdef' and name.parent.name == name:
                 return [er.ClassContext(self, name.parent, context)]
-            elif name.parent.type == 'funcdef':
+            elif name.parent.type == 'funcdef' and name.parent.name == name:
                 return [er.FunctionContext(self, context, name.parent)]
-            elif name.parent.type == 'file_input':
-                raise NotImplementedError
+
             if def_.type == 'expr_stmt' and name in def_.get_defined_names():
                 return self.eval_statement(context, def_, name)
             elif def_.type == 'for_stmt' and \
@@ -592,7 +591,7 @@ class Evaluator(object):
         if node_is_context and parser_utils.is_scope(node):
             scope_node = node
         else:
-            if node.parent.type in ('funcdef', 'classdef'):
+            if node.parent.type in ('funcdef', 'classdef') and node.parent.name == node:
                 # When we're on class/function names/leafs that define the
                 # object itself and not its contents.
                 node = node.parent

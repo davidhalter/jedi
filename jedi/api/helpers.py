@@ -98,6 +98,7 @@ def _get_code_for_stack(code_lines, module_node, position):
             user_stmt = leaf.parent
         else:
             user_stmt = leaf.get_definition()
+
         if user_stmt.parent.type == 'simple_stmt':
             user_stmt = user_stmt.parent
 
