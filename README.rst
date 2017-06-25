@@ -12,7 +12,7 @@ Jedi - an awesome autocompletion/static analysis library for Python
 
 
 *If you have specific questions, please add an issue or ask on* `stackoverflow
-<https://stackoverflow.com>`_ *with the label* ``python-jedi``.
+<https://stackoverflow.com/questions/tagged/python-jedi>`_ *with the label* ``python-jedi``.
 
 
 Jedi is a static analysis tool for Python that can be used in IDEs/editors. Its
