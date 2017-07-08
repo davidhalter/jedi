@@ -348,7 +348,7 @@ def _check_isinstance_type(context, element, search_name):
         is_instance_call = helpers.call_of_leaf(lazy_context_object.data)
         # Do a simple get_code comparison. They should just have the same code,
         # and everything will be all right.
-        assert is_instance_call.normalize() == call.normalize()
+        assert is_instance_call._normalize() == call._normalize()
     except AssertionError:
         return None
 
