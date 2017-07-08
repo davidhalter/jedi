@@ -3,10 +3,11 @@ Helpers for the API
 """
 import re
 from collections import namedtuple
+from textwrap import dedent
 
 from parso.python.parser import Parser
 from parso.python import tree
-from parso.tokenize import tokenize
+from parso.python.tokenize import tokenize
 from parso.utils import splitlines
 
 from jedi._compatibility import u
@@ -127,7 +128,8 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
             else:
                 yield token_
 
-    code = _get_code_for_stack(code_lines, module_node, pos)
+    # The code might be indedented, just remove it.
+    code = dedent(_get_code_for_stack(code_lines, module_node, pos))
     # We use a word to tell Jedi when we have reached the start of the
     # completion.
     # Use Z as a prefix because it's not part of a number suffix.

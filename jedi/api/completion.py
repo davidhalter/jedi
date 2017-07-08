@@ -1,4 +1,4 @@
-from parso import token
+from parso.python import token
 from parso.python import tree
 from jedi import debug
 from jedi import settings
