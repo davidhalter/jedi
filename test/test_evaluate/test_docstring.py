@@ -22,6 +22,21 @@ class TestDocstring(unittest.TestCase):
         func""").goto_definitions()
         self.assertEqual(defs[0].docstring(), 'func()\n\nDocstring of `func`.')
 
+    def test_class_doc(self):
+        defs = jedi.Script("""
+        class TestClass():
+            '''Docstring of `TestClass`.'''
+        TestClass""").goto_definitions()
+        self.assertEqual(defs[0].docstring(), 'Docstring of `TestClass`.')
+
+    def test_instance_doc(self):
+        defs = jedi.Script("""
+        class TestClass():
+            '''Docstring of `TestClass`.'''
+        tc = TestClass()
+        tc""").goto_definitions()
+        self.assertEqual(defs[0].docstring(), 'Docstring of `TestClass`.')
+
     @unittest.skip('need evaluator class for that')
     def test_attribute_docstring(self):
         defs = jedi.Script("""

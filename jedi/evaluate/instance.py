@@ -197,6 +197,11 @@ class CompiledInstance(AbstractInstanceContext):
 
 
 class TreeInstance(AbstractInstanceContext):
+    def __init__(self, evaluator, parent_context, class_context, var_args):
+        super(TreeInstance, self).__init__(evaluator, parent_context,
+                                           class_context, var_args)
+        self.tree_node = class_context.tree_node
+
     @property
     def name(self):
         return filters.ContextName(self, self.class_context.name.tree_name)
