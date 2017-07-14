@@ -7,7 +7,6 @@ from textwrap import dedent
 
 from parso.python.parser import Parser
 from parso.python import tree
-from parso.python.tokenize import tokenize
 from parso.utils import splitlines
 
 from jedi._compatibility import u
@@ -121,7 +120,9 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         pass
 
     def tokenize_without_endmarker(code):
-        tokens = tokenize(code)
+        # TODO This is for now not an official parso API that exists purely
+        #   for Jedi.
+        tokens = grammar._tokenize(code)
         for token_ in tokens:
             if token_.string == safeword:
                 raise EndMarkerReached()

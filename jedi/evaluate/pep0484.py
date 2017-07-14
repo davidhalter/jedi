@@ -199,7 +199,7 @@ def find_type_from_comment_hint_assign(context, node, name):
 
 def _find_type_from_comment_hint(context, node, varlist, name):
     index = None
-    if varlist.type in ("testlist_star_expr", "exprlist"):
+    if varlist.type in ("testlist_star_expr", "exprlist", "testlist"):
         # something like "a, b = 1, 2"
         index = 0
         for child in varlist.children:

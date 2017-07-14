@@ -404,7 +404,7 @@ def test_func():
     #? str()
     x
 
-
+# python >= 3.3
 # -----------------
 # PEP 3132 Extended Iterable Unpacking (star unpacking)
 # -----------------

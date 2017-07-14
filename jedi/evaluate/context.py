@@ -180,7 +180,7 @@ class ContextualizedName(ContextualizedNode):
         node = self._node.parent
         compare = self._node
         while node is not None:
-            if node.type in ('testlist_comp', 'testlist_star_expr', 'exprlist'):
+            if node.type in ('testlist', 'testlist_comp', 'testlist_star_expr', 'exprlist'):
                 for i, child in enumerate(node.children):
                     if child == compare:
                         indexes.insert(0, (int(i / 2), node))
