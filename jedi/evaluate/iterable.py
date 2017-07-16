@@ -873,8 +873,7 @@ def create_index_types(evaluator, context, index):
     elif index.type == 'subscript' and not index.children[0] == '.':
         # subscript basically implies a slice operation, except for Python 2's
         # Ellipsis.
-        print(index.children)
-        # Like array[:3]
+        # e.g. array[:3]
         result = []
         for el in index.children:
             if el == ':':
