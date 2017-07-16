@@ -133,7 +133,7 @@ TEST_ASSIGNMENTS = 2
 TEST_USAGES = 3
 
 
-grammar36 = parso.load_grammar('3.6')
+grammar36 = parso.load_grammar(version='3.6')
 
 
 class IntegrationTestCase(object):
