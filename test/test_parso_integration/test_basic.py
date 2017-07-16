@@ -82,6 +82,15 @@ def test_add_to_end():
 
 
 def test_tokenizer_with_string_literal_backslash():
-    import jedi
     c = jedi.Script("statement = u'foo\\\n'; statement").goto_definitions()
     assert c[0]._name._context.obj == 'foo'
+
+
+def test_ellipsis():
+    def_, = jedi.Script(dedent("""\
+        class Foo():
+            def __getitem__(self, index):
+                return index
+        Foo()[...]""")).goto_definitions()
+
+    assert def_.name == 'ellipsis'

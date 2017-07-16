@@ -310,7 +310,9 @@ class Evaluator(object):
                      self.eval_element(context, element.children[-1]))
         elif typ == 'operator':
             # Must be an ellipsis, other operators are not evaluated.
-            assert element.value == '...'
+            # In Python 2 ellipsis is coded as three single dot tokens, not
+            # as one token 3 dot token.
+            assert element.value in ('.', '...')
             types = set([compiled.create(self, Ellipsis)])
         elif typ == 'dotted_name':
             types = self.eval_atom(context, element.children[0])
