@@ -58,3 +58,44 @@ def test_lambda_forward_references():
     # For now just receiving the 3 is ok. I'm doubting that this is what we
     # want. We also execute functions. Should we only execute classes?
     assert jedi.Script(source).goto_definitions()
+
+
+def test_function_param_annotations():
+    """
+    Function annotation comments in Python 2, from PEP0484.
+    """
+    source = dedent("""\
+    class Dog(object):
+        def __init__(self, name):
+            # type: (str) -> None
+            self.name = name
+    d = Dog(5)
+    d.name""")
+
+    assert [d.name for d in jedi.Script(source, ).goto_definitions()] == ['str']
+
+
+def test_function_retval_annotations():
+    """
+    Function annotation comments for return values
+    """
+    source = dedent("""\
+    def annot():
+        # type: () -> str
+        pass
+
+    annot()""")
+
+    assert [d.name for d in jedi.Script(source, ).goto_definitions()] == ['str']
+
+
+def test_inline_comment_annotations():
+    """
+    Variable assignments may have type annotations inline.
+    """
+    source = dedent("""\
+    x = 5  # type: str
+
+    x""")
+
+    assert [d.name for d in jedi.Script(source, ).goto_definitions()] == ['str']

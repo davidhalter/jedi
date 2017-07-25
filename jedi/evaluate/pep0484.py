@@ -83,6 +83,50 @@ def _fix_forward_reference(context, node):
 @memoize_default()
 def infer_param(execution_context, param):
     annotation = param.annotation
+    if annotation is None:
+        # If no Python 3-style annotation, look for a Python 2-style comment
+        # annotation.
+        # Identify parameters to function in the same sequence as they would
+        # appear in a type comment.
+        all_params = [child for child in param.parent.children
+            if child.type == 'param']
+
+        node = param.parent.parent
+        comment = parser_utils.get_following_comment_same_line(node)
+        if comment is None:
+            return []
+        match = re.match(r"^#\s*type:\s*\(([^#]*)\)\s*->", comment)
+        if not match:
+            return []
+        param_type_comment = match.group(1)
+        # parse the list of types, watching out for commas inside generics.
+        params_comments = []
+        current_param = ''
+        generic_nesting = 0
+        for param_char in param_type_comment:
+            if param_char == ',' and generic_nesting == 0:
+                params_comments.append(current_param)
+                current_param = ''
+            else:
+                current_param += param_char
+            if param_char == '[':
+                generic_nesting += 1
+            if param_char == ']':
+                generic_nesting -= 1
+        if current_param:
+            params_comments.append(current_param)
+        # If the number of parameters doesn't match length of type comment,
+        # ignore first parameter (assume it's self or cls).
+        if len(params_comments) != len(all_params):
+            all_params = all_params[1:]
+        # Find the specific param being investigated
+        index = all_params.index(param)
+        param_comment = params_comments[index]
+        # Construct annotation from type comment
+        annotation = tree.String(
+            repr(str(param_comment.strip())),
+            node.start_pos)
+        annotation.parent = node.parent
     module_context = execution_context.get_root_context()
     return _evaluate_for_annotation(module_context, annotation)
 
@@ -103,6 +147,19 @@ def py__annotations__(funcdef):
 @memoize_default()
 def infer_return_types(function_context):
     annotation = py__annotations__(function_context.tree_node).get("return", None)
+    if annotation is None:
+        # If there is no Python 3-type annotation, look for a Python 2-type annotation
+        node = function_context.tree_node
+        comment = parser_utils.get_following_comment_same_line(node)
+        if comment is None:
+            return []
+        match = re.match(r"^#\s*type:\s*\([^#]*\)\s*->\s*([^#]*)", comment)
+        if not match:
+            return []
+        annotation = tree.String(
+            repr(str(match.group(1).strip())),
+            node.start_pos)
+        annotation.parent = node.parent
     module_context = function_context.get_root_context()
     return _evaluate_for_annotation(module_context, annotation)
 

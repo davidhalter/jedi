@@ -200,6 +200,9 @@ def get_following_comment_same_line(node):
             whitespace = node.children[5].get_first_leaf().prefix
         elif node.type == 'with_stmt':
             whitespace = node.children[3].get_first_leaf().prefix
+        elif node.type == 'funcdef':
+            # actually on the next line
+            whitespace = node.children[4].get_first_leaf().get_next_leaf().prefix
         else:
             whitespace = node.get_last_leaf().get_next_leaf().prefix
     except AttributeError:
