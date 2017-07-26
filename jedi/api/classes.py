@@ -391,9 +391,9 @@ class BaseDefinition(object):
         path = self._name.get_root_context().py__file__()
         lines = parser_cache[path].lines
 
-        line_nr = self._name.start_pos[0]
-        start_line_nr = line_nr - before
-        return ''.join(lines[start_line_nr:line_nr + after + 1])
+        start = self._name.start_pos[0] - 1
+        start = 0 if start - before < 0 else start - before
+        return ''.join(lines[start:start + after + 1])
 
 
 class Completion(BaseDefinition):
