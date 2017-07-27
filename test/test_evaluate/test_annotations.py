@@ -66,10 +66,12 @@ def test_function_param_annotations():
     """
     source = dedent("""\
     class Dog(object):
-        def __init__(self, name):
-            # type: (str) -> None
+        def __init__(self, age, friends, name):
+            # type: (int, List[Dog], str) -> None
+            self.age = age
+            self.friends = friends
             self.name = name
-    d = Dog(5)
+    d = Dog(5, [], 10)
     d.name""")
 
     assert [d.name for d in jedi.Script(source, ).goto_definitions()] == ['str']

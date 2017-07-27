@@ -82,6 +82,9 @@ def _fix_forward_reference(context, node):
 
 @memoize_default()
 def infer_param(execution_context, param):
+    """
+    Infers the type of a function parameter, using type annotations.
+    """
     annotation = param.annotation
     if annotation is None:
         # If no Python 3-style annotation, look for a Python 2-style comment
@@ -115,12 +118,16 @@ def infer_param(execution_context, param):
                 generic_nesting -= 1
         if current_param:
             params_comments.append(current_param)
-        # If the number of parameters doesn't match length of type comment,
-        # ignore first parameter (assume it's self or cls).
-        if len(params_comments) != len(all_params):
-            all_params = all_params[1:]
         # Find the specific param being investigated
         index = all_params.index(param)
+        # If the number of parameters doesn't match length of type comment,
+        # ignore first parameter (assume it's self).
+        if len(params_comments) != len(all_params):
+            if index == 0:
+                # Assume it's self, which is already handled
+                return []
+            else:
+                index -= 1
         param_comment = params_comments[index]
         # Construct annotation from type comment
         annotation = tree.String(
@@ -146,6 +153,10 @@ def py__annotations__(funcdef):
 
 @memoize_default()
 def infer_return_types(function_context):
+    """
+    Infers the type of a function's return value,
+    according to type annotations.
+    """
     annotation = py__annotations__(function_context.tree_node).get("return", None)
     if annotation is None:
         # If there is no Python 3-type annotation, look for a Python 2-type annotation
