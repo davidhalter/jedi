@@ -86,7 +86,7 @@ def search_params(evaluator, execution_context, funcdef):
             params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
             # Evaluate the ExecutedParams to types.
         else:
-            params = [create_default_param(execution_context, p) for p in funcdef.params]
+            params = [create_default_param(execution_context, p) for p in funcdef.get_params()]
         debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
     finally:

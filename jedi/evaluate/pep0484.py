@@ -94,7 +94,7 @@ def py__annotations__(funcdef):
         dct = {'return': return_annotation}
     else:
         dct = {}
-    for function_param in funcdef.params:
+    for function_param in funcdef.get_params():
         param_annotation = function_param.annotation
         if param_annotation is not None:
             dct[function_param.name.value] = param_annotation

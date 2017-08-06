@@ -155,7 +155,7 @@ def get_call_signature(funcdef, width=72, call_string=None):
         else:
             call_string = funcdef.name.value
     if funcdef.type == 'lambdef':
-        p = '(' + ''.join(param.get_code() for param in funcdef.params).strip() + ')'
+        p = '(' + ''.join(param.get_code() for param in funcdef.get_params()).strip() + ')'
     else:
         p = funcdef.children[2].get_code()
     code = call_string + p

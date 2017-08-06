@@ -170,7 +170,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def get_params(self):
         from jedi.evaluate.instance import AnonymousInstance
         anon = AnonymousInstance(self.evaluator, self.parent_context, self)
-        return [AnonymousInstanceParamName(anon, param.name) for param in self.funcdef.params]
+        return [AnonymousInstanceParamName(anon, param.name) for param in self.funcdef.get_params()]
 
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
@@ -291,7 +291,8 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def get_param_names(self):
         function_execution = self.get_function_execution()
-        return [ParamName(function_execution, param.name) for param in self.tree_node.params]
+        return [ParamName(function_execution, param.name)
+                for param in self.tree_node.get_params()]
 
 
 class FunctionExecutionContext(context.TreeContext):

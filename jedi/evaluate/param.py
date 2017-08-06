@@ -236,7 +236,7 @@ def get_params(execution_context, var_args):
     funcdef = execution_context.tree_node
     parent_context = execution_context.parent_context
 
-    for param in funcdef.params:
+    for param in funcdef.get_params():
         param_dict[param.name.value] = param
     unpacked_va = list(var_args.unpack(funcdef))
     var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
@@ -245,7 +245,7 @@ def get_params(execution_context, var_args):
     keys_used = {}
     keys_only = False
     had_multiple_value_error = False
-    for param in funcdef.params:
+    for param in funcdef.get_params():
         # The value and key can both be null. There, the defaults apply.
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
@@ -381,14 +381,15 @@ def _star_star_dict(context, array, input_node, funcdef):
 
 
 def _error_argument_count(funcdef, actual_count):
-    default_arguments = sum(1 for p in funcdef.params if p.default or p.star_count)
+    params = funcdef.get_params()
+    default_arguments = sum(1 for p in params if p.default or p.star_count)
 
     if default_arguments == 0:
         before = 'exactly '
     else:
-        before = 'from %s to ' % (len(funcdef.params) - default_arguments)
+        before = 'from %s to ' % (len(params) - default_arguments)
     return ('TypeError: %s() takes %s%s arguments (%s given).'
-            % (funcdef.name, before, len(funcdef.params), actual_count))
+            % (funcdef.name, before, len(params), actual_count))
 
 
 def create_default_param(execution_context, param):
