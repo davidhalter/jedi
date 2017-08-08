@@ -29,7 +29,7 @@ class Refactoring(object):
     def old_files(self):
         dct = {}
         for old_path, (new_path, old_l, new_l) in self.change_dct.items():
-            dct[new_path] = '\n'.join(new_l)
+            dct[old_path] = '\n'.join(old_l)
         return dct
 
     def new_files(self):
