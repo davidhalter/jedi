@@ -285,6 +285,28 @@ def test_numpydoc_returns_obj():
     assert 'numerator' in names
     assert 'seed' in names
 
+@pytest.mark.skipif(numpydoc_unavailable, 
+                    reason='numpydoc module is unavailable')
+def test_numpydoc_yields():
+    s = dedent('''
+    def foobar():
+        """
+        Yields
+        ----------
+        x : int
+        y : str
+        """
+        return x
+
+    def bazbiz():
+        z = foobar():
+        z.''')
+    names = [c.name for c in jedi.Script(s).completions()]
+    print('names',names)
+    assert 'isupper' in names
+    assert 'capitalize' in names
+    assert 'numerator' in names
+
 @pytest.mark.skipif(numpydoc_unavailable or numpy_unavailable, 
                     reason='numpydoc or numpy module is unavailable')
 def test_numpy_returns():
