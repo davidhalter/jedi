@@ -183,6 +183,8 @@ def test_numpydoc_parameters_alternative_types():
     assert 'numerator' in names
     assert 'append' in names
 
+@pytest.mark.skipif(numpydoc_unavailable, 
+                    reason='numpydoc module is unavailable')
 def test_numpydoc_returns():
     s = dedent('''
     def foobar():
@@ -242,7 +244,9 @@ def test_numpydoc_returns_alternative_types():
     assert 'capitalize' not in names
     assert 'numerator' in names
     assert 'append' in names
-
+    
+@pytest.mark.skipif(numpydoc_unavailable, 
+                    reason='numpydoc module is unavailable')
 def test_numpydoc_returns_list_of():
     s = dedent('''
     def foobar():
