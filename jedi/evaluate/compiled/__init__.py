@@ -11,8 +11,10 @@ from jedi._compatibility import builtins as _builtins, unicode
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
-    ContextNameMixin
+    ContextNameMixin, ParamName
+from jedi.parser.python.tree import Param, Operator
 from jedi.evaluate.context import Context, LazyKnownContext
+from jedi.evaluate.helpers import FakeName
 from . import fake
 
 
@@ -97,12 +99,23 @@ class CompiledObject(Context):
 
     def get_param_names(self):
         params_str, ret = self._parse_function_doc()
-        tokens = params_str.split(',')
+        tokens = params_str.split(', ')
         if inspect.ismethoddescriptor(self.obj):
             tokens.insert(0, 'self')
         for p in tokens:
-            parts = p.strip().split('=')
-            yield UnresolvableParamName(self, parts[0])
+            parts = p.strip().split('=', 1)
+            name = parts[0]
+            default = parts[1] if len(parts) > 1 else None
+
+            children = [FakeName(name, (0, 0))]
+            if default:
+                children.extend([
+                    Operator('=', (0, 0)),
+                    FakeName(default),
+                ])
+
+            name_node = FakeName(name, parent=Param(children, self))
+            yield ParamName(self, name_node)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, repr(self.obj))
@@ -254,16 +267,6 @@ class CompiledName(AbstractNameDefinition):
         module = self.parent_context.get_root_context()
         return [_create_from_name(self._evaluator, module, self.parent_context, self.string_name)]
 
-
-class UnresolvableParamName(AbstractNameDefinition):
-    api_type = 'param'
-
-    def __init__(self, compiled_obj, name):
-        self.parent_context = compiled_obj.parent_context
-        self.string_name = name
-
-    def infer(self):
-        return set()
 
 
 class CompiledContextName(ContextNameMixin, AbstractNameDefinition):

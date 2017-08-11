@@ -147,6 +147,26 @@ def get_module_names(module, all_scopes):
     return names
 
 
+class FakeName(tree.Name):
+    def __init__(self, name_str, parent=None, start_pos=(0, 0), is_definition=None):
+        """
+        In case is_definition is defined (not None), that bool value will be
+        returned.
+        """
+        super(FakeName, self).__init__(name_str, start_pos)
+        self.parent = parent
+        self._is_definition = is_definition
+
+    def get_definition(self):
+        return self.parent
+
+    def is_definition(self):
+        if self._is_definition is None:
+            return super(FakeName, self).is_definition()
+        else:
+            return self._is_definition
+
+
 @contextmanager
 def predefine_names(context, flow_scope, dct):
     predefined = context.predefined_names
