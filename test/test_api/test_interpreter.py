@@ -2,6 +2,7 @@
 Tests of ``jedi.api.Interpreter``.
 """
 
+import sys
 from ..helpers import TestCase
 import jedi
 from jedi._compatibility import is_py33
@@ -196,5 +197,8 @@ def test_param_completion():
     lambd = lambda xyz: 3
 
     _assert_interpreter_complete('foo(bar', locals(), ['bar'])
-    # TODO we're not yet using the Python3.5 inspect.signature, yet.
-    assert not jedi.Interpreter('lambd(xyz', [locals()]).completions()
+
+    if sys.version_info >= (3, 5):
+        _assert_interpreter_complete('lambd(xyz', locals(), ['xyz'])
+    else:
+        _assert_interpreter_complete('lambd(xyz', locals(), [])

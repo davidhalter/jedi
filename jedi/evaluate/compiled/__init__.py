@@ -97,15 +97,61 @@ class CompiledObject(Context):
     def py__doc__(self, include_call_signature=False):
         return inspect.getdoc(self.obj) or ''
 
+    def _get_param_name_and_default_values(self):
+        """Yield tuples: `[(parameter_name, default_value)]`.
+
+        For example, Given the function:
+
+        `def a(x, v='234', l=3213, *args, **kwargs): pass`
+
+        The result will be:
+
+        ```
+        [
+            ('x', None),
+            ('v', "'234'"),
+            ('l', '3213'),
+            ('*args', None),
+            ('**kwargs', None),
+        )
+        ```
+        """
+        try:
+            signature = inspect.signature(self.obj)
+        except Exception:
+
+            params_str, ret = self._parse_function_doc()
+
+            tokens = params_str.split(',')
+            if inspect.ismethoddescriptor(self.obj):
+                tokens.insert(0, 'self')
+
+            for t in tokens:
+                parts = t.strip().split('=', 1)
+                name = parts[0]
+                default = parts[1] if len(parts) > 1 else None
+                yield name, default
+
+        else:
+            for name, param in signature.parameters.items():
+
+                # set default value
+                if param.default is inspect._empty:
+                    default = None
+                else:
+                    default = repr(param.default)
+
+                # add stars to name
+                STARS = {
+                    param.VAR_POSITIONAL: '*',
+                    param.VAR_KEYWORD: '**',
+                }
+                name = STARS.get(param.kind, '') + name
+
+                yield name, default
+
     def get_param_names(self):
-        params_str, ret = self._parse_function_doc()
-        tokens = params_str.split(', ')
-        if inspect.ismethoddescriptor(self.obj):
-            tokens.insert(0, 'self')
-        for p in tokens:
-            parts = p.strip().split('=', 1)
-            name = parts[0]
-            default = parts[1] if len(parts) > 1 else None
+        for name, default in self._get_param_name_and_default_values():
 
             children = [FakeName(name, (0, 0))]
             if default:
