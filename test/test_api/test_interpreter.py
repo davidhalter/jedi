@@ -198,7 +198,7 @@ def test_param_completion():
 
     _assert_interpreter_complete('foo(bar', locals(), ['bar'])
 
-    if sys.version_info >= (3, 5):
+    if sys.version_info >= (3, 3):
         _assert_interpreter_complete('lambd(xyz', locals(), ['xyz'])
     else:
         _assert_interpreter_complete('lambd(xyz', locals(), [])
