@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from jedi._compatibility import u, is_py3
 from jedi import parser_utils
 from jedi.parser.python import parse
