@@ -194,7 +194,7 @@ class Evaluator(object):
             if_stmt = if_stmt.parent
             if if_stmt.type in ('if_stmt', 'for_stmt'):
                 break
-            if if_stmt.is_scope():
+            if parser_utils.is_scope(if_stmt):
                 if_stmt = None
                 break
         predefined_if_name_dict = context.predefined_names.get(if_stmt)
@@ -337,7 +337,7 @@ class Evaluator(object):
             # This is the first global lookup.
             stmt = atom.get_definition()
             if stmt.type == 'comp_for':
-                stmt = tree.search_ancestor(stmt, ('expr_stmt', 'lambdef', 'funcdef', 'classdef'))
+                stmt = tree.search_ancestor(stmt, 'expr_stmt', 'lambdef', 'funcdef', 'classdef')
             if stmt is None or stmt.type != 'expr_stmt':
                 # We only need to adjust the start_pos for statements, because
                 # there the name cannot be used.
@@ -537,7 +537,7 @@ class Evaluator(object):
             while True:
                 node = node.parent
 
-                if node.is_scope():
+                if parser_utils.is_scope(node):
                     return node
                 elif node.type in ('argument', 'testlist_comp'):
                     if node.children[1].type == 'comp_for':
@@ -553,7 +553,7 @@ class Evaluator(object):
                 return base_context
 
             is_funcdef = scope_node.type in ('funcdef', 'lambdef')
-            parent_scope = scope_node.get_parent_scope()
+            parent_scope = parser_utils.get_parent_scope(scope_node)
             parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
 
             if is_funcdef:
@@ -586,7 +586,7 @@ class Evaluator(object):
 
         base_node = base_context.tree_node
 
-        if node_is_context and node.is_scope():
+        if node_is_context and parser_utils.is_scope(node):
             scope_node = node
         else:
             if node.parent.type in ('funcdef', 'classdef'):

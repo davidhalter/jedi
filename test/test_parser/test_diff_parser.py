@@ -2,7 +2,6 @@ from textwrap import dedent
 
 import pytest
 
-import jedi
 from jedi import debug
 from jedi.common import splitlines
 from jedi import cache
@@ -384,38 +383,6 @@ def test_node_insertion(differ):
 
     differ.initialize(code1)
     differ.parse(code2, parsers=1, copies=2)
-
-
-def test_add_to_end():
-    """
-    fast_parser doesn't parse everything again. It just updates with the
-    help of caches, this is an example that didn't work.
-    """
-
-    a = dedent("""\
-    class Abc():
-        def abc(self):
-            self.x = 3
-
-    class Two(Abc):
-        def g(self):
-            self
-    """)      # ^ here is the first completion
-
-    b = "    def h(self):\n" \
-        "        self."
-
-    def complete(code, line=None, column=None):
-        script = jedi.Script(code, line, column, 'example.py')
-        assert script.completions()
-        _assert_valid_graph(script._get_module())
-
-    complete(a, 7, 12)
-    complete(a + b)
-
-    a = a[:-1] + '.\n'
-    complete(a, 7, 13)
-    complete(a + b)
 
 
 def test_whitespace_at_end(differ):

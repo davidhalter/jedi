@@ -25,8 +25,6 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 [<ImportName: import os@1,0>]
 """
 
-from itertools import chain
-
 from jedi._compatibility import utf8_repr, unicode
 from jedi.parser.tree import Node, BaseNode, Leaf, ErrorNode, ErrorLeaf, \
     search_ancestor
@@ -61,18 +59,10 @@ class DocstringMixin(object):
 
 
 class PythonMixin(object):
-    def get_parent_scope(self, include_flows=False):
-        """
-        Returns the underlying scope.
-        """
-        scope = self.parent
-        while scope is not None:
-            if include_flows and isinstance(scope, Flow):
-                return scope
-            if scope.is_scope():
-                break
-            scope = scope.parent
-        return scope
+    """
+    Some Python specific utitilies.
+    """
+    __slots__ = ()
 
     def get_definition(self):
         if self.type in ('newline', 'endmarker'):
@@ -91,10 +81,6 @@ class PythonMixin(object):
             else:
                 break
         return scope
-
-    def is_scope(self):
-        # Default is not being a scope. Just inherit from Scope.
-        return False
 
     def get_name_of_position(self, position):
         for c in self.children:
@@ -269,9 +255,6 @@ class Scope(PythonBaseNode, DocstringMixin):
 
         return scan(self.children)
 
-    def is_scope(self):
-        return True
-
     def get_suite(self):
         """
         Returns the part that is executed by the function.
@@ -311,7 +294,7 @@ class Module(Scope):
         # the future print statement).
         for imp in self.iter_imports():
             if imp.type == 'import_from' and imp.level == 0:
-                for path in imp.paths():
+                for path in imp.get_paths():
                     names = [name.value for name in path]
                     if len(names) == 2 and names[0] == '__future__':
                         yield names[1]
@@ -328,6 +311,10 @@ class Module(Scope):
         return False
 
     def get_used_names(self):
+        """
+        Returns all the `Name` leafs that exist in this module. Tihs includes
+        both definitions and references of names.
+        """
         if self._used_names is None:
             # Don't directly use self._used_names to eliminate a lookup.
             dct = {}
@@ -358,9 +345,15 @@ class ClassOrFunc(Scope):
 
     @property
     def name(self):
+        """
+        Returns the `Name` leaf that defines the function or class name.
+        """
         return self.children[1]
 
     def get_decorators(self):
+        """
+        :return list of Decorator:
+        """
         decorated = self.parent
         if decorated.type == 'decorated':
             if decorated.children[0].type == 'decorators':
@@ -389,6 +382,10 @@ class Class(ClassOrFunc):
         super(Class, self).__init__(children)
 
     def get_super_arglist(self):
+        """
+        Returns the `arglist` node that defines the super classes. It returns
+        None if there are no arguments.
+        """
         if self.children[2] != '(':  # Has no parentheses
             return None
         else:
@@ -452,14 +449,15 @@ class Function(ClassOrFunc):
     """
     Used to store the parsed contents of a python function.
 
-    Children:
-      0. <Keyword: def>
-      1. <Name>
-      2. parameter list (including open-paren and close-paren <Operator>s)
-      3. or 5. <Operator: :>
-      4. or 6. Node() representing function body
-      3. -> (if annotation is also present)
-      4. annotation (if present)
+    Children::
+
+        0. <Keyword: def>
+        1. <Name>
+        2. parameter list (including open-paren and close-paren <Operator>s)
+        3. or 5. <Operator: :>
+        4. or 6. Node() representing function body
+        3. -> (if annotation is also present)
+        4. annotation (if present)
     """
     type = 'funcdef'
 
@@ -514,20 +512,16 @@ class Function(ClassOrFunc):
         except IndexError:
             return None
 
-    def _get_paramlist_code(self):
-        return self.children[2].get_code()
-
-
 class Lambda(Function):
     """
     Lambdas are basically trimmed functions, so give it the same interface.
 
-    Children:
+    Children::
 
-       0. <Keyword: lambda>
-       *. <Param x> for each argument x
-      -2. <Operator: :>
-      -1. Node() representing body
+         0. <Keyword: lambda>
+         *. <Param x> for each argument x
+        -2. <Operator: :>
+        -1. Node() representing body
     """
     type = 'lambdef'
     __slots__ = ()
@@ -545,9 +539,6 @@ class Lambda(Function):
         """
         raise AttributeError("lambda is not named.")
 
-    def _get_paramlist_code(self):
-        return '(' + ''.join(param.get_code() for param in self.params).strip() + ')'
-
     def _get_param_nodes(self):
         return self.children[1:-2]
 
@@ -556,7 +547,6 @@ class Lambda(Function):
         """
         Returns `None`, lambdas don't have annotations.
         """
-        # lambda functions do not support annotations
         return None
 
     def __repr__(self):
@@ -650,6 +640,10 @@ class WithStmt(Flow):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the with statement defines. The
+        defined names are set after `as`.
+        """
         names = []
         for with_item in self.children[1:-2:2]:
             # Check with items for 'as' names.
@@ -669,13 +663,18 @@ class Import(PythonBaseNode):
     __slots__ = ()
 
     def get_path_for_name(self, name):
+        """
+        The path is the list of names that leads to the searched name.
+
+        :return list of Name:
+        """
         try:
             # The name may be an alias. If it is, just map it back to the name.
-            name = self.aliases()[name]
+            name = self._aliases()[name]
         except KeyError:
             pass
 
-        for path in self.paths():
+        for path in self.get_paths():
             if name in path:
                 return path[:path.index(name) + 1]
         raise ValueError('Name should be defined in the import itself')
@@ -692,9 +691,14 @@ class ImportFrom(Import):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the import defines. The
+        defined names are set after `import` or in case an alias - `as` - is
+        present that name is returned.
+        """
         return [alias or name for name, alias in self._as_name_tuples()]
 
-    def aliases(self):
+    def _aliases(self):
         """Mapping from alias to its corresponding name."""
         return dict((alias, name) for name, alias in self._as_name_tuples()
                     if alias is not None)
@@ -738,16 +742,12 @@ class ImportFrom(Import):
             else:
                 yield as_name.children[::2]  # yields x, y -> ``x as y``
 
-    def star_import_name(self):
-        """
-        The last name defined in a star import.
-        """
-        return self.paths()[-1][-1]
-
-    def paths(self):
+    def get_paths(self):
         """
         The import paths defined in an import statement. Typically an array
         like this: ``[<Name: datetime>, <Name: date>]``.
+
+        :return list of list of Name:
         """
         dotted = self.get_from_names()
 
@@ -762,6 +762,11 @@ class ImportName(Import):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the import defines. The defined names
+        is always the first name after `import` or in case an alias - `as` - is
+        present that name is returned.
+        """
         return [alias or path[0] for path, alias in self._dotted_as_names()]
 
     @property
@@ -769,7 +774,7 @@ class ImportName(Import):
         """The level parameter of ``__import__``."""
         return 0  # Obviously 0 for imports without from.
 
-    def paths(self):
+    def get_paths(self):
         return [path for path, alias in self._dotted_as_names()]
 
     def _dotted_as_names(self):
@@ -799,10 +804,13 @@ class ImportName(Import):
 
             import foo.bar
         """
-        return [1 for path, alias in self._dotted_as_names()
-                if alias is None and len(path) > 1]
+        return bool([1 for path, alias in self._dotted_as_names()
+                    if alias is None and len(path) > 1])
 
-    def aliases(self):
+    def _aliases(self):
+        """
+        :return list of Name: Returns all the alias
+        """
         return dict((alias, path[-1]) for path, alias in self._dotted_as_names()
                     if alias is not None)
 
@@ -880,14 +888,18 @@ class ExprStmt(PythonBaseNode, DocstringMixin):
     __slots__ = ()
 
     def get_defined_names(self):
+        """
+        Returns a list of `Name` defined before the `=` sign.
+        """
         names = []
         if self.children[1].type == 'annassign':
             names = _defined_names(self.children[0])
-        return list(chain.from_iterable(
-            _defined_names(self.children[i])
+        return [
+            name
             for i in range(0, len(self.children) - 2, 2)
-            if '=' in self.children[i + 1].value)
-        ) + names
+            if '=' in self.children[i + 1].value
+            for name in _defined_names(self.children[i])
+        ] + names
 
     def get_rhs(self):
         """Returns the right-hand-side of the equals."""
@@ -925,6 +937,10 @@ class Param(PythonBaseNode):
 
     @property
     def star_count(self):
+        """
+        Is `0` in case of `foo`, `1` in case of `*foo` or `2` in case of
+        `**foo`.
+        """
         first = self.children[0]
         if first in ('*', '**'):
             return len(first.value)
@@ -932,6 +948,10 @@ class Param(PythonBaseNode):
 
     @property
     def default(self):
+        """
+        The default is the test node that appears after the `=`. Is `None` in
+        case no default is present.
+        """
         try:
             return self.children[int(self.children[0] in ('*', '**')) + 2]
         except IndexError:
@@ -939,6 +959,10 @@ class Param(PythonBaseNode):
 
     @property
     def annotation(self):
+        """
+        The default is the test node that appears after `->`. Is `None` in case
+        no annotation is present.
+        """
         tfpdef = self._tfpdef()
         if tfpdef.type == 'tfpdef':
             assert tfpdef.children[1] == ":"
@@ -957,6 +981,9 @@ class Param(PythonBaseNode):
 
     @property
     def name(self):
+        """
+        The `Name` leaf of the param.
+        """
         if self._tfpdef().type == 'tfpdef':
             return self._tfpdef().children[0]
         else:
@@ -965,7 +992,7 @@ class Param(PythonBaseNode):
     @property
     def position_index(self):
         """
-        Returns the positional index of a paramter.
+        Property for the positional index of a paramter.
         """
         index = self.parent.children.index(self)
         try:
@@ -979,16 +1006,28 @@ class Param(PythonBaseNode):
 
     def get_parent_function(self):
         """
-        Returns the function/lambda a paramter is defined in.
+        Returns the function/lambda of a parameter.
         """
-        return search_ancestor(self, ('funcdef', 'lambdef'))
+        return search_ancestor(self, 'funcdef', 'lambdef')
 
-    def get_description(self):
-        # TODO Remove?
+    def get_code(self, normalized=False, include_prefix=True, include_comma=True):
+        """
+        Like all the other get_code functions, but includes the param
+        `include_comma`.
+
+        :param include_comma bool: If enabled includes the comma in the string output.
+        """
+        if include_comma:
+            return super(Param, self).get_code(normalized, include_prefix)
+
         children = self.children
         if children[-1] == ',':
             children = children[:-1]
-        return self._get_code_for_children(children, False, False)
+        return self._get_code_for_children(
+            children,
+            normalized=False,
+            include_prefix=include_prefix
+        )
 
     def __repr__(self):
         default = '' if self.default is None else '=%s' % self.default.get_code()
@@ -999,8 +1038,8 @@ class CompFor(PythonBaseNode):
     type = 'comp_for'
     __slots__ = ()
 
-    def is_scope(self):
-        return True
-
     def get_defined_names(self):
+        """
+        Returns the a list of `Name` that the comprehension defines.
+        """
         return _defined_names(self.children[1])

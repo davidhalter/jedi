@@ -115,7 +115,7 @@ else:
                                     'jedi')
 cache_directory = os.path.expanduser(_cache_directory)
 """
-The path where all the caches can be found.
+The path where the cache is stored.
 
 On Linux, this defaults to ``~/.cache/jedi/``, on OS X to
 ``~/Library/Caches/Jedi/`` and on Windows to ``%APPDATA%\\Jedi\\Jedi\\``.

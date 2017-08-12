@@ -22,7 +22,7 @@ All nodes and leaves have these methods/properties:
 
 
 Python Parser Tree
------------------
+------------------
 
 .. automodule:: jedi.parser.python.tree
     :members:

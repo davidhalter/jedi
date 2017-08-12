@@ -8,13 +8,11 @@ However the tests might still be relevant for the parser.
 
 from textwrap import dedent
 
-import jedi
-from jedi._compatibility import u
 from jedi.parser.python import parse
 
 
 def test_carriage_return_splitting():
-    source = u(dedent('''
+    source = dedent('''
 
 
 
@@ -22,48 +20,16 @@ def test_carriage_return_splitting():
 
         class Foo():
             pass
-        '''))
+        ''')
     source = source.replace('\n', '\r\n')
     module = parse(source)
     assert [n.value for lst in module.get_used_names().values() for n in lst] == ['Foo']
 
 
-def test_class_in_docstr():
-    """
-    Regression test for a problem with classes in docstrings.
-    """
-    a = '"\nclasses\n"'
-    jedi.Script(a, 1, 0)._get_module()
-
-    b = a + '\nimport os'
-    assert jedi.Script(b, 4, 8).goto_assignments()
-
-
-def check_p(src, number_parsers_used, number_of_splits=None, number_of_misses=0):
-    if number_of_splits is None:
-        number_of_splits = number_parsers_used
-
+def check_p(src):
     module_node = parse(src)
-
     assert src == module_node.get_code()
     return module_node
-
-
-def test_if():
-    src = dedent('''\
-    def func():
-        x = 3
-        if x:
-            def y():
-                return x
-        return y()
-
-    func()
-    ''')
-
-    # Two parsers needed, one for pass and one for the function.
-    check_p(src, 2)
-    assert [d.name for d in jedi.Script(src, 8, 6).goto_definitions()] == ['int']
 
 
 def test_for():
@@ -74,7 +40,7 @@ def test_for():
     for a1 in 1,"":
         a1
     """)
-    check_p(src, 1)
+    check_p(src)
 
 
 def test_class_with_class_var():
@@ -85,7 +51,7 @@ def test_class_with_class_var():
             self.foo = 4
     pass
     """)
-    check_p(src, 3)
+    check_p(src)
 
 
 def test_func_with_if():
@@ -99,7 +65,7 @@ def test_func_with_if():
             else:
                 return a
     """)
-    check_p(src, 1)
+    check_p(src)
 
 
 def test_decorator():
@@ -109,7 +75,7 @@ def test_decorator():
         def dec(self, a):
             return a
     """)
-    check_p(src, 2)
+    check_p(src)
 
 
 def test_nested_funcs():
@@ -119,25 +85,7 @@ def test_nested_funcs():
             return func(*args, **kwargs)
         return wrapper
     """)
-    check_p(src, 3)
-
-
-def test_class_and_if():
-    src = dedent("""\
-    class V:
-        def __init__(self):
-            pass
-
-        if 1:
-            c = 3
-
-    def a_func():
-        return 1
-
-    # COMMENT
-    a_func()""")
-    check_p(src, 5, 5)
-    assert [d.name for d in jedi.Script(src).goto_definitions()] == ['int']
+    check_p(src)
 
 
 def test_multi_line_params():
@@ -148,7 +96,7 @@ def test_multi_line_params():
 
     foo = 1
     """)
-    check_p(src, 2)
+    check_p(src)
 
 
 def test_class_func_if():
@@ -162,7 +110,7 @@ def test_class_func_if():
 
     pass
     """)
-    check_p(src, 3)
+    check_p(src)
 
 
 def test_multi_line_for():
@@ -173,7 +121,7 @@ def test_multi_line_for():
 
     pass
     """)
-    check_p(src, 1)
+    check_p(src)
 
 
 def test_wrong_indentation():
@@ -183,7 +131,7 @@ def test_wrong_indentation():
          b
         a
     """)
-    #check_p(src, 1)
+    check_p(src)
 
     src = dedent("""\
     def complex():
@@ -195,7 +143,7 @@ def test_wrong_indentation():
         def other():
             pass
     """)
-    check_p(src, 3)
+    check_p(src)
 
 
 def test_strange_parentheses():
@@ -206,7 +154,7 @@ def test_strange_parentheses():
         def x():
             pass
     """)
-    check_p(src, 2)
+    check_p(src)
 
 
 def test_fake_parentheses():
@@ -224,7 +172,7 @@ def test_fake_parentheses():
         def z():
             pass
     """)
-    check_p(src, 3, 2, 1)
+    check_p(src)
 
 
 def test_additional_indent():
@@ -234,45 +182,7 @@ def test_additional_indent():
           pass
     ''')
 
-    check_p(source, 2)
-
-
-def test_incomplete_function():
-    source = '''return ImportErr'''
-
-    script = jedi.Script(dedent(source), 1, 3)
-    assert script.completions()
-
-
-def test_string_literals():
-    """Simplified case of jedi-vim#377."""
-    source = dedent("""
-    x = ur'''
-
-    def foo():
-        pass
-    """)
-
-    script = jedi.Script(dedent(source))
-    assert script._get_module().tree_node.end_pos == (6, 0)
-    assert script.completions()
-
-
-def test_decorator_string_issue():
-    """
-    Test case from #589
-    """
-    source = dedent('''\
-    """
-      @"""
-    def bla():
-      pass
-
-    bla.''')
-
-    s = jedi.Script(source)
-    assert s.completions()
-    assert s._get_module().tree_node.get_code() == source
+    check_p(source)
 
 
 def test_round_trip():
@@ -292,4 +202,4 @@ def test_parentheses_in_string():
     import abc
 
     abc.''')
-    check_p(code, 2, 1, 1)
+    check_p(code)

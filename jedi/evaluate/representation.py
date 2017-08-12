@@ -276,7 +276,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def py__class__(self):
         # This differentiation is only necessary for Python2. Python3 does not
         # use a different method class.
-        if isinstance(self.tree_node.get_parent_scope(), tree.Class):
+        if isinstance(parser_utils.get_parent_scope(self.tree_node), tree.Class):
             name = 'METHOD_CLASS'
         else:
             name = 'FUNCTION_CLASS'
@@ -350,8 +350,8 @@ class FunctionExecutionContext(context.TreeContext):
 
     @recursion.execution_recursion_decorator(default=iter([]))
     def get_yield_values(self):
-        for_parents = [(y, tree.search_ancestor(y, ('for_stmt', 'funcdef',
-                                                    'while_stmt', 'if_stmt')))
+        for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
+                                                'while_stmt', 'if_stmt'))
                        for y in self.tree_node.iter_yield_exprs()]
 
         # Calculate if the yields are placed within the same for loop.
@@ -476,7 +476,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         modules = []
         for i in self.tree_node.iter_imports():
             if i.is_star_import():
-                name = i.star_import_name()
+                name = i.get_paths()[-1][-1]
                 new = imports.infer_import(self, name)
                 for module in new:
                     if isinstance(module, ModuleContext):

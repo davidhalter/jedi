@@ -154,7 +154,12 @@ def get_call_signature(funcdef, width=72, call_string=None):
             call_string = '<lambda>'
         else:
             call_string = funcdef.name.value
-    code = call_string + funcdef._get_paramlist_code()
+    if funcdef.type == 'lambdef':
+        p = '(' + ''.join(param.get_code() for param in funcdef.params).strip() + ')'
+    else:
+        p = funcdef.children[2].get_code()
+    code = call_string + p
+
     return '\n'.join(textwrap.wrap(code, width))
 
 
@@ -216,4 +221,22 @@ def get_following_comment_same_line(node):
     if "\n" in comment:
         comment = comment[:comment.index("\n")]
     return comment
+
+
+def is_scope(node):
+    return node.type in ('file_input', 'classdef', 'funcdef', 'lambdef', 'comp_for')
+
+
+def get_parent_scope(node, include_flows=False):
+    """
+    Returns the underlying scope.
+    """
+    scope = node.parent
+    while scope is not None:
+        if include_flows and isinstance(scope, tree.Flow):
+            return scope
+        if is_scope(scope):
+            break
+        scope = scope.parent
+    return scope
 
