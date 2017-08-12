@@ -5,6 +5,7 @@ import inspect
 import re
 import sys
 import os
+import types
 from functools import partial
 
 from jedi._compatibility import builtins as _builtins, unicode
@@ -13,6 +14,7 @@ from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.context import Context, LazyKnownContext
+from jedi.evaluate.compiled.getattr_static import  getattr_static
 from . import fake
 
 
@@ -22,6 +24,23 @@ if os.path.altsep is not None:
 _path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
 del _sep
 
+# Those types don't exist in typing.
+MethodDescriptorType = type(str.replace)
+WrapperDescriptorType = type(set.__iter__)
+# `object.__subclasshook__` is an already executed descriptor.
+object_class_dict = type.__dict__["__dict__"].__get__(object)
+ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
+
+ALLOWED_DESCRIPTOR_ACCESS = (
+    types.FunctionType,
+    types.GetSetDescriptorType,
+    types.MemberDescriptorType,
+    MethodDescriptorType,
+    WrapperDescriptorType,
+    ClassMethodDescriptorType,
+    staticmethod,
+    classmethod,
+)
 
 class CheckAttribute(object):
     """Raises an AttributeError if the attribute X isn't available."""
@@ -297,16 +316,17 @@ class CompiledObjectFilter(AbstractFilter):
         name = str(name)
         obj = self._compiled_object.obj
         try:
-            getattr(obj, name)
-            if self._is_instance and name not in dir(obj):
-                return []
+            attr, is_get_descriptor = getattr_static(obj, name)
         except AttributeError:
             return []
-        except Exception:
-            # This is a bit ugly. We're basically returning this to make
-            # lookups possible without having the actual attribute. However
-            # this makes proper completion possible.
-            return [EmptyCompiledName(self._evaluator, name)]
+        else:
+            if is_get_descriptor \
+                    and not type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
+                # In case of descriptors that have get methods we cannot return
+                # it's value, because that would mean code execution.
+                return [EmptyCompiledName(self._evaluator, name)]
+            if self._is_instance and name not in dir(obj):
+                return []
         return [self._create_name(name)]
 
     def values(self):

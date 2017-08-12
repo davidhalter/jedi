@@ -2,7 +2,6 @@
 Tests of ``jedi.api.Interpreter``.
 """
 
-from ..helpers import TestCase
 import jedi
 from jedi._compatibility import is_py33
 from jedi.evaluate.compiled import mixed
@@ -179,14 +178,19 @@ def test_getitem_side_effects():
 
 
 def test_property_error():
+    lst = []
     class Foo3():
         @property
         def bar(self):
+            lst.append(1)
             raise ValueError
 
     foo = Foo3()
     _assert_interpreter_complete('foo.bar', locals(), ['bar'])
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
+
+    # There should not be side effects
+    assert lst == []
 
 
 def test_param_completion():
