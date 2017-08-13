@@ -177,9 +177,25 @@ def test_getitem_side_effects():
     _assert_interpreter_complete('foo[0].', locals(), [])
 
 
-def test_property_error():
+def test_property_error_oldstyle():
     lst = []
     class Foo3():
+        @property
+        def bar(self):
+            lst.append(1)
+            raise ValueError
+
+    foo = Foo3()
+    _assert_interpreter_complete('foo.bar', locals(), ['bar'])
+    _assert_interpreter_complete('foo.bar.baz', locals(), [])
+
+    # There should not be side effects
+    assert lst == []
+
+
+def test_property_error_newstyle():
+    lst = []
+    class Foo3(object):
         @property
         def bar(self):
             lst.append(1)

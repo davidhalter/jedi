@@ -8,7 +8,7 @@ from jedi.evaluate.compiled import mixed
 from jedi.evaluate.context import Context
 
 
-class NamespaceObject():
+class NamespaceObject(object):
     def __init__(self, dct):
         self.__dict__ = dct
 
