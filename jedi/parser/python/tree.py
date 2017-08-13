@@ -25,6 +25,7 @@ Any subclasses of :class:`Scope`, including :class:`Module` has an attribute
 [<ImportName: import os@1,0>]
 """
 
+from jedi import cache
 from jedi._compatibility import utf8_repr, unicode
 from jedi.parser.tree import Node, BaseNode, Leaf, ErrorNode, ErrorLeaf, \
     search_ancestor
@@ -153,6 +154,7 @@ class Name(_LeafWithoutNewlines):
         return "<%s: %s@%s,%s>" % (type(self).__name__, self.value,
                                    self.line, self.indent)
 
+    @cache.memoize_method
     def is_definition(self):
         if self.parent.type in ('power', 'atom_expr'):
             # In `self.x = 3` self is not a definition, but x is.

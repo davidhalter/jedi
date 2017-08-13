@@ -11,6 +11,7 @@ This module is one of the reasons why |jedi| is not thread-safe. As you can see
 there are global variables, which are holding the cache information. Some of
 these variables are being cleaned after every API usage.
 """
+from functools import wraps
 import time
 import inspect
 
@@ -111,14 +112,15 @@ def time_cache(time_add_setting):
 
 def memoize_method(method):
     """A normal memoize function."""
-    def wrapper(self, *args, **kwargs):
-        cache_dict = self.__dict__.setdefault('_memoize_method_dct', {})
-        dct = cache_dict.setdefault(method, {})
+    cache = {}
+
+    @wraps(method)
+    def wrapper(*args, **kwargs):
         key = (args, frozenset(kwargs.items()))
         try:
-            return dct[key]
+            return cache[key]
         except KeyError:
-            result = method(self, *args, **kwargs)
-            dct[key] = result
+            result = method(*args, **kwargs)
+            cache[key] = result
             return result
     return wrapper
