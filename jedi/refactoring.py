@@ -15,7 +15,7 @@ following functions (sometimes bug-prone):
 import difflib
 
 from jedi import common
-from parso.utils import source_to_unicode, split_lines
+from parso.utils import python_bytes_to_unicode, split_lines
 from jedi.evaluate import helpers
 
 
@@ -83,7 +83,7 @@ def _rename(names, replace_str):
                 with open(current_path) as f:
                     source = f.read()
 
-            new_lines = split_lines(source_to_unicode(source))
+            new_lines = split_lines(python_bytes_to_unicode(source))
             old_lines = new_lines[:]
 
         nr, indent = name.line, name.column
@@ -101,7 +101,7 @@ def extract(script, new_name):
     :type source: str
     :return: list of changed lines/changed files
     """
-    new_lines = split_lines(source_to_unicode(script.source))
+    new_lines = split_lines(python_bytes_to_unicode(script.source))
     old_lines = new_lines[:]
 
     user_stmt = script._parser.user_stmt()
@@ -160,7 +160,7 @@ def inline(script):
     """
     :type script: api.Script
     """
-    new_lines = split_lines(source_to_unicode(script.source))
+    new_lines = split_lines(python_bytes_to_unicode(script.source))
 
     dct = {}
 

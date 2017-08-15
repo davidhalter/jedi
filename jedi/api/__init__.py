@@ -15,7 +15,7 @@ import sys
 
 import parso
 from parso.python import tree
-from parso.utils import source_to_unicode, split_lines
+from parso.utils import python_bytes_to_unicode, split_lines
 
 from jedi.parser_utils import get_executable_nodes, get_statement_of_position
 from jedi import debug
@@ -110,7 +110,7 @@ class Script(object):
                 source = f.read()
 
         # TODO do we really want that?
-        self._source = source_to_unicode(source, encoding, errors='replace')
+        self._source = python_bytes_to_unicode(source, encoding, errors='replace')
         self._code_lines = split_lines(self._source)
         line = max(len(self._code_lines), 1) if line is None else line
         if not (0 < line <= len(self._code_lines)):

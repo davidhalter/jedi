@@ -44,7 +44,7 @@ import re
 from itertools import chain
 
 from parso.python import tree
-from parso.utils import source_to_unicode
+from parso.utils import python_bytes_to_unicode
 
 from jedi._compatibility import use_metaclass
 from jedi import debug
@@ -548,7 +548,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         init_path = self.py__file__()
         if os.path.basename(init_path) == '__init__.py':
             with open(init_path, 'rb') as f:
-                content = source_to_unicode(f.read(), errors='replace')
+                content = python_bytes_to_unicode(f.read(), errors='replace')
                 # these are strings that need to be used for namespace packages,
                 # the first one is ``pkgutil``, the second ``pkg_resources``.
                 options = ('declare_namespace(__name__)', 'extend_path(__path__')

@@ -19,7 +19,7 @@ import sys
 from parso.python import tree
 from parso.tree import search_ancestor
 from parso.cache import parser_cache
-from parso.utils import source_to_unicode
+from parso.utils import python_bytes_to_unicode
 
 from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
@@ -510,7 +510,7 @@ def get_modules_containing_name(evaluator, modules, name):
 
     def check_fs(path):
         with open(path, 'rb') as f:
-            code = source_to_unicode(f.read(), errors='replace')
+            code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 module_name = os.path.basename(path)[:-3]  # Remove `.py`.
                 module = _load_module(evaluator, path, code)
