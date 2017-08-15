@@ -11,7 +11,7 @@ import re
 import os
 import sys
 
-from parso.utils import splitlines
+from parso.utils import split_lines
 
 from jedi import Interpreter
 from jedi.api.helpers import get_on_completion_name
@@ -86,7 +86,7 @@ def setup_readline(namespace_module=__main__):
                     logging.debug("Start REPL completion: " + repr(text))
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                    lines = splitlines(text)
+                    lines = split_lines(text)
                     position = (len(lines), len(lines[-1]))
                     name = get_on_completion_name(
                         interpreter._get_module_node(),

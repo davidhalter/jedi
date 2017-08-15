@@ -510,7 +510,7 @@ def get_modules_containing_name(evaluator, modules, name):
 
     def check_fs(path):
         with open(path, 'rb') as f:
-            code = source_to_unicode(f.read())
+            code = source_to_unicode(f.read(), errors='replace')
             if name in code:
                 module_name = os.path.basename(path)[:-3]  # Remove `.py`.
                 module = _load_module(evaluator, path, code)

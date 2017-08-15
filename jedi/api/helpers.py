@@ -7,7 +7,7 @@ from textwrap import dedent
 
 from parso.python.parser import Parser
 from parso.python import tree
-from parso.utils import splitlines
+from parso.utils import split_lines
 
 from jedi._compatibility import u
 from jedi.evaluate.helpers import evaluate_call_of_leaf
@@ -53,7 +53,7 @@ class OnErrorLeaf(Exception):
 
 
 def _is_on_comment(leaf, position):
-    comment_lines = splitlines(leaf.prefix)
+    comment_lines = split_lines(leaf.prefix)
     difference = leaf.start_pos[0] - position[0]
     prefix_start_pos = leaf.get_start_pos_of_prefix()
     if difference == 0:
