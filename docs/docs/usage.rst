@@ -53,6 +53,7 @@ Visual Studio Code:
 - `Python Extension`_
 
 Atom:
+
 - autocomplete-python-jedi_
 - autocomplete-python_
 
