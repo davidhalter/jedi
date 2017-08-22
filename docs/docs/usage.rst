@@ -53,7 +53,7 @@ Visual Studio Code:
 - `Python Extension`_
 
 Atom:
-
+- autocomplete-python-jedi_
 - autocomplete-python_
 
 SourceLair:
@@ -114,6 +114,7 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _kate: http://kate-editor.org/
+.. _autocomplete-python-jedi: https://atom.io/packages/autocomplete-python-jedi
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
 .. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
