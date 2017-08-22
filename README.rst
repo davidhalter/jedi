@@ -38,7 +38,7 @@ Jedi can currently be used with the following editors/projects:
 - TextMate_ (Not sure if it's actually working)
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
-- Atom_ (autocomplete-python_)
+- Atom_ (autocomplete-python-jedi_, autocomplete-python_)
 - SourceLair_
 - `GNOME Builder`_ (with support for GObject Introspection)
 - `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
@@ -207,6 +207,7 @@ Acknowledgements
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _Kate: http://kate-editor.org
 .. _Atom: https://atom.io/
+.. _autocomplete-python-jedi: https://atom.io/packages/autocomplete-python-jedi
 .. _autocomplete-python: https://atom.io/packages/autocomplete-python
 .. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
