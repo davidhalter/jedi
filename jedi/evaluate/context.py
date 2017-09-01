@@ -5,7 +5,10 @@ from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 
 
 class Context(object):
-    api_type = None
+    """
+    Should be defined, otherwise the API returns empty types.
+    """
+
     """
     To be defined by subclasses.
     """
@@ -15,6 +18,12 @@ class Context(object):
     def __init__(self, evaluator, parent_context=None):
         self.evaluator = evaluator
         self.parent_context = parent_context
+
+    @property
+    def api_type(self):
+        # By default just lower name of the class. Can and should be
+        # overwritten.
+        return self.__class__.__name__.lower()
 
     def get_root_context(self):
         context = self

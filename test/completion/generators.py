@@ -180,6 +180,25 @@ gen().send()
 gen()()
 
 # -----------------
+# empty yield
+# -----------------
+
+def x():
+    yield
+
+#? None
+next(x())
+#? gen()
+x()
+
+def x():
+    for i in range(3):
+        yield
+
+#? None
+next(x())
+
+# -----------------
 # yield in expression
 # -----------------
 

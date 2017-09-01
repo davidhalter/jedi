@@ -342,6 +342,11 @@ class FunctionExecutionContext(context.TreeContext):
         return types
 
     def _eval_yield(self, yield_expr):
+        if yield_expr.type == 'keyword':
+            # `yield` just yields None.
+            yield context.LazyKnownContext(compiled.create(self.evaluator, None))
+            return
+
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
             cn = ContextualizedNode(self, node.children[1])
