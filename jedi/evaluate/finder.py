@@ -194,7 +194,7 @@ def _name_to_types(evaluator, context, tree_name):
     elif typ == 'expr_stmt':
         types = _remove_statements(evaluator, context, node, tree_name)
     elif typ == 'with_stmt':
-        types = context.eval_node(node.get_context_manager_from_name(tree_name))
+        types = context.eval_node(node.get_test_node_from_name(tree_name))
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
