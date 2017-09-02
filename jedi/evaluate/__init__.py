@@ -468,7 +468,22 @@ class Evaluator(object):
         return helpers.evaluate_call_of_leaf(context, name)
 
     def goto(self, context, name):
-        definition = name._get_definition(import_name_always=True) or name
+        definition = name._get_definition(import_name_always=True)
+        if definition is not None:
+            type_ = definition.type
+            if type_ == 'expr_stmt':
+                # Only take the parent, because if it's more complicated than just
+                # a name it's something you can "goto" again.
+                is_simple_name = name.parent.type not in ('power', 'trailer')
+                if is_simple_name:
+                    return [TreeNameDefinition(context, name)]
+            elif type_ == 'param':
+                return [ParamName(context, name)]
+            elif type_ in ('funcdef', 'classdef'):
+                return [TreeNameDefinition(context, name)]
+            elif type_ in ('import_from', 'import_name'):
+                module_names = imports.infer_import(context, name, is_goto=True)
+                return module_names
 
         par = name.parent
         typ = par.type
@@ -497,19 +512,6 @@ class Evaluator(object):
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names
-        elif definition.type == 'expr_stmt':
-            # Only take the parent, because if it's more complicated than just
-            # a name it's something you can "goto" again.
-            is_simple_name = name.parent.type not in ('power', 'trailer')
-            if is_simple_name:
-                return [TreeNameDefinition(context, name)]
-        elif definition.type == 'param':
-            return [ParamName(context, name)]
-        elif definition.type in ('funcdef', 'classdef'):
-            return [TreeNameDefinition(context, name)]
-        elif definition.type in ('import_from', 'import_name'):
-            module_names = imports.infer_import(context, name, is_goto=True)
-            return module_names
         elif typ == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:
