@@ -340,12 +340,10 @@ class Evaluator(object):
         """
         if atom.type == 'name':
             # This is the first global lookup.
-            stmt = atom.get_definition()
-            if stmt.type == 'comp_for':
-                stmt = tree.search_ancestor(stmt, 'expr_stmt', 'lambdef', 'funcdef', 'classdef')
-            if stmt is None or stmt.type != 'expr_stmt':
-                # We only need to adjust the start_pos for statements, because
-                # there the name cannot be used.
+            stmt = tree.search_ancestor(
+                atom, 'expr_stmt', 'lambdef'
+            ) or atom
+            if stmt.type == 'lambdef':
                 stmt = atom
             return context.py__getattribute__(
                 name_or_str=atom,
