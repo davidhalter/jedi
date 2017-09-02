@@ -94,16 +94,10 @@ def _get_code_for_stack(code_lines, module_node, position):
         # impossible.
         raise OnErrorLeaf(leaf)
     else:
-        if leaf == ';':
-            user_stmt = leaf.parent
-        else:
-            user_stmt = leaf
-            while True:
-                if user_stmt.parent.type in ('file_input', 'suite'):
-                    break
-                user_stmt = user_stmt.parent
-
-        if user_stmt.parent.type == 'simple_stmt':
+        user_stmt = leaf
+        while True:
+            if user_stmt.parent.type in ('file_input', 'suite', 'simple_stmt'):
+                break
             user_stmt = user_stmt.parent
 
         if is_after_newline:
