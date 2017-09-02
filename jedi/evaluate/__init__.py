@@ -444,7 +444,7 @@ class Evaluator(object):
             return types
 
     def goto_definitions(self, context, name):
-        def_ = name._get_definition()
+        def_ = name._get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
             if type_ == 'classdef':
@@ -464,15 +464,12 @@ class Evaluator(object):
                 return finder.check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
-        else:
-            imp = tree.search_ancestor(name, 'import_from', 'import_name')
-            if imp is not None:
-                return imports.infer_import(context, name)
 
         return helpers.evaluate_call_of_leaf(context, name)
 
     def goto(self, context, name):
-        stmt = name.get_definition()
+        definition = name._get_definition(import_name_always=True)
+
         par = name.parent
         typ = par.type
         if typ == 'argument' and par.children[1] == '=' and par.children[0] == name:
@@ -508,7 +505,7 @@ class Evaluator(object):
             return [ParamName(context, name)]
         elif typ in ('param', 'funcdef', 'classdef') and par.name is name:
             return [TreeNameDefinition(context, name)]
-        elif isinstance(stmt, tree.Import):
+        elif isinstance(definition, tree.Import):
             module_names = imports.infer_import(context, name, is_goto=True)
             return module_names
         elif typ == 'dotted_name':  # Is a decorator.
@@ -529,9 +526,10 @@ class Evaluator(object):
                 for value in values
             )
         else:
-            if stmt.type != 'expr_stmt':
-                # We only need to adjust the start_pos for statements, because
-                # there the name cannot be used.
+            stmt = tree.search_ancestor(
+                name, 'expr_stmt', 'lambdef'
+            ) or name
+            if stmt.type == 'lambdef':
                 stmt = name
             return context.py__getattribute__(
                 name,
