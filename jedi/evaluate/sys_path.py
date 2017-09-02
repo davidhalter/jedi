@@ -156,10 +156,10 @@ def _check_module(module_context):
             power = name.parent.parent
             if power.type in ('power', 'atom_expr'):
                 c = power.children
-                if isinstance(c[0], tree.Name) and c[0].value == 'sys' \
+                if c[0].type == 'name' and c[0].value == 'sys' \
                         and c[1].type == 'trailer':
                     n = c[1].children[1]
-                    if isinstance(n, tree.Name) and n.value == 'path':
+                    if n.type == 'name' and n.value == 'path':
                         yield name, power
 
     sys_path = list(module_context.evaluator.sys_path)  # copy
@@ -172,15 +172,15 @@ def _check_module(module_context):
         pass
     else:
         for name, power in get_sys_path_powers(possible_names):
-            stmt = name.get_definition()
+            expr_stmt = power.parent
             if len(power.children) >= 4:
                 sys_path.extend(
                     _paths_from_list_modifications(
                         module_context.py__file__(), *power.children[2:4]
                     )
                 )
-            elif name.get_definition().type == 'expr_stmt':
-                sys_path.extend(_paths_from_assignment(module_context, stmt))
+            elif expr_stmt is not None and expr_stmt.type == 'expr_stmt':
+                sys_path.extend(_paths_from_assignment(module_context, expr_stmt))
     return sys_path
 
 
