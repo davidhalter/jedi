@@ -497,15 +497,17 @@ class Evaluator(object):
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names
-        elif typ == 'expr_stmt' and name in par.get_defined_names():
+        elif definition.type == 'expr_stmt':
             # Only take the parent, because if it's more complicated than just
             # a name it's something you can "goto" again.
-            return [TreeNameDefinition(context, name)]
+            is_simple_name = name.parent.type not in ('power', 'trailer')
+            if is_simple_name:
+                return [TreeNameDefinition(context, name)]
         elif definition.type == 'param':
             return [ParamName(context, name)]
-        elif typ in ('funcdef', 'classdef') and par.name is name:
+        elif definition.type in ('funcdef', 'classdef'):
             return [TreeNameDefinition(context, name)]
-        elif isinstance(definition, tree.Import):
+        elif definition.type in ('import_from', 'import_name'):
             module_names = imports.infer_import(context, name, is_goto=True)
             return module_names
         elif typ == 'dotted_name':  # Is a decorator.
