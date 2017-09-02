@@ -1,11 +1,11 @@
 import pytest
 
 import jedi
-from jedi._compatibility import py_version
+from jedi._compatibility import py_version, unicode
 
 
-def _eval_literal(value):
-    def_, = jedi.Script(value).goto_definitions()
+def _eval_literal(code):
+    def_, = jedi.Script(code).goto_definitions()
     return def_._name._context.obj
 
 
@@ -25,9 +25,9 @@ def test_rb_strings():
     assert _eval_literal('br"asdf"') == b'asdf'
     obj = _eval_literal('rb"asdf"')
     if py_version < 33:
-        # Before Python 3.3 there was a more strict definition in which order
-        # you could define literals.
-        assert obj == ''
+        # rb is not valid in Python 2. Due to error recovery we just get a
+        # string.
+        assert obj == 'asdf'
     else:
         assert obj == b'asdf'
 

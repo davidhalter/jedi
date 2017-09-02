@@ -6,10 +6,12 @@ the interesting information about completion and goto operations.
 import warnings
 import re
 
+from parso.cache import parser_cache
+from parso.python.tree import search_ancestor
+
 from jedi._compatibility import u
 from jedi import settings
 from jedi import common
-from parso.cache import parser_cache
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import instance
@@ -138,9 +140,9 @@ class BaseDefinition(object):
         resolve = False
         if tree_name is not None:
             # TODO move this to their respective names.
-            definition = tree_name.get_definition()
-            if definition.type == 'import_from' and \
-                    tree_name in definition.get_defined_names():
+            definition = tree_name._get_definition()
+            if definition is not None and definition.type == 'import_from' and \
+                    tree_name.is_definition():
                 resolve = True
 
         if isinstance(self._name, imports.SubModuleName) or resolve:
@@ -538,14 +540,14 @@ class Definition(BaseDefinition):
                 typ = 'def'
             return typ + ' ' + u(self._name.string_name)
         elif typ == 'param':
-            code = tree_name.get_definition().get_code(
+            code = search_ancestor(tree_name, 'param').get_code(
                 include_prefix=False,
                 include_comma=False
             )
             return typ + ' ' + code
 
 
-        definition = tree_name.get_definition()
+        definition = tree_name._get_definition() or tree_name
         # Remove the prefix, because that's not what we want for get_code
         # here.
         txt = definition.get_code(include_prefix=False)
@@ -630,7 +632,7 @@ class CallSignature(Definition):
             if self.params:
                 param_name = self.params[-1]._name
                 if param_name.tree_name is not None:
-                    if param_name.tree_name.get_definition().star_count == 2:
+                    if param_name.tree_name._get_definition().star_count == 2:
                         return i
             return None
 
@@ -639,7 +641,7 @@ class CallSignature(Definition):
                 tree_name = param._name.tree_name
                 if tree_name is not None:
                     # *args case
-                    if tree_name.get_definition().star_count == 1:
+                    if tree_name._get_definition().star_count == 1:
                         return i
             return None
         return self._index
