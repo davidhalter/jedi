@@ -61,10 +61,6 @@ listen(['' for x in [1]])
 #?
 ([str for x in []])[0]
 
-# with a set literal
-#? int()
-[a for a in {1, 2, 3}][0]
-
 # -----------------
 # nested list comprehensions
 # -----------------
@@ -134,6 +130,46 @@ left
 right
 
 # -----------------
+# name resolution in comprehensions.
+# -----------------
+
+def x():
+    """Should not try to resolve to the if hio, which was a bug."""
+    #? 22
+    [a for a in h if hio]
+    if hio: pass
+
+# -----------------
+# slices
+# -----------------
+
+#? list()
+foo = [x for x in [1, '']][:1]
+#? int()
+foo[0]
+#? str()
+foo[1]
+
+# -----------------
+# In class
+# -----------------
+
+class X():
+    def __init__(self, bar):
+        self.bar = bar
+
+    def foo(self):
+        x = [a for a in self.bar][0]
+        #? int()
+        x
+        return x
+
+#? int()
+X([1]).foo()
+
+# set/dict comprehensions were introduced in 2.7, therefore:
+# python >= 2.7
+# -----------------
 # dict comprehensions
 # -----------------
 
@@ -174,40 +210,6 @@ d[2]
 next(iter({a for a in range(10)}))
 
 
-# -----------------
-# name resolution in comprehensions.
-# -----------------
-
-def x():
-    """Should not try to resolve to the if hio, which was a bug."""
-    #? 22
-    [a for a in h if hio]
-    if hio: pass
-
-# -----------------
-# slices
-# -----------------
-
-#? list()
-foo = [x for x in [1, '']][:1]
+# with a set literal (also doesn't work in 2.6).
 #? int()
-foo[0]
-#? str()
-foo[1]
-
-# -----------------
-# In class
-# -----------------
-
-class X():
-    def __init__(self, bar):
-        self.bar = bar
-
-    def foo(self):
-        x = [a for a in self.bar][0]
-        #? int()
-        x
-        return x
-
-#? int()
-X([1]).foo()
+[a for a in {1, 2, 3}][0]

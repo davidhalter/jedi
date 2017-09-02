@@ -137,24 +137,6 @@ ret(1)[0]
 ret()[0]
 
 # -----------------
-# with statements
-# -----------------
-
-with open('') as f:
-    #? ['closed']
-    f.closed
-    for line in f:
-        #? str()
-        line
-
-with open('') as f1, open('') as f2:
-    #? ['closed']
-    f1.closed
-    #? ['closed']
-    f2.closed
-
-
-# -----------------
 # global vars
 # -----------------
 
@@ -291,3 +273,23 @@ foo
 __file__
 #? ['__file__']
 __file__
+
+
+# -----------------
+# with statements
+# -----------------
+
+with open('') as f:
+    #? ['closed']
+    f.closed
+    for line in f:
+        #? str()
+        line
+
+# Nested with statements don't exist in Python 2.6.
+# python >= 2.7
+with open('') as f1, open('') as f2:
+    #? ['closed']
+    f1.closed
+    #? ['closed']
+    f2.closed
