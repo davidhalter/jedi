@@ -173,7 +173,7 @@ class NameFinder(object):
 
 def _name_to_types(evaluator, context, tree_name):
     types = []
-    node = tree_name._get_definition()
+    node = tree_name.get_definition()
     if node is None:
         node = tree_name.parent
         if node.type == 'global_stmt':

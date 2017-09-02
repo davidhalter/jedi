@@ -444,7 +444,7 @@ class Evaluator(object):
             return types
 
     def goto_definitions(self, context, name):
-        def_ = name._get_definition(import_name_always=True)
+        def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
             if type_ == 'classdef':
@@ -468,7 +468,7 @@ class Evaluator(object):
         return helpers.evaluate_call_of_leaf(context, name)
 
     def goto(self, context, name):
-        definition = name._get_definition(import_name_always=True)
+        definition = name.get_definition(import_name_always=True)
         if definition is not None:
             type_ = definition.type
             if type_ == 'expr_stmt':

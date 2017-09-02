@@ -89,7 +89,7 @@ class TreeNameDefinition(AbstractTreeName):
 
     @property
     def api_type(self):
-        definition = self.tree_name._get_definition()
+        definition = self.tree_name.get_definition()
         if definition is None:
             definition = self.tree_name.parent
             if definition.type == 'dotted_as_name':

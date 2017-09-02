@@ -140,7 +140,7 @@ class BaseDefinition(object):
         resolve = False
         if tree_name is not None:
             # TODO move this to their respective names.
-            definition = tree_name._get_definition()
+            definition = tree_name.get_definition()
             if definition is not None and definition.type == 'import_from' and \
                     tree_name.is_definition():
                 resolve = True
@@ -547,7 +547,7 @@ class Definition(BaseDefinition):
             return typ + ' ' + code
 
 
-        definition = tree_name._get_definition() or tree_name
+        definition = tree_name.get_definition() or tree_name
         # Remove the prefix, because that's not what we want for get_code
         # here.
         txt = definition.get_code(include_prefix=False)
@@ -632,7 +632,7 @@ class CallSignature(Definition):
             if self.params:
                 param_name = self.params[-1]._name
                 if param_name.tree_name is not None:
-                    if param_name.tree_name._get_definition().star_count == 2:
+                    if param_name.tree_name.get_definition().star_count == 2:
                         return i
             return None
 
@@ -641,7 +641,7 @@ class CallSignature(Definition):
                 tree_name = param._name.tree_name
                 if tree_name is not None:
                     # *args case
-                    if tree_name._get_definition().star_count == 1:
+                    if tree_name.get_definition().star_count == 1:
                         return i
             return None
         return self._index

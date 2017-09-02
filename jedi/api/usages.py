@@ -64,7 +64,7 @@ def resolve_potential_imports(evaluator, definitions):
     new = set()
     for d in definitions:
         if isinstance(d, TreeNameDefinition):
-            imp_or_stmt = d.tree_name._get_definition()
+            imp_or_stmt = d.tree_name.get_definition()
             if isinstance(imp_or_stmt, tree.Import):
                 new |= resolve_potential_imports(
                     evaluator,
