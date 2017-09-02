@@ -74,6 +74,14 @@ class ContextName(ContextNameMixin, AbstractTreeName):
 
 
 class TreeNameDefinition(AbstractTreeName):
+    _API_TYPES = dict(
+        import_name='module',
+        import_from='module',
+        funcdef='function',
+        param='param',
+        classdef='class',
+    )
+
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.evaluate.finder import _name_to_types
@@ -81,14 +89,12 @@ class TreeNameDefinition(AbstractTreeName):
 
     @property
     def api_type(self):
-        definition = self.tree_name.get_definition()
-        return dict(
-            import_name='module',
-            import_from='module',
-            funcdef='function',
-            param='param',
-            classdef='class',
-        ).get(definition.type, 'statement')
+        definition = self.tree_name._get_definition()
+        if definition is None:
+            definition = self.tree_name.parent
+            if definition.type == 'dotted_as_name':
+                definition = definition.parent
+        return self._API_TYPES.get(definition.type, 'statement')
 
 
 class ParamName(AbstractTreeName):

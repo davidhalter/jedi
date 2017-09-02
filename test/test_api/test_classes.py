@@ -358,7 +358,7 @@ class TestGotoAssignments(TestCase):
         nms = names('import json as foo', references=True)
         assert nms[0].name == 'json'
         assert nms[0].type == 'module'
-        assert nms[0]._name.tree_name.get_definition().type == 'import_name'
+        assert nms[0]._name.tree_name.parent.type == 'dotted_as_name'
         n = nms[0].goto_assignments()[0]
         assert n.name == 'json'
         assert n.type == 'module'
@@ -366,7 +366,7 @@ class TestGotoAssignments(TestCase):
 
         assert nms[1].name == 'foo'
         assert nms[1].type == 'module'
-        assert nms[1]._name.tree_name.get_definition().type == 'import_name'
+        assert nms[1]._name.tree_name.parent.type == 'dotted_as_name'
         ass = nms[1].goto_assignments()
         assert len(ass) == 1
         assert ass[0].name == 'json'
