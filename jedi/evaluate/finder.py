@@ -173,7 +173,20 @@ class NameFinder(object):
 
 def _name_to_types(evaluator, context, tree_name):
     types = []
-    node = tree_name.get_definition()
+    node = tree_name._get_definition()
+    if node is None:
+        node = tree_name.parent
+        if node.type == 'global_stmt':
+            context = evaluator.create_context(context, tree_name)
+            finder = NameFinder(evaluator, context, context, tree_name.value)
+            filters = finder.get_filters(search_global=True)
+            # For global_stmt lookups, we only need the first possible scope,
+            # which means the function itself.
+            filters = [next(filters)]
+            return finder.find(filters, attribute_lookup=False)
+        elif node.type not in ('import_from', 'import_name'):
+            raise ValueError("Should not happen.")
+
     typ = node.type
     if typ == 'for_stmt':
         types = pep0484.find_type_from_comment_hint_for(context, node, tree_name)
@@ -199,14 +212,6 @@ def _name_to_types(evaluator, context, tree_name):
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
         types = _apply_decorators(evaluator, context, node)
-    elif typ == 'global_stmt':
-        context = evaluator.create_context(context, tree_name)
-        finder = NameFinder(evaluator, context, context, tree_name.value)
-        filters = finder.get_filters(search_global=True)
-        # For global_stmt lookups, we only need the first possible scope,
-        # which means the function itself.
-        filters = [next(filters)]
-        types += finder.find(filters, attribute_lookup=False)
     elif typ == 'try_stmt':
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
