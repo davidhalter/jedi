@@ -31,7 +31,7 @@ from jedi.evaluate import Evaluator
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate.param import try_iter_content
-from jedi.evaluate.helpers import get_module_names
+from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import get_venv_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
 from jedi.evaluate.filters import TreeNameDefinition
@@ -355,7 +355,11 @@ class Script(object):
                         # Iterate tuples.
                         unpack_tuple_to_dict(context, types, testlist)
                 else:
-                    try_iter_content(self._evaluator.goto_definitions(context, node))
+                    if node.type == 'name':
+                        defs = self._evaluator.goto_definitions(context, node)
+                    else:
+                        defs = evaluate_call_of_leaf(context, node)
+                    try_iter_content(defs)
                 self._evaluator.reset_recursion_limitations()
 
             ana = [a for a in self._evaluator.analysis if self.path == a.path]

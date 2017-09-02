@@ -446,25 +446,30 @@ class Evaluator(object):
             return types
 
     def goto_definitions(self, context, name):
-        def_ = name.get_definition()
         is_simple_name = name.parent.type not in ('power', 'trailer')
         if is_simple_name:
-            if name.parent.type == 'classdef' and name.parent.name == name:
-                return [er.ClassContext(self, name.parent, context)]
-            elif name.parent.type == 'funcdef' and name.parent.name == name:
-                return [er.FunctionContext(self, context, name.parent)]
+            def_ = name._get_definition()
+            if def_ is not None:
+                type_ = def_.type
+                if type_ == 'classdef':
+                    return [er.ClassContext(self, name.parent, context)]
+                elif type_ == 'funcdef':
+                    return [er.FunctionContext(self, context, name.parent)]
 
-            if def_.type == 'expr_stmt' and name in def_.get_defined_names():
-                return self.eval_statement(context, def_, name)
-            elif def_.type == 'for_stmt' and \
-                    name.start_pos < def_.children[1].end_pos:
-                container_types = self.eval_element(context, def_.children[3])
-                cn = ContextualizedNode(context, def_.children[3])
-                for_types = iterable.py__iter__types(self, container_types, cn)
-                c_node = ContextualizedName(context, name)
-                return finder.check_tuple_assignments(self, c_node, for_types)
-            elif def_.type in ('import_from', 'import_name'):
-                return imports.infer_import(context, name)
+                if type_ == 'expr_stmt':
+                    return self.eval_statement(context, def_, name)
+                if type_ == 'for_stmt':
+                    container_types = self.eval_element(context, def_.children[3])
+                    cn = ContextualizedNode(context, def_.children[3])
+                    for_types = iterable.py__iter__types(self, container_types, cn)
+                    c_node = ContextualizedName(context, name)
+                    return finder.check_tuple_assignments(self, c_node, for_types)
+                if type_ in ('import_from', 'import_name'):
+                    return imports.infer_import(context, name)
+            else:
+                imp = tree.search_ancestor(name, 'import_from', 'import_name')
+                if imp is not None:
+                    return imports.infer_import(context, name)
 
         return helpers.evaluate_call_of_leaf(context, name)
 
