@@ -335,7 +335,12 @@ class FunctionExecutionContext(context.TreeContext):
                 if check_yields:
                     types |= set(self._eval_yield(r))
                 else:
-                    types |= self.eval_node(r.children[1])
+                    try:
+                        children = r.children
+                    except AttributeError:
+                        types.add(compiled.create(self.evaluator, None))
+                    else:
+                        types |= self.eval_node(children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break

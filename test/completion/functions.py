@@ -1,3 +1,9 @@
+def x():
+    return
+
+#? None
+x()
+
 def array(first_param):
     #? ['first_param']
     first_param
