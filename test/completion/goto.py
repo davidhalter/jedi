@@ -184,7 +184,7 @@ param = ClassDef
 def ab1(param): pass
 #! 9 ['param param']
 def ab2(param): pass
-#! 11 ['param a=param']
+#! 11 ['param = ClassDef']
 def ab3(a=param): pass
 
 ab1(ClassDef);ab2(ClassDef);ab3(ClassDef)
