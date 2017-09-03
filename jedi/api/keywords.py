@@ -76,11 +76,15 @@ class KeywordName(AbstractNameDefinition):
     api_type = 'keyword'
 
     def __init__(self, evaluator, name):
+        self.evaluator = evaluator
         self.string_name = name
         self.parent_context = evaluator.BUILTINS
 
     def eval(self):
         return set()
+
+    def infer(self):
+        return [Keyword(self.evaluator, self.string_name, (0, 0))]
 
 
 class Keyword(object):
@@ -100,9 +104,8 @@ class Keyword(object):
         """ For a `parsing.Name` like comparision """
         return [self.name]
 
-    @property
-    def docstr(self):
-        return imitate_pydoc(self.name)
+    def py__doc__(self, include_call_signature=False):
+        return imitate_pydoc(self.name.string_name)
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)
@@ -136,6 +139,6 @@ def imitate_pydoc(string):
         return ''
 
     try:
-        return pydoc_topics.topics[label] if pydoc_topics else ''
+        return pydoc_topics.topics[label].strip() if pydoc_topics else ''
     except KeyError:
         return ''

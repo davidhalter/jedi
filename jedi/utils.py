@@ -11,7 +11,7 @@ import re
 import os
 import sys
 
-from parso.utils import split_lines
+from parso import split_lines
 
 from jedi import Interpreter
 from jedi.api.helpers import get_on_completion_name

@@ -19,7 +19,7 @@ import sys
 from parso.python import tree
 from parso.tree import search_ancestor
 from parso.cache import parser_cache
-from parso.utils import python_bytes_to_unicode
+from parso import python_bytes_to_unicode
 
 from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug

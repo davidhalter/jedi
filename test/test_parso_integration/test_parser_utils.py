@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from jedi._compatibility import is_py3
 from jedi import parser_utils
 from parso import parse

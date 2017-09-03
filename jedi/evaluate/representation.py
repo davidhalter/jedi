@@ -44,7 +44,7 @@ import re
 from itertools import chain
 
 from parso.python import tree
-from parso.utils import python_bytes_to_unicode
+from parso import python_bytes_to_unicode
 
 from jedi._compatibility import use_metaclass
 from jedi import debug

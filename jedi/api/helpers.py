@@ -7,7 +7,7 @@ from textwrap import dedent
 
 from parso.python.parser import Parser
 from parso.python import tree
-from parso.utils import split_lines
+from parso import split_lines
 
 from jedi._compatibility import u
 from jedi.evaluate.helpers import evaluate_call_of_leaf
