@@ -295,6 +295,9 @@ x = 32
 #< 7 (0,1), (0,7)
 [x for x in something]
 
+x = 3
+# Not supported syntax in Python 2.6.
+# python >= 2.7
 #< 1 (0,1), (0,10)
 {x:1 for  x in something}
 #< 10 (0,1), (0,10)

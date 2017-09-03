@@ -367,8 +367,6 @@ tuple(a)[1]
 tuple(list(set(a)))[1]
 
 #? int()
-tuple({1})[0]
-#? int()
 tuple((1,))[0]
 
 # implementation detail for lists, should not be visible
@@ -403,6 +401,12 @@ def test_func():
         pass
     #? str()
     x
+
+
+# python >= 2.7
+# Set literals are not valid in 2.6.
+#? int()
+tuple({1})[0]
 
 # python >= 3.3
 # -----------------

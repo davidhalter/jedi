@@ -49,18 +49,6 @@ for a in arr:
 list(arr)[10]
 
 # -----------------
-# set.add
-# -----------------
-st = {1.0}
-for a in [1,2]:
-    st.add(a)
-
-st.append('')  # lists should not have an influence
-
-st.add  # should not cause an exception
-st.add()
-
-# -----------------
 # list.extend / set.update
 # -----------------
 
@@ -102,15 +90,6 @@ arr2.append('')
 #? str()
 arr2[0]
 
-
-st = {1.0}
-st.add(1)
-lst = list(st)
-
-lst.append('')
-
-#? float() int() str()
-lst[0]
 
 lst = [1]
 lst.append(1.0)
@@ -304,3 +283,28 @@ def third():
     return list(b)
 #? 
 third()[0]
+
+
+# -----------------
+# set.add
+# -----------------
+# Set literals are not valid in 2.6.
+# python >= 2.7
+st = {1.0}
+for a in [1,2]:
+    st.add(a)
+
+st.append('')  # lists should not have an influence
+
+st.add  # should not cause an exception
+st.add()
+
+st = {1.0}
+st.add(1)
+lst = list(st)
+
+lst.append('')
+
+#? float() int() str()
+lst[0]
+

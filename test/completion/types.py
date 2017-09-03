@@ -92,19 +92,6 @@ d.items()[0][0]
 d.items()[0][1]
 
 # -----------------
-# set
-# -----------------
-set_t = {1,2}
-
-#? ['clear', 'copy']
-set_t.c
-
-set_t2 = set()
-
-#? ['clear', 'copy']
-set_t2.c
-
-# -----------------
 # tuples
 # -----------------
 tup = ('',2)
@@ -125,3 +112,18 @@ tup3.index
 tup4 = 1,""
 #? ['index']
 tup4.index
+
+# -----------------
+# set
+# -----------------
+# Set literals are not valid in 2.6.
+# python >= 2.7
+set_t = {1,2}
+
+#? ['clear', 'copy']
+set_t.c
+
+set_t2 = set()
+
+#? ['clear', 'copy']
+set_t2.c
