@@ -109,7 +109,7 @@ option than to execute those modules. However: Execute isn't that critical (as
 e.g. in pythoncomplete, which used to execute *every* import!), because it
 means one import and no more.  So basically the only dangerous thing is using
 the import itself. If your ``c_builtin`` uses some strange initializations, it
-might be dangerous. But if it does you're screwed anyways, because eventualy
+might be dangerous. But if it does you're screwed anyways, because eventually
 you're going to execute your code, which executes the import.
 
 

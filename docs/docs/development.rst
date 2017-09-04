@@ -14,7 +14,7 @@ Introduction
 ------------
 
 This page tries to address the fundamental demand for documentation of the
-|jedi| interals. Understanding a dynamic language is a complex task. Especially
+|jedi| internals. Understanding a dynamic language is a complex task. Especially
 because type inference in Python can be a very recursive task. Therefore |jedi|
 couldn't get rid of complexity. I know that **simple is better than complex**,
 but unfortunately it sometimes requires complex solutions to understand complex
