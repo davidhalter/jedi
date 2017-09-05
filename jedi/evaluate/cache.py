@@ -45,6 +45,7 @@ def _memoize_default(default=_NO_DEFAULT, evaluator_is_first_arg=False, second_a
                 memo[key] = rv
                 return rv
         return wrapper
+
     return func
 
 

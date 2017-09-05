@@ -66,6 +66,7 @@ from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 from jedi.evaluate.context import ContextualizedNode
 from jedi import parser_utils
+from jedi.evaluate.parser_cache import get_yield_exprs
 
 
 def apply_py__get__(context, base_context):
@@ -258,7 +259,8 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         Created to be used by inheritance.
         """
-        if self.tree_node.is_generator():
+        yield_exprs = get_yield_exprs(self.evaluator, self.tree_node)
+        if yield_exprs:
             return set([iterable.Generator(self.evaluator, function_execution)])
         else:
             return function_execution.get_return_values()
@@ -321,7 +323,7 @@ class FunctionExecutionContext(context.TreeContext):
 
         if check_yields:
             types = set()
-            returns = funcdef.iter_yield_exprs()
+            returns = get_yield_exprs(self.evaluator, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
             types = set(docstrings.infer_return_types(self.function_context))
@@ -364,7 +366,7 @@ class FunctionExecutionContext(context.TreeContext):
     def get_yield_values(self):
         for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
                                                 'while_stmt', 'if_stmt'))
-                       for y in self.tree_node.iter_yield_exprs()]
+                       for y in get_yield_exprs(self.evaluator, self.tree_node)]
 
         # Calculate if the yields are placed within the same for loop.
         yields_order = []
