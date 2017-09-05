@@ -21,8 +21,8 @@ def memoize_default(default=NO_DEFAULT, evaluator_is_first_arg=False, second_arg
         def wrapper(obj, *args, **kwargs):
             if evaluator_is_first_arg:
                 cache = obj.memoize_cache
-            elif second_arg_is_evaluator:  # needed for meta classes
-                cache = args[0].memoize_cache
+            elif second_arg_is_evaluator:
+                cache = args[0].memoize_cache  # needed for meta classes
             else:
                 cache = obj.evaluator.memoize_cache
 
@@ -45,6 +45,20 @@ def memoize_default(default=NO_DEFAULT, evaluator_is_first_arg=False, second_arg
                 return rv
         return wrapper
     return func
+
+
+def evaluator_function_cache(default=NO_DEFAULT):
+    def decorator(func):
+        return memoize_default(default=default, evaluator_is_first_arg=True)(func)
+
+    return decorator
+
+
+def evaluator_method_cache(default=NO_DEFAULT):
+    def decorator(func):
+        return memoize_default(default=default)(func)
+
+    return decorator
 
 
 class CachedMetaClass(type):
