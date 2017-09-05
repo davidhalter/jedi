@@ -21,7 +21,7 @@ from textwrap import dedent
 from jedi._compatibility import u
 from jedi.common import unite
 from jedi.evaluate import context
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 
@@ -187,7 +187,7 @@ def _execute_array_values(evaluator, array):
         return array.execute_evaluated()
 
 
-@memoize_default()
+@evaluator_method_cache()
 def infer_param(execution_context, param):
     from jedi.evaluate.instance import InstanceFunctionExecution
 
@@ -211,7 +211,7 @@ def infer_param(execution_context, param):
     return types
 
 
-@memoize_default()
+@evaluator_method_cache()
 def infer_return_types(function_context):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:

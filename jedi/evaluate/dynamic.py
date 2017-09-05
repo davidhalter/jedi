@@ -20,7 +20,7 @@ It works as follows:
 from parso.python import tree
 from jedi import settings
 from jedi import debug
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
 from jedi.evaluate.param import TreeArguments, create_default_param
 from jedi.common import to_list, unite
@@ -93,7 +93,7 @@ def search_params(evaluator, execution_context, funcdef):
         evaluator.dynamic_params_depth -= 1
 
 
-@memoize_default([], evaluator_is_first_arg=True)
+@evaluator_function_cache(default=[])
 @to_list
 def _search_function_executions(evaluator, module_context, funcdef):
     """

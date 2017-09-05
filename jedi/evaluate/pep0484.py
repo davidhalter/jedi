@@ -27,7 +27,7 @@ from parso import ParserSyntaxError
 from parso.python import tree
 
 from jedi.common import unite
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.context import LazyTreeContext
 from jedi import debug
@@ -81,7 +81,7 @@ def _fix_forward_reference(context, node):
         return node
 
 
-@memoize_default()
+@evaluator_method_cache()
 def infer_param(execution_context, param):
     annotation = param.annotation
     module_context = execution_context.get_root_context()
@@ -101,7 +101,7 @@ def py__annotations__(funcdef):
     return dct
 
 
-@memoize_default()
+@evaluator_method_cache()
 def infer_return_types(function_context):
     annotation = py__annotations__(function_context.tree_node).get("return", None)
     module_context = function_context.get_root_context()

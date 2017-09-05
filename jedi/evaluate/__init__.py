@@ -72,7 +72,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
@@ -139,7 +139,7 @@ class Evaluator(object):
                 return self._eval_stmt(context, stmt, seek_name)
         return set()
 
-    #@memoize_default(default=[], evaluator_is_first_arg=True)
+    #@evaluator_function_cache(default=[])
     @debug.increase_indent
     def _eval_stmt(self, context, stmt, seek_name=None):
         """
@@ -267,7 +267,7 @@ class Evaluator(object):
                 return self._eval_element_not_cached(context, element)
         return self._eval_element_cached(context, element)
 
-    @memoize_default(default=set(), evaluator_is_first_arg=True)
+    @evaluator_function_cache(default=set())
     def _eval_element_cached(self, context, element):
         return self._eval_element_not_cached(context, element)
 

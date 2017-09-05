@@ -6,7 +6,7 @@ from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
 from jedi.evaluate.context import Context, LazyKnownContext, LazyKnownContexts
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate.dynamic import search_params
@@ -148,7 +148,7 @@ class AbstractInstanceContext(Context):
             if isinstance(name, LazyInstanceName):
                 yield self._create_init_execution(name.class_context, name.tree_name.parent)
 
-    @memoize_default()
+    @evaluator_method_cache()
     def create_instance_context(self, class_context, node):
         if node.parent.type in ('funcdef', 'classdef'):
             node = node.parent

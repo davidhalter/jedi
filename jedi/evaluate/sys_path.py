@@ -4,8 +4,7 @@ import sys
 from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
-from parso.python import tree
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.context import ContextualizedNode
 from jedi import settings
@@ -184,7 +183,7 @@ def _check_module(module_context):
     return sys_path
 
 
-@memoize_default(evaluator_is_first_arg=True, default=[])
+@evaluator_function_cache(default=[])
 def sys_path_with_modifications(evaluator, module_context):
     path = module_context.py__file__()
     if path is None:

@@ -48,7 +48,7 @@ from parso import python_bytes_to_unicode
 
 from jedi._compatibility import use_metaclass
 from jedi import debug
-from jedi.evaluate.cache import memoize_default, CachedMetaClass, NO_DEFAULT
+from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
@@ -115,7 +115,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
         self.tree_node = classdef
 
-    @memoize_default(default=())
+    @evaluator_method_cache(default=())
     def py__mro__(self):
         def add(cls):
             if cls not in mro:
@@ -151,7 +151,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                         add(cls_new)
         return tuple(mro)
 
-    @memoize_default(default=())
+    @evaluator_method_cache(default=())
     def py__bases__(self):
         arglist = self.tree_node.get_super_arglist()
         if arglist:
@@ -312,7 +312,7 @@ class FunctionExecutionContext(context.TreeContext):
         self.tree_node = function_context.tree_node
         self.var_args = var_args
 
-    @memoize_default(default=set())
+    @evaluator_method_cache(default=set())
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
@@ -414,7 +414,7 @@ class FunctionExecutionContext(context.TreeContext):
                                              until_position=until_position,
                                              origin_scope=origin_scope)
 
-    @memoize_default(default=NO_DEFAULT)
+    @evaluator_method_cache()
     def get_params(self):
         return param.get_params(self, self.var_args)
 
@@ -424,7 +424,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
         super(AnonymousFunctionExecution, self).__init__(
             evaluator, parent_context, function_context, var_args=None)
 
-    @memoize_default(default=NO_DEFAULT)
+    @evaluator_method_cache()
     def get_params(self):
         # We need to do a dynamic search here.
         return search_params(self.evaluator, self, self.tree_node)
@@ -483,7 +483,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
     # to push the star imports into Evaluator.modules, if we reenable this.
-    @memoize_default([])
+    @evaluator_method_cache([])
     def star_imports(self):
         modules = []
         for i in self.tree_node.iter_imports():
@@ -496,7 +496,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                 modules += new
         return modules
 
-    @memoize_default()
+    @evaluator_method_cache()
     def _module_attributes_dict(self):
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
@@ -514,7 +514,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
             return re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
 
     @property
-    @memoize_default()
+    @evaluator_method_cache()
     def name(self):
         return ModuleName(self, self._string_name)
 
@@ -597,7 +597,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         else:
             return self._py__path__
 
-    @memoize_default()
+    @evaluator_method_cache()
     def _sub_modules_dict(self):
         """
         Lists modules in the directory of this module (if this module is a
@@ -661,7 +661,7 @@ class ImplicitNamespaceContext(use_metaclass(CachedMetaClass, context.TreeContex
         yield DictFilter(self._sub_modules_dict())
 
     @property
-    @memoize_default()
+    @evaluator_method_cache()
     def name(self):
         string_name = self.py__package__().rpartition('.')[-1]
         return ImplicitNSName(self, string_name)
@@ -678,7 +678,7 @@ class ImplicitNamespaceContext(use_metaclass(CachedMetaClass, context.TreeContex
     def py__path__(self):
         return lambda: [self.paths]
 
-    @memoize_default()
+    @evaluator_method_cache()
     def _sub_modules_dict(self):
         names = {}
 

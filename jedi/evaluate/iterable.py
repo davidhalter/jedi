@@ -32,7 +32,7 @@ from jedi.evaluate import pep0484
 from jedi.evaluate import context
 from jedi.evaluate import precedence
 from jedi.evaluate import recursion
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
     ParserTreeFilter
 from jedi.parser_utils import get_comp_fors
@@ -228,7 +228,7 @@ class Comprehension(AbstractSequence):
         """
         return self._get_comprehension().children[index]
 
-    @memoize_default()
+    @evaluator_method_cache()
     def _get_comp_for_context(self, parent_context, comp_for):
         # TODO shouldn't this be part of create_context?
         return CompForContext.from_comp_for(parent_context, comp_for)
@@ -261,7 +261,7 @@ class Comprehension(AbstractSequence):
                     else:
                         yield iterated
 
-    @memoize_default(default=[])
+    @evaluator_method_cache(default=[])
     @common.to_list
     def _iterate(self):
         comp_fors = tuple(get_comp_fors(self._get_comp_for()))
@@ -698,7 +698,7 @@ def check_array_additions(context, sequence):
     return _check_array_additions(context, sequence)
 
 
-@memoize_default(default=set())
+@evaluator_method_cache(default=set())
 @debug.increase_indent
 def _check_array_additions(context, sequence):
     """

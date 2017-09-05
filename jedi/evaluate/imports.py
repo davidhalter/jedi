@@ -29,13 +29,13 @@ from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
 
 
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
-@memoize_default(default=set())
+@evaluator_method_cache(default=set())
 def infer_import(context, tree_name, is_goto=False):
     module_context = context.get_root_context()
     import_node = search_ancestor(tree_name, 'import_name', 'import_from')

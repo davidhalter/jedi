@@ -10,7 +10,7 @@ from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
 from jedi.evaluate.context import Context
-from jedi.evaluate.cache import memoize_default
+from jedi.evaluate.cache import evaluator_function_cache
 
 
 class MixedObject(object):
@@ -102,7 +102,7 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
         #return MixedName(self._evaluator, self._compiled_object, name)
 
 
-@memoize_default(evaluator_is_first_arg=True)
+@evaluator_function_cache()
 def _load_module(evaluator, path, python_object):
     module = evaluator.grammar.parse(
         path=path,

@@ -15,8 +15,8 @@ sys.path.append('a' +* '/thirdparty')
 #? ['evaluate']
 import evaluate
 
-#? ['Evaluator']
-evaluate.Evaluator
+#? ['evaluator_function_cache']
+evaluate.Evaluator_fu
 
 #? ['jedi_']
 import jedi_
