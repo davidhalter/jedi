@@ -19,6 +19,7 @@ def _memoize_default(default=_NO_DEFAULT, evaluator_is_first_arg=False, second_a
     """
     def func(function):
         def wrapper(obj, *args, **kwargs):
+            # TODO These checks are kind of ugly and slow.
             if evaluator_is_first_arg:
                 cache = obj.memoize_cache
             elif second_arg_is_evaluator:
@@ -61,12 +62,19 @@ def evaluator_method_cache(default=_NO_DEFAULT):
     return decorator
 
 
+def _memoize_meta_class():
+    def decorator(call):
+        return _memoize_default(second_arg_is_evaluator=True)(call)
+
+    return decorator
+
+
 class CachedMetaClass(type):
     """
     This is basically almost the same than the decorator above, it just caches
     class initializations. Either you do it this way or with decorators, but
     with decorators you lose class access (isinstance, etc).
     """
-    @_memoize_default(None, second_arg_is_evaluator=True)
+    @_memoize_meta_class()
     def __call__(self, *args, **kwargs):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)
