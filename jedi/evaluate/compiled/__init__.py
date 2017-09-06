@@ -206,7 +206,7 @@ class CompiledObject(Context):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return
 
-        for part in self.obj:
+        for i, part in enumerate(self.obj):
             yield LazyKnownContext(create(self.evaluator, part))
 
     def py__name__(self):

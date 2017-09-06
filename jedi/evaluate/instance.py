@@ -407,6 +407,9 @@ class ParamArguments(object):
                 continue
             yield None, self.LazyParamContext(p)
 
+    def get_calling_nodes(self):
+        return []
+
 
 class InstanceVarArgs(object):
     def __init__(self, execution_context, funcdef, var_args):

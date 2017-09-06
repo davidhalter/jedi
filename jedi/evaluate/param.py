@@ -70,6 +70,9 @@ class AbstractArguments():
             types = lazy_context.infer()
             try_iter_content(types)
 
+    def get_calling_nodes(self):
+        raise NotImplementedError
+
 
 class TreeArguments(AbstractArguments):
     def __init__(self, evaluator, context, argument_node, trailer=None):

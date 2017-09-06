@@ -23,6 +23,7 @@ from jedi import debug
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
 from jedi.evaluate.param import TreeArguments, create_default_param
+from jedi.evaluate.helpers import is_stdlib_path
 from jedi.common import to_list, unite
 from jedi.parser_utils import get_parent_scope
 
@@ -67,11 +68,20 @@ def search_params(evaluator, execution_context, funcdef):
     is.
     """
     if not settings.dynamic_params:
-        return set()
+        return []
 
     evaluator.dynamic_params_depth += 1
     try:
+        path = execution_context.get_root_context().py__file__()
+        if path is not None and is_stdlib_path(path):
+            # We don't want to search for usages in the stdlib. Usually people
+            # don't work with it (except if you are a core maintainer, sorry).
+            # This makes everything slower. Just disable it and run the tests,
+            # you will see the slowdown, especially in 3.6.
+            return []
+
         debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
+
         module_context = execution_context.get_root_context()
         function_executions = _search_function_executions(
             evaluator,
