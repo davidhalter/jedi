@@ -218,3 +218,10 @@ def test_param_completion():
     _assert_interpreter_complete('foo(bar', locals(), ['bar'])
     # TODO we're not yet using the Python3.5 inspect.signature, yet.
     assert not jedi.Interpreter('lambd(xyz', [locals()]).completions()
+
+
+def test_endless_yield():
+    lst = [1] * 10000
+    # If iterating over lists it should not be possible to take an extremely
+    # long time.
+    _assert_interpreter_complete('list(lst)[9000].rea', locals(), ['real'])

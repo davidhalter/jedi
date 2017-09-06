@@ -207,6 +207,9 @@ class CompiledObject(Context):
             return
 
         for i, part in enumerate(self.obj):
+            if i > 20:
+                # Should not go crazy with large iterators
+                break
             yield LazyKnownContext(create(self.evaluator, part))
 
     def py__name__(self):
