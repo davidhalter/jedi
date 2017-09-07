@@ -3,6 +3,12 @@
 Changelog
 ---------
 
+0.11.0 (2017-09-14)
++++++++++++++++++++
+
+- Split Jedi's parser into a separate project called ``parso``.
+- Avoiding side effects in REPL completion
+
 0.10.2 (2017-04-05)
 +++++++++++++++++++
 
