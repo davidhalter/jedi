@@ -418,10 +418,6 @@ class Evaluator(object):
 
     @debug.increase_indent
     def execute(self, obj, arguments):
-        if not isinstance(arguments, param.AbstractArguments):
-            raise NotImplementedError
-            arguments = param.Arguments(self, arguments)
-
         if self.is_analysis:
             arguments.eval_all()
 
