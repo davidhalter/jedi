@@ -162,18 +162,19 @@ def test_get_line_code():
     assert get_line_code('') == ''
 
     # On custom code
+    first_line = 'def foo():\n'
     line = '    foo'
-    assert get_line_code('def foo():\n%s' % line) == line
+    code = '%s%s' % (first_line, line)
+    assert get_line_code(code) == first_line
 
     # With before/after
-    line = '    foo'
-    source = 'def foo():\n%s\nother_line' % line
-    assert get_line_code(source, line=2) == line + '\n'
-    assert get_line_code(source, line=2, after=1) == line + '\nother_line'
-    assert get_line_code(source, line=2, after=1, before=1) == source
+    code = code + '\nother_line'
+    assert get_line_code(code, line=2) == first_line
+    assert get_line_code(code, line=2, after=1) == first_line + line + '\n'
+    assert get_line_code(code, line=2, after=2, before=1) == code
     # Should just be the whole thing, since there are no more lines on both
     # sides.
-    assert get_line_code(source, line=2, after=3, before=3) == source
+    assert get_line_code(code, line=2, after=3, before=3) == code
 
 
 def test_goto_assignments_follow_imports():
