@@ -65,6 +65,11 @@ class X(): pass
 #? type
 type(X)
 
+
+with open('foo') as f:
+    for line in f.readlines():
+        #? str()
+        line
 # -----------------
 # enumerate
 # -----------------

@@ -32,8 +32,12 @@ def range(start, stop=None, step=1):
 class file():
     def __iter__(self):
         yield ''
+
     def next(self):
         return ''
+
+    def readlines(self):
+        return ['']
 
 
 class xrange():

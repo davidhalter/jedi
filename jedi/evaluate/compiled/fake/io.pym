@@ -4,3 +4,6 @@ class TextIOWrapper():
 
     def __iter__(self):
         yield str()
+
+    def readlines(self):
+        return ['']
