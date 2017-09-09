@@ -526,3 +526,10 @@ class Foo(object):
 Foo().create_class().a
 #? float()
 Foo().b
+
+class Foo(object):
+    def comprehension_definition(self):
+        return [1 for self.b in [1]]
+
+#? int()
+Foo().b
