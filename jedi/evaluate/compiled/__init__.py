@@ -8,7 +8,7 @@ import os
 import types
 from functools import partial
 
-from jedi._compatibility import builtins as _builtins, unicode
+from jedi._compatibility import builtins as _builtins, unicode, py_version
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
@@ -115,12 +115,29 @@ class CompiledObject(Context):
         return inspect.getdoc(self.obj) or ''
 
     def get_param_names(self):
+        obj = self.obj
         try:
-            signature = inspect.signature(self.obj)
+            if py_version == 34:
+                # In 3.4 inspect.signature are wrong for str and int. This has
+                # been fixed in 3.5. The signature of object is returned,
+                # because no signature was found for str. Here we imitate 3.5
+                # logic and just ignore the signature if the magic methods
+                # don't match object.
+                # 3.3 doesn't even have the logic and returns nothing for str
+                # and classes that inherit from object.
+                user_def = inspect._signature_get_user_defined_method
+                if (inspect.isclass(obj)
+                        and not user_def(type(obj), '__init__')
+                        and not user_def(type(obj), '__new__')
+                        and (obj.__init__ != object.__init__
+                             or obj.__new__ != object.__new__)):
+                    raise ValueError
+
+            signature = inspect.signature(obj)
         except ValueError:  # Has no signature
             params_str, ret = self._parse_function_doc()
             tokens = params_str.split(',')
-            if inspect.ismethoddescriptor(self.obj):
+            if inspect.ismethoddescriptor(obj):
                 tokens.insert(0, 'self')
             for p in tokens:
                 parts = p.strip().split('=')
