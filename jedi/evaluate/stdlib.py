@@ -16,7 +16,8 @@ from jedi.common import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate.instance import InstanceFunctionExecution, \
-    AbstractInstanceContext, CompiledInstance, BoundMethod
+    AbstractInstanceContext, CompiledInstance, BoundMethod, \
+    AnonymousInstanceFunctionExecution
 from jedi.evaluate import iterable
 from jedi import debug
 from jedi.evaluate import precedence
@@ -163,7 +164,8 @@ class SuperInstance(AbstractInstanceContext):
 @argument_clinic('[type[, obj]], /', want_context=True)
 def builtins_super(evaluator, types, objects, context):
     # TODO make this able to detect multiple inheritance super
-    if isinstance(context, InstanceFunctionExecution):
+    if isinstance(context, (InstanceFunctionExecution,
+                            AnonymousInstanceFunctionExecution)):
         su = context.instance.py__class__().py__bases__()
         return unite(context.execute_evaluated() for context in su[0].infer())
     return set()

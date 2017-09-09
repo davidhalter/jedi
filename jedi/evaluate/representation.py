@@ -62,7 +62,6 @@ from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
     ParamName, AnonymousInstanceParamName, TreeNameDefinition, \
     ContextNameMixin
-from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import context
 from jedi.evaluate.context import ContextualizedNode
 from jedi import parser_utils
@@ -418,18 +417,15 @@ class FunctionExecutionContext(context.TreeContext):
 
     @evaluator_method_cache()
     def get_params(self):
-        return param.get_params(self, self.var_args)
+        return self.var_args.get_params(self)
 
 
 class AnonymousFunctionExecution(FunctionExecutionContext):
     def __init__(self, evaluator, parent_context, function_context):
         super(AnonymousFunctionExecution, self).__init__(
-            evaluator, parent_context, function_context, var_args=None)
-
-    @evaluator_method_cache()
-    def get_params(self):
-        # We need to do a dynamic search here.
-        return search_params(self.evaluator, self, self.tree_node)
+            evaluator, parent_context, function_context,
+            var_args=param.AnonymousArguments(self)
+        )
 
 
 class ModuleAttributeName(AbstractNameDefinition):

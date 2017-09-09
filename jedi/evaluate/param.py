@@ -73,6 +73,22 @@ class AbstractArguments():
     def get_calling_nodes(self):
         raise NotImplementedError
 
+    def unpack(self, funcdef=None):
+        raise NotImplementedError
+
+    def get_params(self, execution_context):
+        return get_params(execution_context, self)
+
+
+
+class AnonymousArguments(AbstractArguments):
+    def __init__(self, anonymous_context):
+        self.context = anonymous_context
+
+    def get_params(self, execution_context):
+        from jedi.evaluate.dynamic import search_params
+        return search_params(self.context.evaluator, execution_context, execution_context.tree_node)
+
 
 class TreeArguments(AbstractArguments):
     def __init__(self, evaluator, context, argument_node, trailer=None):
@@ -191,6 +207,7 @@ class TreeArguments(AbstractArguments):
                 arguments = param.var_args
                 break
 
+        print(arguments)
         return [arguments.argument_node or arguments.trailer]
 
 
@@ -395,7 +412,7 @@ def _error_argument_count(funcdef, actual_count):
             % (funcdef.name, before, len(params), actual_count))
 
 
-def create_default_param(execution_context, param):
+def _create_default_param(execution_context, param):
     if param.star_count == 1:
         result_arg = context.LazyKnownContext(
             iterable.FakeSequence(execution_context.evaluator, 'tuple', [])
@@ -409,3 +426,9 @@ def create_default_param(execution_context, param):
     else:
         result_arg = context.LazyTreeContext(execution_context.parent_context, param.default)
     return ExecutedParam(execution_context, param, result_arg)
+
+
+def create_default_params(execution_context, funcdef):
+    return [_create_default_param(execution_context, p)
+            for p in funcdef.get_params()]
+

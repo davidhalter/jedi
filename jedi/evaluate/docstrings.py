@@ -189,7 +189,7 @@ def _execute_array_values(evaluator, array):
 
 @evaluator_method_cache()
 def infer_param(execution_context, param):
-    from jedi.evaluate.instance import InstanceFunctionExecution
+    from jedi.evaluate.instance import AnonymousInstanceFunctionExecution
 
     def eval_docstring(docstring):
         return set(
@@ -203,7 +203,7 @@ def infer_param(execution_context, param):
         return set()
 
     types = eval_docstring(execution_context.py__doc__())
-    if isinstance(execution_context, InstanceFunctionExecution) and \
+    if isinstance(execution_context, AnonymousInstanceFunctionExecution) and \
             execution_context.function_context.name.string_name == '__init__':
         class_context = execution_context.instance.class_context
         types |= eval_docstring(class_context.py__doc__())

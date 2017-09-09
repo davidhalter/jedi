@@ -7,6 +7,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import filters
 from jedi.evaluate.context import Context, LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
+from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate.dynamic import search_params
@@ -14,11 +15,31 @@ from jedi.evaluate import iterable
 from jedi.parser_utils import get_parent_scope
 
 
+
+class InstanceFunctionExecution(er.FunctionExecutionContext):
+    def __init__(self, instance, parent_context, function_context, var_args):
+        self.instance = instance
+        var_args = InstanceVarArgs(self, function_context.tree_node, var_args)
+
+        super(InstanceFunctionExecution, self).__init__(
+            instance.evaluator, parent_context, function_context, var_args)
+
+
+class AnonymousInstanceFunctionExecution(er.FunctionExecutionContext):
+    function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
+
+    def __init__(self, instance, parent_context, function_context, var_args):
+        self.instance = instance
+        super(AnonymousInstanceFunctionExecution, self).__init__(
+            instance.evaluator, parent_context, function_context, var_args)
+
+
 class AbstractInstanceContext(Context):
     """
     This class is used to evaluate instances.
     """
     api_type = 'instance'
+    function_execution_cls = InstanceFunctionExecution
 
     def __init__(self, evaluator, parent_context, class_context, var_args):
         super(AbstractInstanceContext, self).__init__(evaluator, parent_context)
@@ -136,7 +157,7 @@ class AbstractInstanceContext(Context):
         bound_method = BoundMethod(
             self.evaluator, self, class_context, self.parent_context, func_node
         )
-        return InstanceFunctionExecution(
+        return self.function_execution_cls(
             self,
             class_context.parent_context,
             bound_method,
@@ -208,12 +229,14 @@ class TreeInstance(AbstractInstanceContext):
 
 
 class AnonymousInstance(TreeInstance):
+    function_execution_cls = AnonymousInstanceFunctionExecution
+
     def __init__(self, evaluator, parent_context, class_context):
         super(AnonymousInstance, self).__init__(
             evaluator,
             parent_context,
             class_context,
-            var_args=None
+            var_args=AnonymousArguments(self),
         )
 
 
@@ -264,8 +287,9 @@ class BoundMethod(er.FunctionContext):
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
+            arguments = AnonymousArguments(self)
             return AnonymousInstanceFunctionExecution(
-                self._instance, self.parent_context, self)
+                self._instance, self.parent_context, self, arguments)
         else:
             return InstanceFunctionExecution(
                 self._instance, self.parent_context, self, arguments)
@@ -411,7 +435,7 @@ class ParamArguments(object):
         return []
 
 
-class InstanceVarArgs(object):
+class InstanceVarArgs(AbstractArguments):
     def __init__(self, execution_context, funcdef, var_args):
         self._execution_context = execution_context
         self._funcdef = funcdef
@@ -419,11 +443,15 @@ class InstanceVarArgs(object):
 
     @memoize_method
     def _get_var_args(self):
-        if self._var_args is None:
-            # TODO this parent_context might be wrong. test?!
-            return ParamArguments(self._execution_context, self._funcdef)
-
         return self._var_args
+
+    @property
+    def argument_node(self):
+        return self._var_args.argument_node
+
+    @property
+    def trailer(self):
+        return self._var_args.trailer
 
     def unpack(self, func=None):
         yield None, LazyKnownContext(self._execution_context.instance)
@@ -432,23 +460,3 @@ class InstanceVarArgs(object):
 
     def get_calling_nodes(self):
         return self._get_var_args().get_calling_nodes()
-
-    def __getattr__(self, name):
-        return getattr(self._var_args, name)
-
-
-class InstanceFunctionExecution(er.FunctionExecutionContext):
-    def __init__(self, instance, parent_context, function_context, var_args):
-        self.instance = instance
-        var_args = InstanceVarArgs(self, function_context.tree_node, var_args)
-
-        super(InstanceFunctionExecution, self).__init__(
-            instance.evaluator, parent_context, function_context, var_args)
-
-
-class AnonymousInstanceFunctionExecution(InstanceFunctionExecution):
-    function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
-
-    def __init__(self, instance, parent_context, function_context):
-        super(AnonymousInstanceFunctionExecution, self).__init__(
-            instance, parent_context, function_context, None)

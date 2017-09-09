@@ -22,7 +22,7 @@ from jedi import settings
 from jedi import debug
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
-from jedi.evaluate.param import TreeArguments, create_default_param
+from jedi.evaluate.param import TreeArguments, create_default_params
 from jedi.evaluate.helpers import is_stdlib_path
 from jedi.common import to_list, unite
 from jedi.parser_utils import get_parent_scope
@@ -68,7 +68,7 @@ def search_params(evaluator, execution_context, funcdef):
     is.
     """
     if not settings.dynamic_params:
-        return []
+        return create_default_params(execution_context, funcdef)
 
     evaluator.dynamic_params_depth += 1
     try:
@@ -78,7 +78,7 @@ def search_params(evaluator, execution_context, funcdef):
             # don't work with it (except if you are a core maintainer, sorry).
             # This makes everything slower. Just disable it and run the tests,
             # you will see the slowdown, especially in 3.6.
-            return []
+            return create_default_params(execution_context, funcdef)
 
         debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
 
@@ -96,7 +96,7 @@ def search_params(evaluator, execution_context, funcdef):
             params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
             # Evaluate the ExecutedParams to types.
         else:
-            params = [create_default_param(execution_context, p) for p in funcdef.get_params()]
+            return create_default_params(execution_context, funcdef)
         debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
     finally:
