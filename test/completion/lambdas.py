@@ -65,6 +65,8 @@ class C():
     def with_param(self):
         return lambda x: x + self.a()
 
+    lambd = lambda self: self.foo
+
 #? int()
 C().a()
 
@@ -74,6 +76,11 @@ C('foo').ret()()
 index = C().with_param()(1)
 #? float()
 ['', 1, 1.0][index]
+
+#? float()
+C().lambd()
+#? int()
+C(1).lambd()
 
 
 def xy(param):

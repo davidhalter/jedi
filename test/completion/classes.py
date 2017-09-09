@@ -509,3 +509,20 @@ Config.mode
 
 #? int()
 Config.mode2
+
+
+# -----------------
+# Nested class/def/class
+# -----------------
+class Foo(object):
+    a = 3
+    def create_class(self):
+        class X():
+            a = self.a
+            self.b = 3.0
+        return X
+
+#? int()
+Foo().create_class().a
+#? float()
+Foo().b

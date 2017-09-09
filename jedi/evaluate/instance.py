@@ -183,9 +183,12 @@ class AbstractInstanceContext(Context):
                 else:
                     bound_method = BoundMethod(
                         self.evaluator, self, class_context,
-                        self.parent_context, scope
+                        parent_context, scope
                     )
                     return bound_method.get_function_execution()
+            elif scope.type == 'classdef':
+                class_context = er.ClassContext(self.evaluator, scope, parent_context)
+                return class_context
             else:
                 raise NotImplementedError
         return class_context
