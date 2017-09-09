@@ -1,9 +1,10 @@
 """
 Tests of ``jedi.api.Interpreter``.
 """
+import pytest
 
 import jedi
-from jedi._compatibility import is_py33
+from jedi._compatibility import is_py33, exec_function, py_version
 from jedi.evaluate.compiled import mixed
 
 
@@ -225,3 +226,29 @@ def test_endless_yield():
     # If iterating over lists it should not be possible to take an extremely
     # long time.
     _assert_interpreter_complete('list(lst)[9000].rea', locals(), ['real'])
+
+
+@pytest.mark.skipif('py_version < 33', reason='inspect.signature was created in 3.3.')
+def test_completion_params():
+    foo = lambda a, b=3: None
+
+    script = jedi.Interpreter('foo', [locals()])
+    c, = script.completions()
+    assert [p.name for p in c.params] == ['a', 'b']
+    assert c.params[0]._goto_definitions() == []
+    t, = c.params[1]._goto_definitions()
+    assert t.name == 'int'
+
+
+@pytest.mark.skipif('py_version < 33', reason='inspect.signature was created in 3.3.')
+def test_completion_param_annotations():
+    # Need to define this function not directly in Python. Otherwise Jedi is to
+    # clever and uses the Python code instead of the signature object.
+    code = 'def foo(a: 1, b: str, c: int = 1.0): pass'
+    exec_function(code, locals())
+    script = jedi.Interpreter('foo', [locals()])
+    c, = script.completions()
+    a, b, c = c.params
+    assert a._goto_definitions() == []
+    assert [d.name for d in b._goto_definitions()] == ['str']
+    assert [d.name for d in c._goto_definitions()] == ['int', 'float']

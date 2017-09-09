@@ -115,13 +115,19 @@ class CompiledObject(Context):
         return inspect.getdoc(self.obj) or ''
 
     def get_param_names(self):
-        params_str, ret = self._parse_function_doc()
-        tokens = params_str.split(',')
-        if inspect.ismethoddescriptor(self.obj):
-            tokens.insert(0, 'self')
-        for p in tokens:
-            parts = p.strip().split('=')
-            yield UnresolvableParamName(self, parts[0])
+        try:
+            signature = inspect.signature(self.obj)
+        except ValueError:  # Has no signature
+            params_str, ret = self._parse_function_doc()
+            tokens = params_str.split(',')
+            if inspect.ismethoddescriptor(self.obj):
+                tokens.insert(0, 'self')
+            for p in tokens:
+                parts = p.strip().split('=')
+                yield UnresolvableParamName(self, parts[0])
+        else:
+            for signature_param in signature.parameters.values():
+                yield SignatureParamName(self, signature_param)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, repr(self.obj))
@@ -274,6 +280,29 @@ class CompiledName(AbstractNameDefinition):
     def infer(self):
         module = self.parent_context.get_root_context()
         return [_create_from_name(self._evaluator, module, self.parent_context, self.string_name)]
+
+
+class SignatureParamName(AbstractNameDefinition):
+    api_type = 'param'
+
+    def __init__(self, compiled_obj, signature_param):
+        self.parent_context = compiled_obj.parent_context
+        self._signature_param = signature_param
+
+    @property
+    def string_name(self):
+        return self._signature_param.name
+
+    def infer(self):
+        p = self._signature_param
+        evaluator = self.parent_context.evaluator
+        types = set()
+        if p.default is not p.empty:
+            types.add(create(evaluator, p.default))
+        if p.annotation is not p.empty:
+            annotation = create(evaluator, p.annotation)
+            types |= annotation.execute_evaluated()
+        return types
 
 
 class UnresolvableParamName(AbstractNameDefinition):
