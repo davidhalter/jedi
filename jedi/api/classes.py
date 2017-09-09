@@ -394,7 +394,7 @@ class BaseDefinition(object):
         lines = parser_cache[self._evaluator.grammar._hashed][path].lines
 
         line_nr = self._name.start_pos[0]
-        start_line_nr = line_nr - before
+        start_line_nr = max(line_nr - before, 0)
         return ''.join(lines[start_line_nr:line_nr + after + 1])
 
 
