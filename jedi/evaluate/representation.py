@@ -265,11 +265,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
             return function_execution.get_return_values()
 
     def get_function_execution(self, arguments=None):
-        e = self.evaluator
         if arguments is None:
             arguments = param.AnonymousArguments()
 
-        return FunctionExecutionContext(e, self.parent_context, self, arguments)
+        return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
 
     def py__call__(self, arguments):
         function_execution = self.get_function_execution(arguments)

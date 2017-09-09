@@ -10,7 +10,6 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
-from jedi.evaluate.dynamic import search_params
 from jedi.evaluate import iterable
 from jedi.parser_utils import get_parent_scope
 
@@ -400,39 +399,6 @@ class SelfNameFilter(InstanceClassFilter):
 
     def _check_flows(self, names):
         return names
-
-
-class ParamArguments(object):
-    """
-    TODO This seems like a strange class, clean up?
-    """
-    class LazyParamContext(object):
-        def __init__(self, fucking_param):
-            self._param = fucking_param
-
-        def infer(self):
-            return self._param.infer()
-
-    def __init__(self, execution_context, funcdef):
-        self._execution_context = execution_context
-        self._funcdef = funcdef
-
-    def unpack(self, func=None):
-        params = search_params(
-            self._execution_context.evaluator,
-            self._execution_context,
-            self._funcdef
-        )
-        is_first = True
-        for p in params:
-            # TODO Yeah, here at last, the class seems to be really wrong.
-            if is_first:
-                is_first = False
-                continue
-            yield None, self.LazyParamContext(p)
-
-    def get_calling_nodes(self):
-        return []
 
 
 class InstanceVarArgs(AbstractArguments):

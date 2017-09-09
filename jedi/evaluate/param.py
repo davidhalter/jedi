@@ -80,7 +80,6 @@ class AbstractArguments():
         return get_params(execution_context, self)
 
 
-
 class AnonymousArguments(AbstractArguments):
     def get_params(self, execution_context):
         from jedi.evaluate.dynamic import search_params
