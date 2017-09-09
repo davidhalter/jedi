@@ -267,9 +267,9 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     def get_function_execution(self, arguments=None):
         e = self.evaluator
         if arguments is None:
-            return AnonymousFunctionExecution(e, self.parent_context, self)
-        else:
-            return FunctionExecutionContext(e, self.parent_context, self, arguments)
+            arguments = param.AnonymousArguments()
+
+        return FunctionExecutionContext(e, self.parent_context, self, arguments)
 
     def py__call__(self, arguments):
         function_execution = self.get_function_execution(arguments)
@@ -418,14 +418,6 @@ class FunctionExecutionContext(context.TreeContext):
     @evaluator_method_cache()
     def get_params(self):
         return self.var_args.get_params(self)
-
-
-class AnonymousFunctionExecution(FunctionExecutionContext):
-    def __init__(self, evaluator, parent_context, function_context):
-        super(AnonymousFunctionExecution, self).__init__(
-            evaluator, parent_context, function_context,
-            var_args=param.AnonymousArguments()
-        )
 
 
 class ModuleAttributeName(AbstractNameDefinition):
