@@ -82,12 +82,13 @@ class AbstractArguments():
 
 
 class AnonymousArguments(AbstractArguments):
-    def __init__(self, anonymous_context):
-        self.context = anonymous_context
-
     def get_params(self, execution_context):
         from jedi.evaluate.dynamic import search_params
-        return search_params(self.context.evaluator, execution_context, execution_context.tree_node)
+        return search_params(
+            execution_context.evaluator,
+            execution_context,
+            execution_context.tree_node
+        )
 
 
 class TreeArguments(AbstractArguments):
@@ -207,7 +208,6 @@ class TreeArguments(AbstractArguments):
                 arguments = param.var_args
                 break
 
-        print(arguments)
         return [arguments.argument_node or arguments.trailer]
 
 

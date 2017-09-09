@@ -19,7 +19,7 @@ from jedi.parser_utils import get_parent_scope
 class InstanceFunctionExecution(er.FunctionExecutionContext):
     def __init__(self, instance, parent_context, function_context, var_args):
         self.instance = instance
-        var_args = InstanceVarArgs(self, function_context.tree_node, var_args)
+        var_args = InstanceVarArgs(self, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
             instance.evaluator, parent_context, function_context, var_args)
@@ -236,7 +236,7 @@ class AnonymousInstance(TreeInstance):
             evaluator,
             parent_context,
             class_context,
-            var_args=AnonymousArguments(self),
+            var_args=AnonymousArguments(),
         )
 
 
@@ -287,7 +287,7 @@ class BoundMethod(er.FunctionContext):
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
-            arguments = AnonymousArguments(self)
+            arguments = AnonymousArguments()
             return AnonymousInstanceFunctionExecution(
                 self._instance, self.parent_context, self, arguments)
         else:
@@ -436,9 +436,8 @@ class ParamArguments(object):
 
 
 class InstanceVarArgs(AbstractArguments):
-    def __init__(self, execution_context, funcdef, var_args):
+    def __init__(self, execution_context, var_args):
         self._execution_context = execution_context
-        self._funcdef = funcdef
         self._var_args = var_args
 
     @memoize_method

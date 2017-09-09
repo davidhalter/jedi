@@ -424,7 +424,7 @@ class AnonymousFunctionExecution(FunctionExecutionContext):
     def __init__(self, evaluator, parent_context, function_context):
         super(AnonymousFunctionExecution, self).__init__(
             evaluator, parent_context, function_context,
-            var_args=param.AnonymousArguments(self)
+            var_args=param.AnonymousArguments()
         )
 
 
