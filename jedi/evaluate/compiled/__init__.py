@@ -117,6 +117,8 @@ class CompiledObject(Context):
     def get_param_names(self):
         obj = self.obj
         try:
+            if py_version < 33:
+                raise ValueError("inspect.signature was introduced in 3.3")
             if py_version == 34:
                 # In 3.4 inspect.signature are wrong for str and int. This has
                 # been fixed in 3.5. The signature of object is returned,
