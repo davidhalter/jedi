@@ -15,9 +15,10 @@ As an addition to parameter searching, this module also provides return
 annotations.
 """
 
-from ast import literal_eval
 import re
 from textwrap import dedent
+
+from parso import parse
 
 from jedi._compatibility import u
 from jedi.common import unite
@@ -63,7 +64,7 @@ else:
                 m = re.match('([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
                 if m:
                     p_type = m.group(1)
-                return _expand_typestr(p_type)
+                return list(_expand_typestr(p_type))
         return []
 
     def _search_return_in_numpydocstr(docstr):
@@ -92,20 +93,31 @@ def _expand_typestr(type_str):
     """
     # Check if alternative types are specified with 'or'
     if re.search('\\bor\\b', type_str):
-        types = [t.split('of')[0].strip() for t in type_str.split('or')]
+        for t in type_str.split('or'):
+            yield t.split('of')[0].strip()
     # Check if like "list of `type`" and set type to list
     elif re.search('\\bof\\b', type_str):
-        types = [type_str.split('of')[0]]
+        yield type_str.split('of')[0]
     # Check if type has is a set of valid literal values eg: {'C', 'F', 'A'}
     elif type_str.startswith('{'):
-        # python2 does not support literal set evals
-        # workaround this by using lists instead
-        type_str = type_str.replace('{', '[').replace('}', ']')
-        types = set(type(x).__name__ for x in literal_eval(type_str))
-    # Otherwise just return the typestr wrapped in a list
+        node = parse(type_str, version='3.6').children[0]
+        if node.type == 'atom':
+            for leaf in node.children[1].children:
+                if leaf.type == 'number':
+                    if '.' in leaf.value:
+                        yield 'float'
+                    else:
+                        yield 'int'
+                elif leaf.type == 'string':
+                    if 'b' in leaf.string_prefix.lower():
+                        yield 'bytes'
+                    else:
+                        yield 'str'
+                # Ignore everything else.
+
+    # Otherwise just work with what we have.
     else:
-        types = [type_str]
-    return types
+        yield type_str
 
 
 def _search_param_in_docstr(docstr, param_str):
