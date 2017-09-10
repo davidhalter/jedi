@@ -364,3 +364,206 @@ def test_numpy_comp_returns():
     names = [c.name for c in jedi.Script(s).completions()]
     print(names)
     assert 'diagonal' in names
+
+
+# ---- Google Style Tests ---
+
+def test_googlestyle_docstring():
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Args:
+            x (int):
+            y (str):
+        """
+        y.''')
+    names = [c.name for c in jedi.Script(s).completions()]
+    assert 'isupper' in names
+    assert 'capitalize' in names
+
+
+def test_googledoc_docstring_set_of_values():
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Args:
+            x ({'foo', 'bar', 100500}):
+        """
+        x.''')
+    names = [c.name for c in jedi.Script(s).completions()]
+    assert 'isupper' in names
+    assert 'capitalize' in names
+    assert 'numerator' in names
+
+
+def test_googledoc_alternative_types():
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Args:
+            x (int or str or list):
+        """
+        x.''')
+    names = [c.name for c in jedi.Script(s).completions()]
+    assert 'isupper' in names
+    assert 'capitalize' in names
+    assert 'numerator' in names
+    assert 'append' in names
+
+
+def test_google_returns():
+    s1 = dedent('''
+    def foobar(x, y):
+        """
+        Returns:
+            int: add x and y
+        """
+        return x + y
+
+    def bazbiz(a, b):
+        z = foobar(a, b)
+        z.''')
+    script = jedi.Script(s1)
+    names1 = [c.name for c in script.completions()]
+    assert 'numerator' in names1
+    assert 'capitalize' not in names1
+    assert 'get' not in names1
+
+    s2 = dedent('''
+    def foobar(x, y):
+        """
+        Returns:
+            str: cat x and y
+        """
+        return x + y
+
+    def bazbiz(a, b):
+        z = foobar(a, b)
+        z.''')
+    script = jedi.Script(s2)
+    names2 = [c.name for c in script.completions()]
+    assert 'numerator' not in names2
+    assert 'capitalize' in names2
+    assert 'get' not in names2
+
+
+def test_google_returns_multi():
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Returns:
+            str: cat x and y
+               int: is part of the doc because it is indented
+            dict: is another valid type
+        """
+        return x + y
+
+    def bazbiz(a, b):
+        z = foobar(a, b)
+        z.''')
+    script = jedi.Script(s)
+    names = [c.name for c in script.completions()]
+    assert 'capitalize' in names
+    assert 'numerator' not in names
+    assert 'get' in names
+
+
+def test_google_returns_typeless():
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Returns:
+            no type is specified here
+        """
+        return magic(x, y)
+
+    def bazbiz(a, b):
+        z = foobar(a, b)
+        z.
+        ''')
+    script = jedi.Script(s)
+    names = [c.name for c in script.completions()]
+    assert 'numerator' not in names
+    assert 'capitalize' not in names
+    assert 'get' not in names
+
+
+def test_google_infer_params():
+    from jedi.evaluate.representation import FunctionContext
+    from jedi.evaluate import docstrings
+    google_source = dedent('''
+    def foobar(x, y):
+        """
+        Args:
+            x (int or str or list):
+            y ({'foo', 'bar', 100500}):
+        """
+        ''')
+    script = jedi.Script(google_source)
+    module_context = script._get_module()
+    module = script._get_module_node()
+    funcdef = next(module.iter_funcdefs())
+    function_context = FunctionContext(
+        module_context.evaluator,
+        module_context,
+        funcdef
+    )
+    execution_context = function_context.get_function_execution()
+
+    x_param, y_param = funcdef.get_params()
+    x_types = docstrings.infer_param(execution_context, x_param)
+    y_types = docstrings.infer_param(execution_context, y_param)
+    x_type_names = set([t.name.string_name for t in x_types])
+    y_type_names = set([t.name.string_name for t in y_types])
+    assert x_type_names == set(['int', 'list', 'str'])
+    assert y_type_names == set(['int', 'str'])
+
+
+def test_google_infer_return_types():
+    from jedi.evaluate.representation import FunctionContext
+    from jedi.evaluate import docstrings
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Returns:
+            int: sum of x and y
+        """
+        return x + y
+        ''')
+    script = jedi.Script(s)
+    module_context = script._get_module()
+    module = script._get_module_node()
+    funcdef = next(module.iter_funcdefs())
+    function_context = FunctionContext(
+        module_context.evaluator,
+        module_context,
+        funcdef
+    )
+    types = docstrings.infer_return_types(function_context)
+    type_names = set([t.name.string_name for t in types])
+    assert type_names == set(['int'])
+
+
+def test_google_infer_return_types_typeless():
+    from jedi.evaluate.representation import FunctionContext
+    from jedi.evaluate import docstrings
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Returns:
+            this does not give a valid type
+        """
+        return x + y
+        ''')
+    script = jedi.Script(s)
+    module_context = script._get_module()
+    module = script._get_module_node()
+    funcdef = next(module.iter_funcdefs())
+    function_context = FunctionContext(
+        module_context.evaluator,
+        module_context,
+        funcdef
+    )
+    types = docstrings.infer_return_types(function_context)
+    type_names = set([t.name.string_name for t in types])
+    assert len(type_names) == 0

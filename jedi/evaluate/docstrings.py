@@ -1,12 +1,13 @@
 """
 Docstrings are another source of information for functions and classes.
 :mod:`jedi.evaluate.dynamic` tries to find all executions of functions, while
-the docstring parsing is much easier. There are three different types of
+the docstring parsing is much easier. There are four different types of
 docstrings that |jedi| understands:
 
 - `Sphinx <http://sphinx-doc.org/markup/desc.html#info-field-lists>`_
 - `Epydoc <http://epydoc.sourceforge.net/manual-fields.html>`_
 - `Numpydoc <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_
+- `Google <https://google.github.io/styleguide/pyguide.html>`_
 
 For example, the sphinx annotation ``:type foo: str`` clearly states that the
 type of ``foo`` is ``str``.
@@ -26,6 +27,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import iterator_to_context_set, ContextSet, \
     NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContexts
+from jedi.evaluate import docscrape_google
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -97,6 +99,47 @@ def _search_return_in_numpydocstr(docstr):
             yield type_
 
 
+def _search_param_in_googledocstr(docstr, param_str):
+    r"""
+    >>> docstr = '\n'.join([
+    ...     'Args:',
+    ...     '    x ( ndarray ):',
+    ...     '    y (int or str or list):',
+    ...     '    z ({"foo", "bar", 100500}):',
+    ... ])
+    >>> sorted(set(_search_param_in_googledocstr(docstr, 'x')))
+    ['ndarray']
+    >>> sorted(set(_search_param_in_googledocstr(docstr, 'y')))
+    ['int', 'list', 'str']
+    >>> sorted(set(_search_param_in_googledocstr(docstr, 'z')))
+    ['int', 'str']
+    """
+    for garg in docscrape_google.parse_google_args(docstr):
+        if garg['name'] == param_str:
+            typestr = garg['type']
+            for type_ in _expand_typestr(typestr):
+                yield type_
+            break
+
+
+def _search_return_in_googledocstr(docstr):
+    r"""
+    >>> docstr = '\n'.join([
+    ...     'Returns:',
+    ...     '    ndarray:',
+    ...     '    int:',
+    ... ])
+    >>> sorted(_search_return_in_googledocstr(docstr))
+    ['int', 'ndarray']
+    """
+    google_rets = list(docscrape_google.parse_google_returns(docstr))
+    found = set()
+    for retdict in google_rets:
+        p_type = retdict['type']
+        found.update(_expand_typestr(p_type))
+    return found
+
+
 def _expand_typestr(type_str):
     """
     Attempts to interpret the possible types in `type_str`
@@ -155,7 +198,8 @@ def _search_param_in_docstr(docstr, param_str):
         if match:
             return [_strip_rst_role(match.group(1))]
 
-    return _search_param_in_numpydocstr(docstr, param_str)
+    return (_search_param_in_numpydocstr(docstr, param_str) or
+            list(_search_param_in_googledocstr(docstr, param_str)))
 
 
 def _strip_rst_role(type_str):
@@ -294,6 +338,10 @@ def infer_return_types(function_context):
                 yield _strip_rst_role(match.group(1))
         # Check for numpy style return hint
         for type_ in _search_return_in_numpydocstr(code):
+            yield type_
+
+        # Check for google style return hint
+        for type_ in _search_return_in_googledocstr(code):
             yield type_
 
     for type_str in search_return_in_docstr(function_context.py__doc__()):

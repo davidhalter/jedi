@@ -26,6 +26,7 @@ Changelog
 - Avoiding side effects in REPL completion.
 - Numpy docstring support should be much better.
 - Moved the `settings.*recursion*` away, they are no longer usable.
+- Added support for Google docstrings.
 
 0.10.2 (2017-04-05)
 +++++++++++++++++++
