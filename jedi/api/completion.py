@@ -146,7 +146,11 @@ class Completion:
 
             nodes = list(self.stack.get_nodes())
 
-            if "import_stmt" in symbol_names:
+            if nodes and nodes[-1] in ('as', 'def', 'class'):
+                # No completions for ``with x as foo`` and ``import x as foo``.
+                # Also true for defining names as a class or function.
+                return list(self._get_class_context_completions(is_function=True))
+            elif "import_stmt" in symbol_names:
                 level = 0
                 only_modules = True
                 level, names = self._parse_dotted_names(nodes)
@@ -161,10 +165,6 @@ class Completion:
                     level,
                     only_modules
                 )
-            elif nodes and nodes[-1] in ('as', 'def', 'class'):
-                # No completions for ``with x as foo`` and ``import x as foo``.
-                # Also true for defining names as a class or function.
-                return list(self._get_class_context_completions(is_function=True))
             elif symbol_names[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
                 completion_names += self._trailer_completions(dot.get_previous_leaf())
