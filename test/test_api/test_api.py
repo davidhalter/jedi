@@ -207,6 +207,9 @@ def test_goto_assignments_follow_imports():
     definition, = script.goto_assignments()
     assert (definition.line, definition.column) == start_pos
 
+    d, = api.Script('a = 1\na').goto_assignments(follow_imports=True)
+    assert d.name == 'a'
+
 
 def test_goto_module():
     def check(line, expected):

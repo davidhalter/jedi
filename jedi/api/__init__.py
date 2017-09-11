@@ -223,9 +223,9 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        def filter_follow_imports(names, follow_classes):
+        def filter_follow_imports(names, check):
             for name in names:
-                if isinstance(name, follow_classes):
+                if check(name):
                     for context in name.infer():
                         yield context.name
                 else:
@@ -233,13 +233,12 @@ class Script(object):
 
         names = self._goto()
         if follow_imports:
-            # TODO really, sure? TreeNameDefinition? Should probably not follow
-            # that.
-            follow_classes = (imports.ImportName, TreeNameDefinition)
+            names = filter_follow_imports(names, lambda name: name.api_type == 'module')
         else:
-            follow_classes = (imports.SubModuleName,)
-
-        names = filter_follow_imports(names, follow_classes)
+            names = filter_follow_imports(
+                names,
+                lambda name: isinstance(name, imports.SubModuleName)
+            )
 
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
