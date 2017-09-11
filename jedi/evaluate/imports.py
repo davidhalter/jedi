@@ -65,9 +65,10 @@ def infer_import(context, tree_name, is_goto=False):
     if from_import_name is not None:
         types = unite(
             t.py__getattribute__(
-                from_import_name.value if isinstance(from_import_name, tree.Name) else from_import_name,
+                from_import_name,
                 name_context=context,
-                is_goto=is_goto
+                is_goto=is_goto,
+                analysis_errors=False
             ) for t in types
         )
 

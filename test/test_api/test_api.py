@@ -2,6 +2,7 @@
 Test all things related to the ``jedi.api`` module.
 """
 
+import os
 from textwrap import dedent
 
 from jedi import api
@@ -205,3 +206,16 @@ def test_goto_assignments_follow_imports():
 
     definition, = script.goto_assignments()
     assert (definition.line, definition.column) == start_pos
+
+
+def test_goto_module():
+    def check(line, expected):
+        script = api.Script(path=path, line=line)
+        module, = script.goto_assignments()
+        assert module.module_path == expected
+
+    base_path = os.path.join(os.path.dirname(__file__), 'simple_import')
+    path = os.path.join(base_path, '__init__.py')
+
+    check(1, os.path.join(base_path, 'module.py'))
+    check(5, os.path.join(base_path, 'module2.py'))

@@ -118,7 +118,7 @@ class Evaluator(object):
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
     def find_types(self, context, name_or_str, name_context, position=None,
-                   search_global=False, is_goto=False):
+                   search_global=False, is_goto=False, analysis_errors=True):
         """
         This is the search function. The most important part to debug.
         `remove_statements` and `filter_statements` really are the core part of
@@ -127,7 +127,8 @@ class Evaluator(object):
         :param position: Position of the last statement -> tuple of line, column
         :return: List of Names. Their parents are the types.
         """
-        f = finder.NameFinder(self, context, name_context, name_or_str, position)
+        f = finder.NameFinder(self, context, name_context, name_or_str,
+                              position, analysis_errors=analysis_errors)
         filters = f.get_filters(search_global)
         if is_goto:
             return f.filter_name(filters)

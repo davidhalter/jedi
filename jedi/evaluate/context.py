@@ -54,11 +54,13 @@ class Context(object):
 
     @Python3Method
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
-                           search_global=False, is_goto=False):
+                           search_global=False, is_goto=False,
+                           analysis_errors=True):
         if name_context is None:
             name_context = self
         return self.evaluator.find_types(
-            self, name_or_str, name_context, position, search_global, is_goto)
+            self, name_or_str, name_context, position, search_global, is_goto,
+            analysis_errors)
 
     def create_context(self, node, node_is_context=False, node_is_object=False):
         return self.evaluator.create_context(self, node, node_is_context, node_is_object)
