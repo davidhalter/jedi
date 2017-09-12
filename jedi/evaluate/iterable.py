@@ -511,6 +511,9 @@ class FakeSequence(_FakeArray):
     def py__iter__(self):
         return self._lazy_context_list
 
+    def py__bool__(self):
+        return bool(len(self._lazy_context_list))
+
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._lazy_context_list)
 

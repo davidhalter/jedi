@@ -25,6 +25,23 @@ from jedi.evaluate import param
 from jedi.evaluate import analysis
 from jedi.evaluate.context import LazyTreeContext, ContextualizedNode
 
+# Now this is all part of fake tuples in Jedi. However super doesn't work on
+# __init__ and __new__ doesn't work at all. So adding this to nametuples is
+# just the easiest way.
+_NAMEDTUPLE_INIT = """
+    def __init__(_cls, {arg_list}):
+        'A helper function for namedtuple.'
+        self.__iterable = ({arg_list})
+
+    def __iter__(self):
+        for i in self.__iterable:
+            yield i
+
+    def __getitem__(self, y):
+        return self.__iterable[y]
+
+"""
+
 
 class NotInStdLib(LookupError):
     pass
@@ -259,20 +276,24 @@ def collections_namedtuple(evaluator, obj, arguments):
     else:
         return set()
 
+    base = collections._class_template
+    base += _NAMEDTUPLE_INIT
     # Build source
-    source = collections._class_template.format(
+    source = base.format(
         typename=name,
-        field_names=fields,
+        field_names=tuple(fields),
         num_fields=len(fields),
-        arg_list=', '.join(fields),
+        arg_list = repr(tuple(fields)).replace("'", "")[1:-1],
         repr_fmt=', '.join(collections._repr_template.format(name=name) for name in fields),
         field_defs='\n'.join(collections._field_template.format(index=index, name=name)
                              for index, name in enumerate(fields))
     )
 
     # Parse source
-    generated_class = next(evaluator.grammar.parse(source).iter_classdefs())
-    return set([er.ClassContext(evaluator, generated_class, evaluator.BUILTINS)])
+    module = evaluator.grammar.parse(source)
+    generated_class = next(module.iter_classdefs())
+    parent_context = er.ModuleContext(evaluator, module, '')
+    return set([er.ClassContext(evaluator, generated_class, parent_context)])
 
 
 @argument_clinic('first, /')

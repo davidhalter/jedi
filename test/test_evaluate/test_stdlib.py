@@ -43,3 +43,35 @@ def test_namedtuple_list():
         assert completions == set()
     else:
         assert completions == set(['legs', 'length', 'large'])
+
+
+def test_namedtuple_content():
+    source = dedent("""\
+        import collections
+        Foo = collections.namedtuple('Foo', ['bar', 'baz'])
+        named = Foo(baz=4, bar=3.0)
+        unnamed = Foo(4, '')
+        """)
+
+    def d(source):
+        x, = Script(source).goto_definitions()
+        return x.name
+
+    assert d(source + 'unnamed.bar') == 'int'
+    assert d(source + 'unnamed.baz') == 'str'
+    assert d(source + 'named.bar') == 'float'
+    assert d(source + 'named.baz') == 'int'
+
+
+def test_nested_namedtuples():
+    """
+    From issue #730.
+    """
+    s = Script(dedent('''
+        import collections
+        Dataset = collections.namedtuple('Dataset', ['data'])
+        Datasets = collections.namedtuple('Datasets', ['train'])
+        train_x = Datasets(train=Dataset('data_value'))
+        train_x.train.'''
+    ))
+    assert 'data' in [c.name for c in s.completions()]
