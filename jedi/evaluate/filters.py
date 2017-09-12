@@ -20,6 +20,12 @@ class AbstractNameDefinition(object):
     def infer(self):
         raise NotImplementedError
 
+    @abstractmethod
+    def goto(self):
+        # Typically names are already definitions and therefore a goto on that
+        # name will always result on itself.
+        return set([self])
+
     def get_root_context(self):
         return self.parent_context.get_root_context()
 
@@ -43,6 +49,9 @@ class AbstractTreeName(AbstractNameDefinition):
     def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
         self.tree_name = tree_name
+
+    def goto(self):
+        return self.parent_context.evaluator.goto(self.parent_context, self.tree_name)
 
     @property
     def string_name(self):

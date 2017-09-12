@@ -141,6 +141,7 @@ def get_init_path(directory_path):
 
 class ImportName(AbstractNameDefinition):
     start_pos = (1, 0)
+    _level = 0
 
     def __init__(self, parent_context, string_name):
         self.parent_context = parent_context
@@ -151,7 +152,11 @@ class ImportName(AbstractNameDefinition):
             self.parent_context.evaluator,
             [self.string_name],
             self.parent_context,
+            level=self._level,
         ).follow()
+
+    def goto(self):
+        return [m.name for m in self.infer()]
 
     def get_root_context(self):
         # Not sure if this is correct.
@@ -163,13 +168,7 @@ class ImportName(AbstractNameDefinition):
 
 
 class SubModuleName(ImportName):
-    def infer(self):
-        return Importer(
-            self.parent_context.evaluator,
-            [self.string_name],
-            self.parent_context,
-            level=1
-        ).follow()
+    _level = 1
 
 
 class Importer(object):

@@ -226,19 +226,22 @@ class Script(object):
         def filter_follow_imports(names, check):
             for name in names:
                 if check(name):
-                    for context in name.infer():
-                        yield context.name
+                    for result in filter_follow_imports(name.goto(), check):
+                        yield result
                 else:
                     yield name
 
         names = self._goto()
         if follow_imports:
-            names = filter_follow_imports(names, lambda name: name.api_type == 'module')
+            def check(name):
+                if isinstance(name, er.ModuleName):
+                    return False
+                return name.api_type == 'module'
         else:
-            names = filter_follow_imports(
-                names,
-                lambda name: isinstance(name, imports.SubModuleName)
-            )
+            def check(name):
+                return isinstance(name, imports.SubModuleName)
+
+        names = filter_follow_imports(names, check)
 
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
