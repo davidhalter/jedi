@@ -227,3 +227,12 @@ z = zipfile.ZipFile("foo")
 # It's too slow. So we don't run it at the moment.
 ##? ['upper']
 z.read('name').upper
+
+# -----------------
+# contextlib
+# -----------------
+
+import contextlib
+with contextlib.closing('asd') as string:
+    #? str()
+    string

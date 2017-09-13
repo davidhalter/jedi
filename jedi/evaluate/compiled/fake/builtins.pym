@@ -39,6 +39,9 @@ class file():
     def readlines(self):
         return ['']
 
+    def __enter__(self):
+        return self
+
 
 class xrange():
     # Attention: this function doesn't exist in Py3k (there it is range).

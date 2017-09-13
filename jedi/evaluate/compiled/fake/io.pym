@@ -7,3 +7,6 @@ class TextIOWrapper():
 
     def readlines(self):
         return ['']
+
+    def __enter__(self):
+        return self

@@ -221,7 +221,12 @@ def _name_to_types(evaluator, context, tree_name):
     elif typ == 'expr_stmt':
         types = _remove_statements(evaluator, context, node, tree_name)
     elif typ == 'with_stmt':
-        types = context.eval_node(node.get_test_node_from_name(tree_name))
+        context_managers = context.eval_node(node.get_test_node_from_name(tree_name))
+        enter_methods = unite(
+            context_manager.py__getattribute__('__enter__')
+            for context_manager in context_managers
+        )
+        types = unite(method.execute_evaluated() for method in enter_methods)
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
