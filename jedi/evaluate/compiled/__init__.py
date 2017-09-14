@@ -14,7 +14,7 @@ from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.context import Context, LazyKnownContext
-from jedi.evaluate.compiled.getattr_static import  getattr_static
+from jedi.evaluate.compiled.getattr_static import getattr_static
 from . import fake
 
 

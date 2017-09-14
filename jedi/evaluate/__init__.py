@@ -94,7 +94,7 @@ class Evaluator(object):
         # To memorize modules -> equals `sys.modules`.
         self.modules = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
-        self.mixed_cache = {}  # see `evaluate.compiled.mixed.create()`
+        self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`
         self.analysis = []
         self.dynamic_params_depth = 0
         self.is_analysis = False

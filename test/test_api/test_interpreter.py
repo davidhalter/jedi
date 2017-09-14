@@ -171,11 +171,13 @@ def test_slice():
 def test_getitem_side_effects():
     class Foo2():
         def __getitem__(self, index):
-            # possible side effects here, should therefore not call this.
+            # Possible side effects here, should therefore not call this.
+            if True:
+                raise NotImplementedError()
             return index
 
     foo = Foo2()
-    _assert_interpreter_complete('foo[0].', locals(), [])
+    _assert_interpreter_complete('foo["asdf"].upper', locals(), ['upper'])
 
 
 def test_property_error_oldstyle():
@@ -252,3 +254,39 @@ def test_completion_param_annotations():
     assert a._goto_definitions() == []
     assert [d.name for d in b._goto_definitions()] == ['str']
     assert set([d.name for d in c._goto_definitions()]) == set(['int', 'float'])
+
+
+def test_more_complex_instances():
+    class Something:
+        def foo(self, other):
+            return self
+
+    class Base():
+        def wow(self):
+            return Something()
+
+    #script = jedi.Interpreter('Base().wow().foo', [locals()])
+    #c, = script.completions()
+    #assert c.name == 'foo'
+
+    x = Base()
+    script = jedi.Interpreter('x.wow().foo', [locals()])
+    c, = script.completions()
+    assert c.name == 'foo'
+
+
+def test_repr_execution_issue():
+    """
+    Anticipate inspect.getfile executing a __repr__ of all kinds of objects.
+    See also #919.
+    """
+    class ErrorRepr:
+        def __repr__(self):
+            raise Exception('xyz')
+
+    er = ErrorRepr()
+
+    script = jedi.Interpreter('er', [locals()])
+    d, = script.goto_definitions()
+    assert d.name == 'ErrorRepr'
+    assert d.type == 'instance'
