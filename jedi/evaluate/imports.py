@@ -223,9 +223,17 @@ class Importer(object):
                         import_path = []
                         # TODO add import error.
                         debug.warning('Attempted relative import beyond top-level package.')
+                # If no path is defined in the module we have no ideas where we
+                # are in the file system. Therefore we cannot know what to do.
+                # In this case we just let the path there and ignore that it's
+                # a relative path. Not sure if that's a good idea.
             else:
                 # Here we basically rewrite the level to 0.
-                import_path = tuple(base) + tuple(import_path)
+                base = tuple(base)
+                if level > 1:
+                    base = base[:-level + 1]
+
+                import_path = base + tuple(import_path)
         self.import_path = import_path
 
     @property

@@ -49,7 +49,7 @@ def scope_nested():
 
     #? float()
     import_tree.pkg.mod1.a
-    #? ['a', '__name__', '__package__', '__file__', '__doc__']
+    #? ['a', 'foobar', '__name__', '__package__', '__file__', '__doc__']
     a = import_tree.pkg.mod1.
 
     import import_tree.random
@@ -283,3 +283,13 @@ def underscore():
     # Does that also work for the our own module?
     #? ['__file__']
     __file__
+
+
+# -----------------
+# complex relative imports #784
+# -----------------
+def relative():
+    #? ['foobar']
+    from import_tree.pkg.mod1 import foobar
+    #? int()
+    foobar
