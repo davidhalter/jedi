@@ -161,9 +161,17 @@ class BaseDefinition(object):
                     pass
 
             if name.api_type == 'module':
-                module_context, = name.infer()
-                for n in reversed(module_context.py__name__().split('.')):
-                    yield n
+                module_contexts = name.infer()
+                if module_contexts:
+                    module_context, = module_contexts
+                    for n in reversed(module_context.py__name__().split('.')):
+                        yield n
+                else:
+                    # We don't really know anything about the path here. This
+                    # module is just an import that would lead in an
+                    # ImportError. So simply return the name.
+                    yield name.string_name
+                    return
             else:
                 yield name.string_name
 

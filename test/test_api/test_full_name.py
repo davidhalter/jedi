@@ -96,3 +96,9 @@ def test_os_path():
     assert d.full_name == 'os.path.join'
     d, = jedi.Script('import os.p').completions()
     assert d.full_name == 'os.path'
+
+
+def test_os_issues():
+    """Issue #873"""
+    c, = jedi.Script('import os\nos.nt''').completions()
+    assert c.full_name == 'nt'
