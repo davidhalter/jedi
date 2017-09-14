@@ -24,3 +24,27 @@ class MyClass:
 tuple,
           ):
         return 1
+
+
+if x:
+    pass
+#? ['else']
+else
+
+try:
+    pass
+#? ['except', 'Exception']
+except
+
+try:
+    pass
+#? 6 ['except', 'Exception']
+except AttributeError:
+    pass
+#? ['finally']
+finally
+
+for x in y:
+    pass
+#? ['else']
+else

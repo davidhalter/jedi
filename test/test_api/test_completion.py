@@ -38,3 +38,12 @@ def test_indent_context():
     code = 'if 1:\nisinstanc'
     comp, = Script(code).completions()
     assert comp.name == 'isinstance'
+
+
+def test_keyword_context():
+    def get_names(*args, **kwargs):
+        return [d.name for d in Script(*args, **kwargs).completions()]
+
+    names = get_names('if 1:\n pass\n')
+    assert 'if' in names
+    assert 'elif' in names

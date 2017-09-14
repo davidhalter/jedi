@@ -1,5 +1,7 @@
 from parso.python import token
 from parso.python import tree
+from parso.tree import search_ancestor, Leaf
+
 from jedi import debug
 from jedi import settings
 from jedi.api import classes
@@ -136,6 +138,38 @@ class Completion:
 
         allowed_keywords, allowed_tokens = \
             helpers.get_possible_completion_types(grammar._pgen_grammar, self.stack)
+
+        if 'if' in allowed_keywords:
+            leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
+            previous_leaf = leaf.get_previous_leaf()
+
+            indent = self._position[1]
+            if not (leaf.start_pos <= self._position <= leaf.end_pos):
+                indent = leaf.start_pos[1]
+
+            if previous_leaf is not None:
+                stmt = previous_leaf
+                while True:
+                    stmt = search_ancestor(
+                        stmt, 'if_stmt', 'for_stmt', 'while_stmt', 'try_stmt',
+                        'error_node',
+                    )
+                    if stmt is None:
+                        break
+
+                    type_ = stmt.type
+                    if type_ == 'error_node':
+                        first = stmt.children[0]
+                        if isinstance(first, Leaf):
+                            type_ = first.value + '_stmt'
+                    # Compare indents
+                    if stmt.start_pos[1] == indent:
+                        if type_ == 'if_stmt':
+                            allowed_keywords += ['elif', 'else']
+                        elif type_ == 'try_stmt':
+                            allowed_keywords += ['except', 'finally', 'else']
+                        elif type_ == 'for_stmt':
+                            allowed_keywords.append('else')
 
         completion_names = list(self._get_keyword_completion_names(allowed_keywords))
 
