@@ -151,19 +151,13 @@ class Completion:
                 # Also true for defining names as a class or function.
                 return list(self._get_class_context_completions(is_function=True))
             elif "import_stmt" in symbol_names:
-                level = 0
-                only_modules = True
-                level, names = self._parse_dotted_names(nodes)
-                if "import_from" in symbol_names:
-                    if 'import' in nodes:
-                        only_modules = False
-                else:
-                    assert "import_name" in symbol_names
+                level, names = self._parse_dotted_names(nodes, "import_from" in symbol_names)
 
+                only_modules = not ("import_from" in symbol_names and 'import' in nodes)
                 completion_names += self._get_importer_names(
                     names,
                     level,
-                    only_modules
+                    only_modules=only_modules,
                 )
             elif symbol_names[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
@@ -211,7 +205,7 @@ class Completion:
                 completion_names += filter.values()
         return completion_names
 
-    def _parse_dotted_names(self, nodes):
+    def _parse_dotted_names(self, nodes, is_import_from):
         level = 0
         names = []
         for node in nodes[1:]:
@@ -222,7 +216,12 @@ class Completion:
                 names += node.children[::2]
             elif node.type == 'name':
                 names.append(node)
+            elif node == ',':
+                if not is_import_from:
+                    names = []
             else:
+                # Here if the keyword `import` comes along it stops checking
+                # for names.
                 break
         return level, names
 

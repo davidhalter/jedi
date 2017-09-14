@@ -197,7 +197,7 @@ def test_goto_following_on_imports():
     assert (g[0].line, g[0].column) != (0, 0)
 
 
-def test_after_from():
+def test_os_after_from():
     def check(source, result, column=None):
         completions = Script(source, column=column).completions()
         assert [c.name for c in completions] == result
@@ -209,6 +209,24 @@ def test_after_from():
 
     check('from os\\\n', ['import'])
     check('from os \\\n', ['import'])
+
+
+def test_os_issues():
+    def import_names(*args, **kwargs):
+        return [d.name for d in jedi.Script(*args, **kwargs).completions()]
+
+    # Github issue #759
+    s = 'import os, s'
+    assert 'sys' in import_names(s)
+    assert 'path' not in import_names(s, column=len(s) - 1)
+    assert 'os' in import_names(s, column=len(s) - 3)
+
+    # Some more checks
+    s = 'from os import path, e'
+    assert 'environ' in import_names(s)
+    assert 'json' not in import_names(s, column=len(s) - 1)
+    assert 'environ' in import_names(s, column=len(s) - 1)
+    assert 'path' in import_names(s, column=len(s) - 3)
 
 
 def test_path_issues():
