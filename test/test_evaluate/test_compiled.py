@@ -92,3 +92,7 @@ def test_time_docstring():
     import time
     comp, = Script('import time\ntime.sleep').completions()
     assert comp.docstring() == time.sleep.__doc__
+
+
+def test_dict_values():
+    assert Script('import sys/sys.modules["alshdb;lasdhf"]').goto_definitions()
