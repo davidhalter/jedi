@@ -218,7 +218,7 @@ def _create(evaluator, obj, parent_context=None, *args):
         node_is_object=True
     )
     if tree_node.type == 'classdef':
-        if not isinstance(obj, type):
+        if not inspect.isclass(obj):
             # Is an instance, not a class.
             tree_context, = tree_context.execute_evaluated()
 
