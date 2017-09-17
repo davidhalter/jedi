@@ -13,19 +13,17 @@ Settings
 ~~~~~~~~~~
 
 Recursion settings are important if you don't want extremly
-recursive python code to go absolutely crazy. First of there is a
-global limit :data:`max_executions`. This limit is important, to set
-a maximum amount of time, the completion may use.
+recursive python code to go absolutely crazy.
 
 The default values are based on experiments while completing the |jedi| library
 itself (inception!). But I don't think there's any other Python library that
-uses recursion in a similarly extreme way. These settings make the completion
-definitely worse in some cases. But a completion should also be fast.
+uses recursion in a similarly extreme way. Completion should also be fast and
+therefore the quality might not always be maximal.
 
-.. autodata:: max_until_execution_unique
-.. autodata:: max_function_recursion_level
-.. autodata:: max_executions_without_builtins
-.. autodata:: max_executions
+.. autodata:: recursion_limit
+.. autodata:: total_function_execution_limit
+.. autodata:: per_function_execution_limit
+.. autodata:: per_function_recursion_limit
 """
 
 from contextlib import contextmanager
@@ -33,33 +31,22 @@ from contextlib import contextmanager
 from jedi import debug
 
 
-max_until_execution_unique = 50
+recursion_limit = 15
 """
-This limit is probably the most important one, because if this limit is
-exceeded, functions can only be one time executed. So new functions will be
-executed, complex recursions with the same functions again and again, are
-ignored.
+Like ``sys.getrecursionlimit()``, just for |jedi|.
 """
-
-max_function_recursion_level = 5
+total_function_execution_limit = 200
 """
-`max_function_recursion_level` is more about whether the recursions are
-stopped in deepth or in width. The ratio beetween this and
-`max_until_execution_unique` is important here. It stops a recursion (after
-the number of function calls in the recursion), if it was already used
-earlier.
+This is a hard limit of how many non-builtin functions can be executed.
 """
-
-max_executions_without_builtins = 200
+per_function_execution_limit = 6
 """
-.. todo:: Document this.
+The maximal amount of times a specific function may be executed.
 """
-
-max_executions = 250
+per_function_recursion_limit = 2
 """
-A maximum amount of time, the completion may use.
+A function may not be executed more than this number of times recursively.
 """
-
 
 class RecursionDetector(object):
     def __init__(self):
@@ -106,25 +93,23 @@ class ExecutionRecursionDetector(object):
     Catches recursions of executions.
     """
     def __init__(self, evaluator):
-        self.recursion_level = 0
-        self.parent_execution_funcs = []
-        self.execution_funcs = set()
-        self.execution_count = 0
         self._evaluator = evaluator
 
+        self._recursion_level = 0
+        self._parent_execution_funcs = []
+        self._funcdef_execution_counts = {}
+        self._execution_count = 0
+
     def pop_execution(self):
-        self.parent_execution_funcs.pop()
-        self.recursion_level -= 1
+        self._parent_execution_funcs.pop()
+        self._recursion_level -= 1
 
     def push_execution(self, execution):
-        self.recursion_level += 1
-        self.execution_count += 1
-        self.execution_funcs.add(execution.tree_node)
-        self.parent_execution_funcs.append(execution.tree_node)
+        funcdef = execution.tree_node
 
-        if self.execution_count > max_executions:
-            debug.warning('Too many executions %s' % execution)
-            return True
+        # These two will be undone in pop_execution.
+        self._recursion_level += 1
+        self._parent_execution_funcs.append(funcdef)
 
         module = execution.get_root_context()
         if module == self._evaluator.BUILTINS:
@@ -133,12 +118,17 @@ class ExecutionRecursionDetector(object):
             # they usually just help a lot with getting good results.
             return False
 
-        if execution.tree_node in self.parent_execution_funcs:
-            if self.recursion_level > max_function_recursion_level:
-                return True
-        if execution.tree_node in self.execution_funcs and \
-                len(self.execution_funcs) > max_until_execution_unique:
+        if self._recursion_level > recursion_limit:
             return True
-        if self.execution_count > max_executions_without_builtins:
+
+        if self._execution_count >= total_function_execution_limit:
+            return True
+        self._execution_count += 1
+
+        if self._funcdef_execution_counts.setdefault(funcdef, 0) >= per_function_execution_limit:
+            return True
+        self._funcdef_execution_counts[funcdef] += 1
+
+        if self._parent_execution_funcs.count(funcdef) > per_function_recursion_limit:
             return True
         return False

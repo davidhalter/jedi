@@ -247,5 +247,3 @@ qsplit = shlex.split("foo, ferwerwerw werw werw e")
 for part in qsplit:
     #? str() None
     part
-    #? str() None
-    part
