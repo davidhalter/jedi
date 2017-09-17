@@ -78,19 +78,6 @@ class PushBackIterator(object):
         return self.current
 
 
-@contextlib.contextmanager
-def scale_speed_settings(factor):
-    a = settings.max_executions
-    b = settings.max_until_execution_unique
-    settings.max_executions *= factor
-    settings.max_until_execution_unique *= factor
-    try:
-        yield
-    finally:
-        settings.max_executions = a
-        settings.max_until_execution_unique = b
-
-
 def indent_block(text, indention='    '):
     """This function indents a text block with a default of four spaces."""
     temp = ''

@@ -43,28 +43,6 @@ Dynamic stuff
 .. autodata:: auto_import_modules
 
 
-.. _settings-recursion:
-
-Recursions
-~~~~~~~~~~
-
-Recursion settings are important if you don't want extremly
-recursive python code to go absolutely crazy. First of there is a
-global limit :data:`max_executions`. This limit is important, to set
-a maximum amount of time, the completion may use.
-
-The default values are based on experiments while completing the |jedi| library
-itself (inception!). But I don't think there's any other Python library that
-uses recursion in a similarly extreme way. These settings make the completion
-definitely worse in some cases. But a completion should also be fast.
-
-.. autodata:: max_until_execution_unique
-.. autodata:: max_function_recursion_level
-.. autodata:: max_executions_without_builtins
-.. autodata:: max_executions
-.. autodata:: scale_call_signatures
-
-
 Caching
 ~~~~~~~
 
@@ -172,44 +150,6 @@ auto_import_modules = [
 Modules that are not analyzed but imported, although they contain Python code.
 This improves autocompletion for libraries that use ``setattr`` or
 ``globals()`` modifications a lot.
-"""
-
-# ----------------
-# recursions
-# ----------------
-
-max_until_execution_unique = 50
-"""
-This limit is probably the most important one, because if this limit is
-exceeded, functions can only be one time executed. So new functions will be
-executed, complex recursions with the same functions again and again, are
-ignored.
-"""
-
-max_function_recursion_level = 5
-"""
-`max_function_recursion_level` is more about whether the recursions are
-stopped in deepth or in width. The ratio beetween this and
-`max_until_execution_unique` is important here. It stops a recursion (after
-the number of function calls in the recursion), if it was already used
-earlier.
-"""
-
-max_executions_without_builtins = 200
-"""
-.. todo:: Document this.
-"""
-
-max_executions = 250
-"""
-A maximum amount of time, the completion may use.
-"""
-
-scale_call_signatures = 0.1
-"""
-Because call_signatures is normally used on every single key hit, it has
-to be faster than a normal completion. This is the factor that is used to
-scale `max_executions` and `max_until_execution_unique`:
 """
 
 # ----------------

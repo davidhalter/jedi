@@ -20,7 +20,6 @@ from parso import python_bytes_to_unicode, split_lines
 from jedi.parser_utils import get_executable_nodes, get_statement_of_position
 from jedi import debug
 from jedi import settings
-from jedi import common
 from jedi import cache
 from jedi.api import classes
 from jedi.api import interpreter
@@ -323,14 +322,13 @@ class Script(object):
             self._get_module(),
             call_signature_details.bracket_leaf
         )
-        with common.scale_speed_settings(settings.scale_call_signatures):
-            definitions = helpers.cache_call_signatures(
-                self._evaluator,
-                context,
-                call_signature_details.bracket_leaf,
-                self._code_lines,
-                self._pos
-            )
+        definitions = helpers.cache_call_signatures(
+            self._evaluator,
+            context,
+            call_signature_details.bracket_leaf,
+            self._code_lines,
+            self._pos
+        )
         debug.speed('func_call followed')
 
         return [classes.CallSignature(self._evaluator, d.name,
