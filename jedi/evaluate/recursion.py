@@ -31,7 +31,6 @@ definitely worse in some cases. But a completion should also be fast.
 from contextlib import contextmanager
 
 from jedi import debug
-from jedi import settings
 
 
 max_until_execution_unique = 50
@@ -60,6 +59,7 @@ max_executions = 250
 """
 A maximum amount of time, the completion may use.
 """
+
 
 class RecursionDetector(object):
     def __init__(self):
@@ -122,20 +122,23 @@ class ExecutionRecursionDetector(object):
         self.execution_funcs.add(execution.tree_node)
         self.parent_execution_funcs.append(execution.tree_node)
 
-        if self.execution_count > settings.max_executions:
+        if self.execution_count > max_executions:
             debug.warning('Too many executions %s' % execution)
             return True
 
         module = execution.get_root_context()
         if module == self._evaluator.BUILTINS:
+            # We have control over builtins so we know they are not recursing
+            # like crazy. Therefore we just let them execute always, because
+            # they usually just help a lot with getting good results.
             return False
 
         if execution.tree_node in self.parent_execution_funcs:
-            if self.recursion_level > settings.max_function_recursion_level:
+            if self.recursion_level > max_function_recursion_level:
                 return True
         if execution.tree_node in self.execution_funcs and \
-                len(self.execution_funcs) > settings.max_until_execution_unique:
+                len(self.execution_funcs) > max_until_execution_unique:
             return True
-        if self.execution_count > settings.max_executions_without_builtins:
+        if self.execution_count > max_executions_without_builtins:
             return True
         return False
