@@ -9,6 +9,7 @@ Changelog
 - Split Jedi's parser into a separate project called ``parso``.
 - Avoiding side effects in REPL completion.
 - Numpy docstring support should be much better.
+- Moved the `settings.*recursion*` away, they are no longer usable.
 
 0.10.2 (2017-04-05)
 +++++++++++++++++++
