@@ -88,7 +88,7 @@ from jedi import parser_utils
 
 def _limit_context_infers(func):
     """
-    This is for now the way how we limit type inferance going wild. There are
+    This is for now the way how we limit type inference going wild. There are
     other ways to ensure recursion limits as well. This is mostly necessary
     because of instance (self) access that can be quite tricky to limit.
 
