@@ -236,3 +236,16 @@ import contextlib
 with contextlib.closing('asd') as string:
     #? str()
     string
+
+# -----------------
+# shlex
+# -----------------
+
+# Github issue #929
+import shlex
+qsplit = shlex.split("foo, ferwerwerw werw werw e")
+for part in qsplit:
+    #? str() None
+    part
+    #? str() None
+    part

@@ -86,6 +86,29 @@ from jedi.evaluate.context import ContextualizedName, ContextualizedNode
 from jedi import parser_utils
 
 
+def _limit_context_infers(func):
+    """
+    This is for now the way how we limit type inferance going wild. There are
+    other ways to ensure recursion limits as well. This is mostly necessary
+    because of instance (self) access that can be quite tricky to limit.
+
+    I'm still not sure this is the way to go, but it looks okay for now and we
+    can still go anther way in the future. Tests are there. ~ dave
+    """
+    def wrapper(evaluator, context, *args, **kwargs):
+        n = context.tree_node
+        try:
+            evaluator.inferred_element_counts[n] += 1
+            if evaluator.inferred_element_counts[n] > 300:
+                debug.warning('In context %s there were too many inferences.', n)
+                return set()
+        except KeyError:
+            evaluator.inferred_element_counts[n] = 1
+        return func(evaluator, context, *args, **kwargs)
+
+    return wrapper
+
+
 class Evaluator(object):
     def __init__(self, grammar, sys_path=None):
         self.grammar = grammar
@@ -94,6 +117,7 @@ class Evaluator(object):
         # To memorize modules -> equals `sys.modules`.
         self.modules = {}  # like `sys.modules`.
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
+        self.inferred_element_counts = {}
         self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`
         self.analysis = []
         self.dynamic_params_depth = 0
@@ -134,6 +158,7 @@ class Evaluator(object):
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
 
+    @_limit_context_infers
     def eval_statement(self, context, stmt, seek_name=None):
         with recursion.execution_allowed(self, stmt) as allowed:
             if allowed or context.get_root_context() == self.BUILTINS:
@@ -273,6 +298,7 @@ class Evaluator(object):
         return self._eval_element_not_cached(context, element)
 
     @debug.increase_indent
+    @_limit_context_infers
     def _eval_element_not_cached(self, context, element):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         types = set()
