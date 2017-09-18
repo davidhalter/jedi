@@ -37,7 +37,7 @@ from jedi.evaluate.filters import TreeNameDefinition
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
-sys.setrecursionlimit(2000)
+sys.setrecursionlimit(3000)
 
 
 class NotFoundError(Exception):
