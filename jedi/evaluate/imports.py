@@ -62,6 +62,9 @@ def infer_import(context, tree_name, is_goto=False):
     #if import_node.is_nested() and not self.nested_resolve:
     #    scopes = [NestedImportModule(module, import_node)]
 
+    if not types:
+        return set()
+
     if from_import_name is not None:
         types = unite(
             t.py__getattribute__(
