@@ -209,6 +209,7 @@ def _create(evaluator, obj, parent_context=None, *args):
     else:
         from jedi.evaluate.representation import ModuleContext
         module_context = ModuleContext(evaluator, module_node, path=path)
+        # TODO this __name__ is probably wrong.
         name = compiled_object.get_root_context().py__name__()
         imports.add_module(evaluator, name, module_context)
 

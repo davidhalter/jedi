@@ -31,7 +31,7 @@ from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
-from jedi.evaluate.sys_path import get_venv_path
+from jedi.evaluate.sys_path import get_venv_path, dotted_path_in_sys_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
 from jedi.evaluate.filters import TreeNameDefinition
 
@@ -151,7 +151,10 @@ class Script(object):
             self._get_module_node(),
             self.path
         )
-        imports.add_module(self._evaluator, module.name.string_name, module)
+        if self.path is not None:
+            name = dotted_path_in_sys_path(self._evaluator.sys_path, self.path)
+            if name is not None:
+                imports.add_module(self._evaluator, name, module)
         return module
 
     @property

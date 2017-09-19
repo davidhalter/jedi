@@ -523,9 +523,11 @@ def get_modules_containing_name(evaluator, modules, name):
         with open(path, 'rb') as f:
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
-                module_name = os.path.basename(path)[:-3]  # Remove `.py`.
                 module = _load_module(evaluator, path, code)
-                add_module(evaluator, module_name, module)
+
+                module_name = sys_path.dotted_path_in_sys_path(evaluator.sys_path, path)
+                if module_name is not None:
+                    add_module(evaluator, module_name, module)
                 return module
 
     # skip non python modules

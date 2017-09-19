@@ -1,6 +1,7 @@
 import glob
 import os
 import sys
+import imp
 from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
@@ -281,3 +282,33 @@ def _get_buildout_script_paths(module_path):
             debug.warning(unicode(e))
             continue
     return extra_module_paths
+
+
+def dotted_path_in_sys_path(sys_path, module_path):
+    """
+    Returns the dotted path inside a sys.path.
+    """
+    # First remove the suffix.
+    for suffix, _, _ in imp.get_suffixes():
+        if module_path.endswith(suffix):
+            module_path = module_path[:-len(suffix)]
+        break
+    else:
+        # There should always be a suffix in a valid Python file on the path.
+        return None
+
+    if module_path.startswith(os.path.sep):
+        # The paths in sys.path most of the times don't end with a slash.
+        module_path = module_path[1:]
+
+    for p in sys_path:
+        if module_path.startswith(p):
+            rest = module_path[len(p):]
+            if rest:
+                split = rest.split(os.path.sep)
+                for string in split:
+                    if not string or '.' in string:
+                        return None
+                return '.'.join(split)
+
+    return None
