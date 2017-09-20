@@ -48,5 +48,5 @@ python setup.py sdist bdist_wheel
 twine upload dist/*
 
 cd $BASE_DIR
-# Back in the development directory fetch tags.
-git fetch --tags
+# The tags have been pushed to this repo. Push the tags to github, now.
+git push --tags
