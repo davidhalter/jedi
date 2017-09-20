@@ -2,7 +2,7 @@ import pydoc
 import keyword
 
 from jedi._compatibility import is_py3, is_py35
-from jedi import common
+from jedi.evaluate.utils import ignored
 from jedi.evaluate.filters import AbstractNameDefinition
 from parso.python.tree import Leaf
 
@@ -123,7 +123,7 @@ def imitate_pydoc(string):
     # with unicode strings)
     string = str(string)
     h = pydoc.help
-    with common.ignored(KeyError):
+    with ignored(KeyError):
         # try to access symbols
         string = h.symbols[string]
         string, _, related = string.partition(' ')

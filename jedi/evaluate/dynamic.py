@@ -24,7 +24,7 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
 from jedi.evaluate.param import TreeArguments, create_default_params
 from jedi.evaluate.helpers import is_stdlib_path
-from jedi.common import to_list, unite
+from jedi.evaluate.utils import to_list, unite
 from jedi.parser_utils import get_parent_scope
 
 

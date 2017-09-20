@@ -24,7 +24,7 @@ from parso import python_bytes_to_unicode
 from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
-from jedi.common import unite
+from jedi.evaluate.utils import unite
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled

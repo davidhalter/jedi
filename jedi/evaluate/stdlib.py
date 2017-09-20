@@ -12,7 +12,7 @@ compiled module that returns the types for C-builtins.
 import collections
 import re
 
-from jedi.common import unite
+from jedi.evaluate.utils import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate.instance import InstanceFunctionExecution, \

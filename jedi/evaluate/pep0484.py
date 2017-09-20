@@ -26,7 +26,7 @@ import re
 from parso import ParserSyntaxError
 from parso.python import tree
 
-from jedi.common import unite
+from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.context import LazyTreeContext

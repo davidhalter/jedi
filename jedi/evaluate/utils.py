@@ -4,7 +4,17 @@ import contextlib
 import functools
 
 from jedi._compatibility import reraise
-from jedi import settings
+
+
+def to_list(func):
+    def wrapper(*args, **kwargs):
+        return list(func(*args, **kwargs))
+    return wrapper
+
+
+def unite(iterable):
+    """Turns a two dimensional array into a one dimensional."""
+    return set(typ for types in iterable for typ in types)
 
 
 class UncaughtAttributeError(Exception):
@@ -78,16 +88,6 @@ class PushBackIterator(object):
         return self.current
 
 
-def indent_block(text, indention='    '):
-    """This function indents a text block with a default of four spaces."""
-    temp = ''
-    while text and text[-1] == '\n':
-        temp += text[-1]
-        text = text[:-1]
-    lines = text.split('\n')
-    return '\n'.join(map(lambda s: indention + s, lines)) + temp
-
-
 @contextlib.contextmanager
 def ignored(*exceptions):
     """
@@ -100,12 +100,11 @@ def ignored(*exceptions):
         pass
 
 
-def unite(iterable):
-    """Turns a two dimensional array into a one dimensional."""
-    return set(typ for types in iterable for typ in types)
-
-
-def to_list(func):
-    def wrapper(*args, **kwargs):
-        return list(func(*args, **kwargs))
-    return wrapper
+def indent_block(text, indention='    '):
+    """This function indents a text block with a default of four spaces."""
+    temp = ''
+    while text and text[-1] == '\n':
+        temp += text[-1]
+        text = text[:-1]
+    lines = text.split('\n')
+    return '\n'.join(map(lambda s: indention + s, lines)) + temp

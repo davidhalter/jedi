@@ -1,7 +1,7 @@
 from abc import abstractproperty
 
 from jedi._compatibility import is_py3
-from jedi.common import unite
+from jedi.evaluate.utils import unite
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate import filters

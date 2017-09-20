@@ -11,7 +11,7 @@ from parso.python.tree import search_ancestor
 
 from jedi._compatibility import u
 from jedi import settings
-from jedi import common
+from jedi.evaluate.utils import ignored, unite
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import instance
@@ -311,7 +311,7 @@ class BaseDefinition(object):
         if not path:
             return None  # for keywords the path is empty
 
-        with common.ignored(KeyError):
+        with ignored(KeyError):
             path[0] = self._mapping[path[0]]
         for key, repl in self._tuple_mapping.items():
             if tuple(path[:len(key)]) == key:
@@ -588,7 +588,7 @@ class Definition(BaseDefinition):
         """
         defs = self._name.infer()
         return sorted(
-            common.unite(defined_names(self._evaluator, d) for d in defs),
+            unite(defined_names(self._evaluator, d) for d in defs),
             key=lambda s: s._name.start_pos or (0, 0)
         )
 

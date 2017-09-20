@@ -22,9 +22,9 @@ It is important to note that:
 """
 from jedi import debug
 from jedi import settings
-from jedi import common
-from jedi.common import unite, safe_property
+from jedi.evaluate.utils import unite, safe_property
 from jedi._compatibility import unicode, zip_longest, is_py3
+from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
@@ -262,7 +262,7 @@ class Comprehension(AbstractSequence):
                         yield iterated
 
     @evaluator_method_cache(default=[])
-    @common.to_list
+    @to_list
     def _iterate(self):
         comp_fors = tuple(get_comp_fors(self._get_comp_for()))
         for result in self._nested(comp_fors):

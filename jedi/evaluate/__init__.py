@@ -67,7 +67,7 @@ from parso.python import tree
 import parso
 
 from jedi import debug
-from jedi.common import unite
+from jedi.evaluate.utils import unite
 from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate import recursion

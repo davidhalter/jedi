@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from jedi._compatibility import zip_longest
 from jedi import debug
-from jedi import common
+from jedi.evaluate.utils import PushBackIterator
 from parso.python import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
@@ -258,7 +258,7 @@ def get_params(execution_context, var_args):
     for param in funcdef.get_params():
         param_dict[param.name.value] = param
     unpacked_va = list(var_args.unpack(funcdef))
-    var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
+    var_arg_iterator = PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
     keys_used = {}
