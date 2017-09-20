@@ -38,6 +38,6 @@ good text editor, while still having very good IDE features for Python.
 
 __version__ = '0.11.0'
 
-from jedi.api import Script, Interpreter, set_debug_function
-from jedi.api import preload_module, names
+from jedi.api import Script, Interpreter, set_debug_function, \
+    preload_module, names
 from jedi import settings
