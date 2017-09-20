@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-0.11.0 (2017-09-14)
+0.11.0 (2017-09-20)
 +++++++++++++++++++
 
 - Split Jedi's parser into a separate project called ``parso``.
