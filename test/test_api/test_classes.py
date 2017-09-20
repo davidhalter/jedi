@@ -6,7 +6,7 @@ from inspect import cleandoc
 
 import pytest
 
-from jedi import Script, defined_names, __doc__ as jedi_doc, names
+from jedi import Script, __doc__ as jedi_doc, names
 from ..helpers import cwd_at
 from ..helpers import TestCase
 
@@ -42,7 +42,7 @@ def make_definitions():
     """)
 
     definitions = []
-    definitions += defined_names(source)
+    definitions += names(source)
 
     source += dedent("""
     variable = sys or C or x or f or g or g() or h""")

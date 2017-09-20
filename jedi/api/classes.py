@@ -3,7 +3,6 @@ The :mod:`jedi.api.classes` module contains the return classes of the API.
 These classes are the much bigger part of the whole API, because they contain
 the interesting information about completion and goto operations.
 """
-import warnings
 import re
 
 from parso.cache import parser_cache
@@ -258,26 +257,6 @@ class BaseDefinition(object):
         return _Help(self._name).docstring(fast=fast, raw=raw)
 
     @property
-    def doc(self):
-        """
-        .. deprecated:: 0.8.0
-           Use :meth:`.docstring` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Deprecated since Jedi 0.8. Use docstring() instead.", DeprecationWarning, stacklevel=2)
-        return self.docstring(raw=False)
-
-    @property
-    def raw_doc(self):
-        """
-        .. deprecated:: 0.8.0
-           Use :meth:`.docstring` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Deprecated since Jedi 0.8. Use docstring() instead.", DeprecationWarning, stacklevel=2)
-        return self.docstring(raw=True)
-
-    @property
     def description(self):
         """A textual description of the object."""
         return u(self._name.string_name)
@@ -368,7 +347,7 @@ class BaseDefinition(object):
             raise AttributeError()
         context = followed[0]  # only check the first one.
 
-        return [_Param(self._evaluator, n) for n in get_param_names(context)]
+        return [Definition(self._evaluator, n) for n in get_param_names(context)]
 
     def parent(self):
         context = self._name.parent_context
@@ -662,46 +641,9 @@ class CallSignature(Definition):
         """
         return self._bracket_start_pos
 
-    @property
-    def call_name(self):
-        """
-        .. deprecated:: 0.8.0
-           Use :attr:`.name` instead.
-        .. todo:: Remove!
-
-        The name (e.g. 'isinstance') as a string.
-        """
-        warnings.warn("Deprecated since Jedi 0.8. Use name instead.", DeprecationWarning, stacklevel=2)
-        return self.name
-
-    @property
-    def module(self):
-        """
-        .. deprecated:: 0.8.0
-           Use :attr:`.module_name` for the module name.
-        .. todo:: Remove!
-        """
-        return self._executable.get_root_node()
-
     def __repr__(self):
         return '<%s: %s index %s>' % \
             (type(self).__name__, self._name.string_name, self.index)
-
-
-class _Param(Definition):
-    """
-    Just here for backwards compatibility.
-    """
-    def get_code(self):
-        """
-        .. deprecated:: 0.8.0
-           Use :attr:`.description` and :attr:`.name` instead.
-        .. todo:: Remove!
-
-        A function to get the whole code of the param.
-        """
-        warnings.warn("Deprecated since version 0.8. Use description instead.", DeprecationWarning, stacklevel=2)
-        return self.description
 
 
 class _Help(object):

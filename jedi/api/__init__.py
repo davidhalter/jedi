@@ -10,7 +10,6 @@ arguments.
 .. warning:: Please, note that Jedi is **not thread safe**.
 """
 import os
-import warnings
 import sys
 
 import parso
@@ -38,16 +37,6 @@ from jedi.evaluate.filters import TreeNameDefinition
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
 sys.setrecursionlimit(3000)
-
-
-class NotFoundError(Exception):
-    """A custom error to avoid catching the wrong exceptions.
-
-    .. deprecated:: 0.9.0
-       Not in use anymore, Jedi just returns no goto result if you're not on a
-       valid name.
-    .. todo:: Remove!
-    """
 
 
 class Script(object):
@@ -90,15 +79,7 @@ class Script(object):
 
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', source_path=None, source_encoding=None,
-                 sys_path=None):
-        if source_path is not None:
-            warnings.warn("Deprecated since version 0.7. Use path instead of source_path.", DeprecationWarning, stacklevel=2)
-            path = source_path
-        if source_encoding is not None:
-            warnings.warn("Deprecated since version 0.8. Use encoding instead of source_encoding.", DeprecationWarning, stacklevel=2)
-            encoding = source_encoding
-
+                 encoding='utf-8', sys_path=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
@@ -156,16 +137,6 @@ class Script(object):
             if name is not None:
                 imports.add_module(self._evaluator, name, module)
         return module
-
-    @property
-    def source_path(self):
-        """
-        .. deprecated:: 0.7.0
-           Use :attr:`.path` instead.
-        .. todo:: Remove!
-        """
-        warnings.warn("Deprecated since version 0.7. Use path instead of source_path.", DeprecationWarning, stacklevel=2)
-        return self.path
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, repr(self._orig_path))
@@ -423,26 +394,6 @@ class Interpreter(Script):
             self.namespaces,
             path=self.path
         )
-
-
-def defined_names(source, path=None, encoding='utf-8'):
-    """
-    Get all definitions in `source` sorted by its position.
-
-    This functions can be used for listing functions, classes and
-    data defined in a file.  This can be useful if you want to list
-    them in "sidebar".  Each element in the returned list also has
-    `defined_names` method which can be used to get sub-definitions
-    (e.g., methods in class).
-
-    :rtype: list of classes.Definition
-
-    .. deprecated:: 0.9.0
-       Use :func:`names` instead.
-    .. todo:: Remove!
-    """
-    warnings.warn("Use names instead.", DeprecationWarning)
-    return names(source, path, encoding)
 
 
 def names(source=None, path=None, encoding='utf-8', all_scopes=False,
