@@ -501,10 +501,6 @@ class FakeSequence(_FakeArray):
         super(FakeSequence, self).__init__(evaluator, None, array_type)
         self._lazy_context_list = lazy_context_list
 
-    def _items(self):
-        raise DeprecationWarning
-        return self._context_list
-
     def py__getitem__(self, index):
         return set(self._lazy_context_list[index].infer())
 
@@ -532,12 +528,6 @@ class FakeDict(_FakeArray):
 
     def dict_values(self):
         return unite(lazy_context.infer() for lazy_context in self._dct.values())
-
-    def _items(self):
-        raise DeprecationWarning
-        for key, values in self._dct.items():
-            # TODO this is not proper. The values could be multiple values?!
-            yield key, values[0]
 
     def exact_key_items(self):
         return self._dct.items()
