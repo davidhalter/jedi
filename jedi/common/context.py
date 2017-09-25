@@ -19,7 +19,6 @@ class ContextSet(object):
         """
         aggregated = set()
         for set_ in sets:
-            print(set_)
             if isinstance(set_, ContextSet):
                 aggregated |= set_._set
             else:
@@ -32,6 +31,9 @@ class ContextSet(object):
     def __iter__(self):
         for element in self._set:
             yield element
+
+    def __bool__(self):
+        return bool(self._set)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))

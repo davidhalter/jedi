@@ -7,6 +7,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 from jedi.evaluate import flow_analysis
 from jedi.evaluate.utils import to_list, unite
+from jedi.common import ContextSet
 from jedi.parser_utils import get_parent_scope
 
 
@@ -64,7 +65,7 @@ class AbstractTreeName(AbstractNameDefinition):
 
 class ContextNameMixin(object):
     def infer(self):
-        return set([self._context])
+        return ContextSet(self._context)
 
     def get_root_context(self):
         if self.parent_context is None:
@@ -128,7 +129,7 @@ class AnonymousInstanceParamName(ParamName):
         if param_node.position_index == 0:
             # This is a speed optimization, to return the self param (because
             # it's known). This only affects anonymous instances.
-            return set([self.parent_context.instance])
+            return ContextSet(self.parent_context.instance)
         else:
             return self.get_param().infer()
 
