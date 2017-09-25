@@ -83,6 +83,7 @@ from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode
+from jedi.common import ContextSet, NO_CONTEXTS
 from jedi import parser_utils
 
 
@@ -101,7 +102,7 @@ def _limit_context_infers(func):
             evaluator.inferred_element_counts[n] += 1
             if evaluator.inferred_element_counts[n] > 300:
                 debug.warning('In context %s there were too many inferences.', n)
-                return set()
+                return NO_CONTEXTS
         except KeyError:
             evaluator.inferred_element_counts[n] = 1
         return func(evaluator, context, *args, **kwargs)
@@ -163,7 +164,7 @@ class Evaluator(object):
         with recursion.execution_allowed(self, stmt) as allowed:
             if allowed or context.get_root_context() == self.BUILTINS:
                 return self._eval_stmt(context, stmt, seek_name)
-        return set()
+        return NO_CONTEXTS
 
     #@evaluator_function_cache(default=[])
     @debug.increase_indent
@@ -178,11 +179,11 @@ class Evaluator(object):
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         rhs = stmt.get_rhs()
-        types = self.eval_element(context, rhs)
+        context_set = self.eval_element(context, rhs)
 
         if seek_name:
             c_node = ContextualizedName(context, seek_name)
-            types = finder.check_tuple_assignments(self, c_node, types)
+            context_set = finder.check_tuple_assignments(self, c_node, context_set)
 
         first_operator = next(stmt.yield_operators(), None)
         if first_operator not in ('=', None) and first_operator.type == 'operator':
@@ -194,7 +195,7 @@ class Evaluator(object):
                 name, position=stmt.start_pos, search_global=True)
 
             for_stmt = tree.search_ancestor(stmt, 'for_stmt')
-            if for_stmt is not None and for_stmt.type == 'for_stmt' and types \
+            if for_stmt is not None and for_stmt.type == 'for_stmt' and context_set \
                     and parser_utils.for_stmt_defines_one_name(for_stmt):
                 # Iterate through result and add the values, that's possible
                 # only in for loops without clutter, because they are
@@ -208,11 +209,11 @@ class Evaluator(object):
                     with helpers.predefine_names(context, for_stmt, dct):
                         t = self.eval_element(context, rhs)
                         left = precedence.calculate(self, context, left, operator, t)
-                types = left
+                context_set = left
             else:
-                types = precedence.calculate(self, context, left, operator, types)
-        debug.dbg('eval_statement result %s', types)
-        return types
+                context_set = precedence.calculate(self, context, left, operator, context_set)
+        debug.dbg('eval_statement result %s', context_set)
+        return context_set
 
     def eval_element(self, context, element):
         if isinstance(context, iterable.CompForContext):
@@ -261,14 +262,14 @@ class Evaluator(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][if_name.value] = set([definition])
+                                    new_name_dicts[i][if_name.value] = ContextSet(definition)
 
                                 name_dicts += new_name_dicts
                         else:
                             for name_dict in name_dicts:
                                 name_dict[if_name.value] = definitions
             if len(name_dicts) > 1:
-                result = set()
+                result = ContextSet()
                 for name_dict in name_dicts:
                     with helpers.predefine_names(context, if_stmt, name_dict):
                         result |= self._eval_element_not_cached(context, element)
@@ -293,7 +294,7 @@ class Evaluator(object):
                 return self._eval_element_not_cached(context, element)
         return self._eval_element_cached(context, element)
 
-    @evaluator_function_cache(default=set())
+    @evaluator_function_cache(default=NO_CONTEXTS)
     def _eval_element_cached(self, context, element):
         return self._eval_element_not_cached(context, element)
 
@@ -301,63 +302,66 @@ class Evaluator(object):
     @_limit_context_infers
     def _eval_element_not_cached(self, context, element):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
-        types = set()
         typ = element.type
         if typ in ('name', 'number', 'string', 'atom'):
-            types = self.eval_atom(context, element)
+            return self.eval_atom(context, element)
         elif typ == 'keyword':
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
-                types.add(compiled.builtin_from_name(self, element.value))
+                return ContextSet(compiled.builtin_from_name(self, element.value))
             # else: print e.g. could be evaluated like this in Python 2.7
+            return NO_CONTEXTS
         elif typ == 'lambdef':
-            types = set([er.FunctionContext(self, context, element)])
+            return ContextSet(er.FunctionContext(self, context, element))
         elif typ == 'expr_stmt':
-            types = self.eval_statement(context, element)
+            return self.eval_statement(context, element)
         elif typ in ('power', 'atom_expr'):
             first_child = element.children[0]
             if not (first_child.type == 'keyword' and first_child.value == 'await'):
-                types = self.eval_atom(context, first_child)
+                context_set = self.eval_atom(context, first_child)
                 for trailer in element.children[1:]:
                     if trailer == '**':  # has a power operation.
                         right = self.eval_element(context, element.children[2])
-                        types = set(precedence.calculate(self, context, types, trailer, right))
+                        context_set = precedence.calculate(
+                            self,
+                            context,
+                            context_set,
+                            trailer,
+                            right
+                        )
                         break
-                    types = self.eval_trailer(context, types, trailer)
+                    context_set = self.eval_trailer(context, context_set, trailer)
+            return context_set
         elif typ in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
-            types = set([iterable.SequenceLiteralContext(self, context, element)])
+            return ContextSet(iterable.SequenceLiteralContext(self, context, element))
         elif typ in ('not_test', 'factor'):
-            types = self.eval_element(context, element.children[-1])
+            context_set = self.eval_element(context, element.children[-1])
             for operator in element.children[:-1]:
-                types = set(precedence.factor_calculate(self, types, operator))
+                context_set = precedence.factor_calculate(self, context_set, operator)
+            return context_set
         elif typ == 'test':
             # `x if foo else y` case.
-            types = (self.eval_element(context, element.children[0]) |
-                     self.eval_element(context, element.children[-1]))
+            return (self.eval_element(context, element.children[0]) |
+                    self.eval_element(context, element.children[-1]))
         elif typ == 'operator':
             # Must be an ellipsis, other operators are not evaluated.
             # In Python 2 ellipsis is coded as three single dot tokens, not
             # as one token 3 dot token.
             assert element.value in ('.', '...')
-            types = set([compiled.create(self, Ellipsis)])
+            return ContextSet(compiled.create(self, Ellipsis))
         elif typ == 'dotted_name':
-            types = self.eval_atom(context, element.children[0])
+            context_set = self.eval_atom(context, element.children[0])
             for next_name in element.children[2::2]:
                 # TODO add search_global=True?
-                types = unite(
-                    typ.py__getattribute__(next_name, name_context=context)
-                    for typ in types
-                )
-            types = types
+                context_set.py__getattribute__(next_name, name_context=context)
+            return context_set
         elif typ == 'eval_input':
-            types = self._eval_element_not_cached(context, element.children[0])
+            return self._eval_element_not_cached(context, element.children[0])
         elif typ == 'annassign':
-            types = pep0484._evaluate_for_annotation(context, element.children[1])
+            return pep0484._evaluate_for_annotation(context, element.children[1])
         else:
-            types = precedence.calculate_children(self, context, element.children)
-        debug.dbg('eval_element result %s', types)
-        return types
+            return precedence.calculate_children(self, context, element.children)
 
     def eval_atom(self, context, atom):
         """
@@ -377,18 +381,19 @@ class Evaluator(object):
                 position=stmt.start_pos,
                 search_global=True
             )
+
         elif isinstance(atom, tree.Literal):
             string = parser_utils.safe_literal_eval(atom.value)
-            return set([compiled.create(self, string)])
+            return ContextSet(compiled.create(self, string))
         else:
             c = atom.children
             if c[0].type == 'string':
                 # Will be one string.
-                types = self.eval_atom(context, c[0])
+                context_set = self.eval_atom(context, c[0])
                 for string in c[1:]:
                     right = self.eval_atom(context, string)
-                    types = precedence.calculate(self, context, types, '+', right)
-                return types
+                    context_set = precedence.calculate(self, context, context_set, '+', right)
+                return context_set
             # Parentheses without commas are not tuples.
             elif c[0] == '(' and not len(c) == 2 \
                     and not(c[1].type == 'testlist_comp' and
@@ -408,7 +413,7 @@ class Evaluator(object):
                         pass
 
                 if comp_for.type == 'comp_for':
-                    return set([iterable.Comprehension.from_atom(self, context, atom)])
+                    return ContextSet(iterable.Comprehension.from_atom(self, context, atom))
 
             # It's a dict/list/tuple literal.
             array_node = c[1]
@@ -420,28 +425,28 @@ class Evaluator(object):
                 context = iterable.DictLiteralContext(self, context, atom)
             else:
                 context = iterable.SequenceLiteralContext(self, context, atom)
-            return set([context])
+            return ContextSet(context)
 
     def eval_trailer(self, context, types, trailer):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
             node = ()
 
-        new_types = set()
         if trailer_op == '[':
-            new_types |= iterable.py__getitem__(self, context, types, trailer)
+            return ContextSet(iterable.py__getitem__(self, context, types, trailer))
         else:
+            context_set = ContextSet()
             for typ in types:
                 debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
                 if trailer_op == '.':
-                    new_types |= typ.py__getattribute__(
+                    context_set |= typ.py__getattribute__(
                         name_context=context,
                         name_or_str=node
                     )
                 elif trailer_op == '(':
                     arguments = param.TreeArguments(self, context, node, trailer)
-                    new_types |= self.execute(typ, arguments)
-        return new_types
+                    context_set |= self.execute(typ, arguments)
+            return context_set
 
     @debug.increase_indent
     def execute(self, obj, arguments):
@@ -460,11 +465,11 @@ class Evaluator(object):
             func = obj.py__call__
         except AttributeError:
             debug.warning("no execution possible %s", obj)
-            return set()
+            return NO_CONTEXTS
         else:
-            types = func(arguments)
-            debug.dbg('execute result: %s in %s', types, obj)
-            return types
+            context_set = func(arguments)
+            debug.dbg('execute result: %s in %s', context_set, obj)
+            return context_set
 
     def goto_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)
@@ -509,25 +514,25 @@ class Evaluator(object):
                 return module_names
 
         par = name.parent
-        typ = par.type
-        if typ == 'argument' and par.children[1] == '=' and par.children[0] == name:
+        node_type = par.type
+        if node_type == 'argument' and par.children[1] == '=' and par.children[0] == name:
             # Named param goto.
             trailer = par.parent
             if trailer.type == 'arglist':
                 trailer = trailer.parent
             if trailer.type != 'classdef':
                 if trailer.type == 'decorator':
-                    types = self.eval_element(context, trailer.children[1])
+                    context_set = self.eval_element(context, trailer.children[1])
                 else:
                     i = trailer.parent.children.index(trailer)
                     to_evaluate = trailer.parent.children[:i]
-                    types = self.eval_element(context, to_evaluate[0])
+                    context_set = self.eval_element(context, to_evaluate[0])
                     for trailer in to_evaluate[1:]:
-                        types = self.eval_trailer(context, types, trailer)
+                        context_set = self.eval_trailer(context, context_set, trailer)
                 param_names = []
-                for typ in types:
+                for context in context_set:
                     try:
-                        get_param_names = typ.get_param_names
+                        get_param_names = context.get_param_names
                     except AttributeError:
                         pass
                     else:
@@ -535,7 +540,7 @@ class Evaluator(object):
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names
-        elif typ == 'dotted_name':  # Is a decorator.
+        elif node_type == 'dotted_name':  # Is a decorator.
             index = par.children.index(name)
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
@@ -546,7 +551,7 @@ class Evaluator(object):
                     for value in values
                 )
 
-        if typ == 'trailer' and par.children[0] == '.':
+        if node_type == 'trailer' and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
             return unite(
                 value.py__getattribute__(name, name_context=context, is_goto=True)

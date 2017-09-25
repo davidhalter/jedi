@@ -19,7 +19,6 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
     See comment from Guido https://github.com/davidhalter/jedi/issues/662
 """
 
-import itertools
 import os
 import re
 
@@ -30,6 +29,7 @@ from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.context import LazyTreeContext
+from jedi.common import NO_CONTEXTS
 from jedi import debug
 from jedi import _compatibility
 from jedi import parser_utils
@@ -42,16 +42,15 @@ def _evaluate_for_annotation(context, annotation, index=None):
     and we're interested in that index
     """
     if annotation is not None:
-        definitions = context.eval_node(
-            _fix_forward_reference(context, annotation))
+        context_set = context.eval_node(_fix_forward_reference(context, annotation))
         if index is not None:
-            definitions = list(itertools.chain.from_iterable(
-                definition.py__getitem__(index) for definition in definitions
-                if definition.array_type == 'tuple' and
-                len(list(definition.py__iter__())) >= index))
-        return unite(d.execute_evaluated() for d in definitions)
+            context_set = context_set.filter(
+                lambda context: context.array_type == 'tuple' \
+                                and len(list(context.py__iter__())) >= index
+            ).py__getitem__(index)
+        return context_set.execute_evaluated()
     else:
-        return set()
+        return NO_CONTEXTS
 
 
 def _fix_forward_reference(context, node):

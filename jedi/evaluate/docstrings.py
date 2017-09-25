@@ -25,6 +25,7 @@ from jedi.evaluate.utils import unite, indent_block
 from jedi.evaluate import context
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
+from jedi.common import iterator_to_context_set, ContextSet, NO_CONTEXTS
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -245,7 +246,7 @@ def infer_param(execution_context, param):
     from jedi.evaluate.instance import AnonymousInstanceFunctionExecution
 
     def eval_docstring(docstring):
-        return set(
+        return ContextSet.from_iterable(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _evaluate_for_statement_string(module_context, param_str)
@@ -253,7 +254,7 @@ def infer_param(execution_context, param):
     module_context = execution_context.get_root_context()
     func = param.get_parent_function()
     if func.type == 'lambdef':
-        return set()
+        return NO_CONTEXTS
 
     types = eval_docstring(execution_context.py__doc__())
     if isinstance(execution_context, AnonymousInstanceFunctionExecution) and \
@@ -265,6 +266,7 @@ def infer_param(execution_context, param):
 
 
 @evaluator_method_cache()
+@iterator_to_context_set
 def infer_return_types(function_context):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
@@ -278,4 +280,3 @@ def infer_return_types(function_context):
     for type_str in search_return_in_docstr(function_context.py__doc__()):
         for type_eval in _evaluate_for_statement_string(function_context.get_root_context(), type_str):
             yield type_eval
-

@@ -7,6 +7,7 @@ from jedi._compatibility import unicode
 from jedi import debug
 from jedi.evaluate.compiled import CompiledObject, create, builtin_from_name
 from jedi.evaluate import analysis
+from jedi.common import ContextSet
 
 # Maps Python syntax to the operator module.
 COMPARISON_OPERATORS = {
@@ -33,7 +34,7 @@ def literals_to_types(evaluator, result):
             new_result |= cls.execute_evaluated()
         else:
             new_result.add(typ)
-    return new_result
+    return ContextSet.from_set(new_result)
 
 
 def calculate_children(evaluator, context, children):
@@ -49,7 +50,7 @@ def calculate_children(evaluator, context, children):
 
         # handle lazy evaluation of and/or here.
         if operator in ('and', 'or'):
-            left_bools = set([left.py__bool__() for left in types])
+            left_bools = ContextSet(left.py__bool__() for left in types)
             if left_bools == set([True]):
                 if operator == 'and':
                     types = context.eval_node(right)
@@ -65,22 +66,22 @@ def calculate_children(evaluator, context, children):
 
 
 def calculate(evaluator, context, left_result, operator, right_result):
-    result = set()
     if not left_result or not right_result:
         # illegal slices e.g. cause left/right_result to be None
         result = (left_result or set()) | (right_result or set())
-        result = literals_to_types(evaluator, result)
+        return literals_to_types(evaluator, result)
     else:
         # I don't think there's a reasonable chance that a string
         # operation is still correct, once we pass something like six
         # objects.
         if len(left_result) * len(right_result) > 6:
-            result = literals_to_types(evaluator, left_result | right_result)
+            return literals_to_types(evaluator, left_result | right_result)
         else:
-            for left in left_result:
-                for right in right_result:
-                    result |= _element_calculate(evaluator, context, left, operator, right)
-    return result
+            return ContextSet.from_sets(
+                _element_calculate(evaluator, context, left, operator, right)
+                for left in left_result
+                for right in right_result
+            )
 
 
 def factor_calculate(evaluator, types, operator):
@@ -131,21 +132,21 @@ def _element_calculate(evaluator, context, left, operator, right):
     if operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.AbstractSequence) or is_string(left):
-            return set([left])
+            return ContextSet(left)
         elif isinstance(right, iterable.AbstractSequence) or is_string(right):
-            return set([right])
+            return ContextSet(right)
     elif operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
-            return set([create(evaluator, left.obj + right.obj)])
+            return ContextSet(create(evaluator, left.obj + right.obj))
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
-            return set([iterable.MergedArray(evaluator, (left, right))])
+            return ContextSet(iterable.MergedArray(evaluator, (left, right)))
     elif operator == '-':
         if l_is_num and r_is_num:
-            return set([create(evaluator, left.obj - right.obj)])
+            return ContextSet(create(evaluator, left.obj - right.obj))
     elif operator == '%':
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
-        return set([left])
+        return ContextSet(left)
     elif operator in COMPARISON_OPERATORS:
         operation = COMPARISON_OPERATORS[operator]
         if isinstance(left, CompiledObject) and isinstance(right, CompiledObject):
@@ -157,9 +158,9 @@ def _element_calculate(evaluator, context, left, operator, right):
             result = operation(left, right)
         except TypeError:
             # Could be True or False.
-            return set([create(evaluator, True), create(evaluator, False)])
+            return ContextSet(create(evaluator, True), create(evaluator, False))
         else:
-            return set([create(evaluator, result)])
+            return ContextSet(create(evaluator, result))
     elif operator == 'in':
         return set()
 
@@ -175,4 +176,4 @@ def _element_calculate(evaluator, context, left, operator, right):
         analysis.add(context, 'type-error-operation', operator,
                      message % (left, right))
 
-    return set([left, right])
+    return ContextSet(left, right)

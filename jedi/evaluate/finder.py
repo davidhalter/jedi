@@ -32,6 +32,7 @@ from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode
+from jedi.common import ContextSet
 from jedi.parser_utils import is_scope, get_parent_scope
 
 
@@ -62,7 +63,7 @@ class NameFinder(object):
             check = flow_analysis.reachability_check(
                 self._context, self._context.tree_node, self._name)
             if check is flow_analysis.UNREACHABLE:
-                return set()
+                return ContextSet()
             return self._found_predefined_types
 
         types = self._names_to_types(names, attribute_lookup)
@@ -158,22 +159,20 @@ class NameFinder(object):
         return inst.execute_function_slots(names, name)
 
     def _names_to_types(self, names, attribute_lookup):
-        types = set()
+        contexts = ContextSet.from_sets(name.infer() for name in names)
 
-        types = unite(name.infer() for name in names)
-
-        debug.dbg('finder._names_to_types: %s -> %s', names, types)
+        debug.dbg('finder._names_to_types: %s -> %s', names, contexts)
         if not names and isinstance(self._context, AbstractInstanceContext):
             # handling __getattr__ / __getattribute__
             return self._check_getattr(self._context)
 
         # Add isinstance and other if/assert knowledge.
-        if not types and isinstance(self._name, tree.Name) and \
+        if not contexts and isinstance(self._name, tree.Name) and \
                 not isinstance(self._name_context, AbstractInstanceContext):
             flow_scope = self._name
             base_node = self._name_context.tree_node
             if base_node.type == 'comp_for':
-                return types
+                return contexts
             while True:
                 flow_scope = get_parent_scope(flow_scope, include_flows=True)
                 n = _check_flow_information(self._name_context, flow_scope,
@@ -182,7 +181,7 @@ class NameFinder(object):
                     return n
                 if flow_scope == base_node:
                     break
-        return types
+        return contexts
 
 
 def _name_to_types(evaluator, context, tree_name):
@@ -210,6 +209,7 @@ def _name_to_types(evaluator, context, tree_name):
         types = pep0484.find_type_from_comment_hint_with(context, node, tree_name)
         if types:
             return types
+
     if typ in ('for_stmt', 'comp_for'):
         try:
             types = context.predefined_names[node][tree_name.value]
@@ -222,11 +222,8 @@ def _name_to_types(evaluator, context, tree_name):
         types = _remove_statements(evaluator, context, node, tree_name)
     elif typ == 'with_stmt':
         context_managers = context.eval_node(node.get_test_node_from_name(tree_name))
-        enter_methods = unite(
-            context_manager.py__getattribute__('__enter__')
-            for context_manager in context_managers
-        )
-        types = unite(method.execute_evaluated() for method in enter_methods)
+        enter_methods = context_managers.py__getattribute__('__enter__')
+        return enter_methods.execute_evaluated()
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
@@ -262,7 +259,7 @@ def _apply_decorators(evaluator, context, node):
             parent_context=context,
             funcdef=node
         )
-    initial = values = set([decoratee_context])
+    initial = values = ContextSet(decoratee_context)
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values)
         dec_values = context.eval_node(dec.children[1])
@@ -294,20 +291,12 @@ def _remove_statements(evaluator, context, stmt, name):
     Due to lazy evaluation, statements like a = func; b = a; b() have to be
     evaluated.
     """
-    types = set()
-    check_instance = None
-
-    pep0484types = \
+    pep0484_contexts = \
         pep0484.find_type_from_comment_hint_assign(context, stmt, name)
-    if pep0484types:
-        return pep0484types
-    types |= context.eval_stmt(stmt, seek_name=name)
+    if pep0484_contexts:
+        return pep0484_contexts
 
-    if check_instance is not None:
-        # class renames
-        types = set([er.get_instance_el(evaluator, check_instance, a, True)
-                     if isinstance(a, er.Function) else a for a in types])
-    return types
+    return context.eval_stmt(stmt, seek_name=name)
 
 
 def _check_flow_information(context, flow, search_name, pos):
@@ -377,26 +366,26 @@ def _check_isinstance_type(context, element, search_name):
     except AssertionError:
         return None
 
-    result = set()
+    context_set = ContextSet()
     for cls_or_tup in lazy_context_cls.infer():
         if isinstance(cls_or_tup, iterable.AbstractSequence) and \
                 cls_or_tup.array_type == 'tuple':
             for lazy_context in cls_or_tup.py__iter__():
                 for context in lazy_context.infer():
-                    result |= context.execute_evaluated()
+                    context_set |= context.execute_evaluated()
         else:
-            result |= cls_or_tup.execute_evaluated()
-    return result
+            context_set |= cls_or_tup.execute_evaluated()
+    return context_set
 
 
-def check_tuple_assignments(evaluator, contextualized_name, types):
+def check_tuple_assignments(evaluator, contextualized_name, context_set):
     """
     Checks if tuples are assigned.
     """
     lazy_context = None
     for index, node in contextualized_name.assignment_indexes():
         cn = ContextualizedNode(contextualized_name.context, node)
-        iterated = iterable.py__iter__(evaluator, types, cn)
+        iterated = iterable.py__iter__(evaluator, context_set, cn)
         for _ in range(index + 1):
             try:
                 lazy_context = next(iterated)
@@ -405,6 +394,6 @@ def check_tuple_assignments(evaluator, contextualized_name, types):
                 # would allow this loop to run for a very long time if the
                 # index number is high. Therefore break if the loop is
                 # finished.
-                return set()
-        types = lazy_context.infer()
-    return types
+                return ContextSet()
+        context_set = lazy_context.infer()
+    return context_set

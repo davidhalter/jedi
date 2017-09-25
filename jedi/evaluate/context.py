@@ -1,7 +1,7 @@
 from jedi._compatibility import Python3Method
-from jedi.evaluate.utils import unite
 from parso.python.tree import ExprStmt, CompFor
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
+from jedi.common import ContextSet, NO_CONTEXTS
 
 
 class Context(object):
@@ -111,11 +111,11 @@ class AbstractLazyContext(object):
 class LazyKnownContext(AbstractLazyContext):
     """data is a context."""
     def infer(self):
-        return set([self.data])
+        return ContextSet(self.data)
 
 
 class LazyKnownContexts(AbstractLazyContext):
-    """data is a set of contexts."""
+    """data is a ContextSet."""
     def infer(self):
         return self.data
 
@@ -125,7 +125,7 @@ class LazyUnknownContext(AbstractLazyContext):
         super(LazyUnknownContext, self).__init__(None)
 
     def infer(self):
-        return set()
+        return NO_CONTEXTS
 
 
 class LazyTreeContext(AbstractLazyContext):
@@ -155,7 +155,7 @@ def get_merged_lazy_context(lazy_contexts):
 class MergedLazyContexts(AbstractLazyContext):
     """data is a list of lazy contexts."""
     def infer(self):
-        return unite(l.infer() for l in self.data)
+        return ContextSet.from_sets(l.infer() for l in self.data)
 
 
 class ContextualizedNode(object):

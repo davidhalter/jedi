@@ -35,6 +35,7 @@ from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
     ParserTreeFilter
+from jedi.common import ContextSet, NO_CONTEXTS
 from jedi.parser_utils import get_comp_fors
 
 
@@ -87,7 +88,7 @@ class SpecialMethodFilter(DictFilter):
             # always only going to be one name. The same is true for the
             # inferred values.
             builtin_func = next(iter(filter.get(self.string_name)[0].infer()))
-            return set([BuiltinMethod(self.parent_context, self._callable, builtin_func)])
+            return ContextSet(BuiltinMethod(self.parent_context, self._callable, builtin_func))
 
     def __init__(self, context, dct, builtin_context):
         super(SpecialMethodFilter, self).__init__(dct)
@@ -304,7 +305,7 @@ class ListComprehension(ArrayMixin, Comprehension):
 
     def py__getitem__(self, index):
         if isinstance(index, slice):
-            return set([self])
+            return ContextSet(self)
 
         all_types = list(self.py__iter__())
         return all_types[index].infer()
@@ -339,11 +340,11 @@ class DictComprehension(ArrayMixin, Comprehension):
     @register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
-        return set([FakeSequence(self.evaluator, 'list', [lazy_context])])
+        return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
     @register_builtin_method('items')
     def _imitate_items(self):
-        items = set(
+        items = ContextSet.from_iterable(
             FakeSequence(
                 self.evaluator, 'tuple'
                 (context.LazyKnownContexts(keys), context.LazyKnownContexts(values))
@@ -385,7 +386,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
 
         # Can raise an IndexError
         if isinstance(index, slice):
-            return set([self])
+            return ContextSet(self)
         else:
             return self._defining_context.eval_node(self._items()[index])
 
@@ -396,7 +397,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
         """
         if self.array_type == 'dict':
             # Get keys.
-            types = set()
+            types = ContextSet()
             for k, _ in self._items():
                 types |= self._defining_context.eval_node(k)
             # We don't know which dict index comes first, therefore always
@@ -470,7 +471,7 @@ class DictLiteralContext(SequenceLiteralContext):
     @register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
-        return set([FakeSequence(self.evaluator, 'list', [lazy_context])])
+        return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
     @register_builtin_method('items')
     def _imitate_items(self):
@@ -482,7 +483,7 @@ class DictLiteralContext(SequenceLiteralContext):
             )) for key_node, value_node in self._items()
         ]
 
-        return set([FakeSequence(self.evaluator, 'list', lazy_contexts)])
+        return ContextSet(FakeSequence(self.evaluator, 'list', lazy_contexts))
 
 
 class _FakeArray(SequenceLiteralContext):
@@ -506,7 +507,7 @@ class FakeSequence(_FakeArray):
         return self._context_list
 
     def py__getitem__(self, index):
-        return set(self._lazy_context_list[index].infer())
+        return self._lazy_context_list[index].infer()
 
     def py__iter__(self):
         return self._lazy_context_list
@@ -641,7 +642,7 @@ def py__iter__types(evaluator, types, contextualized_node=None):
 def py__getitem__(evaluator, context, types, trailer):
     from jedi.evaluate.representation import ClassContext
     from jedi.evaluate.instance import TreeInstance
-    result = set()
+    result = ContextSet()
 
     trailer_op, node, trailer_cl = trailer.children
     assert trailer_op == "["
@@ -685,7 +686,7 @@ def py__getitem__(evaluator, context, types, trailer):
                 try:
                     result |= getitem(index)
                 except IndexError:
-                    result |= py__iter__types(evaluator, set([typ]))
+                    result |= py__iter__types(evaluator, ContextSet(typ))
                 except KeyError:
                     # Must be a dict. Lists don't raise KeyErrors.
                     result |= typ.dict_values()
@@ -696,12 +697,12 @@ def check_array_additions(context, sequence):
     """ Just a mapper function for the internal _check_array_additions """
     if sequence.array_type not in ('list', 'set'):
         # TODO also check for dict updates
-        return set()
+        return NO_CONTEXTS
 
     return _check_array_additions(context, sequence)
 
 
-@evaluator_method_cache(default=set())
+@evaluator_method_cache(default=NO_CONTEXTS)
 @debug.increase_indent
 def _check_array_additions(context, sequence):
     """
@@ -716,11 +717,11 @@ def _check_array_additions(context, sequence):
     module_context = context.get_root_context()
     if not settings.dynamic_array_additions or isinstance(module_context, compiled.CompiledObject):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
-        return set()
+        return ContextSet()
 
     def find_additions(context, arglist, add_name):
         params = list(param.TreeArguments(context.evaluator, context, arglist).unpack())
-        result = set()
+        result = ContextSet()
         if add_name in ['insert']:
             params = params[1:]
         if add_name in ['append', 'add', 'insert']:
@@ -728,7 +729,9 @@ def _check_array_additions(context, sequence):
                 result.add(lazy_context)
         elif add_name in ['extend', 'update']:
             for key, lazy_context in params:
-                result |= set(py__iter__(context.evaluator, lazy_context.infer()))
+                result |= ContextSet.from_iterable(
+                    py__iter__(context.evaluator, lazy_context.infer())
+                )
         return result
 
     temp_param_add, settings.dynamic_params_for_other_modules = \
@@ -737,7 +740,7 @@ def _check_array_additions(context, sequence):
     is_list = sequence.name.string_name == 'list'
     search_names = (['append', 'extend', 'insert'] if is_list else ['add', 'update'])
 
-    added_types = set()
+    added_types = NO_CONTEXTS()
     for add_name in search_names:
         try:
             possible_names = module_context.tree_node.get_used_names()[add_name]
@@ -870,7 +873,7 @@ def create_index_types(evaluator, context, index):
     """
     if index == ':':
         # Like array[:]
-        return set([Slice(context, None, None, None)])
+        return ContextSet(Slice(context, None, None, None))
 
     elif index.type == 'subscript' and not index.children[0] == '.':
         # subscript basically implies a slice operation, except for Python 2's
@@ -888,7 +891,7 @@ def create_index_types(evaluator, context, index):
                 result.append(el)
         result += [None] * (3 - len(result))
 
-        return set([Slice(context, *result)])
+        return ContextSet(Slice(context, *result))
 
     # No slices
     return context.eval_node(index)

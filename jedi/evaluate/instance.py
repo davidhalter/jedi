@@ -11,6 +11,7 @@ from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
+from jedi.common import ContextSet, iterator_to_context_set
 from jedi.parser_utils import get_parent_scope
 
 
@@ -250,6 +251,7 @@ class CompiledInstanceName(compiled.CompiledName):
         super(CompiledInstanceName, self).__init__(evaluator, parent_context, name)
         self._instance = instance
 
+    @iterator_to_context_set
     def infer(self):
         for result_context in super(CompiledInstanceName, self).infer():
             if isinstance(result_context, er.FunctionContext):
@@ -311,9 +313,7 @@ class CompiledBoundMethod(compiled.CompiledObject):
 
 class InstanceNameDefinition(filters.TreeNameDefinition):
     def infer(self):
-        contexts = super(InstanceNameDefinition, self).infer()
-        for context in contexts:
-            yield context
+        return super(InstanceNameDefinition, self).infer()
 
 
 class LazyInstanceName(filters.TreeNameDefinition):
@@ -331,6 +331,7 @@ class LazyInstanceName(filters.TreeNameDefinition):
 
 
 class LazyInstanceClassName(LazyInstanceName):
+    @iterator_to_context_set
     def infer(self):
         for result_context in super(LazyInstanceClassName, self).infer():
             if isinstance(result_context, er.FunctionContext):
