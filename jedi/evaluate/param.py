@@ -10,6 +10,7 @@ from jedi.evaluate import context
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import ParamName
+from jedi.common import NO_CONTEXTS
 
 
 def add_argument_issue(parent_context, error_name, lazy_context, message):
@@ -51,7 +52,7 @@ class AbstractArguments():
                 debug.warning('TypeError: %s expected at least %s arguments, got %s',
                               name, len(parameters), i)
                 raise ValueError
-            values = set() if argument is None else argument.infer()
+            values = NO_CONTEXTS if argument is None else argument.infer()
 
             if not values and not optional:
                 # For the stdlib we always want values. If we don't get them,

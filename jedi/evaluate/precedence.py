@@ -7,7 +7,7 @@ from jedi._compatibility import unicode
 from jedi import debug
 from jedi.evaluate.compiled import CompiledObject, create, builtin_from_name
 from jedi.evaluate import analysis
-from jedi.common import ContextSet
+from jedi.common import ContextSet, NO_CONTEXTS
 
 # Maps Python syntax to the operator module.
 COMPARISON_OPERATORS = {
@@ -162,7 +162,7 @@ def _element_calculate(evaluator, context, left, operator, right):
         else:
             return ContextSet(create(evaluator, result))
     elif operator == 'in':
-        return set()
+        return NO_CONTEXTS
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""

@@ -1,7 +1,6 @@
 from abc import abstractproperty
 
 from jedi._compatibility import is_py3
-from jedi.evaluate.utils import unite
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
@@ -11,7 +10,7 @@ from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
-from jedi.common import ContextSet, iterator_to_context_set
+from jedi.common import ContextSet, iterator_to_context_set, NO_CONTEXTS
 from jedi.parser_utils import get_parent_scope
 
 
@@ -59,7 +58,7 @@ class AbstractInstanceContext(Context):
             raise AttributeError
 
         def execute(arguments):
-            return unite(name.execute(arguments) for name in names)
+            return ContextSet.from_sets(name.execute(arguments) for name in names)
 
         return execute
 
@@ -81,7 +80,7 @@ class AbstractInstanceContext(Context):
         return []
 
     def execute_function_slots(self, names, *evaluated_args):
-        return unite(
+        return ContextSet.from_sets(
             name.execute_evaluated(*evaluated_args)
             for name in names
         )
@@ -97,7 +96,7 @@ class AbstractInstanceContext(Context):
                 none_obj = compiled.create(self.evaluator, None)
                 return self.execute_function_slots(names, none_obj, obj)
         else:
-            return set([self])
+            return ContextSet(self)
 
     def get_filters(self, search_global=None, until_position=None,
                     origin_scope=None, include_self_names=True):
@@ -123,7 +122,7 @@ class AbstractInstanceContext(Context):
             names = self.get_function_slot_names('__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
-            return set()
+            return NO_CONTEXTS
         else:
             index_obj = compiled.create(self.evaluator, index)
             return self.execute_function_slots(names, index_obj)

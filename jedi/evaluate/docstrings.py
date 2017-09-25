@@ -223,7 +223,10 @@ def _execute_types_in_stmt(module_context, stmt):
     contain is executed. (Used as type information).
     """
     definitions = module_context.eval_node(stmt)
-    return unite(_execute_array_values(module_context.evaluator, d) for d in definitions)
+    return ContextSet.from_sets(
+        _execute_array_values(module_context.evaluator, d)
+        for d in definitions
+    )
 
 
 def _execute_array_values(evaluator, array):
@@ -234,7 +237,10 @@ def _execute_array_values(evaluator, array):
     if isinstance(array, SequenceLiteralContext):
         values = []
         for lazy_context in array.py__iter__():
-            objects = unite(_execute_array_values(evaluator, typ) for typ in lazy_context.infer())
+            objects = ContextSet.from_sets(
+                _execute_array_values(evaluator, typ)
+                for typ in lazy_context.infer()
+            )
             values.append(context.LazyKnownContexts(objects))
         return set([FakeSequence(evaluator, array.array_type, values)])
     else:

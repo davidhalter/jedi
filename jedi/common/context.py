@@ -35,6 +35,9 @@ class ContextSet(object):
     def __bool__(self):
         return bool(self._set)
 
+    def __len__(self):
+        return len(self._set)
+
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))
 

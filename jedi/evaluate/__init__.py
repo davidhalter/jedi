@@ -433,7 +433,7 @@ class Evaluator(object):
             node = ()
 
         if trailer_op == '[':
-            return ContextSet(iterable.py__getitem__(self, context, types, trailer))
+            return iterable.py__getitem__(self, context, types, trailer)
         else:
             context_set = ContextSet()
             for typ in types:

@@ -144,7 +144,7 @@ class GeneratorMixin(object):
     @register_builtin_method('__next__', python_version_match=3)
     def py__next__(self):
         # TODO add TypeError if params are given.
-        return unite(lazy_context.infer() for lazy_context in self.py__iter__())
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
@@ -297,7 +297,8 @@ class ArrayMixin(object):
         return self.evaluator.BUILTINS
 
     def dict_values(self):
-        return unite(self._defining_context.eval_node(v) for k, v in self._items())
+        return ContextSet.from_sets(self._defining_context.eval_node(v)
+                                    for k, v in self._items())
 
 
 class ListComprehension(ArrayMixin, Comprehension):
@@ -335,7 +336,7 @@ class DictComprehension(ArrayMixin, Comprehension):
         return self.dict_values()
 
     def dict_values(self):
-        return unite(values for keys, values in self._iterate())
+        return ContextSet.from_sets(values for keys, values in self._iterate())
 
     @register_builtin_method('values')
     def _imitate_values(self):
@@ -414,7 +415,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
     def _values(self):
         """Returns a list of a list of node."""
         if self.array_type == 'dict':
-            return unite(v for k, v in self._items())
+            return ContextSet.from_sets(v for k, v in self._items())
         else:
             return self._items()
 
@@ -532,7 +533,7 @@ class FakeDict(_FakeArray):
         return self._dct[index].infer()
 
     def dict_values(self):
-        return unite(lazy_context.infer() for lazy_context in self._dct.values())
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self._dct.values())
 
     def _items(self):
         raise DeprecationWarning
@@ -555,7 +556,7 @@ class MergedArray(_FakeArray):
                 yield lazy_context
 
     def py__getitem__(self, index):
-        return unite(lazy_context.infer() for lazy_context in self.py__iter__())
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
 
     def _items(self):
         for array in self._arrays:
@@ -633,7 +634,7 @@ def py__iter__types(evaluator, types, contextualized_node=None):
     Calls `py__iter__`, but ignores the ordering in the end and just returns
     all types that it contains.
     """
-    return unite(
+    return ContextSet.from_sets(
         lazy_context.infer()
         for lazy_context in py__iter__(evaluator, types, contextualized_node)
     )
@@ -740,7 +741,7 @@ def _check_array_additions(context, sequence):
     is_list = sequence.name.string_name == 'list'
     search_names = (['append', 'extend', 'insert'] if is_list else ['add', 'update'])
 
-    added_types = NO_CONTEXTS()
+    added_types = NO_CONTEXTS
     for add_name in search_names:
         try:
             possible_names = module_context.tree_node.get_used_names()[add_name]

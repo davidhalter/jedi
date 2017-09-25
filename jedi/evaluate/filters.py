@@ -6,9 +6,9 @@ from abc import abstractmethod
 
 from parso.tree import search_ancestor
 from jedi.evaluate import flow_analysis
-from jedi.evaluate.utils import to_list, unite
 from jedi.common import ContextSet
 from jedi.parser_utils import get_parent_scope
+from jedi.evaluate.utils import to_list
 
 
 class AbstractNameDefinition(object):
@@ -36,10 +36,10 @@ class AbstractNameDefinition(object):
         return '<%s: %s@%s>' % (self.__class__.__name__, self.string_name, self.start_pos)
 
     def execute(self, arguments):
-        return unite(context.execute(arguments) for context in self.infer())
+        return self.infer().execute(arguments)
 
     def execute_evaluated(self, *args, **kwargs):
-        return unite(context.execute_evaluated(*args, **kwargs) for context in self.infer())
+        return self.infer().execute_evaluated(*args, **kwargs)
 
     @property
     def api_type(self):

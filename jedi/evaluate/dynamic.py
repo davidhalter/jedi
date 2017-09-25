@@ -24,7 +24,8 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
 from jedi.evaluate.param import TreeArguments, create_default_params
 from jedi.evaluate.helpers import is_stdlib_path
-from jedi.evaluate.utils import to_list, unite
+from jedi.evaluate.utils import to_list
+from jedi.common import ContextSet
 from jedi.parser_utils import get_parent_scope
 
 
@@ -50,7 +51,7 @@ class MergedExecutedParams(object):
         self._executed_params = executed_params
 
     def infer(self):
-        return unite(p.infer() for p in self._executed_params)
+        return ContextSet.from_sets(p.infer() for p in self._executed_params)
 
 
 @debug.increase_indent
@@ -103,7 +104,7 @@ def search_params(evaluator, execution_context, funcdef):
         evaluator.dynamic_params_depth -= 1
 
 
-@evaluator_function_cache(default=[])
+@evaluator_function_cache(default=None)
 @to_list
 def _search_function_executions(evaluator, module_context, funcdef):
     """

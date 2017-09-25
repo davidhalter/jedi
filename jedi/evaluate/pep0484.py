@@ -25,11 +25,10 @@ import re
 from parso import ParserSyntaxError
 from parso.python import tree
 
-from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.context import LazyTreeContext
-from jedi.common import NO_CONTEXTS
+from jedi.common import NO_CONTEXTS, ContextSet
 from jedi import debug
 from jedi import _compatibility
 from jedi import parser_utils
@@ -146,7 +145,7 @@ def py__getitem__(context, typ, node):
     if type_name in ("Union", '_Union'):
         # In Python 3.6 it's still called typing.Union but it's an instance
         # called _Union.
-        return unite(context.eval_node(node) for node in nodes)
+        return ContextSet.from_sets(context.eval_node(node) for node in nodes)
     if type_name in ("Optional", '_Optional'):
         # Here we have the same issue like in Union. Therefore we also need to
         # check for the instance typing._Optional (Python 3.6).

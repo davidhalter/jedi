@@ -24,7 +24,6 @@ from parso import python_bytes_to_unicode
 from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
-from jedi.evaluate.utils import unite
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
@@ -67,13 +66,11 @@ def infer_import(context, tree_name, is_goto=False):
         return NO_CONTEXTS
 
     if from_import_name is not None:
-        types = unite(
-            t.py__getattribute__(
-                from_import_name,
-                name_context=context,
-                is_goto=is_goto,
-                analysis_errors=False
-            ) for t in types
+        types = types.py__getattribute__(
+            from_import_name,
+            name_context=context,
+            is_goto=is_goto,
+            analysis_errors=False
         )
 
         if not types:

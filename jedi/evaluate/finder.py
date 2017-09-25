@@ -233,10 +233,7 @@ def _name_to_types(evaluator, context, tree_name):
         # TODO check for types that are not classes and add it to
         # the static analysis report.
         exceptions = context.eval_node(tree_name.get_previous_sibling().get_previous_sibling())
-        types = unite(
-            evaluator.execute(t, param.ValuesArguments([]))
-            for t in exceptions
-        )
+        types = exceptions.execute_evaluated()
     else:
         raise ValueError("Should not happen.")
     return types
@@ -274,8 +271,7 @@ def _apply_decorators(evaluator, context, node):
             debug.warning('decorator not found: %s on %s', dec, node)
             return initial
 
-        values = unite(dec_value.execute(param.ValuesArguments([values]))
-                       for dec_value in dec_values)
+        values = dec_values.execute(param.ValuesArguments([values]))
         if not len(values):
             debug.warning('not possible to resolve wrappers found %s', node)
             return initial
