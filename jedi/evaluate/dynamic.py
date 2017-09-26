@@ -14,7 +14,7 @@ It works as follows:
 
 - |Jedi| sees a param
 - search for function calls named ``foo``
-- execute these calls and check the input. This work with a ``ParamListener``.
+- execute these calls and check the input.
 """
 
 from parso.python import tree
@@ -30,17 +30,6 @@ from jedi.parser_utils import get_parent_scope
 
 
 MAX_PARAM_SEARCHES = 20
-
-
-class ParamListener(object):
-    """
-    This listener is used to get the params for a function.
-    """
-    def __init__(self):
-        self.param_possibilities = []
-
-    def execute(self, params):
-        self.param_possibilities += params
 
 
 class MergedExecutedParams(object):
