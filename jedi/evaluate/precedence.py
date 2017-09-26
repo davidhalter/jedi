@@ -25,7 +25,7 @@ COMPARISON_OPERATORS = {
 def literals_to_types(evaluator, result):
     # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
     # int(), float(), etc).
-    new_result = set()
+    new_result = NO_CONTEXTS
     for typ in result:
         if is_literal(typ):
             # Literals are only valid as long as the operations are
@@ -33,8 +33,8 @@ def literals_to_types(evaluator, result):
             cls = builtin_from_name(evaluator, typ.name.string_name)
             new_result |= cls.execute_evaluated()
         else:
-            new_result.add(typ)
-    return ContextSet.from_set(new_result)
+            new_result |= ContextSet(typ)
+    return new_result
 
 
 def calculate_children(evaluator, context, children):
@@ -68,7 +68,7 @@ def calculate_children(evaluator, context, children):
 def calculate(evaluator, context, left_result, operator, right_result):
     if not left_result or not right_result:
         # illegal slices e.g. cause left/right_result to be None
-        result = (left_result or set()) | (right_result or set())
+        result = (left_result or NO_CONTEXTS) | (right_result or NO_CONTEXTS)
         return literals_to_types(evaluator, result)
     else:
         # I don't think there's a reasonable chance that a string

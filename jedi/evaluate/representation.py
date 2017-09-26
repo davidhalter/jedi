@@ -335,7 +335,10 @@ class FunctionExecutionContext(context.TreeContext):
                 debug.dbg('Return unreachable: %s', r)
             else:
                 if check_yields:
-                    context_set |= ContextSet(self._eval_yield(r))
+                    context_set |= ContextSet.from_sets(
+                        lazy_context.infer()
+                        for lazy_context in self._eval_yield(r)
+                    )
                 else:
                     try:
                         children = r.children
@@ -388,7 +391,7 @@ class FunctionExecutionContext(context.TreeContext):
             else:
                 types = self.get_return_values(check_yields=True)
                 if types:
-                    yield context.get_merged_lazy_context(list(types))
+                    yield context.LazyKnownContexts(types)
                 return
             last_for_stmt = for_stmt
 
@@ -432,11 +435,7 @@ class ModuleAttributeName(AbstractNameDefinition):
         self.string_name = string_name
 
     def infer(self):
-        return ContextSet(
-            compiled.create(self.parent_context.evaluator, str).execute(
-                param.ValuesArguments([])
-            )
-        )
+        return compiled.create(self.parent_context.evaluator, str).execute_evaluated()
 
 
 class ModuleName(ContextNameMixin, AbstractNameDefinition):

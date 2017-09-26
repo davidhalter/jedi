@@ -297,8 +297,10 @@ class ArrayMixin(object):
         return self.evaluator.BUILTINS
 
     def dict_values(self):
-        return ContextSet.from_sets(self._defining_context.eval_node(v)
-                                    for k, v in self._items())
+        return ContextSet.from_sets(
+            self._defining_context.eval_node(v)
+            for k, v in self._items()
+        )
 
 
 class ListComprehension(ArrayMixin, Comprehension):
@@ -649,6 +651,8 @@ def py__getitem__(evaluator, context, types, trailer):
     assert trailer_op == "["
     assert trailer_cl == "]"
 
+    # TODO It's kind of stupid to cast this from a context set to a set.
+    types = set(types)
     # special case: PEP0484 typing module, see
     # https://github.com/davidhalter/jedi/issues/663
     for typ in list(types):
@@ -795,7 +799,7 @@ def get_dynamic_array_instance(instance):
 
     ai = _ArrayInstance(instance)
     from jedi.evaluate import param
-    return param.ValuesArguments([[ai]])
+    return param.ValuesArguments([ContextSet(ai)])
 
 
 class _ArrayInstance(object):

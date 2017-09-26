@@ -331,7 +331,8 @@ class Evaluator(object):
                         )
                         break
                     context_set = self.eval_trailer(context, context_set, trailer)
-            return context_set
+                return context_set
+            return NO_CONTEXTS
         elif typ in ('testlist_star_expr', 'testlist',):
             # The implicit tuple in statements.
             return ContextSet(iterable.SequenceLiteralContext(self, context, element))

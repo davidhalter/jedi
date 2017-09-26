@@ -186,7 +186,7 @@ def builtins_super(evaluator, types, objects, context):
     if isinstance(context, (InstanceFunctionExecution,
                             AnonymousInstanceFunctionExecution)):
         su = context.instance.py__class__().py__bases__()
-        return unite(context.execute_evaluated() for context in su[0].infer())
+        return su[0].infer().execute_evaluated()
     return NO_CONTEXTS
 
 
@@ -208,7 +208,7 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
     seq = iterable.FakeSequence(evaluator, 'list', rev)
-    arguments = param.ValuesArguments([[seq]])
+    arguments = param.ValuesArguments([ContextSet(seq)])
     return ContextSet(CompiledInstance(evaluator, evaluator.BUILTINS, obj, arguments))
 
 

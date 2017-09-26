@@ -42,7 +42,7 @@ class ContextSet(object):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))
 
     def filter(self, filter_func):
-        return ContextSet(filter(filter_func, self._set))
+        return ContextSet.from_iterable(filter(filter_func, self._set))
 
     def __getattr__(self, name):
         def mapper(*args, **kwargs):
