@@ -7,7 +7,7 @@ from jedi._compatibility import unicode
 from jedi import debug
 from jedi.evaluate.compiled import CompiledObject, create, builtin_from_name
 from jedi.evaluate import analysis
-from jedi.common import ContextSet, NO_CONTEXTS
+from jedi.common import ContextSet, NO_CONTEXTS, iterator_to_context_set
 
 # Maps Python syntax to the operator module.
 COMPARISON_OPERATORS = {
@@ -84,6 +84,7 @@ def calculate(evaluator, context, left_contexts, operator, right_contexts):
             )
 
 
+@iterator_to_context_set
 def factor_calculate(evaluator, types, operator):
     """
     Calculates `+`, `-`, `~` and `not` prefixes.
