@@ -726,17 +726,15 @@ def _check_array_additions(context, sequence):
 
     def find_additions(context, arglist, add_name):
         params = list(param.TreeArguments(context.evaluator, context, arglist).unpack())
-        result = ContextSet()
+        result = set()
         if add_name in ['insert']:
             params = params[1:]
         if add_name in ['append', 'add', 'insert']:
-            for key, lazy_context in params:
-                result.add(lazy_context)
+            for key, whatever in params:
+                result.add(whatever)
         elif add_name in ['extend', 'update']:
             for key, lazy_context in params:
-                result |= ContextSet.from_iterable(
-                    py__iter__(context.evaluator, lazy_context.infer())
-                )
+                result |= set(py__iter__(context.evaluator, lazy_context.infer()))
         return result
 
     temp_param_add, settings.dynamic_params_for_other_modules = \
@@ -745,7 +743,7 @@ def _check_array_additions(context, sequence):
     is_list = sequence.name.string_name == 'list'
     search_names = (['append', 'extend', 'insert'] if is_list else ['add', 'update'])
 
-    added_types = NO_CONTEXTS
+    added_types = set()
     for add_name in search_names:
         try:
             possible_names = module_context.tree_node.get_used_names()[add_name]

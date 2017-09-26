@@ -18,6 +18,7 @@ class ContextSet(object):
         Used to work with an iterable of set.
         """
         aggregated = set()
+        sets = list(sets)
         for set_ in sets:
             if isinstance(set_, ContextSet):
                 aggregated |= set_._set

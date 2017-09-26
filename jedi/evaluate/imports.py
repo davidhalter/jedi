@@ -28,6 +28,7 @@ from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
+from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.common import ContextSet, NO_CONTEXTS
@@ -66,12 +67,17 @@ def infer_import(context, tree_name, is_goto=False):
         return NO_CONTEXTS
 
     if from_import_name is not None:
-        types = types.py__getattribute__(
-            from_import_name,
-            name_context=context,
-            is_goto=is_goto,
-            analysis_errors=False
+        types = unite(
+            t.py__getattribute__(
+                from_import_name,
+                name_context=context,
+                is_goto=is_goto,
+                analysis_errors=False
+            )
+            for t in types
         )
+        if not is_goto:
+            types = ContextSet.from_set(types)
 
         if not types:
             path = import_path + [from_import_name]

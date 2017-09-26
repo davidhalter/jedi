@@ -279,7 +279,9 @@ class CompiledObject(Context):
         return []  # Builtins don't have imports
 
     def dict_values(self):
-        return ContextSet(create(self.evaluator, v) for v in self.obj.values())
+        return ContextSet.from_iterable(
+            create(self.evaluator, v) for v in self.obj.values()
+        )
 
 
 class CompiledName(AbstractNameDefinition):

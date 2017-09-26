@@ -12,6 +12,7 @@ from jedi.evaluate import imports
 from jedi.evaluate.context import Context
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled.getattr_static import getattr_static
+from jedi.common import ContextSet
 
 
 class MixedObject(object):
@@ -85,7 +86,9 @@ class MixedName(compiled.CompiledName):
             # PyQt4.QtGui.QStyleOptionComboBox.currentText
             # -> just set it to None
             obj = None
-        return [_create(self._evaluator, obj, parent_context=self.parent_context)]
+        return ContextSet(
+            _create(self._evaluator, obj, parent_context=self.parent_context)
+        )
 
     @property
     def api_type(self):

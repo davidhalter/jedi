@@ -95,4 +95,4 @@ def test_time_docstring():
 
 
 def test_dict_values():
-    assert Script('import sys/sys.modules["alshdb;lasdhf"]').goto_definitions()
+    assert Script('import sys\nsys.modules["alshdb;lasdhf"]').goto_definitions()
