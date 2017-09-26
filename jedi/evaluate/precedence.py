@@ -50,7 +50,7 @@ def calculate_children(evaluator, context, children):
 
         # handle lazy evaluation of and/or here.
         if operator in ('and', 'or'):
-            left_bools = ContextSet(left.py__bool__() for left in types)
+            left_bools = set(left.py__bool__() for left in types)
             if left_bools == set([True]):
                 if operator == 'and':
                     types = context.eval_node(right)
@@ -65,22 +65,22 @@ def calculate_children(evaluator, context, children):
     return types
 
 
-def calculate(evaluator, context, left_result, operator, right_result):
-    if not left_result or not right_result:
+def calculate(evaluator, context, left_contexts, operator, right_contexts):
+    if not left_contexts or not right_contexts:
         # illegal slices e.g. cause left/right_result to be None
-        result = (left_result or NO_CONTEXTS) | (right_result or NO_CONTEXTS)
+        result = (left_contexts or NO_CONTEXTS) | (right_contexts or NO_CONTEXTS)
         return literals_to_types(evaluator, result)
     else:
         # I don't think there's a reasonable chance that a string
         # operation is still correct, once we pass something like six
         # objects.
-        if len(left_result) * len(right_result) > 6:
-            return literals_to_types(evaluator, left_result | right_result)
+        if len(left_contexts) * len(right_contexts) > 6:
+            return literals_to_types(evaluator, left_contexts | right_contexts)
         else:
             return ContextSet.from_sets(
                 _element_calculate(evaluator, context, left, operator, right)
-                for left in left_result
-                for right in right_result
+                for left in left_contexts
+                for right in right_contexts
             )
 
 

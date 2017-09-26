@@ -355,7 +355,7 @@ class Evaluator(object):
             context_set = self.eval_atom(context, element.children[0])
             for next_name in element.children[2::2]:
                 # TODO add search_global=True?
-                context_set.py__getattribute__(next_name, name_context=context)
+                context_set = context_set.py__getattribute__(next_name, name_context=context)
             return context_set
         elif typ == 'eval_input':
             return self._eval_element_not_cached(context, element.children[0])
