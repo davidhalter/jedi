@@ -50,8 +50,21 @@ class Context(object):
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            search_global=False, is_goto=False,
                            analysis_errors=True):
+        """
+        This is the search function.
+
+        :param position: Position of the last statement -> tuple of line, column
+        """
         if name_context is None:
             name_context = self
+        from jedi.evaluate import finder
+        f = finder.NameFinder(self.evaluator, self, name_context, name_or_str,
+                              position, analysis_errors=analysis_errors)
+        filters = f.get_filters(search_global)
+        if is_goto:
+            return f.filter_name(filters)
+        return f.find(filters, attribute_lookup=not search_global)
+
         return self.evaluator.find_types(
             self, name_or_str, name_context, position, search_global, is_goto,
             analysis_errors)

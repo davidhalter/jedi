@@ -12,10 +12,12 @@ Evaluation of Python code in |jedi| is based on three assumptions:
 * The programmer is not a total dick, e.g. like `this
   <https://github.com/davidhalter/jedi/issues/24>`_ :-)
 
-The actual algorithm is based on a principle called lazy evaluation. If you
-don't know about it, google it.  That said, the typical entry point for static
-analysis is calling ``eval_expr_stmt``. There's separate logic for
-autocompletion in the API, the evaluator is all about evaluating an expression.
+The actual algorithm is based on a principle called lazy evaluation.  That
+said, the typical entry point for static analysis is calling
+``eval_expr_stmt``. There's separate logic for autocompletion in the API, the
+evaluator is all about evaluating an expression.
+
+TODO this paragraph is not what jedi does anymore.
 
 Now you need to understand what follows after ``eval_expr_stmt``. Let's
 make an example::
@@ -116,23 +118,6 @@ class Evaluator(object):
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
-
-    def find_types(self, context, name_or_str, name_context, position=None,
-                   search_global=False, is_goto=False, analysis_errors=True):
-        """
-        This is the search function. The most important part to debug.
-        `remove_statements` and `filter_statements` really are the core part of
-        this completion.
-
-        :param position: Position of the last statement -> tuple of line, column
-        :return: List of Names. Their parents are the types.
-        """
-        f = finder.NameFinder(self, context, name_context, name_or_str,
-                              position, analysis_errors=analysis_errors)
-        filters = f.get_filters(search_global)
-        if is_goto:
-            return f.filter_name(filters)
-        return f.find(filters, attribute_lookup=not search_global)
 
     def eval_element(self, context, element):
         if isinstance(context, iterable.CompForContext):
