@@ -82,8 +82,8 @@ from jedi.evaluate import helpers
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
-from jedi.evaluate.context import ContextualizedName, ContextualizedNode
-from jedi.common import ContextSet, NO_CONTEXTS
+from jedi.evaluate.context import ContextualizedName, ContextualizedNode, \
+    ContextSet, NO_CONTEXTS
 from jedi import parser_utils
 
 

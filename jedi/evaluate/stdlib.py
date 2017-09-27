@@ -23,8 +23,8 @@ from jedi import debug
 from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import analysis
-from jedi.evaluate.context import LazyTreeContext, ContextualizedNode
-from jedi.common import NO_CONTEXTS, ContextSet
+from jedi.evaluate.context import LazyTreeContext, ContextualizedNode, \
+    NO_CONTEXTS, ContextSet
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on
 # __init__ and __new__ doesn't work at all. So adding this to nametuples is

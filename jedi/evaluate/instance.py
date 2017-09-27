@@ -4,13 +4,13 @@ from jedi._compatibility import is_py3
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
-from jedi.evaluate.context import Context, LazyKnownContext, LazyKnownContexts
+from jedi.evaluate.context import Context, LazyKnownContext, LazyKnownContexts, \
+    ContextSet, iterator_to_context_set, NO_CONTEXTS
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
 from jedi.evaluate import iterable
-from jedi.common import ContextSet, iterator_to_context_set, NO_CONTEXTS
 from jedi.parser_utils import get_parent_scope
 
 

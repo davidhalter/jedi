@@ -21,11 +21,11 @@ from textwrap import dedent
 from parso import parse
 
 from jedi._compatibility import u
-from jedi.evaluate.utils import unite, indent_block
-from jedi.evaluate import context
+from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
-from jedi.common import iterator_to_context_set, ContextSet, NO_CONTEXTS
+from jedi.evaluate.context import iterator_to_context_set, ContextSet, \
+    NO_CONTEXTS, LazyKnownContexts
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -241,7 +241,7 @@ def _execute_array_values(evaluator, array):
                 _execute_array_values(evaluator, typ)
                 for typ in lazy_context.infer()
             )
-            values.append(context.LazyKnownContexts(objects))
+            values.append(LazyKnownContexts(objects))
         return set([FakeSequence(evaluator, array.array_type, values)])
     else:
         return array.execute_evaluated()

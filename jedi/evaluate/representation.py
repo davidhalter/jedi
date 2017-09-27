@@ -63,8 +63,8 @@ from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ParamName, AnonymousInstanceParamName, TreeNameDefinition, \
     ContextNameMixin
 from jedi.evaluate import context
-from jedi.evaluate.context import ContextualizedNode
-from jedi.common import NO_CONTEXTS, ContextSet, iterator_to_context_set
+from jedi.evaluate.context import ContextualizedNode, NO_CONTEXTS, \
+    ContextSet, iterator_to_context_set
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
 

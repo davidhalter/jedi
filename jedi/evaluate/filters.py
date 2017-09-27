@@ -6,7 +6,7 @@ from abc import abstractmethod
 
 from parso.tree import search_ancestor
 from jedi.evaluate import flow_analysis
-from jedi.common import ContextSet
+from jedi.evaluate.context import ContextSet
 from jedi.parser_utils import get_parent_scope
 from jedi.evaluate.utils import to_list
 

@@ -31,7 +31,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
-from jedi.common import ContextSet, NO_CONTEXTS
+from jedi.evaluate.context import ContextSet, NO_CONTEXTS
 
 
 # This memoization is needed, because otherwise we will infinitely loop on

@@ -22,20 +22,20 @@ It is important to note that:
 """
 from jedi import debug
 from jedi import settings
-from jedi.evaluate.utils import unite, safe_property
+from jedi.evaluate.utils import safe_property
 from jedi._compatibility import unicode, zip_longest, is_py3
 from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
-from jedi.evaluate import context
 from jedi.evaluate import precedence
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
     ParserTreeFilter
-from jedi.common import ContextSet, NO_CONTEXTS
+from jedi.evaluate import context
+from jedi.evaluate.context import ContextSet, NO_CONTEXTS
 from jedi.parser_utils import get_comp_fors
 
 

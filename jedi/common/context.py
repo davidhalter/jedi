@@ -1,4 +1,4 @@
-class ContextSet(object):
+class BaseContextSet(object):
     def __init__(self, *args):
         self._set = set(args)
 
@@ -20,14 +20,14 @@ class ContextSet(object):
         aggregated = set()
         sets = list(sets)
         for set_ in sets:
-            if isinstance(set_, ContextSet):
+            if isinstance(set_, BaseContextSet):
                 aggregated |= set_._set
             else:
                 aggregated |= set_
         return cls.from_set(aggregated)
 
     def __or__(self, other):
-        return ContextSet.from_set(self._set | other._set)
+        return type(self).from_set(self._set | other._set)
 
     def __iter__(self):
         for element in self._set:
@@ -43,22 +43,12 @@ class ContextSet(object):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))
 
     def filter(self, filter_func):
-        return ContextSet.from_iterable(filter(filter_func, self._set))
+        return type(self).from_iterable(filter(filter_func, self._set))
 
     def __getattr__(self, name):
         def mapper(*args, **kwargs):
-            return ContextSet.from_sets(
+            return type(self).from_sets(
                 getattr(context, name)(*args, **kwargs)
                 for context in self._set
             )
         return mapper
-
-
-def iterator_to_context_set(func):
-    def wrapper(*args, **kwargs):
-        return ContextSet.from_iterable(func(*args, **kwargs))
-
-    return wrapper
-
-
-NO_CONTEXTS = ContextSet()

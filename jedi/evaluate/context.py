@@ -1,7 +1,7 @@
 from jedi._compatibility import Python3Method
 from parso.python.tree import ExprStmt, CompFor
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
-from jedi.common import ContextSet, NO_CONTEXTS
+from jedi.common import BaseContextSet
 
 
 class Context(object):
@@ -204,3 +204,17 @@ class ContextualizedName(ContextualizedNode):
             compare = node
             node = node.parent
         return indexes
+
+
+class ContextSet(BaseContextSet):
+    pass
+
+
+NO_CONTEXTS = ContextSet()
+
+
+def iterator_to_context_set(func):
+    def wrapper(*args, **kwargs):
+        return ContextSet.from_iterable(func(*args, **kwargs))
+
+    return wrapper

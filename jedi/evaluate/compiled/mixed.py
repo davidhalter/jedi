@@ -9,10 +9,9 @@ from jedi import settings
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
-from jedi.evaluate.context import Context
+from jedi.evaluate.context import Context, ContextSet
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled.getattr_static import getattr_static
-from jedi.common import ContextSet
 
 
 class MixedObject(object):

@@ -29,7 +29,7 @@ therefore the quality might not always be maximal.
 from contextlib import contextmanager
 
 from jedi import debug
-from jedi.common import NO_CONTEXTS
+from jedi.evaluate.context import NO_CONTEXTS
 
 
 recursion_limit = 15

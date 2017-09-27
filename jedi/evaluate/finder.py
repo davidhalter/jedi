@@ -18,7 +18,6 @@ check for -> a is a string). There's big potential in these checks.
 from parso.python import tree
 from parso.tree import search_ancestor
 from jedi import debug
-from jedi.evaluate.utils import unite
 from jedi import settings
 from jedi.evaluate import representation as er
 from jedi.evaluate.instance import AbstractInstanceContext
@@ -31,8 +30,7 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
-from jedi.evaluate.context import ContextualizedName, ContextualizedNode
-from jedi.common import ContextSet
+from jedi.evaluate.context import ContextualizedName, ContextualizedNode, ContextSet
 from jedi.parser_utils import is_scope, get_parent_scope
 
 
