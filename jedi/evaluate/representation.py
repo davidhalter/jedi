@@ -113,7 +113,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     """
     api_type = 'class'
 
-    def __init__(self, evaluator, classdef, parent_context):
+    def __init__(self, evaluator, parent_context, classdef):
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
         self.tree_node = classdef
 

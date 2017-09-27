@@ -245,7 +245,7 @@ class Evaluator(object):
         if def_ is not None:
             type_ = def_.type
             if type_ == 'classdef':
-                return [er.ClassContext(self, name.parent, context)]
+                return [er.ClassContext(self, context, name.parent)]
             elif type_ == 'funcdef':
                 return [er.FunctionContext(self, context, name.parent)]
 
@@ -378,7 +378,7 @@ class Evaluator(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                class_context = er.ClassContext(self, scope_node, parent_context)
+                class_context = er.ClassContext(self, parent_context, scope_node)
                 if child_is_funcdef:
                     # anonymous instance
                     return AnonymousInstance(self, parent_context, class_context)
