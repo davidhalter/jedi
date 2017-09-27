@@ -29,7 +29,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import pep0484
-from jedi.evaluate import precedence
+from jedi.evaluate.syntax_tree import is_string
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
@@ -462,7 +462,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
         """
         for key_node, value in self._items():
             for key in self._defining_context.eval_node(key_node):
-                if precedence.is_string(key):
+                if is_string(key):
                     yield key.obj, context.LazyTreeContext(self._defining_context, value)
 
     def __repr__(self):

@@ -121,7 +121,7 @@ def _paths_from_assignment(module_context, expr_stmt):
             continue
 
         from jedi.evaluate.iterable import py__iter__
-        from jedi.evaluate.precedence import is_string
+        from jedi.evaluate.syntax_tree import is_string
         cn = ContextualizedNode(module_context.create_context(expr_stmt), expr_stmt)
         for lazy_context in py__iter__(module_context.evaluator, cn.infer(), cn):
             for context in lazy_context.infer():

@@ -20,11 +20,11 @@ from jedi.evaluate.instance import InstanceFunctionExecution, \
     AnonymousInstanceFunctionExecution
 from jedi.evaluate import iterable
 from jedi import debug
-from jedi.evaluate import precedence
 from jedi.evaluate import param
 from jedi.evaluate import analysis
 from jedi.evaluate.context import LazyTreeContext, ContextualizedNode, \
     NO_CONTEXTS, ContextSet
+from jedi.evaluate.syntax_tree import is_string
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on
 # __init__ and __new__ doesn't work at all. So adding this to nametuples is
@@ -156,7 +156,7 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
     # follow the first param
     for obj in objects:
         for name in names:
-            if precedence.is_string(name):
+            if is_string(name):
                 return obj.py__getattribute__(name.obj)
             else:
                 debug.warning('getattr called without str')
