@@ -202,12 +202,12 @@ def eval_atom(context, atom):
 def eval_expr_stmt(context, stmt, seek_name=None):
     with recursion.execution_allowed(context.evaluator, stmt) as allowed:
         if allowed or context.get_root_context() == context.evaluator.BUILTINS:
-            return _eval_stmt(context, stmt, seek_name)
+            return _eval_expr_stmt(context, stmt, seek_name)
     return NO_CONTEXTS
 
 
 @debug.increase_indent
-def _eval_stmt(context, stmt, seek_name=None):
+def _eval_expr_stmt(context, stmt, seek_name=None):
     """
     The starting point of the completion. A statement always owns a call
     list, which are the calls, that a statement does. In case multiple
@@ -216,7 +216,7 @@ def _eval_stmt(context, stmt, seek_name=None):
 
     :param stmt: A `tree.ExprStmt`.
     """
-    debug.dbg('eval_statement %s (%s)', stmt, seek_name)
+    debug.dbg('eval_expr_stmt %s (%s)', stmt, seek_name)
     rhs = stmt.get_rhs()
     context_set = context.eval_node(rhs)
 
@@ -253,5 +253,5 @@ def _eval_stmt(context, stmt, seek_name=None):
             context_set = left
         else:
             context_set = precedence.calculate(context.evaluator, context, left, operator, context_set)
-    debug.dbg('eval_statement result %s', context_set)
+    debug.dbg('eval_expr_stmt result %s', context_set)
     return context_set
