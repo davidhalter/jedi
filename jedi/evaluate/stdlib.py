@@ -170,7 +170,7 @@ def builtins_type(evaluator, objects, bases, dicts):
         # It's a type creation... maybe someday...
         return NO_CONTEXTS
     else:
-        return ContextSet.from_iterable(o.py__class__() for o in objects)
+        return objects.py__class__()
 
 
 class SuperInstance(AbstractInstanceContext):

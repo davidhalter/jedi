@@ -207,7 +207,8 @@ class ContextualizedName(ContextualizedNode):
 
 
 class ContextSet(BaseContextSet):
-    pass
+    def py__class__(self):
+        return ContextSet.from_iterable(c.py__class__() for c in self._set)
 
 
 NO_CONTEXTS = ContextSet()
