@@ -67,7 +67,7 @@ def eval_node(context, element):
             for trailer in element.children[1:]:
                 if trailer == '**':  # has a power operation.
                     right = evaluator.eval_element(context, element.children[2])
-                    context_set = calculate(
+                    context_set = _eval_comparison(
                         evaluator,
                         context,
                         context_set,
@@ -163,7 +163,7 @@ def eval_atom(context, atom):
             context_set = eval_atom(context, c[0])
             for string in c[1:]:
                 right = eval_atom(context, string)
-                context_set = calculate(context.evaluator, context, context_set, '+', right)
+                context_set = _eval_comparison(context.evaluator, context, context_set, '+', right)
             return context_set
         # Parentheses without commas are not tuples.
         elif c[0] == '(' and not len(c) == 2 \
@@ -250,10 +250,10 @@ def _eval_expr_stmt(context, stmt, seek_name=None):
                 dct = {for_stmt.children[1].value: lazy_context.infer()}
                 with helpers.predefine_names(context, for_stmt, dct):
                     t = context.eval_node(rhs)
-                    left = calculate(context.evaluator, context, left, operator, t)
+                    left = _eval_comparison(context.evaluator, context, left, operator, t)
             context_set = left
         else:
-            context_set = calculate(context.evaluator, context, left, operator, context_set)
+            context_set = _eval_comparison(context.evaluator, context, left, operator, context_set)
     debug.dbg('eval_expr_stmt result %s', context_set)
     return context_set
 
@@ -277,9 +277,9 @@ def eval_or_test(context, or_test):
                     types = context.eval_node(right)
             # Otherwise continue, because of uncertainty.
         else:
-            types = calculate(context.evaluator, context, types, operator,
+            types = _eval_comparison(context.evaluator, context, types, operator,
                                          context.eval_node(right))
-    debug.dbg('calculate_children types %s', types)
+    debug.dbg('eval_or_test types %s', types)
     return types
 
 
@@ -314,12 +314,12 @@ COMPARISON_OPERATORS = {
 }
 
 
-def literals_to_types(evaluator, result):
+def _literals_to_types(evaluator, result):
     # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
     # int(), float(), etc).
     new_result = NO_CONTEXTS
     for typ in result:
-        if is_literal(typ):
+        if _is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
             cls = compiled.builtin_from_name(evaluator, typ.name.string_name)
@@ -329,38 +329,38 @@ def literals_to_types(evaluator, result):
     return new_result
 
 
-def calculate(evaluator, context, left_contexts, operator, right_contexts):
+def _eval_comparison(evaluator, context, left_contexts, operator, right_contexts):
     if not left_contexts or not right_contexts:
         # illegal slices e.g. cause left/right_result to be None
         result = (left_contexts or NO_CONTEXTS) | (right_contexts or NO_CONTEXTS)
-        return literals_to_types(evaluator, result)
+        return _literals_to_types(evaluator, result)
     else:
         # I don't think there's a reasonable chance that a string
         # operation is still correct, once we pass something like six
         # objects.
         if len(left_contexts) * len(right_contexts) > 6:
-            return literals_to_types(evaluator, left_contexts | right_contexts)
+            return _literals_to_types(evaluator, left_contexts | right_contexts)
         else:
             return ContextSet.from_sets(
-                _element_calculate(evaluator, context, left, operator, right)
+                _eval_comparison_part(evaluator, context, left, operator, right)
                 for left in left_contexts
                 for right in right_contexts
             )
 
 
-def is_compiled(context):
+def _is_compiled(context):
     return isinstance(context, compiled.CompiledObject)
 
 
 def _is_number(context):
-    return is_compiled(context) and isinstance(context.obj, (int, float))
+    return _is_compiled(context) and isinstance(context.obj, (int, float))
 
 
 def is_string(context):
-    return is_compiled(context) and isinstance(context.obj, (str, unicode))
+    return _is_compiled(context) and isinstance(context.obj, (str, unicode))
 
 
-def is_literal(context):
+def _is_literal(context):
     return _is_number(context) or is_string(context)
 
 
@@ -374,7 +374,7 @@ def _is_list(context):
     return isinstance(context, iterable.AbstractSequence) and context.array_type == 'list'
 
 
-def _element_calculate(evaluator, context, left, operator, right):
+def _eval_comparison_part(evaluator, context, left, operator, right):
     from jedi.evaluate import iterable, instance
     l_is_num = _is_number(left)
     r_is_num = _is_number(right)
@@ -398,7 +398,7 @@ def _element_calculate(evaluator, context, left, operator, right):
         return ContextSet(left)
     elif operator in COMPARISON_OPERATORS:
         operation = COMPARISON_OPERATORS[operator]
-        if is_compiled(left) and is_compiled(right):
+        if _is_compiled(left) and _is_compiled(right):
             # Possible, because the return is not an option. Just compare.
             left = left.obj
             right = right.obj
