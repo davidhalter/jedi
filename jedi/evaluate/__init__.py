@@ -14,22 +14,22 @@ Evaluation of Python code in |jedi| is based on three assumptions:
 
 The actual algorithm is based on a principle called lazy evaluation. If you
 don't know about it, google it.  That said, the typical entry point for static
-analysis is calling ``eval_statement``. There's separate logic for
+analysis is calling ``eval_expr_stmt``. There's separate logic for
 autocompletion in the API, the evaluator is all about evaluating an expression.
 
-Now you need to understand what follows after ``eval_statement``. Let's
+Now you need to understand what follows after ``eval_expr_stmt``. Let's
 make an example::
 
     import datetime
     datetime.date.toda# <-- cursor here
 
 First of all, this module doesn't care about completion. It really just cares
-about ``datetime.date``. At the end of the procedure ``eval_statement`` will
+about ``datetime.date``. At the end of the procedure ``eval_expr_stmt`` will
 return the ``date`` class.
 
 To *visualize* this (simplified):
 
-- ``Evaluator.eval_statement`` doesn't do much, because there's no assignment.
+- ``Evaluator.eval_expr_stmt`` doesn't do much, because there's no assignment.
 - ``Context.eval_node`` cares for resolving the dotted path
 - ``Evaluator.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
@@ -46,7 +46,7 @@ What if the import would contain another ``ExprStmt`` like this::
     from foo import bar
     Date = bar.baz
 
-Well... You get it. Just another ``eval_statement`` recursion. It's really
+Well... You get it. Just another ``eval_expr_stmt`` recursion. It's really
 easy. Python can obviously get way more complicated then this. To understand
 tuple assignments, list comprehensions and everything else, a lot more code had
 to be written.
@@ -76,38 +76,13 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
-from jedi.evaluate import precedence
 from jedi.evaluate import helpers
-from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS
-from jedi.evaluate.syntax_tree import eval_trailer, eval_atom
+from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, eval_node
 from jedi import parser_utils
-
-
-def _limit_context_infers(func):
-    """
-    This is for now the way how we limit type inference going wild. There are
-    other ways to ensure recursion limits as well. This is mostly necessary
-    because of instance (self) access that can be quite tricky to limit.
-
-    I'm still not sure this is the way to go, but it looks okay for now and we
-    can still go anther way in the future. Tests are there. ~ dave
-    """
-    def wrapper(evaluator, context, *args, **kwargs):
-        n = context.tree_node
-        try:
-            evaluator.inferred_element_counts[n] += 1
-            if evaluator.inferred_element_counts[n] > 300:
-                debug.warning('In context %s there were too many inferences.', n)
-                return NO_CONTEXTS
-        except KeyError:
-            evaluator.inferred_element_counts[n] = 1
-        return func(evaluator, context, *args, **kwargs)
-
-    return wrapper
 
 
 class Evaluator(object):
@@ -159,65 +134,9 @@ class Evaluator(object):
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
 
-    @_limit_context_infers
-    def eval_statement(self, context, stmt, seek_name=None):
-        with recursion.execution_allowed(self, stmt) as allowed:
-            if allowed or context.get_root_context() == self.BUILTINS:
-                return self._eval_stmt(context, stmt, seek_name)
-        return NO_CONTEXTS
-
-    #@evaluator_function_cache(default=[])
-    @debug.increase_indent
-    def _eval_stmt(self, context, stmt, seek_name=None):
-        """
-        The starting point of the completion. A statement always owns a call
-        list, which are the calls, that a statement does. In case multiple
-        names are defined in the statement, `seek_name` returns the result for
-        this name.
-
-        :param stmt: A `tree.ExprStmt`.
-        """
-        debug.dbg('eval_statement %s (%s)', stmt, seek_name)
-        rhs = stmt.get_rhs()
-        context_set = context.eval_node(rhs)
-
-        if seek_name:
-            c_node = ContextualizedName(context, seek_name)
-            context_set = finder.check_tuple_assignments(self, c_node, context_set)
-
-        first_operator = next(stmt.yield_operators(), None)
-        if first_operator not in ('=', None) and first_operator.type == 'operator':
-            # `=` is always the last character in aug assignments -> -1
-            operator = copy.copy(first_operator)
-            operator.value = operator.value[:-1]
-            name = stmt.get_defined_names()[0].value
-            left = context.py__getattribute__(
-                name, position=stmt.start_pos, search_global=True)
-
-            for_stmt = tree.search_ancestor(stmt, 'for_stmt')
-            if for_stmt is not None and for_stmt.type == 'for_stmt' and context_set \
-                    and parser_utils.for_stmt_defines_one_name(for_stmt):
-                # Iterate through result and add the values, that's possible
-                # only in for loops without clutter, because they are
-                # predictable. Also only do it, if the variable is not a tuple.
-                node = for_stmt.get_testlist()
-                cn = ContextualizedNode(context, node)
-                ordered = list(iterable.py__iter__(self, cn.infer(), cn))
-
-                for lazy_context in ordered:
-                    dct = {for_stmt.children[1].value: lazy_context.infer()}
-                    with helpers.predefine_names(context, for_stmt, dct):
-                        t = context.eval_node(rhs)
-                        left = precedence.calculate(self, context, left, operator, t)
-                context_set = left
-            else:
-                context_set = precedence.calculate(self, context, left, operator, context_set)
-        debug.dbg('eval_statement result %s', context_set)
-        return context_set
-
     def eval_element(self, context, element):
         if isinstance(context, iterable.CompForContext):
-            return self._eval_element_not_cached(context, element)
+            return eval_node(context, element)
 
         if_stmt = element
         while if_stmt is not None:
@@ -272,13 +191,13 @@ class Evaluator(object):
                 result = ContextSet()
                 for name_dict in name_dicts:
                     with helpers.predefine_names(context, if_stmt, name_dict):
-                        result |= self._eval_element_not_cached(context, element)
+                        result |= eval_node(context, element)
                 return result
             else:
                 return self._eval_element_if_evaluated(context, element)
         else:
             if predefined_if_name_dict:
-                return self._eval_element_not_cached(context, element)
+                return eval_node(context, element)
             else:
                 return self._eval_element_if_evaluated(context, element)
 
@@ -291,78 +210,12 @@ class Evaluator(object):
             parent = parent.parent
             predefined_if_name_dict = context.predefined_names.get(parent)
             if predefined_if_name_dict is not None:
-                return self._eval_element_not_cached(context, element)
+                return eval_node(context, element)
         return self._eval_element_cached(context, element)
 
     @evaluator_function_cache(default=NO_CONTEXTS)
     def _eval_element_cached(self, context, element):
-        return self._eval_element_not_cached(context, element)
-
-    @debug.increase_indent
-    @_limit_context_infers
-    def _eval_element_not_cached(self, context, element):
-        debug.dbg('eval_element %s@%s', element, element.start_pos)
-        typ = element.type
-        if typ in ('name', 'number', 'string', 'atom'):
-            return eval_atom(context, element)
-        elif typ == 'keyword':
-            # For False/True/None
-            if element.value in ('False', 'True', 'None'):
-                return ContextSet(compiled.builtin_from_name(self, element.value))
-            # else: print e.g. could be evaluated like this in Python 2.7
-            return NO_CONTEXTS
-        elif typ == 'lambdef':
-            return ContextSet(er.FunctionContext(self, context, element))
-        elif typ == 'expr_stmt':
-            return self.eval_statement(context, element)
-        elif typ in ('power', 'atom_expr'):
-            first_child = element.children[0]
-            if not (first_child.type == 'keyword' and first_child.value == 'await'):
-                context_set = eval_atom(context, first_child)
-                for trailer in element.children[1:]:
-                    if trailer == '**':  # has a power operation.
-                        right = self.eval_element(context, element.children[2])
-                        context_set = precedence.calculate(
-                            self,
-                            context,
-                            context_set,
-                            trailer,
-                            right
-                        )
-                        break
-                    context_set = eval_trailer(context, context_set, trailer)
-                return context_set
-            return NO_CONTEXTS
-        elif typ in ('testlist_star_expr', 'testlist',):
-            # The implicit tuple in statements.
-            return ContextSet(iterable.SequenceLiteralContext(self, context, element))
-        elif typ in ('not_test', 'factor'):
-            context_set = context.eval_node(element.children[-1])
-            for operator in element.children[:-1]:
-                context_set = precedence.factor_calculate(self, context_set, operator)
-            return context_set
-        elif typ == 'test':
-            # `x if foo else y` case.
-            return (context.eval_node(element.children[0]) |
-                    context.eval_node(element.children[-1]))
-        elif typ == 'operator':
-            # Must be an ellipsis, other operators are not evaluated.
-            # In Python 2 ellipsis is coded as three single dot tokens, not
-            # as one token 3 dot token.
-            assert element.value in ('.', '...')
-            return ContextSet(compiled.create(self, Ellipsis))
-        elif typ == 'dotted_name':
-            context_set = eval_atom(context, element.children[0])
-            for next_name in element.children[2::2]:
-                # TODO add search_global=True?
-                context_set = context_set.py__getattribute__(next_name, name_context=context)
-            return context_set
-        elif typ == 'eval_input':
-            return self._eval_element_not_cached(context, element.children[0])
-        elif typ == 'annassign':
-            return pep0484._evaluate_for_annotation(context, element.children[1])
-        else:
-            return precedence.calculate_children(self, context, element.children)
+        return eval_node(context, element)
 
     @debug.increase_indent
     def execute(self, obj, arguments):
@@ -399,7 +252,7 @@ class Evaluator(object):
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
                 if is_simple_name:
-                    return self.eval_statement(context, def_, name)
+                    return eval_expr_stmt(context, def_, name)
             if type_ == 'for_stmt':
                 container_types = context.eval_node(def_.children[3])
                 cn = ContextualizedNode(context, def_.children[3])

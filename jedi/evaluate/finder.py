@@ -32,7 +32,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, ContextSet
 from jedi.parser_utils import is_scope, get_parent_scope
-from jedi.evaluate.syntax_tree import eval_trailer
+from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt
 
 
 class NameFinder(object):
@@ -291,7 +291,7 @@ def _remove_statements(evaluator, context, stmt, name):
     if pep0484_contexts:
         return pep0484_contexts
 
-    return context.eval_stmt(stmt, seek_name=name)
+    return eval_expr_stmt(context, stmt, seek_name=name)
 
 
 def _check_flow_information(context, flow, search_name, pos):

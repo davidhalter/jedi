@@ -1,14 +1,113 @@
 """
 Functions evaluating the syntax tree.
 """
+import copy
 
 from parso.python import tree
 
 from jedi import debug
 from jedi import parser_utils
-from jedi.evaluate.context import ContextSet
+from jedi.evaluate.context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
+    ContextualizedName
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
+from jedi.evaluate import pep0484
+from jedi.evaluate import recursion
+from jedi.evaluate import helpers
+
+
+def _limit_context_infers(func):
+    """
+    This is for now the way how we limit type inference going wild. There are
+    other ways to ensure recursion limits as well. This is mostly necessary
+    because of instance (self) access that can be quite tricky to limit.
+
+    I'm still not sure this is the way to go, but it looks okay for now and we
+    can still go anther way in the future. Tests are there. ~ dave
+    """
+    def wrapper(context, *args, **kwargs):
+        n = context.tree_node
+        evaluator = context.evaluator
+        try:
+            evaluator.inferred_element_counts[n] += 1
+            if evaluator.inferred_element_counts[n] > 300:
+                debug.warning('In context %s there were too many inferences.', n)
+                return NO_CONTEXTS
+        except KeyError:
+            evaluator.inferred_element_counts[n] = 1
+        return func(context, *args, **kwargs)
+
+    return wrapper
+
+
+@debug.increase_indent
+@_limit_context_infers
+def eval_node(context, element):
+    debug.dbg('eval_element %s@%s', element, element.start_pos)
+    evaluator = context.evaluator
+    typ = element.type
+    if typ in ('name', 'number', 'string', 'atom'):
+        return eval_atom(context, element)
+    elif typ == 'keyword':
+        # For False/True/None
+        if element.value in ('False', 'True', 'None'):
+            return ContextSet(compiled.builtin_from_name(evaluator, element.value))
+        # else: print e.g. could be evaluated like this in Python 2.7
+        return NO_CONTEXTS
+    elif typ == 'lambdef':
+        from jedi.evaluate import representation as er
+        return ContextSet(er.FunctionContext(evaluator, context, element))
+    elif typ == 'expr_stmt':
+        return eval_expr_stmt(context, element)
+    elif typ in ('power', 'atom_expr'):
+        first_child = element.children[0]
+        if not (first_child.type == 'keyword' and first_child.value == 'await'):
+            context_set = eval_atom(context, first_child)
+            for trailer in element.children[1:]:
+                if trailer == '**':  # has a power operation.
+                    right = evaluator.eval_element(context, element.children[2])
+                    context_set = precedence.calculate(
+                        evaluator,
+                        context,
+                        context_set,
+                        trailer,
+                        right
+                    )
+                    break
+                context_set = eval_trailer(context, context_set, trailer)
+            return context_set
+        return NO_CONTEXTS
+    elif typ in ('testlist_star_expr', 'testlist',):
+        # The implicit tuple in statements.
+        from jedi.evaluate import iterable
+        return ContextSet(iterable.SequenceLiteralContext(evaluator, context, element))
+    elif typ in ('not_test', 'factor'):
+        context_set = context.eval_node(element.children[-1])
+        for operator in element.children[:-1]:
+            context_set = precedence.factor_calculate(evaluator, context_set, operator)
+        return context_set
+    elif typ == 'test':
+        # `x if foo else y` case.
+        return (context.eval_node(element.children[0]) |
+                context.eval_node(element.children[-1]))
+    elif typ == 'operator':
+        # Must be an ellipsis, other operators are not evaluated.
+        # In Python 2 ellipsis is coded as three single dot tokens, not
+        # as one token 3 dot token.
+        assert element.value in ('.', '...')
+        return ContextSet(compiled.create(evaluator, Ellipsis))
+    elif typ == 'dotted_name':
+        context_set = eval_atom(context, element.children[0])
+        for next_name in element.children[2::2]:
+            # TODO add search_global=True?
+            context_set = context_set.py__getattribute__(next_name, name_context=context)
+        return context_set
+    elif typ == 'eval_input':
+        return eval_node(context, element.children[0])
+    elif typ == 'annassign':
+        return pep0484._evaluate_for_annotation(context, element.children[1])
+    else:
+        return precedence.calculate_children(evaluator, context, element.children)
 
 
 def eval_trailer(context, base_contexts, trailer):
@@ -97,3 +196,62 @@ def eval_atom(context, atom):
         else:
             context = iterable.SequenceLiteralContext(context.evaluator, context, atom)
         return ContextSet(context)
+
+
+@_limit_context_infers
+def eval_expr_stmt(context, stmt, seek_name=None):
+    with recursion.execution_allowed(context.evaluator, stmt) as allowed:
+        if allowed or context.get_root_context() == context.evaluator.BUILTINS:
+            return _eval_stmt(context, stmt, seek_name)
+    return NO_CONTEXTS
+
+
+@debug.increase_indent
+def _eval_stmt(context, stmt, seek_name=None):
+    """
+    The starting point of the completion. A statement always owns a call
+    list, which are the calls, that a statement does. In case multiple
+    names are defined in the statement, `seek_name` returns the result for
+    this name.
+
+    :param stmt: A `tree.ExprStmt`.
+    """
+    debug.dbg('eval_statement %s (%s)', stmt, seek_name)
+    rhs = stmt.get_rhs()
+    context_set = context.eval_node(rhs)
+
+    if seek_name:
+        c_node = ContextualizedName(context, seek_name)
+        from jedi.evaluate import finder
+        context_set = finder.check_tuple_assignments(context.evaluator, c_node, context_set)
+
+    first_operator = next(stmt.yield_operators(), None)
+    if first_operator not in ('=', None) and first_operator.type == 'operator':
+        # `=` is always the last character in aug assignments -> -1
+        operator = copy.copy(first_operator)
+        operator.value = operator.value[:-1]
+        name = stmt.get_defined_names()[0].value
+        left = context.py__getattribute__(
+            name, position=stmt.start_pos, search_global=True)
+
+        for_stmt = tree.search_ancestor(stmt, 'for_stmt')
+        if for_stmt is not None and for_stmt.type == 'for_stmt' and context_set \
+                and parser_utils.for_stmt_defines_one_name(for_stmt):
+            # Iterate through result and add the values, that's possible
+            # only in for loops without clutter, because they are
+            # predictable. Also only do it, if the variable is not a tuple.
+            node = for_stmt.get_testlist()
+            cn = ContextualizedNode(context, node)
+            from jedi.evaluate import iterable
+            ordered = list(iterable.py__iter__(context.evaluator, cn.infer(), cn))
+
+            for lazy_context in ordered:
+                dct = {for_stmt.children[1].value: lazy_context.infer()}
+                with helpers.predefine_names(context, for_stmt, dct):
+                    t = context.eval_node(rhs)
+                    left = precedence.calculate(context.evaluator, context, left, operator, t)
+            context_set = left
+        else:
+            context_set = precedence.calculate(context.evaluator, context, left, operator, context_set)
+    debug.dbg('eval_statement result %s', context_set)
+    return context_set

@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from parso.python import tree
 
 from jedi.parser_utils import get_parent_scope
-from jedi.evaluate.syntax_tree import eval_trailer
 
 
 def is_stdlib_path(path):
@@ -89,6 +88,7 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
         trailers = power.children[1:cut]
 
     values = context.eval_node(base)
+    from jedi.evaluate.syntax_tree import eval_trailer
     for trailer in trailers:
         values = eval_trailer(context, values, trailer)
     return values
