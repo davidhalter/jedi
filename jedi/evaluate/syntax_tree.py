@@ -107,7 +107,7 @@ def eval_node(context, element):
     elif typ == 'annassign':
         return pep0484._evaluate_for_annotation(context, element.children[1])
     else:
-        return precedence.calculate_children(evaluator, context, element.children)
+        return eval_or_test(context, element)
 
 
 def eval_trailer(context, base_contexts, trailer):
@@ -255,3 +255,28 @@ def _eval_expr_stmt(context, stmt, seek_name=None):
             context_set = precedence.calculate(context.evaluator, context, left, operator, context_set)
     debug.dbg('eval_expr_stmt result %s', context_set)
     return context_set
+
+
+def eval_or_test(context, or_test):
+    iterator = iter(or_test.children)
+    types = context.eval_node(next(iterator))
+    for operator in iterator:
+        right = next(iterator)
+        if operator.type == 'comp_op':  # not in / is not
+            operator = ' '.join(c.value for c in operator.children)
+
+        # handle lazy evaluation of and/or here.
+        if operator in ('and', 'or'):
+            left_bools = set(left.py__bool__() for left in types)
+            if left_bools == set([True]):
+                if operator == 'and':
+                    types = context.eval_node(right)
+            elif left_bools == set([False]):
+                if operator != 'and':
+                    types = context.eval_node(right)
+            # Otherwise continue, because of uncertainty.
+        else:
+            types = precedence.calculate(context.evaluator, context, types, operator,
+                                         context.eval_node(right))
+    debug.dbg('calculate_children types %s', types)
+    return types

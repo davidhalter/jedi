@@ -4,7 +4,6 @@ Handles operator precedence.
 import operator as op
 
 from jedi._compatibility import unicode
-from jedi import debug
 from jedi.evaluate.compiled import CompiledObject, create, builtin_from_name
 from jedi.evaluate import analysis
 from jedi.evaluate.context import ContextSet, NO_CONTEXTS, iterator_to_context_set
@@ -35,34 +34,6 @@ def literals_to_types(evaluator, result):
         else:
             new_result |= ContextSet(typ)
     return new_result
-
-
-def calculate_children(evaluator, context, children):
-    """
-    Calculate a list of children with operators.
-    """
-    iterator = iter(children)
-    types = context.eval_node(next(iterator))
-    for operator in iterator:
-        right = next(iterator)
-        if operator.type == 'comp_op':  # not in / is not
-            operator = ' '.join(c.value for c in operator.children)
-
-        # handle lazy evaluation of and/or here.
-        if operator in ('and', 'or'):
-            left_bools = set(left.py__bool__() for left in types)
-            if left_bools == set([True]):
-                if operator == 'and':
-                    types = context.eval_node(right)
-            elif left_bools == set([False]):
-                if operator != 'and':
-                    types = context.eval_node(right)
-            # Otherwise continue, because of uncertainty.
-        else:
-            types = calculate(evaluator, context, types, operator,
-                              context.eval_node(right))
-    debug.dbg('calculate_children types %s', types)
-    return types
 
 
 def calculate(evaluator, context, left_contexts, operator, right_contexts):
