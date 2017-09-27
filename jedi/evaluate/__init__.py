@@ -83,7 +83,7 @@ from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS
-from jedi.evaluate.syntax_tree import eval_trailer
+from jedi.evaluate.syntax_tree import eval_trailer, eval_atom
 from jedi import parser_utils
 
 
@@ -304,7 +304,7 @@ class Evaluator(object):
         debug.dbg('eval_element %s@%s', element, element.start_pos)
         typ = element.type
         if typ in ('name', 'number', 'string', 'atom'):
-            return self.eval_atom(context, element)
+            return eval_atom(context, element)
         elif typ == 'keyword':
             # For False/True/None
             if element.value in ('False', 'True', 'None'):
@@ -318,7 +318,7 @@ class Evaluator(object):
         elif typ in ('power', 'atom_expr'):
             first_child = element.children[0]
             if not (first_child.type == 'keyword' and first_child.value == 'await'):
-                context_set = self.eval_atom(context, first_child)
+                context_set = eval_atom(context, first_child)
                 for trailer in element.children[1:]:
                     if trailer == '**':  # has a power operation.
                         right = self.eval_element(context, element.children[2])
@@ -352,7 +352,7 @@ class Evaluator(object):
             assert element.value in ('.', '...')
             return ContextSet(compiled.create(self, Ellipsis))
         elif typ == 'dotted_name':
-            context_set = self.eval_atom(context, element.children[0])
+            context_set = eval_atom(context, element.children[0])
             for next_name in element.children[2::2]:
                 # TODO add search_global=True?
                 context_set = context_set.py__getattribute__(next_name, name_context=context)
@@ -363,70 +363,6 @@ class Evaluator(object):
             return pep0484._evaluate_for_annotation(context, element.children[1])
         else:
             return precedence.calculate_children(self, context, element.children)
-
-    def eval_atom(self, context, atom):
-        """
-        Basically to process ``atom`` nodes. The parser sometimes doesn't
-        generate the node (because it has just one child). In that case an atom
-        might be a name or a literal as well.
-        """
-        if atom.type == 'name':
-            # This is the first global lookup.
-            stmt = tree.search_ancestor(
-                atom, 'expr_stmt', 'lambdef'
-            ) or atom
-            if stmt.type == 'lambdef':
-                stmt = atom
-            return context.py__getattribute__(
-                name_or_str=atom,
-                position=stmt.start_pos,
-                search_global=True
-            )
-
-        elif isinstance(atom, tree.Literal):
-            string = parser_utils.safe_literal_eval(atom.value)
-            return ContextSet(compiled.create(self, string))
-        else:
-            c = atom.children
-            if c[0].type == 'string':
-                # Will be one string.
-                context_set = self.eval_atom(context, c[0])
-                for string in c[1:]:
-                    right = self.eval_atom(context, string)
-                    context_set = precedence.calculate(self, context, context_set, '+', right)
-                return context_set
-            # Parentheses without commas are not tuples.
-            elif c[0] == '(' and not len(c) == 2 \
-                    and not(c[1].type == 'testlist_comp' and
-                            len(c[1].children) > 1):
-                return context.eval_node(c[1])
-
-            try:
-                comp_for = c[1].children[1]
-            except (IndexError, AttributeError):
-                pass
-            else:
-                if comp_for == ':':
-                    # Dict comprehensions have a colon at the 3rd index.
-                    try:
-                        comp_for = c[1].children[3]
-                    except IndexError:
-                        pass
-
-                if comp_for.type == 'comp_for':
-                    return ContextSet(iterable.Comprehension.from_atom(self, context, atom))
-
-            # It's a dict/list/tuple literal.
-            array_node = c[1]
-            try:
-                array_node_c = array_node.children
-            except AttributeError:
-                array_node_c = []
-            if c[0] == '{' and (array_node == '}' or ':' in array_node_c):
-                context = iterable.DictLiteralContext(self, context, atom)
-            else:
-                context = iterable.SequenceLiteralContext(self, context, atom)
-            return ContextSet(context)
 
     @debug.increase_indent
     def execute(self, obj, arguments):
