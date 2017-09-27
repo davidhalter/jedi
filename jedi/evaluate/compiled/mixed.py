@@ -41,9 +41,6 @@ class MixedObject(object):
     # We have to overwrite everything that has to do with trailers, name
     # lookups and filters to make it possible to route name lookups towards
     # compiled objects and the rest towards tree node contexts.
-    def eval_trailer(*args, **kwags):
-        return Context.eval_trailer(*args, **kwags)
-
     def py__getattribute__(*args, **kwargs):
         return Context.py__getattribute__(*args, **kwargs)
 

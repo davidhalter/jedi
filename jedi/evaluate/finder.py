@@ -32,6 +32,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, ContextSet
 from jedi.parser_utils import is_scope, get_parent_scope
+from jedi.evaluate.syntax_tree import eval_trailer
 
 
 class NameFinder(object):
@@ -263,7 +264,7 @@ def _apply_decorators(evaluator, context, node):
             # Create a trailer and evaluate it.
             trailer = tree.PythonNode('trailer', trailer_nodes)
             trailer.parent = dec
-            dec_values = evaluator.eval_trailer(context, dec_values, trailer)
+            dec_values = eval_trailer(context, dec_values, trailer)
 
         if not len(dec_values):
             debug.warning('decorator not found: %s on %s', dec, node)

@@ -77,13 +77,13 @@ from jedi.evaluate import stdlib
 from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import precedence
-from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS
+from jedi.evaluate.syntax_tree import eval_trailer
 from jedi import parser_utils
 
 
@@ -330,7 +330,7 @@ class Evaluator(object):
                             right
                         )
                         break
-                    context_set = self.eval_trailer(context, context_set, trailer)
+                    context_set = eval_trailer(context, context_set, trailer)
                 return context_set
             return NO_CONTEXTS
         elif typ in ('testlist_star_expr', 'testlist',):
@@ -428,25 +428,6 @@ class Evaluator(object):
                 context = iterable.SequenceLiteralContext(self, context, atom)
             return ContextSet(context)
 
-    def eval_trailer(self, context, base_contexts, trailer):
-        trailer_op, node = trailer.children[:2]
-        if node == ')':  # `arglist` is optional.
-            node = ()
-
-        if trailer_op == '[':
-            return iterable.py__getitem__(self, context, base_contexts, trailer)
-        else:
-            debug.dbg('eval_trailer: %s in %s', trailer, base_contexts)
-            if trailer_op == '.':
-                return base_contexts.py__getattribute__(
-                    name_context=context,
-                    name_or_str=node
-                )
-            else:
-                assert trailer_op == '('
-                arguments = param.TreeArguments(self, context, node, trailer)
-                return base_contexts.execute(arguments)
-
     @debug.increase_indent
     def execute(self, obj, arguments):
         if self.is_analysis:
@@ -527,7 +508,7 @@ class Evaluator(object):
                     to_evaluate = trailer.parent.children[:i]
                     context_set = context.eval_node(to_evaluate[0])
                     for trailer in to_evaluate[1:]:
-                        context_set = self.eval_trailer(context, context_set, trailer)
+                        context_set = eval_trailer(context, context_set, trailer)
                 param_names = []
                 for context in context_set:
                     try:

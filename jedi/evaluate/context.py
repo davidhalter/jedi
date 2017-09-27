@@ -49,9 +49,6 @@ class Context(object):
     def eval_stmt(self, stmt, seek_name=None):
         return self.evaluator.eval_statement(self, stmt, seek_name)
 
-    def eval_trailer(self, types, trailer):
-        return self.evaluator.eval_trailer(self, types, trailer)
-
     @Python3Method
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            search_global=False, is_goto=False,
