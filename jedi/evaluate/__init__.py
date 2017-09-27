@@ -428,26 +428,24 @@ class Evaluator(object):
                 context = iterable.SequenceLiteralContext(self, context, atom)
             return ContextSet(context)
 
-    def eval_trailer(self, context, types, trailer):
+    def eval_trailer(self, context, base_contexts, trailer):
         trailer_op, node = trailer.children[:2]
         if node == ')':  # `arglist` is optional.
             node = ()
 
         if trailer_op == '[':
-            return iterable.py__getitem__(self, context, types, trailer)
+            return iterable.py__getitem__(self, context, base_contexts, trailer)
         else:
-            context_set = ContextSet()
-            for typ in types:
-                debug.dbg('eval_trailer: %s in scope %s', trailer, typ)
-                if trailer_op == '.':
-                    context_set |= typ.py__getattribute__(
-                        name_context=context,
-                        name_or_str=node
-                    )
-                elif trailer_op == '(':
-                    arguments = param.TreeArguments(self, context, node, trailer)
-                    context_set |= self.execute(typ, arguments)
-            return context_set
+            debug.dbg('eval_trailer: %s in %s', trailer, base_contexts)
+            if trailer_op == '.':
+                return base_contexts.py__getattribute__(
+                    name_context=context,
+                    name_or_str=node
+                )
+            else:
+                assert trailer_op == '('
+                arguments = param.TreeArguments(self, context, node, trailer)
+                return base_contexts.execute(arguments)
 
     @debug.increase_indent
     def execute(self, obj, arguments):

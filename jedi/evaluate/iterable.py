@@ -61,8 +61,15 @@ class BuiltinMethod(object):
         self._method = method
         self._builtin_func = builtin_func
 
+    # TODO it seems kind of stupid that we have to overwrite 3 methods here.
     def py__call__(self, params):
         return self._method(self._builtin_context)
+
+    def execute(self, *args, **kwargs):
+        return self._builtin_context.evaluator.execute(self, *args, **kwargs)
+
+    def execute_evaluated(self, *args, **kwargs):
+        return self._builtin_context.evaluator.execute_evaluated(self, *args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
