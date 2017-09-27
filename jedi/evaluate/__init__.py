@@ -30,11 +30,11 @@ return the ``date`` class.
 To *visualize* this (simplified):
 
 - ``Evaluator.eval_statement`` doesn't do much, because there's no assignment.
-- ``Evaluator.eval_element`` cares for resolving the dotted path
+- ``Context.eval_node`` cares for resolving the dotted path
 - ``Evaluator.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
 - Using the import logic, the datetime module is found.
-- Now ``find_types`` is called again by ``eval_element`` to find ``date``
+- Now ``find_types`` is called again by ``eval_node`` to find ``date``
   inside the datetime module.
 
 Now what would happen if we wanted ``datetime.date.foo.bar``? Two more
@@ -179,7 +179,7 @@ class Evaluator(object):
         """
         debug.dbg('eval_statement %s (%s)', stmt, seek_name)
         rhs = stmt.get_rhs()
-        context_set = self.eval_element(context, rhs)
+        context_set = context.eval_node(rhs)
 
         if seek_name:
             c_node = ContextualizedName(context, seek_name)
@@ -207,7 +207,7 @@ class Evaluator(object):
                 for lazy_context in ordered:
                     dct = {for_stmt.children[1].value: lazy_context.infer()}
                     with helpers.predefine_names(context, for_stmt, dct):
-                        t = self.eval_element(context, rhs)
+                        t = context.eval_node(rhs)
                         left = precedence.calculate(self, context, left, operator, t)
                 context_set = left
             else:
@@ -337,14 +337,14 @@ class Evaluator(object):
             # The implicit tuple in statements.
             return ContextSet(iterable.SequenceLiteralContext(self, context, element))
         elif typ in ('not_test', 'factor'):
-            context_set = self.eval_element(context, element.children[-1])
+            context_set = context.eval_node(element.children[-1])
             for operator in element.children[:-1]:
                 context_set = precedence.factor_calculate(self, context_set, operator)
             return context_set
         elif typ == 'test':
             # `x if foo else y` case.
-            return (self.eval_element(context, element.children[0]) |
-                    self.eval_element(context, element.children[-1]))
+            return (context.eval_node(element.children[0]) |
+                    context.eval_node(element.children[-1]))
         elif typ == 'operator':
             # Must be an ellipsis, other operators are not evaluated.
             # In Python 2 ellipsis is coded as three single dot tokens, not
@@ -399,7 +399,7 @@ class Evaluator(object):
             elif c[0] == '(' and not len(c) == 2 \
                     and not(c[1].type == 'testlist_comp' and
                             len(c[1].children) > 1):
-                return self.eval_element(context, c[1])
+                return context.eval_node(c[1])
 
             try:
                 comp_for = c[1].children[1]
@@ -486,7 +486,7 @@ class Evaluator(object):
                 if is_simple_name:
                     return self.eval_statement(context, def_, name)
             if type_ == 'for_stmt':
-                container_types = self.eval_element(context, def_.children[3])
+                container_types = context.eval_node(def_.children[3])
                 cn = ContextualizedNode(context, def_.children[3])
                 for_types = iterable.py__iter__types(self, container_types, cn)
                 c_node = ContextualizedName(context, name)
@@ -523,11 +523,11 @@ class Evaluator(object):
                 trailer = trailer.parent
             if trailer.type != 'classdef':
                 if trailer.type == 'decorator':
-                    context_set = self.eval_element(context, trailer.children[1])
+                    context_set = context.eval_node(trailer.children[1])
                 else:
                     i = trailer.parent.children.index(trailer)
                     to_evaluate = trailer.parent.children[:i]
-                    context_set = self.eval_element(context, to_evaluate[0])
+                    context_set = context.eval_node(to_evaluate[0])
                     for trailer in to_evaluate[1:]:
                         context_set = self.eval_trailer(context, context_set, trailer)
                 param_names = []
@@ -546,7 +546,7 @@ class Evaluator(object):
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
                 new_dotted.children[index - 1:] = []
-                values = self.eval_element(context, new_dotted)
+                values = context.eval_node(new_dotted)
                 return unite(
                     value.py__getattribute__(name, name_context=context, is_goto=True)
                     for value in values
