@@ -110,7 +110,7 @@ class SpecialMethodFilter(DictFilter):
         return self.SpecialMethodName(self.context, name, value, self._builtin_context)
 
 
-def has_builtin_methods(cls):
+def _has_builtin_methods(cls):
     base_dct = {}
     # Need to care properly about inheritance. Builtin Methods should not get
     # lost, just because they are not mentioned in a class.
@@ -129,7 +129,7 @@ def has_builtin_methods(cls):
     return cls
 
 
-def register_builtin_method(method_name, python_version_match=None):
+def _register_builtin_method(method_name, python_version_match=None):
     def wrapper(func):
         if python_version_match and python_version_match != 2 + int(is_py3):
             # Some functions do only apply to certain versions.
@@ -140,13 +140,13 @@ def register_builtin_method(method_name, python_version_match=None):
     return wrapper
 
 
-@has_builtin_methods
+@_has_builtin_methods
 class GeneratorMixin(object):
     array_type = None
 
-    @register_builtin_method('send')
-    @register_builtin_method('next', python_version_match=2)
-    @register_builtin_method('__next__', python_version_match=3)
+    @_register_builtin_method('send')
+    @_register_builtin_method('next', python_version_match=2)
+    @_register_builtin_method('__next__', python_version_match=3)
     def py__next__(self):
         # TODO add TypeError if params are given.
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
@@ -322,7 +322,7 @@ class SetComprehension(ArrayMixin, Comprehension):
     array_type = 'set'
 
 
-@has_builtin_methods
+@_has_builtin_methods
 class DictComprehension(ArrayMixin, Comprehension):
     array_type = 'dict'
 
@@ -344,12 +344,12 @@ class DictComprehension(ArrayMixin, Comprehension):
     def dict_values(self):
         return ContextSet.from_sets(values for keys, values in self._iterate())
 
-    @register_builtin_method('values')
+    @_register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
-    @register_builtin_method('items')
+    @_register_builtin_method('items')
     def _imitate_items(self):
         items = ContextSet.from_iterable(
             FakeSequence(
@@ -466,7 +466,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
-@has_builtin_methods
+@_has_builtin_methods
 class DictLiteralContext(SequenceLiteralContext):
     array_type = 'dict'
 
@@ -475,12 +475,12 @@ class DictLiteralContext(SequenceLiteralContext):
         self._defining_context = defining_context
         self.atom = atom
 
-    @register_builtin_method('values')
+    @_register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
-    @register_builtin_method('items')
+    @_register_builtin_method('items')
     def _imitate_items(self):
         lazy_contexts = [
             context.LazyKnownContext(FakeSequence(
