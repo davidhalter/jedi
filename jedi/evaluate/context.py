@@ -3,36 +3,25 @@ from parso.python.tree import ExprStmt, CompFor
 from jedi import debug
 from jedi._compatibility import Python3Method, zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
-from jedi.common import BaseContextSet
+from jedi.common import BaseContextSet, BaseContext
 
 
-class Context(object):
+class Context(BaseContext):
     """
     Should be defined, otherwise the API returns empty types.
     """
 
+    predefined_names = {}
+    tree_node = None
     """
     To be defined by subclasses.
     """
-    predefined_names = {}
-    tree_node = None
-
-    def __init__(self, evaluator, parent_context=None):
-        self.evaluator = evaluator
-        self.parent_context = parent_context
 
     @property
     def api_type(self):
         # By default just lower name of the class. Can and should be
         # overwritten.
         return self.__class__.__name__.lower()
-
-    def get_root_context(self):
-        context = self
-        while True:
-            if context.parent_context is None:
-                return context
-            context = context.parent_context
 
     @debug.increase_indent
     def execute(self, arguments):

@@ -1,3 +1,16 @@
+class BaseContext(object):
+    def __init__(self, evaluator, parent_context=None):
+        self.evaluator = evaluator
+        self.parent_context = parent_context
+
+    def get_root_context(self):
+        context = self
+        while True:
+            if context.parent_context is None:
+                return context
+            context = context.parent_context
+
+
 class BaseContextSet(object):
     def __init__(self, *args):
         self._set = set(args)
