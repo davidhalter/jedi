@@ -360,7 +360,7 @@ class FunctionExecutionContext(context.TreeContext):
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
             cn = ContextualizedNode(self, node.children[1])
-            for lazy_context in iterable.py__iter__(self.evaluator, cn.infer(), cn):
+            for lazy_context in cn.infer().iterate(cn):
                 yield lazy_context
         else:
             yield context.LazyTreeContext(self, node)
@@ -395,7 +395,6 @@ class FunctionExecutionContext(context.TreeContext):
                 return
             last_for_stmt = for_stmt
 
-        evaluator = self.evaluator
         for for_stmt, yields in yields_order:
             if for_stmt is None:
                 # No for_stmt, just normal yields.
@@ -405,7 +404,7 @@ class FunctionExecutionContext(context.TreeContext):
             else:
                 input_node = for_stmt.get_testlist()
                 cn = ContextualizedNode(self, input_node)
-                ordered = iterable.py__iter__(evaluator, cn.infer(), cn)
+                ordered = cn.infer().iterate(cn)
                 ordered = list(ordered)
                 for lazy_context in ordered:
                     dct = {str(for_stmt.children[1].value): lazy_context.infer()}

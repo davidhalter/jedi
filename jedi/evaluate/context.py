@@ -1,7 +1,7 @@
 from parso.python.tree import ExprStmt, CompFor
 
 from jedi import debug
-from jedi._compatibility import Python3Method
+from jedi._compatibility import Python3Method, zip_longest
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 from jedi.common import BaseContextSet
 
@@ -65,6 +65,22 @@ class Context(object):
             return context_set
 
         return self.evaluator.execute(self, arguments)
+
+    def iterate(self, contextualized_node=None):
+        debug.dbg('iterate')
+        try:
+            iter_method = self.py__iter__
+        except AttributeError:
+            if contextualized_node is not None:
+                from jedi.evaluate import analysis
+                analysis.add(
+                    contextualized_node.context,
+                    'type-error-not-iterable',
+                    contextualized_node._node,
+                    message="TypeError: '%s' object is not iterable" % self)
+            return iter([])
+        else:
+            return iter_method()
 
     def execute_evaluated(self, *value_list):
         """
@@ -247,6 +263,13 @@ class ContextualizedName(ContextualizedNode):
 class ContextSet(BaseContextSet):
     def py__class__(self):
         return ContextSet.from_iterable(c.py__class__() for c in self._set)
+
+    def iterate(self, contextualized_node=None):
+        type_iters = [c.iterate(contextualized_node) for c in self._set]
+        for lazy_contexts in zip_longest(*type_iters):
+            yield get_merged_lazy_context(
+                [l for l in lazy_contexts if l is not None]
+            )
 
 
 NO_CONTEXTS = ContextSet()

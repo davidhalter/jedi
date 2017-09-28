@@ -243,8 +243,7 @@ def _eval_expr_stmt(context, stmt, seek_name=None):
             # predictable. Also only do it, if the variable is not a tuple.
             node = for_stmt.get_testlist()
             cn = ContextualizedNode(context, node)
-            from jedi.evaluate import iterable
-            ordered = list(iterable.py__iter__(context.evaluator, cn.infer(), cn))
+            ordered = list(cn.infer().iterate(cn))
 
             for lazy_context in ordered:
                 dct = {for_stmt.children[1].value: lazy_context.infer()}
@@ -551,8 +550,7 @@ def check_tuple_assignments(evaluator, contextualized_name, context_set):
     lazy_context = None
     for index, node in contextualized_name.assignment_indexes():
         cn = ContextualizedNode(contextualized_name.context, node)
-        from jedi.evaluate import iterable
-        iterated = iterable.py__iter__(evaluator, context_set, cn)
+        iterated = context_set.iterate(cn)
         for _ in range(index + 1):
             try:
                 lazy_context = next(iterated)

@@ -23,7 +23,7 @@ It is important to note that:
 from jedi import debug
 from jedi import settings
 from jedi.evaluate.utils import safe_property
-from jedi._compatibility import unicode, zip_longest, is_py3
+from jedi._compatibility import unicode, is_py3
 from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
@@ -240,14 +240,13 @@ class Comprehension(AbstractSequence):
         return CompForContext.from_comp_for(parent_context, comp_for)
 
     def _nested(self, comp_fors, parent_context=None):
-        evaluator = self.evaluator
         comp_for = comp_fors[0]
         input_node = comp_for.children[3]
         parent_context = parent_context or self._defining_context
         input_types = parent_context.eval_node(input_node)
 
         cn = context.ContextualizedNode(parent_context, input_node)
-        iterated = py__iter__(evaluator, input_types, cn)
+        iterated = input_types.iterate(cn)
         exprlist = comp_for.children[1]
         for i, lazy_context in enumerate(iterated):
             types = lazy_context.infer()
@@ -587,7 +586,7 @@ def unpack_tuple_to_dict(context, types, exprlist):
         dct = {}
         parts = iter(exprlist.children[::2])
         n = 0
-        for lazy_context in py__iter__(context.evaluator, types, exprlist):
+        for lazy_context in types.iterate(exprlist):
             n += 1
             try:
                 part = next(parts)
@@ -614,36 +613,14 @@ def unpack_tuple_to_dict(context, types, exprlist):
     raise NotImplementedError
 
 
-def py__iter__(evaluator, types, contextualized_node=None):
-    debug.dbg('py__iter__')
-    type_iters = []
-    for typ in types:
-        try:
-            iter_method = typ.py__iter__
-        except AttributeError:
-            if contextualized_node is not None:
-                analysis.add(
-                    contextualized_node.context,
-                    'type-error-not-iterable',
-                    contextualized_node._node,
-                    message="TypeError: '%s' object is not iterable" % typ)
-        else:
-            type_iters.append(iter_method())
-
-    for lazy_contexts in zip_longest(*type_iters):
-        yield context.get_merged_lazy_context(
-            [l for l in lazy_contexts if l is not None]
-        )
-
-
-def py__iter__types(evaluator, types, contextualized_node=None):
+def py__iter__types(evaluator, contexts, contextualized_node=None):
     """
     Calls `py__iter__`, but ignores the ordering in the end and just returns
     all types that it contains.
     """
     return ContextSet.from_sets(
         lazy_context.infer()
-        for lazy_context in py__iter__(evaluator, types, contextualized_node)
+        for lazy_context in contexts.iterate(contextualized_node)
     )
 
 
@@ -682,7 +659,8 @@ def py__getitem__(evaluator, context, types, trailer):
                 if isinstance(typ, AbstractSequence) and typ.array_type == 'dict':
                     types.remove(typ)
                     result |= typ.dict_values()
-            return result | py__iter__types(evaluator, types)
+            cs = ContextSet.from_set(types)
+            return result | py__iter__types(evaluator, cs)
 
         for typ in types:
             # The actual getitem call.
@@ -739,7 +717,7 @@ def _check_array_additions(context, sequence):
                 result.add(whatever)
         elif add_name in ['extend', 'update']:
             for key, lazy_context in params:
-                result |= set(py__iter__(context.evaluator, lazy_context.infer()))
+                result |= set(lazy_context.infer().iterate())
         return result
 
     temp_param_add, settings.dynamic_params_for_other_modules = \
@@ -827,7 +805,7 @@ class _ArrayInstance(object):
         except StopIteration:
             pass
         else:
-            for lazy in py__iter__(self.instance.evaluator, lazy_context.infer()):
+            for lazy in lazy_context.infer().iterate():
                 yield lazy
 
         from jedi.evaluate import param
@@ -835,6 +813,9 @@ class _ArrayInstance(object):
             additions = _check_array_additions(var_args.context, self.instance)
             for addition in additions:
                 yield addition
+
+    def iterate(self, contextualized_node=None):
+        return self.py__iter__()
 
 
 class Slice(context.Context):

@@ -12,7 +12,6 @@ compiled module that returns the types for C-builtins.
 import collections
 import re
 
-from jedi.evaluate.utils import unite
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
 from jedi.evaluate.instance import InstanceFunctionExecution, \
@@ -200,7 +199,7 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     if isinstance(lazy_context, LazyTreeContext):
         # TODO access private
         cn = ContextualizedNode(lazy_context._context, lazy_context.data)
-    ordered = list(iterable.py__iter__(evaluator, sequences, cn))
+    ordered = list(sequences.iterate(cn))
 
     rev = list(reversed(ordered))
     # Repack iterator values and then run it the normal way. This is
@@ -232,9 +231,9 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             elif cls_or_tup.name.string_name == 'tuple' \
                     and cls_or_tup.get_root_context() == evaluator.BUILTINS:
                 # Check for tuples.
-                classes = unite(
+                classes = ContextSet.from_sets(
                     lazy_context.infer()
-                    for lazy_context in cls_or_tup.py__iter__()
+                    for lazy_context in cls_or_tup.iterate()
                 )
                 bool_results.add(any(cls in mro for cls in classes))
             else:
