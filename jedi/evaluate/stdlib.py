@@ -295,7 +295,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     module = evaluator.grammar.parse(source)
     generated_class = next(module.iter_classdefs())
     parent_context = er.ModuleContext(evaluator, module, '')
-    return ContextSet(er.ClassContext(evaluator, generated_class, parent_context))
+    return ContextSet(er.ClassContext(evaluator, parent_context, generated_class))
 
 
 @argument_clinic('first, /')
