@@ -28,7 +28,7 @@ from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
-from jedi.evaluate.syntax_tree import is_string
+from jedi.evaluate.helpers import is_string
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \

@@ -15,6 +15,9 @@ from jedi.evaluate import pep0484
 from jedi.evaluate import recursion
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
+from jedi.evaluate import iterable
+from jedi.evaluate import imports
+from jedi.evaluate import representation as er
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 
 
@@ -57,7 +60,6 @@ def eval_node(context, element):
         # else: print e.g. could be evaluated like this in Python 2.7
         return NO_CONTEXTS
     elif typ == 'lambdef':
-        from jedi.evaluate import representation as er
         return ContextSet(er.FunctionContext(evaluator, context, element))
     elif typ == 'expr_stmt':
         return eval_expr_stmt(context, element)
@@ -81,7 +83,6 @@ def eval_node(context, element):
         return NO_CONTEXTS
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
-        from jedi.evaluate import iterable
         return ContextSet(iterable.SequenceLiteralContext(evaluator, context, element))
     elif typ in ('not_test', 'factor'):
         context_set = context.eval_node(element.children[-1])
@@ -118,7 +119,6 @@ def eval_trailer(context, base_contexts, trailer):
         node = ()
 
     if trailer_op == '[':
-        from jedi.evaluate.representation import ClassContext
         from jedi.evaluate.instance import TreeInstance
 
         trailer_op, node, _ = trailer.children
@@ -129,7 +129,7 @@ def eval_trailer(context, base_contexts, trailer):
         # https://github.com/davidhalter/jedi/issues/663
         result = ContextSet()
         for typ in list(foo):
-            if isinstance(typ, (ClassContext, TreeInstance)):
+            if isinstance(typ, (er.ClassContext, TreeInstance)):
                 typing_module_types = pep0484.py__getitem__(context, typ, node)
                 if typing_module_types is not None:
                     foo.remove(typ)
@@ -159,7 +159,6 @@ def eval_atom(context, atom):
     generate the node (because it has just one child). In that case an atom
     might be a name or a literal as well.
     """
-    from jedi.evaluate import iterable
     if atom.type == 'name':
         # This is the first global lookup.
         stmt = tree.search_ancestor(
@@ -367,17 +366,15 @@ def _eval_comparison(evaluator, context, left_contexts, operator, right_contexts
 
 
 def _is_tuple(context):
-    from jedi.evaluate import iterable
     return isinstance(context, iterable.AbstractSequence) and context.array_type == 'tuple'
 
 
 def _is_list(context):
-    from jedi.evaluate import iterable
     return isinstance(context, iterable.AbstractSequence) and context.array_type == 'list'
 
 
 def _eval_comparison_part(evaluator, context, left, operator, right):
-    from jedi.evaluate import iterable, instance
+    from jedi.evaluate import instance
     l_is_num = is_number(left)
     r_is_num = is_number(right)
     if operator == '*':
@@ -473,7 +470,6 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             return types
 
     if typ in ('for_stmt', 'comp_for'):
-        from jedi.evaluate import iterable
         try:
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
@@ -488,7 +484,6 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         enter_methods = context_managers.py__getattribute__('__enter__')
         return enter_methods.execute_evaluated()
     elif typ in ('import_from', 'import_name'):
-        from jedi.evaluate import imports
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
         types = _apply_decorators(context, node)
@@ -508,7 +503,6 @@ def _apply_decorators(context, node):
     Returns the function, that should to be executed in the end.
     This is also the places where the decorators are processed.
     """
-    from jedi.evaluate import representation as er
     if node.type == 'classdef':
         decoratee_context = er.ClassContext(
             context.evaluator,
@@ -571,10 +565,9 @@ def eval_subscript_list(evaluator, context, index):
     """
     Handles slices in subscript nodes.
     """
-    from jedi.evaluate.iterable import Slice
     if index == ':':
         # Like array[:]
-        return ContextSet(Slice(context, None, None, None))
+        return ContextSet(iterable.Slice(context, None, None, None))
 
     elif index.type == 'subscript' and not index.children[0] == '.':
         # subscript basically implies a slice operation, except for Python 2's
@@ -592,7 +585,7 @@ def eval_subscript_list(evaluator, context, index):
                 result.append(el)
         result += [None] * (3 - len(result))
 
-        return ContextSet(Slice(context, *result))
+        return ContextSet(iterable.Slice(context, *result))
 
     # No slices
     return context.eval_node(index)

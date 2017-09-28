@@ -51,7 +51,6 @@ from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate import recursion
-from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate import param
@@ -262,6 +261,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         yield_exprs = get_yield_exprs(self.evaluator, self.tree_node)
         if yield_exprs:
+            from jedi.evaluate import iterable
             return ContextSet(iterable.Generator(self.evaluator, function_execution))
         else:
             return function_execution.get_return_values()
