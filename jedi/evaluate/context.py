@@ -1,7 +1,7 @@
 from parso.python.tree import ExprStmt, CompFor
 
 from jedi import debug
-from jedi._compatibility import Python3Method, zip_longest
+from jedi._compatibility import Python3Method, zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 from jedi.common import BaseContextSet
 
@@ -66,6 +66,14 @@ class Context(object):
 
         return self.evaluator.execute(self, arguments)
 
+    def execute_evaluated(self, *value_list):
+        """
+        Execute a function with already executed arguments.
+        """
+        from jedi.evaluate.param import ValuesArguments
+        arguments = ValuesArguments([ContextSet(value) for value in value_list])
+        return self.execute(arguments)
+
     def iterate(self, contextualized_node=None):
         debug.dbg('iterate')
         try:
@@ -76,19 +84,51 @@ class Context(object):
                 analysis.add(
                     contextualized_node.context,
                     'type-error-not-iterable',
-                    contextualized_node._node,
+                    contextualized_node.node,
                     message="TypeError: '%s' object is not iterable" % self)
             return iter([])
         else:
             return iter_method()
 
-    def execute_evaluated(self, *value_list):
-        """
-        Execute a function with already executed arguments.
-        """
-        from jedi.evaluate.param import ValuesArguments
-        arguments = ValuesArguments([ContextSet(value) for value in value_list])
-        return self.execute(arguments)
+    def get_item(self, index_contexts, contextualized_node):
+        from jedi.evaluate.compiled import CompiledObject
+        from jedi.evaluate.iterable import Slice, AbstractSequence
+        result = ContextSet()
+
+        for index in index_contexts:
+            if isinstance(index, (CompiledObject, Slice)):
+                index = index.obj
+
+            if type(index) not in (float, int, str, unicode, slice, type(Ellipsis)):
+                # If the index is not clearly defined, we have to get all the
+                # possiblities.
+                if isinstance(self, AbstractSequence) and self.array_type == 'dict':
+                    result |= self.dict_values()
+                else:
+                    result |= iterate_contexts(ContextSet(self))
+                continue
+
+            # The actual getitem call.
+            try:
+                getitem = self.py__getitem__
+            except AttributeError:
+                from jedi.evaluate import analysis
+                # TODO this context is probably not right.
+                analysis.add(
+                    contextualized_node.context,
+                    'type-error-not-subscriptable',
+                    contextualized_node.node,
+                    message="TypeError: '%s' object is not subscriptable" % self
+                )
+            else:
+                try:
+                    result |= getitem(index)
+                except IndexError:
+                    result |= iterate_contexts(ContextSet(self))
+                except KeyError:
+                    # Must be a dict. Lists don't raise KeyErrors.
+                    result |= self.dict_values()
+        return result
 
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
@@ -140,6 +180,17 @@ class Context(object):
             else:
                 return clean_scope_docstring(self.tree_node)
         return None
+
+
+def iterate_contexts(contexts, contextualized_node=None):
+    """
+    Calls `iterate`, on all contexts but ignores the ordering and just returns
+    all contexts that the iterate functions yield.
+    """
+    return ContextSet.from_sets(
+        lazy_context.infer()
+        for lazy_context in contexts.iterate(contextualized_node)
+    )
 
 
 class TreeContext(Context):
@@ -215,20 +266,20 @@ class MergedLazyContexts(AbstractLazyContext):
 class ContextualizedNode(object):
     def __init__(self, context, node):
         self.context = context
-        self._node = node
+        self.node = node
 
     def get_root_context(self):
         return self.context.get_root_context()
 
     def infer(self):
-        return self.context.eval_node(self._node)
+        return self.context.eval_node(self.node)
 
 
 class ContextualizedName(ContextualizedNode):
     # TODO merge with TreeNameDefinition?!
     @property
     def name(self):
-        return self._node
+        return self.node
 
     def assignment_indexes(self):
         """
@@ -242,8 +293,8 @@ class ContextualizedName(ContextualizedNode):
         would result in ``[(1, xyz_node), (0, yz_node)]``.
         """
         indexes = []
-        node = self._node.parent
-        compare = self._node
+        node = self.node.parent
+        compare = self.node
         while node is not None:
             if node.type in ('testlist', 'testlist_comp', 'testlist_star_expr', 'exprlist'):
                 for i, child in enumerate(node.children):

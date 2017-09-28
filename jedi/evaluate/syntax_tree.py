@@ -10,7 +10,7 @@ from jedi._compatibility import unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.evaluate.context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
-    ContextualizedName, iterator_to_context_set
+    ContextualizedName, iterator_to_context_set, iterate_contexts
 from jedi.evaluate import compiled
 from jedi.evaluate import pep0484
 from jedi.evaluate import recursion
@@ -119,7 +119,27 @@ def eval_trailer(context, base_contexts, trailer):
 
     if trailer_op == '[':
         from jedi.evaluate import iterable
-        return iterable.py__getitem__(context.evaluator, context, base_contexts, trailer)
+        from jedi.evaluate.representation import ClassContext
+        from jedi.evaluate.instance import TreeInstance
+
+        trailer_op, node, _ = trailer.children
+
+        # TODO It's kind of stupid to cast this from a context set to a set.
+        foo = set(base_contexts)
+        # special case: PEP0484 typing module, see
+        # https://github.com/davidhalter/jedi/issues/663
+        result = ContextSet()
+        for typ in list(foo):
+            if isinstance(typ, (ClassContext, TreeInstance)):
+                typing_module_types = pep0484.py__getitem__(context, typ, node)
+                if typing_module_types is not None:
+                    foo.remove(typ)
+                    result |= typing_module_types
+
+        return result | base_contexts.get_item(
+            iterable.create_index_types(context.evaluator, context, node),
+            ContextualizedNode(context, trailer)
+        )
     else:
         debug.dbg('eval_trailer: %s in %s', trailer, base_contexts)
         if trailer_op == '.':
@@ -475,7 +495,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
             cn = ContextualizedNode(context, node.children[3])
-            for_types = iterable.iterate_contexts(evaluator, cn.infer(), cn)
+            for_types = iterate_contexts(cn.infer(), cn)
             c_node = ContextualizedName(context, tree_name)
             types = check_tuple_assignments(evaluator, c_node, for_types)
     elif typ == 'expr_stmt':

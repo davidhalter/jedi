@@ -80,7 +80,7 @@ from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, \
-    ContextSet, NO_CONTEXTS
+    ContextSet, NO_CONTEXTS, iterate_contexts
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi import parser_utils
@@ -217,7 +217,7 @@ class Evaluator(object):
             if type_ == 'for_stmt':
                 container_types = context.eval_node(def_.children[3])
                 cn = ContextualizedNode(context, def_.children[3])
-                for_types = iterable.iterate_contexts(self, container_types, cn)
+                for_types = iterate_contexts(container_types, cn)
                 c_node = ContextualizedName(context, name)
                 return check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):
