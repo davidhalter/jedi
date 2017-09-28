@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 import ast
 
@@ -14,7 +14,6 @@ with open('jedi/__init__.py') as f:
 version = tree.body[1].value.s
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
-packages = ['jedi', 'jedi.evaluate', 'jedi.evaluate.compiled', 'jedi.api']
 with open('requirements.txt') as f:
     install_requires = f.read().splitlines()
 
@@ -30,7 +29,7 @@ setup(name='jedi',
       license='MIT',
       keywords='python completion refactoring vim',
       long_description=readme,
-      packages=packages,
+      packages=find_packages(exclude=['test']),
       install_requires=install_requires,
       package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
       platforms=['any'],

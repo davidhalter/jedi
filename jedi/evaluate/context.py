@@ -127,8 +127,6 @@ class Context(BaseContext):
                            search_global=False, is_goto=False,
                            analysis_errors=True):
         """
-        This is the search function.
-
         :param position: Position of the last statement -> tuple of line, column
         """
         if name_context is None:
