@@ -51,19 +51,20 @@ from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate import recursion
-from jedi.evaluate import iterable
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 from jedi.evaluate import helpers
+from jedi.evaluate import iterable
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
     ParamName, AnonymousInstanceParamName, TreeNameDefinition, \
     ContextNameMixin
 from jedi.evaluate import context
-from jedi.evaluate.context import ContextualizedNode
+from jedi.evaluate.context import ContextualizedNode, NO_CONTEXTS, \
+    ContextSet, iterator_to_context_set
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
 
@@ -83,12 +84,13 @@ class ClassName(TreeNameDefinition):
         super(ClassName, self).__init__(parent_context, tree_name)
         self._name_context = name_context
 
+    @iterator_to_context_set
     def infer(self):
         # TODO this _name_to_types might get refactored and be a part of the
         # parent class. Once it is, we can probably just overwrite method to
         # achieve this.
-        from jedi.evaluate.finder import _name_to_types
-        inferred = _name_to_types(
+        from jedi.evaluate.syntax_tree import tree_name_to_contexts
+        inferred = tree_name_to_contexts(
             self.parent_context.evaluator, self._name_context, self.tree_name)
 
         for result_context in inferred:
@@ -111,7 +113,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
     """
     api_type = 'class'
 
-    def __init__(self, evaluator, classdef, parent_context):
+    def __init__(self, evaluator, parent_context, classdef):
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
         self.tree_node = classdef
 
@@ -162,7 +164,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
 
     def py__call__(self, params):
         from jedi.evaluate.instance import TreeInstance
-        return set([TreeInstance(self.evaluator, self.parent_context, self, params)])
+        return ContextSet(TreeInstance(self.evaluator, self.parent_context, self, params))
 
     def py__class__(self):
         return compiled.create(self.evaluator, type)
@@ -227,7 +229,7 @@ class LambdaName(AbstractNameDefinition):
         return self._lambda_context.tree_node.start_pos
 
     def infer(self):
-        return set([self._lambda_context])
+        return ContextSet(self._lambda_context)
 
 
 class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
@@ -260,7 +262,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         yield_exprs = get_yield_exprs(self.evaluator, self.tree_node)
         if yield_exprs:
-            return set([iterable.Generator(self.evaluator, function_execution)])
+            return ContextSet(iterable.Generator(self.evaluator, function_execution))
         else:
             return function_execution.get_return_values()
 
@@ -312,7 +314,7 @@ class FunctionExecutionContext(context.TreeContext):
         self.tree_node = function_context.tree_node
         self.var_args = var_args
 
-    @evaluator_method_cache(default=set())
+    @evaluator_method_cache(default=NO_CONTEXTS)
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
@@ -320,12 +322,12 @@ class FunctionExecutionContext(context.TreeContext):
             return self.evaluator.eval_element(self, funcdef.children[-1])
 
         if check_yields:
-            types = set()
+            context_set = NO_CONTEXTS
             returns = get_yield_exprs(self.evaluator, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
-            types = set(docstrings.infer_return_types(self.function_context))
-            types |= set(pep0484.infer_return_types(self.function_context))
+            context_set = docstrings.infer_return_types(self.function_context)
+            context_set |= pep0484.infer_return_types(self.function_context)
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)
@@ -333,18 +335,21 @@ class FunctionExecutionContext(context.TreeContext):
                 debug.dbg('Return unreachable: %s', r)
             else:
                 if check_yields:
-                    types |= set(self._eval_yield(r))
+                    context_set |= ContextSet.from_sets(
+                        lazy_context.infer()
+                        for lazy_context in self._eval_yield(r)
+                    )
                 else:
                     try:
                         children = r.children
                     except AttributeError:
-                        types.add(compiled.create(self.evaluator, None))
+                        context_set |= ContextSet(compiled.create(self.evaluator, None))
                     else:
-                        types |= self.eval_node(children[1])
+                        context_set |= self.eval_node(children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
-        return types
+        return context_set
 
     def _eval_yield(self, yield_expr):
         if yield_expr.type == 'keyword':
@@ -355,7 +360,7 @@ class FunctionExecutionContext(context.TreeContext):
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
             cn = ContextualizedNode(self, node.children[1])
-            for lazy_context in iterable.py__iter__(self.evaluator, cn.infer(), cn):
+            for lazy_context in cn.infer().iterate(cn):
                 yield lazy_context
         else:
             yield context.LazyTreeContext(self, node)
@@ -386,11 +391,10 @@ class FunctionExecutionContext(context.TreeContext):
             else:
                 types = self.get_return_values(check_yields=True)
                 if types:
-                    yield context.get_merged_lazy_context(list(types))
+                    yield context.LazyKnownContexts(types)
                 return
             last_for_stmt = for_stmt
 
-        evaluator = self.evaluator
         for for_stmt, yields in yields_order:
             if for_stmt is None:
                 # No for_stmt, just normal yields.
@@ -400,7 +404,7 @@ class FunctionExecutionContext(context.TreeContext):
             else:
                 input_node = for_stmt.get_testlist()
                 cn = ContextualizedNode(self, input_node)
-                ordered = iterable.py__iter__(evaluator, cn.infer(), cn)
+                ordered = cn.infer().iterate(cn)
                 ordered = list(ordered)
                 for lazy_context in ordered:
                     dct = {str(for_stmt.children[1].value): lazy_context.infer()}
@@ -430,9 +434,7 @@ class ModuleAttributeName(AbstractNameDefinition):
         self.string_name = string_name
 
     def infer(self):
-        return compiled.create(self.parent_context.evaluator, str).execute(
-            param.ValuesArguments([])
-        )
+        return compiled.create(self.parent_context.evaluator, str).execute_evaluated()
 
 
 class ModuleName(ContextNameMixin, AbstractNameDefinition):
@@ -628,7 +630,7 @@ class ImplicitNSName(AbstractNameDefinition):
         self.string_name = string_name
 
     def infer(self):
-        return []
+        return NO_CONTEXTS
 
     def get_root_context(self):
         return self.implicit_ns_context

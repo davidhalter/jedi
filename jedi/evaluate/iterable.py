@@ -22,19 +22,19 @@ It is important to note that:
 """
 from jedi import debug
 from jedi import settings
-from jedi import common
-from jedi.common import unite, safe_property
-from jedi._compatibility import unicode, zip_longest, is_py3
+from jedi.evaluate.utils import safe_property
+from jedi._compatibility import is_py3
+from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
-from jedi.evaluate import pep0484
-from jedi.evaluate import context
-from jedi.evaluate import precedence
+from jedi.evaluate.helpers import is_string
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
     ParserTreeFilter
+from jedi.evaluate import context
+from jedi.evaluate.context import ContextSet, NO_CONTEXTS, Context
 from jedi.parser_utils import get_comp_fors
 
 
@@ -53,15 +53,20 @@ class AbstractSequence(context.Context):
         return compiled.CompiledContextName(self, self.array_type)
 
 
-class BuiltinMethod(object):
+class BuiltinMethod(Context):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
+    api_type = 'function'
+
     def __init__(self, builtin_context, method, builtin_func):
-        self._builtin_context = builtin_context
+        super(BuiltinMethod, self).__init__(
+            builtin_context.evaluator,
+            parent_context=builtin_context
+        )
         self._method = method
         self._builtin_func = builtin_func
 
     def py__call__(self, params):
-        return self._method(self._builtin_context)
+        return self._method(self.parent_context)
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
@@ -87,7 +92,7 @@ class SpecialMethodFilter(DictFilter):
             # always only going to be one name. The same is true for the
             # inferred values.
             builtin_func = next(iter(filter.get(self.string_name)[0].infer()))
-            return set([BuiltinMethod(self.parent_context, self._callable, builtin_func)])
+            return ContextSet(BuiltinMethod(self.parent_context, self._callable, builtin_func))
 
     def __init__(self, context, dct, builtin_context):
         super(SpecialMethodFilter, self).__init__(dct)
@@ -104,7 +109,7 @@ class SpecialMethodFilter(DictFilter):
         return self.SpecialMethodName(self.context, name, value, self._builtin_context)
 
 
-def has_builtin_methods(cls):
+def _has_builtin_methods(cls):
     base_dct = {}
     # Need to care properly about inheritance. Builtin Methods should not get
     # lost, just because they are not mentioned in a class.
@@ -123,7 +128,7 @@ def has_builtin_methods(cls):
     return cls
 
 
-def register_builtin_method(method_name, python_version_match=None):
+def _register_builtin_method(method_name, python_version_match=None):
     def wrapper(func):
         if python_version_match and python_version_match != 2 + int(is_py3):
             # Some functions do only apply to certain versions.
@@ -134,16 +139,16 @@ def register_builtin_method(method_name, python_version_match=None):
     return wrapper
 
 
-@has_builtin_methods
+@_has_builtin_methods
 class GeneratorMixin(object):
     array_type = None
 
-    @register_builtin_method('send')
-    @register_builtin_method('next', python_version_match=2)
-    @register_builtin_method('__next__', python_version_match=3)
+    @_register_builtin_method('send')
+    @_register_builtin_method('next', python_version_match=2)
+    @_register_builtin_method('__next__', python_version_match=3)
     def py__next__(self):
         # TODO add TypeError if params are given.
-        return unite(lazy_context.infer() for lazy_context in self.py__iter__())
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
@@ -234,14 +239,13 @@ class Comprehension(AbstractSequence):
         return CompForContext.from_comp_for(parent_context, comp_for)
 
     def _nested(self, comp_fors, parent_context=None):
-        evaluator = self.evaluator
         comp_for = comp_fors[0]
         input_node = comp_for.children[3]
         parent_context = parent_context or self._defining_context
         input_types = parent_context.eval_node(input_node)
 
         cn = context.ContextualizedNode(parent_context, input_node)
-        iterated = py__iter__(evaluator, input_types, cn)
+        iterated = input_types.iterate(cn)
         exprlist = comp_for.children[1]
         for i, lazy_context in enumerate(iterated):
             types = lazy_context.infer()
@@ -262,7 +266,7 @@ class Comprehension(AbstractSequence):
                         yield iterated
 
     @evaluator_method_cache(default=[])
-    @common.to_list
+    @to_list
     def _iterate(self):
         comp_fors = tuple(get_comp_fors(self._get_comp_for()))
         for result in self._nested(comp_fors):
@@ -296,7 +300,10 @@ class ArrayMixin(object):
         return self.evaluator.BUILTINS
 
     def dict_values(self):
-        return unite(self._defining_context.eval_node(v) for k, v in self._items())
+        return ContextSet.from_sets(
+            self._defining_context.eval_node(v)
+            for k, v in self._items()
+        )
 
 
 class ListComprehension(ArrayMixin, Comprehension):
@@ -304,7 +311,7 @@ class ListComprehension(ArrayMixin, Comprehension):
 
     def py__getitem__(self, index):
         if isinstance(index, slice):
-            return set([self])
+            return ContextSet(self)
 
         all_types = list(self.py__iter__())
         return all_types[index].infer()
@@ -314,7 +321,7 @@ class SetComprehension(ArrayMixin, Comprehension):
     array_type = 'set'
 
 
-@has_builtin_methods
+@_has_builtin_methods
 class DictComprehension(ArrayMixin, Comprehension):
     array_type = 'dict'
 
@@ -334,16 +341,16 @@ class DictComprehension(ArrayMixin, Comprehension):
         return self.dict_values()
 
     def dict_values(self):
-        return unite(values for keys, values in self._iterate())
+        return ContextSet.from_sets(values for keys, values in self._iterate())
 
-    @register_builtin_method('values')
+    @_register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
-        return set([FakeSequence(self.evaluator, 'list', [lazy_context])])
+        return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
-    @register_builtin_method('items')
+    @_register_builtin_method('items')
     def _imitate_items(self):
-        items = set(
+        items = ContextSet.from_iterable(
             FakeSequence(
                 self.evaluator, 'tuple'
                 (context.LazyKnownContexts(keys), context.LazyKnownContexts(values))
@@ -385,7 +392,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
 
         # Can raise an IndexError
         if isinstance(index, slice):
-            return set([self])
+            return ContextSet(self)
         else:
             return self._defining_context.eval_node(self._items()[index])
 
@@ -396,7 +403,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
         """
         if self.array_type == 'dict':
             # Get keys.
-            types = set()
+            types = ContextSet()
             for k, _ in self._items():
                 types |= self._defining_context.eval_node(k)
             # We don't know which dict index comes first, therefore always
@@ -413,7 +420,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
     def _values(self):
         """Returns a list of a list of node."""
         if self.array_type == 'dict':
-            return unite(v for k, v in self._items())
+            return ContextSet.from_sets(v for k, v in self._items())
         else:
             return self._items()
 
@@ -451,14 +458,14 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
         """
         for key_node, value in self._items():
             for key in self._defining_context.eval_node(key_node):
-                if precedence.is_string(key):
+                if is_string(key):
                     yield key.obj, context.LazyTreeContext(self._defining_context, value)
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
-@has_builtin_methods
+@_has_builtin_methods
 class DictLiteralContext(SequenceLiteralContext):
     array_type = 'dict'
 
@@ -467,12 +474,12 @@ class DictLiteralContext(SequenceLiteralContext):
         self._defining_context = defining_context
         self.atom = atom
 
-    @register_builtin_method('values')
+    @_register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
-        return set([FakeSequence(self.evaluator, 'list', [lazy_context])])
+        return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
-    @register_builtin_method('items')
+    @_register_builtin_method('items')
     def _imitate_items(self):
         lazy_contexts = [
             context.LazyKnownContext(FakeSequence(
@@ -482,7 +489,7 @@ class DictLiteralContext(SequenceLiteralContext):
             )) for key_node, value_node in self._items()
         ]
 
-        return set([FakeSequence(self.evaluator, 'list', lazy_contexts)])
+        return ContextSet(FakeSequence(self.evaluator, 'list', lazy_contexts))
 
 
 class _FakeArray(SequenceLiteralContext):
@@ -502,7 +509,7 @@ class FakeSequence(_FakeArray):
         self._lazy_context_list = lazy_context_list
 
     def py__getitem__(self, index):
-        return set(self._lazy_context_list[index].infer())
+        return self._lazy_context_list[index].infer()
 
     def py__iter__(self):
         return self._lazy_context_list
@@ -527,7 +534,7 @@ class FakeDict(_FakeArray):
         return self._dct[index].infer()
 
     def dict_values(self):
-        return unite(lazy_context.infer() for lazy_context in self._dct.values())
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self._dct.values())
 
     def exact_key_items(self):
         return self._dct.items()
@@ -544,7 +551,7 @@ class MergedArray(_FakeArray):
                 yield lazy_context
 
     def py__getitem__(self, index):
-        return unite(lazy_context.infer() for lazy_context in self.py__iter__())
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
 
     def _items(self):
         for array in self._arrays:
@@ -568,7 +575,7 @@ def unpack_tuple_to_dict(context, types, exprlist):
         dct = {}
         parts = iter(exprlist.children[::2])
         n = 0
-        for lazy_context in py__iter__(context.evaluator, types, exprlist):
+        for lazy_context in types.iterate(exprlist):
             n += 1
             try:
                 part = next(parts)
@@ -595,103 +602,16 @@ def unpack_tuple_to_dict(context, types, exprlist):
     raise NotImplementedError
 
 
-def py__iter__(evaluator, types, contextualized_node=None):
-    debug.dbg('py__iter__')
-    type_iters = []
-    for typ in types:
-        try:
-            iter_method = typ.py__iter__
-        except AttributeError:
-            if contextualized_node is not None:
-                analysis.add(
-                    contextualized_node.context,
-                    'type-error-not-iterable',
-                    contextualized_node._node,
-                    message="TypeError: '%s' object is not iterable" % typ)
-        else:
-            type_iters.append(iter_method())
-
-    for lazy_contexts in zip_longest(*type_iters):
-        yield context.get_merged_lazy_context(
-            [l for l in lazy_contexts if l is not None]
-        )
-
-
-def py__iter__types(evaluator, types, contextualized_node=None):
-    """
-    Calls `py__iter__`, but ignores the ordering in the end and just returns
-    all types that it contains.
-    """
-    return unite(
-        lazy_context.infer()
-        for lazy_context in py__iter__(evaluator, types, contextualized_node)
-    )
-
-
-def py__getitem__(evaluator, context, types, trailer):
-    from jedi.evaluate.representation import ClassContext
-    from jedi.evaluate.instance import TreeInstance
-    result = set()
-
-    trailer_op, node, trailer_cl = trailer.children
-    assert trailer_op == "["
-    assert trailer_cl == "]"
-
-    # special case: PEP0484 typing module, see
-    # https://github.com/davidhalter/jedi/issues/663
-    for typ in list(types):
-        if isinstance(typ, (ClassContext, TreeInstance)):
-            typing_module_types = pep0484.py__getitem__(context, typ, node)
-            if typing_module_types is not None:
-                types.remove(typ)
-                result |= typing_module_types
-
-    if not types:
-        # all consumed by special cases
-        return result
-
-    for index in create_index_types(evaluator, context, node):
-        if isinstance(index, (compiled.CompiledObject, Slice)):
-            index = index.obj
-
-        if type(index) not in (float, int, str, unicode, slice, type(Ellipsis)):
-            # If the index is not clearly defined, we have to get all the
-            # possiblities.
-            for typ in list(types):
-                if isinstance(typ, AbstractSequence) and typ.array_type == 'dict':
-                    types.remove(typ)
-                    result |= typ.dict_values()
-            return result | py__iter__types(evaluator, types)
-
-        for typ in types:
-            # The actual getitem call.
-            try:
-                getitem = typ.py__getitem__
-            except AttributeError:
-                # TODO this context is probably not right.
-                analysis.add(context, 'type-error-not-subscriptable', trailer_op,
-                             message="TypeError: '%s' object is not subscriptable" % typ)
-            else:
-                try:
-                    result |= getitem(index)
-                except IndexError:
-                    result |= py__iter__types(evaluator, set([typ]))
-                except KeyError:
-                    # Must be a dict. Lists don't raise KeyErrors.
-                    result |= typ.dict_values()
-    return result
-
-
 def check_array_additions(context, sequence):
     """ Just a mapper function for the internal _check_array_additions """
     if sequence.array_type not in ('list', 'set'):
         # TODO also check for dict updates
-        return set()
+        return NO_CONTEXTS
 
     return _check_array_additions(context, sequence)
 
 
-@evaluator_method_cache(default=set())
+@evaluator_method_cache(default=NO_CONTEXTS)
 @debug.increase_indent
 def _check_array_additions(context, sequence):
     """
@@ -706,7 +626,7 @@ def _check_array_additions(context, sequence):
     module_context = context.get_root_context()
     if not settings.dynamic_array_additions or isinstance(module_context, compiled.CompiledObject):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
-        return set()
+        return ContextSet()
 
     def find_additions(context, arglist, add_name):
         params = list(param.TreeArguments(context.evaluator, context, arglist).unpack())
@@ -714,11 +634,11 @@ def _check_array_additions(context, sequence):
         if add_name in ['insert']:
             params = params[1:]
         if add_name in ['append', 'add', 'insert']:
-            for key, lazy_context in params:
-                result.add(lazy_context)
+            for key, whatever in params:
+                result.add(whatever)
         elif add_name in ['extend', 'update']:
             for key, lazy_context in params:
-                result |= set(py__iter__(context.evaluator, lazy_context.infer()))
+                result |= set(lazy_context.infer().iterate())
         return result
 
     temp_param_add, settings.dynamic_params_for_other_modules = \
@@ -781,7 +701,7 @@ def get_dynamic_array_instance(instance):
 
     ai = _ArrayInstance(instance)
     from jedi.evaluate import param
-    return param.ValuesArguments([[ai]])
+    return param.ValuesArguments([ContextSet(ai)])
 
 
 class _ArrayInstance(object):
@@ -806,7 +726,7 @@ class _ArrayInstance(object):
         except StopIteration:
             pass
         else:
-            for lazy in py__iter__(self.instance.evaluator, lazy_context.infer()):
+            for lazy in lazy_context.infer().iterate():
                 yield lazy
 
         from jedi.evaluate import param
@@ -814,6 +734,9 @@ class _ArrayInstance(object):
             additions = _check_array_additions(var_args.context, self.instance)
             for addition in additions:
                 yield addition
+
+    def iterate(self, contextualized_node=None):
+        return self.py__iter__()
 
 
 class Slice(context.Context):
@@ -852,33 +775,3 @@ class Slice(context.Context):
             return slice(get(self._start), get(self._stop), get(self._step))
         except IndexError:
             return slice(None, None, None)
-
-
-def create_index_types(evaluator, context, index):
-    """
-    Handles slices in subscript nodes.
-    """
-    if index == ':':
-        # Like array[:]
-        return set([Slice(context, None, None, None)])
-
-    elif index.type == 'subscript' and not index.children[0] == '.':
-        # subscript basically implies a slice operation, except for Python 2's
-        # Ellipsis.
-        # e.g. array[:3]
-        result = []
-        for el in index.children:
-            if el == ':':
-                if not result:
-                    result.append(None)
-            elif el.type == 'sliceop':
-                if len(el.children) == 2:
-                    result.append(el.children[1])
-            else:
-                result.append(el)
-        result += [None] * (3 - len(result))
-
-        return set([Slice(context, *result)])
-
-    # No slices
-    return context.eval_node(index)

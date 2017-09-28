@@ -14,7 +14,7 @@ It works as follows:
 
 - |Jedi| sees a param
 - search for function calls named ``foo``
-- execute these calls and check the input. This work with a ``ParamListener``.
+- execute these calls and check the input.
 """
 
 from parso.python import tree
@@ -24,22 +24,12 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import imports
 from jedi.evaluate.param import TreeArguments, create_default_params
 from jedi.evaluate.helpers import is_stdlib_path
-from jedi.common import to_list, unite
+from jedi.evaluate.utils import to_list
+from jedi.evaluate.context import ContextSet
 from jedi.parser_utils import get_parent_scope
 
 
 MAX_PARAM_SEARCHES = 20
-
-
-class ParamListener(object):
-    """
-    This listener is used to get the params for a function.
-    """
-    def __init__(self):
-        self.param_possibilities = []
-
-    def execute(self, params):
-        self.param_possibilities += params
 
 
 class MergedExecutedParams(object):
@@ -50,7 +40,7 @@ class MergedExecutedParams(object):
         self._executed_params = executed_params
 
     def infer(self):
-        return unite(p.infer() for p in self._executed_params)
+        return ContextSet.from_sets(p.infer() for p in self._executed_params)
 
 
 @debug.increase_indent
@@ -103,7 +93,7 @@ def search_params(evaluator, execution_context, funcdef):
         evaluator.dynamic_params_depth -= 1
 
 
-@evaluator_function_cache(default=[])
+@evaluator_function_cache(default=None)
 @to_list
 def _search_function_executions(evaluator, module_context, funcdef):
     """

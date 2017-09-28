@@ -29,6 +29,7 @@ therefore the quality might not always be maximal.
 from contextlib import contextmanager
 
 from jedi import debug
+from jedi.evaluate.context import NO_CONTEXTS
 
 
 recursion_limit = 15
@@ -71,7 +72,7 @@ def execution_allowed(evaluator, node):
         pushed_nodes.pop()
 
 
-def execution_recursion_decorator(default=set()):
+def execution_recursion_decorator(default=NO_CONTEXTS):
     def decorator(func):
         def wrapper(execution, **kwargs):
             detector = execution.evaluator.execution_recursion_detector

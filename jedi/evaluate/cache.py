@@ -4,8 +4,6 @@
 - ``CachedMetaClass`` uses ``_memoize_default`` to do the same with classes.
 """
 
-import inspect
-
 _NO_DEFAULT = object()
 
 
@@ -40,8 +38,6 @@ def _memoize_default(default=_NO_DEFAULT, evaluator_is_first_arg=False, second_a
                 if default is not _NO_DEFAULT:
                     memo[key] = default
                 rv = function(obj, *args, **kwargs)
-                if inspect.isgenerator(rv):
-                    rv = list(rv)
                 memo[key] = rv
                 return rv
         return wrapper

@@ -19,17 +19,15 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
     See comment from Guido https://github.com/davidhalter/jedi/issues/662
 """
 
-import itertools
 import os
 import re
 
 from parso import ParserSyntaxError
 from parso.python import tree
 
-from jedi.common import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
-from jedi.evaluate.context import LazyTreeContext
+from jedi.evaluate.context import LazyTreeContext, NO_CONTEXTS, ContextSet
 from jedi import debug
 from jedi import _compatibility
 from jedi import parser_utils
@@ -42,16 +40,15 @@ def _evaluate_for_annotation(context, annotation, index=None):
     and we're interested in that index
     """
     if annotation is not None:
-        definitions = context.eval_node(
-            _fix_forward_reference(context, annotation))
+        context_set = context.eval_node(_fix_forward_reference(context, annotation))
         if index is not None:
-            definitions = list(itertools.chain.from_iterable(
-                definition.py__getitem__(index) for definition in definitions
-                if definition.array_type == 'tuple' and
-                len(list(definition.py__iter__())) >= index))
-        return unite(d.execute_evaluated() for d in definitions)
+            context_set = context_set.filter(
+                lambda context: context.array_type == 'tuple' \
+                                and len(list(context.py__iter__())) >= index
+            ).py__getitem__(index)
+        return context_set.execute_evaluated()
     else:
-        return set()
+        return NO_CONTEXTS
 
 
 def _fix_forward_reference(context, node):
@@ -147,7 +144,7 @@ def py__getitem__(context, typ, node):
     if type_name in ("Union", '_Union'):
         # In Python 3.6 it's still called typing.Union but it's an instance
         # called _Union.
-        return unite(context.eval_node(node) for node in nodes)
+        return ContextSet.from_sets(context.eval_node(node) for node in nodes)
     if type_name in ("Optional", '_Optional'):
         # Here we have the same issue like in Union. Therefore we also need to
         # check for the instance typing._Optional (Python 3.6).

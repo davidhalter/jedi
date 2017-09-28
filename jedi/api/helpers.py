@@ -10,6 +10,7 @@ from parso.python import tree
 from parso import split_lines
 
 from jedi._compatibility import u
+from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi.cache import time_cache
 
@@ -206,7 +207,7 @@ def evaluate_goto_definition(evaluator, context, leaf):
     elif parent.type == 'trailer':
         return evaluate_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
-        return context.evaluator.eval_atom(context, leaf)
+        return eval_atom(context, leaf)
     return []
 
 

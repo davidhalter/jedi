@@ -10,13 +10,13 @@ from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.context import ContextualizedNode
 from jedi import settings
 from jedi import debug
-from jedi import common
+from jedi.evaluate.utils import ignored
 
 
 def get_venv_path(venv):
     """Get sys.path for specified virtual environment."""
     sys_path = _get_venv_path_dirs(venv)
-    with common.ignored(ValueError):
+    with ignored(ValueError):
         sys_path.remove('')
     sys_path = _get_sys_path_with_egglinks(sys_path)
     # As of now, get_venv_path_dirs does not scan built-in pythonpath and
@@ -120,10 +120,9 @@ def _paths_from_assignment(module_context, expr_stmt):
         except AssertionError:
             continue
 
-        from jedi.evaluate.iterable import py__iter__
-        from jedi.evaluate.precedence import is_string
+        from jedi.evaluate.syntax_tree import is_string
         cn = ContextualizedNode(module_context.create_context(expr_stmt), expr_stmt)
-        for lazy_context in py__iter__(module_context.evaluator, cn.infer(), cn):
+        for lazy_context in cn.infer().iterate(cn):
             for context in lazy_context.infer():
                 if is_string(context):
                     yield context.obj
@@ -194,7 +193,7 @@ def sys_path_with_modifications(evaluator, module_context):
 
     curdir = os.path.abspath(os.curdir)
     #TODO why do we need a chdir?
-    with common.ignored(OSError):
+    with ignored(OSError):
         os.chdir(os.path.dirname(path))
 
     buildout_script_paths = set()
@@ -246,7 +245,7 @@ def _detect_django_path(module_path):
     result = []
 
     for parent in traverse_parents(module_path):
-        with common.ignored(IOError):
+        with ignored(IOError):
             with open(parent + os.path.sep + 'manage.py'):
                 debug.dbg('Found django path: %s', module_path)
                 result.append(parent)

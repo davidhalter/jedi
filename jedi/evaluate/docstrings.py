@@ -21,11 +21,11 @@ from textwrap import dedent
 from parso import parse
 
 from jedi._compatibility import u
-from jedi.common import unite
-from jedi.evaluate import context
+from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.common import indent_block
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
+from jedi.evaluate.context import iterator_to_context_set, ContextSet, \
+    NO_CONTEXTS, LazyKnownContexts
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -223,7 +223,10 @@ def _execute_types_in_stmt(module_context, stmt):
     contain is executed. (Used as type information).
     """
     definitions = module_context.eval_node(stmt)
-    return unite(_execute_array_values(module_context.evaluator, d) for d in definitions)
+    return ContextSet.from_sets(
+        _execute_array_values(module_context.evaluator, d)
+        for d in definitions
+    )
 
 
 def _execute_array_values(evaluator, array):
@@ -234,8 +237,11 @@ def _execute_array_values(evaluator, array):
     if isinstance(array, SequenceLiteralContext):
         values = []
         for lazy_context in array.py__iter__():
-            objects = unite(_execute_array_values(evaluator, typ) for typ in lazy_context.infer())
-            values.append(context.LazyKnownContexts(objects))
+            objects = ContextSet.from_sets(
+                _execute_array_values(evaluator, typ)
+                for typ in lazy_context.infer()
+            )
+            values.append(LazyKnownContexts(objects))
         return set([FakeSequence(evaluator, array.array_type, values)])
     else:
         return array.execute_evaluated()
@@ -246,7 +252,7 @@ def infer_param(execution_context, param):
     from jedi.evaluate.instance import AnonymousInstanceFunctionExecution
 
     def eval_docstring(docstring):
-        return set(
+        return ContextSet.from_iterable(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _evaluate_for_statement_string(module_context, param_str)
@@ -254,7 +260,7 @@ def infer_param(execution_context, param):
     module_context = execution_context.get_root_context()
     func = param.get_parent_function()
     if func.type == 'lambdef':
-        return set()
+        return NO_CONTEXTS
 
     types = eval_docstring(execution_context.py__doc__())
     if isinstance(execution_context, AnonymousInstanceFunctionExecution) and \
@@ -266,6 +272,7 @@ def infer_param(execution_context, param):
 
 
 @evaluator_method_cache()
+@iterator_to_context_set
 def infer_return_types(function_context):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
@@ -279,4 +286,3 @@ def infer_return_types(function_context):
     for type_str in search_return_in_docstr(function_context.py__doc__()):
         for type_eval in _evaluate_for_statement_string(function_context.get_root_context(), type_str):
             yield type_eval
-

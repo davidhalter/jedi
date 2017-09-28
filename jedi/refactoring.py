@@ -14,7 +14,6 @@ following functions (sometimes bug-prone):
 """
 import difflib
 
-from jedi import common
 from parso import python_bytes_to_unicode, split_lines
 from jedi.evaluate import helpers
 
@@ -165,38 +164,37 @@ def inline(script):
     dct = {}
 
     definitions = script.goto_assignments()
-    with common.ignored(AssertionError):
-        assert len(definitions) == 1
-        stmt = definitions[0]._definition
-        usages = script.usages()
-        inlines = [r for r in usages
-                   if not stmt.start_pos <= (r.line, r.column) <= stmt.end_pos]
-        inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),
-                         reverse=True)
-        expression_list = stmt.expression_list()
-        # don't allow multiline refactorings for now.
-        assert stmt.start_pos[0] == stmt.end_pos[0]
-        index = stmt.start_pos[0] - 1
+    assert len(definitions) == 1
+    stmt = definitions[0]._definition
+    usages = script.usages()
+    inlines = [r for r in usages
+               if not stmt.start_pos <= (r.line, r.column) <= stmt.end_pos]
+    inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),
+                     reverse=True)
+    expression_list = stmt.expression_list()
+    # don't allow multiline refactorings for now.
+    assert stmt.start_pos[0] == stmt.end_pos[0]
+    index = stmt.start_pos[0] - 1
 
-        line = new_lines[index]
-        replace_str = line[expression_list[0].start_pos[1]:stmt.end_pos[1] + 1]
-        replace_str = replace_str.strip()
-        # tuples need parentheses
-        if expression_list and isinstance(expression_list[0], pr.Array):
-            arr = expression_list[0]
-            if replace_str[0] not in ['(', '[', '{'] and len(arr) > 1:
-                replace_str = '(%s)' % replace_str
+    line = new_lines[index]
+    replace_str = line[expression_list[0].start_pos[1]:stmt.end_pos[1] + 1]
+    replace_str = replace_str.strip()
+    # tuples need parentheses
+    if expression_list and isinstance(expression_list[0], pr.Array):
+        arr = expression_list[0]
+        if replace_str[0] not in ['(', '[', '{'] and len(arr) > 1:
+            replace_str = '(%s)' % replace_str
 
-        # if it's the only assignment, remove the statement
-        if len(stmt.get_defined_names()) == 1:
-            line = line[:stmt.start_pos[1]] + line[stmt.end_pos[1]:]
+    # if it's the only assignment, remove the statement
+    if len(stmt.get_defined_names()) == 1:
+        line = line[:stmt.start_pos[1]] + line[stmt.end_pos[1]:]
 
-        dct = _rename(inlines, replace_str)
-        # remove the empty line
-        new_lines = dct[script.path][2]
-        if line.strip():
-            new_lines[index] = line
-        else:
-            new_lines.pop(index)
+    dct = _rename(inlines, replace_str)
+    # remove the empty line
+    new_lines = dct[script.path][2]
+    if line.strip():
+        new_lines[index] = line
+    else:
+        new_lines.pop(index)
 
     return Refactoring(dct)

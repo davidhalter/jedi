@@ -6,8 +6,9 @@ from abc import abstractmethod
 
 from parso.tree import search_ancestor
 from jedi.evaluate import flow_analysis
-from jedi.common import to_list, unite
+from jedi.evaluate.context import ContextSet
 from jedi.parser_utils import get_parent_scope
+from jedi.evaluate.utils import to_list
 
 
 class AbstractNameDefinition(object):
@@ -35,10 +36,10 @@ class AbstractNameDefinition(object):
         return '<%s: %s@%s>' % (self.__class__.__name__, self.string_name, self.start_pos)
 
     def execute(self, arguments):
-        return unite(context.execute(arguments) for context in self.infer())
+        return self.infer().execute(arguments)
 
     def execute_evaluated(self, *args, **kwargs):
-        return unite(context.execute_evaluated(*args, **kwargs) for context in self.infer())
+        return self.infer().execute_evaluated(*args, **kwargs)
 
     @property
     def api_type(self):
@@ -64,7 +65,7 @@ class AbstractTreeName(AbstractNameDefinition):
 
 class ContextNameMixin(object):
     def infer(self):
-        return set([self._context])
+        return ContextSet(self._context)
 
     def get_root_context(self):
         if self.parent_context is None:
@@ -93,8 +94,8 @@ class TreeNameDefinition(AbstractTreeName):
 
     def infer(self):
         # Refactor this, should probably be here.
-        from jedi.evaluate.finder import _name_to_types
-        return _name_to_types(self.parent_context.evaluator, self.parent_context, self.tree_name)
+        from jedi.evaluate.syntax_tree import tree_name_to_contexts
+        return tree_name_to_contexts(self.parent_context.evaluator, self.parent_context, self.tree_name)
 
     @property
     def api_type(self):
@@ -128,7 +129,7 @@ class AnonymousInstanceParamName(ParamName):
         if param_node.position_index == 0:
             # This is a speed optimization, to return the self param (because
             # it's known). This only affects anonymous instances.
-            return set([self.parent_context.instance])
+            return ContextSet(self.parent_context.instance)
         else:
             return self.get_param().infer()
 

@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from jedi._compatibility import zip_longest
 from jedi import debug
-from jedi import common
+from jedi.evaluate.utils import PushBackIterator
 from parso.python import tree
 from jedi.evaluate import iterable
 from jedi.evaluate import analysis
@@ -10,6 +10,7 @@ from jedi.evaluate import context
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import ParamName
+from jedi.evaluate.context import NO_CONTEXTS
 
 
 def add_argument_issue(parent_context, error_name, lazy_context, message):
@@ -51,7 +52,7 @@ class AbstractArguments():
                 debug.warning('TypeError: %s expected at least %s arguments, got %s',
                               name, len(parameters), i)
                 raise ValueError
-            values = set() if argument is None else argument.infer()
+            values = NO_CONTEXTS if argument is None else argument.infer()
 
             if not values and not optional:
                 # For the stdlib we always want values. If we don't get them,
@@ -237,7 +238,7 @@ class ExecutedParam(object):
         pep0484_hints = pep0484.infer_param(self._execution_context, self._param_node)
         doc_params = docstrings.infer_param(self._execution_context, self._param_node)
         if pep0484_hints or doc_params:
-            return list(set(pep0484_hints) | set(doc_params))
+            return pep0484_hints | doc_params
 
         return self._lazy_context.infer()
 
@@ -258,7 +259,7 @@ def get_params(execution_context, var_args):
     for param in funcdef.get_params():
         param_dict[param.name.value] = param
     unpacked_va = list(var_args.unpack(funcdef))
-    var_arg_iterator = common.PushBackIterator(iter(unpacked_va))
+    var_arg_iterator = PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
     keys_used = {}

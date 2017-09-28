@@ -24,18 +24,19 @@ from parso import python_bytes_to_unicode
 from jedi._compatibility import find_module, unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
-from jedi.common import unite
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
+from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
+from jedi.evaluate.context import ContextSet, NO_CONTEXTS
 
 
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
-@evaluator_method_cache(default=set())
+@evaluator_method_cache(default=NO_CONTEXTS)
 def infer_import(context, tree_name, is_goto=False):
     module_context = context.get_root_context()
     import_node = search_ancestor(tree_name, 'import_name', 'import_from')
@@ -63,7 +64,7 @@ def infer_import(context, tree_name, is_goto=False):
     #    scopes = [NestedImportModule(module, import_node)]
 
     if not types:
-        return set()
+        return NO_CONTEXTS
 
     if from_import_name is not None:
         types = unite(
@@ -72,8 +73,11 @@ def infer_import(context, tree_name, is_goto=False):
                 name_context=context,
                 is_goto=is_goto,
                 analysis_errors=False
-            ) for t in types
+            )
+            for t in types
         )
+        if not is_goto:
+            types = ContextSet.from_set(types)
 
         if not types:
             path = import_path + [from_import_name]
@@ -270,7 +274,7 @@ class Importer(object):
 
     def follow(self):
         if not self.import_path:
-            return set()
+            return NO_CONTEXTS
         return self._do_import(self.import_path, self.sys_path_with_modifications())
 
     def _do_import(self, import_path, sys_path):
@@ -296,7 +300,7 @@ class Importer(object):
 
         module_name = '.'.join(import_parts)
         try:
-            return set([self._evaluator.modules[module_name]])
+            return ContextSet(self._evaluator.modules[module_name])
         except KeyError:
             pass
 
@@ -305,7 +309,7 @@ class Importer(object):
             # the module cache.
             bases = self._do_import(import_path[:-1], sys_path)
             if not bases:
-                return set()
+                return NO_CONTEXTS
             # We can take the first element, because only the os special
             # case yields multiple modules, which is not important for
             # further imports.
@@ -323,7 +327,7 @@ class Importer(object):
             except AttributeError:
                 # The module is not a package.
                 _add_error(self.module_context, import_path[-1])
-                return set()
+                return NO_CONTEXTS
             else:
                 paths = method()
                 debug.dbg('search_module %s in paths %s', module_name, paths)
@@ -340,7 +344,7 @@ class Importer(object):
                         module_path = None
                 if module_path is None:
                     _add_error(self.module_context, import_path[-1])
-                    return set()
+                    return NO_CONTEXTS
         else:
             parent_module = None
             try:
@@ -356,7 +360,7 @@ class Importer(object):
             except ImportError:
                 # The module is not a package.
                 _add_error(self.module_context, import_path[-1])
-                return set()
+                return NO_CONTEXTS
 
         code = None
         if is_pkg:
@@ -383,10 +387,10 @@ class Importer(object):
         if module is None:
             # The file might raise an ImportError e.g. and therefore not be
             # importable.
-            return set()
+            return NO_CONTEXTS
 
         self._evaluator.modules[module_name] = module
-        return set([module])
+        return ContextSet(module)
 
     def _generate_name(self, name, in_module=None):
         # Create a pseudo import to be able to follow them.
