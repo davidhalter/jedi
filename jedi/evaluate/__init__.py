@@ -217,7 +217,7 @@ class Evaluator(object):
             if type_ == 'for_stmt':
                 container_types = context.eval_node(def_.children[3])
                 cn = ContextualizedNode(context, def_.children[3])
-                for_types = iterable.py__iter__types(self, container_types, cn)
+                for_types = iterable.iterate_contexts(self, container_types, cn)
                 c_node = ContextualizedName(context, name)
                 return check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):

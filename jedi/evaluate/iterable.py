@@ -613,10 +613,10 @@ def unpack_tuple_to_dict(context, types, exprlist):
     raise NotImplementedError
 
 
-def py__iter__types(evaluator, contexts, contextualized_node=None):
+def iterate_contexts(evaluator, contexts, contextualized_node=None):
     """
-    Calls `py__iter__`, but ignores the ordering in the end and just returns
-    all types that it contains.
+    Calls `iterate`, on all contexts but ignores the ordering and just returns
+    all contexts that the iterate functions yield.
     """
     return ContextSet.from_sets(
         lazy_context.infer()
@@ -660,7 +660,7 @@ def py__getitem__(evaluator, context, types, trailer):
                     types.remove(typ)
                     result |= typ.dict_values()
             cs = ContextSet.from_set(types)
-            return result | py__iter__types(evaluator, cs)
+            return result | iterate_contexts(evaluator, cs)
 
         for typ in types:
             # The actual getitem call.
@@ -674,7 +674,7 @@ def py__getitem__(evaluator, context, types, trailer):
                 try:
                     result |= getitem(index)
                 except IndexError:
-                    result |= py__iter__types(evaluator, ContextSet(typ))
+                    result |= iterate_contexts(evaluator, ContextSet(typ))
                 except KeyError:
                     # Must be a dict. Lists don't raise KeyErrors.
                     result |= typ.dict_values()
