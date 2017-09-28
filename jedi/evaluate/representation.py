@@ -89,8 +89,8 @@ class ClassName(TreeNameDefinition):
         # TODO this _name_to_types might get refactored and be a part of the
         # parent class. Once it is, we can probably just overwrite method to
         # achieve this.
-        from jedi.evaluate.finder import _name_to_types
-        inferred = _name_to_types(
+        from jedi.evaluate.syntax_tree import tree_name_to_contexts
+        inferred = tree_name_to_contexts(
             self.parent_context.evaluator, self._name_context, self.tree_name)
 
         for result_context in inferred:

@@ -34,6 +34,7 @@ from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import get_venv_path, dotted_path_in_sys_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
 from jedi.evaluate.filters import TreeNameDefinition
+from jedi.evaluate.syntax_tree import tree_name_to_contexts
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -348,10 +349,8 @@ class Script(object):
             for node in get_executable_nodes(module_node):
                 context = self._get_module().create_context(node)
                 if node.type in ('funcdef', 'classdef'):
-                    # TODO This is stupid, should be private
-                    from jedi.evaluate.finder import _name_to_types
                     # Resolve the decorators.
-                    _name_to_types(self._evaluator, context, node.children[1])
+                    tree_name_to_contexts(self._evaluator, context, node.children[1])
                 elif isinstance(node, tree.Import):
                     import_names = set(node.get_defined_names())
                     if node.is_nested():

@@ -223,8 +223,7 @@ def _eval_expr_stmt(context, stmt, seek_name=None):
 
     if seek_name:
         c_node = ContextualizedName(context, seek_name)
-        from jedi.evaluate import finder
-        context_set = finder.check_tuple_assignments(context.evaluator, c_node, context_set)
+        context_set = check_tuple_assignments(context.evaluator, c_node, context_set)
 
     first_operator = next(stmt.yield_operators(), None)
     if first_operator not in ('=', None) and first_operator.type == 'operator':
@@ -426,3 +425,141 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
                      message % (left, right))
 
     return ContextSet(left, right)
+
+
+def _remove_statements(evaluator, context, stmt, name):
+    """
+    This is the part where statements are being stripped.
+
+    Due to lazy evaluation, statements like a = func; b = a; b() have to be
+    evaluated.
+    """
+    pep0484_contexts = \
+        pep0484.find_type_from_comment_hint_assign(context, stmt, name)
+    if pep0484_contexts:
+        return pep0484_contexts
+
+    return eval_expr_stmt(context, stmt, seek_name=name)
+
+
+def tree_name_to_contexts(evaluator, context, tree_name):
+    types = []
+    node = tree_name.get_definition(import_name_always=True)
+    if node is None:
+        node = tree_name.parent
+        if node.type == 'global_stmt':
+            context = evaluator.create_context(context, tree_name)
+            from jedi.evaluate.finder import NameFinder
+            finder = NameFinder(evaluator, context, context, tree_name.value)
+            filters = finder.get_filters(search_global=True)
+            # For global_stmt lookups, we only need the first possible scope,
+            # which means the function itself.
+            filters = [next(filters)]
+            return finder.find(filters, attribute_lookup=False)
+        elif node.type not in ('import_from', 'import_name'):
+            raise ValueError("Should not happen.")
+
+    typ = node.type
+    if typ == 'for_stmt':
+        types = pep0484.find_type_from_comment_hint_for(context, node, tree_name)
+        if types:
+            return types
+    if typ == 'with_stmt':
+        types = pep0484.find_type_from_comment_hint_with(context, node, tree_name)
+        if types:
+            return types
+
+    if typ in ('for_stmt', 'comp_for'):
+        from jedi.evaluate import iterable
+        try:
+            types = context.predefined_names[node][tree_name.value]
+        except KeyError:
+            cn = ContextualizedNode(context, node.children[3])
+            for_types = iterable.py__iter__types(evaluator, cn.infer(), cn)
+            c_node = ContextualizedName(context, tree_name)
+            types = check_tuple_assignments(evaluator, c_node, for_types)
+    elif typ == 'expr_stmt':
+        types = _remove_statements(evaluator, context, node, tree_name)
+    elif typ == 'with_stmt':
+        context_managers = context.eval_node(node.get_test_node_from_name(tree_name))
+        enter_methods = context_managers.py__getattribute__('__enter__')
+        return enter_methods.execute_evaluated()
+    elif typ in ('import_from', 'import_name'):
+        from jedi.evaluate import imports
+        types = imports.infer_import(context, tree_name)
+    elif typ in ('funcdef', 'classdef'):
+        types = _apply_decorators(evaluator, context, node)
+    elif typ == 'try_stmt':
+        # TODO an exception can also be a tuple. Check for those.
+        # TODO check for types that are not classes and add it to
+        # the static analysis report.
+        exceptions = context.eval_node(tree_name.get_previous_sibling().get_previous_sibling())
+        types = exceptions.execute_evaluated()
+    else:
+        raise ValueError("Should not happen.")
+    return types
+
+
+def _apply_decorators(evaluator, context, node):
+    """
+    Returns the function, that should to be executed in the end.
+    This is also the places where the decorators are processed.
+    """
+    from jedi.evaluate import representation as er
+    if node.type == 'classdef':
+        decoratee_context = er.ClassContext(
+            evaluator,
+            parent_context=context,
+            classdef=node
+        )
+    else:
+        decoratee_context = er.FunctionContext(
+            evaluator,
+            parent_context=context,
+            funcdef=node
+        )
+    initial = values = ContextSet(decoratee_context)
+    for dec in reversed(node.get_decorators()):
+        debug.dbg('decorator: %s %s', dec, values)
+        dec_values = context.eval_node(dec.children[1])
+        trailer_nodes = dec.children[2:-1]
+        if trailer_nodes:
+            # Create a trailer and evaluate it.
+            trailer = tree.PythonNode('trailer', trailer_nodes)
+            trailer.parent = dec
+            dec_values = eval_trailer(context, dec_values, trailer)
+
+        if not len(dec_values):
+            debug.warning('decorator not found: %s on %s', dec, node)
+            return initial
+
+        from jedi.evaluate import param
+        values = dec_values.execute(param.ValuesArguments([values]))
+        if not len(values):
+            debug.warning('not possible to resolve wrappers found %s', node)
+            return initial
+
+        debug.dbg('decorator end %s', values)
+    return values
+
+
+def check_tuple_assignments(evaluator, contextualized_name, context_set):
+    """
+    Checks if tuples are assigned.
+    """
+    lazy_context = None
+    for index, node in contextualized_name.assignment_indexes():
+        cn = ContextualizedNode(contextualized_name.context, node)
+        from jedi.evaluate import iterable
+        iterated = iterable.py__iter__(evaluator, context_set, cn)
+        for _ in range(index + 1):
+            try:
+                lazy_context = next(iterated)
+            except StopIteration:
+                # We could do this with the default param in next. But this
+                # would allow this loop to run for a very long time if the
+                # index number is high. Therefore break if the loop is
+                # finished.
+                return ContextSet()
+        context_set = lazy_context.infer()
+    return context_set

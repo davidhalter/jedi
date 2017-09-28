@@ -76,14 +76,14 @@ from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import stdlib
-from jedi.evaluate import finder
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS
-from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, eval_node
+from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
+    eval_node, check_tuple_assignments
 from jedi import parser_utils
 
 
@@ -243,7 +243,7 @@ class Evaluator(object):
                 cn = ContextualizedNode(context, def_.children[3])
                 for_types = iterable.py__iter__types(self, container_types, cn)
                 c_node = ContextualizedName(context, name)
-                return finder.check_tuple_assignments(self, c_node, for_types)
+                return check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
 

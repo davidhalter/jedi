@@ -94,8 +94,8 @@ class TreeNameDefinition(AbstractTreeName):
 
     def infer(self):
         # Refactor this, should probably be here.
-        from jedi.evaluate.finder import _name_to_types
-        return _name_to_types(self.parent_context.evaluator, self.parent_context, self.tree_name)
+        from jedi.evaluate.syntax_tree import tree_name_to_contexts
+        return tree_name_to_contexts(self.parent_context.evaluator, self.parent_context, self.tree_name)
 
     @property
     def api_type(self):

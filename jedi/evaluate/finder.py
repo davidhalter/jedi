@@ -19,20 +19,16 @@ from parso.python import tree
 from parso.tree import search_ancestor
 from jedi import debug
 from jedi import settings
-from jedi.evaluate import representation as er
 from jedi.evaluate.instance import AbstractInstanceContext
 from jedi.evaluate import compiled
-from jedi.evaluate import pep0484
 from jedi.evaluate import iterable
-from jedi.evaluate import imports
 from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
-from jedi.evaluate.context import ContextualizedName, ContextualizedNode, ContextSet
+from jedi.evaluate.context import ContextSet
 from jedi.parser_utils import is_scope, get_parent_scope
-from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt
 
 
 class NameFinder(object):
@@ -183,117 +179,6 @@ class NameFinder(object):
         return contexts
 
 
-def _name_to_types(evaluator, context, tree_name):
-    types = []
-    node = tree_name.get_definition(import_name_always=True)
-    if node is None:
-        node = tree_name.parent
-        if node.type == 'global_stmt':
-            context = evaluator.create_context(context, tree_name)
-            finder = NameFinder(evaluator, context, context, tree_name.value)
-            filters = finder.get_filters(search_global=True)
-            # For global_stmt lookups, we only need the first possible scope,
-            # which means the function itself.
-            filters = [next(filters)]
-            return finder.find(filters, attribute_lookup=False)
-        elif node.type not in ('import_from', 'import_name'):
-            raise ValueError("Should not happen.")
-
-    typ = node.type
-    if typ == 'for_stmt':
-        types = pep0484.find_type_from_comment_hint_for(context, node, tree_name)
-        if types:
-            return types
-    if typ == 'with_stmt':
-        types = pep0484.find_type_from_comment_hint_with(context, node, tree_name)
-        if types:
-            return types
-
-    if typ in ('for_stmt', 'comp_for'):
-        try:
-            types = context.predefined_names[node][tree_name.value]
-        except KeyError:
-            cn = ContextualizedNode(context, node.children[3])
-            for_types = iterable.py__iter__types(evaluator, cn.infer(), cn)
-            c_node = ContextualizedName(context, tree_name)
-            types = check_tuple_assignments(evaluator, c_node, for_types)
-    elif typ == 'expr_stmt':
-        types = _remove_statements(evaluator, context, node, tree_name)
-    elif typ == 'with_stmt':
-        context_managers = context.eval_node(node.get_test_node_from_name(tree_name))
-        enter_methods = context_managers.py__getattribute__('__enter__')
-        return enter_methods.execute_evaluated()
-    elif typ in ('import_from', 'import_name'):
-        types = imports.infer_import(context, tree_name)
-    elif typ in ('funcdef', 'classdef'):
-        types = _apply_decorators(evaluator, context, node)
-    elif typ == 'try_stmt':
-        # TODO an exception can also be a tuple. Check for those.
-        # TODO check for types that are not classes and add it to
-        # the static analysis report.
-        exceptions = context.eval_node(tree_name.get_previous_sibling().get_previous_sibling())
-        types = exceptions.execute_evaluated()
-    else:
-        raise ValueError("Should not happen.")
-    return types
-
-
-def _apply_decorators(evaluator, context, node):
-    """
-    Returns the function, that should to be executed in the end.
-    This is also the places where the decorators are processed.
-    """
-    if node.type == 'classdef':
-        decoratee_context = er.ClassContext(
-            evaluator,
-            parent_context=context,
-            classdef=node
-        )
-    else:
-        decoratee_context = er.FunctionContext(
-            evaluator,
-            parent_context=context,
-            funcdef=node
-        )
-    initial = values = ContextSet(decoratee_context)
-    for dec in reversed(node.get_decorators()):
-        debug.dbg('decorator: %s %s', dec, values)
-        dec_values = context.eval_node(dec.children[1])
-        trailer_nodes = dec.children[2:-1]
-        if trailer_nodes:
-            # Create a trailer and evaluate it.
-            trailer = tree.PythonNode('trailer', trailer_nodes)
-            trailer.parent = dec
-            dec_values = eval_trailer(context, dec_values, trailer)
-
-        if not len(dec_values):
-            debug.warning('decorator not found: %s on %s', dec, node)
-            return initial
-
-        values = dec_values.execute(param.ValuesArguments([values]))
-        if not len(values):
-            debug.warning('not possible to resolve wrappers found %s', node)
-            return initial
-
-        debug.dbg('decorator end %s', values)
-    return values
-
-
-def _remove_statements(evaluator, context, stmt, name):
-    """
-    This is the part where statements are being stripped.
-
-    Due to lazy evaluation, statements like a = func; b = a; b() have to be
-    evaluated.
-    """
-    pep0484_contexts = \
-        pep0484.find_type_from_comment_hint_assign(context, stmt, name)
-    if pep0484_contexts:
-        return pep0484_contexts
-
-    return eval_expr_stmt(context, stmt, seek_name=name)
-
-
 def _check_flow_information(context, flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
@@ -370,25 +255,4 @@ def _check_isinstance_type(context, element, search_name):
                     context_set |= context.execute_evaluated()
         else:
             context_set |= cls_or_tup.execute_evaluated()
-    return context_set
-
-
-def check_tuple_assignments(evaluator, contextualized_name, context_set):
-    """
-    Checks if tuples are assigned.
-    """
-    lazy_context = None
-    for index, node in contextualized_name.assignment_indexes():
-        cn = ContextualizedNode(contextualized_name.context, node)
-        iterated = iterable.py__iter__(evaluator, context_set, cn)
-        for _ in range(index + 1):
-            try:
-                lazy_context = next(iterated)
-            except StopIteration:
-                # We could do this with the default param in next. But this
-                # would allow this loop to run for a very long time if the
-                # index number is high. Therefore break if the loop is
-                # finished.
-                return ContextSet()
-        context_set = lazy_context.infer()
     return context_set
