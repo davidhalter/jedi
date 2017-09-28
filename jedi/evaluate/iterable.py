@@ -23,12 +23,11 @@ It is important to note that:
 from jedi import debug
 from jedi import settings
 from jedi.evaluate.utils import safe_property
-from jedi._compatibility import unicode, is_py3
+from jedi._compatibility import is_py3
 from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
-from jedi.evaluate import pep0484
 from jedi.evaluate.syntax_tree import is_string
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_method_cache

@@ -6,7 +6,6 @@ import operator as op
 
 from parso.python import tree
 
-from jedi._compatibility import unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.evaluate.context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
@@ -16,6 +15,7 @@ from jedi.evaluate import pep0484
 from jedi.evaluate import recursion
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
+from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 
 
 def _limit_context_infers(func):
@@ -308,7 +308,7 @@ def eval_factor(context_set, operator):
     """
     for context in context_set:
         if operator == '-':
-            if _is_number(context):
+            if is_number(context):
                 yield compiled.create(context.evaluator, -context.obj)
         elif operator == 'not':
             value = context.py__bool__()
@@ -337,7 +337,7 @@ def _literals_to_types(evaluator, result):
     # int(), float(), etc).
     new_result = NO_CONTEXTS
     for typ in result:
-        if _is_literal(typ):
+        if is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
             cls = compiled.builtin_from_name(evaluator, typ.name.string_name)
@@ -366,22 +366,6 @@ def _eval_comparison(evaluator, context, left_contexts, operator, right_contexts
             )
 
 
-def _is_compiled(context):
-    return isinstance(context, compiled.CompiledObject)
-
-
-def _is_number(context):
-    return _is_compiled(context) and isinstance(context.obj, (int, float))
-
-
-def is_string(context):
-    return _is_compiled(context) and isinstance(context.obj, (str, unicode))
-
-
-def _is_literal(context):
-    return _is_number(context) or is_string(context)
-
-
 def _is_tuple(context):
     from jedi.evaluate import iterable
     return isinstance(context, iterable.AbstractSequence) and context.array_type == 'tuple'
@@ -394,8 +378,8 @@ def _is_list(context):
 
 def _eval_comparison_part(evaluator, context, left, operator, right):
     from jedi.evaluate import iterable, instance
-    l_is_num = _is_number(left)
-    r_is_num = _is_number(right)
+    l_is_num = is_number(left)
+    r_is_num = is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.AbstractSequence) or is_string(left):
@@ -416,7 +400,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
         return ContextSet(left)
     elif operator in COMPARISON_OPERATORS:
         operation = COMPARISON_OPERATORS[operator]
-        if _is_compiled(left) and _is_compiled(right):
+        if is_compiled(left) and is_compiled(right):
             # Possible, because the return is not an option. Just compare.
             left = left.obj
             right = right.obj

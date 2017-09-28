@@ -7,7 +7,9 @@ from contextlib import contextmanager
 
 from parso.python import tree
 
+from jedi._compatibility import unicode
 from jedi.parser_utils import get_parent_scope
+from jedi.evaluate.compiled import CompiledObject
 
 
 def is_stdlib_path(path):
@@ -174,3 +176,19 @@ def predefine_names(context, flow_scope, dct):
         yield
     finally:
         del predefined[flow_scope]
+
+
+def is_compiled(context):
+    return isinstance(context, CompiledObject)
+
+
+def is_string(context):
+    return is_compiled(context) and isinstance(context.obj, (str, unicode))
+
+
+def is_literal(context):
+    return is_number(context) or is_string(context)
+
+
+def is_number(context):
+    return is_compiled(context) and isinstance(context.obj, (int, float))
