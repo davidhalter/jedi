@@ -1,5 +1,7 @@
-from jedi._compatibility import Python3Method
 from parso.python.tree import ExprStmt, CompFor
+
+from jedi import debug
+from jedi._compatibility import Python3Method
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 from jedi.common import BaseContextSet
 
@@ -32,7 +34,36 @@ class Context(object):
                 return context
             context = context.parent_context
 
+    @debug.increase_indent
     def execute(self, arguments):
+        """
+        In contrast to py__call__ this function is always available.
+
+        `hasattr(x, py__call__)` can also be checked to see if a context is
+        executable.
+        """
+        if self.evaluator.is_analysis:
+            arguments.eval_all()
+
+        debug.dbg('execute: %s %s', self, arguments)
+        from jedi.evaluate import stdlib
+        try:
+            # Some stdlib functions like super(), namedtuple(), etc. have been
+            # hard-coded in Jedi to support them.
+            return stdlib.execute(self.evaluator, self, arguments)
+        except stdlib.NotInStdLib:
+            pass
+
+        try:
+            func = self.py__call__
+        except AttributeError:
+            debug.warning("no execution possible %s", self)
+            return NO_CONTEXTS
+        else:
+            context_set = func(arguments)
+            debug.dbg('execute result: %s in %s', context_set, self)
+            return context_set
+
         return self.evaluator.execute(self, arguments)
 
     def execute_evaluated(self, *value_list):

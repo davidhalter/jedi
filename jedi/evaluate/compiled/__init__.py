@@ -266,7 +266,7 @@ class CompiledObject(Context):
                     # TODO do we?
                     continue
                 bltn_obj = create(self.evaluator, bltn_obj)
-                for result in self.evaluator.execute(bltn_obj, params):
+                for result in bltn_obj.execute(params):
                     yield result
         for type_ in docstrings.infer_return_types(self):
             yield type_

@@ -75,7 +75,6 @@ from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate import stdlib
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
@@ -201,29 +200,6 @@ class Evaluator(object):
     @evaluator_function_cache(default=NO_CONTEXTS)
     def _eval_element_cached(self, context, element):
         return eval_node(context, element)
-
-    @debug.increase_indent
-    def execute(self, obj, arguments):
-        if self.is_analysis:
-            arguments.eval_all()
-
-        debug.dbg('execute: %s %s', obj, arguments)
-        try:
-            # Some stdlib functions like super(), namedtuple(), etc. have been
-            # hard-coded in Jedi to support them.
-            return stdlib.execute(self, obj, arguments)
-        except stdlib.NotInStdLib:
-            pass
-
-        try:
-            func = obj.py__call__
-        except AttributeError:
-            debug.warning("no execution possible %s", obj)
-            return NO_CONTEXTS
-        else:
-            context_set = func(arguments)
-            debug.dbg('execute result: %s in %s', context_set, obj)
-            return context_set
 
     def goto_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)

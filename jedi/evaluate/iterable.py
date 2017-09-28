@@ -35,7 +35,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
     ParserTreeFilter
 from jedi.evaluate import context
-from jedi.evaluate.context import ContextSet, NO_CONTEXTS
+from jedi.evaluate.context import ContextSet, NO_CONTEXTS, Context
 from jedi.parser_utils import get_comp_fors
 
 
@@ -54,22 +54,20 @@ class AbstractSequence(context.Context):
         return compiled.CompiledContextName(self, self.array_type)
 
 
-class BuiltinMethod(object):
+class BuiltinMethod(Context):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
+    api_type = 'function'
+
     def __init__(self, builtin_context, method, builtin_func):
-        self._builtin_context = builtin_context
+        super(BuiltinMethod, self).__init__(
+            builtin_context.evaluator,
+            parent_context=builtin_context
+        )
         self._method = method
         self._builtin_func = builtin_func
 
-    # TODO it seems kind of stupid that we have to overwrite 3 methods here.
     def py__call__(self, params):
-        return self._method(self._builtin_context)
-
-    def execute(self, *args, **kwargs):
-        return self._builtin_context.evaluator.execute(self, *args, **kwargs)
-
-    def execute_evaluated(self, *args, **kwargs):
-        return self._builtin_context.evaluator.execute_evaluated(self, *args, **kwargs)
+        return self._method(self.parent_context)
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
