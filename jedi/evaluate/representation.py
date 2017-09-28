@@ -57,6 +57,7 @@ from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import imports
 from jedi.evaluate import helpers
+from jedi.evaluate import iterable
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     GlobalNameFilter, DictFilter, ContextName, AbstractNameDefinition, \
     ParamName, AnonymousInstanceParamName, TreeNameDefinition, \
@@ -261,7 +262,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
         """
         yield_exprs = get_yield_exprs(self.evaluator, self.tree_node)
         if yield_exprs:
-            from jedi.evaluate import iterable
             return ContextSet(iterable.Generator(self.evaluator, function_execution))
         else:
             return function_execution.get_return_values()

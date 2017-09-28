@@ -17,7 +17,10 @@ from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
+from jedi.evaluate import param
 from jedi.evaluate import representation as er
+from jedi.evaluate.instance import TreeInstance, CompiledInstance
+from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 
 
@@ -119,8 +122,6 @@ def eval_trailer(context, base_contexts, trailer):
         node = ()
 
     if trailer_op == '[':
-        from jedi.evaluate.instance import TreeInstance
-
         trailer_op, node, _ = trailer.children
 
         # TODO It's kind of stupid to cast this from a context set to a set.
@@ -148,7 +149,6 @@ def eval_trailer(context, base_contexts, trailer):
             )
         else:
             assert trailer_op == '('
-            from jedi.evaluate import param
             arguments = param.TreeArguments(context.evaluator, context, node, trailer)
             return base_contexts.execute(arguments)
 
@@ -374,7 +374,6 @@ def _is_list(context):
 
 
 def _eval_comparison_part(evaluator, context, left, operator, right):
-    from jedi.evaluate import instance
     l_is_num = is_number(left)
     r_is_num = is_number(right)
     if operator == '*':
@@ -414,7 +413,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
-        return isinstance(obj, instance.CompiledInstance) and \
+        return isinstance(obj, CompiledInstance) and \
             obj.name.string_name in ('int', 'float')
 
     # Static analysis, one is a number, the other one is not.
@@ -449,7 +448,6 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         node = tree_name.parent
         if node.type == 'global_stmt':
             context = evaluator.create_context(context, tree_name)
-            from jedi.evaluate.finder import NameFinder
             finder = NameFinder(evaluator, context, context, tree_name.value)
             filters = finder.get_filters(search_global=True)
             # For global_stmt lookups, we only need the first possible scope,
@@ -530,7 +528,6 @@ def _apply_decorators(context, node):
             debug.warning('decorator not found: %s on %s', dec, node)
             return initial
 
-        from jedi.evaluate import param
         values = dec_values.execute(param.ValuesArguments([values]))
         if not len(values):
             debug.warning('not possible to resolve wrappers found %s', node)
