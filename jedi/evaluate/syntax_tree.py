@@ -6,6 +6,7 @@ import operator as op
 
 from parso.python import tree
 
+from jedi._compatibility import unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.evaluate.context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
@@ -488,7 +489,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         from jedi.evaluate import imports
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
-        types = _apply_decorators(evaluator, context, node)
+        types = _apply_decorators(context, node)
     elif typ == 'try_stmt':
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
@@ -500,7 +501,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
     return types
 
 
-def _apply_decorators(evaluator, context, node):
+def _apply_decorators(context, node):
     """
     Returns the function, that should to be executed in the end.
     This is also the places where the decorators are processed.
@@ -508,13 +509,13 @@ def _apply_decorators(evaluator, context, node):
     from jedi.evaluate import representation as er
     if node.type == 'classdef':
         decoratee_context = er.ClassContext(
-            evaluator,
+            context.evaluator,
             parent_context=context,
             classdef=node
         )
     else:
         decoratee_context = er.FunctionContext(
-            evaluator,
+            context.evaluator,
             parent_context=context,
             funcdef=node
         )
