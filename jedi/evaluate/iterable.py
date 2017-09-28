@@ -786,33 +786,3 @@ class Slice(context.Context):
             return slice(get(self._start), get(self._stop), get(self._step))
         except IndexError:
             return slice(None, None, None)
-
-
-def create_index_types(evaluator, context, index):
-    """
-    Handles slices in subscript nodes.
-    """
-    if index == ':':
-        # Like array[:]
-        return ContextSet(Slice(context, None, None, None))
-
-    elif index.type == 'subscript' and not index.children[0] == '.':
-        # subscript basically implies a slice operation, except for Python 2's
-        # Ellipsis.
-        # e.g. array[:3]
-        result = []
-        for el in index.children:
-            if el == ':':
-                if not result:
-                    result.append(None)
-            elif el.type == 'sliceop':
-                if len(el.children) == 2:
-                    result.append(el.children[1])
-            else:
-                result.append(el)
-        result += [None] * (3 - len(result))
-
-        return ContextSet(Slice(context, *result))
-
-    # No slices
-    return context.eval_node(index)

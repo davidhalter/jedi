@@ -118,7 +118,6 @@ def eval_trailer(context, base_contexts, trailer):
         node = ()
 
     if trailer_op == '[':
-        from jedi.evaluate import iterable
         from jedi.evaluate.representation import ClassContext
         from jedi.evaluate.instance import TreeInstance
 
@@ -137,7 +136,7 @@ def eval_trailer(context, base_contexts, trailer):
                     result |= typing_module_types
 
         return result | base_contexts.get_item(
-            iterable.create_index_types(context.evaluator, context, node),
+            eval_subscript_list(context.evaluator, context, node),
             ContextualizedNode(context, trailer)
         )
     else:
@@ -582,3 +581,34 @@ def check_tuple_assignments(evaluator, contextualized_name, context_set):
                 return ContextSet()
         context_set = lazy_context.infer()
     return context_set
+
+
+def eval_subscript_list(evaluator, context, index):
+    """
+    Handles slices in subscript nodes.
+    """
+    from jedi.evaluate.iterable import Slice
+    if index == ':':
+        # Like array[:]
+        return ContextSet(Slice(context, None, None, None))
+
+    elif index.type == 'subscript' and not index.children[0] == '.':
+        # subscript basically implies a slice operation, except for Python 2's
+        # Ellipsis.
+        # e.g. array[:3]
+        result = []
+        for el in index.children:
+            if el == ':':
+                if not result:
+                    result.append(None)
+            elif el.type == 'sliceop':
+                if len(el.children) == 2:
+                    result.append(el.children[1])
+            else:
+                result.append(el)
+        result += [None] * (3 - len(result))
+
+        return ContextSet(Slice(context, *result))
+
+    # No slices
+    return context.eval_node(index)
