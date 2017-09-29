@@ -206,7 +206,7 @@ def _create(evaluator, obj, parent_context=None, *args):
     if parent_context.tree_node.get_root_node() == module_node:
         module_context = parent_context.get_root_context()
     else:
-        from jedi.evaluate.representation import ModuleContext
+        from jedi.evaluate.context.module import ModuleContext
         module_context = ModuleContext(evaluator, module_node, path=path)
         # TODO this __name__ is probably wrong.
         name = compiled_object.get_root_context().py__name__()

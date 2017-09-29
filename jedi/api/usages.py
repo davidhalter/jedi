@@ -2,7 +2,7 @@ from jedi.api import classes
 from parso.python import tree
 from jedi.evaluate import imports
 from jedi.evaluate.filters import TreeNameDefinition
-from jedi.evaluate.representation import ModuleContext
+from jedi.evaluate.context.module import ModuleContext
 
 
 def compare_contexts(c1, c2):

@@ -27,6 +27,8 @@ from jedi.evaluate.helpers import is_stdlib_path
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.context import ContextSet
 from jedi.parser_utils import get_parent_scope
+from jedi.evaluate.context.module import ModuleContext
+
 
 
 MAX_PARAM_SEARCHES = 20
@@ -99,8 +101,6 @@ def _search_function_executions(evaluator, module_context, funcdef):
     """
     Returns a list of param names.
     """
-    from jedi.evaluate import representation as er
-
     func_string_name = funcdef.name.value
     compare_node = funcdef
     if func_string_name == '__init__':
@@ -113,7 +113,7 @@ def _search_function_executions(evaluator, module_context, funcdef):
     i = 0
     for for_mod_context in imports.get_modules_containing_name(
             evaluator, [module_context], func_string_name):
-        if not isinstance(module_context, er.ModuleContext):
+        if not isinstance(module_context, ModuleContext):
             return
         for name, trailer in _get_possible_nodes(for_mod_context, func_string_name):
             i += 1

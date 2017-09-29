@@ -28,6 +28,7 @@ from parso.python import tree
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.context import LazyTreeContext, NO_CONTEXTS, ContextSet
+from jedi.evaluate.context.module import ModuleContext
 from jedi import debug
 from jedi import _compatibility
 from jedi import parser_utils
@@ -150,7 +151,6 @@ def py__getitem__(context, typ, node):
         # check for the instance typing._Optional (Python 3.6).
         return context.eval_node(nodes[0])
 
-    from jedi.evaluate.representation import ModuleContext
     typing = ModuleContext(
         context.evaluator,
         module_node=_get_typing_replacement_module(context.evaluator.latest_grammar),

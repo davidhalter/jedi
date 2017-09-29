@@ -420,7 +420,8 @@ class Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
-        from jedi.evaluate.representation import ModuleContext, ImplicitNamespaceContext
+        from jedi.evaluate.context.module import ModuleContext
+        from jedi.evaluate.representation import ImplicitNamespaceContext
         names = []
         if self.import_path:
             # flask
@@ -489,7 +490,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
             code=code, path=path, cache=True, diff_cache=True,
             cache_path=settings.cache_directory)
 
-        from jedi.evaluate.representation import ModuleContext
+        from jedi.evaluate.context.module import ModuleContext
         return ModuleContext(evaluator, module_node, path=path)
     else:
         return compiled.load_module(evaluator, path)
@@ -508,7 +509,7 @@ def get_modules_containing_name(evaluator, modules, name):
     """
     Search a name in the directories of modules.
     """
-    from jedi.evaluate import representation as er
+    from jedi.evaluate.context.module import ModuleContext
 
     def check_python_file(path):
         try:
@@ -521,7 +522,7 @@ def get_modules_containing_name(evaluator, modules, name):
                 return None
         else:
             module_node = node_cache_item.node
-            return er.ModuleContext(evaluator, module_node, path=path)
+            return ModuleContext(evaluator, module_node, path=path)
 
     def check_fs(path):
         with open(path, 'rb') as f:

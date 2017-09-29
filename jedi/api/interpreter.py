@@ -2,7 +2,7 @@
 TODO Some parts of this module are still not well documented.
 """
 
-from jedi.evaluate.representation import ModuleContext
+from jedi.evaluate.context.module import ModuleContext
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled import mixed
 from jedi.evaluate.context import Context

@@ -219,7 +219,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         debug.warning('Error trying to read buildout_script: %s', buildout_script_path)
         return
 
-    from jedi.evaluate.representation import ModuleContext
+    from jedi.evaluate.context.module import ModuleContext
     for path in _check_module(ModuleContext(evaluator, module_node, buildout_script_path)):
         yield path
 

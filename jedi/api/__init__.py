@@ -26,7 +26,6 @@ from jedi.api import usages
 from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.evaluate import Evaluator
-from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
@@ -34,6 +33,8 @@ from jedi.evaluate.sys_path import get_venv_path, dotted_path_in_sys_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
 from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
+from jedi.evaluate.context.module import ModuleContext
+from jedi.evaluate.context.module import ModuleName
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -128,7 +129,7 @@ class Script(object):
 
     @cache.memoize_method
     def _get_module(self):
-        module = er.ModuleContext(
+        module = ModuleContext(
             self._evaluator,
             self._get_module_node(),
             self.path
@@ -208,7 +209,7 @@ class Script(object):
         names = self._goto()
         if follow_imports:
             def check(name):
-                if isinstance(name, er.ModuleName):
+                if isinstance(name, ModuleName):
                     return False
                 return name.api_type == 'module'
         else:

@@ -23,6 +23,7 @@ from jedi.evaluate import param
 from jedi.evaluate import analysis
 from jedi.evaluate.context import LazyTreeContext, ContextualizedNode, \
     NO_CONTEXTS, ContextSet
+from jedi.evaluate.context.module import ModuleContext
 from jedi.evaluate.syntax_tree import is_string
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on
@@ -58,7 +59,7 @@ def execute(evaluator, obj, arguments):
     else:
         if obj.parent_context == evaluator.BUILTINS:
             module_name = 'builtins'
-        elif isinstance(obj.parent_context, er.ModuleContext):
+        elif isinstance(obj.parent_context, ModuleContext):
             module_name = obj.parent_context.name.string_name
         else:
             module_name = ''
@@ -293,7 +294,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     # Parse source
     module = evaluator.grammar.parse(source)
     generated_class = next(module.iter_classdefs())
-    parent_context = er.ModuleContext(evaluator, module, '')
+    parent_context = ModuleContext(evaluator, module, '')
     return ContextSet(er.ClassContext(evaluator, parent_context, generated_class))
 
 

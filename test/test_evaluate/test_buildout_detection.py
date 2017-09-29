@@ -9,7 +9,7 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     sys_path_with_modifications,
                                     _check_module)
 from jedi.evaluate import Evaluator
-from jedi.evaluate.representation import ModuleContext
+from jedi.evaluate.context.module import ModuleContext
 
 from ..helpers import cwd_at
 
