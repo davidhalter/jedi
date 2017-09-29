@@ -151,7 +151,7 @@ def _get_possible_nodes(module_context, func_string_name):
 
 
 def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
-    from jedi.evaluate import representation as er
+    from jedi.evaluate.context.function import FunctionExecutionContext
 
     def create_func_excs():
         arglist = trailer.children[1]
@@ -175,7 +175,7 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
         if compare_node == value_node:
             for func_execution in create_func_excs():
                 yield func_execution
-        elif isinstance(value.parent_context, er.FunctionExecutionContext) and \
+        elif isinstance(value.parent_context, FunctionExecutionContext) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better

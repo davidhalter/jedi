@@ -19,6 +19,7 @@ from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import param
 from jedi.evaluate import representation as er
+from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate.context.instance import TreeInstance, CompiledInstance
 from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
@@ -63,7 +64,7 @@ def eval_node(context, element):
         # else: print e.g. could be evaluated like this in Python 2.7
         return NO_CONTEXTS
     elif typ == 'lambdef':
-        return ContextSet(er.FunctionContext(evaluator, context, element))
+        return ContextSet(FunctionContext(evaluator, context, element))
     elif typ == 'expr_stmt':
         return eval_expr_stmt(context, element)
     elif typ in ('power', 'atom_expr'):
@@ -508,7 +509,7 @@ def _apply_decorators(context, node):
             classdef=node
         )
     else:
-        decoratee_context = er.FunctionContext(
+        decoratee_context = FunctionContext(
             context.evaluator,
             parent_context=context,
             funcdef=node

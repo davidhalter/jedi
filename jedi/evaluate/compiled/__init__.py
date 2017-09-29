@@ -552,7 +552,7 @@ def _create_from_name(evaluator, module, compiled_object, name):
     try:
         faked = fake.get_faked(evaluator, module, obj, parent_context=compiled_object, name=name)
         if faked.type == 'funcdef':
-            from jedi.evaluate.representation import FunctionContext
+            from jedi.evaluate.context.function import FunctionContext
             return FunctionContext(evaluator, compiled_object, faked)
     except fake.FakeDoesNotExist:
         pass
@@ -633,7 +633,7 @@ def create(evaluator, obj, parent_context=None, module=None, faked=None):
         try:
             faked = fake.get_faked(evaluator, module, obj, parent_context=parent_context)
             if faked.type == 'funcdef':
-                from jedi.evaluate.representation import FunctionContext
+                from jedi.evaluate.context.function import FunctionContext
                 return FunctionContext(evaluator, parent_context, faked)
         except fake.FakeDoesNotExist:
             pass

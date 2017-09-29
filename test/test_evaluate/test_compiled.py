@@ -5,7 +5,7 @@ import parso
 from jedi._compatibility import builtins, is_py3
 from jedi.evaluate import compiled
 from jedi.evaluate.context import instance
-from jedi.evaluate.representation import FunctionContext
+from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate import Evaluator
 from jedi.parser_utils import clean_scope_docstring
 from jedi import Script

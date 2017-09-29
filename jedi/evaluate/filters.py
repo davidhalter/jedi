@@ -327,7 +327,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     >>> filters[4].values()                              #doctest: +ELLIPSIS
     [<CompiledName: ...>, ...]
     """
-    from jedi.evaluate.representation import FunctionExecutionContext
+    from jedi.evaluate.context.function import FunctionExecutionContext
     while context is not None:
         # Names in methods cannot be resolved within the class.
         for filter in context.get_filters(

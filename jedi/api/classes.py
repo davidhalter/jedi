@@ -18,6 +18,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParamName
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import instance
+from jedi.evaluate.context.function import FunctionContext, FunctionExecutionContext
 from jedi.api.keywords import KeywordName
 
 
@@ -354,10 +355,10 @@ class BaseDefinition(object):
         if context is None:
             return None
 
-        if isinstance(context, er.FunctionExecutionContext):
+        if isinstance(context, FunctionExecutionContext):
             # TODO the function context should be a part of the function
             # execution context.
-            context = er.FunctionContext(
+            context = FunctionContext(
                 self._evaluator, context.parent_context, context.tree_node)
         return Definition(self._evaluator, context.name)
 

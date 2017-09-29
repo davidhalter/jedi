@@ -10,12 +10,13 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
+from jedi.evaluate.context.function import FunctionExecutionContext, FunctionContext
 from jedi.evaluate import iterable
 from jedi.parser_utils import get_parent_scope
 
 
 
-class InstanceFunctionExecution(er.FunctionExecutionContext):
+class InstanceFunctionExecution(FunctionExecutionContext):
     def __init__(self, instance, parent_context, function_context, var_args):
         self.instance = instance
         var_args = InstanceVarArgs(self, var_args)
@@ -24,7 +25,7 @@ class InstanceFunctionExecution(er.FunctionExecutionContext):
             instance.evaluator, parent_context, function_context, var_args)
 
 
-class AnonymousInstanceFunctionExecution(er.FunctionExecutionContext):
+class AnonymousInstanceFunctionExecution(FunctionExecutionContext):
     function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
 
     def __init__(self, instance, parent_context, function_context, var_args):
@@ -253,7 +254,7 @@ class CompiledInstanceName(compiled.CompiledName):
     @iterator_to_context_set
     def infer(self):
         for result_context in super(CompiledInstanceName, self).infer():
-            if isinstance(result_context, er.FunctionContext):
+            if isinstance(result_context, FunctionContext):
                 parent_context = result_context.parent_context
                 while parent_context.is_class():
                     parent_context = parent_context.parent_context
@@ -285,7 +286,7 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
             self._evaluator, self._instance, self._compiled_object, name)
 
 
-class BoundMethod(er.FunctionContext):
+class BoundMethod(FunctionContext):
     def __init__(self, evaluator, instance, class_context, *args, **kwargs):
         super(BoundMethod, self).__init__(evaluator, *args, **kwargs)
         self._instance = instance
@@ -333,7 +334,7 @@ class LazyInstanceClassName(LazyInstanceName):
     @iterator_to_context_set
     def infer(self):
         for result_context in super(LazyInstanceClassName, self).infer():
-            if isinstance(result_context, er.FunctionContext):
+            if isinstance(result_context, FunctionContext):
                 # Classes are never used to resolve anything within the
                 # functions. Only other functions and modules will resolve
                 # those things.

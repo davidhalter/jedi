@@ -81,6 +81,7 @@ from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.context.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
+from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi import parser_utils
@@ -208,7 +209,7 @@ class Evaluator(object):
             if type_ == 'classdef':
                 return [er.ClassContext(self, context, name.parent)]
             elif type_ == 'funcdef':
-                return [er.FunctionContext(self, context, name.parent)]
+                return [FunctionContext(self, context, name.parent)]
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
@@ -330,7 +331,7 @@ class Evaluator(object):
                         parent_context.parent_context, scope_node
                     )
                 else:
-                    func = er.FunctionContext(
+                    func = FunctionContext(
                         self,
                         parent_context,
                         scope_node

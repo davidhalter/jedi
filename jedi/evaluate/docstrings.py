@@ -202,7 +202,7 @@ def _evaluate_for_statement_string(module_context, string):
     except (AttributeError, IndexError):
         return []
 
-    from jedi.evaluate.representation import FunctionContext
+    from jedi.evaluate.context.function import FunctionContext
     function_context = FunctionContext(
         module_context.evaluator,
         module_context,
