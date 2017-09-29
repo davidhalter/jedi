@@ -158,14 +158,14 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
             return [context.LazyKnownContext(compiled.create(self.evaluator, object))]
 
     def py__call__(self, params):
-        from jedi.evaluate.instance import TreeInstance
+        from jedi.evaluate.context.instance import TreeInstance
         return ContextSet(TreeInstance(self.evaluator, self.parent_context, self, params))
 
     def py__class__(self):
         return compiled.create(self.evaluator, type)
 
     def get_params(self):
-        from jedi.evaluate.instance import AnonymousInstance
+        from jedi.evaluate.context.instance import AnonymousInstance
         anon = AnonymousInstance(self.evaluator, self.parent_context, self)
         return [AnonymousInstanceParamName(anon, param.name) for param in self.funcdef.get_params()]
 

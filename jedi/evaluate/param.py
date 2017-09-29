@@ -385,7 +385,7 @@ def _iterate_star_args(context, array, input_node, funcdef=None):
 
 
 def _star_star_dict(context, array, input_node, funcdef):
-    from jedi.evaluate.instance import CompiledInstance
+    from jedi.evaluate.context.instance import CompiledInstance
     if isinstance(array, CompiledInstance) and array.name.string_name == 'dict':
         # For now ignore this case. In the future add proper iterators and just
         # make one call without crazy isinstance checks.

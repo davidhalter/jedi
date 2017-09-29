@@ -13,11 +13,11 @@ from jedi import settings
 from jedi.evaluate.utils import ignored, unite
 from jedi.cache import memoize_method
 from jedi.evaluate import representation as er
-from jedi.evaluate import instance
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParamName
 from jedi.evaluate.imports import ImportName
+from jedi.evaluate.context import instance
 from jedi.api.keywords import KeywordName
 
 

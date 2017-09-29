@@ -82,7 +82,7 @@ class CompiledObject(Context):
     @CheckAttribute
     def py__call__(self, params):
         if inspect.isclass(self.obj):
-            from jedi.evaluate.instance import CompiledInstance
+            from jedi.evaluate.context.instance import CompiledInstance
             return ContextSet(CompiledInstance(self.evaluator, self.parent_context, self, params))
         else:
             return ContextSet.from_iterable(self._execute_function(params))

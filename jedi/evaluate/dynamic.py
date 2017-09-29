@@ -150,7 +150,8 @@ def _get_possible_nodes(module_context, func_string_name):
 
 
 def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
-    from jedi.evaluate import representation as er, instance
+    from jedi.evaluate import representation as er
+    from jedi.evaluate.context import instance
 
     def create_func_excs():
         arglist = trailer.children[1]

@@ -14,7 +14,7 @@ import re
 
 from jedi.evaluate import compiled
 from jedi.evaluate import representation as er
-from jedi.evaluate.instance import InstanceFunctionExecution, \
+from jedi.evaluate.context.instance import InstanceFunctionExecution, \
     AbstractInstanceContext, CompiledInstance, BoundMethod, \
     AnonymousInstanceFunctionExecution
 from jedi.evaluate import iterable

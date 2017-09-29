@@ -249,7 +249,7 @@ def _execute_array_values(evaluator, array):
 
 @evaluator_method_cache()
 def infer_param(execution_context, param):
-    from jedi.evaluate.instance import AnonymousInstanceFunctionExecution
+    from jedi.evaluate.context.instance import AnonymousInstanceFunctionExecution
 
     def eval_docstring(docstring):
         return ContextSet.from_iterable(

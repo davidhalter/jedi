@@ -109,7 +109,7 @@ def _check_for_setattr(instance):
 
 def add_attribute_error(name_context, lookup_context, name):
     message = ('AttributeError: %s has no attribute %s.' % (lookup_context, name))
-    from jedi.evaluate.instance import AbstractInstanceContext, CompiledInstanceName
+    from jedi.evaluate.context.instance import AbstractInstanceContext, CompiledInstanceName
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
     typ = Error
