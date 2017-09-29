@@ -375,7 +375,7 @@ class Importer(object):
             module_file.close()
 
         if isinstance(module_path, ImplicitNSInfo):
-            from jedi.evaluate.representation import ImplicitNamespaceContext
+            from jedi.evaluate.context.namespace import ImplicitNamespaceContext
             fullname, paths = module_path.name, module_path.paths
             module = ImplicitNamespaceContext(self._evaluator, fullname=fullname)
             module.paths = paths
@@ -421,7 +421,7 @@ class Importer(object):
             definition that is not defined in a module.
         """
         from jedi.evaluate.context.module import ModuleContext
-        from jedi.evaluate.representation import ImplicitNamespaceContext
+        from jedi.evaluate.context.namespace import ImplicitNamespaceContext
         names = []
         if self.import_path:
             # flask
