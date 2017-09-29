@@ -12,13 +12,13 @@ from jedi._compatibility import u
 from jedi import settings
 from jedi.evaluate.utils import ignored, unite
 from jedi.cache import memoize_method
-from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.filters import ParamName
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import instance
 from jedi.evaluate.context.function import FunctionContext, FunctionExecutionContext
+from jedi.evaluate.context.klass import ClassContext
 from jedi.api.keywords import KeywordName
 
 
@@ -323,8 +323,8 @@ class BaseDefinition(object):
                 param_names = list(context.get_param_names())
                 if isinstance(context, instance.BoundMethod):
                     param_names = param_names[1:]
-            elif isinstance(context, (instance.AbstractInstanceContext, er.ClassContext)):
-                if isinstance(context, er.ClassContext):
+            elif isinstance(context, (instance.AbstractInstanceContext, ClassContext)):
+                if isinstance(context, ClassContext):
                     search = '__init__'
                 else:
                     search = '__call__'
@@ -336,7 +336,7 @@ class BaseDefinition(object):
                 # there's no better solution.
                 inferred = names[0].infer()
                 param_names = get_param_names(next(iter(inferred)))
-                if isinstance(context, er.ClassContext):
+                if isinstance(context, ClassContext):
                     param_names = param_names[1:]
                 return param_names
             elif isinstance(context, compiled.CompiledObject):

@@ -37,18 +37,14 @@ py__doc__(include_call_signature:      Returns the docstring for a context.
 ====================================== ========================================
 
 """
-import os
-from itertools import chain
-
 from jedi._compatibility import use_metaclass
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate import param
-from jedi.evaluate import imports
 from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
-    DictFilter, ContextName, AbstractNameDefinition, AnonymousInstanceParamName
+    ContextName, AnonymousInstanceParamName
 from jedi.evaluate import context
-from jedi.evaluate.context import NO_CONTEXTS, ContextSet, iterator_to_context_set
+from jedi.evaluate.context import ContextSet, iterator_to_context_set
 
 
 def apply_py__get__(context, base_context):

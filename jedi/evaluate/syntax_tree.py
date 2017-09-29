@@ -18,7 +18,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import param
-from jedi.evaluate import representation as er
+from jedi.evaluate.context.klass import ClassContext
 from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate.context.instance import TreeInstance, CompiledInstance
 from jedi.evaluate.finder import NameFinder
@@ -131,7 +131,7 @@ def eval_trailer(context, base_contexts, trailer):
         # https://github.com/davidhalter/jedi/issues/663
         result = ContextSet()
         for typ in list(foo):
-            if isinstance(typ, (er.ClassContext, TreeInstance)):
+            if isinstance(typ, (ClassContext, TreeInstance)):
                 typing_module_types = pep0484.py__getitem__(context, typ, node)
                 if typing_module_types is not None:
                     foo.remove(typ)
@@ -503,7 +503,7 @@ def _apply_decorators(context, node):
     This is also the places where the decorators are processed.
     """
     if node.type == 'classdef':
-        decoratee_context = er.ClassContext(
+        decoratee_context = ClassContext(
             context.evaluator,
             parent_context=context,
             classdef=node

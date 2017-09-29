@@ -9,8 +9,8 @@ from jedi.evaluate.context import Context, LazyKnownContext, LazyKnownContexts, 
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
-from jedi.evaluate import representation as er
 from jedi.evaluate.context.function import FunctionExecutionContext, FunctionContext
+from jedi.evaluate.context.klass import ClassContext, apply_py__get__
 from jedi.evaluate import iterable
 from jedi.parser_utils import get_parent_scope
 
@@ -188,7 +188,7 @@ class AbstractInstanceContext(Context):
                     )
                     return bound_method.get_function_execution()
             elif scope.type == 'classdef':
-                class_context = er.ClassContext(self.evaluator, scope, parent_context)
+                class_context = ClassContext(self.evaluator, scope, parent_context)
                 return class_context
             elif scope.type == 'comp_for':
                 # Comprehensions currently don't have a special scope in Jedi.
@@ -347,7 +347,7 @@ class LazyInstanceClassName(LazyInstanceName):
                     parent_context, result_context.tree_node
                 )
             else:
-                for c in er.apply_py__get__(result_context, self._instance):
+                for c in apply_py__get__(result_context, self._instance):
                     yield c
 
 

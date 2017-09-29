@@ -13,7 +13,6 @@ import collections
 import re
 
 from jedi.evaluate import compiled
-from jedi.evaluate import representation as er
 from jedi.evaluate.context.instance import InstanceFunctionExecution, \
     AbstractInstanceContext, CompiledInstance, BoundMethod, \
     AnonymousInstanceFunctionExecution
@@ -23,6 +22,7 @@ from jedi.evaluate import param
 from jedi.evaluate import analysis
 from jedi.evaluate.context import LazyTreeContext, ContextualizedNode, \
     NO_CONTEXTS, ContextSet
+from jedi.evaluate.context.klass import ClassContext
 from jedi.evaluate.context.module import ModuleContext
 from jedi.evaluate.syntax_tree import is_string
 
@@ -295,7 +295,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     module = evaluator.grammar.parse(source)
     generated_class = next(module.iter_classdefs())
     parent_context = ModuleContext(evaluator, module, '')
-    return ContextSet(er.ClassContext(evaluator, parent_context, generated_class))
+    return ContextSet(ClassContext(evaluator, parent_context, generated_class))
 
 
 @argument_clinic('first, /')

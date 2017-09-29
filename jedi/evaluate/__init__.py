@@ -70,7 +70,6 @@ import parso
 
 from jedi import debug
 from jedi.evaluate.utils import unite
-from jedi.evaluate import representation as er
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate import iterable
@@ -85,6 +84,7 @@ from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi import parser_utils
+from jedi.evaluate.context.klass import ClassContext
 
 
 class Evaluator(object):
@@ -207,7 +207,7 @@ class Evaluator(object):
         if def_ is not None:
             type_ = def_.type
             if type_ == 'classdef':
-                return [er.ClassContext(self, context, name.parent)]
+                return [ClassContext(self, context, name.parent)]
             elif type_ == 'funcdef':
                 return [FunctionContext(self, context, name.parent)]
 
@@ -340,7 +340,7 @@ class Evaluator(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                class_context = er.ClassContext(self, parent_context, scope_node)
+                class_context = ClassContext(self, parent_context, scope_node)
                 if child_is_funcdef:
                     # anonymous instance
                     return AnonymousInstance(self, parent_context, class_context)
