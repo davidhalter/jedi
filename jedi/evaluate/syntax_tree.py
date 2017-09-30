@@ -19,7 +19,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import param
 from jedi.evaluate.context import ClassContext, FunctionContext
 from jedi.evaluate.context import iterable
-from jedi.evaluate.context.instance import TreeInstance, CompiledInstance
+from jedi.evaluate.context import TreeInstance, CompiledInstance
 from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 

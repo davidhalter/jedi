@@ -79,9 +79,9 @@ from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
-from jedi.evaluate.context import ClassContext, FunctionContext
+from jedi.evaluate.context import ClassContext, FunctionContext, \
+    AnonymousInstance, BoundMethod
 from jedi.evaluate.context.iterable import CompForContext
-from jedi.evaluate.context.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 

@@ -19,7 +19,7 @@ from parso.python import tree
 from parso.tree import search_ancestor
 from jedi import debug
 from jedi import settings
-from jedi.evaluate.context.instance import AbstractInstanceContext
+from jedi.evaluate.context import AbstractInstanceContext
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
