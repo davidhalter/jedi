@@ -30,7 +30,8 @@ def test_paths_from_assignment():
 # matching directory.
 CUR_DIR = os.path.dirname(__file__)
 VENVS = list(glob(
-    os.path.join(CUR_DIR, 'sample_venvs/venv%d%d' % sys.version_info[:2])))
+    os.path.join(CUR_DIR, 'sample_venvs/venv%d%d' % sys.version_info[:2])
+))
 
 
 @pytest.mark.parametrize('venv', VENVS)
@@ -56,3 +57,15 @@ def test_get_venv_path(venv):
     # Ensure that "import ..." lines were ignored.
     assert pjoin('/path', 'from', 'smth.py') not in venv_path
     assert pjoin('/path', 'from', 'smth.py:extend_path') not in venv_path
+
+
+@pytest.mark.parametrize('pyenv_venv, pyenv_version, expected_version', (
+    ('', '', sys.version_info),
+    ('/path/.pyenv/versions/2.7.69/envs/env', '', (2, 7, 69)),
+    ('', '3.6.9', (3, 6, 9))
+))
+def test_get_python_version_without_pyenv(monkeypatch, pyenv_venv, pyenv_version, expected_version):
+    monkeypatch.setenv('PYENV_VIRTUAL_ENV', pyenv_venv)
+    monkeypatch.setenv('PYENV_VERSION', pyenv_version)
+
+    assert sys_path.get_python_version() == expected_version

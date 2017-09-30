@@ -1,7 +1,8 @@
 import glob
-import os
-import sys
 import imp
+import os
+import re
+import sys
 from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
@@ -11,6 +12,23 @@ from jedi.evaluate.base_context import ContextualizedNode
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.utils import ignored
+
+
+def get_python_version():
+    pyenv_venv = os.getenv('PYENV_VIRTUAL_ENV')
+    if pyenv_venv:
+        version = re.findall('/(\d.\d.\d+)/', pyenv_venv)[0]
+        return _convert_to_python_version(version)
+
+    pyenv_version = os.getenv('PYENV_VERSION')
+    if pyenv_version:
+        return _convert_to_python_version(pyenv_version)
+
+    return sys.version_info
+
+
+def _convert_to_python_version(str_version):
+    return tuple(int(n) for n in str_version.split('.'))
 
 
 def get_venv_path(venv):
@@ -62,11 +80,10 @@ def _get_venv_path_dirs(venv):
 
 def _get_venv_sitepackages(venv):
     if os.name == 'nt':
-        p = os.path.join(venv, 'lib', 'site-packages')
-    else:
-        p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
-                         'site-packages')
-    return p
+        return os.path.join(venv, 'lib', 'site-packages')
+
+    python_version = get_python_version()
+    return os.path.join(venv, 'lib', 'python%d.%d' % python_version[:2], 'site-packages')
 
 
 def _execute_code(module_path, code):
