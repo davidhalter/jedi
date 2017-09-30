@@ -69,6 +69,7 @@ from parso.python import tree
 import parso
 
 from jedi import debug
+from jedi import parser_utils
 from jedi.evaluate.utils import unite
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
@@ -76,15 +77,13 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
-from jedi.evaluate.context.iterable import CompForContext
-from jedi.evaluate.context.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
-from jedi.evaluate.context.function import FunctionContext
+from jedi.evaluate.context import ClassContext, FunctionContext
+from jedi.evaluate.context.iterable import CompForContext
+from jedi.evaluate.context.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi import parser_utils
-from jedi.evaluate.context import ClassContext
 
 
 class Evaluator(object):
