@@ -12,7 +12,7 @@ from jedi.evaluate.param import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate.context.function import FunctionExecutionContext, FunctionContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__
-from jedi.evaluate import iterable
+from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
 

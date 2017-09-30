@@ -4,13 +4,13 @@ from jedi._compatibility import zip_longest
 from jedi import debug
 from jedi.evaluate.utils import PushBackIterator
 from parso.python import tree
-from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import context
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import ParamName
 from jedi.evaluate.base_context import NO_CONTEXTS
+from jedi.evaluate.context import iterable
 
 
 def add_argument_issue(parent_context, error_name, lazy_context, message):

@@ -159,7 +159,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             else:
                 except_classes = node_context.eval_node(node)
                 for cls in except_classes:
-                    from jedi.evaluate import iterable
+                    from jedi.evaluate.context import iterable
                     if isinstance(cls, iterable.AbstractIterable) and \
                             cls.array_type == 'tuple':
                         # multiple exceptions

@@ -169,7 +169,7 @@ def py__getitem__(context, typ, node):
         return None
     compiled_classname = compiled.create(context.evaluator, type_name)
 
-    from jedi.evaluate.iterable import FakeSequence
+    from jedi.evaluate.context.iterable import FakeSequence
     args = FakeSequence(
         context.evaluator,
         "tuple",

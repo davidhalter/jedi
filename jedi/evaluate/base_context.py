@@ -81,7 +81,7 @@ class Context(BaseContext):
 
     def get_item(self, index_contexts, contextualized_node):
         from jedi.evaluate.compiled import CompiledObject
-        from jedi.evaluate.iterable import Slice, AbstractIterable
+        from jedi.evaluate.context.iterable import Slice, AbstractIterable
         result = ContextSet()
 
         for index in index_contexts:

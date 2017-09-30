@@ -30,11 +30,11 @@ from jedi.evaluate import imports
 from jedi.evaluate.param import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import get_venv_path, dotted_path_in_sys_path
-from jedi.evaluate.iterable import unpack_tuple_to_dict
 from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.context.module import ModuleName
+from jedi.evaluate.context.iterable import unpack_tuple_to_dict
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.

@@ -15,10 +15,10 @@ from jedi.evaluate import pep0484
 from jedi.evaluate import recursion
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
-from jedi.evaluate import iterable
 from jedi.evaluate import imports
 from jedi.evaluate import param
 from jedi.evaluate.context import ClassContext
+from jedi.evaluate.context import iterable
 from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate.context.instance import TreeInstance, CompiledInstance
 from jedi.evaluate.finder import NameFinder

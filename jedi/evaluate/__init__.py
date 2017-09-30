@@ -72,11 +72,11 @@ from jedi import debug
 from jedi.evaluate.utils import unite
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
-from jedi.evaluate import iterable
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
+from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.context.instance import AnonymousInstance, BoundMethod
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
@@ -120,7 +120,7 @@ class Evaluator(object):
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
     def eval_element(self, context, element):
-        if isinstance(context, iterable.CompForContext):
+        if isinstance(context, CompForContext):
             return eval_node(context, element)
 
         if_stmt = element
@@ -349,7 +349,7 @@ class Evaluator(object):
             elif scope_node.type == 'comp_for':
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
-                return iterable.CompForContext.from_comp_for(parent_context, scope_node)
+                return CompForContext.from_comp_for(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 
         base_node = base_context.tree_node

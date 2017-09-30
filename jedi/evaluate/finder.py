@@ -21,11 +21,11 @@ from jedi import debug
 from jedi import settings
 from jedi.evaluate.context.instance import AbstractInstanceContext
 from jedi.evaluate import compiled
-from jedi.evaluate import iterable
 from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import param
 from jedi.evaluate import helpers
+from jedi.evaluate.context import iterable
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
 from jedi.evaluate.base_context import ContextSet
 from jedi.parser_utils import is_scope, get_parent_scope

@@ -12,17 +12,17 @@ compiled module that returns the types for C-builtins.
 import collections
 import re
 
+from jedi import debug
+from jedi.evaluate import param
+from jedi.evaluate import analysis
 from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import InstanceFunctionExecution, \
     AbstractInstanceContext, CompiledInstance, BoundMethod, \
     AnonymousInstanceFunctionExecution
-from jedi.evaluate import iterable
-from jedi import debug
-from jedi.evaluate import param
-from jedi.evaluate import analysis
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet
 from jedi.evaluate.context import ClassContext, ModuleContext, LazyTreeContext
+from jedi.evaluate.context import iterable
 from jedi.evaluate.syntax_tree import is_string
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on

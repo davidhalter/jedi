@@ -234,7 +234,7 @@ def _execute_array_values(evaluator, array):
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
     """
-    from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
+    from jedi.evaluate.context.iterable import SequenceLiteralContext, FakeSequence
     if isinstance(array, SequenceLiteralContext):
         values = []
         for lazy_context in array.py__iter__():
