@@ -367,11 +367,11 @@ def _eval_comparison(evaluator, context, left_contexts, operator, right_contexts
 
 
 def _is_tuple(context):
-    return isinstance(context, iterable.AbstractSequence) and context.array_type == 'tuple'
+    return isinstance(context, iterable.AbstractIterable) and context.array_type == 'tuple'
 
 
 def _is_list(context):
-    return isinstance(context, iterable.AbstractSequence) and context.array_type == 'list'
+    return isinstance(context, iterable.AbstractIterable) and context.array_type == 'list'
 
 
 def _eval_comparison_part(evaluator, context, left, operator, right):
@@ -379,9 +379,9 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
     r_is_num = is_number(right)
     if operator == '*':
         # for iterables, ignore * operations
-        if isinstance(left, iterable.AbstractSequence) or is_string(left):
+        if isinstance(left, iterable.AbstractIterable) or is_string(left):
             return ContextSet(left)
-        elif isinstance(right, iterable.AbstractSequence) or is_string(right):
+        elif isinstance(right, iterable.AbstractIterable) or is_string(right):
             return ContextSet(right)
     elif operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):

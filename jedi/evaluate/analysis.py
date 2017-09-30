@@ -160,7 +160,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
                 except_classes = node_context.eval_node(node)
                 for cls in except_classes:
                     from jedi.evaluate import iterable
-                    if isinstance(cls, iterable.AbstractSequence) and \
+                    if isinstance(cls, iterable.AbstractIterable) and \
                             cls.array_type == 'tuple':
                         # multiple exceptions
                         for lazy_context in cls.py__iter__():

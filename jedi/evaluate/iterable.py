@@ -22,14 +22,14 @@ It is important to note that:
 """
 from jedi import debug
 from jedi import settings
-from jedi.evaluate.utils import safe_property
-from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import context
 from jedi.evaluate import recursion
 from jedi.evaluate.helpers import is_string
+from jedi.evaluate.utils import safe_property
+from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import ParserTreeFilter, has_builtin_methods, \
     register_builtin_method, SpecialMethodFilter
@@ -38,12 +38,12 @@ from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
 from jedi.parser_utils import get_comp_fors
 
 
-class AbstractSequence(Context):
+class AbstractIterable(Context):
     builtin_methods = {}
     api_type = 'instance'
 
     def __init__(self, evaluator):
-        super(AbstractSequence, self).__init__(evaluator, evaluator.BUILTINS)
+        super(AbstractIterable, self).__init__(evaluator, evaluator.BUILTINS)
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         raise NotImplementedError
@@ -111,7 +111,7 @@ class CompForContext(TreeContext):
         yield ParserTreeFilter(self.evaluator, self)
 
 
-class Comprehension(AbstractSequence):
+class Comprehension(AbstractIterable):
     @staticmethod
     def from_atom(evaluator, context, atom):
         bracket = atom.children[0]
@@ -278,7 +278,7 @@ class GeneratorComprehension(GeneratorMixin, Comprehension):
     pass
 
 
-class SequenceLiteralContext(ArrayMixin, AbstractSequence):
+class SequenceLiteralContext(ArrayMixin, AbstractIterable):
     mapping = {'(': 'tuple',
                '[': 'list',
                '{': 'set'}

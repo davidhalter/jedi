@@ -268,7 +268,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     _fields = list(_follow_param(evaluator, arguments, 1))[0]
     if isinstance(_fields, compiled.CompiledObject):
         fields = _fields.obj.replace(',', ' ').split()
-    elif isinstance(_fields, iterable.AbstractSequence):
+    elif isinstance(_fields, iterable.AbstractIterable):
         fields = [
             v.obj
             for lazy_context in _fields.py__iter__()
