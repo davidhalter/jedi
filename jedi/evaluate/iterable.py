@@ -23,7 +23,6 @@ It is important to note that:
 from jedi import debug
 from jedi import settings
 from jedi.evaluate.utils import safe_property
-from jedi._compatibility import is_py3
 from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
@@ -32,8 +31,8 @@ from jedi.evaluate import context
 from jedi.evaluate import recursion
 from jedi.evaluate.helpers import is_string
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
-    ParserTreeFilter
+from jedi.evaluate.filters import ParserTreeFilter, has_builtin_methods, \
+    register_builtin_method, SpecialMethodFilter
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
     TreeContext, ContextualizedNode
 from jedi.parser_utils import get_comp_fors
@@ -54,99 +53,13 @@ class AbstractSequence(Context):
         return compiled.CompiledContextName(self, self.array_type)
 
 
-class BuiltinMethod(Context):
-    """``Generator.__next__`` ``dict.values`` methods and so on."""
-    api_type = 'function'
-
-    def __init__(self, builtin_context, method, builtin_func):
-        super(BuiltinMethod, self).__init__(
-            builtin_context.evaluator,
-            parent_context=builtin_context
-        )
-        self._method = method
-        self._builtin_func = builtin_func
-
-    def py__call__(self, params):
-        return self._method(self.parent_context)
-
-    def __getattr__(self, name):
-        return getattr(self._builtin_func, name)
-
-
-class SpecialMethodFilter(DictFilter):
-    """
-    A filter for methods that are defined in this module on the corresponding
-    classes like Generator (for __next__, etc).
-    """
-    class SpecialMethodName(AbstractNameDefinition):
-        api_type = 'function'
-
-        def __init__(self, parent_context, string_name, callable_, builtin_context):
-            self.parent_context = parent_context
-            self.string_name = string_name
-            self._callable = callable_
-            self._builtin_context = builtin_context
-
-        def infer(self):
-            filter = next(self._builtin_context.get_filters())
-            # We can take the first index, because on builtin methods there's
-            # always only going to be one name. The same is true for the
-            # inferred values.
-            builtin_func = next(iter(filter.get(self.string_name)[0].infer()))
-            return ContextSet(BuiltinMethod(self.parent_context, self._callable, builtin_func))
-
-    def __init__(self, context, dct, builtin_context):
-        super(SpecialMethodFilter, self).__init__(dct)
-        self.context = context
-        self._builtin_context = builtin_context
-        """
-        This context is what will be used to introspect the name, where as the
-        other context will be used to execute the function.
-
-        We distinguish, because we have to.
-        """
-
-    def _convert(self, name, value):
-        return self.SpecialMethodName(self.context, name, value, self._builtin_context)
-
-
-def _has_builtin_methods(cls):
-    base_dct = {}
-    # Need to care properly about inheritance. Builtin Methods should not get
-    # lost, just because they are not mentioned in a class.
-    for base_cls in reversed(cls.__bases__):
-        try:
-            base_dct.update(base_cls.builtin_methods)
-        except AttributeError:
-            pass
-
-    cls.builtin_methods = base_dct
-    for func in cls.__dict__.values():
-        try:
-            cls.builtin_methods.update(func.registered_builtin_methods)
-        except AttributeError:
-            pass
-    return cls
-
-
-def _register_builtin_method(method_name, python_version_match=None):
-    def wrapper(func):
-        if python_version_match and python_version_match != 2 + int(is_py3):
-            # Some functions do only apply to certain versions.
-            return func
-        dct = func.__dict__.setdefault('registered_builtin_methods', {})
-        dct[method_name] = func
-        return func
-    return wrapper
-
-
-@_has_builtin_methods
+@has_builtin_methods
 class GeneratorMixin(object):
     array_type = None
 
-    @_register_builtin_method('send')
-    @_register_builtin_method('next', python_version_match=2)
-    @_register_builtin_method('__next__', python_version_match=3)
+    @register_builtin_method('send')
+    @register_builtin_method('next', python_version_match=2)
+    @register_builtin_method('__next__', python_version_match=3)
     def py__next__(self):
         # TODO add TypeError if params are given.
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
@@ -322,7 +235,7 @@ class SetComprehension(ArrayMixin, Comprehension):
     array_type = 'set'
 
 
-@_has_builtin_methods
+@has_builtin_methods
 class DictComprehension(ArrayMixin, Comprehension):
     array_type = 'dict'
 
@@ -344,12 +257,12 @@ class DictComprehension(ArrayMixin, Comprehension):
     def dict_values(self):
         return ContextSet.from_sets(values for keys, values in self._iterate())
 
-    @_register_builtin_method('values')
+    @register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
-    @_register_builtin_method('items')
+    @register_builtin_method('items')
     def _imitate_items(self):
         items = ContextSet.from_iterable(
             FakeSequence(
@@ -466,7 +379,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractSequence):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
-@_has_builtin_methods
+@has_builtin_methods
 class DictLiteralContext(SequenceLiteralContext):
     array_type = 'dict'
 
@@ -475,12 +388,12 @@ class DictLiteralContext(SequenceLiteralContext):
         self._defining_context = defining_context
         self.atom = atom
 
-    @_register_builtin_method('values')
+    @register_builtin_method('values')
     def _imitate_values(self):
         lazy_context = context.LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
-    @_register_builtin_method('items')
+    @register_builtin_method('items')
     def _imitate_items(self):
         lazy_contexts = [
             context.LazyKnownContext(FakeSequence(
