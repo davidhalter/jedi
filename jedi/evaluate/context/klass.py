@@ -43,8 +43,9 @@ from jedi.evaluate import compiled
 from jedi.evaluate import param
 from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
     ContextName, AnonymousInstanceParamName
-from jedi.evaluate import context
-from jedi.evaluate.context import ContextSet, iterator_to_context_set
+from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
+    TreeContext
+from jedi.evaluate.context import LazyKnownContext
 
 
 def apply_py__get__(context, base_context):
@@ -84,7 +85,7 @@ class ClassFilter(ParserTreeFilter):
                 for name in names]
 
 
-class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
+class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -138,7 +139,7 @@ class ClassContext(use_metaclass(CachedMetaClass, context.TreeContext)):
             args = param.TreeArguments(self.evaluator, self, arglist)
             return [value for key, value in args.unpack() if key is None]
         else:
-            return [context.LazyKnownContext(compiled.create(self.evaluator, object))]
+            return [LazyKnownContext(compiled.create(self.evaluator, object))]
 
     def py__call__(self, params):
         from jedi.evaluate.context.instance import TreeInstance

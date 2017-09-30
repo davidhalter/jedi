@@ -92,7 +92,7 @@ def _check_for_setattr(instance):
     """
     Check if there's any setattr method inside an instance. If so, return True.
     """
-    from jedi.evaluate.context.module import ModuleContext
+    from jedi.evaluate.context import ModuleContext
     module = instance.get_root_context()
     if not isinstance(module, ModuleContext):
         return False

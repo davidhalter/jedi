@@ -10,7 +10,7 @@ from jedi.evaluate import context
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import ParamName
-from jedi.evaluate.context import NO_CONTEXTS
+from jedi.evaluate.base_context import NO_CONTEXTS
 
 
 def add_argument_issue(parent_context, error_name, lazy_context, message):

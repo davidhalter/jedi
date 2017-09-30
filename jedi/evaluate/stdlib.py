@@ -20,10 +20,11 @@ from jedi.evaluate import iterable
 from jedi import debug
 from jedi.evaluate import param
 from jedi.evaluate import analysis
-from jedi.evaluate.context import LazyTreeContext, ContextualizedNode, \
+from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet
+from jedi.evaluate.context import LazyTreeContext
 from jedi.evaluate.context.klass import ClassContext
-from jedi.evaluate.context.module import ModuleContext
+from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.syntax_tree import is_string
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on

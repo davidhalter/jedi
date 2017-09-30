@@ -1,4 +1,4 @@
-from jedi.evaluate.context import ContextSet, NO_CONTEXTS
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 
 class AbstractLazyContext(object):
     def __init__(self, data):

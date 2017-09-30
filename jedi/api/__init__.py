@@ -33,7 +33,7 @@ from jedi.evaluate.sys_path import get_venv_path, dotted_path_in_sys_path
 from jedi.evaluate.iterable import unpack_tuple_to_dict
 from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
-from jedi.evaluate.context.module import ModuleContext
+from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.context.module import ModuleName
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we

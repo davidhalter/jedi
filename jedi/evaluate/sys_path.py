@@ -7,7 +7,7 @@ from jedi.evaluate.site import addsitedir
 from jedi._compatibility import exec_function, unicode
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled import CompiledObject
-from jedi.evaluate.context import ContextualizedNode
+from jedi.evaluate.base_context import ContextualizedNode
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.utils import ignored
@@ -219,7 +219,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         debug.warning('Error trying to read buildout_script: %s', buildout_script_path)
         return
 
-    from jedi.evaluate.context.module import ModuleContext
+    from jedi.evaluate.context import ModuleContext
     for path in _check_module(ModuleContext(evaluator, module_node, buildout_script_path)):
         yield path
 

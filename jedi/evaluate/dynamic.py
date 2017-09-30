@@ -25,10 +25,9 @@ from jedi.evaluate import imports
 from jedi.evaluate.param import TreeArguments, create_default_params
 from jedi.evaluate.helpers import is_stdlib_path
 from jedi.evaluate.utils import to_list
-from jedi.evaluate.context import ContextSet
 from jedi.parser_utils import get_parent_scope
-from jedi.evaluate.context.module import ModuleContext
-from jedi.evaluate.context import instance
+from jedi.evaluate.context import ModuleContext, instance
+from jedi.evaluate.base_context import ContextSet
 
 
 

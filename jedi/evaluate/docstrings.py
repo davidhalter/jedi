@@ -24,8 +24,9 @@ from jedi._compatibility import u
 from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
-from jedi.evaluate.context import iterator_to_context_set, ContextSet, \
-    NO_CONTEXTS, LazyKnownContexts
+from jedi.evaluate.base_context import iterator_to_context_set, ContextSet, \
+    NO_CONTEXTS
+from jedi.evaluate.context import LazyKnownContexts
 
 
 DOCSTRING_PARAM_PATTERNS = [

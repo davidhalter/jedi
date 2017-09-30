@@ -5,8 +5,7 @@ from jedi._compatibility import use_metaclass
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import imports
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition
-from jedi.evaluate import context
-from jedi.evaluate.context import NO_CONTEXTS
+from jedi.evaluate.base_context import NO_CONTEXTS, TreeContext
 
 
 class ImplicitNSName(AbstractNameDefinition):
@@ -25,7 +24,7 @@ class ImplicitNSName(AbstractNameDefinition):
         return self.implicit_ns_context
 
 
-class ImplicitNamespaceContext(use_metaclass(CachedMetaClass, context.TreeContext)):
+class ImplicitNamespaceContext(use_metaclass(CachedMetaClass, TreeContext)):
     """
     Provides support for implicit namespace packages
     """

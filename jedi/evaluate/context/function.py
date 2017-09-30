@@ -13,8 +13,9 @@ from jedi.evaluate import helpers
 from jedi.evaluate import iterable
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ContextName, AbstractNameDefinition, ParamName
-from jedi.evaluate import context
-from jedi.evaluate.context import ContextualizedNode, NO_CONTEXTS, ContextSet
+from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
+    ContextSet, TreeContext
+from jedi.evaluate.context import LazyKnownContexts, LazyKnownContext, LazyTreeContext
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
 
@@ -33,7 +34,7 @@ class LambdaName(AbstractNameDefinition):
         return ContextSet(self._lambda_context)
 
 
-class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
+class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -98,7 +99,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, context.TreeContext)):
                 for param in self.tree_node.get_params()]
 
 
-class FunctionExecutionContext(context.TreeContext):
+class FunctionExecutionContext(TreeContext):
     """
     This class is used to evaluate functions and their returns.
 
@@ -155,7 +156,7 @@ class FunctionExecutionContext(context.TreeContext):
     def _eval_yield(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
-            yield context.LazyKnownContext(compiled.create(self.evaluator, None))
+            yield LazyKnownContext(compiled.create(self.evaluator, None))
             return
 
         node = yield_expr.children[1]
@@ -164,7 +165,7 @@ class FunctionExecutionContext(context.TreeContext):
             for lazy_context in cn.infer().iterate(cn):
                 yield lazy_context
         else:
-            yield context.LazyTreeContext(self, node)
+            yield LazyTreeContext(self, node)
 
     @recursion.execution_recursion_decorator(default=iter([]))
     def get_yield_values(self):
@@ -192,7 +193,7 @@ class FunctionExecutionContext(context.TreeContext):
             else:
                 types = self.get_return_values(check_yields=True)
                 if types:
-                    yield context.LazyKnownContexts(types)
+                    yield LazyKnownContexts(types)
                 return
             last_for_stmt = for_stmt
 
@@ -222,5 +223,3 @@ class FunctionExecutionContext(context.TreeContext):
     @evaluator_method_cache()
     def get_params(self):
         return self.var_args.get_params(self)
-
-

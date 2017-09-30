@@ -8,7 +8,7 @@ from parso.python import tree
 
 from jedi import debug
 from jedi import parser_utils
-from jedi.evaluate.context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
     ContextualizedName, iterator_to_context_set, iterate_contexts
 from jedi.evaluate import compiled
 from jedi.evaluate import pep0484

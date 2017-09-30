@@ -10,7 +10,7 @@ from jedi.evaluate.cache import CachedMetaClass, evaluator_method_cache
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter
 from jedi.evaluate import compiled
-from jedi.evaluate.context import TreeContext
+from jedi.evaluate.base_context import TreeContext
 from jedi.evaluate.imports import SubModuleName, infer_import
 
 class _ModuleAttributeName(AbstractNameDefinition):

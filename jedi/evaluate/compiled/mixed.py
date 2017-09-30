@@ -9,7 +9,8 @@ from jedi import settings
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
-from jedi.evaluate.context import Context, ContextSet
+from jedi.evaluate.base_context import Context, ContextSet
+from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled.getattr_static import getattr_static
 
@@ -206,7 +207,6 @@ def _create(evaluator, obj, parent_context=None, *args):
     if parent_context.tree_node.get_root_node() == module_node:
         module_context = parent_context.get_root_context()
     else:
-        from jedi.evaluate.context.module import ModuleContext
         module_context = ModuleContext(evaluator, module_node, path=path)
         # TODO this __name__ is probably wrong.
         name = compiled_object.get_root_context().py__name__()

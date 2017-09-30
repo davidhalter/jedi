@@ -28,17 +28,18 @@ from jedi.evaluate.utils import to_list
 from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
-from jedi.evaluate.helpers import is_string
+from jedi.evaluate import context
 from jedi.evaluate import recursion
+from jedi.evaluate.helpers import is_string
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, \
     ParserTreeFilter
-from jedi.evaluate import context
-from jedi.evaluate.context import ContextSet, NO_CONTEXTS, Context
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
+    TreeContext, ContextualizedNode
 from jedi.parser_utils import get_comp_fors
 
 
-class AbstractSequence(context.Context):
+class AbstractSequence(Context):
     builtin_methods = {}
     api_type = 'instance'
 
@@ -168,7 +169,7 @@ class GeneratorMixin(object):
         return compiled.CompiledContextName(self, 'generator')
 
 
-class Generator(GeneratorMixin, context.Context):
+class Generator(GeneratorMixin, Context):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func_execution_context):
         super(Generator, self).__init__(evaluator, parent_context=evaluator.BUILTINS)
@@ -181,7 +182,7 @@ class Generator(GeneratorMixin, context.Context):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
-class CompForContext(context.TreeContext):
+class CompForContext(TreeContext):
     @classmethod
     def from_comp_for(cls, parent_context, comp_for):
         return cls(parent_context.evaluator, parent_context, comp_for)
@@ -244,7 +245,7 @@ class Comprehension(AbstractSequence):
         parent_context = parent_context or self._defining_context
         input_types = parent_context.eval_node(input_node)
 
-        cn = context.ContextualizedNode(parent_context, input_node)
+        cn = ContextualizedNode(parent_context, input_node)
         iterated = input_types.iterate(cn)
         exprlist = comp_for.children[1]
         for i, lazy_context in enumerate(iterated):
@@ -739,7 +740,7 @@ class _ArrayInstance(object):
         return self.py__iter__()
 
 
-class Slice(context.Context):
+class Slice(Context):
     def __init__(self, context, start, stop, step):
         super(Slice, self).__init__(
             context.evaluator,

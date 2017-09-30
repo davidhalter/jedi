@@ -31,7 +31,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
-from jedi.evaluate.context import ContextSet, NO_CONTEXTS
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 
 
 # This memoization is needed, because otherwise we will infinitely loop on
@@ -420,7 +420,7 @@ class Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
-        from jedi.evaluate.context.module import ModuleContext
+        from jedi.evaluate.context import ModuleContext
         from jedi.evaluate.context.namespace import ImplicitNamespaceContext
         names = []
         if self.import_path:
@@ -490,7 +490,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
             code=code, path=path, cache=True, diff_cache=True,
             cache_path=settings.cache_directory)
 
-        from jedi.evaluate.context.module import ModuleContext
+        from jedi.evaluate.context import ModuleContext
         return ModuleContext(evaluator, module_node, path=path)
     else:
         return compiled.load_module(evaluator, path)
@@ -509,7 +509,7 @@ def get_modules_containing_name(evaluator, modules, name):
     """
     Search a name in the directories of modules.
     """
-    from jedi.evaluate.context.module import ModuleContext
+    from jedi.evaluate.context import ModuleContext
 
     def check_python_file(path):
         try:
