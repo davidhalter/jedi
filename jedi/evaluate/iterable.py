@@ -23,11 +23,10 @@ It is important to note that:
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
-from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import context
 from jedi.evaluate import recursion
-from jedi.evaluate.helpers import is_string
+from jedi.evaluate.helpers import is_string, predefine_names, evaluate_call_of_leaf
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_method_cache
@@ -168,7 +167,7 @@ class Comprehension(AbstractIterable):
                 parent_context,
                 comp_for,
             )
-            with helpers.predefine_names(context_, comp_for, dct):
+            with predefine_names(context_, comp_for, dct):
                 try:
                     for result in self._nested(comp_fors[1:], context_):
                         yield result
@@ -589,7 +588,7 @@ def _check_array_additions(context, sequence):
 
                 with recursion.execution_allowed(context.evaluator, power) as allowed:
                     if allowed:
-                        found = helpers.evaluate_call_of_leaf(
+                        found = evaluate_call_of_leaf(
                             random_context,
                             name,
                             cut_own_trailer=True
