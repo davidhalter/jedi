@@ -40,12 +40,10 @@ py__doc__(include_call_signature:      Returns the docstring for a context.
 from jedi._compatibility import use_metaclass
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
-from jedi.evaluate import param
 from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
     ContextName, AnonymousInstanceParamName
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     TreeContext
-from jedi.evaluate.context import LazyKnownContext
 
 
 def apply_py__get__(context, base_context):
@@ -136,9 +134,11 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     def py__bases__(self):
         arglist = self.tree_node.get_super_arglist()
         if arglist:
+            from jedi.evaluate import param
             args = param.TreeArguments(self.evaluator, self, arglist)
             return [value for key, value in args.unpack() if key is None]
         else:
+            from jedi.evaluate.context import LazyKnownContext
             return [LazyKnownContext(compiled.create(self.evaluator, object))]
 
     def py__call__(self, params):

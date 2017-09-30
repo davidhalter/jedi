@@ -84,7 +84,7 @@ from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi import parser_utils
-from jedi.evaluate.context.klass import ClassContext
+from jedi.evaluate.context import ClassContext
 
 
 class Evaluator(object):

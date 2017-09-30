@@ -18,7 +18,7 @@ from jedi.evaluate.filters import ParamName
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import instance
 from jedi.evaluate.context.function import FunctionContext, FunctionExecutionContext
-from jedi.evaluate.context.klass import ClassContext
+from jedi.evaluate.context import ClassContext
 from jedi.api.keywords import KeywordName
 
 

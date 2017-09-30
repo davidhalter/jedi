@@ -23,7 +23,6 @@ from parso import parse
 from jedi._compatibility import u
 from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
 from jedi.evaluate.base_context import iterator_to_context_set, ContextSet, \
     NO_CONTEXTS
 from jedi.evaluate.context import LazyKnownContexts
@@ -235,6 +234,7 @@ def _execute_array_values(evaluator, array):
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
     """
+    from jedi.evaluate.iterable import SequenceLiteralContext, FakeSequence
     if isinstance(array, SequenceLiteralContext):
         values = []
         for lazy_context in array.py__iter__():
