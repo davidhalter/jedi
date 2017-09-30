@@ -21,8 +21,9 @@ from jedi.evaluate.context.instance import InstanceFunctionExecution, \
     AnonymousInstanceFunctionExecution
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet
-from jedi.evaluate.context import ClassContext, ModuleContext, LazyTreeContext
+from jedi.evaluate.context import ClassContext, ModuleContext
 from jedi.evaluate.context import iterable
+from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.syntax_tree import is_string
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on

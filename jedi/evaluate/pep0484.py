@@ -28,7 +28,7 @@ from parso.python import tree
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
-from jedi.evaluate.context import LazyTreeContext
+from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.context import ModuleContext
 from jedi import debug
 from jedi import _compatibility

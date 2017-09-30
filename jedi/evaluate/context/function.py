@@ -14,7 +14,8 @@ from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ContextName, AbstractNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
     ContextSet, TreeContext
-from jedi.evaluate.context import LazyKnownContexts, LazyKnownContext, LazyTreeContext
+from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
+    LazyTreeContext
 from jedi.evaluate.context import iterable
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs

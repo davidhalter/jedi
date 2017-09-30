@@ -5,7 +5,8 @@ from jedi import debug
 from jedi.evaluate.utils import PushBackIterator
 from parso.python import tree
 from jedi.evaluate import analysis
-from jedi.evaluate import context
+from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
+    LazyTreeContext, LazyUnknownContext, get_merged_lazy_context
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate.filters import ParamName
@@ -14,7 +15,7 @@ from jedi.evaluate.context import iterable
 
 
 def add_argument_issue(parent_context, error_name, lazy_context, message):
-    if isinstance(lazy_context, context.LazyTreeContext):
+    if isinstance(lazy_context, LazyTreeContext):
         node = lazy_context.data
         if node.parent.type == 'argument':
             node = node.parent
@@ -141,7 +142,7 @@ class TreeArguments(AbstractArguments):
                 for values in list(zip_longest(*iterators)):
                     # TODO zip_longest yields None, that means this would raise
                     # an exception?
-                    yield None, context.get_merged_lazy_context(
+                    yield None, get_merged_lazy_context(
                         [v for v in values if v is not None]
                     )
             elif star_count == 2:
@@ -153,14 +154,14 @@ class TreeArguments(AbstractArguments):
                 if el.type == 'argument':
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
-                        named_args.append((c[0].value, context.LazyTreeContext(self.context, c[2]),))
+                        named_args.append((c[0].value, LazyTreeContext(self.context, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         comp = iterable.GeneratorComprehension(
                             self._evaluator, self.context, self.argument_node.parent)
-                        yield None, context.LazyKnownContext(comp)
+                        yield None, LazyKnownContext(comp)
                 else:
-                    yield None, context.LazyTreeContext(self.context, el)
+                    yield None, LazyTreeContext(self.context, el)
 
         # Reordering var_args is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
@@ -217,7 +218,7 @@ class ValuesArguments(AbstractArguments):
 
     def unpack(self, funcdef=None):
         for values in self._values_list:
-            yield None, context.LazyKnownContexts(values)
+            yield None, LazyKnownContexts(values)
 
     def get_calling_nodes(self):
         return []
@@ -307,30 +308,30 @@ def get_params(execution_context, var_args):
                         break
                     lazy_context_list.append(argument)
             seq = iterable.FakeSequence(execution_context.evaluator, 'tuple', lazy_context_list)
-            result_arg = context.LazyKnownContext(seq)
+            result_arg = LazyKnownContext(seq)
         elif param.star_count == 2:
             # **kwargs param
             dct = iterable.FakeDict(execution_context.evaluator, dict(non_matching_keys))
-            result_arg = context.LazyKnownContext(dct)
+            result_arg = LazyKnownContext(dct)
             non_matching_keys = {}
         else:
             # normal param
             if argument is None:
                 # No value: Return an empty container
                 if param.default is None:
-                    result_arg = context.LazyUnknownContext()
+                    result_arg = LazyUnknownContext()
                     if not keys_only:
                         for node in var_args.get_calling_nodes():
                             m = _error_argument_count(funcdef, len(unpacked_va))
                             analysis.add(parent_context, 'type-error-too-few-arguments',
                                          node, message=m)
                 else:
-                    result_arg = context.LazyTreeContext(parent_context, param.default)
+                    result_arg = LazyTreeContext(parent_context, param.default)
             else:
                 result_arg = argument
 
         result_params.append(ExecutedParam(execution_context, param, result_arg))
-        if not isinstance(result_arg, context.LazyUnknownContext):
+        if not isinstance(result_arg, LazyUnknownContext):
             keys_used[param.name.value] = result_params[-1]
 
     if keys_only:
@@ -414,17 +415,17 @@ def _error_argument_count(funcdef, actual_count):
 
 def _create_default_param(execution_context, param):
     if param.star_count == 1:
-        result_arg = context.LazyKnownContext(
+        result_arg = LazyKnownContext(
             iterable.FakeSequence(execution_context.evaluator, 'tuple', [])
         )
     elif param.star_count == 2:
-        result_arg = context.LazyKnownContext(
+        result_arg = LazyKnownContext(
             iterable.FakeDict(execution_context.evaluator, {})
         )
     elif param.default is None:
-        result_arg = context.LazyUnknownContext()
+        result_arg = LazyUnknownContext()
     else:
-        result_arg = context.LazyTreeContext(execution_context.parent_context, param.default)
+        result_arg = LazyTreeContext(execution_context.parent_context, param.default)
     return ExecutedParam(execution_context, param, result_arg)
 
 

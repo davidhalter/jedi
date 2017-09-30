@@ -14,6 +14,7 @@ from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.base_context import Context, ContextSet
+from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from . import fake
 
@@ -231,7 +232,6 @@ class CompiledObject(Context):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return
 
-        from jedi.evaluate.context import LazyKnownContext
         for i, part in enumerate(self.obj):
             if i > 20:
                 # Should not go crazy with large iterators

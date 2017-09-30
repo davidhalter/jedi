@@ -25,7 +25,7 @@ from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import iterator_to_context_set, ContextSet, \
     NO_CONTEXTS
-from jedi.evaluate.context import LazyKnownContexts
+from jedi.evaluate.lazy_context import LazyKnownContexts
 
 
 DOCSTRING_PARAM_PATTERNS = [

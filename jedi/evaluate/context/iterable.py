@@ -24,8 +24,9 @@ from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
-from jedi.evaluate import context
 from jedi.evaluate import recursion
+from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
+    LazyTreeContext
 from jedi.evaluate.helpers import is_string, predefine_names, evaluate_call_of_leaf
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.utils import to_list
@@ -187,7 +188,7 @@ class Comprehension(AbstractIterable):
 
     def py__iter__(self):
         for set_ in self._iterate():
-            yield context.LazyKnownContexts(set_)
+            yield LazyKnownContexts(set_)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._atom)
@@ -243,7 +244,7 @@ class DictComprehension(ArrayMixin, Comprehension):
 
     def py__iter__(self):
         for keys, values in self._iterate():
-            yield context.LazyKnownContexts(keys)
+            yield LazyKnownContexts(keys)
 
     def py__getitem__(self, index):
         for keys, values in self._iterate():
@@ -258,7 +259,7 @@ class DictComprehension(ArrayMixin, Comprehension):
 
     @register_builtin_method('values')
     def _imitate_values(self):
-        lazy_context = context.LazyKnownContexts(self.dict_values())
+        lazy_context = LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
     @register_builtin_method('items')
@@ -266,7 +267,7 @@ class DictComprehension(ArrayMixin, Comprehension):
         items = ContextSet.from_iterable(
             FakeSequence(
                 self.evaluator, 'tuple'
-                (context.LazyKnownContexts(keys), context.LazyKnownContexts(values))
+                (LazyKnownContexts(keys), LazyKnownContexts(values))
             ) for keys, values in self._iterate()
         )
 
@@ -322,10 +323,10 @@ class SequenceLiteralContext(ArrayMixin, AbstractIterable):
             # We don't know which dict index comes first, therefore always
             # yield all the types.
             for _ in types:
-                yield context.LazyKnownContexts(types)
+                yield LazyKnownContexts(types)
         else:
             for node in self._items():
-                yield context.LazyTreeContext(self._defining_context, node)
+                yield LazyTreeContext(self._defining_context, node)
 
             for addition in check_array_additions(self._defining_context, self):
                 yield addition
@@ -372,7 +373,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractIterable):
         for key_node, value in self._items():
             for key in self._defining_context.eval_node(key_node):
                 if is_string(key):
-                    yield key.obj, context.LazyTreeContext(self._defining_context, value)
+                    yield key.obj, LazyTreeContext(self._defining_context, value)
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
@@ -389,16 +390,16 @@ class DictLiteralContext(SequenceLiteralContext):
 
     @register_builtin_method('values')
     def _imitate_values(self):
-        lazy_context = context.LazyKnownContexts(self.dict_values())
+        lazy_context = LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, 'list', [lazy_context]))
 
     @register_builtin_method('items')
     def _imitate_items(self):
         lazy_contexts = [
-            context.LazyKnownContext(FakeSequence(
+            LazyKnownContext(FakeSequence(
                 self.evaluator, 'tuple',
-                (context.LazyTreeContext(self._defining_context, key_node),
-                 context.LazyTreeContext(self._defining_context, value_node))
+                (LazyTreeContext(self._defining_context, key_node),
+                 LazyTreeContext(self._defining_context, value_node))
             )) for key_node, value_node in self._items()
         ]
 
@@ -441,7 +442,7 @@ class FakeDict(_FakeArray):
 
     def py__iter__(self):
         for key in self._dct:
-            yield context.LazyKnownContext(compiled.create(self.evaluator, key))
+            yield LazyKnownContext(compiled.create(self.evaluator, key))
 
     def py__getitem__(self, index):
         return self._dct[index].infer()
