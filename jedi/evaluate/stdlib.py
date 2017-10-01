@@ -13,7 +13,7 @@ import collections
 import re
 
 from jedi import debug
-from jedi.evaluate import param
+from jedi.evaluate.arguments import ValuesArguments
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import InstanceFunctionExecution, \
@@ -208,7 +208,7 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
     seq = iterable.FakeSequence(evaluator, 'list', rev)
-    arguments = param.ValuesArguments([ContextSet(seq)])
+    arguments = ValuesArguments([ContextSet(seq)])
     return ContextSet(CompiledInstance(evaluator, evaluator.BUILTINS, obj, arguments))
 
 

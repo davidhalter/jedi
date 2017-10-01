@@ -534,7 +534,7 @@ def _check_array_additions(context, sequence):
     >>> a = [""]
     >>> a.append(1)
     """
-    from jedi.evaluate import param
+    from jedi.evaluate import arguments
 
     debug.dbg('Dynamic array search for %s' % sequence, color='MAGENTA')
     module_context = context.get_root_context()
@@ -543,7 +543,7 @@ def _check_array_additions(context, sequence):
         return ContextSet()
 
     def find_additions(context, arglist, add_name):
-        params = list(param.TreeArguments(context.evaluator, context, arglist).unpack())
+        params = list(arguments.TreeArguments(context.evaluator, context, arglist).unpack())
         result = set()
         if add_name in ['insert']:
             params = params[1:]
@@ -614,8 +614,8 @@ def get_dynamic_array_instance(instance):
         return instance.var_args
 
     ai = _ArrayInstance(instance)
-    from jedi.evaluate import param
-    return param.ValuesArguments([ContextSet(ai)])
+    from jedi.evaluate import arguments
+    return arguments.ValuesArguments([ContextSet(ai)])
 
 
 class _ArrayInstance(object):
@@ -643,8 +643,8 @@ class _ArrayInstance(object):
             for lazy in lazy_context.infer().iterate():
                 yield lazy
 
-        from jedi.evaluate import param
-        if isinstance(var_args, param.TreeArguments):
+        from jedi.evaluate import arguments
+        if isinstance(var_args, arguments.TreeArguments):
             additions = _check_array_additions(var_args.context, self.instance)
             for addition in additions:
                 yield addition

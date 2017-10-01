@@ -59,7 +59,7 @@ class Context(BaseContext):
         """
         Execute a function with already executed arguments.
         """
-        from jedi.evaluate.param import ValuesArguments
+        from jedi.evaluate.arguments import ValuesArguments
         arguments = ValuesArguments([ContextSet(value) for value in value_list])
         return self.execute(arguments)
 

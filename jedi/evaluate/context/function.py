@@ -7,9 +7,9 @@ from jedi.evaluate import compiled
 from jedi.evaluate import recursion
 from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
-from jedi.evaluate import param
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import helpers
+from jedi.evaluate.arguments import AnonymousArguments
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ContextName, AbstractNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
@@ -71,7 +71,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
-            arguments = param.AnonymousArguments()
+            arguments = AnonymousArguments()
 
         return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
 

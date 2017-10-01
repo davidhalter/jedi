@@ -27,7 +27,7 @@ from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
-from jedi.evaluate.param import try_iter_content
+from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import get_venv_path, dotted_path_in_sys_path
 from jedi.evaluate.filters import TreeNameDefinition

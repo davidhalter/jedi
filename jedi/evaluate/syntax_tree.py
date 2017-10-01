@@ -16,7 +16,7 @@ from jedi.evaluate import recursion
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import imports
-from jedi.evaluate import param
+from jedi.evaluate import arguments
 from jedi.evaluate.context import ClassContext, FunctionContext
 from jedi.evaluate.context import iterable
 from jedi.evaluate.context import TreeInstance, CompiledInstance
@@ -149,8 +149,8 @@ def eval_trailer(context, base_contexts, trailer):
             )
         else:
             assert trailer_op == '('
-            arguments = param.TreeArguments(context.evaluator, context, node, trailer)
-            return base_contexts.execute(arguments)
+            args = arguments.TreeArguments(context.evaluator, context, node, trailer)
+            return base_contexts.execute(args)
 
 
 def eval_atom(context, atom):
@@ -528,7 +528,7 @@ def _apply_decorators(context, node):
             debug.warning('decorator not found: %s on %s', dec, node)
             return initial
 
-        values = dec_values.execute(param.ValuesArguments([values]))
+        values = dec_values.execute(arguments.ValuesArguments([values]))
         if not len(values):
             debug.warning('not possible to resolve wrappers found %s', node)
             return initial

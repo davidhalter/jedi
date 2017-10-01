@@ -23,7 +23,7 @@ from jedi.evaluate.context import AbstractInstanceContext
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
-from jedi.evaluate import param
+from jedi.evaluate.arguments import TreeArguments
 from jedi.evaluate import helpers
 from jedi.evaluate.context import iterable
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
@@ -231,7 +231,7 @@ def _check_isinstance_type(context, element, search_name):
 
         # arglist stuff
         arglist = trailer.children[1]
-        args = param.TreeArguments(context.evaluator, context, arglist, trailer)
+        args = TreeArguments(context.evaluator, context, arglist, trailer)
         param_list = list(args.unpack())
         # Disallow keyword arguments
         assert len(param_list) == 2

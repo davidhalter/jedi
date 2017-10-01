@@ -8,7 +8,7 @@ from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
     iterator_to_context_set
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.param import AbstractArguments, AnonymousArguments
+from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate.context.function import FunctionExecutionContext, FunctionContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__

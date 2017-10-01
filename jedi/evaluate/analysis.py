@@ -181,7 +181,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             assert trailer.type == 'trailer'
             arglist = trailer.children[1]
             assert arglist.type == 'arglist'
-            from jedi.evaluate.param import TreeArguments
+            from jedi.evaluate.arguments import TreeArguments
             args = list(TreeArguments(node_context.evaluator, node_context, arglist).unpack())
             # Arguments should be very simple
             assert len(args) == 2
