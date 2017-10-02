@@ -84,6 +84,7 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
+from jedi.evaluate.sys_path import get_python_version
 
 
 class Evaluator(object):
@@ -99,7 +100,8 @@ class Evaluator(object):
         self.analysis = []
         self.dynamic_params_depth = 0
         self.is_analysis = False
-        self.python_version = sys.version_info[:2]
+        python_version = get_python_version()
+        self.python_version = python_version[:2]
 
         self.project = project
 
