@@ -7,12 +7,13 @@ from jedi.evaluate import compiled
 from jedi.evaluate.context import instance
 from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate import Evaluator
+from jedi.evaluate.project import Project
 from jedi.parser_utils import clean_scope_docstring
 from jedi import Script
 
 
 def _evaluator():
-    return Evaluator(parso.load_grammar())
+    return Evaluator(parso.load_grammar(), Project())
 
 
 def test_simple():

@@ -87,7 +87,7 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
 
 
 class Evaluator(object):
-    def __init__(self, grammar, sys_path=None):
+    def __init__(self, grammar, project):
         self.grammar = grammar
         self.latest_grammar = parso.load_grammar(version='3.6')
         self.memoize_cache = {}  # for memoize decorators
@@ -101,13 +101,7 @@ class Evaluator(object):
         self.is_analysis = False
         self.python_version = sys.version_info[:2]
 
-        if sys_path is None:
-            sys_path = sys.path
-        self.sys_path = copy.copy(sys_path)
-        try:
-            self.sys_path.remove('')
-        except ValueError:
-            pass
+        self.project = project
 
         self.reset_recursion_limitations()
 

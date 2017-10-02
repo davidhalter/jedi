@@ -243,5 +243,3 @@ def _star_star_dict(context, array, input_node, funcdef):
                 % (funcdef.name.value, array)
             analysis.add(context, 'type-error-star-star', input_node, message=m)
         return {}
-
-

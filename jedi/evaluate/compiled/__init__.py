@@ -444,7 +444,7 @@ def dotted_from_fs_path(fs_path, sys_path):
 
 
 def load_module(evaluator, path=None, name=None):
-    sys_path = evaluator.sys_path
+    sys_path = list(evaluator.project.sys_path)
     if path is not None:
         dotted_path = dotted_from_fs_path(path, sys_path=sys_path)
     else:

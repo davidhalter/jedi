@@ -480,7 +480,7 @@ class Importer(object):
 
 def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=None):
     if sys_path is None:
-        sys_path = evaluator.sys_path
+        sys_path = evaluator.project.sys_path
 
     dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
@@ -530,7 +530,7 @@ def get_modules_containing_name(evaluator, modules, name):
             if name in code:
                 module = _load_module(evaluator, path, code)
 
-                module_name = sys_path.dotted_path_in_sys_path(evaluator.sys_path, path)
+                module_name = sys_path.dotted_path_in_sys_path(evaluator.project.sys_path, path)
                 if module_name is not None:
                     add_module(evaluator, module_name, module)
                 return module

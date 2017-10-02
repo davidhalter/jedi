@@ -161,7 +161,7 @@ def _check_module(module_context):
                     if n.type == 'name' and n.value == 'path':
                         yield name, power
 
-    sys_path = list(module_context.evaluator.sys_path)  # copy
+    sys_path = list(module_context.evaluator.project.sys_path)  # copy
     if isinstance(module_context, CompiledObject):
         return sys_path
 
@@ -189,7 +189,7 @@ def sys_path_with_modifications(evaluator, module_context):
     if path is None:
         # Support for modules without a path is bad, therefore return the
         # normal path.
-        return list(evaluator.sys_path)
+        return evaluator.project.sys_path
 
     curdir = os.path.abspath(os.curdir)
     #TODO why do we need a chdir?

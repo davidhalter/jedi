@@ -9,6 +9,7 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     sys_path_with_modifications,
                                     _check_module)
 from jedi.evaluate import Evaluator
+from jedi.evaluate.project import Project
 from jedi.evaluate.context.module import ModuleContext
 
 from ..helpers import cwd_at
@@ -16,7 +17,8 @@ from ..helpers import cwd_at
 
 def check_module_test(code):
     grammar = parso.load_grammar()
-    module_context = ModuleContext(Evaluator(grammar), parso.parse(code), path=None)
+    e = Evaluator(grammar, Project())
+    module_context = ModuleContext(e, parso.parse(code), path=None)
     return _check_module(module_context)
 
 
@@ -69,7 +71,7 @@ def test_sys_path_with_modifications():
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
     grammar = parso.load_grammar()
     module_node = parso.parse(code, path=path)
-    module_context = ModuleContext(Evaluator(grammar), module_node, path=path)
+    module_context = ModuleContext(Evaluator(grammar, Project()), module_node, path=path)
     paths = sys_path_with_modifications(module_context.evaluator, module_context)
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 

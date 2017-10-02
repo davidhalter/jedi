@@ -27,9 +27,10 @@ from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
+from jedi.evaluate.project import Project
 from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
-from jedi.evaluate.sys_path import get_venv_path, dotted_path_in_sys_path
+from jedi.evaluate.sys_path import dotted_path_in_sys_path
 from jedi.evaluate.filters import TreeNameDefinition
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
@@ -110,11 +111,7 @@ class Script(object):
 
         # Load the Python grammar of the current interpreter.
         self._grammar = parso.load_grammar()
-        if sys_path is None:
-            venv = os.getenv('VIRTUAL_ENV')
-            if venv:
-                sys_path = list(get_venv_path(venv))
-        self._evaluator = Evaluator(self._grammar, sys_path=sys_path)
+        self._evaluator = Evaluator(self._grammar, Project(sys_path=sys_path))
         debug.speed('init')
 
     @cache.memoize_method
@@ -135,7 +132,7 @@ class Script(object):
             self.path
         )
         if self.path is not None:
-            name = dotted_path_in_sys_path(self._evaluator.sys_path, self.path)
+            name = dotted_path_in_sys_path(self._evaluator.project.sys_path, self.path)
             if name is not None:
                 imports.add_module(self._evaluator, name, module)
         return module

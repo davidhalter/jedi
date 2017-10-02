@@ -135,7 +135,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
             return self.py__name__()
 
     def _py__path__(self):
-        search_path = self.evaluator.sys_path
+        search_path = self.evaluator.project.sys_path
         init_path = self.py__file__()
         if os.path.basename(init_path) == '__init__.py':
             with open(init_path, 'rb') as f:
