@@ -6,7 +6,6 @@ from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import exec_function, unicode
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.base_context import ContextualizedNode
 from jedi import settings
 from jedi import debug
@@ -80,11 +79,23 @@ def _execute_code(module_path, code):
         try:
             res = variables['result']
             if isinstance(res, str):
-                return [os.path.abspath(res)]
+                return _abs_path(module_path, res)
         except KeyError:
             pass
-    return []
+    return None
 
+
+def _abs_path(module_path, path):
+    if os.path.isabs(path):
+        return path
+
+    if module_path is None:
+        # In this case we have no idea where we actually are in the file
+        # system.
+        return None
+
+    base_dir = os.path.dirname(module_path)
+    return os.path.abspath(os.path.join(base_dir, path))
 
 def _paths_from_assignment(module_context, expr_stmt):
     """
@@ -125,7 +136,9 @@ def _paths_from_assignment(module_context, expr_stmt):
         for lazy_context in cn.infer().iterate(cn):
             for context in lazy_context.infer():
                 if is_string(context):
-                    yield context.obj
+                    abs_path = _abs_path(module_context.py__file__(), context.obj)
+                    if abs_path is not None:
+                        yield abs_path
 
 
 def _paths_from_list_modifications(module_path, trailer1, trailer2):
@@ -143,10 +156,11 @@ def _paths_from_list_modifications(module_path, trailer1, trailer2):
     arg = trailer2.children[1]
     if name == 'insert' and len(arg.children) in (3, 4):  # Possible trailing comma.
         arg = arg.children[2]
-    return _execute_code(module_path, arg.get_code())
+    path = _execute_code(module_path, arg.get_code())
+    return [] if path is None else [path]
 
 
-def _check_module(module_context):
+def check_sys_path_modifications(module_context):
     """
     Detect sys.path modifications within module.
     """
@@ -161,10 +175,10 @@ def _check_module(module_context):
                     if n.type == 'name' and n.value == 'path':
                         yield name, power
 
-    sys_path = list(module_context.evaluator.project.sys_path)  # copy
-    if isinstance(module_context, CompiledObject):
-        return sys_path
+    if module_context.tree_node is None:
+        return []
 
+    added = []
     try:
         possible_names = module_context.tree_node.get_used_names()['path']
     except KeyError:
@@ -173,39 +187,30 @@ def _check_module(module_context):
         for name, power in get_sys_path_powers(possible_names):
             expr_stmt = power.parent
             if len(power.children) >= 4:
-                sys_path.extend(
+                added.extend(
                     _paths_from_list_modifications(
                         module_context.py__file__(), *power.children[2:4]
                     )
                 )
             elif expr_stmt is not None and expr_stmt.type == 'expr_stmt':
-                sys_path.extend(_paths_from_assignment(module_context, expr_stmt))
-    return sys_path
+                added.extend(_paths_from_assignment(module_context, expr_stmt))
+    return added
 
 
 @evaluator_function_cache(default=[])
 def sys_path_with_modifications(evaluator, module_context):
-    path = module_context.py__file__()
-    if path is None:
-        # Support for modules without a path is bad, therefore return the
-        # normal path.
-        return evaluator.project.sys_path
+    return evaluator.project.sys_path + check_sys_path_modifications(module_context)
 
-    curdir = os.path.abspath(os.curdir)
-    #TODO why do we need a chdir?
-    with ignored(OSError):
-        os.chdir(os.path.dirname(path))
 
+def detect_additional_paths(evaluator, script_path):
+    django_paths = _detect_django_path(script_path)
     buildout_script_paths = set()
 
-    result = _check_module(module_context)
-    result += _detect_django_path(path)
-    for buildout_script_path in _get_buildout_script_paths(path):
+    for buildout_script_path in _get_buildout_script_paths(script_path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script_path):
             buildout_script_paths.add(path)
-    # cleanup, back to old directory
-    os.chdir(curdir)
-    return list(result) + list(buildout_script_paths)
+
+    return django_paths + list(buildout_script_paths)
 
 
 def _get_paths_from_buildout_script(evaluator, buildout_script_path):
@@ -220,7 +225,8 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         return
 
     from jedi.evaluate.context import ModuleContext
-    for path in _check_module(ModuleContext(evaluator, module_node, buildout_script_path)):
+    module = ModuleContext(evaluator, module_node, buildout_script_path)
+    for path in check_sys_path_modifications(module):
         yield path
 
 

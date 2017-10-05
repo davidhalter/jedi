@@ -111,7 +111,9 @@ class Script(object):
 
         # Load the Python grammar of the current interpreter.
         self._grammar = parso.load_grammar()
-        self._evaluator = Evaluator(self._grammar, Project(sys_path=sys_path))
+        project = Project(sys_path=sys_path)
+        self._evaluator = Evaluator(self._grammar, project)
+        project.add_script_path(self.path)
         debug.speed('init')
 
     @cache.memoize_method

@@ -1,25 +1,17 @@
 import os
 from textwrap import dedent
 
-import parso
-
-from jedi._compatibility import u
+from jedi import Script
 from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _get_buildout_script_paths,
-                                    sys_path_with_modifications,
-                                    _check_module)
-from jedi.evaluate import Evaluator
-from jedi.evaluate.project import Project
-from jedi.evaluate.context.module import ModuleContext
+                                    check_sys_path_modifications)
 
 from ..helpers import cwd_at
 
 
 def check_module_test(code):
-    grammar = parso.load_grammar()
-    e = Evaluator(grammar, Project())
-    module_context = ModuleContext(e, parso.parse(code), path=None)
-    return _check_module(module_context)
+    module_context = Script(code)._get_module()
+    return check_sys_path_modifications(module_context)
 
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name')
@@ -40,25 +32,27 @@ def test_buildout_detection():
 
 
 def test_append_on_non_sys_path():
-    code = dedent(u("""
+    code = dedent("""
         class Dummy(object):
             path = []
 
         d = Dummy()
-        d.path.append('foo')"""))
+        d.path.append('foo')"""
+    )
 
     paths = check_module_test(code)
-    assert len(paths) > 0
+    assert not paths
     assert 'foo' not in paths
 
 
 def test_path_from_invalid_sys_path_assignment():
-    code = dedent(u("""
+    code = dedent("""
         import sys
-        sys.path = 'invalid'"""))
+        sys.path = 'invalid'"""
+    )
 
     paths = check_module_test(code)
-    assert len(paths) > 0
+    assert not paths
     assert 'invalid' not in paths
 
 
@@ -69,15 +63,12 @@ def test_sys_path_with_modifications():
     """)
 
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
-    grammar = parso.load_grammar()
-    module_node = parso.parse(code, path=path)
-    module_context = ModuleContext(Evaluator(grammar, Project()), module_node, path=path)
-    paths = sys_path_with_modifications(module_context.evaluator, module_context)
+    paths = Script(code, path=path)._evaluator.project.sys_path
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 
 
 def test_path_from_sys_path_assignment():
-    code = dedent(u("""
+    code = dedent("""
         #!/usr/bin/python
 
         import sys
@@ -91,7 +82,8 @@ def test_path_from_sys_path_assignment():
         import important_package
 
         if __name__ == '__main__':
-            sys.exit(important_package.main())"""))
+            sys.exit(important_package.main())"""
+    )
 
     paths = check_module_test(code)
     assert 1 not in paths

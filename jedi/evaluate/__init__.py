@@ -62,7 +62,6 @@ only *evaluates* what needs to be *evaluated*. All the statements and modules
 that are not used are just being ignored.
 """
 
-import copy
 import sys
 
 from parso.python import tree
@@ -100,8 +99,8 @@ class Evaluator(object):
         self.dynamic_params_depth = 0
         self.is_analysis = False
         self.python_version = sys.version_info[:2]
-
         self.project = project
+        project.add_evaluator(self)
 
         self.reset_recursion_limitations()
 
