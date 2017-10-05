@@ -57,8 +57,8 @@ Supported Python Features
 - Django / Flask / Buildout support
 
 
-Unsupported Features
---------------------
+Not Supported
+-------------
 
 Not yet implemented:
 
