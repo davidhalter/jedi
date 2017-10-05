@@ -68,23 +68,6 @@ def _get_venv_sitepackages(venv):
     return p
 
 
-def _execute_code(module_path, code):
-    c = "import os; from os.path import *; result=%s"
-    variables = {'__file__': module_path}
-    try:
-        exec_function(c % code, variables)
-    except Exception:
-        debug.warning('sys.path manipulation detected, but failed to evaluate.')
-    else:
-        try:
-            res = variables['result']
-            if isinstance(res, str):
-                return _abs_path(module_path, res)
-        except KeyError:
-            pass
-    return None
-
-
 def _abs_path(module_path, path):
     if os.path.isabs(path):
         return path
@@ -96,6 +79,7 @@ def _abs_path(module_path, path):
 
     base_dir = os.path.dirname(module_path)
     return os.path.abspath(os.path.join(base_dir, path))
+
 
 def _paths_from_assignment(module_context, expr_stmt):
     """
@@ -119,8 +103,8 @@ def _paths_from_assignment(module_context, expr_stmt):
             assert trailer.children[0] == '.' and trailer.children[1].value == 'path'
             # TODO Essentially we're not checking details on sys.path
             # manipulation. Both assigment of the sys.path and changing/adding
-            # parts of the sys.path are the same: They get added to the current
-            # sys.path.
+            # parts of the sys.path are the same: They get added to the end of
+            # the current sys.path.
             """
             execution = c[2]
             assert execution.children[0] == '['
@@ -139,6 +123,23 @@ def _paths_from_assignment(module_context, expr_stmt):
                     abs_path = _abs_path(module_context.py__file__(), context.obj)
                     if abs_path is not None:
                         yield abs_path
+
+
+def _execute_code(module_path, code):
+    c = "import os; from os.path import *; result=%s"
+    variables = {'__file__': module_path}
+    try:
+        exec_function(c % code, variables)
+    except Exception:
+        debug.warning('sys.path manipulation detected, but failed to evaluate.')
+    else:
+        try:
+            res = variables['result']
+            if isinstance(res, str):
+                return _abs_path(module_path, res)
+        except KeyError:
+            pass
+    return None
 
 
 def _paths_from_list_modifications(module_path, trailer1, trailer2):
