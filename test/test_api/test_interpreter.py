@@ -4,11 +4,11 @@ Tests of ``jedi.api.Interpreter``.
 import pytest
 
 import jedi
-from jedi._compatibility import is_py33, is_py3
+from jedi._compatibility import is_py33, py_version
 from jedi.evaluate.compiled import mixed
 
 
-if is_py3:
+if py_version > 30:
     def exec_(source, global_map):
         exec(source, global_map)
 else:
