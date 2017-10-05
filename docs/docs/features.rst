@@ -77,21 +77,6 @@ Will probably never be implemented:
 Caveats
 -------
 
-**Malformed Syntax**
-
-Syntax errors and other strange stuff may lead to undefined behaviour of the
-completion. |jedi| is **NOT** a Python compiler, that tries to correct you. It
-is a tool that wants to help you. But **YOU** have to know Python, not |jedi|.
-
-**Legacy Python 2 Features**
-
-This framework should work for both Python 2/3. However, some things were just
-not as *pythonic* in Python 2 as things should be. To keep things simple, some
-older Python 2 features have been left out:
-
-- Classes: Always Python 3 like, therefore all classes inherit from ``object``.
-- Generators: No ``next()`` method. The ``__next__()`` method is used instead.
-
 **Slow Performance**
 
 Importing ``numpy`` can be quite slow sometimes, as well as loading the
