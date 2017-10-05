@@ -4,8 +4,16 @@ Tests of ``jedi.api.Interpreter``.
 import pytest
 
 import jedi
-from jedi._compatibility import is_py33, exec_function, py_version
+from jedi._compatibility import is_py33, is_py3
 from jedi.evaluate.compiled import mixed
+
+
+if is_py3:
+    def exec_(source, global_map):
+        exec(source, global_map)
+else:
+    eval(compile("""def exec_(source, global_map):
+                        exec source in global_map """, 'blub', 'exec'))
 
 
 class _GlobalNameSpace():
@@ -247,7 +255,7 @@ def test_completion_param_annotations():
     # Need to define this function not directly in Python. Otherwise Jedi is to
     # clever and uses the Python code instead of the signature object.
     code = 'def foo(a: 1, b: str, c: int = 1.0): pass'
-    exec_function(code, locals())
+    exec_(code, locals())
     script = jedi.Interpreter('foo', [locals()])
     c, = script.completions()
     a, b, c = c.params

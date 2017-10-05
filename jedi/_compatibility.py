@@ -174,14 +174,6 @@ except NameError:
     unicode = str
 
 
-# exec function
-if is_py3:
-    def exec_function(source, global_map):
-        exec(source, global_map)
-else:
-    eval(compile("""def exec_function(source, global_map):
-                        exec source in global_map """, 'blub', 'exec'))
-
 # re-raise function
 if is_py3:
     def reraise(exception, traceback):

@@ -4,9 +4,10 @@ import sys
 import imp
 from jedi.evaluate.site import addsitedir
 
-from jedi._compatibility import exec_function, unicode
+from jedi._compatibility import unicode
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.base_context import ContextualizedNode
+from jedi.evaluate.helpers import is_string
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.utils import ignored
@@ -68,7 +69,8 @@ def _get_venv_sitepackages(venv):
     return p
 
 
-def _abs_path(module_path, path):
+def _abs_path(module_context, path):
+    module_path = module_context.py__file__()
     if os.path.isabs(path):
         return path
 
@@ -78,6 +80,7 @@ def _abs_path(module_path, path):
         return None
 
     base_dir = os.path.dirname(module_path)
+    print(base_dir, path)
     return os.path.abspath(os.path.join(base_dir, path))
 
 
@@ -115,50 +118,36 @@ def _paths_from_assignment(module_context, expr_stmt):
         except AssertionError:
             continue
 
-        from jedi.evaluate.syntax_tree import is_string
         cn = ContextualizedNode(module_context.create_context(expr_stmt), expr_stmt)
         for lazy_context in cn.infer().iterate(cn):
             for context in lazy_context.infer():
                 if is_string(context):
-                    abs_path = _abs_path(module_context.py__file__(), context.obj)
+                    abs_path = _abs_path(module_context, context.obj)
                     if abs_path is not None:
                         yield abs_path
 
 
-def _execute_code(module_path, code):
-    c = "import os; from os.path import *; result=%s"
-    variables = {'__file__': module_path}
-    try:
-        exec_function(c % code, variables)
-    except Exception:
-        debug.warning('sys.path manipulation detected, but failed to evaluate.')
-    else:
-        try:
-            res = variables['result']
-            if isinstance(res, str):
-                return _abs_path(module_path, res)
-        except KeyError:
-            pass
-    return None
-
-
-def _paths_from_list_modifications(module_path, trailer1, trailer2):
+def _paths_from_list_modifications(module_context, trailer1, trailer2):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
     # Guarantee that both are trailers, the first one a name and the second one
     # a function execution with at least one param.
     if not (trailer1.type == 'trailer' and trailer1.children[0] == '.'
             and trailer2.type == 'trailer' and trailer2.children[0] == '('
             and len(trailer2.children) == 3):
-        return []
+        return
 
     name = trailer1.children[1].value
     if name not in ['insert', 'append']:
-        return []
+        return
     arg = trailer2.children[1]
     if name == 'insert' and len(arg.children) in (3, 4):  # Possible trailing comma.
         arg = arg.children[2]
-    path = _execute_code(module_path, arg.get_code())
-    return [] if path is None else [path]
+
+    for context in module_context.create_context(arg).eval_node(arg):
+        if is_string(context):
+            abs_path = _abs_path(module_context, context.obj)
+            if abs_path is not None:
+                yield abs_path
 
 
 def check_sys_path_modifications(module_context):
@@ -190,7 +179,7 @@ def check_sys_path_modifications(module_context):
             if len(power.children) >= 4:
                 added.extend(
                     _paths_from_list_modifications(
-                        module_context.py__file__(), *power.children[2:4]
+                        module_context, *power.children[2:4]
                     )
                 )
             elif expr_stmt is not None and expr_stmt.type == 'expr_stmt':

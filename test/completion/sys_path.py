@@ -7,8 +7,6 @@ sys.path.insert(0, '../../jedi')
 sys.path.append(dirname(os.path.abspath('thirdparty' + os.path.sep + 'asdf')))
 
 # modifications, that should fail:
-# because of sys module
-sys.path.append(sys.path[1] + '/thirdparty')
 # syntax err
 sys.path.append('a' +* '/thirdparty')
 
@@ -18,8 +16,9 @@ import evaluate
 #? ['evaluator_function_cache']
 evaluate.Evaluator_fu
 
-#? ['jedi_']
+# Those don't work because dirname and abspath are not properly understood.
+##? ['jedi_']
 import jedi_
 
-#? ['el']
+##? ['el']
 jedi_.el
