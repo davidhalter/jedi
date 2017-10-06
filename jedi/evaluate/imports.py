@@ -252,10 +252,8 @@ class Importer(object):
 
     def sys_path_with_modifications(self):
         in_path = []
-        sys_path_mod = list(sys_path.sys_path_with_modifications(
-            self._evaluator,
-            self.module_context
-        ))
+        sys_path_mod = self._evaluator.project.sys_path \
+                       + sys_path.check_sys_path_modifications(self.module_context)
         if self.file_path is not None:
             # If you edit e.g. gunicorn, there will be imports like this:
             # `from gunicorn import something`. But gunicorn is not in the

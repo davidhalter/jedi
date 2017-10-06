@@ -7,10 +7,12 @@ from jedi.cache import underscore_memoization
 
 class Project(object):
     def __init__(self, sys_path=None):
-        if sys_path is None:
-            venv = os.getenv('VIRTUAL_ENV')
-            if venv:
-                sys_path = get_venv_path(venv)
+        if sys_path is not None:
+            self._sys_path = sys_path
+
+        venv = os.getenv('VIRTUAL_ENV')
+        if venv:
+            sys_path = get_venv_path(venv)
 
         if sys_path is None:
             sys_path = sys.path

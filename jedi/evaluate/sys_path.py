@@ -5,7 +5,7 @@ import imp
 from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import unicode
-from jedi.evaluate.cache import evaluator_function_cache
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextualizedNode
 from jedi.evaluate.helpers import is_string
 from jedi import settings
@@ -150,6 +150,7 @@ def _paths_from_list_modifications(module_context, trailer1, trailer2):
                 yield abs_path
 
 
+@evaluator_method_cache(default=[])
 def check_sys_path_modifications(module_context):
     """
     Detect sys.path modifications within module.
@@ -187,7 +188,6 @@ def check_sys_path_modifications(module_context):
     return added
 
 
-@evaluator_function_cache(default=[])
 def sys_path_with_modifications(evaluator, module_context):
     return evaluator.project.sys_path + check_sys_path_modifications(module_context)
 
