@@ -241,34 +241,29 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        temp, settings.dynamic_flow_information = \
-            settings.dynamic_flow_information, False
-        try:
-            module_node = self._get_module_node()
-            user_stmt = get_statement_of_position(module_node, self._pos)
-            definition_names = self._goto()
-            if not definition_names and isinstance(user_stmt, tree.Import):
-                # For not defined imports (goto doesn't find something, we take
-                # the name as a definition. This is enough, because every name
-                # points to it.
-                name = user_stmt.get_name_of_position(self._pos)
-                if name is None:
-                    # Must be syntax
-                    return []
-                definition_names = [TreeNameDefinition(self._get_module(), name)]
-
-            if not definition_names:
-                # Without a definition for a name we cannot find references.
+        module_node = self._get_module_node()
+        user_stmt = get_statement_of_position(module_node, self._pos)
+        definition_names = self._goto()
+        if not definition_names and isinstance(user_stmt, tree.Import):
+            # For not defined imports (goto doesn't find something, we take
+            # the name as a definition. This is enough, because every name
+            # points to it.
+            name = user_stmt.get_name_of_position(self._pos)
+            if name is None:
+                # Must be syntax
                 return []
+            definition_names = [TreeNameDefinition(self._get_module(), name)]
 
-            definition_names = usages.resolve_potential_imports(self._evaluator,
-                                                                definition_names)
+        if not definition_names:
+            # Without a definition for a name we cannot find references.
+            return []
 
-            modules = set([d.get_root_context() for d in definition_names])
-            modules.add(self._get_module())
-            definitions = usages.usages(self._evaluator, definition_names, modules)
-        finally:
-            settings.dynamic_flow_information = temp
+        definition_names = usages.resolve_potential_imports(self._evaluator,
+                                                            definition_names)
+
+        modules = set([d.get_root_context() for d in definition_names])
+        modules.add(self._get_module())
+        definitions = usages.usages(self._evaluator, definition_names, modules)
 
         return helpers.sorted_definitions(set(definitions))
 

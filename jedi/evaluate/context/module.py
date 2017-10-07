@@ -13,6 +13,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
 from jedi.evaluate.imports import SubModuleName, infer_import
 
+
 class _ModuleAttributeName(AbstractNameDefinition):
     """
     For module attributes like __file__, __str__ and so on.
