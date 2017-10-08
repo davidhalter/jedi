@@ -188,7 +188,7 @@ class TestClass(Super):
         self.base_class
         #< (-20,13), (0,13)
         self.base_var
-        #< 
+        #< (0, 18),
         TestClass.base_var
 
 
@@ -242,7 +242,7 @@ def f(**kwargs):
 # No result
 # -----------------
 if isinstance(j, int):
-    #< 
+    #< (0, 4),
     j
 
 # -----------------

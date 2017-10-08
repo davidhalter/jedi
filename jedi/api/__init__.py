@@ -22,11 +22,11 @@ from jedi import settings
 from jedi import cache
 from jedi.api import classes
 from jedi.api import interpreter
-from jedi.api import usages
 from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
+from jedi.evaluate import usages
 from jedi.evaluate.project import Project
 from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
@@ -205,7 +205,12 @@ class Script(object):
                 else:
                     yield name
 
-        names = self._goto()
+        tree_name = self._get_module_node().get_name_of_position(self._pos)
+        if tree_name is None:
+            return []
+        context = self._evaluator.create_context(self._get_module(), tree_name)
+        names = list(self._evaluator.goto(context, tree_name))
+
         if follow_imports:
             def check(name):
                 if isinstance(name, ModuleName):
@@ -220,16 +225,6 @@ class Script(object):
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
-    def _goto(self):
-        """
-        Used for goto_assignments and usages.
-        """
-        name = self._get_module_node().get_name_of_position(self._pos)
-        if name is None:
-            return []
-        context = self._evaluator.create_context(self._get_module(), name)
-        return list(self._evaluator.goto(context, name))
-
     def usages(self, additional_module_paths=()):
         """
         Return :class:`classes.Definition` objects, which contain all
@@ -241,31 +236,15 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        module_node = self._get_module_node()
-        user_stmt = get_statement_of_position(module_node, self._pos)
-        definition_names = self._goto()
-        if not definition_names and isinstance(user_stmt, tree.Import):
-            # For not defined imports (goto doesn't find something, we take
-            # the name as a definition. This is enough, because every name
-            # points to it.
-            name = user_stmt.get_name_of_position(self._pos)
-            if name is None:
-                # Must be syntax
-                return []
-            definition_names = [TreeNameDefinition(self._get_module(), name)]
-
-        if not definition_names:
-            # Without a definition for a name we cannot find references.
+        tree_name = self._get_module_node().get_name_of_position(self._pos)
+        if tree_name is None:
+            # Must be syntax
             return []
 
-        definition_names = usages.resolve_potential_imports(self._evaluator,
-                                                            definition_names)
+        names = usages.usages(self._evaluator, self._get_module(), tree_name)
 
-        modules = set([d.get_root_context() for d in definition_names])
-        modules.add(self._get_module())
-        definitions = usages.usages(self._evaluator, definition_names, modules)
-
-        return helpers.sorted_definitions(set(definitions))
+        definitions = [classes.Definition(self._evaluator, n) for n in names]
+        return helpers.sorted_definitions(definitions)
 
     def call_signatures(self):
         """
