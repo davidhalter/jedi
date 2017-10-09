@@ -241,7 +241,7 @@ class Script(object):
             # Must be syntax
             return []
 
-        names = usages.usages(self._evaluator, self._get_module(), tree_name)
+        names = usages.usages(self._get_module(), tree_name)
 
         definitions = [classes.Definition(self._evaluator, n) for n in names]
         return helpers.sorted_definitions(definitions)

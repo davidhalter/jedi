@@ -20,31 +20,30 @@ def _resolve_names(definition_names, avoid_names=()):
                 yield name
 
 
-def usages(evaluator, module_context, tree_name):
-    """
-    :param definitions: list of Name
-    """
-    def find_names(module_context, tree_name):
-        context = evaluator.create_context(module_context, tree_name)
-        name = TreeNameDefinition(context, tree_name)
-        found_names = set(name.goto())
-        found_names.add(name)
-        return dcti(_resolve_names(found_names))
+def _dictionarize(names):
+    return dict(
+        (n if n.tree_name is None else n.tree_name, n)
+        for n in names
+    )
 
-    def dcti(names):
-        return dict(
-            (n if n.tree_name is None else n.tree_name, n)
-            for n in names
-        )
 
+def _find_names(module_context, tree_name):
+    context = module_context.create_context(tree_name)
+    name = TreeNameDefinition(context, tree_name)
+    found_names = set(name.goto())
+    found_names.add(name)
+    return _dictionarize(_resolve_names(found_names))
+
+
+def usages(module_context, tree_name):
     search_name = tree_name.value
-    found_names = find_names(module_context, tree_name)
+    found_names = _find_names(module_context, tree_name)
     modules = set(d.get_root_context() for d in found_names.values())
     modules = set(m for m in modules if isinstance(m, ModuleContext))
 
-    for m in imports.get_modules_containing_name(evaluator, modules, search_name):
+    for m in imports.get_modules_containing_name(module_context.evaluator, modules, search_name):
         for name_leaf in m.tree_node.get_used_names().get(search_name, []):
-            new = find_names(m, name_leaf)
+            new = _find_names(m, name_leaf)
             for tree_name in new:
                 if tree_name in found_names:
                     found_names.update(new)
