@@ -80,7 +80,6 @@ def _abs_path(module_context, path):
         return None
 
     base_dir = os.path.dirname(module_path)
-    print(base_dir, path)
     return os.path.abspath(os.path.join(base_dir, path))
 
 

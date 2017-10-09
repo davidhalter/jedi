@@ -508,6 +508,16 @@ def get_modules_containing_name(evaluator, modules, name):
     Search a name in the directories of modules.
     """
     from jedi.evaluate.context import ModuleContext
+    def check_directories(paths):
+        for p in paths:
+            if p is not None:
+                # We need abspath, because the seetings paths might not already
+                # have been converted to absolute paths.
+                d = os.path.dirname(os.path.abspath(p))
+                for file_name in os.listdir(d):
+                    path = os.path.join(d, file_name)
+                    if file_name.endswith('.py'):
+                        yield path
 
     def check_python_file(path):
         try:
@@ -547,17 +557,10 @@ def get_modules_containing_name(evaluator, modules, name):
     if not settings.dynamic_params_for_other_modules:
         return
 
-    paths = set(settings.additional_dynamic_modules)
-    for p in used_mod_paths:
-        if p is not None:
-            # We need abspath, because the seetings paths might not already
-            # have been converted to absolute paths.
-            d = os.path.dirname(os.path.abspath(p))
-            for file_name in os.listdir(d):
-                path = os.path.join(d, file_name)
-                if path not in used_mod_paths and path not in paths:
-                    if file_name.endswith('.py'):
-                        paths.add(path)
+    additional = set(os.path.abspath(p) for p in settings.additional_dynamic_modules)
+    # Check the directories of used modules.
+    paths = (additional | set(check_directories(used_mod_paths))) \
+            - used_mod_paths
 
     # Sort here to make issues less random.
     for p in sorted(paths):
