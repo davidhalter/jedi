@@ -41,11 +41,22 @@ def usages(module_context, tree_name):
     modules = set(d.get_root_context() for d in found_names.values())
     modules = set(m for m in modules if isinstance(m, ModuleContext))
 
+    non_matching_usage_maps = {}
     for m in imports.get_modules_containing_name(module_context.evaluator, modules, search_name):
         for name_leaf in m.tree_node.get_used_names().get(search_name, []):
             new = _find_names(m, name_leaf)
-            for tree_name in new:
-                if tree_name in found_names:
-                    found_names.update(new)
-                    break
+            if any(tree_name in found_names for tree_name in new):
+                found_names.update(new)
+                for tree_name in new:
+                    for dct in non_matching_usage_maps.get(tree_name, []):
+                        # A usage that was previously searched for matches with
+                        # a now found name. Merge.
+                        found_names.update(dct)
+                    try:
+                        del non_matching_usage_maps[tree_name]
+                    except KeyError:
+                        pass
+            else:
+                for name in new:
+                    non_matching_usage_maps.setdefault(name, []).append(new)
     return found_names.values()

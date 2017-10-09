@@ -302,3 +302,14 @@ x = 3
 {x:1 for  x in something}
 #< 10 (0,1), (0,10)
 {x:1 for  x in something}
+
+def x():
+    zzz = 3
+    if UNDEFINED:
+        zzz = 5
+        if UNDEFINED2:
+            zzz
+    else:
+        #< (0, 8), (1, 4), (-3, 12), (-5, 8), (-7, 4)
+        zzz
+    zzz
