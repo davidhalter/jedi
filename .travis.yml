@@ -8,11 +8,14 @@ python:
   - 3.5
   - 3.6
   - pypy
+  - nightly
+
 matrix:
   allow_failures:
     - python: pypy
     - env: TOXENV=cov
     - env: TOXENV=sith
+    - python: nightly
   include:
     - python: 3.5
       env: TOXENV=cov
@@ -27,4 +30,3 @@ after_script:
       pip install --quiet coveralls;
       coveralls;
       fi
-
