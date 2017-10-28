@@ -58,8 +58,11 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
 
     If you're using the leaf, e.g. the bracket `)` it will return ``list([])``.
 
-    # TODO remove cut_own_trailer option, since its always used with it. Just
-    #      ignore it, It's not what we want anyway. Or document it better?
+    We use this function for two purposes. Given an expression ``bar.foo``,
+    we may want to
+      - infer the type of ``foo`` to offer completions after foo
+      - infer the type of ``bar`` to be able to jump to the definition of foo
+    The option ``cut_own_trailer`` must be set to true for the second purpose.
     """
     trailer = leaf.parent
     # The leaf may not be the last or first child, because there exist three
