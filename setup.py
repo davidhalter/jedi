@@ -31,6 +31,7 @@ setup(name='jedi',
       long_description=readme,
       packages=find_packages(exclude=['test']),
       install_requires=install_requires,
+      extras_require={'dev': ['docopt']},
       package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
       platforms=['any'],
       classifiers=[
