@@ -37,6 +37,19 @@ from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
     TreeContext, ContextualizedNode
 from jedi.parser_utils import get_comp_fors
 
+try:
+    from types import CoroutineType
+except ImportError:
+    HAS_COROUTINE = False
+else:
+    HAS_COROUTINE = True
+
+try:
+    from types import AsyncGeneratorType
+except ImportError:
+    HAS_ASYNC_GENERATOR = False
+else:
+    HAS_ASYNC_GENERATOR = True
 
 class AbstractIterable(Context):
     builtin_methods = {}
@@ -51,6 +64,83 @@ class AbstractIterable(Context):
     @property
     def name(self):
         return compiled.CompiledContextName(self, self.array_type)
+
+
+@has_builtin_methods
+class CoroutineMixin(object):
+    array_type = None
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        gen_obj = compiled.create(self.evaluator, CoroutineType)
+        yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
+        for filter in gen_obj.get_filters(search_global):
+            yield filter
+
+    def py__bool__(self):
+        return True
+
+    def py__class__(self):
+        gen_obj = compiled.create(self.evaluator, CoroutineType)
+        return gen_obj.py__class__()
+
+    @property
+    def name(self):
+        return compiled.CompiledContextName(self, 'coroutine')
+
+
+class Coroutine(CoroutineMixin, Context):
+    def __init__(self, evaluator, func_execution_context):
+        if not HAS_COROUTINE:
+            raise ImportError("Need python3.5 to support coroutines.")
+        super(Coroutine, self).__init__(evaluator, parent_context=evaluator.BUILTINS)
+        self._func_execution_context = func_execution_context
+
+    def execute_await(self):
+        return self._func_execution_context.get_return_values()
+
+    def __repr__(self):
+        return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
+
+
+@has_builtin_methods
+class AsyncGeneratorMixin(object):
+    array_type = None
+
+    @register_builtin_method('__anext__')
+    def py__anext__(self):
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__aiter__())
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        gen_obj = compiled.create(self.evaluator, AsyncGeneratorType)
+        yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
+        for filter in gen_obj.get_filters(search_global):
+            yield filter
+
+    def py__bool__(self):
+        return True
+
+    def py__class__(self):
+        gen_obj = compiled.create(self.evaluator, AsyncGeneratorType)
+        return gen_obj.py__class__()
+
+    @property
+    def name(self):
+        return compiled.CompiledContextName(self, 'asyncgenerator')
+
+
+class AsyncGenerator(AsyncGeneratorMixin, Context):
+    """Handling of `yield` functions."""
+    def __init__(self, evaluator, func_execution_context):
+        if not HAS_ASYNC_GENERATOR:
+            raise ImportError("Need python3.6 to support async generators.")
+        super(AsyncGenerator, self).__init__(evaluator, parent_context=evaluator.BUILTINS)
+        self._func_execution_context = func_execution_context
+
+    def py__aiter__(self):
+        return self._func_execution_context.get_yield_values(is_async=True)
+
+    def __repr__(self):
+        return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
 @has_builtin_methods
@@ -126,17 +216,18 @@ class Comprehension(AbstractIterable):
             cls = ListComprehension
         return cls(evaluator, context, atom)
 
-    def __init__(self, evaluator, defining_context, atom):
+    def __init__(self, evaluator, defining_context, atom, is_async=False):
         super(Comprehension, self).__init__(evaluator)
         self._defining_context = defining_context
         self._atom = atom
 
     def _get_comprehension(self):
+        "return 'a for a in b'"
         # The atom contains a testlist_comp
         return self._atom.children[1]
 
     def _get_comp_for(self):
-        # The atom contains a testlist_comp
+        "return CompFor('for a in b')"
         return self._get_comprehension().children[1]
 
     def _eval_node(self, index=0):
@@ -154,13 +245,17 @@ class Comprehension(AbstractIterable):
 
     def _nested(self, comp_fors, parent_context=None):
         comp_for = comp_fors[0]
-        input_node = comp_for.children[3]
+
+        is_async = 'async' == comp_for.children[comp_for.children.index('for') - 1]
+
+        input_node = comp_for.children[comp_for.children.index('in') + 1]
         parent_context = parent_context or self._defining_context
         input_types = parent_context.eval_node(input_node)
+        # TODO: simulate await if self.is_async
 
         cn = ContextualizedNode(parent_context, input_node)
-        iterated = input_types.iterate(cn)
-        exprlist = comp_for.children[1]
+        iterated = input_types.iterate(cn, is_async=is_async)
+        exprlist = comp_for.children[comp_for.children.index('for') + 1]
         for i, lazy_context in enumerate(iterated):
             types = lazy_context.infer()
             dct = unpack_tuple_to_dict(parent_context, types, exprlist)
@@ -649,7 +744,7 @@ class _ArrayInstance(object):
             for addition in additions:
                 yield addition
 
-    def iterate(self, contextualized_node=None):
+    def iterate(self, contextualized_node=None, is_async=False):
         return self.py__iter__()
 
 

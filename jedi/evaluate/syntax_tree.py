@@ -68,22 +68,38 @@ def eval_node(context, element):
         return eval_expr_stmt(context, element)
     elif typ in ('power', 'atom_expr'):
         first_child = element.children[0]
-        if not (first_child.type == 'keyword' and first_child.value == 'await'):
-            context_set = eval_atom(context, first_child)
-            for trailer in element.children[1:]:
-                if trailer == '**':  # has a power operation.
-                    right = evaluator.eval_element(context, element.children[2])
-                    context_set = _eval_comparison(
-                        evaluator,
-                        context,
-                        context_set,
-                        trailer,
-                        right
-                    )
-                    break
-                context_set = eval_trailer(context, context_set, trailer)
-            return context_set
-        return NO_CONTEXTS
+        children = element.children[1:]
+        had_await = False
+        if first_child.type == 'keyword' and first_child.value == 'await':
+            had_await = True
+            first_child = children.pop(0)
+
+        context_set = eval_atom(context, first_child)
+        for trailer in children:
+            if trailer == '**':  # has a power operation.
+                right = evaluator.eval_element(context, children[1])
+                context_set = _eval_comparison(
+                    evaluator,
+                    context,
+                    context_set,
+                    trailer,
+                    right
+                )
+                break
+            context_set = eval_trailer(context, context_set, trailer)
+
+        if had_await:
+            await_context_set = ContextSet()
+            for context in context_set:
+                try:
+                    func = context.execute_await
+                except AttributeError:
+                    debug.warning('Tried to run execute_await on context %s', context)
+                    pass
+                else:
+                    await_context_set |= func()
+            return await_context_set
+        return context_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
         return ContextSet(iterable.SequenceLiteralContext(evaluator, context, element))

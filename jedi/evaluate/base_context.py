@@ -63,10 +63,13 @@ class Context(BaseContext):
         arguments = ValuesArguments([ContextSet(value) for value in value_list])
         return self.execute(arguments)
 
-    def iterate(self, contextualized_node=None):
+    def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate')
         try:
-            iter_method = self.py__iter__
+            if is_async:
+                iter_method = self.py__aiter__
+            else:
+                iter_method = self.py__iter__
         except AttributeError:
             if contextualized_node is not None:
                 from jedi.evaluate import analysis
@@ -241,9 +244,9 @@ class ContextSet(BaseContextSet):
     def py__class__(self):
         return ContextSet.from_iterable(c.py__class__() for c in self._set)
 
-    def iterate(self, contextualized_node=None):
+    def iterate(self, contextualized_node=None, is_async=False):
         from jedi.evaluate.lazy_context import get_merged_lazy_context
-        type_iters = [c.iterate(contextualized_node) for c in self._set]
+        type_iters = [c.iterate(contextualized_node, is_async=is_async) for c in self._set]
         for lazy_contexts in zip_longest(*type_iters):
             yield get_merged_lazy_context(
                 [l for l in lazy_contexts if l is not None]

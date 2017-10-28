@@ -6,17 +6,39 @@ raise errors or return extremely strange results.
 """
 
 async def x():
+    return 1
+
+#? []
+x.cr_awai
+
+#? ['cr_await']
+x().cr_awai
+
+a = await x()
+#? int()
+a
+
+async def y():
     argh = await x()
-    #? 
+    #? int()
     argh
     return 2
 
-#? int()
-x()
+async def asgen():
+    yield 1
+    await asyncio.sleep(0)
+    yield 2
 
-a = await x()
-#?
-a
+async def wrapper():
+    #? int()
+    [x async for x in asgen()][0]
+
+    async for y in asgen():
+        # TODO: make this an int()
+        y
+
+#? ['__anext__']
+asgen().__ane
 
 
 async def x2():
