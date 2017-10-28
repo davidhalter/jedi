@@ -89,6 +89,10 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
         base = power.children[0]
         trailers = power.children[1:cut]
 
+    if base == 'await':
+        base = trailers[0]
+        trailers = trailers[1:]
+
     values = context.eval_node(base)
     from jedi.evaluate.syntax_tree import eval_trailer
     for trailer in trailers:
