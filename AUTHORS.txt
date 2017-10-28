@@ -44,6 +44,7 @@ Mathias Rav (@Mortal) <rav@cs.au.dk>
 Daniel Fiterman (@dfit99) <fitermandaniel2@gmail.com>
 Simon Ruggier (@sruggier)
 Élie Gouzien (@ElieGouzien)
-
+Robin Roth (@robinro)
+Malte Plath (@langsamer)
 
 Note: (@user) means a github user name.
