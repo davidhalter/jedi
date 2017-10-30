@@ -222,7 +222,7 @@ A little history
 
 The Star Wars Jedi are awesome. My Jedi software tries to imitate a little bit
 of the precognition the Jedi have. There's even an awesome `scene
-<http://www.youtube.com/watch?v=5BDO3pyavOY>`_ of Monty Python Jedis :-).
+<https://youtu.be/yHRJLIf7wMU>`_ of Monty Python Jedis :-).
 
 But actually the name hasn't so much to do with Star Wars. It's part of my
 second name.
