@@ -14,9 +14,9 @@ matrix:
     - env: TOXENV=cov
     - env: TOXENV=sith
   include:
-    - python: 3.5
+    - python: 3.6
       env: TOXENV=cov
-    - python: 3.5
+    - python: 3.6
       env: TOXENV=sith
 install:
     - pip install --quiet tox-travis
