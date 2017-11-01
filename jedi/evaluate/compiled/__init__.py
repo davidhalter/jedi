@@ -450,10 +450,6 @@ def load_module(evaluator, path=None, name=None):
     else:
         dotted_path = name
 
-    if dotted_path is None:
-        p, _, dotted_path = path.partition(os.path.sep)
-        sys_path.insert(0, p)
-
     temp, sys.path = sys.path, sys_path
     try:
         __import__(dotted_path)
