@@ -2,7 +2,7 @@ import os
 import sys
 
 from jedi.evaluate.sys_path import get_venv_path, detect_additional_paths
-from jedi.cache import underscore_memoization
+from jedi.cache import memoize_method
 
 
 class Project(object):
@@ -32,7 +32,7 @@ class Project(object):
         self._evaluator = evaluator
 
     @property
-    @underscore_memoization
+    @memoize_method
     def sys_path(self):
         if self._script_path is None:
             return self._base_sys_path
