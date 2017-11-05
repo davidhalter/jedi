@@ -36,7 +36,7 @@ As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 
-__version__ = '0.11.0'
+__version__ = '0.11.1'
 
 from jedi.api import Script, Interpreter, set_debug_function, \
     preload_module, names
