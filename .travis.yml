@@ -8,14 +8,13 @@ python:
   - 3.5
   - 3.6
   - pypy
-  - nightly
+  - "3.7-dev"
 
 matrix:
   allow_failures:
     - python: pypy
     - env: TOXENV=cov
     - env: TOXENV=sith
-    - python: nightly
   include:
     - python: 3.5
       env: TOXENV=cov
