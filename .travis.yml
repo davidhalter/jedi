@@ -8,11 +8,14 @@ python:
   - 3.5
   - 3.6
   - pypy
+  - "3.7-dev"
+
 matrix:
   allow_failures:
     - python: pypy
     - env: TOXENV=cov
     - env: TOXENV=sith
+    - python: 3.7-dev
   include:
     - python: 3.5
       env: TOXENV=cov
@@ -27,4 +30,3 @@ after_script:
       pip install --quiet coveralls;
       coveralls;
       fi
-
