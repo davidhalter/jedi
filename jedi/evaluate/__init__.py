@@ -83,10 +83,11 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
+from jedi.evaluate.compiled.subprocess import EvaluatorSubprocess, EvaluatorSameProcess
 
 
 class Evaluator(object):
-    def __init__(self, grammar, project):
+    def __init__(self, grammar, project, compiled_sub_process=None):
         self.grammar = grammar
         self.latest_grammar = parso.load_grammar(version='3.6')
         self.memoize_cache = {}  # for memoize decorators
@@ -101,6 +102,12 @@ class Evaluator(object):
         self.python_version = sys.version_info[:2]
         self.project = project
         project.add_evaluator(self)
+
+        if compiled_sub_process is None:
+            self.compiled_subprocess = EvaluatorSameProcess(self)
+        else:
+            self.compiled_subprocess = EvaluatorSubprocess(self, compiled_sub_process)
+
 
         self.reset_recursion_limitations()
 

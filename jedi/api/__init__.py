@@ -36,6 +36,7 @@ from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.context.module import ModuleName
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
+from jedi.evaluate.compiled.subprocess import get_subprocess
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -79,10 +80,12 @@ class Script(object):
     :type encoding: str
     :param sys_path: ``sys.path`` to use during analysis of the script
     :type sys_path: list
+    :param environment: TODO
+    :type sys_path: Environment
 
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', sys_path=None):
+                 encoding='utf-8', sys_path=None, environment=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
@@ -112,9 +115,23 @@ class Script(object):
         # Load the Python grammar of the current interpreter.
         self._grammar = parso.load_grammar()
         project = Project(sys_path=sys_path)
-        self._evaluator = Evaluator(self._grammar, project)
+        if isinstance(self, Interpreter):
+            # It's not possible to use a subprocess for the interpreter.
+            self._compiled_subprocess = None
+        else:
+            if environment is None:
+                executable = sys.executable
+            else:
+                executable = environment.executable
+            self._compiled_subprocess = get_subprocess(executable)
+        self._evaluator = Evaluator(self._grammar, project, self._compiled_subprocess)
         project.add_script_path(self.path)
         debug.speed('init')
+
+    def __del__(self):
+        if self._compiled_subprocess is not None:
+            self._compiled_subprocess.delete_evaluator(evaluator)
+        self._evaluator.cleanup_evaluator
 
     @cache.memoize_method
     def _get_module_node(self):
@@ -355,6 +372,9 @@ class Interpreter(Script):
             namespaces = [dict(n) for n in namespaces]
         except Exception:
             raise TypeError("namespaces must be a non-empty list of dicts.")
+
+        if 'environment' in kwds:
+            raise TypeError("Environments are not allowed when using an interpreter.")
 
         super(Interpreter, self).__init__(source, **kwds)
         self.namespaces = namespaces
