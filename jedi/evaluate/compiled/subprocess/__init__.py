@@ -41,7 +41,7 @@ class CompiledSubProcess(object):
             (executable, '-m', 'jedi.evaluate.compiled.subprocess')
         )
 
-    def command(self):
+    def command(self, command):
         return self._send()
 
 
