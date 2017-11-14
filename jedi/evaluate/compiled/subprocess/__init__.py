@@ -14,7 +14,7 @@ import pickle
 from functools import partial
 
 from jedi.cache import memoize_method
-from jedi.evaluate.compiled.subprocess import commands
+from jedi.evaluate.compiled.subprocess import functions
 
 _PICKLE_PROTOCOL = 2
 
@@ -29,6 +29,11 @@ def get_subprocess(executable):
         return sub
 
 
+def _get_function(evaluator, name):
+    function = getattr(functions, name)
+    return partial(function, evaluator)
+
+
 class EvaluatorSameProcess(object):
     """
     Basically just an easy access to functions.py. It has the same API
@@ -38,9 +43,8 @@ class EvaluatorSameProcess(object):
     def __init__(self, evaluator):
         self._evaluator = evaluator
 
-    def __getattr__(self):
-        function = getattr(commands, name)
-        return partial(function, self._evaluator)
+    def __getattr__(self, name):
+        return _get_function(self._evaluator, name)
 
 
 class EvaluatorSubprocess(object):
@@ -50,11 +54,10 @@ class EvaluatorSubprocess(object):
         self._compiled_subprocess = compiled_subprocess
 
     def __getattr__(self, name):
-        function = getattr(commands, name)
-        return partial(function, self._evaluator_weakref())
+        return _get_function(self._evaluator_weakref(), name)
 
     def __del__(self):
-        self.delete_evaluator(self._evaluator_weakref()
+        self.delete_evaluator(self._evaluator_weakref())
 
 
 class _Subprocess(object):
@@ -93,6 +96,9 @@ class _CompiledSubprocess(_Subprocess):
         assert callable(function)
         return self._send(id(evaluator), function, args, kwargs)
 
+    def get_sys_path(self):
+        return self._send(None, functions.get_sys_path, (), {})
+
     def delete_evaluator(self, evaluator_id):
         # With an argument - the evaluator gets deleted.
         self._send(evaluator_id, None)
@@ -102,7 +108,7 @@ class Listener():
     def __init__(self):
         self._evaluators = {}
 
-    def _run(self, evaluator_id, function, args, kwargs):
+    def _get_evaluator(self, function, evaluator_id):
         from jedi.evaluate import Evaluator
 
         if function is None:
@@ -116,8 +122,14 @@ class Listener():
         except KeyError:
             evaluator = Evaluator(None, None)
             self.evaluators[evaluator_id] = evaluator
+        return evaluator
 
-        return function(evaluator, *args, **kwargs)
+    def _run(self, evaluator_id, function, args, kwargs):
+        if evaluator_id is None:
+            return function(*args, **kwargs)
+        else:
+            evaluator = self._get_evaluator(evaluator_id)
+            return function(evaluator, *args, **kwargs)
 
     def listen(self):
         stdout = sys.stdout

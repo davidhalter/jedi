@@ -24,6 +24,7 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.completion import Completion
+from jedi.api.virtualenv import DefaultEnvironment
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
 from jedi.evaluate import usages
@@ -117,21 +118,14 @@ class Script(object):
         project = Project(sys_path=sys_path)
         if isinstance(self, Interpreter):
             # It's not possible to use a subprocess for the interpreter.
-            self._compiled_subprocess = None
+            compiled_subprocess = None
         else:
             if environment is None:
-                executable = sys.executable
-            else:
-                executable = environment.executable
-            self._compiled_subprocess = get_subprocess(executable)
-        self._evaluator = Evaluator(self._grammar, project, self._compiled_subprocess)
+                environment = DefaultEnvironment()
+            compiled_subprocess = environment.get_subprocess()
+        self._evaluator = Evaluator(self._grammar, project, compiled_subprocess)
         project.add_script_path(self.path)
         debug.speed('init')
-
-    def __del__(self):
-        if self._compiled_subprocess is not None:
-            self._compiled_subprocess.delete_evaluator(evaluator)
-        self._evaluator.cleanup_evaluator
 
     @cache.memoize_method
     def _get_module_node(self):

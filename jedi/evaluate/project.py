@@ -3,12 +3,10 @@ import sys
 
 from jedi.evaluate.sys_path import get_venv_path, detect_additional_paths
 from jedi.cache import memoize_method
-from jedi.evaluate.compiled.subprocess import CompiledSubProcess
 
 
 class Project(object):
     def __init__(self, sys_path=None):
-        self._compiled_subprocess = CompiledSubProcess()
         if sys_path is not None:
             self._sys_path = sys_path
 
