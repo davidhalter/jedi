@@ -7,6 +7,7 @@ goals:
 2. Make it possible to handle different Python versions as well as virtualenvs.
 """
 
+import os
 import sys
 import subprocess
 import weakref
@@ -19,6 +20,8 @@ from jedi.evaluate.compiled.subprocess import functions
 _PICKLE_PROTOCOL = 2
 
 _subprocesses = {}
+
+_MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
 
 
 def get_subprocess(executable):
@@ -88,8 +91,12 @@ class _Subprocess(object):
 
 class _CompiledSubprocess(_Subprocess):
     def __init__(self, executable):
+        parso_path = sys.modules['parso'].__file__
         super(_CompiledSubprocess, self).__init__(
-            (executable, '-m', 'jedi.evaluate.compiled.subprocess')
+            (executable,
+             _MAIN_PATH,
+             os.path.dirname(os.path.dirname(parso_path))
+             )
         )
 
     def run(self, evaluator, function, *args, **kwargs):

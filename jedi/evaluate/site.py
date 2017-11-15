@@ -17,7 +17,6 @@ from __future__ import print_function
 
 import sys
 import os
-from sysconfig import get_config_var
 
 
 def makepath(*paths):
@@ -109,8 +108,3 @@ def addsitedir(sys_path, sitedir, known_paths=None):
     if reset:
         known_paths = None
     return known_paths
-
-
-def getuserbase():
-    """Returns the `user base` directory path."""
-    return get_config_var('userbase')

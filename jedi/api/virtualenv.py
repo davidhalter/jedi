@@ -1,11 +1,9 @@
 import os
 import re
 import sys
-import sysconfig
-from subprocess import CalledProcessError
+from subprocess import Popen, PIPE
 from collections import namedtuple
 
-from jedi._compatibility import check_output
 from jedi.evaluate.project import Project
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import get_subprocess
@@ -34,16 +32,11 @@ class Environment(object):
 
     @memoize_method
     def get_sys_path(self):
-        vars = {
-            'base': self._path
-        }
-        lib_path = sysconfig.get_path('stdlib', vars=vars)
         # It's pretty much impossible to generate the sys path without actually
         # executing Python. The sys path (when starting with -S) itself depends
         # on how the Python version was compiled (ENV variables).
         # If you omit -S when starting Python (normal case), additionally
         # site.py gets executed.
-
         return self.get_subprocess().get_sys_path()
 
 
@@ -80,11 +73,18 @@ def _get_executable_path(path):
 
 def _get_version(executable):
     try:
-        output = check_output([executable, '--version'])
-    except (CalledProcessError, OSError):
+        process = Popen([executable, '--version'], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            raise NoVirtualEnv()
+    except OSError:
         raise NoVirtualEnv()
 
-    match = re.match(rb'Python (\d+)\.(\d+)\.(\d+)', output)
+    # Until Python 3.4 wthe version string is part of stderr, after that
+    # stdout.
+    output = stdout + stderr
+    match = re.match(br'Python (\d+)\.(\d+)\.(\d+)', output)
     if match is None:
         raise NoVirtualEnv()
 
