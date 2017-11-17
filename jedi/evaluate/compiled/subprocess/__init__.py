@@ -69,7 +69,7 @@ class EvaluatorSubprocess(object):
                 **kwargs
             )
             if isinstance(result, CompiledHandle):
-                result.add_subprocess(self._compiled_subprocess)
+                result.add_subprocess(self)
 
             return result
 
@@ -210,7 +210,7 @@ class Handles(object):
 
 class CompiledHandle(object):
     def __init__(self, compiled_object):
-        self._compiled_object = compiled_object
+        self.compiled_object = compiled_object
         self._id = id(compiled_object)
 
     def add_subprocess(self, subprocess):
@@ -232,6 +232,6 @@ class CompiledHandle(object):
             # function return value.
             self._subprocess.get_compiled_property(self._id, name)
 
-        def _compiled_method(*args, **kwargs):
+        def compiled_method(*args, **kwargs):
             return self._subprocess.get_compiled_method_return(self._id, name, *args, **kwargs)
-        return self._compiled_method
+        return compiled_method

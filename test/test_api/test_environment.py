@@ -33,4 +33,6 @@ def evaluator():
 
 
 def test_import_module(evaluator):
-    evaluator.compiled_subprocess.import_module(name='math')
+    compiled_obj = evaluator.compiled_subprocess.import_module(name='math')
+    assert compiled_obj.py__bool__() is True
+    assert compiled_obj.type == 'file_input'
