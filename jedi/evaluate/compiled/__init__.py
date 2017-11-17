@@ -51,6 +51,9 @@ class CheckAttribute(object):
         self.check_name = func.__name__[2:]
 
     def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
         # This might raise an AttributeError. That's wanted.
         if self.check_name == '__iter__':
             # Python iterators are a bit strange, because there's no need for

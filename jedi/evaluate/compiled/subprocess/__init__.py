@@ -98,7 +98,10 @@ class _Subprocess(object):
         data = evaluator_id, function, args, kwargs
         pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
         self._process.stdin.flush()
-        return pickle.load(self._process.stdout)
+        is_exception, result = pickle.load(self._process.stdout)
+        if is_exception:
+            raise result
+        return result
 
     def terminate(self):
         self._process.terminate()
@@ -167,7 +170,10 @@ class Listener():
                 # It looks like the parent process closed. Don't make a big fuss
                 # here and just exit.
                 exit(1)
-            result = self._run(*payload)
+            try:
+                result = False, self._run(*payload)
+            except Exception as e:
+                result = True, e
             pickle.dump(result, stdout, protocol=_PICKLE_PROTOCOL)
             stdout.flush()
 
