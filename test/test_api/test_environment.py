@@ -1,5 +1,6 @@
 import pytest
 
+import jedi
 from jedi._compatibility import py_version
 from jedi.api.virtualenv import Environment, DefaultEnvironment, NoVirtualEnv
 
@@ -24,3 +25,12 @@ def test_versions(version):
 
     sys_path = env.get_sys_path()
     assert any(executable in p for p in sys_path)
+
+
+@pytest.fixture
+def evaluator():
+    return jedi.Script('')._evaluator
+
+
+def test_import_module(evaluator):
+    evaluator.compiled_subprocess.import_module(name='math')

@@ -7,8 +7,10 @@ from jedi.cache import memoize_method
 
 class Project(object):
     def __init__(self, sys_path=None):
+        self._script_path = None
+
         if sys_path is not None:
-            self._sys_path = sys_path
+            self._base_sys_path = sys_path
 
         venv = os.getenv('VIRTUAL_ENV')
         if venv:

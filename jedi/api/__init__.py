@@ -121,7 +121,7 @@ class Script(object):
             compiled_subprocess = None
         else:
             if environment is None:
-                environment = DefaultEnvironment()
+                environment = DefaultEnvironment(self.path)
             compiled_subprocess = environment.get_subprocess()
         self._evaluator = Evaluator(self._grammar, project, compiled_subprocess)
         project.add_script_path(self.path)

@@ -32,9 +32,8 @@ def get_subprocess(executable):
         return sub
 
 
-def _get_function(evaluator, name):
-    function = getattr(functions, name)
-    return partial(function, evaluator)
+def _get_function(name):
+    return getattr(functions, name)
 
 
 class EvaluatorSameProcess(object):
@@ -47,20 +46,38 @@ class EvaluatorSameProcess(object):
         self._evaluator = evaluator
 
     def __getattr__(self, name):
-        return _get_function(self._evaluator, name)
+        return _get_function(name)
 
 
 class EvaluatorSubprocess(object):
     def __init__(self, evaluator, compiled_subprocess):
+        self._used = False
         self._evaluator_weakref = weakref.ref(evaluator)
-        self._evaluator_id = ()
+        self._evaluator_id = id(evaluator)
         self._compiled_subprocess = compiled_subprocess
 
     def __getattr__(self, name):
-        return _get_function(self._evaluator_weakref(), name)
+        func = _get_function(name)
+
+        def wrapper(*args, **kwargs):
+            self._used = True
+
+            result = self._compiled_subprocess.run(
+                self._evaluator_weakref(),
+                func,
+                *args,
+                **kwargs
+            )
+            if isinstance(result, CompiledHandle):
+                result.add_subprocess(self._compiled_subprocess)
+
+            return result
+
+        return wrapper
 
     def __del__(self):
-        self.delete_evaluator(self._evaluator_weakref())
+        if self._used:
+            self._compiled_subprocess.delete_evaluator(self._evaluator_id)
 
 
 class _Subprocess(object):
@@ -74,10 +91,11 @@ class _Subprocess(object):
             self._args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            #stderr=subprocess.PIPE
+            # stderr=subprocess.PIPE
         )
 
-    def _send(self, *data):
+    def _send(self, evaluator_id, function, args=(), kwargs={}):
+        data = evaluator_id, function, args, kwargs
         pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
         self._process.stdin.flush()
         return pickle.load(self._process.stdout)
@@ -116,27 +134,24 @@ class Listener():
         self._evaluators = {}
 
     def _get_evaluator(self, function, evaluator_id):
-        from jedi.evaluate import Evaluator
-
-        if function is None:
-            # If the function is None, this is the hint to delete the
-            # evaluator.
-            del self._evaluators[evaluator_id]
-            return
+        from jedi.evaluate import Evaluator, project
 
         try:
-            evaluator = self.evaluators[evaluator_id]
+            evaluator, handles = self._evaluators[evaluator_id]
         except KeyError:
-            evaluator = Evaluator(None, None)
-            self.evaluators[evaluator_id] = evaluator
-        return evaluator
+            evaluator = Evaluator(None, project=project.Project())
+            handles = Handles()
+            self._evaluators[evaluator_id] = evaluator, handles
+        return evaluator, handles
 
     def _run(self, evaluator_id, function, args, kwargs):
         if evaluator_id is None:
             return function(*args, **kwargs)
+        elif function is None:
+            del self._evaluators[evaluator_id]
         else:
-            evaluator = self._get_evaluator(evaluator_id)
-            return function(evaluator, *args, **kwargs)
+            evaluator, handles = self._get_evaluator(function, evaluator_id)
+            return function(evaluator, handles, *args, **kwargs)
 
     def listen(self):
         stdout = sys.stdout
@@ -155,3 +170,68 @@ class Listener():
             result = self._run(*payload)
             pickle.dump(result, stdout, protocol=_PICKLE_PROTOCOL)
             stdout.flush()
+
+
+'''
+class ModifiedUnpickler(pickle._Unpickler):
+    dispatch = pickle._Unpickler.dispatch.copy()
+
+    def __init__(self, subprocess, *args, **kwargs):
+        super(ModifiedUnpickler, self).__init__(*args, **kwargs)
+        self._subprocess = subprocess
+
+    def load_newobj(self):
+        """
+        Just a copy of the builtin plus the on_new_obj hook.
+        """
+        args = self.stack.pop()
+        cls = self.stack.pop()
+        obj = cls.__new__(cls, *args)
+        self.append(self.on_new_obj(obj))
+
+    def on_new_obj(self, obj):
+        if isinstance(obj, CompiledHandle):
+            obj.add_subprocess(self._subprocess)
+    dispatch[pickle.NEWOBJ[0]] = load_newobj
+'''
+
+
+class Handles(object):
+    def __init__(self):
+        self._handles = {}
+
+    def create(self, obj):
+        handle = self._handles[id(obj)] = CompiledHandle(obj)
+        return handle
+
+    def get_compiled_object(self, id_):
+        return self._handles[id_].compiled_object
+
+
+class CompiledHandle(object):
+    def __init__(self, compiled_object):
+        self._compiled_object = compiled_object
+        self._id = id(compiled_object)
+
+    def add_subprocess(self, subprocess):
+        self._subprocess = subprocess
+
+    def __getstate__(self):
+        return self._id
+
+    def __setstate__(self, state):
+        self._id = state
+
+    def __getattr__(self, name):
+        from jedi.evaluate import compiled
+        attr = getattr(compiled.CompiledObject, name)
+        if isinstance(attr, property):
+            return self._subprocess.get_compiled_property(self._id, name)
+        elif isinstance(attr, compiled.CheckAttribute):
+            # It might raise an AttributeError, however we're interested in the
+            # function return value.
+            self._subprocess.get_compiled_property(self._id, name)
+
+        def _compiled_method(*args, **kwargs):
+            return self._subprocess.get_compiled_method_return(self._id, name, *args, **kwargs)
+        return self._compiled_method
