@@ -12,10 +12,12 @@ import sys
 import subprocess
 import weakref
 import pickle
+import types
 from functools import partial
 
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
+from jedi.evaluate.compiled import CompiledObject
 
 _PICKLE_PROTOCOL = 2
 
@@ -46,7 +48,7 @@ class EvaluatorSameProcess(object):
         self._evaluator = evaluator
 
     def __getattr__(self, name):
-        return _get_function(name)
+        return partial(_get_function(name), self._evaluator, IgnoreHandles())
 
 
 class EvaluatorSubprocess(object):
@@ -65,8 +67,9 @@ class EvaluatorSubprocess(object):
             result = self._compiled_subprocess.run(
                 self._evaluator_weakref(),
                 func,
-                *args,
-                **kwargs
+                args=args,
+                kwargs=kwargs,
+                unpickler=lambda stdout: ModifiedUnpickler(self, stdout).load()
             )
             if isinstance(result, CompiledHandle):
                 result.add_subprocess(self)
@@ -94,11 +97,11 @@ class _Subprocess(object):
             # stderr=subprocess.PIPE
         )
 
-    def _send(self, evaluator_id, function, args=(), kwargs={}):
+    def _send(self, evaluator_id, function, args=(), kwargs={}, unpickler=pickle.load):
         data = evaluator_id, function, args, kwargs
         pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
         self._process.stdin.flush()
-        is_exception, result = pickle.load(self._process.stdout)
+        is_exception, result = unpickler(self._process.stdout)
         if is_exception:
             raise result
         return result
@@ -120,9 +123,9 @@ class _CompiledSubprocess(_Subprocess):
              )
         )
 
-    def run(self, evaluator, function, *args, **kwargs):
+    def run(self, evaluator, function, args=(), kwargs={}, unpickler=None):
         assert callable(function)
-        return self._send(id(evaluator), function, args, kwargs)
+        return self._send(id(evaluator), function, args, kwargs, unpickler=unpickler)
 
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
@@ -148,6 +151,7 @@ class Listener():
         return evaluator, handles
 
     def _run(self, evaluator_id, function, args, kwargs):
+        print(function, args, kwargs, file=sys.stderr)
         if evaluator_id is None:
             return function(*args, **kwargs)
         elif function is None:
@@ -174,11 +178,11 @@ class Listener():
                 result = False, self._run(*payload)
             except Exception as e:
                 result = True, e
-            pickle.dump(result, stdout, protocol=_PICKLE_PROTOCOL)
+
+            ModifiedPickler(stdout, protocol=_PICKLE_PROTOCOL).dump(result)
             stdout.flush()
 
 
-'''
 class ModifiedUnpickler(pickle._Unpickler):
     dispatch = pickle._Unpickler.dispatch.copy()
 
@@ -186,20 +190,41 @@ class ModifiedUnpickler(pickle._Unpickler):
         super(ModifiedUnpickler, self).__init__(*args, **kwargs)
         self._subprocess = subprocess
 
-    def load_newobj(self):
-        """
-        Just a copy of the builtin plus the on_new_obj hook.
-        """
-        args = self.stack.pop()
-        cls = self.stack.pop()
-        obj = cls.__new__(cls, *args)
-        self.append(self.on_new_obj(obj))
+    def load_inst(self):
+        raise NotImplementedError
+    dispatch[pickle.INST[0]] = load_inst
 
-    def on_new_obj(self, obj):
-        if isinstance(obj, CompiledHandle):
-            obj.add_subprocess(self._subprocess)
+    def load_obj(self):
+        raise NotImplementedError
+    dispatch[pickle.OBJ[0]] = load_obj
+    dispatch = pickle._Unpickler.dispatch.copy()
+
+    def load_newobj(self):
+        super(ModifiedUnpickler, self).load_newobj()
+        tos = self.stack[-1]
+        if isinstance(tos, CompiledHandle):
+            tos.add_subprocess(self._subprocess)
+        print('pop', tos, file=sys.stderr)
     dispatch[pickle.NEWOBJ[0]] = load_newobj
-'''
+
+    def load_newobj_ex(self):
+        super(ModifiedUnpickler, self).load_newobj_ex()
+        tos = self.stack[-1]
+        print('popex', tos, file=sys.stderr)
+    dispatch[pickle.NEWOBJ_EX[0]] = load_newobj_ex
+
+    def _instantiate(self, klass, k):
+        super(ModifiedUnpickler, self)._instantiate(klass, k)
+        tos = self.stack[-1]
+        print('tttt', tos)
+
+
+class ModifiedPickler(pickle._Pickler):
+    def save(self, obj, *args, **kwargs):
+        print('s', obj, args, kwargs, file=sys.stderr)
+        if isinstance(obj, CompiledObject):
+            obj = CompiledHandle(obj)
+        return super(ModifiedPickler, self).save(obj, *args, **kwargs)
 
 
 class Handles(object):
@@ -214,10 +239,19 @@ class Handles(object):
         return self._handles[id_].compiled_object
 
 
+class IgnoreHandles(object):
+    def create(self, obj):
+        return obj
+
+
 class CompiledHandle(object):
     def __init__(self, compiled_object):
         self.compiled_object = compiled_object
         self._id = id(compiled_object)
+
+    @property
+    def obj(self):
+        raise NotImplementedError
 
     def add_subprocess(self, subprocess):
         self._subprocess = subprocess

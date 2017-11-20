@@ -378,7 +378,8 @@ class Importer(object):
             module = ImplicitNamespaceContext(self._evaluator, fullname=fullname)
             module.paths = paths
         elif module_file is None and not module_path.endswith(('.py', '.zip', '.egg')):
-            module = compiled.load_module(self._evaluator, module_path)
+            module = self._evaluator.compiled_subprocess.import_module(module_path)
+            #module = compiled.load_module(self._evaluator, module_path)
         else:
             module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
 

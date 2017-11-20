@@ -21,3 +21,7 @@ def get_compiled_property(evaluator, handles, id, attribute):
 def get_compiled_method_return(evaluator, handles, id, attribute, *args, **kwargs):
     compiled_object = handles.get_compiled_object(id)
     return getattr(compiled_object, attribute)(*args, **kwargs)
+
+
+def get_special_object(evaluator, handles, identifier):
+    return compiled.get_special_object(evaluator, identifier)
