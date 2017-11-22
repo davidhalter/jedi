@@ -80,7 +80,7 @@ def _search_scope(scope, obj_name):
             return s
 
 
-def get_module(obj):
+def _get_module(obj):
     if inspect.ismodule(obj):
         return obj
     try:
@@ -108,7 +108,7 @@ def get_module(obj):
 def _faked(grammar, module, obj, name):
     # Crazy underscore actions to try to escape all the internal madness.
     if module is None:
-        module = get_module(obj)
+        module = _get_module(obj)
 
     faked_mod = _load_faked_module(grammar, module)
     if faked_mod is None:
@@ -145,7 +145,7 @@ def _faked(grammar, module, obj, name):
     return None, None
 
 
-def memoize_faked(obj):
+def _memoize_faked(obj):
     """
     A typical memoize function that ignores issues with non hashable results.
     """
@@ -167,7 +167,7 @@ def memoize_faked(obj):
     return memoizer
 
 
-@memoize_faked
+@_memoize_faked
 def _get_faked(grammar, module, obj, name=None):
     result, fake_module = _faked(grammar, module, obj, name)
     if result is None:

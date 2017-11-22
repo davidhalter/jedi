@@ -106,7 +106,8 @@ class Evaluator(object):
         if compiled_sub_process is None:
             self.compiled_subprocess = EvaluatorSameProcess(self)
         else:
-            self.compiled_subprocess = EvaluatorSubprocess(self, compiled_sub_process)
+            self.compiled_subprocess = EvaluatorSameProcess(self)
+            #self.compiled_subprocess = EvaluatorSubprocess(self, compiled_sub_process)
 
 
         self.reset_recursion_limitations()
