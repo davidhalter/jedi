@@ -12,7 +12,6 @@ import sys
 import subprocess
 import weakref
 import pickle
-import types
 from functools import partial
 
 from jedi.cache import memoize_method
@@ -151,7 +150,6 @@ class Listener():
         return evaluator, handles
 
     def _run(self, evaluator_id, function, args, kwargs):
-        print(function, args, kwargs, file=sys.stderr)
         if evaluator_id is None:
             return function(*args, **kwargs)
         elif function is None:
@@ -179,6 +177,8 @@ class Listener():
             except Exception as e:
                 result = True, e
 
+            print(result, payload, file=sys.stderr)
+
             ModifiedPickler(stdout, protocol=_PICKLE_PROTOCOL).dump(result)
             stdout.flush()
 
@@ -190,33 +190,13 @@ class ModifiedUnpickler(pickle._Unpickler):
         super(ModifiedUnpickler, self).__init__(*args, **kwargs)
         self._subprocess = subprocess
 
-    def load_inst(self):
-        raise NotImplementedError
-    dispatch[pickle.INST[0]] = load_inst
-
-    def load_obj(self):
-        raise NotImplementedError
-    dispatch[pickle.OBJ[0]] = load_obj
-    dispatch = pickle._Unpickler.dispatch.copy()
-
     def load_newobj(self):
         super(ModifiedUnpickler, self).load_newobj()
         tos = self.stack[-1]
+        print('pop', tos, file=sys.stderr)
         if isinstance(tos, CompiledHandle):
             tos.add_subprocess(self._subprocess)
-        print('pop', tos, file=sys.stderr)
     dispatch[pickle.NEWOBJ[0]] = load_newobj
-
-    def load_newobj_ex(self):
-        super(ModifiedUnpickler, self).load_newobj_ex()
-        tos = self.stack[-1]
-        print('popex', tos, file=sys.stderr)
-    dispatch[pickle.NEWOBJ_EX[0]] = load_newobj_ex
-
-    def _instantiate(self, klass, k):
-        super(ModifiedUnpickler, self)._instantiate(klass, k)
-        tos = self.stack[-1]
-        print('tttt', tos)
 
 
 class ModifiedPickler(pickle._Pickler):
@@ -263,6 +243,7 @@ class CompiledHandle(object):
         self._id = state
 
     def __getattr__(self, name):
+        print('getattr', name, file=sys.stderr)
         from jedi.evaluate import compiled
         attr = getattr(compiled.CompiledObject, name)
         if isinstance(attr, property):
