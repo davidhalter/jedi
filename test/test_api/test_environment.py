@@ -35,6 +35,6 @@ def evaluator():
 def test_import_module(evaluator):
     compiled_obj = evaluator.compiled_subprocess.import_module(name='math')
     assert compiled_obj.py__bool__() is True
-    assert compiled_obj.type == 'file_input'
+    assert compiled_obj.api_type == 'module'
     with pytest.raises(AttributeError):
         assert compiled_obj.py__mro__()

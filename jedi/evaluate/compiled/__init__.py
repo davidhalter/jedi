@@ -176,18 +176,6 @@ class CompiledObject(Context):
         # Everything else...
         return 'instance'
 
-    @property
-    def type(self):
-        """Imitate the tree.Node.type values."""
-        cls = self._get_class()
-        if inspect.isclass(cls):
-            return 'classdef'
-        elif inspect.ismodule(cls):
-            return 'file_input'
-        elif inspect.isbuiltin(cls) or inspect.ismethod(cls) or \
-                inspect.ismethoddescriptor(cls):
-            return 'funcdef'
-
     @underscore_memoization
     def _cls(self):
         """
@@ -257,7 +245,7 @@ class CompiledObject(Context):
 
     def _execute_function(self, params):
         from jedi.evaluate import docstrings
-        if self.type != 'funcdef':
+        if self.api_type != 'function':
             return
         for name in self._parse_function_doc()[1].split():
             try:
