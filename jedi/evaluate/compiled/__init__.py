@@ -388,9 +388,8 @@ class CompiledObjectFilter(AbstractFilter):
         for name in dir(obj):
             names += self.get(name)
 
-        is_instance = self._is_instance or fake.is_class_instance(obj)
         # ``dir`` doesn't include the type names.
-        if not inspect.ismodule(obj) and (obj is not type) and not is_instance:
+        if not self._is_instance and inspect.isclass(obj) and obj != type:
             for filter in create(self._evaluator, type).get_filters():
                 names += filter.values()
         return names
