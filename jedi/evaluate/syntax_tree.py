@@ -22,6 +22,7 @@ from jedi.evaluate.context import iterable
 from jedi.evaluate.context import TreeInstance, CompiledInstance
 from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
+from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
 
 
 def _limit_context_infers(func):
@@ -318,19 +319,6 @@ def eval_factor(context_set, operator):
             yield context
 
 
-# Maps Python syntax to the operator module.
-COMPARISON_OPERATORS = {
-    '==': op.eq,
-    '!=': op.ne,
-    'is': op.is_,
-    'is not': op.is_not,
-    '<': op.lt,
-    '<=': op.le,
-    '>': op.gt,
-    '>=': op.ge,
-}
-
-
 def _literals_to_types(evaluator, result):
     # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
     # int(), float(), etc).
@@ -384,30 +372,29 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
             return ContextSet(right)
     elif operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
-            return ContextSet(compiled.create(evaluator, left.obj + right.obj))
+            return ContextSet(left.execute_operation(right, operator))
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
             return ContextSet(iterable.MergedArray(evaluator, (left, right)))
     elif operator == '-':
         if l_is_num and r_is_num:
-            return ContextSet(compiled.create(evaluator, left.obj - right.obj))
+            return ContextSet(left.execute_operation(right, operator))
     elif operator == '%':
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
         return ContextSet(left)
     elif operator in COMPARISON_OPERATORS:
-        operation = COMPARISON_OPERATORS[operator]
         if is_compiled(left) and is_compiled(right):
             # Possible, because the return is not an option. Just compare.
-            left = left.obj
-            right = right.obj
-
-        try:
-            result = operation(left, right)
-        except TypeError:
-            # Could be True or False.
-            return ContextSet(compiled.create(evaluator, True), compiled.create(evaluator, False))
+            try:
+                return ContextSet(left.execute_operation(right, operator))
+            except TypeError:
+                # Could be True or False.
+                pass
         else:
+            raise NotImplementedError
             return ContextSet(compiled.create(evaluator, result))
+
+        return ContextSet(compiled.create(evaluator, True), compiled.create(evaluator, False))
     elif operator == 'in':
         return NO_CONTEXTS
 

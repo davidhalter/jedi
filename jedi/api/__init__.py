@@ -16,7 +16,7 @@ import parso
 from parso.python import tree
 from parso import python_bytes_to_unicode, split_lines
 
-from jedi.parser_utils import get_executable_nodes, get_statement_of_position
+from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
 from jedi import cache

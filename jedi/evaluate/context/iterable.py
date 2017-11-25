@@ -300,7 +300,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractIterable):
             for key, value in self._items():
                 for k in self._defining_context.eval_node(key):
                     if isinstance(k, compiled.CompiledObject) \
-                            and index == k.obj:
+                            and index == k.get_safe_value(default=None):
                         return self._defining_context.eval_node(value)
             raise KeyError('No key found in dictionary %s.' % self)
 

@@ -11,7 +11,8 @@ def test_sys_path():
 
 @pytest.mark.parametrize(
     'version',
-    ['2.6', '2.7', '3.3', '3.4', '3.5', '3.6', '3.7']
+    # TODO add '2.6', '2.7',
+    ['3.3', '3.4', '3.5', '3.6', '3.7']
 )
 def test_versions(version):
     executable = 'python' + version

@@ -16,6 +16,7 @@ from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
 from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.getattr_static import getattr_static
+from jedi.evaluate.compiled.access import DirectObjectAccess, _sentinel
 from . import fake
 
 
@@ -25,23 +26,6 @@ if os.path.altsep is not None:
 _path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
 del _sep
 
-# Those types don't exist in typing.
-MethodDescriptorType = type(str.replace)
-WrapperDescriptorType = type(set.__iter__)
-# `object.__subclasshook__` is an already executed descriptor.
-object_class_dict = type.__dict__["__dict__"].__get__(object)
-ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
-
-ALLOWED_DESCRIPTOR_ACCESS = (
-    types.FunctionType,
-    types.GetSetDescriptorType,
-    types.MemberDescriptorType,
-    MethodDescriptorType,
-    WrapperDescriptorType,
-    ClassMethodDescriptorType,
-    staticmethod,
-    classmethod,
-)
 
 class CheckAttribute(object):
     """Raises an AttributeError if the attribute X isn't available."""
@@ -60,12 +44,10 @@ class CheckAttribute(object):
             # the __iter__ function as long as __getitem__ is defined (it will
             # just start with __getitem__(0). This is especially true for
             # Python 2 strings, where `str.__iter__` is not even defined.
-            try:
-                iter(instance.obj)
-            except TypeError:
+            if not instance.access.has_iter():
                 raise AttributeError
         else:
-            getattr(instance.obj, self.check_name)
+            instance.access.getattr(self.check_name)
         return partial(self.func, instance)
 
 
@@ -73,9 +55,9 @@ class CompiledObject(Context):
     path = None  # modules have this attribute - set it to None.
     used_names = lambda self: {}  # To be consistent with modules.
 
-    def __init__(self, evaluator, obj, parent_context=None, faked_class=None):
+    def __init__(self, evaluator, access, parent_context=None, faked_class=None):
         super(CompiledObject, self).__init__(evaluator, parent_context)
-        self.obj = obj
+        self.access = access
         # This attribute will not be set for most classes, except for fakes.
         self.tree_node = faked_class
 
@@ -85,7 +67,7 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__call__(self, params):
-        if inspect.isclass(self.obj):
+        if self.access.is_class():
             from jedi.evaluate.context import CompiledInstance
             return ContextSet(CompiledInstance(self.evaluator, self.parent_context, self, params))
         else:
@@ -97,26 +79,25 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__mro__(self):
-        return (self,) + tuple(create(self.evaluator, cls) for cls in self.obj.__mro__[1:])
+        return (self,) + tuple(
+             _create_from_access(self.evaluator, access) for access in self.access.py__mro__accesses()
+        )
 
     @CheckAttribute
     def py__bases__(self):
         return tuple(create(self.evaluator, cls) for cls in self.obj.__bases__)
 
     def py__bool__(self):
-        return bool(self.obj)
+        return self.access.py__bool__()
 
     def py__file__(self):
-        try:
-            return self.obj.__file__
-        except AttributeError:
-            return None
+        return self.access.py__file__()
 
     def is_class(self):
-        return inspect.isclass(self.obj)
+        return self.access.is_class()
 
     def py__doc__(self, include_call_signature=False):
-        return inspect.getdoc(self.obj) or ''
+        return self.access.py__doc__()
 
     def get_param_names(self):
         obj = self.obj
@@ -153,7 +134,7 @@ class CompiledObject(Context):
                 yield SignatureParamName(self, signature_param)
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, repr(self.obj))
+        return '<%s: %s>' % (self.__class__.__name__, self.access.get_repr())
 
     @underscore_memoization
     def _parse_function_doc(self):
@@ -165,16 +146,7 @@ class CompiledObject(Context):
 
     @property
     def api_type(self):
-        obj = self.obj
-        if inspect.isclass(obj):
-            return 'class'
-        elif inspect.ismodule(obj):
-            return 'module'
-        elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
-                or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
-            return 'function'
-        # Everything else...
-        return 'instance'
+        return self.access.get_api_type()
 
     @underscore_memoization
     def _cls(self):
@@ -184,18 +156,6 @@ class CompiledObject(Context):
         """
         # Ensures that a CompiledObject is returned that is not an instance (like list)
         return self
-
-    def _get_class(self):
-        if not fake.is_class_instance(self.obj) or \
-                inspect.ismethoddescriptor(self.obj):  # slots
-            return self.obj
-
-        try:
-            return self.obj.__class__
-        except AttributeError:
-            # happens with numpy.core.umath._UFUNC_API (you get it
-            # automatically by doing `import numpy`.
-            return type
 
     def get_filters(self, search_global=False, is_instance=False,
                     until_position=None, origin_scope=None):
@@ -211,36 +171,25 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__getitem__(self, index):
-        if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
-            # Get rid of side effects, we won't call custom `__getitem__`s.
+        access = self.access.py__getitem__(index)
+        if access is None:
             return ContextSet()
 
-        return ContextSet(create(self.evaluator, self.obj[index]))
+        return ContextSet(_create_from_access(self.evaluator, access))
 
     @CheckAttribute
-    def py__iter__(self):
-        if type(self.obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
-            # Get rid of side effects, we won't call custom `__getitem__`s.
-            return
-
-        for i, part in enumerate(self.obj):
-            if i > 20:
-                # Should not go crazy with large iterators
-                break
-            yield LazyKnownContext(create(self.evaluator, part))
+    def py__iter__list(self):
+        for access in self.access.py__iter__():
+            yield _create_from_access(self.evaluator, access)
 
     def py__name__(self):
-        try:
-            return self._get_class().__name__
-        except AttributeError:
-            return None
+        return self.access.py__name__()
 
     @property
     def name(self):
-        try:
-            name = self._get_class().__name__
-        except AttributeError:
-            name = repr(self.obj)
+        name = self.py__name__()
+        if name is None:
+            name = self.access.get_repr()
         return CompiledContextName(self, name)
 
     def _execute_function(self, params):
@@ -274,6 +223,15 @@ class CompiledObject(Context):
             create(self.evaluator, v) for v in self.obj.values()
         )
 
+    def get_safe_value(self, default=_sentinel):
+        return self.access.get_safe_value(default=default)
+
+    def execute_operation(self, other, operator):
+        return _create_from_access(
+            self.evaluator,
+            self.access.execute_operation(other.access, operator)
+        )
+
 
 class CompiledName(AbstractNameDefinition):
     def __init__(self, evaluator, parent_context, name):
@@ -294,9 +252,8 @@ class CompiledName(AbstractNameDefinition):
 
     @underscore_memoization
     def infer(self):
-        module = self.parent_context.get_root_context()
         return ContextSet(_create_from_name(
-            self._evaluator, module, self.parent_context, self.string_name
+            self._evaluator, self.parent_context, self.string_name
         ))
 
 
@@ -366,30 +323,20 @@ class CompiledObjectFilter(AbstractFilter):
     @memoize_method
     def get(self, name):
         name = str(name)
-        obj = self._compiled_object.obj
-        try:
-            attr, is_get_descriptor = getattr_static(obj, name)
-        except AttributeError:
+        if not self._compiled_object.access.is_allowed_getattr(name):
+            return [EmptyCompiledName(self._evaluator, name)]
+
+        if self._is_instance and name not in self._compiled_object.access.dir():
             return []
-        else:
-            if is_get_descriptor \
-                    and not type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
-                # In case of descriptors that have get methods we cannot return
-                # it's value, because that would mean code execution.
-                return [EmptyCompiledName(self._evaluator, name)]
-            if self._is_instance and name not in dir(obj):
-                return []
         return [self._create_name(name)]
 
     def values(self):
-        obj = self._compiled_object.obj
-
         names = []
-        for name in dir(obj):
+        for name in self._compiled_object.access.dir():
             names += self.get(name)
 
         # ``dir`` doesn't include the type names.
-        if not self._is_instance and inspect.isclass(obj) and obj != type:
+        if not self._is_instance and self._compiled_object.access.needs_type_completions():
             for filter in create(self._evaluator, type).get_filters():
                 names += filter.values()
         return names
@@ -533,24 +480,18 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def _create_from_name(evaluator, module, compiled_object, name):
-    obj = compiled_object.obj
+def _create_from_name(evaluator, compiled_object, name):
     faked = None
+    print(compiled_object.tree_node)
     try:
-        faked = fake.get_faked(evaluator, module, obj, parent_context=compiled_object, name=name)
+        faked = fake.get_faked_with_parent_context(compiled_object, name)
         if faked.type == 'funcdef':
             from jedi.evaluate.context.function import FunctionContext
             return FunctionContext(evaluator, compiled_object, faked)
     except fake.FakeDoesNotExist:
         pass
 
-    try:
-        obj = getattr(obj, name)
-    except AttributeError:
-        # Happens e.g. in properties of
-        # PyQt4.QtGui.QStyleOptionComboBox.currentText
-        # -> just set it to None
-        obj = None
+    obj = compiled_object.access.getattr(name, default=None)
     return create(evaluator, obj, parent_context=compiled_object, faked=faked)
 
 
@@ -609,20 +550,45 @@ def create(evaluator, obj, parent_context=None, module=None, faked=None):
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
+    print('create', obj)
+    if isinstance(obj, DirectObjectAccess):
+        access = obj
+    else:
+        access = DirectObjectAccess(obj)
     if inspect.ismodule(obj):
         if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
-    else:
-        if parent_context is None and obj is not _builtins:
-            return create(evaluator, obj, create(evaluator, _builtins))
 
-        try:
-            faked = fake.get_faked(evaluator, module, obj, parent_context=parent_context)
-            if faked.type == 'funcdef':
-                from jedi.evaluate.context.function import FunctionContext
-                return FunctionContext(evaluator, parent_context, faked)
-        except fake.FakeDoesNotExist:
-            pass
+    #if parent_context is None and obj is not _builtins:
+        #return create(evaluator, obj, create(evaluator, _builtins))
 
-    return CompiledObject(evaluator, obj, parent_context, faked)
+    if faked is None and parent_context is None:
+        access_tuples = access.get_access_path_tuples()
+        if access_tuples:
+            string_names, accesses = zip(*access_tuples)
+            try:
+                tree_nodes = fake.get_faked_tree_nodes(evaluator.latest_grammar, string_names)
+            except fake.FakeDoesNotExist:
+                pass
+            else:
+                for access2, tree_node in zip(accesses, tree_nodes):
+                    parent_context = CompiledObject(evaluator, access2, parent_context, tree_node)
+                print('foo', obj, tree_nodes, parent_context)
+
+                # TODO this if is ugly. Please remove, it may make certain
+                # properties of that function unusable.
+                if tree_node.type == 'function':
+                    from jedi.evaluate.context.function import FunctionContext
+                    return FunctionContext(evaluator, parent_context.parent_context, tree_node)
+                return parent_context
+    if parent_context is None:
+        parent_context = create(evaluator, _builtins)
+
+    return CompiledObject(evaluator, access, parent_context, faked)
+
+
+def _create_from_access(evaluator, access, parent_context=None, faked=None):
+    if parent_context is None:
+        parent_context = create(evaluator, _builtins)
+    return CompiledObject(evaluator, access, parent_context, faked)

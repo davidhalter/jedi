@@ -85,8 +85,13 @@ class Context(BaseContext):
         result = ContextSet()
 
         for index in index_contexts:
-            if isinstance(index, (CompiledObject, Slice)):
+            if isinstance(index, Slice):
                 index = index.obj
+            if isinstance(index, CompiledObject):
+                try:
+                    index = index.get_safe_value()
+                except ValueError:
+                    pass
 
             if type(index) not in (float, int, str, unicode, slice, type(Ellipsis)):
                 # If the index is not clearly defined, we have to get all the

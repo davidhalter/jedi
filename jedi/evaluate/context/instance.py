@@ -306,7 +306,7 @@ class BoundMethod(FunctionContext):
 class CompiledBoundMethod(compiled.CompiledObject):
     def __init__(self, func):
         super(CompiledBoundMethod, self).__init__(
-            func.evaluator, func.obj, func.parent_context, func.tree_node)
+            func.evaluator, func.access, func.parent_context, func.tree_node)
 
     def get_param_names(self):
         return list(super(CompiledBoundMethod, self).get_param_names())[1:]

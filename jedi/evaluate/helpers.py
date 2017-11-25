@@ -183,7 +183,7 @@ def is_compiled(context):
 
 
 def is_string(context):
-    return is_compiled(context) and isinstance(context.obj, (str, unicode))
+    return is_compiled(context) and isinstance(context.get_safe_value(default=None), (str, unicode))
 
 
 def is_literal(context):
@@ -191,4 +191,4 @@ def is_literal(context):
 
 
 def is_number(context):
-    return is_compiled(context) and isinstance(context.obj, (int, float))
+    return is_compiled(context) and isinstance(context.get_safe_value(default=None), (int, float))
