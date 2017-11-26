@@ -27,7 +27,8 @@ from jedi.evaluate import analysis
 from jedi.evaluate import recursion
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext
-from jedi.evaluate.helpers import is_string, predefine_names, evaluate_call_of_leaf
+from jedi.evaluate.helpers import get_int_or_none, is_string, \
+    predefine_names, evaluate_call_of_leaf
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_method_cache
@@ -680,10 +681,9 @@ class Slice(Context):
                 # For simplicity, we want slices to be clear defined with just
                 # one type.  Otherwise we will return an empty slice object.
                 raise IndexError
-            try:
-                return list(result)[0].obj
-            except AttributeError:
-                return None
+
+            context, = result
+            return get_int_or_none(context)
 
         try:
             return slice(get(self._start), get(self._stop), get(self._step))

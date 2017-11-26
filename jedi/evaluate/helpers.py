@@ -190,5 +190,16 @@ def is_literal(context):
     return is_number(context) or is_string(context)
 
 
+def _get_safe_value_or_none(context, accept):
+    if is_compiled(context):
+        value = context.get_safe_value(default=None)
+        if isinstance(value, accept):
+            return value
+
+
+def get_int_or_none(context):
+    return _get_safe_value_or_none(context, int)
+
+
 def is_number(context):
-    return is_compiled(context) and isinstance(context.get_safe_value(default=None), (int, float))
+    return _get_safe_value_or_none(context, (int, float)) is not None
