@@ -100,37 +100,18 @@ class CompiledObject(Context):
         return self.access.py__doc__()
 
     def get_param_names(self):
-        obj = self.obj
         try:
-            if py_version < 33:
-                raise ValueError("inspect.signature was introduced in 3.3")
-            if py_version == 34:
-                # In 3.4 inspect.signature are wrong for str and int. This has
-                # been fixed in 3.5. The signature of object is returned,
-                # because no signature was found for str. Here we imitate 3.5
-                # logic and just ignore the signature if the magic methods
-                # don't match object.
-                # 3.3 doesn't even have the logic and returns nothing for str
-                # and classes that inherit from object.
-                user_def = inspect._signature_get_user_defined_method
-                if (inspect.isclass(obj)
-                        and not user_def(type(obj), '__init__')
-                        and not user_def(type(obj), '__new__')
-                        and (obj.__init__ != object.__init__
-                             or obj.__new__ != object.__new__)):
-                    raise ValueError
-
-            signature = inspect.signature(obj)
+            signature_params = self.access.get_signature_params()
         except ValueError:  # Has no signature
             params_str, ret = self._parse_function_doc()
             tokens = params_str.split(',')
-            if inspect.ismethoddescriptor(obj):
+            if self.access.ismethoddescriptor():
                 tokens.insert(0, 'self')
             for p in tokens:
                 parts = p.strip().split('=')
                 yield UnresolvableParamName(self, parts[0])
         else:
-            for signature_param in signature.parameters.values():
+            for signature_param in signature_params.values():
                 yield SignatureParamName(self, signature_param)
 
     def __repr__(self):
