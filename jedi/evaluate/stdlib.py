@@ -157,7 +157,7 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
     for obj in objects:
         for name in names:
             if is_string(name):
-                return obj.py__getattribute__(name.obj)
+                return obj.py__getattribute__(name.get_safe_value())
             else:
                 debug.warning('getattr called without str')
                 continue
@@ -216,18 +216,21 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
 def builtins_isinstance(evaluator, objects, types, arguments):
     bool_results = set()
     for o in objects:
+        cls = o.py__class__()
         try:
-            mro_func = o.py__class__().py__mro__
+            mro_func = cls.py__mro__
         except AttributeError:
             # This is temporary. Everything should have a class attribute in
             # Python?! Maybe we'll leave it here, because some numpy objects or
             # whatever might not.
-            return ContextSet(compiled.create(True), compiled.create(False))
+            return ContextSet(compiled.create(evaluator, True), compiled.create(evaluator, False))
 
         mro = mro_func()
+        print(mro, types)
 
         for cls_or_tup in types:
             if cls_or_tup.is_class():
+                print(id(mro[0]), mro[0], id(cls_or_tup), cls_or_tup)
                 bool_results.add(cls_or_tup in mro)
             elif cls_or_tup.name.string_name == 'tuple' \
                     and cls_or_tup.get_root_context() == evaluator.BUILTINS:
@@ -246,6 +249,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                               'not %s.' % cls_or_tup
                     analysis.add(lazy_context._context, 'type-error-isinstance', node, message)
 
+    print(objects, types, bool_results)
     return ContextSet.from_iterable(compiled.create(evaluator, x) for x in bool_results)
 
 
@@ -265,15 +269,16 @@ def collections_namedtuple(evaluator, obj, arguments):
 
     # Process arguments
     # TODO here we only use one of the types, we should use all.
-    name = list(_follow_param(evaluator, arguments, 0))[0].obj
+    # TODO this is buggy, doesn't need to be a string
+    name = list(_follow_param(evaluator, arguments, 0))[0].get_safe_value()
     _fields = list(_follow_param(evaluator, arguments, 1))[0]
     if isinstance(_fields, compiled.CompiledObject):
-        fields = _fields.obj.replace(',', ' ').split()
+        fields = _fields.get_safe_value().replace(',', ' ').split()
     elif isinstance(_fields, iterable.AbstractIterable):
         fields = [
-            v.obj
+            v.get_safe_value()
             for lazy_context in _fields.py__iter__()
-            for v in lazy_context.infer() if hasattr(v, 'obj')
+            for v in lazy_context.infer() if is_string(v)
         ]
     else:
         return NO_CONTEXTS

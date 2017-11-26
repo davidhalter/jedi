@@ -5,6 +5,7 @@ from collections import namedtuple
 
 from jedi._compatibility import unicode, is_py3, is_py34, builtins, py_version
 from jedi.evaluate.compiled.getattr_static import getattr_static
+from jedi.evaluate.cache import evaluator_function_cache
 
 
 MethodDescriptorType = type(str.replace)
@@ -76,15 +77,22 @@ _OPERATORS.update(COMPARISON_OPERATORS)
 SignatureParam = namedtuple('SignatureParam', 'name default empty annotation')
 
 
+@evaluator_function_cache()
+def create_access(evaluator, obj):
+    print('create', obj)
+    return DirectObjectAccess(evaluator, obj)
+
+
 class DirectObjectAccess(object):
-    def __init__(self, obj):
+    def __init__(self, evaluator, obj):
+        self._evaluator = evaluator
         self._obj = obj
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._obj)
 
     def _create_access(self, obj):
-        return DirectObjectAccess(obj)
+        return create_access(self._evaluator, obj)
 
     def py__bool__(self):
         return bool(self._obj)
@@ -99,7 +107,7 @@ class DirectObjectAccess(object):
         return inspect.getdoc(self._obj) or ''
 
     def py__name__(self):
-        if not is_class_instance(self._obj) or \
+        if not _is_class_instance(self._obj) or \
                 inspect.ismethoddescriptor(self._obj):  # slots
             cls = self._obj
         else:
@@ -138,6 +146,9 @@ class DirectObjectAccess(object):
             lst.append(self._create_access(part))
         return lst
 
+    def py__class__(self):
+        return self._create_access(self._obj.__class__)
+
     def get_repr(self):
         return repr(self._obj)
 
@@ -161,7 +172,7 @@ class DirectObjectAccess(object):
         try:
             attr, is_get_descriptor = getattr_static(self._obj, name)
         except AttributeError:
-            return []
+            raise
         else:
             if is_get_descriptor \
                     and not type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
@@ -274,11 +285,20 @@ class DirectObjectAccess(object):
                 default=p.default,
                 empty=p.empty,
                 annotation=p.annotation,
-            ) for p in signature.parameters
+            ) for p in signature.parameters.values()
         ]
 
+    def negate(self):
+        return self._create_access(-self._obj)
 
-def is_class_instance(obj):
+    def dict_values(self):
+        return [self._create_access(v) for v in self._obj.values()]
+
+    def is_super_class(self, exception):
+        return issubclass(exception, self._obj)
+
+
+def _is_class_instance(obj):
     """Like inspect.* methods."""
     try:
         cls = obj.__class__

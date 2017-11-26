@@ -2,7 +2,6 @@
 Functions evaluating the syntax tree.
 """
 import copy
-import operator as op
 
 from parso.python import tree
 
@@ -309,7 +308,7 @@ def eval_factor(context_set, operator):
     for context in context_set:
         if operator == '-':
             if is_number(context):
-                yield compiled.create(context.evaluator, -context.obj)
+                yield context.negate()
         elif operator == 'not':
             value = context.py__bool__()
             if value is None:  # Uncertainty.
@@ -383,6 +382,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
         # `int() % float()`.
         return ContextSet(left)
     elif operator in COMPARISON_OPERATORS:
+        print(operator, left, right)
         if is_compiled(left) and is_compiled(right):
             # Possible, because the return is not an option. Just compare.
             try:
@@ -391,8 +391,10 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
                 # Could be True or False.
                 pass
         else:
-            raise NotImplementedError
-            return ContextSet(compiled.create(evaluator, result))
+            if operator in ('is', '!=', '==', 'is not'):
+                operation = COMPARISON_OPERATORS[operator]
+                bool_ = operation(left, right)
+                return ContextSet(compiled.create(evaluator, bool_))
 
         return ContextSet(compiled.create(evaluator, True), compiled.create(evaluator, False))
     elif operator == 'in':

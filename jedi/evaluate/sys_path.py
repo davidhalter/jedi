@@ -121,7 +121,7 @@ def _paths_from_assignment(module_context, expr_stmt):
         for lazy_context in cn.infer().iterate(cn):
             for context in lazy_context.infer():
                 if is_string(context):
-                    abs_path = _abs_path(module_context, context.obj)
+                    abs_path = _abs_path(module_context, context.get_safe_value())
                     if abs_path is not None:
                         yield abs_path
 
@@ -144,7 +144,7 @@ def _paths_from_list_modifications(module_context, trailer1, trailer2):
 
     for context in module_context.create_context(arg).eval_node(arg):
         if is_string(context):
-            abs_path = _abs_path(module_context, context.obj)
+            abs_path = _abs_path(module_context, context.get_safe_value())
             if abs_path is not None:
                 yield abs_path
 

@@ -192,4 +192,3 @@ def _create_default_param(execution_context, param):
 def create_default_params(execution_context, funcdef):
     return [_create_default_param(execution_context, p)
             for p in funcdef.get_params()]
-

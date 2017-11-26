@@ -30,6 +30,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
 from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.context import ModuleContext
+from jedi.evaluate.helpers import is_string
 from jedi import debug
 from jedi import _compatibility
 from jedi import parser_utils
@@ -60,16 +61,15 @@ def _fix_forward_reference(context, node):
                       " not %s" % (node, evaled_nodes))
         return node
     evaled_node = list(evaled_nodes)[0]
-    if isinstance(evaled_node, compiled.CompiledObject) and \
-            isinstance(evaled_node.obj, str):
+    if is_string(evaled_node):
         try:
             new_node = context.evaluator.grammar.parse(
-                _compatibility.unicode(evaled_node.obj),
+                _compatibility.unicode(evaled_node.get_safe_value()),
                 start_symbol='eval_input',
                 error_recovery=False
             )
         except ParserSyntaxError:
-            debug.warning('Annotation not parsed: %s' % evaled_node.obj)
+            debug.warning('Annotation not parsed: %s' % evaled_node)
             return node
         else:
             module = node.get_root_node()

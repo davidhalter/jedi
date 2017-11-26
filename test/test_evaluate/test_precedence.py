@@ -14,4 +14,4 @@ def test_equals(source):
     script = Script(source)
     node = script._get_module_node().children[0]
     first, = script._get_module().eval_node(node)
-    assert isinstance(first, CompiledObject) and first.obj is True
+    assert isinstance(first, CompiledObject) and first.access._obj is True

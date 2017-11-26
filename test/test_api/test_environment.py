@@ -28,11 +28,6 @@ def test_versions(version):
     assert any(executable in p for p in sys_path)
 
 
-@pytest.fixture
-def evaluator():
-    return jedi.Script('')._evaluator
-
-
 def test_import_module(evaluator):
     compiled_obj = evaluator.compiled_subprocess.import_module(name='math')
     assert compiled_obj.py__bool__() is True

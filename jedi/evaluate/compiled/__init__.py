@@ -8,15 +8,13 @@ import os
 import types
 from functools import partial
 
-from jedi._compatibility import builtins as _builtins, unicode, py_version
+from jedi._compatibility import builtins as _builtins
 from jedi import debug
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.base_context import Context, ContextSet
-from jedi.evaluate.lazy_context import LazyKnownContext
-from jedi.evaluate.compiled.getattr_static import getattr_static
-from jedi.evaluate.compiled.access import DirectObjectAccess, _sentinel
+from jedi.evaluate.compiled.access import DirectObjectAccess, _sentinel, create_access
 from . import fake
 
 
@@ -75,7 +73,7 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__class__(self):
-        return create(self.evaluator, self.obj.__class__)
+        return create(self.evaluator, self.access.py__class__())
 
     @CheckAttribute
     def py__mro__(self):
@@ -85,6 +83,7 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__bases__(self):
+        raise NotImplementedError
         return tuple(create(self.evaluator, cls) for cls in self.obj.__bases__)
 
     def py__bool__(self):
@@ -111,7 +110,7 @@ class CompiledObject(Context):
                 parts = p.strip().split('=')
                 yield UnresolvableParamName(self, parts[0])
         else:
-            for signature_param in signature_params.values():
+            for signature_param in signature_params:
                 yield SignatureParamName(self, signature_param)
 
     def __repr__(self):
@@ -201,7 +200,7 @@ class CompiledObject(Context):
 
     def dict_values(self):
         return ContextSet.from_iterable(
-            create(self.evaluator, v) for v in self.obj.values()
+            create(self.evaluator, access) for access in self.access.dict_values()
         )
 
     def get_safe_value(self, default=_sentinel):
@@ -212,6 +211,12 @@ class CompiledObject(Context):
             self.evaluator,
             self.access.execute_operation(other.access, operator)
         )
+
+    def negate(self):
+        return create(self.evaluator, self.access.negate())
+
+    def is_super_class(self, exception):
+        return self.access.is_super_class(exception)
 
 
 class CompiledName(AbstractNameDefinition):
@@ -304,8 +309,11 @@ class CompiledObjectFilter(AbstractFilter):
     @memoize_method
     def get(self, name):
         name = str(name)
-        if not self._compiled_object.access.is_allowed_getattr(name):
-            return [EmptyCompiledName(self._evaluator, name)]
+        try:
+            if not self._compiled_object.access.is_allowed_getattr(name):
+                return [EmptyCompiledName(self._evaluator, name)]
+        except AttributeError:
+            return []
 
         if self._is_instance and name not in self._compiled_object.access.dir():
             return []
@@ -463,7 +471,6 @@ def _parse_function_doc(doc):
 
 def _create_from_name(evaluator, compiled_object, name):
     faked = None
-    print(compiled_object.tree_node)
     try:
         faked = fake.get_faked_with_parent_context(compiled_object, name)
         if faked.type == 'funcdef':
@@ -472,8 +479,8 @@ def _create_from_name(evaluator, compiled_object, name):
     except fake.FakeDoesNotExist:
         pass
 
-    obj = compiled_object.access.getattr(name, default=None)
-    return create(evaluator, obj, parent_context=compiled_object, faked=faked)
+    access = compiled_object.access.getattr(name, default=None)
+    return create(evaluator, access, parent_context=compiled_object, faked=faked)
 
 
 def builtin_from_name(evaluator, string):
@@ -498,7 +505,11 @@ _SPECIAL_OBJECTS = {
 
 def get_special_object(evaluator, identifier):
     obj = _SPECIAL_OBJECTS[identifier]
-    return create(evaluator, obj, parent_context=create(evaluator, _builtins))
+    if identifier == 'BUILTINS':
+        parent_context = None
+    else:
+        parent_context = create(evaluator, _builtins)
+    return create(evaluator, obj, parent_context=parent_context)
 
 
 def compiled_objects_cache(attribute_name):
@@ -508,7 +519,7 @@ def compiled_objects_cache(attribute_name):
         Caching the id has the advantage that an object doesn't need to be
         hashable.
         """
-        def wrapper(evaluator, obj, parent_context=None, module=None, faked=None):
+        def wrapper(evaluator, obj, parent_context=None, faked=None):
             cache = getattr(evaluator, attribute_name)
             # Do a very cheap form of caching here.
             key = id(obj), id(parent_context)
@@ -516,9 +527,9 @@ def compiled_objects_cache(attribute_name):
                 return cache[key][0]
             except KeyError:
                 # TODO this whole decorator is way too ugly
-                result = func(evaluator, obj, parent_context, module, faked)
+                result = func(evaluator, obj, parent_context, faked)
                 # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent_context, module, faked
+                cache[key] = result, obj, parent_context, faked
                 return result
         return wrapper
 
@@ -526,16 +537,17 @@ def compiled_objects_cache(attribute_name):
 
 
 @compiled_objects_cache('compiled_cache')
-def create(evaluator, obj, parent_context=None, module=None, faked=None):
+def create(evaluator, obj, parent_context=None, faked=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
-    print('create', obj)
     if isinstance(obj, DirectObjectAccess):
         access = obj
     else:
-        access = DirectObjectAccess(obj)
+        print('xxx', obj)
+        return create(evaluator, create_access(evaluator, obj), parent_context, faked)
+
     if inspect.ismodule(obj):
         if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.
@@ -554,8 +566,7 @@ def create(evaluator, obj, parent_context=None, module=None, faked=None):
                 pass
             else:
                 for access2, tree_node in zip(accesses, tree_nodes):
-                    parent_context = CompiledObject(evaluator, access2, parent_context, tree_node)
-                print('foo', obj, tree_nodes, parent_context)
+                    parent_context = create(evaluator, access2, parent_context, faked=tree_node)
 
                 # TODO this if is ugly. Please remove, it may make certain
                 # properties of that function unusable.
@@ -563,13 +574,18 @@ def create(evaluator, obj, parent_context=None, module=None, faked=None):
                     from jedi.evaluate.context.function import FunctionContext
                     return FunctionContext(evaluator, parent_context.parent_context, tree_node)
                 return parent_context
-    if parent_context is None:
+    # TODO wow this is a mess....
+    if parent_context is None and not faked:
         parent_context = create(evaluator, _builtins)
+        return create(evaluator, obj, parent_context)
 
+    print('OOOOOOOOOO', obj)
+    if access._obj == _builtins and parent_context is not None:
+        raise 1
     return CompiledObject(evaluator, access, parent_context, faked)
 
 
 def _create_from_access(evaluator, access, parent_context=None, faked=None):
     if parent_context is None:
         parent_context = create(evaluator, _builtins)
-    return CompiledObject(evaluator, access, parent_context, faked)
+    return create(evaluator, access, parent_context, faked=faked)

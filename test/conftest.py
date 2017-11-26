@@ -125,3 +125,8 @@ class StaticAnalysisCase(object):
 def cwd_tmpdir(monkeypatch, tmpdir):
     with helpers.set_cwd(tmpdir.dirpath):
         yield tmpdir
+
+
+@pytest.fixture
+def evaluator():
+    return jedi.Script('')._evaluator

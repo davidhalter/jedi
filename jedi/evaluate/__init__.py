@@ -101,6 +101,7 @@ class Evaluator(object):
         self.is_analysis = False
         self.python_version = sys.version_info[:2]
         self.project = project
+        self.access_cache = {}
         project.add_evaluator(self)
 
         if compiled_sub_process is None:

@@ -50,12 +50,12 @@ def test_parse_function_doc_illegal_docstr():
     assert ('', '') == compiled._parse_function_doc(docstr)
 
 
-def test_doc():
+def test_doc(evaluator):
     """
     Even CompiledObject docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    obj = compiled.CompiledObject(_evaluator(), ''.__getnewargs__)
+    obj = compiled.create(evaluator, ''.__getnewargs__)
     assert obj.py__doc__() == ''
 
 

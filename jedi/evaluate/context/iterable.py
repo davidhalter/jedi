@@ -373,7 +373,7 @@ class SequenceLiteralContext(ArrayMixin, AbstractIterable):
         for key_node, value in self._items():
             for key in self._defining_context.eval_node(key_node):
                 if is_string(key):
-                    yield key.obj, LazyTreeContext(self._defining_context, value)
+                    yield key.get_safe_value(), LazyTreeContext(self._defining_context, value)
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
