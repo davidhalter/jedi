@@ -83,7 +83,7 @@ def compiled_objects_cache(attribute_name):
         Caching the id has the advantage that an object doesn't need to be
         hashable.
         """
-        def wrapper(evaluator, obj):
+        def wrapper(evaluator, obj, parent_context=None):
             cache = getattr(evaluator, attribute_name)
             # Do a very cheap form of caching here.
             key = id(obj)
@@ -91,9 +91,13 @@ def compiled_objects_cache(attribute_name):
                 cache[key]
                 return cache[key][0]
             except KeyError:
-                result = func(evaluator, obj)
+                # TODO wuaaaarrghhhhhhhh
+                if attribute_name == 'mixed_cache':
+                    result = func(evaluator, obj, parent_context)
+                else:
+                    result = func(evaluator, obj)
                 # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj
+                cache[key] = result, obj, parent_context
                 return result
         return wrapper
 
@@ -214,11 +218,10 @@ class DirectObjectAccess(object):
                 raise
             return None
 
-    def get_safe_value(self, default=_sentinel):
+    def get_safe_value(self):
         if type(self._obj) in (float, int, str, unicode, slice, type(Ellipsis)):
             return self._obj
-        if default == _sentinel:
-            raise ValueError
+        raise ValueError
 
     def get_api_type(self):
         obj = self._obj

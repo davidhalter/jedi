@@ -205,7 +205,12 @@ class CompiledObject(Context):
         )
 
     def get_safe_value(self, default=_sentinel):
-        return self.access.get_safe_value(default=default)
+        try:
+            return self.access.get_safe_value()
+        except ValueError:
+            if default == _sentinel:
+                raise
+            return default
 
     def execute_operation(self, other, operator):
         return _create_from_access(
@@ -565,8 +570,6 @@ def _create(evaluator, access, parent_context=None, faked=None):
         parent_context = create(evaluator, _builtins)
         return create(evaluator, access, parent_context)
 
-    if access._obj == str:
-        print('OOOOOOOOOO', id(access), id(parent_context), id(faked))
     return CompiledObject(evaluator, access, parent_context, faked)
 
 

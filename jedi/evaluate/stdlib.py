@@ -229,7 +229,6 @@ def builtins_isinstance(evaluator, objects, types, arguments):
 
         for cls_or_tup in types:
             if cls_or_tup.is_class():
-                print(id(mro[0]), mro[0], id(cls_or_tup), cls_or_tup)
                 bool_results.add(cls_or_tup in mro)
             elif cls_or_tup.name.string_name == 'tuple' \
                     and cls_or_tup.get_root_context() == evaluator.BUILTINS:

@@ -250,7 +250,7 @@ class DictComprehension(ArrayMixin, Comprehension):
         for keys, values in self._iterate():
             for k in keys:
                 if isinstance(k, compiled.CompiledObject):
-                    if k.obj == index:
+                    if k.get_safe_value(default=object()) == index:
                         return values
         return self.dict_values()
 

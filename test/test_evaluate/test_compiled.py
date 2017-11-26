@@ -12,32 +12,25 @@ from jedi.parser_utils import clean_scope_docstring
 from jedi import Script
 
 
-def _evaluator():
-    return Evaluator(parso.load_grammar(), Project())
-
-
-def test_simple():
-    e = _evaluator()
-    bltn = compiled.CompiledObject(e, builtins)
-    obj = compiled.CompiledObject(e, '_str_', bltn)
+def test_simple(evaluator):
+    obj = compiled.create(evaluator, '_str_')
     upper, = obj.py__getattribute__('upper')
     objs = list(upper.execute_evaluated())
     assert len(objs) == 1
     assert isinstance(objs[0], instance.CompiledInstance)
 
 
-def test_fake_loading():
-    e = _evaluator()
-    assert isinstance(compiled.create(e, next), FunctionContext)
+def test_fake_loading(evaluator):
+    assert isinstance(compiled.create(evaluator, next), FunctionContext)
 
-    builtin = compiled.get_special_object(e, 'BUILTINS')
+    builtin = compiled.get_special_object(evaluator, 'BUILTINS')
     string, = builtin.py__getattribute__('str')
-    from_name = compiled._create_from_name(e, builtin, string, '__init__')
+    from_name = compiled._create_from_name(evaluator, builtin, string, '__init__')
     assert isinstance(from_name, FunctionContext)
 
 
-def test_fake_docstr():
-    node = compiled.create(_evaluator(), next).tree_node
+def test_fake_docstr(evaluator):
+    node = compiled.create(evaluator, next).tree_node
     assert clean_scope_docstring(node) == next.__doc__
 
 

@@ -109,7 +109,8 @@ def _load_module(evaluator, path, python_object):
     ).get_root_node()
     python_module = inspect.getmodule(python_object)
 
-    evaluator.modules[python_module.__name__] = module
+    # TODO we should actually make something like this possible.
+    #evaluator.modules[python_module.__name__] = module
     return module
 
 
