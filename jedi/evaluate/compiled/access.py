@@ -5,7 +5,6 @@ from collections import namedtuple
 
 from jedi._compatibility import unicode, is_py3, is_py34, builtins, py_version
 from jedi.evaluate.compiled.getattr_static import getattr_static
-from jedi.evaluate.cache import evaluator_function_cache
 
 
 MethodDescriptorType = type(str.replace)
@@ -77,9 +76,32 @@ _OPERATORS.update(COMPARISON_OPERATORS)
 SignatureParam = namedtuple('SignatureParam', 'name default empty annotation')
 
 
-@evaluator_function_cache()
+def compiled_objects_cache(attribute_name):
+    def decorator(func):
+        """
+        This decorator caches just the ids, oopposed to caching the object itself.
+        Caching the id has the advantage that an object doesn't need to be
+        hashable.
+        """
+        def wrapper(evaluator, obj):
+            cache = getattr(evaluator, attribute_name)
+            # Do a very cheap form of caching here.
+            key = id(obj)
+            try:
+                cache[key]
+                return cache[key][0]
+            except KeyError:
+                result = func(evaluator, obj)
+                # Need to cache all of them, otherwise the id could be overwritten.
+                cache[key] = result, obj
+                return result
+        return wrapper
+
+    return decorator
+
+
+@compiled_objects_cache('compiled_cache')
 def create_access(evaluator, obj):
-    print('create', obj)
     return DirectObjectAccess(evaluator, obj)
 
 

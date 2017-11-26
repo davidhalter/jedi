@@ -13,6 +13,7 @@ from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled.getattr_static import getattr_static
+from jedi.evaluate.compiled.access import compiled_objects_cache
 
 
 class MixedObject(object):
@@ -191,7 +192,7 @@ def _find_syntax_node_name(evaluator, access):
     return names[-1].parent, path
 
 
-@compiled.compiled_objects_cache('mixed_cache')
+@compiled_objects_cache('mixed_cache')
 def _create(evaluator, access, parent_context=None, *args):
     tree_node, path = _find_syntax_node_name(evaluator, access)
 

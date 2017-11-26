@@ -15,6 +15,7 @@ from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.compiled.access import DirectObjectAccess, _sentinel, create_access
+from jedi.evaluate.cache import evaluator_function_cache
 from . import fake
 
 
@@ -512,47 +513,32 @@ def get_special_object(evaluator, identifier):
     return create(evaluator, obj, parent_context=parent_context)
 
 
-def compiled_objects_cache(attribute_name):
-    def decorator(func):
-        """
-        This decorator caches just the ids, oopposed to caching the object itself.
-        Caching the id has the advantage that an object doesn't need to be
-        hashable.
-        """
-        def wrapper(evaluator, obj, parent_context=None, faked=None):
-            cache = getattr(evaluator, attribute_name)
-            # Do a very cheap form of caching here.
-            key = id(obj), id(parent_context)
-            try:
-                return cache[key][0]
-            except KeyError:
-                # TODO this whole decorator is way too ugly
-                result = func(evaluator, obj, parent_context, faked)
-                # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent_context, faked
-                return result
-        return wrapper
-
-    return decorator
+def _normalize_create_args(func):
+    """The cache doesn't care about keyword vs. normal args."""
+    def wrapper(evaluator, obj, parent_context=None, faked=None):
+        return func(evaluator, obj, parent_context, faked)
+    return wrapper
 
 
-@compiled_objects_cache('compiled_cache')
 def create(evaluator, obj, parent_context=None, faked=None):
-    """
-    A very weird interface class to this module. The more options provided the
-    more acurate loading compiled objects is.
-    """
-    if isinstance(obj, DirectObjectAccess):
-        access = obj
-    else:
-        print('xxx', obj)
-        return create(evaluator, create_access(evaluator, obj), parent_context, faked)
-
     if inspect.ismodule(obj):
         if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
 
+    if isinstance(obj, DirectObjectAccess):
+        return _create(evaluator, obj, parent_context, faked)
+    else:
+        return _create(evaluator, create_access(evaluator, obj), parent_context, faked)
+
+
+@_normalize_create_args
+@evaluator_function_cache()
+def _create(evaluator, access, parent_context=None, faked=None):
+    """
+    A very weird interface class to this module. The more options provided the
+    more acurate loading compiled objects is.
+    """
     #if parent_context is None and obj is not _builtins:
         #return create(evaluator, obj, create(evaluator, _builtins))
 
@@ -577,11 +563,10 @@ def create(evaluator, obj, parent_context=None, faked=None):
     # TODO wow this is a mess....
     if parent_context is None and not faked:
         parent_context = create(evaluator, _builtins)
-        return create(evaluator, obj, parent_context)
+        return create(evaluator, access, parent_context)
 
-    print('OOOOOOOOOO', obj)
-    if access._obj == _builtins and parent_context is not None:
-        raise 1
+    if access._obj == str:
+        print('OOOOOOOOOO', id(access), id(parent_context), id(faked))
     return CompiledObject(evaluator, access, parent_context, faked)
 
 

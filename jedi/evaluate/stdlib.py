@@ -226,7 +226,6 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             return ContextSet(compiled.create(evaluator, True), compiled.create(evaluator, False))
 
         mro = mro_func()
-        print(mro, types)
 
         for cls_or_tup in types:
             if cls_or_tup.is_class():
@@ -249,7 +248,6 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                               'not %s.' % cls_or_tup
                     analysis.add(lazy_context._context, 'type-error-isinstance', node, message)
 
-    print(objects, types, bool_results)
     return ContextSet.from_iterable(compiled.create(evaluator, x) for x in bool_results)
 
 
