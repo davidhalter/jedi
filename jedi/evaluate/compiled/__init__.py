@@ -14,6 +14,7 @@ from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.base_context import Context, ContextSet
+from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import DirectObjectAccess, _sentinel, create_access
 from jedi.evaluate.cache import evaluator_function_cache
 from . import fake
@@ -159,9 +160,9 @@ class CompiledObject(Context):
         return ContextSet(_create_from_access(self.evaluator, access))
 
     @CheckAttribute
-    def py__iter__list(self):
-        for access in self.access.py__iter__():
-            yield _create_from_access(self.evaluator, access)
+    def py__iter__(self):
+        for access in self.access.py__iter__list():
+            yield LazyKnownContext(_create_from_access(self.evaluator, access))
 
     def py__name__(self):
         return self.access.py__name__()
