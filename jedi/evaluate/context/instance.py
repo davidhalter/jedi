@@ -167,7 +167,7 @@ class AbstractInstanceContext(Context):
 
     def create_init_executions(self):
         for name in self.get_function_slot_names('__init__'):
-            if isinstance(name, LazyInstanceName):
+            if isinstance(name, SelfName):
                 yield self._create_init_execution(name.class_context, name.tree_name.parent)
 
     @evaluator_method_cache()
@@ -317,7 +317,7 @@ class InstanceNameDefinition(filters.TreeNameDefinition):
         return super(InstanceNameDefinition, self).infer()
 
 
-class LazyInstanceName(filters.TreeNameDefinition):
+class SelfName(filters.TreeNameDefinition):
     """
     This name calculates the parent_context lazily.
     """
@@ -331,7 +331,7 @@ class LazyInstanceName(filters.TreeNameDefinition):
         return self._instance.create_instance_context(self.class_context, self.tree_name)
 
 
-class LazyInstanceClassName(LazyInstanceName):
+class LazyInstanceClassName(SelfName):
     @iterator_to_context_set
     def infer(self):
         for result_context in super(LazyInstanceClassName, self).infer():
@@ -385,7 +385,7 @@ class InstanceClassFilter(filters.ParserTreeFilter):
 
 
 class SelfNameFilter(InstanceClassFilter):
-    name_class = LazyInstanceName
+    name_class = SelfName
 
     def _filter(self, names):
         names = self._filter_self_names(names)
