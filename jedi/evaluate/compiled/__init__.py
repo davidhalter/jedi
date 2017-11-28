@@ -82,18 +82,18 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__class__(self):
-        return create_from_access(self.evaluator, self.access.py__class__())
+        return _create_from_access(self.evaluator, self.access.py__class__())
 
     @CheckAttribute
     def py__mro__(self):
         return (self,) + tuple(
-            create_from_access(self.evaluator, access) for access in self.access.py__mro__accesses()
+            _create_from_access(self.evaluator, access) for access in self.access.py__mro__accesses()
         )
 
     @CheckAttribute
     def py__bases__(self):
         return tuple(
-            create_from_access(self.evaluator, access)
+            _create_from_access(self.evaluator, access)
             for access in self.access.py__bases__()
         )
 
@@ -166,12 +166,12 @@ class CompiledObject(Context):
         if access is None:
             return ContextSet()
 
-        return ContextSet(create_from_access(self.evaluator, access))
+        return ContextSet(_create_from_access(self.evaluator, access))
 
     @CheckAttribute
     def py__iter__(self):
         for access in self.access.py__iter__list():
-            yield LazyKnownContext(create_from_access(self.evaluator, access))
+            yield LazyKnownContext(_create_from_access(self.evaluator, access))
 
     def py__name__(self):
         return self.access.py__name__()
@@ -211,7 +211,7 @@ class CompiledObject(Context):
 
     def dict_values(self):
         return ContextSet.from_iterable(
-            create_from_access(self.evaluator, access) for access in self.access.dict_values()
+            _create_from_access(self.evaluator, access) for access in self.access.dict_values()
         )
 
     def get_safe_value(self, default=_sentinel):
@@ -223,13 +223,13 @@ class CompiledObject(Context):
             return default
 
     def execute_operation(self, other, operator):
-        return create_from_access(
+        return _create_from_access(
             self.evaluator,
             self.access.execute_operation(other.access, operator)
         )
 
     def negate(self):
-        return create_from_access(self.evaluator, self.access.negate())
+        return _create_from_access(self.evaluator, self.access.negate())
 
     def is_super_class(self, exception):
         return self.access.is_super_class(exception)
@@ -275,9 +275,9 @@ class SignatureParamName(AbstractNameDefinition):
         evaluator = self.parent_context.evaluator
         contexts = ContextSet()
         if p.has_default:
-            contexts = ContextSet(create_from_access(evaluator, p.default))
+            contexts = ContextSet(_create_from_access(evaluator, p.default))
         if p.has_annotation:
-            annotation = create_from_access(evaluator, p.annotation)
+            annotation = _create_from_access(evaluator, p.annotation)
             contexts |= annotation.execute_evaluated()
         return contexts
 
@@ -531,13 +531,13 @@ def _normalize_create_args(func):
 
 
 def create(evaluator, obj):
-    return create_from_access(
+    return _create_from_access(
         evaluator, create_access(evaluator, obj)
     )
 
 
 @evaluator_function_cache()
-def create_from_access(evaluator, access):
+def _create_from_access(evaluator, access):
     """
     Returns a CompiledObject and tries to find fake modules.
     """
