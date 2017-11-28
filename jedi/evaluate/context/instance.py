@@ -104,13 +104,11 @@ class AbstractInstanceContext(Context):
                     origin_scope=None, include_self_names=True):
         if include_self_names:
             for cls in self.class_context.py__mro__():
-                if isinstance(cls, compiled.CompiledObject):
-                    if cls.tree_node is not None:
-                        # In this case we're talking about a fake object, it
-                        # doesn't make sense for normal compiled objects to
-                        # search for self variables.
-                        yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
-                else:
+                if not isinstance(cls, compiled.CompiledObject) \
+                        or cls.tree_node is not None:
+                    # In this case we're excluding compiled objects that are
+                    # not fake objects. It doesn't make sense for normal
+                    # compiled objects to search for self variables.
                     yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
 
         for cls in self.class_context.py__mro__():
