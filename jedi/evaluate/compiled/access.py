@@ -73,7 +73,7 @@ _OPERATORS = {
 _OPERATORS.update(COMPARISON_OPERATORS)
 
 
-SignatureParam = namedtuple('SignatureParam', 'name default empty annotation')
+SignatureParam = namedtuple('SignatureParam', 'name has_default default has_annotation annotation')
 
 
 def compiled_objects_cache(attribute_name):
@@ -307,9 +307,10 @@ class DirectObjectAccess(object):
         return [
             SignatureParam(
                 name=p.name,
-                default=p.default,
-                empty=p.empty,
-                annotation=p.annotation,
+                has_default=p.default is not p.empty,
+                default=self._create_access(p.default),
+                has_annotation=p.annotation is not p.empty,
+                annotation=self._create_access(p.annotation),
             ) for p in signature.parameters.values()
         ]
 

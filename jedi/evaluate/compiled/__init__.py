@@ -82,18 +82,18 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__class__(self):
-        return create(self.evaluator, self.access.py__class__())
+        return create_from_access(self.evaluator, self.access.py__class__())
 
     @CheckAttribute
     def py__mro__(self):
         return (self,) + tuple(
-             _create_from_access(self.evaluator, access) for access in self.access.py__mro__accesses()
+             create_from_access(self.evaluator, access) for access in self.access.py__mro__accesses()
         )
 
     @CheckAttribute
     def py__bases__(self):
         raise NotImplementedError
-        return tuple(create(self.evaluator, cls) for cls in self.obj.__bases__)
+        return tuple(create_from_access(self.evaluator, cls) for cls in self.obj.__bases__)
 
     def py__bool__(self):
         return self.access.py__bool__()
@@ -164,12 +164,12 @@ class CompiledObject(Context):
         if access is None:
             return ContextSet()
 
-        return ContextSet(_create_from_access(self.evaluator, access))
+        return ContextSet(create_from_access(self.evaluator, access))
 
     @CheckAttribute
     def py__iter__(self):
         for access in self.access.py__iter__list():
-            yield LazyKnownContext(_create_from_access(self.evaluator, access))
+            yield LazyKnownContext(create_from_access(self.evaluator, access))
 
     def py__name__(self):
         return self.access.py__name__()
@@ -209,7 +209,7 @@ class CompiledObject(Context):
 
     def dict_values(self):
         return ContextSet.from_iterable(
-            create(self.evaluator, access) for access in self.access.dict_values()
+            create_from_access(self.evaluator, access) for access in self.access.dict_values()
         )
 
     def get_safe_value(self, default=_sentinel):
@@ -221,13 +221,13 @@ class CompiledObject(Context):
             return default
 
     def execute_operation(self, other, operator):
-        return _create_from_access(
+        return create_from_access(
             self.evaluator,
             self.access.execute_operation(other.access, operator)
         )
 
     def negate(self):
-        return create(self.evaluator, self.access.negate())
+        return create_from_access(self.evaluator, self.access.negate())
 
     def is_super_class(self, exception):
         return self.access.is_super_class(exception)
@@ -272,10 +272,10 @@ class SignatureParamName(AbstractNameDefinition):
         p = self._signature_param
         evaluator = self.parent_context.evaluator
         contexts = ContextSet()
-        if p.default is not p.empty:
-            contexts = ContextSet(create(evaluator, p.default))
-        if p.annotation is not p.empty:
-            annotation = create(evaluator, p.annotation)
+        if p.has_default:
+            contexts = ContextSet(create_from_access(evaluator, p.default))
+        if p.has_annotation:
+            annotation = create_from_access(evaluator, p.annotation)
             contexts |= annotation.execute_evaluated()
         return contexts
 
@@ -491,7 +491,7 @@ def _create_from_name(evaluator, compiled_object, name):
         pass
 
     access = compiled_object.access.getattr(name, default=None)
-    return create(evaluator, access, parent_context=compiled_object, faked=faked)
+    return create_from_access(evaluator, access, parent_context=compiled_object, faked=faked)
 
 
 def builtin_from_name(evaluator, string):
@@ -536,15 +536,12 @@ def create(evaluator, obj, parent_context=None, faked=None):
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
 
-    if isinstance(obj, DirectObjectAccess):
-        return _create_from_access(evaluator, obj, parent_context, faked)
-    else:
-        return _create_from_access(evaluator, create_access(evaluator, obj), parent_context, faked)
+    return create_from_access(evaluator, create_access(evaluator, obj), parent_context, faked)
 
 
 @_normalize_create_args
 @evaluator_function_cache()
-def _create_from_access(evaluator, access, parent_context=None, faked=None):
+def create_from_access(evaluator, access, parent_context=None, faked=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
@@ -559,11 +556,13 @@ def _create_from_access(evaluator, access, parent_context=None, faked=None):
                 pass
             else:
                 for access2, tree_node in zip(accesses, tree_nodes):
-                    parent_context = create(evaluator, access2, parent_context, faked=tree_node)
+                    parent_context = create_from_access(
+                        evaluator, access2, parent_context, faked=tree_node
+                    )
                 return parent_context
     # TODO wow this is a mess....
     if parent_context is None and not faked:
         parent_context = create(evaluator, _builtins)
-        return create(evaluator, access, parent_context)
+        return create_from_access(evaluator, access, parent_context)
 
     return CompiledObject(evaluator, access, parent_context, faked)
