@@ -109,7 +109,7 @@ class AbstractInstanceContext(Context):
                     # In this case we're excluding compiled objects that are
                     # not fake objects. It doesn't make sense for normal
                     # compiled objects to search for self variables.
-                    yield SelfNameFilter(self.evaluator, self, cls, origin_scope)
+                    yield SelfAttributeFilter(self.evaluator, self, cls, origin_scope)
 
         for cls in self.class_context.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
@@ -382,7 +382,10 @@ class InstanceClassFilter(filters.ParserTreeFilter):
         return [self.name_class(self.context, self._class_context, name) for name in names]
 
 
-class SelfNameFilter(InstanceClassFilter):
+class SelfAttributeFilter(InstanceClassFilter):
+    """
+    This class basically filters all the use cases where `self.*` was assigned.
+    """
     name_class = SelfName
 
     def _filter(self, names):
