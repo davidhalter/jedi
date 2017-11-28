@@ -1,7 +1,6 @@
 """
 Imitate the parser representation.
 """
-import inspect
 import re
 import sys
 import os
@@ -15,7 +14,7 @@ from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
 from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.lazy_context import LazyKnownContext
-from jedi.evaluate.compiled.access import DirectObjectAccess, _sentinel, create_access
+from jedi.evaluate.compiled.access import _sentinel, create_access
 from jedi.evaluate.cache import evaluator_function_cache
 from . import fake
 
@@ -52,18 +51,11 @@ class CheckAttribute(object):
 
 
 class CompiledObject(Context):
-    path = None  # modules have this attribute - set it to None.
-    used_names = lambda self: {}  # To be consistent with modules.
-
     def __init__(self, evaluator, access, parent_context=None, faked_class=None):
         super(CompiledObject, self).__init__(evaluator, parent_context)
         self.access = access
         # This attribute will not be set for most classes, except for fakes.
         self.tree_node = faked_class
-
-    def get_root_node(self):
-        # To make things a bit easier with filters we add this method here.
-        return self.get_root_context()
 
     @CheckAttribute
     def py__call__(self, params):
@@ -202,12 +194,6 @@ class CompiledObject(Context):
                     yield result
         for type_ in docstrings.infer_return_types(self):
             yield type_
-
-    def get_self_attributes(self):
-        return []  # Instance compatibility
-
-    def get_imports(self):
-        return []  # Builtins don't have imports
 
     def dict_values(self):
         return ContextSet.from_iterable(
