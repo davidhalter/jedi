@@ -197,7 +197,7 @@ def _find_syntax_node_name(evaluator, access):
 def _create(evaluator, access, parent_context=None, *args):
     tree_node, path = _find_syntax_node_name(evaluator, access)
 
-    compiled_object = compiled.create_from_access(
+    compiled_object = compiled.create_cached_compiled_object(
         evaluator, access, parent_context=parent_context.compiled_object)
     if tree_node is None:
         return compiled_object
