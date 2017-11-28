@@ -537,21 +537,18 @@ def create(evaluator, obj, parent_context=None, faked=None):
             return create(evaluator, obj)
 
     if isinstance(obj, DirectObjectAccess):
-        return _create(evaluator, obj, parent_context, faked)
+        return _create_from_access(evaluator, obj, parent_context, faked)
     else:
-        return _create(evaluator, create_access(evaluator, obj), parent_context, faked)
+        return _create_from_access(evaluator, create_access(evaluator, obj), parent_context, faked)
 
 
 @_normalize_create_args
 @evaluator_function_cache()
-def _create(evaluator, access, parent_context=None, faked=None):
+def _create_from_access(evaluator, access, parent_context=None, faked=None):
     """
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
-    #if parent_context is None and obj is not _builtins:
-        #return create(evaluator, obj, create(evaluator, _builtins))
-
     if faked is None and parent_context is None:
         access_tuples = access.get_access_path_tuples()
         if access_tuples:
@@ -570,9 +567,3 @@ def _create(evaluator, access, parent_context=None, faked=None):
         return create(evaluator, access, parent_context)
 
     return CompiledObject(evaluator, access, parent_context, faked)
-
-
-def _create_from_access(evaluator, access, parent_context=None, faked=None):
-    if parent_context is None:
-        parent_context = create(evaluator, _builtins)
-    return create(evaluator, access, parent_context, faked=faked)
