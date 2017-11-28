@@ -67,6 +67,13 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__call__(self, params):
+        if self.tree_node is not None and self.tree_node.type == 'funcdef':
+            from jedi.evaluate.context.function import FunctionContext
+            return FunctionContext(
+                self.evaluator,
+                parent_context=self.parent_context,
+                funcdef=self.tree_node
+            ).py__call__(params)
         if self.access.is_class():
             from jedi.evaluate.context import CompiledInstance
             return ContextSet(CompiledInstance(self.evaluator, self.parent_context, self, params))
@@ -480,9 +487,6 @@ def _create_from_name(evaluator, compiled_object, name):
     faked = None
     try:
         faked = fake.get_faked_with_parent_context(compiled_object, name)
-        if faked.type == 'funcdef':
-            from jedi.evaluate.context.function import FunctionContext
-            return FunctionContext(evaluator, compiled_object, faked)
     except fake.FakeDoesNotExist:
         pass
 
@@ -559,12 +563,6 @@ def _create(evaluator, access, parent_context=None, faked=None):
             else:
                 for access2, tree_node in zip(accesses, tree_nodes):
                     parent_context = create(evaluator, access2, parent_context, faked=tree_node)
-
-                # TODO this if is ugly. Please remove, it may make certain
-                # properties of that function unusable.
-                if tree_node.type == 'function':
-                    from jedi.evaluate.context.function import FunctionContext
-                    return FunctionContext(evaluator, parent_context.parent_context, tree_node)
                 return parent_context
     # TODO wow this is a mess....
     if parent_context is None and not faked:

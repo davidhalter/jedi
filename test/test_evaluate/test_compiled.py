@@ -21,17 +21,17 @@ def test_simple(evaluator):
 
 
 def test_fake_loading(evaluator):
-    assert isinstance(compiled.create(evaluator, next), FunctionContext)
-
     builtin = compiled.get_special_object(evaluator, 'BUILTINS')
     string, = builtin.py__getattribute__('str')
-    from_name = compiled._create_from_name(evaluator, builtin, string, '__init__')
-    assert isinstance(from_name, FunctionContext)
+    from_name = compiled._create_from_name(evaluator, string, '__init__')
+    assert from_name.tree_node
 
 
 def test_fake_docstr(evaluator):
-    node = compiled.create(evaluator, next).tree_node
-    assert clean_scope_docstring(node) == next.__doc__
+    next_ = compiled.create(evaluator, next)
+    assert next_.py__doc__()
+    assert next_.tree_node is not None
+    assert next_.py__doc__() == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():

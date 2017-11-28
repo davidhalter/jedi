@@ -324,8 +324,8 @@ def test_keyword_argument_index():
     def get(source, column=None):
         return Script(source, column=column).call_signatures()[0]
 
-    assert get('sorted([], key=a').index == 2
-    assert get('sorted([], key=').index == 2
+    assert get('sorted([], key=a').index == 1
+    assert get('sorted([], key=').index == 1
     assert get('sorted([], no_key=a').index is None
 
     kw_func = 'def foo(a, b): pass\nfoo(b=3, a=4)'

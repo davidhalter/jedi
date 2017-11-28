@@ -253,7 +253,8 @@ class CompiledInstanceName(compiled.CompiledName):
     @iterator_to_context_set
     def infer(self):
         for result_context in super(CompiledInstanceName, self).infer():
-            if isinstance(result_context, FunctionContext):
+            is_function = result_context.api_type == 'function'
+            if result_context.tree_node is not None and is_function:
                 parent_context = result_context.parent_context
                 while parent_context.is_class():
                     parent_context = parent_context.parent_context
@@ -263,7 +264,7 @@ class CompiledInstanceName(compiled.CompiledName):
                     parent_context, result_context.tree_node
                 )
             else:
-                if result_context.api_type == 'function':
+                if is_function:
                     yield CompiledBoundMethod(result_context)
                 else:
                     yield result_context
