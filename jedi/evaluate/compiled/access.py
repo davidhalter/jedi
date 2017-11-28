@@ -175,6 +175,9 @@ class DirectObjectAccess(object):
     def py__class__(self):
         return self._create_access(self._obj.__class__)
 
+    def py__bases__(self):
+        return [self._create_access(base) for base in self._obj.__bases__]
+
     def get_repr(self):
         return repr(self._obj)
 

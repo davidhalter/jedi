@@ -87,13 +87,15 @@ class CompiledObject(Context):
     @CheckAttribute
     def py__mro__(self):
         return (self,) + tuple(
-             create_from_access(self.evaluator, access) for access in self.access.py__mro__accesses()
+            create_from_access(self.evaluator, access) for access in self.access.py__mro__accesses()
         )
 
     @CheckAttribute
     def py__bases__(self):
-        raise NotImplementedError
-        return tuple(create_from_access(self.evaluator, cls) for cls in self.obj.__bases__)
+        return tuple(
+            create_from_access(self.evaluator, access)
+            for access in self.access.py__bases__()
+        )
 
     def py__bool__(self):
         return self.access.py__bool__()
