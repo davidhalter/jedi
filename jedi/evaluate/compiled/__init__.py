@@ -548,7 +548,7 @@ def create_from_access(evaluator, access, parent_context=None, faked=None):
     A very weird interface class to this module. The more options provided the
     more acurate loading compiled objects is.
     """
-    if faked is None and parent_context is None:
+    if parent_context is None and faked is None:
         access_tuples = access.get_access_path_tuples()
         if access_tuples:
             string_names, accesses = zip(*access_tuples)
@@ -562,8 +562,7 @@ def create_from_access(evaluator, access, parent_context=None, faked=None):
                         evaluator, access2, parent_context, faked=tree_node
                     )
                 return parent_context
-    # TODO wow this is a mess....
-    if parent_context is None and not faked:
+
         parent_context = create(evaluator, _builtins)
         return create_from_access(evaluator, access, parent_context)
 
