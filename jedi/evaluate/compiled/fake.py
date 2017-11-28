@@ -5,12 +5,9 @@ mixing in Python code, the autocompletion should work much better for builtins.
 """
 
 import os
-import inspect
 from itertools import chain
 
-from parso.python import tree
-
-from jedi._compatibility import is_py3, builtins, unicode
+from jedi._compatibility import is_py3, unicode
 
 fake_modules = {}
 
@@ -66,89 +63,6 @@ def _search_scope(scope, obj_name):
     for s in chain(scope.iter_classdefs(), scope.iter_funcdefs()):
         if s.name.value == obj_name:
             return s
-
-
-def _faked(grammar, module, obj, name):
-    # Crazy underscore actions to try to escape all the internal madness.
-    if module is None:
-        module = _get_module(obj)
-
-    faked_mod = _load_faked_module(grammar, module)
-    if faked_mod is None:
-        return None, None
-
-    # Having the module as a `parser.python.tree.Module`, we need to scan
-    # for methods.
-    if name is None:
-        if inspect.isbuiltin(obj) or inspect.isclass(obj):
-            return _search_scope(faked_mod, obj.__name__), faked_mod
-        elif not inspect.isclass(obj):
-            # object is a method or descriptor
-            try:
-                objclass = obj.__objclass__
-            except AttributeError:
-                return None, None
-            else:
-                cls = _search_scope(faked_mod, objclass.__name__)
-                if cls is None:
-                    return None, None
-                return _search_scope(cls, obj.__name__), faked_mod
-    else:
-        if obj is module:
-            return _search_scope(faked_mod, name), faked_mod
-        else:
-            try:
-                cls_name = obj.__name__
-            except AttributeError:
-                return None, None
-            cls = _search_scope(faked_mod, cls_name)
-            if cls is None:
-                return None, None
-            return _search_scope(cls, name), faked_mod
-    return None, None
-
-
-def _memoize_faked(obj):
-    """
-    A typical memoize function that ignores issues with non hashable results.
-    """
-    cache = obj.cache = {}
-
-    def memoizer(*args, **kwargs):
-        key = (obj, args, frozenset(kwargs.items()))
-        try:
-            result = cache[key]
-        except (TypeError, ValueError):
-            return obj(*args, **kwargs)
-        except KeyError:
-            result = obj(*args, **kwargs)
-            if result is not None:
-                cache[key] = obj(*args, **kwargs)
-            return result
-        else:
-            return result
-    return memoizer
-
-
-@_memoize_faked
-def _get_faked(grammar, module, obj, name=None):
-    result, fake_module = _faked(grammar, module, obj, name)
-    if result is None:
-        # We're not interested in classes. What we want is functions.
-        raise FakeDoesNotExist
-    elif result.type == 'classdef':
-        return result, fake_module
-    else:
-        # Set the docstr which was previously not set (faked modules don't
-        # contain it).
-        assert result.type == 'funcdef'
-        doc = '"""%s"""' % obj.__doc__  # TODO need escapes.
-        suite = result.children[-1]
-        string = tree.String(doc, (0, 0), '')
-        new_line = tree.Newline('\n', (0, 0))
-        docstr_node = tree.PythonNode('simple_stmt', [string, new_line])
-        suite.children.insert(1, docstr_node)
-        return result, fake_module
 
 
 def get_faked_with_parent_context(parent_context, name):
