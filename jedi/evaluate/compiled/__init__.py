@@ -493,7 +493,9 @@ def _create_from_name(evaluator, compiled_object, name):
         pass
 
     access = compiled_object.access.getattr(name, default=None)
-    return create_from_access(evaluator, access, parent_context=compiled_object, faked=faked)
+    return _create_cached_compiled_object(
+        evaluator, access, parent_context=compiled_object, faked=faked
+    )
 
 
 def builtin_from_name(evaluator, string):
@@ -532,23 +534,23 @@ def _normalize_create_args(func):
     return wrapper
 
 
-def create(evaluator, obj, parent_context=None, faked=None):
+def create(evaluator, obj, parent_context=None):
     if inspect.ismodule(obj):
         if parent_context is not None:
             # Modules don't have parents, be careful with caching: recurse.
             return create(evaluator, obj)
 
-    return create_from_access(evaluator, create_access(evaluator, obj), parent_context, faked)
+    return create_from_access(
+        evaluator, create_access(evaluator, obj), parent_context
+    )
 
 
-@_normalize_create_args
 @evaluator_function_cache()
-def create_from_access(evaluator, access, parent_context=None, faked=None):
+def create_from_access(evaluator, access, parent_context=None):
     """
-    A very weird interface class to this module. The more options provided the
-    more acurate loading compiled objects is.
+    Returns a CompiledObject and tries to find fake modules.
     """
-    if parent_context is None and faked is None:
+    if parent_context is None:
         access_tuples = access.get_access_path_tuples()
         if access_tuples:
             string_names, accesses = zip(*access_tuples)
@@ -558,12 +560,17 @@ def create_from_access(evaluator, access, parent_context=None, faked=None):
                 pass
             else:
                 for access2, tree_node in zip(accesses, tree_nodes):
-                    parent_context = create_from_access(
+                    parent_context = _create_cached_compiled_object(
                         evaluator, access2, parent_context, faked=tree_node
                     )
                 return parent_context
 
         parent_context = create(evaluator, _builtins)
-        return create_from_access(evaluator, access, parent_context)
+        return _create_cached_compiled_object(evaluator, access, parent_context)
+    return _create_cached_compiled_object(evaluator, access, parent_context)
 
+
+@_normalize_create_args
+@evaluator_function_cache()
+def _create_cached_compiled_object(evaluator, access, parent_context, faked):
     return CompiledObject(evaluator, access, parent_context, faked)
