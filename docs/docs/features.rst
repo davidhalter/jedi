@@ -53,7 +53,7 @@ Supported Python Features
   case, that doesn't work with |jedi|)
 - simple/usual ``sys.path`` modifications
 - ``isinstance`` checks for if/while/assert
-- namespace packages (includes ``pkgutil`` and ``pkg_resources`` namespaces)
+- namespace packages (includes ``pkgutil``, ``pkg_resources`` and PEP420 namespaces)
 - Django / Flask / Buildout support
 
 
@@ -64,7 +64,6 @@ Not yet implemented:
 
 - manipulations of instances outside the instance variables without using
   methods
-- implicit namespace packages (Python 3.3+, `PEP 420 <https://www.python.org/dev/peps/pep-0420/>`_)
 
 Will probably never be implemented:
 

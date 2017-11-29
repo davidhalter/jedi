@@ -56,3 +56,34 @@ def test_implicit_nested_namespace_package():
     result = script.goto_definitions()
 
     assert len(result) == 1
+
+@pytest.mark.skipif('sys.version_info[:2] < (3,4)')
+def test_implicit_namespace_package_import_autocomplete():
+    CODE = 'from implicit_name'
+
+    sys_path = [dirname(__file__)]
+
+    script = jedi.Script(sys_path=sys_path, source=CODE)
+    compl = script.completions()
+    assert [c.name for c in compl] == ['implicit_namespace_package']
+
+
+@pytest.mark.skipif('sys.version_info[:2] < (3,4)')
+def test_namespace_package_in_multiple_directories_autocompletion():
+    CODE = 'from pkg.'
+    sys_path = [join(dirname(__file__), d)
+                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+
+    script = jedi.Script(sys_path=sys_path, source=CODE)
+    compl = script.completions()
+    assert set(c.name for c in compl) == {'ns1_file', 'ns2_file'}
+
+
+@pytest.mark.skipif('sys.version_info[:2] < (3,4)')
+def test_namespace_package_in_multiple_directories_goto_definition():
+    CODE = 'from pkg import ns1_file'
+    sys_path = [join(dirname(__file__), d)
+                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+    script = jedi.Script(sys_path=sys_path, source=CODE)
+    result = script.goto_definitions()
+    assert len(result) == 1

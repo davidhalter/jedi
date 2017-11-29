@@ -21,7 +21,7 @@ from parso.tree import search_ancestor
 from parso.cache import parser_cache
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import find_module, unicode, ImplicitNSInfo
+from jedi._compatibility import find_module, unicode, ImplicitNSInfo, iter_modules
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import sys_path
@@ -401,7 +401,6 @@ class Importer(object):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
-
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
@@ -409,7 +408,7 @@ class Importer(object):
 
         if search_path is None:
             search_path = self.sys_path_with_modifications()
-        for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
+        for module_loader, name, is_pkg in iter_modules(search_path):
             names.append(self._generate_name(name, in_module=in_module))
         return names
 
@@ -448,7 +447,7 @@ class Importer(object):
                 # implicit namespace packages
                 elif isinstance(context, ImplicitNamespaceContext):
                     paths = context.paths
-                    names += self._get_module_names(paths)
+                    names += self._get_module_names(paths, in_module=context)
 
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to

@@ -5,7 +5,7 @@ import os
 
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import use_metaclass
+from jedi._compatibility import use_metaclass, iter_modules
 from jedi.evaluate.cache import CachedMetaClass, evaluator_method_cache
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter
@@ -188,7 +188,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         path = self._path
         names = {}
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
-            mods = pkgutil.iter_modules([os.path.dirname(path)])
+            mods = iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self, name)
