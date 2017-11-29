@@ -23,7 +23,7 @@ def test_simple(evaluator):
 def test_fake_loading(evaluator):
     builtin = compiled.get_special_object(evaluator, 'BUILTINS')
     string, = builtin.py__getattribute__('str')
-    from_name = compiled._create_from_name(evaluator, string, '__init__')
+    from_name = compiled.context._create_from_name(evaluator, string, '__init__')
     assert from_name.tree_node
 
 
@@ -40,7 +40,7 @@ def test_parse_function_doc_illegal_docstr():
 
     doesn't have a closing bracket.
     """
-    assert ('', '') == compiled._parse_function_doc(docstr)
+    assert ('', '') == compiled.context._parse_function_doc(docstr)
 
 
 def test_doc(evaluator):
