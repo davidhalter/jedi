@@ -158,7 +158,7 @@ class IntegrationTestCase(object):
         return self.line_nr - 1
 
     def __repr__(self):
-        return '<%s: %s:%s:%s>' % (self.__class__.__name__, self.module_name,
+        return '<%s: %s:%s %r>' % (self.__class__.__name__, self.path,
                                    self.line_nr_test, self.line.rstrip())
 
     def script(self):
