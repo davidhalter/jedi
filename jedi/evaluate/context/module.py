@@ -25,7 +25,8 @@ class _ModuleAttributeName(AbstractNameDefinition):
         self.string_name = string_name
 
     def infer(self):
-        return compiled.create(self.parent_context.evaluator, str).execute_evaluated()
+        ctx = compiled.builtin_from_name(self.parent_context.evaluator, 'str')
+        return ctx.execute_evaluated()
 
 
 class ModuleName(ContextNameMixin, AbstractNameDefinition):

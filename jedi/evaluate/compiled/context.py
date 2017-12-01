@@ -312,14 +312,14 @@ class CompiledObjectFilter(AbstractFilter):
         return [self._create_name(name)]
 
     def values(self):
+        from jedi.evaluate.compiled import builtin_from_name
         names = []
         for name in self._compiled_object.access.dir():
             names += self.get(name)
 
         # ``dir`` doesn't include the type names.
-        from jedi.evaluate.compiled import create
         if not self._is_instance and self._compiled_object.access.needs_type_completions():
-            for filter in create(self._evaluator, type).get_filters():
+            for filter in builtin_from_name(self._evaluator, 'type').get_filters():
                 names += filter.values()
         return names
 

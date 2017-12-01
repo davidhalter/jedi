@@ -101,7 +101,7 @@ def eval_node(context, element):
         # In Python 2 ellipsis is coded as three single dot tokens, not
         # as one token 3 dot token.
         assert element.value in ('.', '...')
-        return ContextSet(compiled.create(evaluator, Ellipsis))
+        return ContextSet(compiled.builtin_from_name(evaluator, 'Ellipsis'))
     elif typ == 'dotted_name':
         context_set = eval_atom(context, element.children[0])
         for next_name in element.children[2::2]:
@@ -360,6 +360,10 @@ def _is_list(context):
     return isinstance(context, iterable.AbstractIterable) and context.array_type == 'list'
 
 
+def _bool_to_context(evaluator, bool_):
+    return compiled.builtin_from_name(evaluator, str(bool_))
+
+
 def _eval_comparison_part(evaluator, context, left, operator, right):
     l_is_num = is_number(left)
     r_is_num = is_number(right)
@@ -382,7 +386,6 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
         # `int() % float()`.
         return ContextSet(left)
     elif operator in COMPARISON_OPERATORS:
-        print(operator, left, right)
         if is_compiled(left) and is_compiled(right):
             # Possible, because the return is not an option. Just compare.
             try:
@@ -394,9 +397,9 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
             if operator in ('is', '!=', '==', 'is not'):
                 operation = COMPARISON_OPERATORS[operator]
                 bool_ = operation(left, right)
-                return ContextSet(compiled.create(evaluator, bool_))
+                return ContextSet(_bool_to_context(evaluator, bool_))
 
-        return ContextSet(compiled.create(evaluator, True), compiled.create(evaluator, False))
+        return ContextSet(_bool_to_context(evaluator, True), _bool_to_context(evaluator, False))
     elif operator == 'in':
         return NO_CONTEXTS
 

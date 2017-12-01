@@ -223,7 +223,8 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             # This is temporary. Everything should have a class attribute in
             # Python?! Maybe we'll leave it here, because some numpy objects or
             # whatever might not.
-            return ContextSet(compiled.create(evaluator, True), compiled.create(evaluator, False))
+            bool_results = set([True, False])
+            break
 
         mro = mro_func()
 
@@ -247,7 +248,10 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                               'not %s.' % cls_or_tup
                     analysis.add(lazy_context._context, 'type-error-isinstance', node, message)
 
-    return ContextSet.from_iterable(compiled.create(evaluator, x) for x in bool_results)
+    return ContextSet.from_iterable(
+        compiled.builtin_from_name(evaluator, str(b))
+        for b in bool_results
+    )
 
 
 def collections_namedtuple(evaluator, obj, arguments):

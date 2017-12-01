@@ -146,7 +146,8 @@ class FunctionExecutionContext(TreeContext):
                     try:
                         children = r.children
                     except AttributeError:
-                        context_set |= ContextSet(compiled.create(self.evaluator, None))
+                        ctx = compiled.builtin_from_name(self.evaluator, 'None')
+                        context_set |= ContextSet(ctx)
                     else:
                         context_set |= self.eval_node(children[1])
             if check is flow_analysis.REACHABLE:
@@ -157,7 +158,8 @@ class FunctionExecutionContext(TreeContext):
     def _eval_yield(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
-            yield LazyKnownContext(compiled.create(self.evaluator, None))
+            ctx = compiled.builtin_from_name(self.evaluator, 'None')
+            yield LazyKnownContext(ctx)
             return
 
         node = yield_expr.children[1]
