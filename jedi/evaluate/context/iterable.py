@@ -443,7 +443,7 @@ class FakeDict(_FakeArray):
 
     def py__iter__(self):
         for key in self._dct:
-            yield LazyKnownContext(compiled.create(self.evaluator, key))
+            yield LazyKnownContext(compiled.create_simple_object(self.evaluator, key))
 
     def py__getitem__(self, index):
         return self._dct[index].infer()

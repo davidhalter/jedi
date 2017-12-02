@@ -140,7 +140,7 @@ class NameFinder(object):
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         # str is important, because it shouldn't be `Name`!
-        name = compiled.create(self._evaluator, self._string_name)
+        name = compiled.create_simple_object(self._evaluator, self._string_name)
 
         # This is a little bit special. `__getattribute__` is in Python
         # executed before `__getattr__`. But: I know no use case, where

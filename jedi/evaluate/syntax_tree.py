@@ -174,7 +174,7 @@ def eval_atom(context, atom):
 
     elif isinstance(atom, tree.Literal):
         string = parser_utils.safe_literal_eval(atom.value)
-        return ContextSet(compiled.create(context.evaluator, string))
+        return ContextSet(compiled.create_simple_object(context.evaluator, string))
     else:
         c = atom.children
         if c[0].type == 'string':
@@ -313,7 +313,7 @@ def eval_factor(context_set, operator):
             value = context.py__bool__()
             if value is None:  # Uncertainty.
                 return
-            yield compiled.create(context.evaluator, not value)
+            yield compiled.create_simple_object(context.evaluator, not value)
         else:
             yield context
 

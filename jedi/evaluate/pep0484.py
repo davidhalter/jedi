@@ -167,7 +167,7 @@ def py__getitem__(context, typ, node):
                            if isinstance(child, tree.Class))
     if type_name not in valid_classnames:
         return None
-    compiled_classname = compiled.create(context.evaluator, type_name)
+    compiled_classname = compiled.create_simple_object(context.evaluator, type_name)
 
     from jedi.evaluate.context.iterable import FakeSequence
     args = FakeSequence(

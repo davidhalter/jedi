@@ -124,7 +124,7 @@ class AbstractInstanceContext(Context):
             debug.warning('No __getitem__, cannot access the array.')
             return NO_CONTEXTS
         else:
-            index_obj = compiled.create(self.evaluator, index)
+            index_obj = compiled.create_simple_object(self.evaluator, index)
             return self.execute_function_slots(names, index_obj)
 
     def py__iter__(self):

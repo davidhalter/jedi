@@ -22,6 +22,15 @@ def builtin_from_name(evaluator, string):
     return create(evaluator, bltn_obj)
 
 
+def create_simple_object(evaluator, obj):
+    """
+    Only allows creations of objects that are easily picklable across Python
+    versions.
+    """
+    assert isinstance(obj, (int, float, str, bytes, slice, complex, type(Ellipsis)))
+    return create(evaluator, obj)
+
+
 def create(evaluator, obj):
     return create_from_access(
         evaluator, create_access(evaluator, obj)
