@@ -1,5 +1,6 @@
 import inspect
 import types
+import sys
 import operator as op
 from collections import namedtuple
 
@@ -282,8 +283,8 @@ class DirectObjectAccess(object):
                 else:
                     try:
                         # TODO use sys.modules, __module__ can be faked.
-                        yield __import__(imp_plz)
-                    except ImportError:
+                        yield sys.modules[imp_plz]
+                    except KeyError:
                         # __module__ can be something arbitrary that doesn't exist.
                         yield builtins
 
