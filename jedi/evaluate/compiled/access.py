@@ -116,7 +116,7 @@ class AccessPath(object):
 
 def create_access_path(evaluator, obj):
     access = create_access(evaluator, obj)
-    return AccessPath(access.get_access_path_tuples())
+    return AccessPath(access._get_access_path_tuples())
 
 
 class DirectObjectAccess(object):
@@ -251,7 +251,7 @@ class DirectObjectAccess(object):
         # Everything else...
         return 'instance'
 
-    def get_access_path_tuples(self):
+    def _get_access_path_tuples(self):
         return [
             (getattr(o, '__name__', None), create_access(self._evaluator, o))
             for o in self._get_objects_path()

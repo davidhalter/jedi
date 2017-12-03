@@ -79,15 +79,3 @@ def get_faked_module(grammar, string_name):
     if module is None:
         raise FakeDoesNotExist
     return module
-
-
-def get_faked_tree_nodes(grammar, string_names):
-    module = base = get_faked_module(grammar, string_names[0])
-
-    tree_nodes = [module]
-    for name in string_names[1:]:
-        base = _search_scope(base, name)
-        if base is None:
-            raise FakeDoesNotExist
-        tree_nodes.append(base)
-    return tree_nodes

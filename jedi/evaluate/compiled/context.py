@@ -431,31 +431,6 @@ def create_from_access_path(evaluator, access_path):
     return parent_context
 
 
-@evaluator_function_cache()
-def create_from_access(evaluator, access):
-    """
-    Returns a CompiledObject and tries to find fake modules.
-    """
-    access_tuples = access.get_access_path_tuples()
-    if access_tuples:
-        string_names, accesses = zip(*access_tuples)
-        try:
-            tree_nodes = fake.get_faked_tree_nodes(evaluator.latest_grammar, string_names)
-        except fake.FakeDoesNotExist:
-            pass
-        else:
-            parent_context = None
-            for access2, tree_node in zip(accesses, tree_nodes):
-                parent_context = create_cached_compiled_object(
-                    evaluator, access2, parent_context, faked=tree_node
-                )
-            return parent_context
-
-    from jedi.evaluate.compiled import create, _builtins
-    parent_context = create(evaluator, _builtins)
-    return create_cached_compiled_object(evaluator, access, parent_context)
-
-
 @_normalize_create_args
 @evaluator_function_cache()
 def create_cached_compiled_object(evaluator, access, parent_context, faked):
