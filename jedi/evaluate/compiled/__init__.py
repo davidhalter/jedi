@@ -5,8 +5,8 @@ import re
 
 from jedi._compatibility import builtins as _builtins
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
-    CompiledObjectFilter, CompiledContextName, create_from_access
-from jedi.evaluate.compiled.access import create_access
+    CompiledObjectFilter, CompiledContextName, create_from_access_path
+from jedi.evaluate.compiled.access import create_access_path
 from jedi import debug
 
 
@@ -32,8 +32,8 @@ def create_simple_object(evaluator, obj):
 
 
 def create(evaluator, obj):
-    return create_from_access(
-        evaluator, create_access(evaluator, obj)
+    return create_from_access_path(
+        evaluator, create_access_path(evaluator, obj)
     )
 
 

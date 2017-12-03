@@ -109,6 +109,16 @@ def create_access(evaluator, obj):
     return DirectObjectAccess(evaluator, obj)
 
 
+class AccessPath(object):
+    def __init__(self, accesses):
+        self.accesses = accesses
+
+
+def create_access_path(evaluator, obj):
+    access = create_access(evaluator, obj)
+    return AccessPath(access.get_access_path_tuples())
+
+
 class DirectObjectAccess(object):
     def __init__(self, evaluator, obj):
         self._evaluator = evaluator
@@ -119,6 +129,9 @@ class DirectObjectAccess(object):
 
     def _create_access(self, obj):
         return create_access(self._evaluator, obj)
+
+    def _create_access_path(self, obj):
+        return create_access_path(self._evaluator, obj)
 
     def py__bool__(self):
         return bool(self._obj)
@@ -150,14 +163,14 @@ class DirectObjectAccess(object):
             return None
 
     def py__mro__accesses(self):
-        return tuple(self._create_access(cls) for cls in self._obj.__mro__[1:])
+        return tuple(self._create_access_path(cls) for cls in self._obj.__mro__[1:])
 
     def py__getitem__(self, index):
         if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return None
 
-        return self._create_access(self._obj[index])
+        return self._create_access_path(self._obj[index])
 
     def py__iter__list(self):
         if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
@@ -169,14 +182,14 @@ class DirectObjectAccess(object):
             if i > 20:
                 # Should not go crazy with large iterators
                 break
-            lst.append(self._create_access(part))
+            lst.append(self._create_access_path(part))
         return lst
 
     def py__class__(self):
-        return self._create_access(self._obj.__class__)
+        return self._create_access_path(self._obj.__class__)
 
     def py__bases__(self):
-        return [self._create_access(base) for base in self._obj.__bases__]
+        return [self._create_access_path(base) for base in self._obj.__bases__]
 
     def get_repr(self):
         return repr(self._obj)
@@ -239,14 +252,10 @@ class DirectObjectAccess(object):
         return 'instance'
 
     def get_access_path_tuples(self):
-        path = self._get_objects_path()
-        try:
-            # Just provoke an AttributeError.
-            result = [(o.__name__, o) for o in path]
-        except AttributeError:
-            return []
-        else:
-            return [(name, self._create_access(o)) for name, o in result]
+        return [
+            (getattr(o, '__name__', None), create_access(self._evaluator, o))
+            for o in self._get_objects_path()
+        ]
 
     def _get_objects_path(self):
         def get():
@@ -272,6 +281,7 @@ class DirectObjectAccess(object):
                     yield builtins
                 else:
                     try:
+                        # TODO use sys.modules, __module__ can be faked.
                         yield __import__(imp_plz)
                     except ImportError:
                         # __module__ can be something arbitrary that doesn't exist.
@@ -281,7 +291,7 @@ class DirectObjectAccess(object):
 
     def execute_operation(self, other, operator):
         op = _OPERATORS[operator]
-        return self._create_access(op(self._obj, other._obj))
+        return self._create_access_path(op(self._obj, other._obj))
 
     def needs_type_completions(self):
         return inspect.isclass(self._obj) and self._obj != type
@@ -311,17 +321,17 @@ class DirectObjectAccess(object):
             SignatureParam(
                 name=p.name,
                 has_default=p.default is not p.empty,
-                default=self._create_access(p.default),
+                default=self._create_access_path(p.default),
                 has_annotation=p.annotation is not p.empty,
-                annotation=self._create_access(p.annotation),
+                annotation=self._create_access_path(p.annotation),
             ) for p in signature.parameters.values()
         ]
 
     def negate(self):
-        return self._create_access(-self._obj)
+        return self._create_access_path(-self._obj)
 
     def dict_values(self):
-        return [self._create_access(v) for v in self._obj.values()]
+        return [self._create_access_path(v) for v in self._obj.values()]
 
     def is_super_class(self, exception):
         return issubclass(exception, self._obj)

@@ -74,10 +74,15 @@ def get_faked_with_parent_context(parent_context, name):
     raise FakeDoesNotExist
 
 
-def get_faked_tree_nodes(grammar, string_names):
-    module = base = _load_faked_module(grammar, string_names[0])
+def get_faked_module(grammar, string_name):
+    module = _load_faked_module(grammar, string_name)
     if module is None:
         raise FakeDoesNotExist
+    return module
+
+
+def get_faked_tree_nodes(grammar, string_names):
+    module = base = get_faked_module(grammar, string_names[0])
 
     tree_nodes = [module]
     for name in string_names[1:]:
