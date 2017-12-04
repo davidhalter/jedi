@@ -28,7 +28,7 @@ from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
-from jedi.evaluate.utils import unite
+from jedi.evaluate.utils import unite, dotted_from_fs_path
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
@@ -481,7 +481,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
     if sys_path is None:
         sys_path = evaluator.project.sys_path
 
-    dotted_path = path and compiled.dotted_from_fs_path(path, sys_path)
+    dotted_path = path and dotted_from_fs_path(path, sys_path)
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
             and dotted_path not in settings.auto_import_modules:
 

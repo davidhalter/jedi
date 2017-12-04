@@ -4,8 +4,10 @@ import sys
 import operator as op
 from collections import namedtuple
 
+from jedi import debug
 from jedi._compatibility import unicode, is_py3, is_py34, builtins, py_version
 from jedi.evaluate.compiled.getattr_static import getattr_static
+from jedi.evaluate.utils import dotted_from_fs_path
 
 
 MethodDescriptorType = type(str.replace)
@@ -108,6 +110,36 @@ def compiled_objects_cache(attribute_name):
 @compiled_objects_cache('compiled_cache')
 def create_access(evaluator, obj):
     return DirectObjectAccess(evaluator, obj)
+
+
+def load_module(evaluator, path=None, name=None):
+    sys_path = list(evaluator.project.sys_path)
+    if path is not None:
+        dotted_path = dotted_from_fs_path(path, sys_path=sys_path)
+    else:
+        dotted_path = name
+
+    temp, sys.path = sys.path, sys_path
+    try:
+        __import__(dotted_path)
+    except RuntimeError:
+        if 'PySide' in dotted_path or 'PyQt' in dotted_path:
+            # RuntimeError: the PyQt4.QtCore and PyQt5.QtCore modules both wrap
+            # the QObject class.
+            # See https://github.com/davidhalter/jedi/pull/483
+            return None
+        raise
+    except ImportError:
+        # If a module is "corrupt" or not really a Python module or whatever.
+        debug.warning('Module %s not importable in path %s.', dotted_path, path)
+        return None
+    finally:
+        sys.path = temp
+
+    # Just access the cache after import, because of #59 as well as the very
+    # complicated import structure of Python.
+    module = sys.modules[dotted_path]
+    return create_access_path(evaluator, module)
 
 
 class AccessPath(object):
