@@ -1,5 +1,3 @@
-import types
-
 from jedi._compatibility import builtins as _builtins
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
     CompiledObjectFilter, CompiledContextName, create_from_access_path
@@ -26,24 +24,11 @@ def create(evaluator, obj):
     )
 
 
-def _a_generator(foo):
-    """Used to have an object to return for generators."""
-    yield 42
-    yield foo
-
-
-_SPECIAL_OBJECTS = {
-    'FUNCTION_CLASS': types.FunctionType,
-    'METHOD_CLASS': type(CompiledObject.is_class),
-    'MODULE_CLASS': types.ModuleType,
-    'GENERATOR_OBJECT': _a_generator(1.0),
-    'BUILTINS': _builtins,
-}
-
-
 def get_special_object(evaluator, identifier):
-    obj = _SPECIAL_OBJECTS[identifier]
-    return create(evaluator, obj)
+    return create_from_access_path(
+        evaluator,
+        access.get_special_object(evaluator, identifier)
+    )
 
 
 def load_module(evaluator, path=None, name=None):
