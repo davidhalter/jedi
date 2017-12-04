@@ -166,20 +166,16 @@ class CompiledObject(Context):
 
     def _execute_function(self, params):
         from jedi.evaluate import docstrings
-        from jedi.evaluate.compiled import create, _builtins
+        from jedi.evaluate.compiled import builtin_from_name
         if self.api_type != 'function':
             return
         for name in self._parse_function_doc()[1].split():
             try:
-                bltn_obj = getattr(_builtins, name)
+                self.evaluator.BUILTINS.access.getattr(name)
             except AttributeError:
                 continue
             else:
-                if bltn_obj is None:
-                    # We want to evaluate everything except None.
-                    # TODO do we?
-                    continue
-                bltn_obj = create(self.evaluator, bltn_obj)
+                bltn_obj = builtin_from_name(self.evaluator, name)
                 for result in bltn_obj.execute(params):
                     yield result
         for type_ in docstrings.infer_return_types(self):
