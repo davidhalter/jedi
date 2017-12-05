@@ -387,16 +387,14 @@ def _is_class_instance(obj):
         return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
 
 
-_SPECIAL_OBJECTS = {
-    'FUNCTION_CLASS': types.FunctionType,
-    'METHOD_CLASS': type(DirectObjectAccess.py__bool__),
-    'MODULE_CLASS': types.ModuleType,
-    'GENERATOR_OBJECT': _a_generator(1.0),
-    'BUILTINS': builtins,
-}
+class _SPECIAL_OBJECTS(object):
+    FUNCTION_CLASS = types.FunctionType
+    METHOD_CLASS = type(DirectObjectAccess.py__bool__)
+    MODULE_CLASS = types.ModuleType
+    GENERATOR_OBJECT = _a_generator(1.0)
+    BUILTINS = builtins
+
 
 def get_special_object(evaluator, identifier):
-    obj = _SPECIAL_OBJECTS[identifier]
+    obj = getattr(_SPECIAL_OBJECTS, identifier)
     return create_access_path(evaluator, obj)
-
-
