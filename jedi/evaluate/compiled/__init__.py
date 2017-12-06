@@ -27,12 +27,12 @@ def create(evaluator, obj):
 def get_special_object(evaluator, identifier):
     return create_from_access_path(
         evaluator,
-        access.get_special_object(evaluator, identifier)
+        evaluator.compiled_subprocess.get_special_object(identifier)
     )
 
 
 def load_module(evaluator, path=None, name=None):
     return create_from_access_path(
         evaluator,
-        access.load_module(evaluator, path=path, name=name)
+        evaluator.compiled_subprocess.load_module(path=path, name=name)
     )

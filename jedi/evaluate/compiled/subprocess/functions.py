@@ -1,16 +1,13 @@
 import sys
-from jedi.evaluate import compiled
+from jedi.evaluate.compiled import access
 
 
 def get_sys_path():
     return sys.path
 
 
-def import_module(evaluator, handles, path=None, name=None):
-    compiled_object = compiled.load_module(evaluator, path=path, name=name)
-    if compiled_object is None:
-        return None
-    return handles.create(compiled_object)
+def load_module(evaluator, path=None, name=None):
+    return access.load_module(evaluator, path=path, name=name)
 
 
 def get_compiled_method_return(evaluator, id, attribute, *args, **kwargs):
@@ -18,5 +15,5 @@ def get_compiled_method_return(evaluator, id, attribute, *args, **kwargs):
     return getattr(handle.access, attribute)(*args, **kwargs)
 
 
-def get_special_object(evaluator, handles, identifier):
-    return compiled.get_special_object(evaluator, identifier)
+def get_special_object(evaluator, identifier):
+    return access.get_special_object(evaluator, identifier)

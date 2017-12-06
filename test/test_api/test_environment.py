@@ -28,9 +28,11 @@ def test_versions(version):
     assert any(executable in p for p in sys_path)
 
 
-def test_import_module(evaluator):
-    compiled_obj = evaluator.compiled_subprocess.import_module(name='math')
-    assert compiled_obj.py__bool__() is True
-    assert compiled_obj.api_type == 'module'
+def test_load_module(evaluator):
+    access_path = evaluator.compiled_subprocess.load_module(name='math')
+    name, access_handle = access_path.accesses[0]
+
+    assert access_handle.py__bool__() is True
+    assert access_handle.get_api_type() == 'module'
     with pytest.raises(AttributeError):
-        assert compiled_obj.py__mro__()
+        access_handle.py__mro__()
