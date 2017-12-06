@@ -16,7 +16,7 @@ from functools import partial
 
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
-from jedi.evaluate.compiled import CompiledObject
+from jedi.evaluate.compiled.access import DirectObjectAccess
 
 _PICKLE_PROTOCOL = 2
 
@@ -37,24 +37,39 @@ def _get_function(name):
     return getattr(functions, name)
 
 
-class EvaluatorSameProcess(object):
+class _EvaluatorProcess(object):
+    def __init__(self, evaluator):
+        self._evaluator_weakref = weakref.ref(evaluator)
+        self._evaluator_id = id(evaluator)
+        self._handles = {}
+
+    def get_or_create_access_handle(self, obj):
+        id_ = id(obj)
+        try:
+            return self.get_access_handle(id_)
+        except KeyError:
+            access = DirectObjectAccess(self._evaluator_weakref(), obj)
+            handle = self._handles[id_] = AccessHandle(self, access, id_)
+        return handle
+
+    def get_access_handle(self, id_):
+        return self._handles[id_]
+
+
+class EvaluatorSameProcess(_EvaluatorProcess):
     """
     Basically just an easy access to functions.py. It has the same API
     as EvaluatorSubprocess and does the same thing without using a subprocess.
     This is necessary for the Interpreter process.
     """
-    def __init__(self, evaluator):
-        self._evaluator = evaluator
-
     def __getattr__(self, name):
-        return partial(_get_function(name), self._evaluator, IgnoreHandles())
+        return partial(_get_function(name), self._evaluator_weakref())
 
 
-class EvaluatorSubprocess(object):
+class EvaluatorSubprocess(_EvaluatorProcess):
     def __init__(self, evaluator, compiled_subprocess):
+        super(EvaluatorSubprocess).__init__(evaluator)
         self._used = False
-        self._evaluator_weakref = weakref.ref(evaluator)
-        self._evaluator_id = id(evaluator)
         self._compiled_subprocess = compiled_subprocess
 
     def __getattr__(self, name):
@@ -70,7 +85,7 @@ class EvaluatorSubprocess(object):
                 kwargs=kwargs,
                 unpickler=lambda stdout: ModifiedUnpickler(self, stdout).load()
             )
-            if isinstance(result, CompiledHandle):
+            if isinstance(result, AccessHandle):
                 result.add_subprocess(self)
 
             return result
@@ -142,12 +157,11 @@ class Listener():
         from jedi.evaluate import Evaluator, project
 
         try:
-            evaluator, handles = self._evaluators[evaluator_id]
+            evaluator = self._evaluators[evaluator_id]
         except KeyError:
             evaluator = Evaluator(None, project=project.Project())
-            handles = Handles()
-            self._evaluators[evaluator_id] = evaluator, handles
-        return evaluator, handles
+            self._evaluators[evaluator_id] = evaluator
+        return evaluator
 
     def _run(self, evaluator_id, function, args, kwargs):
         if evaluator_id is None:
@@ -155,8 +169,8 @@ class Listener():
         elif function is None:
             del self._evaluators[evaluator_id]
         else:
-            evaluator, handles = self._get_evaluator(function, evaluator_id)
-            return function(evaluator, handles, *args, **kwargs)
+            evaluator = self._get_evaluator(function, evaluator_id)
+            return function(evaluator, *args, **kwargs)
 
     def listen(self):
         stdout = sys.stdout
@@ -194,44 +208,26 @@ class ModifiedUnpickler(pickle._Unpickler):
         super(ModifiedUnpickler, self).load_newobj()
         tos = self.stack[-1]
         print('pop', tos, file=sys.stderr)
-        if isinstance(tos, CompiledHandle):
+        if isinstance(tos, AccessHandle):
             tos.add_subprocess(self._subprocess)
     dispatch[pickle.NEWOBJ[0]] = load_newobj
 
 
 class ModifiedPickler(pickle._Pickler):
+    def __init__(self, subprocess, *args, **kwargs):
+        super(ModifiedPickler, self).__init__(*args, **kwargs)
+        self._subprocess = subprocess
+
     def save(self, obj, *args, **kwargs):
         print('s', obj, args, kwargs, file=sys.stderr)
-        if isinstance(obj, CompiledObject):
-            obj = CompiledHandle(obj)
         return super(ModifiedPickler, self).save(obj, *args, **kwargs)
 
 
-class Handles(object):
-    def __init__(self):
-        self._handles = {}
-
-    def create(self, obj):
-        handle = self._handles[id(obj)] = CompiledHandle(obj)
-        return handle
-
-    def get_compiled_object(self, id_):
-        return self._handles[id_].compiled_object
-
-
-class IgnoreHandles(object):
-    def create(self, obj):
-        return obj
-
-
-class CompiledHandle(object):
-    def __init__(self, compiled_object):
-        self.compiled_object = compiled_object
-        self._id = id(compiled_object)
-
-    @property
-    def obj(self):
-        raise NotImplementedError
+class AccessHandle(object):
+    def __init__(self, subprocess, access, id_):
+        self.access = access
+        self._subprocess = subprocess
+        self._id = id_
 
     def add_subprocess(self, subprocess):
         self._subprocess = subprocess
@@ -244,15 +240,6 @@ class CompiledHandle(object):
 
     def __getattr__(self, name):
         print('getattr', name, file=sys.stderr)
-        from jedi.evaluate import compiled
-        attr = getattr(compiled.CompiledObject, name)
-        if isinstance(attr, property):
-            return self._subprocess.get_compiled_property(self._id, name)
-        elif isinstance(attr, compiled.CheckAttribute):
-            # It might raise an AttributeError, however we're interested in the
-            # function return value.
-            self._subprocess.get_compiled_property(self._id, name)
-
         def compiled_method(*args, **kwargs):
             return self._subprocess.get_compiled_method_return(self._id, name, *args, **kwargs)
         return compiled_method

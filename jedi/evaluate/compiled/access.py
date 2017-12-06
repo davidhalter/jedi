@@ -114,9 +114,8 @@ def compiled_objects_cache(attribute_name):
     return decorator
 
 
-@compiled_objects_cache('compiled_cache')
 def create_access(evaluator, obj):
-    return DirectObjectAccess(evaluator, obj)
+    return evaluator.compiled_subprocess.get_or_create_access_handle(obj)
 
 
 def load_module(evaluator, path=None, name=None):
@@ -329,9 +328,10 @@ class DirectObjectAccess(object):
 
         return list(reversed(list(get())))
 
-    def execute_operation(self, other, operator):
+    def execute_operation(self, other_access_handle, operator):
+        other_access = other_access_handle.access
         op = _OPERATORS[operator]
-        return self._create_access_path(op(self._obj, other._obj))
+        return self._create_access_path(op(self._obj, other_access._obj))
 
     def needs_type_completions(self):
         return inspect.isclass(self._obj) and self._obj != type

@@ -13,14 +13,9 @@ def import_module(evaluator, handles, path=None, name=None):
     return handles.create(compiled_object)
 
 
-def get_compiled_property(evaluator, handles, id, attribute):
-    compiled_object = handles.get_compiled_object(id)
-    return getattr(compiled_object, attribute)
-
-
-def get_compiled_method_return(evaluator, handles, id, attribute, *args, **kwargs):
-    compiled_object = handles.get_compiled_object(id)
-    return getattr(compiled_object, attribute)(*args, **kwargs)
+def get_compiled_method_return(evaluator, id, attribute, *args, **kwargs):
+    handle = evaluator.compiled_subprocess.get_access_handle(id)
+    return getattr(handle.access, attribute)(*args, **kwargs)
 
 
 def get_special_object(evaluator, handles, identifier):
