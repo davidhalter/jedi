@@ -1,12 +1,13 @@
 from jedi._compatibility import builtins as _builtins
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
-    CompiledObjectFilter, CompiledContextName, create_from_access_path
+    CompiledObjectFilter, CompiledContextName, create_from_access_path, \
+    create_from_name
 from jedi.evaluate.compiled import access
 
 
 def builtin_from_name(evaluator, string):
-    bltn_obj = getattr(_builtins, string)
-    return create(evaluator, bltn_obj)
+    builtins = evaluator.get_builtins_module()
+    return create_from_name(evaluator, builtins, string)
 
 
 def create_simple_object(evaluator, obj):

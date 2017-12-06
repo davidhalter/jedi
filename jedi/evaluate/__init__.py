@@ -114,7 +114,11 @@ class Evaluator(object):
         self.reset_recursion_limitations()
 
         # Constants
+        # TODO move to get_builtins_module
         self.BUILTINS = compiled.get_special_object(self, 'BUILTINS')
+
+    def get_builtins_module(self):
+        return self.BUILTINS
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()

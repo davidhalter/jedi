@@ -172,6 +172,8 @@ class CompiledObject(Context):
             return
         for name in self._parse_function_doc()[1].split():
             try:
+                # TODO wtf is this? this is exactly the same as the thing
+                # below. It uses getattr as well.
                 self.evaluator.BUILTINS.access_handle.getattr(name)
             except AttributeError:
                 continue
@@ -228,7 +230,7 @@ class CompiledName(AbstractNameDefinition):
 
     @underscore_memoization
     def infer(self):
-        return ContextSet(_create_from_name(
+        return ContextSet(create_from_name(
             self._evaluator, self.parent_context, self.string_name
         ))
 
@@ -394,7 +396,7 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def _create_from_name(evaluator, compiled_object, name):
+def create_from_name(evaluator, compiled_object, name):
     faked = None
     try:
         faked = fake.get_faked_with_parent_context(compiled_object, name)
