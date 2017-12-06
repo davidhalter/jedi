@@ -6,7 +6,7 @@ from jedi._compatibility import py_version, unicode
 
 def _eval_literal(code):
     def_, = jedi.Script(code).goto_definitions()
-    return def_._name._context.access._obj
+    return def_._name._context.access_handle.access._obj
 
 
 @pytest.mark.skipif('sys.version_info[:2] < (3, 6)')

@@ -39,7 +39,7 @@ class MixedObject(object):
         self.parent_context = parent_context
         self.compiled_object = compiled_object
         self._context = tree_context
-        self.access = compiled_object.access
+        self.access_handle = compiled_object.access_handle
 
     # We have to overwrite everything that has to do with trailers, name
     # lookups and filters to make it possible to route name lookups towards
@@ -51,7 +51,7 @@ class MixedObject(object):
         yield MixedObjectFilter(self.evaluator, self)
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, repr(self.access))
+        return '<%s: %s>' % (type(self).__name__, self.access_handle.get_repr())
 
     def __getattr__(self, name):
         return getattr(self._context, name)
@@ -76,11 +76,11 @@ class MixedName(compiled.CompiledName):
 
     @underscore_memoization
     def infer(self):
-        access = self.parent_context.access
+        access_handle = self.parent_context.access_handle
         # TODO use logic from compiled.CompiledObjectFilter
-        access = access.getattr(self.string_name, default=None)
+        access_handle = access_handle.getattr(self.string_name, default=None)
         return ContextSet(
-            _create(self._evaluator, access, parent_context=self.parent_context)
+            _create(self._evaluator, access_handle, parent_context=self.parent_context)
         )
 
     @property
@@ -132,10 +132,10 @@ def _get_object_to_check(python_object):
         raise TypeError  # Prevents computation of `repr` within inspect.
 
 
-def _find_syntax_node_name(evaluator, access):
+def _find_syntax_node_name(evaluator, access_handle):
     # TODO accessing this is bad, but it probably doesn't matter that much,
     # because we're working with interpreteters only here.
-    python_object = access._obj
+    python_object = access_handle.access._obj
     try:
         python_object = _get_object_to_check(python_object)
         path = inspect.getsourcefile(python_object)
@@ -195,11 +195,11 @@ def _find_syntax_node_name(evaluator, access):
 
 
 @compiled_objects_cache('mixed_cache')
-def _create(evaluator, access, parent_context=None, *args):
-    tree_node, path = _find_syntax_node_name(evaluator, access)
+def _create(evaluator, access_handle, parent_context=None, *args):
+    tree_node, path = _find_syntax_node_name(evaluator, access_handle)
 
     compiled_object = create_cached_compiled_object(
-        evaluator, access, parent_context=parent_context.compiled_object)
+        evaluator, access_handle, parent_context=parent_context.compiled_object)
     if tree_node is None:
         return compiled_object
 
@@ -218,7 +218,7 @@ def _create(evaluator, access, parent_context=None, *args):
         node_is_object=True
     )
     if tree_node.type == 'classdef':
-        if not access.is_class():
+        if not access_handle.is_class():
             # Is an instance, not a class.
             tree_context, = tree_context.execute_evaluated()
 

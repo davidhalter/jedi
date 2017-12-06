@@ -32,17 +32,17 @@ class CheckAttribute(object):
             # the __iter__ function as long as __getitem__ is defined (it will
             # just start with __getitem__(0). This is especially true for
             # Python 2 strings, where `str.__iter__` is not even defined.
-            if not instance.access.has_iter():
+            if not instance.access_handle.has_iter():
                 raise AttributeError
         else:
-            instance.access.getattr(self.check_name)
+            instance.access_handle.getattr(self.check_name)
         return partial(self.func, instance)
 
 
 class CompiledObject(Context):
-    def __init__(self, evaluator, access, parent_context=None, faked_class=None):
+    def __init__(self, evaluator, access_handle, parent_context=None, faked_class=None):
         super(CompiledObject, self).__init__(evaluator, parent_context)
-        self.access = access
+        self.access_handle = access_handle
         # This attribute will not be set for most classes, except for fakes.
         self.tree_node = faked_class
 
@@ -55,7 +55,7 @@ class CompiledObject(Context):
                 parent_context=self.parent_context,
                 funcdef=self.tree_node
             ).py__call__(params)
-        if self.access.is_class():
+        if self.access_handle.is_class():
             from jedi.evaluate.context import CompiledInstance
             return ContextSet(CompiledInstance(self.evaluator, self.parent_context, self, params))
         else:
@@ -63,40 +63,41 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__class__(self):
-        return create_from_access_path(self.evaluator, self.access.py__class__())
+        return create_from_access_path(self.evaluator, self.access_handle.py__class__())
 
     @CheckAttribute
     def py__mro__(self):
         return (self,) + tuple(
-            create_from_access_path(self.evaluator, access) for access in self.access.py__mro__accesses()
+            create_from_access_path(self.evaluator, access)
+            for access in self.access_handle.py__mro__accesses()
         )
 
     @CheckAttribute
     def py__bases__(self):
         return tuple(
             create_from_access_path(self.evaluator, access)
-            for access in self.access.py__bases__()
+            for access in self.access_handle.py__bases__()
         )
 
     def py__bool__(self):
-        return self.access.py__bool__()
+        return self.access_handle.py__bool__()
 
     def py__file__(self):
-        return self.access.py__file__()
+        return self.access_handle.py__file__()
 
     def is_class(self):
-        return self.access.is_class()
+        return self.access_handle.is_class()
 
     def py__doc__(self, include_call_signature=False):
-        return self.access.py__doc__()
+        return self.access_handle.py__doc__()
 
     def get_param_names(self):
         try:
-            signature_params = self.access.get_signature_params()
+            signature_params = self.access_handle.get_signature_params()
         except ValueError:  # Has no signature
             params_str, ret = self._parse_function_doc()
             tokens = params_str.split(',')
-            if self.access.ismethoddescriptor():
+            if self.access_handle.ismethoddescriptor():
                 tokens.insert(0, 'self')
             for p in tokens:
                 parts = p.strip().split('=')
@@ -106,7 +107,7 @@ class CompiledObject(Context):
                 yield SignatureParamName(self, signature_param)
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.access.get_repr())
+        return '<%s: %s>' % (self.__class__.__name__, self.access_handle.get_repr())
 
     @underscore_memoization
     def _parse_function_doc(self):
@@ -118,7 +119,7 @@ class CompiledObject(Context):
 
     @property
     def api_type(self):
-        return self.access.get_api_type()
+        return self.access_handle.get_api_type()
 
     @underscore_memoization
     def _cls(self):
@@ -143,7 +144,7 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__getitem__(self, index):
-        access = self.access.py__getitem__(index)
+        access = self.access_handle.py__getitem__(index)
         if access is None:
             return ContextSet()
 
@@ -151,17 +152,17 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__iter__(self):
-        for access in self.access.py__iter__list():
+        for access in self.access_handle.py__iter__list():
             yield LazyKnownContext(create_from_access_path(self.evaluator, access))
 
     def py__name__(self):
-        return self.access.py__name__()
+        return self.access_handle.py__name__()
 
     @property
     def name(self):
         name = self.py__name__()
         if name is None:
-            name = self.access.get_repr()
+            name = self.access_handle.get_repr()
         return CompiledContextName(self, name)
 
     def _execute_function(self, params):
@@ -171,7 +172,7 @@ class CompiledObject(Context):
             return
         for name in self._parse_function_doc()[1].split():
             try:
-                self.evaluator.BUILTINS.access.getattr(name)
+                self.evaluator.BUILTINS.access_handle.getattr(name)
             except AttributeError:
                 continue
             else:
@@ -183,12 +184,13 @@ class CompiledObject(Context):
 
     def dict_values(self):
         return ContextSet.from_iterable(
-            create_from_access_path(self.evaluator, access) for access in self.access.dict_values()
+            create_from_access_path(self.evaluator, access)
+            for access in self.access_handle.dict_values()
         )
 
     def get_safe_value(self, default=_sentinel):
         try:
-            return self.access.get_safe_value()
+            return self.access_handle.get_safe_value()
         except ValueError:
             if default == _sentinel:
                 raise
@@ -197,14 +199,14 @@ class CompiledObject(Context):
     def execute_operation(self, other, operator):
         return create_from_access_path(
             self.evaluator,
-            self.access.execute_operation(other.access, operator)
+            self.access_handle.execute_operation(other.access_handle, operator)
         )
 
     def negate(self):
-        return create_from_access_path(self.evaluator, self.access.negate())
+        return create_from_access_path(self.evaluator, self.access_handle.negate())
 
     def is_super_class(self, exception):
-        return self.access.is_super_class(exception)
+        return self.access_handle.is_super_class(exception)
 
 
 class CompiledName(AbstractNameDefinition):
@@ -298,23 +300,23 @@ class CompiledObjectFilter(AbstractFilter):
     def get(self, name):
         name = str(name)
         try:
-            if not self._compiled_object.access.is_allowed_getattr(name):
+            if not self._compiled_object.access_handle.is_allowed_getattr(name):
                 return [EmptyCompiledName(self._evaluator, name)]
         except AttributeError:
             return []
 
-        if self._is_instance and name not in self._compiled_object.access.dir():
+        if self._is_instance and name not in self._compiled_object.access_handle.dir():
             return []
         return [self._create_name(name)]
 
     def values(self):
         from jedi.evaluate.compiled import builtin_from_name
         names = []
-        for name in self._compiled_object.access.dir():
+        for name in self._compiled_object.access_handle.dir():
             names += self.get(name)
 
         # ``dir`` doesn't include the type names.
-        if not self._is_instance and self._compiled_object.access.needs_type_completions():
+        if not self._is_instance and self._compiled_object.access_handle.needs_type_completions():
             for filter in builtin_from_name(self._evaluator, 'type').get_filters():
                 names += filter.values()
         return names
@@ -399,7 +401,7 @@ def _create_from_name(evaluator, compiled_object, name):
     except fake.FakeDoesNotExist:
         pass
 
-    access = compiled_object.access.getattr(name, default=None)
+    access = compiled_object.access_handle.getattr(name, default=None)
     return create_cached_compiled_object(
         evaluator, access, parent_context=compiled_object, faked=faked
     )
@@ -429,5 +431,5 @@ def create_from_access_path(evaluator, access_path):
 
 @_normalize_create_args
 @evaluator_function_cache()
-def create_cached_compiled_object(evaluator, access, parent_context, faked):
-    return CompiledObject(evaluator, access, parent_context, faked)
+def create_cached_compiled_object(evaluator, access_handle, parent_context, faked):
+    return CompiledObject(evaluator, access_handle, parent_context, faked)

@@ -193,7 +193,7 @@ class Listener():
 
             print(result, payload, file=sys.stderr)
 
-            ModifiedPickler(stdout, protocol=_PICKLE_PROTOCOL).dump(result)
+            ModifiedPickler(file=stdout, protocol=_PICKLE_PROTOCOL).dump(result)
             stdout.flush()
 
 
@@ -214,9 +214,8 @@ class ModifiedUnpickler(pickle._Unpickler):
 
 
 class ModifiedPickler(pickle._Pickler):
-    def __init__(self, subprocess, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(ModifiedPickler, self).__init__(*args, **kwargs)
-        self._subprocess = subprocess
 
     def save(self, obj, *args, **kwargs):
         print('s', obj, args, kwargs, file=sys.stderr)
