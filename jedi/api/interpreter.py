@@ -5,7 +5,14 @@ TODO Some parts of this module are still not well documented.
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled import mixed
+from jedi.evaluate.compiled.access import create_access_path
 from jedi.evaluate.base_context import Context
+
+
+def _create(evaluator, obj):
+    return compiled.create_from_access_path(
+        evaluator, create_access_path(evaluator, obj)
+    )
 
 
 class NamespaceObject(object):
@@ -33,7 +40,7 @@ class MixedModuleContext(Context):
             yield filter
 
         for namespace_obj in self._namespace_objects:
-            compiled_object = compiled.create(self.evaluator, namespace_obj)
+            compiled_object = _create(self.evaluator, namespace_obj)
             mixed_object = mixed.MixedObject(
                 self.evaluator,
                 parent_context=self,

@@ -17,3 +17,7 @@ def get_compiled_method_return(evaluator, id, attribute, *args, **kwargs):
 
 def get_special_object(evaluator, identifier):
     return access.get_special_object(evaluator, identifier)
+
+
+def create_simple_object(evaluator, obj):
+    return access.create_access_path(evaluator, obj)

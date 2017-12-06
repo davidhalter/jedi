@@ -9,11 +9,12 @@ from jedi.evaluate.context.function import FunctionContext
 from jedi.evaluate import Evaluator
 from jedi.evaluate.project import Project
 from jedi.parser_utils import clean_scope_docstring
+from jedi.api import interpreter
 from jedi import Script
 
 
 def test_simple(evaluator):
-    obj = compiled.create(evaluator, '_str_')
+    obj = compiled.create_simple_object(evaluator, '_str_')
     upper, = obj.py__getattribute__('upper')
     objs = list(upper.execute_evaluated())
     assert len(objs) == 1
@@ -28,7 +29,7 @@ def test_fake_loading(evaluator):
 
 
 def test_fake_docstr(evaluator):
-    next_ = compiled.create(evaluator, next)
+    next_ = interpreter._create(evaluator, next)
     assert next_.py__doc__()
     assert next_.tree_node is not None
     assert next_.py__doc__() == next.__doc__
@@ -48,7 +49,7 @@ def test_doc(evaluator):
     Even CompiledObject docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    obj = compiled.create(evaluator, ''.__getnewargs__)
+    obj = interpreter._create(evaluator, ''.__getnewargs__)
     assert obj.py__doc__() == ''
 
 

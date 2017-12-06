@@ -16,12 +16,9 @@ def create_simple_object(evaluator, obj):
     versions.
     """
     assert isinstance(obj, (int, float, str, bytes, slice, complex, type(Ellipsis)))
-    return create(evaluator, obj)
-
-
-def create(evaluator, obj):
     return create_from_access_path(
-        evaluator, access.create_access_path(evaluator, obj)
+        evaluator,
+        evaluator.compiled_subprocess.create_simple_object(obj)
     )
 
 
