@@ -289,3 +289,9 @@ def utf8_repr(func):
         return func
     else:
         return wrapper
+
+
+if is_py3:
+    import queue
+else:
+    import Queue as queue

@@ -14,6 +14,7 @@ import weakref
 import pickle
 from functools import partial
 
+from jedi._compatibility import queue
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess
@@ -68,7 +69,7 @@ class EvaluatorSameProcess(_EvaluatorProcess):
 
 class EvaluatorSubprocess(_EvaluatorProcess):
     def __init__(self, evaluator, compiled_subprocess):
-        super(EvaluatorSubprocess).__init__(evaluator)
+        super(EvaluatorSubprocess, self).__init__(evaluator)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
 
@@ -83,7 +84,7 @@ class EvaluatorSubprocess(_EvaluatorProcess):
                 func,
                 args=args,
                 kwargs=kwargs,
-                unpickler=lambda stdout: ModifiedUnpickler(self, stdout).load()
+                unpickler=lambda stdout: _ModifiedMasterUnpickler(self, stdout).load()
             )
             if isinstance(result, AccessHandle):
                 result.add_subprocess(self)
@@ -136,8 +137,18 @@ class _CompiledSubprocess(_Subprocess):
              os.path.dirname(os.path.dirname(parso_path))
              )
         )
+        self._evaluator_deletion_queue = queue.deque()
 
     def run(self, evaluator, function, args=(), kwargs={}, unpickler=None):
+        # Delete old evaluators.
+        while True:
+            try:
+                evaluator_id = self._evaluator_deletion_queue.pop()
+            except IndexError:
+                break
+            else:
+                self._send(evaluator_id, None)
+
         assert callable(function)
         return self._send(id(evaluator), function, args, kwargs, unpickler=unpickler)
 
@@ -145,13 +156,22 @@ class _CompiledSubprocess(_Subprocess):
         return self._send(None, functions.get_sys_path, (), {})
 
     def delete_evaluator(self, evaluator_id):
+        """
+        Currently we are not deleting evalutors instantly. They only get
+        deleted once the subprocess is used again. It would probably a better
+        solution to move all of this into a thread. However, the memory usage
+        of a single evaluator shouldn't be that high.
+        """
         # With an argument - the evaluator gets deleted.
-        self._send(evaluator_id, None)
+        self._evaluator_deletion_queue.append(evaluator_id)
 
 
 class Listener():
     def __init__(self):
         self._evaluators = {}
+        # TODO refactor so we don't need to process anymore just handle
+        # controlling.
+        self._process = _EvaluatorProcess(Listener)
 
     def _get_evaluator(self, function, evaluator_id):
         from jedi.evaluate import Evaluator, project
@@ -170,6 +190,16 @@ class Listener():
             del self._evaluators[evaluator_id]
         else:
             evaluator = self._get_evaluator(function, evaluator_id)
+
+            # Exchange all handles
+            args = list(args)
+            for i, arg in enumerate(args):
+                if isinstance(arg, AccessHandle):
+                    args[i] = evaluator.compiled_subprocess.get_access_handle(arg.id)
+            for key, value in kwargs.items():
+                if isinstance(value, AccessHandle):
+                    kwargs[key] = evaluator.compiled_subprocess.get_access_handle(value.id)
+
             return function(evaluator, *args, **kwargs)
 
     def listen(self):
@@ -181,7 +211,7 @@ class Listener():
 
         while True:
             try:
-                payload = pickle.load(stdin)
+                payload = pickle.load(file=stdin)
             except EOFError:
                 # It looks like the parent process closed. Don't make a big fuss
                 # here and just exit.
@@ -191,54 +221,48 @@ class Listener():
             except Exception as e:
                 result = True, e
 
-            print(result, payload, file=sys.stderr)
-
-            ModifiedPickler(file=stdout, protocol=_PICKLE_PROTOCOL).dump(result)
+            pickle.dump(result, file=stdout, protocol=_PICKLE_PROTOCOL)
             stdout.flush()
 
 
-class ModifiedUnpickler(pickle._Unpickler):
+class _ModifiedUnpickler(pickle._Unpickler):
     dispatch = pickle._Unpickler.dispatch.copy()
 
     def __init__(self, subprocess, *args, **kwargs):
-        super(ModifiedUnpickler, self).__init__(*args, **kwargs)
+        super(_ModifiedUnpickler, self).__init__(*args, **kwargs)
         self._subprocess = subprocess
 
     def load_newobj(self):
-        super(ModifiedUnpickler, self).load_newobj()
+        super(_ModifiedUnpickler, self).load_newobj()
         tos = self.stack[-1]
-        print('pop', tos, file=sys.stderr)
         if isinstance(tos, AccessHandle):
-            tos.add_subprocess(self._subprocess)
+            self.stack[-1] = self.get_access_handle(tos)
     dispatch[pickle.NEWOBJ[0]] = load_newobj
 
 
-class ModifiedPickler(pickle._Pickler):
-    def __init__(self, *args, **kwargs):
-        super(ModifiedPickler, self).__init__(*args, **kwargs)
-
-    def save(self, obj, *args, **kwargs):
-        print('s', obj, args, kwargs, file=sys.stderr)
-        return super(ModifiedPickler, self).save(obj, *args, **kwargs)
+class _ModifiedMasterUnpickler(_ModifiedUnpickler):
+    def get_access_handle(self, access_handle):
+        access_handle.add_subprocess(self._subprocess)
+        return access_handle
 
 
 class AccessHandle(object):
     def __init__(self, subprocess, access, id_):
         self.access = access
         self._subprocess = subprocess
-        self._id = id_
+        self.id = id_
 
     def add_subprocess(self, subprocess):
         self._subprocess = subprocess
 
     def __getstate__(self):
-        return self._id
+        return self.id
 
     def __setstate__(self, state):
-        self._id = state
+        self.id = state
 
     def __getattr__(self, name):
-        print('getattr', name, file=sys.stderr)
+        #print('getattr', name, file=sys.stderr)
         def compiled_method(*args, **kwargs):
-            return self._subprocess.get_compiled_method_return(self._id, name, *args, **kwargs)
+            return self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
         return compiled_method

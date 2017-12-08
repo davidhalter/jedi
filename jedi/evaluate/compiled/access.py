@@ -274,9 +274,9 @@ class DirectObjectAccess(object):
             return None
 
     def get_safe_value(self):
-        if type(self._obj) in (float, int, str, unicode, slice, type(Ellipsis)):
+        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice, type(Ellipsis)):
             return self._obj
-        raise ValueError
+        raise ValueError("Object is type %s and not simple" % type(self._obj))
 
     def get_api_type(self):
         obj = self._obj
