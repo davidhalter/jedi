@@ -50,11 +50,15 @@ class _EvaluatorProcess(object):
             return self.get_access_handle(id_)
         except KeyError:
             access = DirectObjectAccess(self._evaluator_weakref(), obj)
-            handle = self._handles[id_] = AccessHandle(self, access, id_)
-        return handle
+            handle = AccessHandle(self, access, id_)
+            self.set_access_handle(handle)
+            return handle
 
     def get_access_handle(self, id_):
         return self._handles[id_]
+
+    def set_access_handle(self, handle):
+        self._handles[handle.id] = handle
 
 
 class EvaluatorSameProcess(_EvaluatorProcess):
@@ -84,7 +88,7 @@ class EvaluatorSubprocess(_EvaluatorProcess):
                 func,
                 args=args,
                 kwargs=kwargs,
-                unpickler=lambda stdout: _ModifiedMasterUnpickler(self, stdout).load()
+                unpickler=lambda stdout: _ModifiedUnpickler(self, stdout).load()
             )
             if isinstance(result, AccessHandle):
                 result.add_subprocess(self)
@@ -211,7 +215,7 @@ class Listener():
 
         while True:
             try:
-                payload = pickle.load(file=stdin)
+                payload = pickle.load(stdin)
             except EOFError:
                 # It looks like the parent process closed. Don't make a big fuss
                 # here and just exit.
@@ -232,17 +236,20 @@ class _ModifiedUnpickler(pickle._Unpickler):
         super(_ModifiedUnpickler, self).__init__(*args, **kwargs)
         self._subprocess = subprocess
 
-    def load_newobj(self):
-        super(_ModifiedUnpickler, self).load_newobj()
+    def load_build(self):
+        super(_ModifiedUnpickler, self).load_build()
         tos = self.stack[-1]
         if isinstance(tos, AccessHandle):
             self.stack[-1] = self.get_access_handle(tos)
-    dispatch[pickle.NEWOBJ[0]] = load_newobj
+    dispatch[pickle.BUILD[0]] = load_build
 
-
-class _ModifiedMasterUnpickler(_ModifiedUnpickler):
     def get_access_handle(self, access_handle):
-        access_handle.add_subprocess(self._subprocess)
+        try:
+            # Rewrite the access handle to one we're already having.
+            access_handle = self._subprocess.get_access_handle(access_handle.id)
+        except KeyError:
+            access_handle.add_subprocess(self._subprocess)
+            self._subprocess.set_access_handle(access_handle)
         return access_handle
 
 
@@ -262,6 +269,9 @@ class AccessHandle(object):
         self.id = state
 
     def __getattr__(self, name):
+        if name in ('id', '_subprocess', 'access'):
+            raise AttributeError("Something went wrong with unpickling")
+
         #print('getattr', name, file=sys.stderr)
         def compiled_method(*args, **kwargs):
             return self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)

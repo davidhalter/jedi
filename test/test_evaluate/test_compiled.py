@@ -29,7 +29,7 @@ def test_fake_loading(evaluator):
 
 
 def test_fake_docstr(evaluator):
-    next_ = interpreter._create(evaluator, next)
+    next_ = compiled.builtin_from_name(evaluator, 'next')
     assert next_.py__doc__()
     assert next_.tree_node is not None
     assert next_.py__doc__() == next.__doc__
@@ -49,7 +49,9 @@ def test_doc(evaluator):
     Even CompiledObject docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    obj = interpreter._create(evaluator, ''.__getnewargs__)
+    str_ = compiled.create_simple_object(evaluator, '')
+    # Equals `''.__getnewargs__`
+    obj = compiled.create_from_name(evaluator, str_, '__getnewargs__')
     assert obj.py__doc__() == ''
 
 

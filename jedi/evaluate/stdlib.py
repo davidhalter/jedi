@@ -110,7 +110,7 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
             try:
                 lst = list(arguments.eval_argument_clinic(clinic_args))
             except ValueError:
-                return NO_CONTEXTS
+                result = NO_CONTEXTS
             else:
                 kwargs = {}
                 if want_context:
@@ -119,9 +119,10 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
                     kwargs['obj'] = obj
                 if want_arguments:
                     kwargs['arguments'] = arguments
-                return func(evaluator, *lst, **kwargs)
+                result = func(evaluator, *lst, **kwargs)
             finally:
-                debug.dbg('builtin end', color='MAGENTA')
+                debug.dbg('builtin end: %s', result, color='MAGENTA')
+            return result
 
         return wrapper
     return f
