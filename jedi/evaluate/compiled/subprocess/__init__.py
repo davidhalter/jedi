@@ -17,7 +17,8 @@ from functools import partial
 from jedi._compatibility import queue
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
-from jedi.evaluate.compiled.access import DirectObjectAccess
+from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
+    SignatureParam
 
 _PICKLE_PROTOCOL = 2
 
@@ -88,14 +89,31 @@ class EvaluatorSubprocess(_EvaluatorProcess):
                 func,
                 args=args,
                 kwargs=kwargs,
-                unpickler=lambda stdout: _ModifiedUnpickler(self, stdout).load()
             )
-            if isinstance(result, AccessHandle):
-                result.add_subprocess(self)
-
-            return result
+            # IMO it should be possible to create a hook in pickle.load to
+            # mess with the loaded objects. However it's extremely complicated
+            # to work around this so just do it with this call. ~ dave
+            return self._convert_access_handles(result)
 
         return wrapper
+
+    def _convert_access_handles(self, obj):
+        if isinstance(obj, SignatureParam):
+            return SignatureParam(*self._convert_access_handles(tuple(obj)))
+        elif isinstance(obj, tuple):
+            return tuple(self._convert_access_handles(o) for o in obj)
+        elif isinstance(obj, list):
+            return [self._convert_access_handles(o) for o in obj]
+        elif isinstance(obj, AccessHandle):
+            try:
+                # Rewrite the access handle to one we're already having.
+                obj = self.get_access_handle(obj.id)
+            except KeyError:
+                obj.add_subprocess(self)
+                self.set_access_handle(obj)
+        elif isinstance(obj, AccessPath):
+            return AccessPath(self._convert_access_handles(obj.accesses))
+        return obj
 
     def __del__(self):
         if self._used:
@@ -116,11 +134,11 @@ class _Subprocess(object):
             # stderr=subprocess.PIPE
         )
 
-    def _send(self, evaluator_id, function, args=(), kwargs={}, unpickler=pickle.load):
+    def _send(self, evaluator_id, function, args=(), kwargs={}):
         data = evaluator_id, function, args, kwargs
         pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
         self._process.stdin.flush()
-        is_exception, result = unpickler(self._process.stdout)
+        is_exception, result = pickle.load(self._process.stdout)
         if is_exception:
             raise result
         return result
@@ -143,7 +161,7 @@ class _CompiledSubprocess(_Subprocess):
         )
         self._evaluator_deletion_queue = queue.deque()
 
-    def run(self, evaluator, function, args=(), kwargs={}, unpickler=None):
+    def run(self, evaluator, function, args=(), kwargs={}):
         # Delete old evaluators.
         while True:
             try:
@@ -154,7 +172,7 @@ class _CompiledSubprocess(_Subprocess):
                 self._send(evaluator_id, None)
 
         assert callable(function)
-        return self._send(id(evaluator), function, args, kwargs, unpickler=unpickler)
+        return self._send(id(evaluator), function, args, kwargs)
 
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
@@ -227,30 +245,6 @@ class Listener():
 
             pickle.dump(result, file=stdout, protocol=_PICKLE_PROTOCOL)
             stdout.flush()
-
-
-class _ModifiedUnpickler(pickle._Unpickler):
-    dispatch = pickle._Unpickler.dispatch.copy()
-
-    def __init__(self, subprocess, *args, **kwargs):
-        super(_ModifiedUnpickler, self).__init__(*args, **kwargs)
-        self._subprocess = subprocess
-
-    def load_build(self):
-        super(_ModifiedUnpickler, self).load_build()
-        tos = self.stack[-1]
-        if isinstance(tos, AccessHandle):
-            self.stack[-1] = self.get_access_handle(tos)
-    dispatch[pickle.BUILD[0]] = load_build
-
-    def get_access_handle(self, access_handle):
-        try:
-            # Rewrite the access handle to one we're already having.
-            access_handle = self._subprocess.get_access_handle(access_handle.id)
-        except KeyError:
-            access_handle.add_subprocess(self._subprocess)
-            self._subprocess.set_access_handle(access_handle)
-        return access_handle
 
 
 class AccessHandle(object):
