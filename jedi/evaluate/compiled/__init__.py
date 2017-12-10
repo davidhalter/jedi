@@ -6,7 +6,7 @@ from jedi.evaluate.compiled import access
 
 
 def builtin_from_name(evaluator, string):
-    builtins = evaluator.get_builtins_module()
+    builtins = evaluator.builtins_module
     return create_from_name(evaluator, builtins, string)
 
 

@@ -207,7 +207,7 @@ class CompiledInstance(AbstractInstanceContext):
         # I don't think that dynamic append lookups should happen here. That
         # sounds more like something that should go to py__iter__.
         if self.class_context.name.string_name in ['list', 'set'] \
-                and self.parent_context.get_root_context() == self.evaluator.BUILTINS:
+                and self.parent_context.get_root_context() == self.evaluator.builtins_module:
             # compare the module path with the builtin name.
             self.var_args = iterable.get_dynamic_array_instance(self)
 

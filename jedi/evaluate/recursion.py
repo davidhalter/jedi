@@ -113,7 +113,7 @@ class ExecutionRecursionDetector(object):
         self._parent_execution_funcs.append(funcdef)
 
         module = execution.get_root_context()
-        if module == self._evaluator.BUILTINS:
+        if module == self._evaluator.builtins_module:
             # We have control over builtins so we know they are not recursing
             # like crazy. Therefore we just let them execute always, because
             # they usually just help a lot with getting good results.

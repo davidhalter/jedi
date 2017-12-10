@@ -221,7 +221,7 @@ def eval_atom(context, atom):
 @_limit_context_infers
 def eval_expr_stmt(context, stmt, seek_name=None):
     with recursion.execution_allowed(context.evaluator, stmt) as allowed:
-        if allowed or context.get_root_context() == context.evaluator.BUILTINS:
+        if allowed or context.get_root_context() == context.evaluator.builtins_module:
             return _eval_expr_stmt(context, stmt, seek_name)
     return NO_CONTEXTS
 

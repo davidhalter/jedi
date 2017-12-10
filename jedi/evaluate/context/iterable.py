@@ -44,7 +44,7 @@ class AbstractIterable(Context):
     api_type = 'instance'
 
     def __init__(self, evaluator):
-        super(AbstractIterable, self).__init__(evaluator, evaluator.BUILTINS)
+        super(AbstractIterable, self).__init__(evaluator, evaluator.builtins_module)
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         raise NotImplementedError
@@ -86,7 +86,7 @@ class GeneratorMixin(object):
 class Generator(GeneratorMixin, Context):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func_execution_context):
-        super(Generator, self).__init__(evaluator, parent_context=evaluator.BUILTINS)
+        super(Generator, self).__init__(evaluator, parent_context=evaluator.builtins_module)
         self._func_execution_context = func_execution_context
 
     def py__iter__(self):
@@ -212,7 +212,7 @@ class ArrayMixin(object):
 
     @safe_property
     def parent(self):
-        return self.evaluator.BUILTINS
+        return self.evaluator.builtins_module
 
     def dict_values(self):
         return ContextSet.from_sets(
@@ -658,7 +658,7 @@ class Slice(Context):
     def __init__(self, context, start, stop, step):
         super(Slice, self).__init__(
             context.evaluator,
-            parent_context=context.evaluator.BUILTINS
+            parent_context=context.evaluator.builtins_module
         )
         self._context = context
         # all of them are either a Precedence or None.

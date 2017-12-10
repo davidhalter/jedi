@@ -57,7 +57,7 @@ def execute(evaluator, obj, arguments):
     except AttributeError:
         pass
     else:
-        if obj.parent_context == evaluator.BUILTINS:
+        if obj.parent_context == evaluator.builtins_module:
             module_name = 'builtins'
         elif isinstance(obj.parent_context, ModuleContext):
             module_name = obj.parent_context.name.string_name
@@ -210,7 +210,7 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # just returned the result directly.
     seq = iterable.FakeSequence(evaluator, 'list', rev)
     arguments = ValuesArguments([ContextSet(seq)])
-    return ContextSet(CompiledInstance(evaluator, evaluator.BUILTINS, obj, arguments))
+    return ContextSet(CompiledInstance(evaluator, evaluator.builtins_module, obj, arguments))
 
 
 @argument_clinic('obj, type, /', want_arguments=True)
@@ -233,7 +233,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
             elif cls_or_tup.name.string_name == 'tuple' \
-                    and cls_or_tup.get_root_context() == evaluator.BUILTINS:
+                    and cls_or_tup.get_root_context() == evaluator.builtins_module:
                 # Check for tuples.
                 classes = ContextSet.from_sets(
                     lazy_context.infer()

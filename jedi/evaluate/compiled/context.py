@@ -174,7 +174,7 @@ class CompiledObject(Context):
             try:
                 # TODO wtf is this? this is exactly the same as the thing
                 # below. It uses getattr as well.
-                self.evaluator.BUILTINS.access_handle.getattr(name)
+                self.evaluator.builtins_module.access_handle.getattr(name)
             except AttributeError:
                 continue
             else:
@@ -283,7 +283,7 @@ class EmptyCompiledName(AbstractNameDefinition):
     nothing.
     """
     def __init__(self, evaluator, name):
-        self.parent_context = evaluator.BUILTINS
+        self.parent_context = evaluator.builtins_module
         self.string_name = name
 
     def infer(self):

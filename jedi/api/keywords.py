@@ -78,7 +78,7 @@ class KeywordName(AbstractNameDefinition):
     def __init__(self, evaluator, name):
         self.evaluator = evaluator
         self.string_name = name
-        self.parent_context = evaluator.BUILTINS
+        self.parent_context = evaluator.builtins_module
 
     def eval(self):
         return set()
@@ -93,7 +93,7 @@ class Keyword(object):
     def __init__(self, evaluator, name, pos):
         self.name = KeywordName(evaluator, name)
         self.start_pos = pos
-        self.parent = evaluator.BUILTINS
+        self.parent = evaluator.builtins_module
 
     @property
     def only_valid_as_leaf(self):
