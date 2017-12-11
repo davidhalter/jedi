@@ -155,7 +155,7 @@ class AccessPath(object):
 
 def create_access_path(evaluator, obj):
     access = create_access(evaluator, obj)
-    return AccessPath(access._get_access_path_tuples())
+    return AccessPath(access.get_access_path_tuples())
 
 
 class DirectObjectAccess(object):
@@ -274,7 +274,7 @@ class DirectObjectAccess(object):
             return None
 
     def get_safe_value(self):
-        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice, type(Ellipsis)):
+        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice):
             return self._obj
         raise ValueError("Object is type %s and not simple" % type(self._obj))
 
@@ -290,7 +290,7 @@ class DirectObjectAccess(object):
         # Everything else...
         return 'instance'
 
-    def _get_access_path_tuples(self):
+    def get_access_path_tuples(self):
         return [
             (getattr(o, '__name__', None), create_access(self._evaluator, o))
             for o in self._get_objects_path()

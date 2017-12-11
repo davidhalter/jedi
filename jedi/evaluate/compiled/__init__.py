@@ -1,8 +1,7 @@
-from jedi._compatibility import builtins as _builtins
+from jedi._compatibility import unicode
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
     CompiledObjectFilter, CompiledContextName, create_from_access_path, \
     create_from_name
-from jedi.evaluate.compiled import access
 
 
 def builtin_from_name(evaluator, string):
@@ -15,7 +14,7 @@ def create_simple_object(evaluator, obj):
     Only allows creations of objects that are easily picklable across Python
     versions.
     """
-    assert isinstance(obj, (int, float, str, bytes, slice, complex, type(Ellipsis)))
+    assert isinstance(obj, (int, float, str, bytes, unicode, slice, complex))
     return create_from_access_path(
         evaluator,
         evaluator.compiled_subprocess.create_simple_object(obj)

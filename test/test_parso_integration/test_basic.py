@@ -87,10 +87,6 @@ def test_tokenizer_with_string_literal_backslash():
 
 
 def test_ellipsis():
-    def_, = jedi.Script(dedent("""\
-        class Foo():
-            def __getitem__(self, index):
-                return index
-        Foo()[...]""")).goto_definitions()
+    def_, = jedi.Script('x=...;x').goto_definitions()
 
     assert def_.name == 'ellipsis'

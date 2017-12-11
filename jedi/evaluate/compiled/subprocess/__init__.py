@@ -188,7 +188,7 @@ class _CompiledSubprocess(_Subprocess):
         self._evaluator_deletion_queue.append(evaluator_id)
 
 
-class Listener():
+class Listener(object):
     def __init__(self):
         self._evaluators = {}
         # TODO refactor so we don't need to process anymore just handle
@@ -263,9 +263,10 @@ class AccessHandle(object):
         self.id = state
 
     def __getattr__(self, name):
-        if name in ('id', '_subprocess', 'access'):
+        if name in ('id', 'access') or name.startswith('_'):
             raise AttributeError("Something went wrong with unpickling")
 
+        #print >> sys.stderr, name
         #print('getattr', name, file=sys.stderr)
         def compiled_method(*args, **kwargs):
             return self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)

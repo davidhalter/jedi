@@ -93,7 +93,7 @@ class Context(BaseContext):
                 except ValueError:
                     pass
 
-            if type(index) not in (float, int, str, unicode, slice, type(Ellipsis)):
+            if type(index) not in (float, int, str, unicode, slice):
                 # If the index is not clearly defined, we have to get all the
                 # possiblities.
                 if isinstance(self, AbstractIterable) and self.array_type == 'dict':
