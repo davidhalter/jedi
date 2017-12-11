@@ -5,7 +5,11 @@ import pytest
 
 import jedi
 
-collect_ignore = ["setup.py"]
+collect_ignore = [
+    'setup.py',
+    '__main__.py',
+    'jedi/evaluate/compiled/subprocess/__main__.py'
+]
 
 
 # The following hooks (pytest_configure, pytest_unconfigure) are used

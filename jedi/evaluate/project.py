@@ -12,12 +12,12 @@ class Project(object):
         if sys_path is not None:
             self._base_sys_path = sys_path
 
-        venv = os.getenv('VIRTUAL_ENV')
-        if venv:
-            sys_path = get_venv_path(venv)
-
         if sys_path is None:
-            sys_path = sys.path
+            venv = os.getenv('VIRTUAL_ENV')
+            if venv:
+                sys_path = get_venv_path(venv)
+            else:
+                sys_path = sys.path
 
         base_sys_path = list(sys_path)
         try:
