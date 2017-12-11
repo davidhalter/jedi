@@ -1,7 +1,10 @@
 from textwrap import dedent
 
+import pytest
 from parso import parse
+
 import jedi
+from jedi._compatibility import py_version
 
 
 def test_form_feed_characters():
@@ -86,7 +89,8 @@ def test_tokenizer_with_string_literal_backslash():
     assert c[0]._name._context.get_safe_value() == 'foo'
 
 
-def test_ellipsis():
+@pytest.mark.skipif('py_version < 30', reason='In 2.7 Ellipsis can only be used like x[...]')
+def test_ellipsis_without_getitem():
     def_, = jedi.Script('x=...;x').goto_definitions()
 
     assert def_.name == 'ellipsis'

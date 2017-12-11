@@ -5,7 +5,7 @@ import warnings
 from ..helpers import TestCase
 from jedi import Script
 from jedi import cache
-from jedi._compatibility import is_py33
+from jedi._compatibility import is_py33, py_version
 
 
 def assert_signature(source, expected_name, expected_index=0, line=None, column=None):
@@ -324,8 +324,10 @@ def test_keyword_argument_index():
     def get(source, column=None):
         return Script(source, column=column).call_signatures()[0]
 
-    assert get('sorted([], key=a').index == 1
-    assert get('sorted([], key=').index == 1
+    # The signature of sorted changed from 2 to 3.
+    py2_offset = int(py_version < 30)
+    assert get('sorted([], key=a').index == 1 + py2_offset
+    assert get('sorted([], key=').index == 1 + py2_offset
     assert get('sorted([], no_key=a').index is None
 
     kw_func = 'def foo(a, b): pass\nfoo(b=3, a=4)'
