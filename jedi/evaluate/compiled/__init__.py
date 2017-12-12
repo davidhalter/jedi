@@ -29,7 +29,7 @@ def get_special_object(evaluator, identifier):
 
 
 def load_module(evaluator, path=None, name=None):
-    return create_from_access_path(
-        evaluator,
-        evaluator.compiled_subprocess.load_module(path=path, name=name)
-    )
+    access_path = evaluator.compiled_subprocess.load_module(path=path, name=name)
+    if access_path is None:
+        return None
+    return create_from_access_path(evaluator, access_path)
