@@ -164,7 +164,7 @@ class DirectObjectAccess(object):
         self._obj = obj
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._obj)
+        return '%s(%s)' % (self.__class__.__name__, self.get_repr())
 
     def _create_access(self, obj):
         return create_access(self._evaluator, obj)
@@ -231,7 +231,16 @@ class DirectObjectAccess(object):
         return [self._create_access_path(base) for base in self._obj.__bases__]
 
     def get_repr(self):
-        return repr(self._obj)
+        # Try to avoid execution of the property.
+        type_ = type(self._obj)
+        if type_ == type:
+            return type.__repr__(self._obj)
+
+        builtins = 'builtins', '__builtin__'
+        if getattr_static(type_, '__module__', default='') in builtins:
+            # Allow direct execution of repr for builtins.
+            return repr(self._obj)
+        return object.__repr__(self._obj)
 
     def is_class(self):
         return inspect.isclass(self._obj)

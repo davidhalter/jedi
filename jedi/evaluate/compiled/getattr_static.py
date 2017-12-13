@@ -10,6 +10,7 @@ from jedi._compatibility import py_version
 
 _sentinel = object()
 
+
 def _check_instance(obj, attr):
     instance_dict = {}
     try:
@@ -27,6 +28,7 @@ def _check_class(klass, attr):
             except KeyError:
                 pass
     return _sentinel
+
 
 def _is_type(obj):
     try:
@@ -143,8 +145,7 @@ def getattr_static(obj, attr, default=_sentinel):
     if not _is_type(obj):
         klass = _get_type(obj)
         dict_attr = _shadowed_dict(klass)
-        if (dict_attr is _sentinel or
-            type(dict_attr) is types.MemberDescriptorType):
+        if (dict_attr is _sentinel or type(dict_attr) is types.MemberDescriptorType):
             instance_result = _check_instance(obj, attr)
     else:
         klass = obj

@@ -256,6 +256,13 @@ class AccessHandle(object):
     def add_subprocess(self, subprocess):
         self._subprocess = subprocess
 
+    def __repr__(self):
+        try:
+            detail = self.access
+        except AttributeError:
+            detail = '#' + str(self.id)
+        return '<%s of %s>' % (self.__class__.__name__, detail)
+
     def __getstate__(self):
         return self.id
 
