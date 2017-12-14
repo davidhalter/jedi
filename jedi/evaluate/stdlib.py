@@ -107,10 +107,11 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
     def f(func):
         def wrapper(evaluator, obj, arguments):
             debug.dbg('builtin start %s' % obj, color='MAGENTA')
+            result = NO_CONTEXTS
             try:
                 lst = list(arguments.eval_argument_clinic(clinic_args))
             except ValueError:
-                result = NO_CONTEXTS
+                pass
             else:
                 kwargs = {}
                 if want_context:
