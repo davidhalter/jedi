@@ -12,6 +12,8 @@ def load_module(evaluator, path=None, name=None):
 
 def get_compiled_method_return(evaluator, id, attribute, *args, **kwargs):
     handle = evaluator.compiled_subprocess.get_access_handle(id)
+    #print >> sys.stderr, handle, attribute, args, kwargs
+    #print(id, attribute, args, kwargs, file=sys.stderr)
     return getattr(handle.access, attribute)(*args, **kwargs)
 
 

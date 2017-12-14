@@ -385,6 +385,17 @@ class DirectObjectAccess(object):
     def is_super_class(self, exception):
         return issubclass(exception, self._obj)
 
+    def get_dir_infos(self):
+        """
+        Used to return a couple of infos that are needed when accessing the sub
+        objects of an objects
+        """
+        tuples = dict(
+            (name, self.is_allowed_getattr(name))
+            for name in self.dir()
+        )
+        return self.needs_type_completions(), tuples
+
 
 def _is_class_instance(obj):
     """Like inspect.* methods."""

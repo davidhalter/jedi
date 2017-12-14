@@ -298,27 +298,48 @@ class CompiledObjectFilter(AbstractFilter):
         self._compiled_object = compiled_object
         self._is_instance = is_instance
 
-    @memoize_method
     def get(self, name):
         name = str(name)
+        return self._get(
+            name,
+            lambda: self._compiled_object.access_handle.is_allowed_getattr(name),
+            lambda: self._compiled_object.access_handle.dir(),
+        )
+
+    def _get(self, name, allowed_getattr_callback, dir_callback):
+        """
+        To remove quite a few access calls we introduced the callback here.
+        """
         try:
-            if not self._compiled_object.access_handle.is_allowed_getattr(name):
-                return [EmptyCompiledName(self._evaluator, name)]
+            if not allowed_getattr_callback():
+                return [self._get_cached_name(name, is_empty=True)]
         except AttributeError:
             return []
 
-        if self._is_instance and name not in self._compiled_object.access_handle.dir():
+        if self._is_instance and name not in dir_callback():
             return []
-        return [self._create_name(name)]
+        return [self._get_cached_name(name)]
+
+    @memoize_method
+    def _get_cached_name(self, name, is_empty=False):
+        if is_empty:
+            return EmptyCompiledName(self._evaluator, name)
+        else:
+            return self._create_name(name)
 
     def values(self):
         from jedi.evaluate.compiled import builtin_from_name
         names = []
-        for name in self._compiled_object.access_handle.dir():
-            names += self.get(name)
+        needs_type_completions, dir_infos = self._compiled_object.access_handle.get_dir_infos()
+        for name in dir_infos:
+            names += self._get(
+                name,
+                lambda: dir_infos[name],
+                lambda: dir_infos.keys(),
+            )
 
         # ``dir`` doesn't include the type names.
-        if not self._is_instance and self._compiled_object.access_handle.needs_type_completions():
+        if not self._is_instance and needs_type_completions:
             for filter in builtin_from_name(self._evaluator, 'type').get_filters():
                 names += filter.values()
         return names
