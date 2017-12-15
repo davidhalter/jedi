@@ -24,7 +24,7 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.completion import Completion
-from jedi.api.virtualenv import DefaultEnvironment
+from jedi.api.virtualenv import get_default_environment
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
 from jedi.evaluate import usages
@@ -37,7 +37,6 @@ from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.context.module import ModuleName
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-from jedi.evaluate.compiled.subprocess import get_subprocess
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -121,7 +120,7 @@ class Script(object):
             compiled_subprocess = None
         else:
             if environment is None:
-                environment = DefaultEnvironment()
+                environment = get_default_environment()
             compiled_subprocess = environment.get_subprocess()
         self._evaluator = Evaluator(self._grammar, project, compiled_subprocess)
         project.add_script_path(self.path)

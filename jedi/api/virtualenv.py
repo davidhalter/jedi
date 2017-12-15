@@ -45,9 +45,8 @@ class Environment(object):
         return self.get_subprocess().get_sys_path()
 
 
-class DefaultEnvironment(Environment):
-    def __init__(self):
-        super(DefaultEnvironment, self).__init__(sys.prefix, sys.executable)
+def get_default_environment():
+    return Environment(sys.prefix, sys.executable)
 
 
 def find_virtualenvs(paths=None):
@@ -69,7 +68,7 @@ def find_python_environments():
     current_version = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
     for version_string in _SUPPORTED_PYTHONS:
         if version_string == current_version:
-            yield DefaultEnvironment()
+            yield get_default_environment()
         else:
             exe = find_executable('python' + version_string)
             if exe is not None:

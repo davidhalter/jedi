@@ -1,13 +1,12 @@
 import pytest
 
-import jedi
 from jedi._compatibility import py_version
-from jedi.api.virtualenv import Environment, DefaultEnvironment, \
+from jedi.api.virtualenv import Environment, get_default_environment, \
     InvalidPythonEnvironment, find_python_environments
 
 
 def test_sys_path():
-    assert DefaultEnvironment().get_sys_path()
+    assert get_default_environment().get_sys_path()
 
 
 def test_find_python_environments():
