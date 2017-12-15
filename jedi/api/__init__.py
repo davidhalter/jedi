@@ -24,7 +24,7 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.completion import Completion
-from jedi.api.virtualenv import get_default_environment
+from jedi.api.environment import get_default_environment
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
 from jedi.evaluate import usages

@@ -1,7 +1,7 @@
 import pytest
 
 from jedi._compatibility import py_version
-from jedi.api.virtualenv import Environment, get_default_environment, \
+from jedi.api.environment import Environment, get_default_environment, \
     InvalidPythonEnvironment, find_python_environments
 
 
