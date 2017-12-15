@@ -2,23 +2,31 @@ import pytest
 
 import jedi
 from jedi._compatibility import py_version
-from jedi.api.virtualenv import Environment, DefaultEnvironment, NoVirtualEnv
+from jedi.api.virtualenv import Environment, DefaultEnvironment, \
+    InvalidPythonEnvironment, find_python_environments
 
 
 def test_sys_path():
-    assert DefaultEnvironment('/foo').get_sys_path()
+    assert DefaultEnvironment().get_sys_path()
+
+
+def test_find_python_environments():
+    envs = list(find_python_environments())
+    assert len(envs)
+    for env in envs:
+        assert env.version_info
+        assert env.get_sys_path()
 
 
 @pytest.mark.parametrize(
     'version',
-    # TODO add '2.6', '2.7',
-    ['3.3', '3.4', '3.5', '3.6', '3.7']
+    ['2.7', '3.3', '3.4', '3.5', '3.6', '3.7']
 )
 def test_versions(version):
     executable = 'python' + version
     try:
         env = Environment('some path', executable)
-    except NoVirtualEnv:
+    except InvalidPythonEnvironment:
         if int(version.replace('.', '')) == py_version:
             # At least the current version has to work
             raise

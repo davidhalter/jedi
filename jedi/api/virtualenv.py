@@ -3,6 +3,9 @@ import re
 import sys
 from subprocess import Popen, PIPE
 from collections import namedtuple
+# When dropping Python 2.7 support we should consider switching to
+# `shutil.which`.
+from distutils.spawn import find_executable
 
 from jedi.evaluate.project import Project
 from jedi.cache import memoize_method
@@ -10,19 +13,21 @@ from jedi.evaluate.compiled.subprocess import get_subprocess
 
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
+_SUPPORTED_PYTHONS = ['2.7', '3.3', '3.4', '3.5', '3.6']
 
-class NoVirtualEnv(Exception):
+
+class InvalidPythonEnvironment(Exception):
     pass
 
 
 class Environment(object):
     def __init__(self, path, executable):
-        self._path = path
+        self._base_path = path
         self._executable = executable
         self.version_info = _get_version(self._executable)
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._path)
+        return '<%s: %s>' % (self.__class__.__name__, self._base_path)
 
     def get_project(self):
         return Project(self.get_sys_path())
@@ -41,10 +46,8 @@ class Environment(object):
 
 
 class DefaultEnvironment(Environment):
-    def __init__(self, script_path):
-        # TODO make this usable
-        path = script_path
-        super(DefaultEnvironment, self).__init__(path, sys.executable)
+    def __init__(self):
+        super(DefaultEnvironment, self).__init__(sys.prefix, sys.executable)
 
 
 def find_virtualenvs(paths=None):
@@ -55,8 +58,33 @@ def find_virtualenvs(paths=None):
         executable = _get_executable_path(path)
         try:
             yield Environment(path, executable)
-        except NoVirtualEnv:
+        except InvalidPythonEnvironment:
             pass
+
+
+def find_python_environments():
+    """
+    Ignores virtualenvs and returns the different Python versions.
+    """
+    current_version = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
+    for version_string in _SUPPORTED_PYTHONS:
+        if version_string == current_version:
+            yield DefaultEnvironment()
+        else:
+            exe = find_executable('python' + version_string)
+            if exe is not None:
+                path = os.path.dirname(os.path.dirname(exe))
+                try:
+                    yield Environment(path, exe)
+                except InvalidPythonEnvironment:
+                    pass
+
+
+def create_environment(path):
+    """
+    Make it possible to create
+    """
+    return Environment(path, _get_executable_path(path))
 
 
 def _get_executable_path(path):
@@ -77,15 +105,15 @@ def _get_version(executable):
         stdout, stderr = process.communicate()
         retcode = process.poll()
         if retcode:
-            raise NoVirtualEnv()
+            raise InvalidPythonEnvironment()
     except OSError:
-        raise NoVirtualEnv()
+        raise InvalidPythonEnvironment()
 
     # Until Python 3.4 wthe version string is part of stderr, after that
     # stdout.
     output = stdout + stderr
     match = re.match(br'Python (\d+)\.(\d+)\.(\d+)', output)
     if match is None:
-        raise NoVirtualEnv()
+        raise InvalidPythonEnvironment()
 
     return _VersionInfo(*match.groups())
