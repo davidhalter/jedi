@@ -11,6 +11,8 @@ from jedi.evaluate.project import Project
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import get_subprocess
 
+import parso
+
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
 _SUPPORTED_PYTHONS = ['2.7', '3.3', '3.4', '3.5', '3.6']
@@ -34,6 +36,11 @@ class Environment(object):
 
     def get_subprocess(self):
         return get_subprocess(self._executable)
+
+    @memoize_method
+    def get_parser(self):
+        version_string = '%s.%s' % (self.version_info.major, self.version_info.minor)
+        return parso.load_grammar(version=version_string)
 
     @memoize_method
     def get_sys_path(self):
@@ -115,4 +122,4 @@ def _get_version(executable):
     if match is None:
         raise InvalidPythonEnvironment()
 
-    return _VersionInfo(*match.groups())
+    return _VersionInfo(*[int(m) for m in match.groups()])
