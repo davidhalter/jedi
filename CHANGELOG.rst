@@ -3,6 +3,12 @@
 Changelog
 ---------
 
+0.11.1 (2017-12-14)
++++++++++++++++++++
+
+- Parso update - the caching layer was broken
+- Better usages - a lot of internal code was ripped out and improved.
+
 0.11.0 (2017-09-20)
 +++++++++++++++++++
 
