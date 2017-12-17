@@ -24,7 +24,7 @@ from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.completion import Completion
-from jedi.api.environment import get_default_environment
+from jedi.api.environment import InterpreterEnvironment
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
 from jedi.evaluate import usages
@@ -115,14 +115,7 @@ class Script(object):
         # Load the Python grammar of the current interpreter.
         self._grammar = parso.load_grammar()
         project = Project(sys_path=sys_path)
-        if isinstance(self, Interpreter):
-            # It's not possible to use a subprocess for the interpreter.
-            compiled_subprocess = None
-        else:
-            if environment is None:
-                environment = get_default_environment()
-            compiled_subprocess = environment.get_subprocess()
-        self._evaluator = Evaluator(self._grammar, project, compiled_subprocess)
+        self._evaluator = Evaluator(self._grammar, project, environment)
         project.add_script_path(self.path)
         debug.speed('init')
 
@@ -366,10 +359,14 @@ class Interpreter(Script):
         except Exception:
             raise TypeError("namespaces must be a non-empty list of dicts.")
 
-        if 'environment' in kwds:
-            raise TypeError("Environments are not allowed when using an interpreter.")
+        environment = kwds.get('environment', None)
+        if environment is None:
+            environment = InterpreterEnvironment()
+        else:
+            if not isinstance(environment, InterpreterEnvironment):
+                raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
 
-        super(Interpreter, self).__init__(source, **kwds)
+        super(Interpreter, self).__init__(source, environment=environment, **kwds)
         self.namespaces = namespaces
 
     def _get_module(self):

@@ -41,4 +41,4 @@ __version__ = '0.11.0'
 from jedi.api import Script, Interpreter, set_debug_function, \
     preload_module, names
 from jedi import settings
-from jedi.api.environment import find_virtualenvs, create_environment
+from jedi.api.environment import find_virtualenvs, find_python_environments

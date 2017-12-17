@@ -201,7 +201,12 @@ class Listener(object):
         try:
             evaluator = self._evaluators[evaluator_id]
         except KeyError:
-            evaluator = Evaluator(None, project=project.Project())
+            from jedi.api.environment import InterpreterEnvironment
+            evaluator = Evaluator(
+                grammar=None,
+                project=project.Project(),
+                environment=InterpreterEnvironment()
+            )
             self._evaluators[evaluator_id] = evaluator
         return evaluator
 

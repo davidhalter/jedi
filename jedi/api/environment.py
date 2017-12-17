@@ -9,7 +9,8 @@ from distutils.spawn import find_executable
 
 from jedi.evaluate.project import Project
 from jedi.cache import memoize_method
-from jedi.evaluate.compiled.subprocess import get_subprocess
+from jedi.evaluate.compiled.subprocess import get_subprocess, \
+    EvaluatorSameProcess, EvaluatorSubprocess
 
 import parso
 
@@ -22,7 +23,17 @@ class InvalidPythonEnvironment(Exception):
     pass
 
 
-class Environment(object):
+class _BaseEnvironment(object):
+    def get_project(self):
+        return Project(self.get_sys_path())
+
+    @memoize_method
+    def get_parser(self):
+        version_string = '%s.%s' % (self.version_info.major, self.version_info.minor)
+        return parso.load_grammar(version=version_string)
+
+
+class Environment(_BaseEnvironment):
     def __init__(self, path, executable):
         self._base_path = path
         self._executable = executable
@@ -31,16 +42,11 @@ class Environment(object):
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._base_path)
 
-    def get_project(self):
-        return Project(self.get_sys_path())
+    def get_evaluator_subprocess(self, evaluator):
+        return EvaluatorSubprocess(evaluator, self._get_subprocess())
 
-    def get_subprocess(self):
+    def _get_subprocess(self):
         return get_subprocess(self._executable)
-
-    @memoize_method
-    def get_parser(self):
-        version_string = '%s.%s' % (self.version_info.major, self.version_info.minor)
-        return parso.load_grammar(version=version_string)
 
     @memoize_method
     def get_sys_path(self):
@@ -49,7 +55,18 @@ class Environment(object):
         # on how the Python version was compiled (ENV variables).
         # If you omit -S when starting Python (normal case), additionally
         # site.py gets executed.
-        return self.get_subprocess().get_sys_path()
+        return self._get_subprocess().get_sys_path()
+
+
+class InterpreterEnvironment(_BaseEnvironment):
+    def __init__(self):
+        self.version_info = _VersionInfo(*sys.version_info[:3])
+
+    def get_evaluator_subprocess(self, evaluator):
+        return EvaluatorSameProcess(evaluator)
+
+    def get_sys_path(self):
+        return sys.sys_path
 
 
 def get_default_environment():
