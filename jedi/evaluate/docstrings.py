@@ -155,8 +155,7 @@ def _search_param_in_docstr(docstr, param_str):
         if match:
             return [_strip_rst_role(match.group(1))]
 
-    return (_search_param_in_numpydocstr(docstr, param_str) or
-            [])
+    return _search_param_in_numpydocstr(docstr, param_str)
 
 
 def _strip_rst_role(type_str):
