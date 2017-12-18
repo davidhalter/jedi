@@ -377,10 +377,10 @@ class Importer(object):
             fullname, paths = module_path.name, module_path.paths
             module = ImplicitNamespaceContext(self._evaluator, fullname=fullname)
             module.paths = paths
-        elif module_file is None and not module_path.endswith(('.py', '.zip', '.egg')):
-            module = compiled.load_module(self._evaluator, path=module_path)
-        else:
+        elif module_file is not None or module_path.endswith(('.py', '.zip', '.egg')):
             module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
+        else:
+            module = compiled.load_module(self._evaluator, path=module_path)
 
         if module is None:
             # The file might raise an ImportError e.g. and therefore not be
