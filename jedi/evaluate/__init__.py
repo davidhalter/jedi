@@ -258,6 +258,8 @@ class Evaluator(object):
                 else:
                     i = trailer.parent.children.index(trailer)
                     to_evaluate = trailer.parent.children[:i]
+                    if to_evaluate[0] == 'await':
+                        to_evaluate.pop(0)
                     context_set = context.eval_node(to_evaluate[0])
                     for trailer in to_evaluate[1:]:
                         context_set = eval_trailer(context, context_set, trailer)
