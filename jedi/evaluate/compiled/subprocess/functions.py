@@ -6,8 +6,8 @@ def get_sys_path():
     return sys.path
 
 
-def load_module(evaluator, path=None, name=None):
-    return access.load_module(evaluator, path=path, name=name)
+def load_module(evaluator, **kwargs):
+    return access.load_module(evaluator, **kwargs)
 
 
 def get_compiled_method_return(evaluator, id, attribute, *args, **kwargs):
