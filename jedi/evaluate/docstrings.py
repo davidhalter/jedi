@@ -42,49 +42,59 @@ DOCSTRING_RETURN_PATTERNS = [
 REST_ROLE_PATTERN = re.compile(r':[^`]+:`([^`]+)`')
 
 
-try:
-    from numpydoc.docscrape import NumpyDocString
-except ImportError:
-    def _search_param_in_numpydocstr(docstr, param_str):
-        return []
+_numpy_doc_string_cache = None
 
-    def _search_return_in_numpydocstr(docstr):
-        return []
-else:
-    def _search_param_in_numpydocstr(docstr, param_str):
-        """Search `docstr` (in numpydoc format) for type(-s) of `param_str`."""
-        try:
-            # This is a non-public API. If it ever changes we should be 
-            # prepared and return gracefully.
-            params = NumpyDocString(docstr)._parsed_data['Parameters']
-        except (KeyError, AttributeError):
-            return []
-        for p_name, p_type, p_descr in params:
-            if p_name == param_str:
-                m = re.match('([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
-                if m:
-                    p_type = m.group(1)
-                return list(_expand_typestr(p_type))
-        return []
 
-    def _search_return_in_numpydocstr(docstr):
-        """
-        Search `docstr` (in numpydoc format) for type(-s) of function returns.
-        """
-        doc = NumpyDocString(docstr)
-        try:
-            # This is a non-public API. If it ever changes we should be 
-            # prepared and return gracefully.
-            returns = doc._parsed_data['Returns']
-            returns += doc._parsed_data['Yields']
-        except (KeyError, AttributeError):
-            raise StopIteration
-        for r_name, r_type, r_descr in returns:
-            #Return names are optional and if so the type is in the name
-            if not r_type:
-                r_type = r_name
-            for type_ in _expand_typestr(r_type):
-                yield type_
+def _get_numpy_doc_string_cls():
+    global _numpy_doc_string_cache
+    try:
+        from numpydoc.docscrape import NumpyDocString
+        _numpy_doc_string_cache = NumpyDocString
+    except ImportError as e:
+        _numpy_doc_string_cache = e
+    if isinstance(_numpy_doc_string_cache, ImportError):
+        raise _numpy_doc_string_cache
+    return _numpy_doc_string_cache
+
+
+def _search_param_in_numpydocstr(docstr, param_str):
+    """Search `docstr` (in numpydoc format) for type(-s) of `param_str`."""
+    try:
+        # This is a non-public API. If it ever changes we should be
+        # prepared and return gracefully.
+        params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
+    except (KeyError, AttributeError, ImportError):
+        return []
+    for p_name, p_type, p_descr in params:
+        if p_name == param_str:
+            m = re.match('([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
+            if m:
+                p_type = m.group(1)
+            return list(_expand_typestr(p_type))
+    return []
+
+
+def _search_return_in_numpydocstr(docstr):
+    """
+    Search `docstr` (in numpydoc format) for type(-s) of function returns.
+    """
+    try:
+        doc = _get_numpy_doc_string_cls()(docstr)
+    except ImportError:
+        return
+    try:
+        # This is a non-public API. If it ever changes we should be
+        # prepared and return gracefully.
+        returns = doc._parsed_data['Returns']
+        returns += doc._parsed_data['Yields']
+    except (KeyError, AttributeError):
+        return
+    for r_name, r_type, r_descr in returns:
+        # Return names are optional and if so the type is in the name
+        if not r_type:
+            r_type = r_name
+        for type_ in _expand_typestr(r_type):
+            yield type_
 
 
 def _expand_typestr(type_str):
