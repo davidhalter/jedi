@@ -1,7 +1,4 @@
-import os
-import sys
-
-from jedi.evaluate.sys_path import get_venv_path, detect_additional_paths
+from jedi.evaluate.sys_path import detect_additional_paths
 from jedi.cache import memoize_method
 
 
@@ -9,23 +6,7 @@ class Project(object):
     def __init__(self, sys_path=None):
         self._script_path = None
 
-        if sys_path is not None:
-            self._base_sys_path = sys_path
-
-        if sys_path is None:
-            venv = os.getenv('VIRTUAL_ENV')
-            if venv:
-                sys_path = get_venv_path(venv)
-            else:
-                sys_path = sys.path
-
-        base_sys_path = list(sys_path)
-        try:
-            base_sys_path.remove('')
-        except ValueError:
-            pass
-
-        self._base_sys_path = base_sys_path
+        self._base_sys_path = sys_path
 
     def add_script_path(self, script_path):
         self._script_path = script_path
@@ -36,7 +17,17 @@ class Project(object):
     @property
     @memoize_method
     def sys_path(self):
-        if self._script_path is None:
-            return self._base_sys_path
+        sys_path = self._base_sys_path
+        if sys_path is None:
+            sys_path = self._evaluator.environment.get_sys_path()
 
-        return self._base_sys_path + detect_additional_paths(self._evaluator, self._script_path)
+        sys_path = list(sys_path)
+        try:
+            sys_path.remove('')
+        except ValueError:
+            pass
+
+        if self._script_path is None:
+            return sys_path
+
+        return sys_path + detect_additional_paths(self._evaluator, self._script_path)

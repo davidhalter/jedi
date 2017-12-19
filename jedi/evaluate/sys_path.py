@@ -1,8 +1,5 @@
-import glob
 import os
-import sys
 import imp
-from jedi.evaluate.site import addsitedir
 
 from jedi._compatibility import unicode
 from jedi.evaluate.cache import evaluator_method_cache
@@ -11,62 +8,6 @@ from jedi.evaluate.helpers import is_string
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.utils import ignored
-
-
-def get_venv_path(venv):
-    """Get sys.path for specified virtual environment."""
-    sys_path = _get_venv_path_dirs(venv)
-    with ignored(ValueError):
-        sys_path.remove('')
-    sys_path = _get_sys_path_with_egglinks(sys_path)
-    # As of now, get_venv_path_dirs does not scan built-in pythonpath and
-    # user-local site-packages, let's approximate them using path from Jedi
-    # interpreter.
-    return sys_path + sys.path
-
-
-def _get_sys_path_with_egglinks(sys_path):
-    """Find all paths including those referenced by egg-links.
-
-    Egg-link-referenced directories are inserted into path immediately before
-    the directory on which their links were found.  Such directories are not
-    taken into consideration by normal import mechanism, but they are traversed
-    when doing pkg_resources.require.
-    """
-    result = []
-    for p in sys_path:
-        # pkg_resources does not define a specific order for egg-link files
-        # using os.listdir to enumerate them, we're sorting them to have
-        # reproducible tests.
-        for egg_link in sorted(glob.glob(os.path.join(p, '*.egg-link'))):
-            with open(egg_link) as fd:
-                for line in fd:
-                    line = line.strip()
-                    if line:
-                        result.append(os.path.join(p, line))
-                        # pkg_resources package only interprets the first
-                        # non-empty line in egg-link files.
-                        break
-        result.append(p)
-    return result
-
-
-def _get_venv_path_dirs(venv):
-    """Get sys.path for venv without starting up the interpreter."""
-    venv = os.path.abspath(venv)
-    sitedir = _get_venv_sitepackages(venv)
-    sys_path = []
-    addsitedir(sys_path, sitedir)
-    return sys_path
-
-
-def _get_venv_sitepackages(venv):
-    if os.name == 'nt':
-        p = os.path.join(venv, 'lib', 'site-packages')
-    else:
-        p = os.path.join(venv, 'lib', 'python%d.%d' % sys.version_info[:2],
-                         'site-packages')
-    return p
 
 
 def _abs_path(module_context, path):
@@ -87,7 +28,7 @@ def _paths_from_assignment(module_context, expr_stmt):
     """
     Extracts the assigned strings from an assignment that looks as follows::
 
-    >>> sys.path[0:0] = ['module/path', 'another/module/path']
+        sys.path[0:0] = ['module/path', 'another/module/path']
 
     This function is in general pretty tolerant (and therefore 'buggy').
     However, it's not a big issue usually to add more paths to Jedi's sys_path,

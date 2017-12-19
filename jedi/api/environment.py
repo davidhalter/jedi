@@ -66,7 +66,7 @@ class InterpreterEnvironment(_BaseEnvironment):
         return EvaluatorSameProcess(evaluator)
 
     def get_sys_path(self):
-        return sys.sys_path
+        return sys.path
 
 
 def get_default_environment():
