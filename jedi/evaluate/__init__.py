@@ -87,8 +87,13 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
 
 
 class Evaluator(object):
-    def __init__(self, grammar, project, environment=None):
-        self.grammar = grammar
+    def __init__(self, project, environment=None):
+        if environment is None:
+            environment = get_default_environment()
+        self.environment = environment
+        self.compiled_subprocess = environment.get_evaluator_subprocess(self)
+        self.grammar = environment.get_grammar()
+
         self.latest_grammar = parso.load_grammar(version='3.6')
         self.memoize_cache = {}  # for memoize decorators
         # To memorize modules -> equals `sys.modules`.
@@ -103,11 +108,6 @@ class Evaluator(object):
         self.project = project
         self.access_cache = {}
         project.add_evaluator(self)
-
-        if environment is None:
-            environment = get_default_environment()
-        self.environment = environment
-        self.compiled_subprocess = environment.get_evaluator_subprocess(self)
 
         self.reset_recursion_limitations()
 

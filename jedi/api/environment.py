@@ -28,7 +28,7 @@ class _BaseEnvironment(object):
         return Project(self.get_sys_path())
 
     @memoize_method
-    def get_parser(self):
+    def get_grammar(self):
         version_string = '%s.%s' % (self.version_info.major, self.version_info.minor)
         return parso.load_grammar(version=version_string)
 

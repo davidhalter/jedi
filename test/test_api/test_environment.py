@@ -15,7 +15,7 @@ def test_find_python_environments():
     for env in envs:
         assert env.version_info
         assert env.get_sys_path()
-        parser_version = env.get_parser().version_info
+        parser_version = env.get_grammar().version_info
         assert parser_version[:2] == env.version_info[:2]
 
 

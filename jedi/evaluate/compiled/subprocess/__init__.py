@@ -203,7 +203,6 @@ class Listener(object):
         except KeyError:
             from jedi.api.environment import InterpreterEnvironment
             evaluator = Evaluator(
-                grammar=None,
                 project=project.Project(),
                 environment=InterpreterEnvironment()
             )
