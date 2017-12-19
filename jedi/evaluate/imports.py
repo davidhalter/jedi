@@ -130,8 +130,13 @@ class NestedImportModule(tree.Module):
 
 def _add_error(context, name, message=None):
     # Should be a name, not a string!
+    if message is None:
+        name_str = str(name.value) if isinstance(name, tree.Name) else name
+        message = 'No module named ' + name_str
     if hasattr(name, 'parent'):
         analysis.add(context, 'import-error', name, message)
+    else:
+        debug.warning('ImportError without origin: ' + message)
 
 
 def get_init_path(directory_path):
@@ -226,10 +231,11 @@ class Importer(object):
                         else:
                             import_path.insert(0, dir_name)
                     else:
-                        _add_error(module_context, import_path[-1])
+                        _add_error(
+                            module_context, import_path[-1],
+                            message='Attempted relative import beyond top-level package.'
+                        )
                         import_path = []
-                        # TODO add import error.
-                        debug.warning('Attempted relative import beyond top-level package.')
                 # If no path is defined in the module we have no ideas where we
                 # are in the file system. Therefore we cannot know what to do.
                 # In this case we just let the path there and ignore that it's
