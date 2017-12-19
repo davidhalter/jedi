@@ -161,27 +161,30 @@ class IntegrationTestCase(object):
         return '<%s: %s:%s %r>' % (self.__class__.__name__, self.path,
                                    self.line_nr_test, self.line.rstrip())
 
-    def script(self):
-        return jedi.Script(self.source, self.line_nr, self.column, self.path)
+    def script(self, environment):
+        return jedi.Script(
+            self.source, self.line_nr, self.column, self.path,
+            environment=environment
+        )
 
-    def run(self, compare_cb):
+    def run(self, compare_cb, environment=None):
         testers = {
             TEST_COMPLETIONS: self.run_completion,
             TEST_DEFINITIONS: self.run_goto_definitions,
             TEST_ASSIGNMENTS: self.run_goto_assignments,
             TEST_USAGES: self.run_usages,
         }
-        return testers[self.test_type](compare_cb)
+        return testers[self.test_type](compare_cb, environment)
 
-    def run_completion(self, compare_cb):
-        completions = self.script().completions()
+    def run_completion(self, compare_cb, environment):
+        completions = self.script(environment).completions()
         #import cProfile; cProfile.run('script.completions()')
 
         comp_str = set([c.name for c in completions])
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))
 
-    def run_goto_definitions(self, compare_cb):
-        script = self.script()
+    def run_goto_definitions(self, compare_cb, environment):
+        script = self.script(environment)
         evaluator = script._evaluator
 
         def comparison(definition):
@@ -218,13 +221,13 @@ class IntegrationTestCase(object):
         is_str = set(comparison(r) for r in result)
         return compare_cb(self, is_str, should)
 
-    def run_goto_assignments(self, compare_cb):
-        result = self.script().goto_assignments()
+    def run_goto_assignments(self, compare_cb, environment):
+        result = self.script(environment).goto_assignments()
         comp_str = str(sorted(str(r.description) for r in result))
         return compare_cb(self, comp_str, self.correct)
 
-    def run_usages(self, compare_cb):
-        result = self.script().usages()
+    def run_usages(self, compare_cb, environment):
+        result = self.script(environment).usages()
         self.correct = self.correct.strip()
         compare = sorted((r.module_name, r.line, r.column) for r in result)
         wanted = []

@@ -31,19 +31,19 @@ unspecified = %s
 """ % (case, sorted(d - a), sorted(a - d))
 
 
-def test_completion(case, monkeypatch):
+def test_completion(case, monkeypatch, environment):
     if case.skip is not None:
         pytest.skip(case.skip)
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
-    case.run(assert_case_equal)
+    case.run(assert_case_equal, environment)
 
 
-def test_static_analysis(static_analysis_case):
+def test_static_analysis(static_analysis_case, environment):
     if static_analysis_case.skip is not None:
         pytest.skip(static_analysis_case.skip)
     else:
-        static_analysis_case.run(assert_static_analysis)
+        static_analysis_case.run(assert_static_analysis, environment)
 
 
 def test_refactor(refactor_case):

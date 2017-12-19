@@ -1,9 +1,12 @@
 import tempfile
 import shutil
+import os
 
 import pytest
 
 import jedi
+from jedi.api.environment import get_default_environment, get_python_environment
+from jedi._compatibility import py_version
 
 collect_ignore = [
     'setup.py',
@@ -75,3 +78,12 @@ def clean_jedi_cache(request):
     def restore():
         settings.cache_directory = old
         shutil.rmtree(tmp)
+
+
+@pytest.fixture(scope='session')
+def environment():
+    version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
+    if int(version) == py_version:
+        return get_default_environment()
+
+    return get_python_environment('python%s.%s' % tuple(version))

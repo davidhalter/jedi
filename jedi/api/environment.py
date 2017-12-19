@@ -94,13 +94,18 @@ def find_python_environments():
         if version_string == current_version:
             yield get_default_environment()
         else:
-            exe = find_executable('python' + version_string)
-            if exe is not None:
-                path = os.path.dirname(os.path.dirname(exe))
-                try:
-                    yield Environment(path, exe)
-                except InvalidPythonEnvironment:
-                    pass
+            try:
+                yield get_python_environment('python' + version_string)
+            except InvalidPythonEnvironment:
+                pass
+
+
+def get_python_environment(python_name):
+    exe = find_executable(python_name)
+    if exe is None:
+        raise InvalidPythonEnvironment("This executable doesn't exist.")
+    path = os.path.dirname(os.path.dirname(exe))
+    return Environment(path, exe)
 
 
 def create_environment(path):

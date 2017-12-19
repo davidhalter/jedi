@@ -110,8 +110,12 @@ class StaticAnalysisCase(object):
                 cases.append((line_nr + 1, column, match.group(3)))
         return cases
 
-    def run(self, compare_cb):
-        analysis = jedi.Script(self._source, path=self._path)._analysis()
+    def run(self, compare_cb, environment):
+        analysis = jedi.Script(
+            self._source,
+            path=self._path,
+            environment=environment,
+        )._analysis()
         typ_str = lambda inst: 'warning ' if isinstance(inst, Warning) else ''
         analysis = [(r.line, r.column, typ_str(r) + r.name)
                     for r in analysis]
