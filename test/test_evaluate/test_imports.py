@@ -37,27 +37,33 @@ def test_find_module_not_package():
 
 
 def test_find_module_package_zipped():
-    if 'zipped_imports/pkg.zip' not in sys.path:
-      sys.path.append(os.path.join(os.path.dirname(__file__),
-                      'zipped_imports/pkg.zip'))
-    file, path, is_package = find_module('pkg')
-    assert file is not None
-    assert path.endswith('pkg.zip')
-    assert is_package is True
-    assert len(jedi.Script('import pkg; pkg.mod', 1, 19).completions()) == 1
+    path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
+    sys.path.append(path)
+    try:
+        file, path, is_package = find_module('pkg')
+        assert file is not None
+        assert path.endswith('pkg.zip')
+        assert is_package is True
+    finally:
+        sys.path.pop()
+
+    script = jedi.Script('import pkg; pkg.mod', 1, 19, sys_path=[path])
+    assert len(script.completions()) == 1
 
 
 @pytest.mark.skipif('sys.version_info < (2,7)')
 def test_find_module_not_package_zipped():
-    if 'zipped_imports/not_pkg.zip' not in sys.path:
-      sys.path.append(os.path.join(os.path.dirname(__file__),
-                      'zipped_imports/not_pkg.zip'))
-    file, path, is_package = find_module('not_pkg')
-    assert file is not None
-    assert path.endswith('not_pkg.zip')
-    assert is_package is False
-    assert len(
-      jedi.Script('import not_pkg; not_pkg.val', 1, 27).completions()) == 1
+    path = os.path.join(os.path.dirname(__file__), 'zipped_imports/not_pkg.zip')
+    sys.path.append(path)
+    try:
+        file, path, is_package = find_module('not_pkg')
+        assert file is not None
+        assert path.endswith('not_pkg.zip')
+        assert is_package is False
+    finally:
+        sys.path.pop()
+    script = jedi.Script('import not_pkg; not_pkg.val', 1, 27, sys_path=[path])
+    assert len(script.completions()) == 1
 
 
 @cwd_at('test/test_evaluate/not_in_sys_path/pkg')
