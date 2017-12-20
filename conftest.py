@@ -1,6 +1,7 @@
 import tempfile
 import shutil
 import os
+import sys
 
 import pytest
 
@@ -87,3 +88,14 @@ def environment():
         return get_default_environment()
 
     return get_python_environment('python%s.%s' % tuple(version))
+
+
+@pytest.fixture(scope='session')
+def has_typing(environment):
+    if environment.version_info >= (3, 5, 0):
+        # This if is just needed to avoid that tests ever skip way more than
+        # they should for all Python versions.
+        return True
+
+    script = jedi.Script('import typing', environment=environment)
+    return bool(script.goto_definitions())

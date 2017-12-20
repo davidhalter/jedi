@@ -31,9 +31,11 @@ unspecified = %s
 """ % (case, sorted(d - a), sorted(a - d))
 
 
-def test_completion(case, monkeypatch, environment):
+def test_completion(case, monkeypatch, environment, has_typing):
     if case.skip is not None:
         pytest.skip(case.skip)
+    if not has_typing and 'typing' in case.path:
+        pytest.skip('Needs the typing module installed to run this test.')
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
     case.run(assert_case_equal, environment)
