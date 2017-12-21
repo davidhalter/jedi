@@ -380,9 +380,11 @@ class Importer(object):
 
         if isinstance(module_path, ImplicitNSInfo):
             from jedi.evaluate.context.namespace import ImplicitNamespaceContext
-            fullname, paths = module_path.name, module_path.paths
-            module = ImplicitNamespaceContext(self._evaluator, fullname=fullname)
-            module.paths = paths
+            module = ImplicitNamespaceContext(
+                self._evaluator,
+                fullname=module_path.name,
+                paths=module_path.paths,
+            )
         elif module_file is not None or module_path.endswith(('.py', '.zip', '.egg')):
             module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
         else:
