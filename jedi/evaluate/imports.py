@@ -308,8 +308,16 @@ class Importer(object):
         except KeyError:
             pass
 
-        def _find_module(*args, **kwargs):
-            module_file, module_path, is_pkg = find_module(*args, **kwargs)
+        def _find_module(sys_path=None, **kwargs):
+            if sys_path is not None:
+                sys.path, temp = sys_path, sys.path
+            try:
+                module_file, module_path, is_pkg = find_module(**kwargs)
+            except ImportError:
+                return None, None, None
+            finally:
+                if sys_path is not None:
+                    sys.path = temp
 
             code = None
             if is_pkg:
@@ -355,30 +363,29 @@ class Importer(object):
                 for path in paths:
                     # At the moment we are only using one path. So this is
                     # not important to be correct.
-                    try:
-                        if not isinstance(path, list):
-                            path = [path]
-                        code, module_path, is_pkg = \
-                            _find_module(import_parts[-1], path, fullname=module_name)
+                    if not isinstance(path, list):
+                        path = [path]
+                    code, module_path, is_pkg = _find_module(
+                        string=import_parts[-1],
+                        path=path,
+                        fullname=module_name
+                    )
+                    if module_path is not None:
                         break
-                    except ImportError:
-                        module_path = None
-                if module_path is None:
+                else:
                     _add_error(self.module_context, import_path[-1])
                     return NO_CONTEXTS
         else:
             parent_module = None
-            try:
-                debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
-                # Override the sys.path. It works only good that way.
-                # Injecting the path directly into `find_module` did not work.
-                sys.path, temp = sys_path, sys.path
-                try:
-                    code, module_path, is_pkg = \
-                        _find_module(import_parts[-1], fullname=module_name)
-                finally:
-                    sys.path = temp
-            except ImportError:
+            debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
+            # Override the sys.path. It works only good that way.
+            # Injecting the path directly into `find_module` did not work.
+            code, module_path, is_pkg = _find_module(
+                string=import_parts[-1],
+                fullname=module_name,
+                sys_path=sys_path,
+            )
+            if module_path is None:
                 # The module is not a package.
                 _add_error(self.module_context, import_path[-1])
                 return NO_CONTEXTS
