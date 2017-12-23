@@ -308,6 +308,23 @@ class Importer(object):
         except KeyError:
             pass
 
+        def _find_module(*args, **kwargs):
+            module_file, module_path, is_pkg = find_module(*args, **kwargs)
+
+            code = None
+            if is_pkg:
+                # In this case, we don't have a file yet. Search for the
+                # __init__ file.
+                if module_path.endswith(('.zip', '.egg')):
+                    code = module_file.loader.get_source(module_name)
+                else:
+                    module_path = get_init_path(module_path)
+            elif module_file:
+                code = module_file.read()
+                module_file.close()
+
+            return code, module_path, is_pkg
+
         if len(import_path) > 1:
             # This is a recursive way of importing that works great with
             # the module cache.
@@ -341,8 +358,8 @@ class Importer(object):
                     try:
                         if not isinstance(path, list):
                             path = [path]
-                        module_file, module_path, is_pkg = \
-                            find_module(import_parts[-1], path, fullname=module_name)
+                        code, module_path, is_pkg = \
+                            _find_module(import_parts[-1], path, fullname=module_name)
                         break
                     except ImportError:
                         module_path = None
@@ -357,26 +374,14 @@ class Importer(object):
                 # Injecting the path directly into `find_module` did not work.
                 sys.path, temp = sys_path, sys.path
                 try:
-                    module_file, module_path, is_pkg = \
-                        find_module(import_parts[-1], fullname=module_name)
+                    code, module_path, is_pkg = \
+                        _find_module(import_parts[-1], fullname=module_name)
                 finally:
                     sys.path = temp
             except ImportError:
                 # The module is not a package.
                 _add_error(self.module_context, import_path[-1])
                 return NO_CONTEXTS
-
-        code = None
-        if is_pkg:
-            # In this case, we don't have a file yet. Search for the
-            # __init__ file.
-            if module_path.endswith(('.zip', '.egg')):
-                code = module_file.loader.get_source(module_name)
-            else:
-                module_path = get_init_path(module_path)
-        elif module_file:
-            code = module_file.read()
-            module_file.close()
 
         if isinstance(module_path, ImplicitNSInfo):
             from jedi.evaluate.context.namespace import ImplicitNamespaceContext
@@ -385,7 +390,7 @@ class Importer(object):
                 fullname=module_path.name,
                 paths=module_path.paths,
             )
-        elif module_file is not None or module_path.endswith(('.py', '.zip', '.egg')):
+        elif code is not None or module_path.endswith(('.py', '.zip', '.egg')):
             module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
         else:
             module = compiled.load_module(self._evaluator, path=module_path, sys_path=sys_path)
