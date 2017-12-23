@@ -11,7 +11,6 @@ correct implementation is delegated to _compatibility.
 This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
-import imp
 import os
 import pkgutil
 import sys
@@ -21,7 +20,7 @@ from parso.tree import search_ancestor
 from parso.cache import parser_cache
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import find_module, unicode, ImplicitNSInfo
+from jedi._compatibility import unicode, ImplicitNSInfo
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import sys_path
@@ -137,18 +136,6 @@ def _add_error(context, name, message=None):
         analysis.add(context, 'import-error', name, message)
     else:
         debug.warning('ImportError without origin: ' + message)
-
-
-def get_init_path(directory_path):
-    """
-    The __init__ file can be searched in a directory. If found return it, else
-    None.
-    """
-    for suffix, _, _ in imp.get_suffixes():
-        path = os.path.join(directory_path, '__init__' + suffix)
-        if os.path.exists(path):
-            return path
-    return None
 
 
 class ImportName(AbstractNameDefinition):
@@ -308,31 +295,6 @@ class Importer(object):
         except KeyError:
             pass
 
-        def _find_module(sys_path=None, **kwargs):
-            if sys_path is not None:
-                sys.path, temp = sys_path, sys.path
-            try:
-                module_file, module_path, is_pkg = find_module(**kwargs)
-            except ImportError:
-                return None, None, None
-            finally:
-                if sys_path is not None:
-                    sys.path = temp
-
-            code = None
-            if is_pkg:
-                # In this case, we don't have a file yet. Search for the
-                # __init__ file.
-                if module_path.endswith(('.zip', '.egg')):
-                    code = module_file.loader.get_source(module_name)
-                else:
-                    module_path = get_init_path(module_path)
-            elif module_file:
-                code = module_file.read()
-                module_file.close()
-
-            return code, module_path, is_pkg
-
         if len(import_path) > 1:
             # This is a recursive way of importing that works great with
             # the module cache.
@@ -365,10 +327,10 @@ class Importer(object):
                     # not important to be correct.
                     if not isinstance(path, list):
                         path = [path]
-                    code, module_path, is_pkg = _find_module(
+                    code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
                         string=import_parts[-1],
                         path=path,
-                        fullname=module_name
+                        full_name=module_name
                     )
                     if module_path is not None:
                         break
@@ -380,9 +342,9 @@ class Importer(object):
             debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
             # Override the sys.path. It works only good that way.
             # Injecting the path directly into `find_module` did not work.
-            code, module_path, is_pkg = _find_module(
+            code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
                 string=import_parts[-1],
-                fullname=module_name,
+                full_name=module_name,
                 sys_path=sys_path,
             )
             if module_path is None:
