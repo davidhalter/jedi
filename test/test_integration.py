@@ -34,7 +34,9 @@ unspecified = %s
 def test_completion(case, monkeypatch, environment, has_typing):
     if case.skip is not None:
         pytest.skip(case.skip)
-    if not has_typing and 'typing' in case.path:
+
+    _CONTAINS_TYPING = ('pep0484_typing', 'pep0484_comments', 'pep0526_variables')
+    if not has_typing and any(x in case.path for x in _CONTAINS_TYPING):
         pytest.skip('Needs the typing module installed to run this test.')
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
