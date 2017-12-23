@@ -14,7 +14,7 @@ import weakref
 import pickle
 from functools import partial
 
-from jedi._compatibility import queue
+from jedi._compatibility import queue, is_py3
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
@@ -33,6 +33,13 @@ def get_subprocess(executable):
     except KeyError:
         sub = _subprocesses[executable] = _CompiledSubprocess(executable)
         return sub
+
+
+def _pickle_load(file):
+    if is_py3:
+        return pickle.load(file, encoding='bytes')
+    else:
+        return pickle.load(file)
 
 
 def _get_function(name):
@@ -138,7 +145,7 @@ class _Subprocess(object):
         data = evaluator_id, function, args, kwargs
         pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
         self._process.stdin.flush()
-        is_exception, result = pickle.load(self._process.stdout)
+        is_exception, result = _pickle_load(self._process.stdout)
         if is_exception:
             raise result
         return result
@@ -237,7 +244,7 @@ class Listener(object):
 
         while True:
             try:
-                payload = pickle.load(stdin)
+                payload = _pickle_load(stdin)
             except EOFError:
                 # It looks like the parent process closed. Don't make a big fuss
                 # here and just exit.
