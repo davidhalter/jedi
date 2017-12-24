@@ -310,11 +310,12 @@ class CompiledObjectFilter(AbstractFilter):
         """
         To remove quite a few access calls we introduced the callback here.
         """
-        try:
-            if not allowed_getattr_callback():
-                return [self._get_cached_name(name, is_empty=True)]
-        except AttributeError:
+        has_attribute, is_descriptor = allowed_getattr_callback()
+        if not has_attribute:
             return []
+
+        if is_descriptor:
+            return [self._get_cached_name(name, is_empty=True)]
 
         if self._is_instance and name not in dir_callback():
             return []

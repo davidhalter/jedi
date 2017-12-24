@@ -275,17 +275,18 @@ class DirectObjectAccess(object):
             return False
 
     def is_allowed_getattr(self, name):
+        # TODO this API is ugly.
         try:
             attr, is_get_descriptor = getattr_static(self._obj, name)
         except AttributeError:
-            raise
+            return False, False
         else:
             if is_get_descriptor \
                     and not type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
                 # In case of descriptors that have get methods we cannot return
                 # it's value, because that would mean code execution.
-                return False
-        return True
+                return True, True
+        return True, False
 
     def getattr(self, name, default=_sentinel):
         try:
