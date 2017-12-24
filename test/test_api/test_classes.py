@@ -18,52 +18,52 @@ def test_is_keyword():
     assert len(results) == 1 and results[0].is_keyword is False
 
 
-def make_definitions():
-    """
-    Return a list of definitions for parametrized tests.
+def test_basedefinition_type():
+    def make_definitions():
+        """
+        Return a list of definitions for parametrized tests.
 
-    :rtype: [jedi.api_classes.BaseDefinition]
-    """
-    source = dedent("""
-    import sys
+        :rtype: [jedi.api_classes.BaseDefinition]
+        """
+        source = dedent("""
+        import sys
 
-    class C:
-        pass
+        class C:
+            pass
 
-    x = C()
+        x = C()
 
-    def f():
-        pass
+        def f():
+            pass
 
-    def g():
-        yield
+        def g():
+            yield
 
-    h = lambda: None
-    """)
+        h = lambda: None
+        """)
 
-    definitions = []
-    definitions += names(source)
+        definitions = []
+        definitions += names(source)
 
-    source += dedent("""
-    variable = sys or C or x or f or g or g() or h""")
-    lines = source.splitlines()
-    script = Script(source, len(lines), len('variable'), None)
-    definitions += script.goto_definitions()
+        source += dedent("""
+        variable = sys or C or x or f or g or g() or h""")
+        lines = source.splitlines()
+        script = Script(source, len(lines), len('variable'), None)
+        definitions += script.goto_definitions()
 
-    script2 = Script(source, 4, len('class C'), None)
-    definitions += script2.usages()
+        script2 = Script(source, 4, len('class C'), None)
+        definitions += script2.usages()
 
-    source_param = "def f(a): return a"
-    script_param = Script(source_param, 1, len(source_param), None)
-    definitions += script_param.goto_assignments()
+        source_param = "def f(a): return a"
+        script_param = Script(source_param, 1, len(source_param), None)
+        definitions += script_param.goto_assignments()
 
-    return definitions
+        return definitions
 
 
-@pytest.mark.parametrize('definition', make_definitions())
-def test_basedefinition_type(definition):
-    assert definition.type in ('module', 'class', 'instance', 'function',
-                               'generator', 'statement', 'import', 'param')
+    for definition in make_definitions():
+        assert definition.type in ('module', 'class', 'instance', 'function',
+                                   'generator', 'statement', 'import', 'param')
 
 
 def test_basedefinition_type_import():
