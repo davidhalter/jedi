@@ -296,7 +296,7 @@ class DirectObjectAccess(object):
             # -> just set it to None
             if default is _sentinel:
                 raise
-            return None
+            return default
 
     def get_safe_value(self):
         if type(self._obj) in (bool, bytes, float, int, str, unicode, slice):
@@ -404,6 +404,7 @@ class DirectObjectAccess(object):
         Used to return a couple of infos that are needed when accessing the sub
         objects of an objects
         """
+        # TODO is_allowed_getattr might raise an AttributeError
         tuples = dict(
             (force_unicode(name), self.is_allowed_getattr(name))
             for name in self.dir()
