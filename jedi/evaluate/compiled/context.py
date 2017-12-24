@@ -236,7 +236,7 @@ class CompiledName(AbstractNameDefinition):
 
 
 class SignatureParamName(AbstractNameDefinition):
-    api_type = 'param'
+    api_type = u'param'
 
     def __init__(self, compiled_obj, signature_param):
         self.parent_context = compiled_obj.parent_context
@@ -259,7 +259,7 @@ class SignatureParamName(AbstractNameDefinition):
 
 
 class UnresolvableParamName(AbstractNameDefinition):
-    api_type = 'param'
+    api_type = u'param'
 
     def __init__(self, compiled_obj, name):
         self.parent_context = compiled_obj.parent_context

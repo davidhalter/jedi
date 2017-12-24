@@ -18,7 +18,7 @@ class _ModuleAttributeName(AbstractNameDefinition):
     """
     For module attributes like __file__, __str__ and so on.
     """
-    api_type = 'instance'
+    api_type = u'instance'
 
     def __init__(self, parent_module, string_name):
         self.parent_context = parent_module
@@ -42,7 +42,7 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
 
 
 class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
-    api_type = 'module'
+    api_type = u'module'
     parent_context = None
 
     def __init__(self, evaluator, module_node, path):

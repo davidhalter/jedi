@@ -39,7 +39,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
-    api_type = 'function'
+    api_type = u'function'
 
     def __init__(self, evaluator, parent_context, funcdef):
         """ This should not be called directly """

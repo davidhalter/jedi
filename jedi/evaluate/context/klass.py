@@ -89,7 +89,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
     """
-    api_type = 'class'
+    api_type = u'class'
 
     def __init__(self, evaluator, parent_context, classdef):
         super(ClassContext, self).__init__(evaluator, parent_context=parent_context)

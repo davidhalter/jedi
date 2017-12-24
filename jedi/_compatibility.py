@@ -220,14 +220,14 @@ except AttributeError:
     encoding = 'ascii'
 
 
-def u(string):
+def u(string, errors='strict'):
     """Cast to unicode DAMMIT!
     Written because Python2 repr always implicitly casts to a string, so we
     have to cast back to a unicode (and we now that we always deal with valid
     unicode, because we check that in the beginning).
     """
     if isinstance(string, bytes):
-        return str(string, encoding='UTF-8')
+        return unicode(string, encoding='UTF-8', errors=errors)
     return string
 
 

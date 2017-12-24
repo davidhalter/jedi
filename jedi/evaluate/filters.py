@@ -108,7 +108,7 @@ class TreeNameDefinition(AbstractTreeName):
 
 
 class ParamName(AbstractTreeName):
-    api_type = 'param'
+    api_type = u'param'
 
     def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
@@ -281,7 +281,7 @@ class DictFilter(AbstractFilter):
 
 class _BuiltinMappedMethod(Context):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
-    api_type = 'function'
+    api_type = u'function'
 
     def __init__(self, builtin_context, method, builtin_func):
         super(_BuiltinMappedMethod, self).__init__(
@@ -304,7 +304,7 @@ class SpecialMethodFilter(DictFilter):
     classes like Generator (for __next__, etc).
     """
     class SpecialMethodName(AbstractNameDefinition):
-        api_type = 'function'
+        api_type = u'function'
 
         def __init__(self, parent_context, string_name, callable_, builtin_context):
             self.parent_context = parent_context

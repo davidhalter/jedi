@@ -5,7 +5,7 @@ import operator as op
 from collections import namedtuple
 
 from jedi import debug
-from jedi._compatibility import unicode, is_py3, is_py34, builtins, py_version
+from jedi._compatibility import unicode, is_py3, is_py34, builtins, py_version, u
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.utils import dotted_from_fs_path
 
@@ -192,7 +192,7 @@ class DirectObjectAccess(object):
             return None
 
     def py__doc__(self, include_call_signature=False):
-        return inspect.getdoc(self._obj) or ''
+        return u(inspect.getdoc(self._obj), errors='replace') or u''
 
     def py__name__(self):
         if not _is_class_instance(self._obj) or \
@@ -300,14 +300,14 @@ class DirectObjectAccess(object):
     def get_api_type(self):
         obj = self._obj
         if self.is_class():
-            return 'class'
+            return u'class'
         elif inspect.ismodule(obj):
-            return 'module'
+            return u'module'
         elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
                 or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
-            return 'function'
+            return u'function'
         # Everything else...
-        return 'instance'
+        return u'instance'
 
     def get_access_path_tuples(self):
         return [

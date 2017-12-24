@@ -39,7 +39,7 @@ class AbstractInstanceContext(Context):
     """
     This class is used to evaluate instances.
     """
-    api_type = 'instance'
+    api_type = u'instance'
     function_execution_cls = InstanceFunctionExecution
 
     def __init__(self, evaluator, parent_context, class_context, var_args):

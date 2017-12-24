@@ -27,7 +27,7 @@ class ImplicitNamespaceContext(TreeContext):
     """
     Provides support for implicit namespace packages
     """
-    api_type = 'module'
+    api_type = u'module'
     parent_context = None
 
     def __init__(self, evaluator, fullname, paths):

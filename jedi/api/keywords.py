@@ -73,7 +73,7 @@ keywords_only_valid_as_leaf = (
 
 
 class KeywordName(AbstractNameDefinition):
-    api_type = 'keyword'
+    api_type = u'keyword'
 
     def __init__(self, evaluator, name):
         self.evaluator = evaluator
@@ -88,7 +88,7 @@ class KeywordName(AbstractNameDefinition):
 
 
 class Keyword(object):
-    api_type = 'keyword'
+    api_type = u'keyword'
 
     def __init__(self, evaluator, name, pos):
         self.name = KeywordName(evaluator, name)

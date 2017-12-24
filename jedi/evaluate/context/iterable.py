@@ -41,7 +41,7 @@ from jedi.parser_utils import get_comp_fors
 
 class AbstractIterable(Context):
     builtin_methods = {}
-    api_type = 'instance'
+    api_type = u'instance'
 
     def __init__(self, evaluator):
         super(AbstractIterable, self).__init__(evaluator, evaluator.builtins_module)
