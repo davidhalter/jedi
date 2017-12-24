@@ -1,7 +1,6 @@
 import tempfile
 import shutil
 import os
-import sys
 
 import pytest
 
@@ -37,6 +36,9 @@ def pytest_addoption(parser):
 
     parser.addoption("--warning-is-error", action='store_true',
                      help="Warnings are treated as errors.")
+
+    parser.addoption("--env", action='store',
+                     help="Execute the tests in that environment (e.g. 35 for python3.5).")
 
 
 def pytest_configure(config):
@@ -82,8 +84,12 @@ def clean_jedi_cache(request):
 
 
 @pytest.fixture(scope='session')
-def environment():
-    version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
+def environment(request):
+    if request is None:
+        version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
+    else:
+        version = request.config.option.env
+
     if int(version) == py_version:
         return get_default_environment()
 
