@@ -226,12 +226,25 @@ def u(string):
     have to cast back to a unicode (and we now that we always deal with valid
     unicode, because we check that in the beginning).
     """
-    if is_py3:
-        return str(string)
-
-    if not isinstance(string, unicode):
-        return unicode(str(string), 'UTF-8')
+    if isinstance(string, bytes):
+        return str(string, encoding='UTF-8')
     return string
+
+
+def cast_path(obj):
+    """
+    Take a bytes or str path and cast it to unicode.
+
+    Apparently it is perfectly fine to pass both byte and unicode objects into
+    the sys.path. This probably means that byte paths are normal at other
+    places as well.
+
+    Since this just really complicates everything and Python 2.7 will be EOL
+    soon anyway, just go with always strings.
+    """
+    return unicode(obj, encoding='utf-8', errors='replace') \
+           if isinstance(obj, bytes) else obj
+
 
 try:
     import builtins  # module name in python 3

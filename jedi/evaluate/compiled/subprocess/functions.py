@@ -1,12 +1,14 @@
 import sys
 import os
 import imp
+
+from jedi._compatibility import find_module, cast_path
 from jedi.evaluate.compiled import access
-from jedi._compatibility import find_module
+from jedi import parser_utils
 
 
 def get_sys_path():
-    return sys.path
+    return list(map(cast_path, sys.path))
 
 
 def load_module(evaluator, **kwargs):
@@ -51,7 +53,7 @@ def get_module_info(evaluator, sys_path=None, full_name=None, **kwargs):
         code = module_file.read()
         module_file.close()
 
-    return code, module_path, is_pkg
+    return code, cast_path(module_path), is_pkg
 
 
 def _get_init_path(directory_path):
@@ -64,3 +66,7 @@ def _get_init_path(directory_path):
         if os.path.exists(path):
             return path
     return None
+
+
+def safe_literal_eval(evaluator, value):
+    return parser_utils.safe_literal_eval(value)

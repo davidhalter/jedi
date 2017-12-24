@@ -173,7 +173,7 @@ def eval_atom(context, atom):
         )
 
     elif isinstance(atom, tree.Literal):
-        string = parser_utils.safe_literal_eval(atom.value)
+        string = context.evaluator.compiled_subprocess.safe_literal_eval(atom.value)
         return ContextSet(compiled.create_simple_object(context.evaluator, string))
     else:
         c = atom.children
