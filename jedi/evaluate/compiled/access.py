@@ -310,12 +310,8 @@ class DirectObjectAccess(object):
         return u'instance'
 
     def get_access_path_tuples(self):
-        return [
-            (
-                u(getattr(o, '__name__', None), errors='replace'),
-                create_access(self._evaluator, o)
-            ) for o in self._get_objects_path()
-        ]
+        accesses = [create_access(self._evaluator, o) for o in self._get_objects_path()]
+        return [(access.py__name__(), access) for access in accesses]
 
     def _get_objects_path(self):
         def get():
