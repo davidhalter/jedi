@@ -8,7 +8,6 @@ import re
 from parso.cache import parser_cache
 from parso.python.tree import search_ancestor
 
-from jedi._compatibility import u
 from jedi import settings
 from jedi.evaluate.utils import ignored, unite
 from jedi.cache import memoize_method
@@ -260,7 +259,7 @@ class BaseDefinition(object):
     @property
     def description(self):
         """A textual description of the object."""
-        return u(self._name.string_name)
+        return self._name.string_name
 
     @property
     def full_name(self):
@@ -526,7 +525,7 @@ class Definition(BaseDefinition):
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
-            return typ + ' ' + u(self._name.string_name)
+            return typ + ' ' + self._name.string_name
         elif typ == 'param':
             code = search_ancestor(tree_name, 'param').get_code(
                 include_prefix=False,
