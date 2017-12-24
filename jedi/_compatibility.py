@@ -245,6 +245,12 @@ def cast_path(obj):
     return u(obj, errors='replace')
 
 
+def force_unicode(obj):
+    # Intentionally don't mix those two up, because those two code paths might
+    # be different in the future (maybe windows?).
+    return cast_path(obj)
+
+
 try:
     import builtins  # module name in python 3
 except ImportError:

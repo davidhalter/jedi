@@ -5,7 +5,8 @@ import operator as op
 from collections import namedtuple
 
 from jedi import debug
-from jedi._compatibility import unicode, is_py3, is_py34, builtins, py_version, u
+from jedi._compatibility import unicode, is_py3, is_py34, builtins, \
+    py_version, force_unicode, u
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.utils import dotted_from_fs_path
 
@@ -168,6 +169,10 @@ def create_access_path(evaluator, obj):
     return AccessPath(access.get_access_path_tuples())
 
 
+def _force_unicode_decorator(func):
+    return lambda *args, **kwargs: force_unicode(func(*args, **kwargs))
+
+
 class DirectObjectAccess(object):
     def __init__(self, evaluator, obj):
         self._evaluator = evaluator
@@ -192,7 +197,7 @@ class DirectObjectAccess(object):
             return None
 
     def py__doc__(self, include_call_signature=False):
-        return u(inspect.getdoc(self._obj), errors='replace') or u''
+        return force_unicode(inspect.getdoc(self._obj)) or u''
 
     def py__name__(self):
         if not _is_class_instance(self._obj) or \
@@ -207,7 +212,7 @@ class DirectObjectAccess(object):
                 return None
 
         try:
-            return u(cls.__name__, errors='replace')
+            return force_unicode(cls.__name__)
         except AttributeError:
             return None
 
@@ -240,6 +245,7 @@ class DirectObjectAccess(object):
     def py__bases__(self):
         return [self._create_access_path(base) for base in self._obj.__bases__]
 
+    @_force_unicode_decorator
     def get_repr(self):
         # Try to avoid execution of the property.
         type_ = type(self._obj)
@@ -399,7 +405,7 @@ class DirectObjectAccess(object):
         objects of an objects
         """
         tuples = dict(
-            (u(name, errors='replace'), self.is_allowed_getattr(name))
+            (force_unicode(name), self.is_allowed_getattr(name))
             for name in self.dir()
         )
         return self.needs_type_completions(), tuples
