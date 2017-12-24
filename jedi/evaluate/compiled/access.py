@@ -207,7 +207,7 @@ class DirectObjectAccess(object):
                 return None
 
         try:
-            return u(cls.__name__)
+            return u(cls.__name__, errors='replace')
         except AttributeError:
             return None
 
@@ -399,7 +399,7 @@ class DirectObjectAccess(object):
         objects of an objects
         """
         tuples = dict(
-            (name, self.is_allowed_getattr(name))
+            (u(name, errors='replace'), self.is_allowed_getattr(name))
             for name in self.dir()
         )
         return self.needs_type_completions(), tuples
