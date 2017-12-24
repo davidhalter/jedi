@@ -125,13 +125,14 @@ class BaseDefinition(object):
 
         Finally, here is what you can get from :attr:`type`:
 
-        >>> defs[0].type
+        >>> defs = [str(d.type) for d in defs]  # It's unicode and in Py2 has u before it.
+        >>> defs[0]
         'module'
-        >>> defs[1].type
+        >>> defs[1]
         'class'
-        >>> defs[2].type
+        >>> defs[2]
         'instance'
-        >>> defs[3].type
+        >>> defs[3]
         'function'
 
         """
