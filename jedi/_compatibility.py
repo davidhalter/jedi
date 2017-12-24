@@ -242,8 +242,7 @@ def cast_path(obj):
     Since this just really complicates everything and Python 2.7 will be EOL
     soon anyway, just go with always strings.
     """
-    return unicode(obj, encoding='utf-8', errors='replace') \
-           if isinstance(obj, bytes) else obj
+    return u(obj, errors='replace')
 
 
 try:

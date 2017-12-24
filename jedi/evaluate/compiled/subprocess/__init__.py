@@ -284,7 +284,7 @@ class AccessHandle(object):
         if name in ('id', 'access') or name.startswith('_'):
             raise AttributeError("Something went wrong with unpickling")
 
-        #print >> sys.stderr, name
+        #if not is_py3: print >> sys.stderr, name
         #print('getattr', name, file=sys.stderr)
         return partial(self._workaround, name)
 

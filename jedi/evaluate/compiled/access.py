@@ -207,7 +207,7 @@ class DirectObjectAccess(object):
                 return None
 
         try:
-            return cls.__name__
+            return u(cls.__name__)
         except AttributeError:
             return None
 
@@ -311,8 +311,10 @@ class DirectObjectAccess(object):
 
     def get_access_path_tuples(self):
         return [
-            (getattr(o, '__name__', None), create_access(self._evaluator, o))
-            for o in self._get_objects_path()
+            (
+                u(getattr(o, '__name__', None), errors='replace'),
+                create_access(self._evaluator, o)
+            ) for o in self._get_objects_path()
         ]
 
     def _get_objects_path(self):
