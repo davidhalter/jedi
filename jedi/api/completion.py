@@ -208,7 +208,7 @@ class Completion:
 
     def _get_keyword_completion_names(self, keywords_):
         for k in keywords_:
-            yield keywords.keyword(self._evaluator, k).name
+            yield keywords.KeywordName(self._evaluator, k)
 
     def _global_completions(self):
         context = get_user_scope(self._module_context, self._position)
