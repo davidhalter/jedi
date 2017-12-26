@@ -299,7 +299,6 @@ class CompiledObjectFilter(AbstractFilter):
         self._is_instance = is_instance
 
     def get(self, name):
-        name = str(name)
         return self._get(
             name,
             lambda: self._compiled_object.access_handle.is_allowed_getattr(name),
