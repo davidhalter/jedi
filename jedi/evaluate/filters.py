@@ -163,7 +163,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
     def get(self, name):
         try:
-            names = self._used_names[str(name)]
+            names = self._used_names[name]
         except KeyError:
             return []
 
@@ -266,7 +266,7 @@ class DictFilter(AbstractFilter):
 
     def get(self, name):
         try:
-            value = self._convert(name, self._dct[str(name)])
+            value = self._convert(name, self._dct[name])
         except KeyError:
             return []
 
