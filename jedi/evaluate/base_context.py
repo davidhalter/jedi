@@ -144,10 +144,6 @@ class Context(BaseContext):
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
 
-        return self.evaluator.find_types(
-            self, name_or_str, name_context, position, search_global, is_goto,
-            analysis_errors)
-
     def create_context(self, node, node_is_context=False, node_is_object=False):
         return self.evaluator.create_context(self, node, node_is_context, node_is_object)
 
