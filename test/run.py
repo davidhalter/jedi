@@ -138,7 +138,7 @@ grammar36 = parso.load_grammar(version='3.6')
 
 class IntegrationTestCase(object):
     def __init__(self, test_type, correct, line_nr, column, start, line,
-                 path=None, skip=None):
+                 path=None, skip_version_info=None):
         self.test_type = test_type
         self.correct = correct
         self.line_nr = line_nr
@@ -146,7 +146,32 @@ class IntegrationTestCase(object):
         self.start = start
         self.line = line
         self.path = path
-        self.skip = skip
+        self._skip_version_info = skip_version_info
+        self._skip = None
+
+    def set_skip(self, reason):
+        self._skip = reason
+
+    def get_skip_reason(self, environment):
+        if self._skip is not None:
+            return self._skip
+
+        if self._skip_version_info is None:
+            return
+
+        comp_map = {
+            '==': 'eq',
+            '<=': 'le',
+            '>=': 'ge',
+            '<': 'lt',
+            '>': 'gt',
+        }
+        min_version, operator_ = self._skip_version_info
+        operation = getattr(operator, comp_map[operator_])
+        if not operation(environment.version_info[:2], min_version):
+            return "Python version %s %s.%s" % (
+                operator_, min_version[0], min_version[1]
+            )
 
     @property
     def module_name(self):
@@ -249,34 +274,24 @@ class IntegrationTestCase(object):
 
 
 def skip_python_version(line):
-    comp_map = {
-        '==': 'eq',
-        '<=': 'le',
-        '>=': 'ge',
-        '<': 'lt',
-        '>': 'gt',
-    }
     # check for python minimal version number
     match = re.match(r" *# *python *([<>]=?|==) *(\d+(?:\.\d+)?)$", line)
     if match:
-        minimal_python_version = tuple(
-            map(int, match.group(2).split(".")))
-        operation = getattr(operator, comp_map[match.group(1)])
-        if not operation(sys.version_info, minimal_python_version):
-            return "Minimal python version %s %s" % (match.group(1), match.group(2))
-
+        minimal_python_version = tuple(map(int, match.group(2).split(".")))
+        return minimal_python_version, match.group(1)
     return None
 
 
 def collect_file_tests(path, lines, lines_to_execute):
     def makecase(t):
         return IntegrationTestCase(t, correct, line_nr, column,
-                                   start, line, path=path, skip=skip)
+                                   start, line, path=path,
+                                   skip_version_info=skip_version_info)
 
     start = None
     correct = None
     test_type = None
-    skip = None
+    skip_version_info = None
     for line_nr, line in enumerate(lines, 1):
         if correct is not None:
             r = re.match('^(\d+)\s*(.*)$', correct)
@@ -296,7 +311,7 @@ def collect_file_tests(path, lines, lines_to_execute):
                 yield makecase(TEST_DEFINITIONS)
             correct = None
         else:
-            skip = skip or skip_python_version(line)
+            skip_version_info = skip_version_info or skip_python_version(line)
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
                 # test_type is ? for completion and ! for goto_assignments
@@ -345,7 +360,7 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                                            lines_to_execute):
                 case.source = source
                 if skip:
-                    case.skip = skip
+                    case.set_skip(skip)
                 yield case
 
 
@@ -421,7 +436,7 @@ if __name__ == '__main__':
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
-        if c.skip:
+        if c.get_skip_reason():
             continue
         if current != c.path:
             file_change(current, count, fails)

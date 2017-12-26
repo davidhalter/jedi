@@ -32,8 +32,9 @@ unspecified = %s
 
 
 def test_completion(case, monkeypatch, environment, has_typing):
-    if case.skip is not None:
-        pytest.skip(case.skip)
+    skip_reason = case.get_skip_reason(environment)
+    if skip_reason is not None:
+        pytest.skip(skip_reason)
 
     _CONTAINS_TYPING = ('pep0484_typing', 'pep0484_comments', 'pep0526_variables')
     if not has_typing and any(x in case.path for x in _CONTAINS_TYPING):
