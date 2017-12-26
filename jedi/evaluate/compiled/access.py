@@ -265,7 +265,7 @@ class DirectObjectAccess(object):
         return inspect.ismethoddescriptor(self._obj)
 
     def dir(self):
-        return dir(self._obj)
+        return list(map(force_unicode, dir(self._obj)))
 
     def has_iter(self):
         try:
