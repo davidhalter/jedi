@@ -190,7 +190,11 @@ def is_compiled(context):
 
 
 def is_string(context):
-    return is_compiled(context) and isinstance(context.get_safe_value(default=None), (str, unicode))
+    if context.evaluator.environment.version_info.major == 2:
+        str_classes = (str, unicode, bytes)
+    else:
+        str_classes = (str,)
+    return is_compiled(context) and isinstance(context.get_safe_value(default=None), str_classes)
 
 
 def is_literal(context):

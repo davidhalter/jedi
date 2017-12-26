@@ -22,6 +22,7 @@ It is important to note that:
 """
 from jedi import debug
 from jedi import settings
+from jedi._compatibility import force_unicode
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate import recursion
@@ -298,10 +299,11 @@ class SequenceLiteralContext(ArrayMixin, AbstractIterable):
     def py__getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.array_type == 'dict':
+            compiled_obj_index = compiled.create_simple_object(self.evaluator, index)
             for key, value in self._items():
                 for k in self._defining_context.eval_node(key):
                     if isinstance(k, compiled.CompiledObject) \
-                            and index == k.get_safe_value(default=None):
+                            and k.execute_operation(compiled_obj_index, '==').get_safe_value():
                         return self._defining_context.eval_node(value)
             raise KeyError('No key found in dictionary %s.' % self)
 
