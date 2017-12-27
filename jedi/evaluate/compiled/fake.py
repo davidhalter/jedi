@@ -29,17 +29,18 @@ class FakeDoesNotExist(Exception):
     pass
 
 
-def _load_faked_module(grammar, module_name):
-    if module_name == '__builtin__' and not is_py3:
-        module_name = 'builtins'
-
+def _load_faked_module(evaluator, module_name):
     try:
         return fake_modules[module_name]
     except KeyError:
         pass
 
+    check_module_name = module_name
+    if module_name == '__builtin__' and evaluator.environment.version_info.major == 2:
+        check_module_name = 'builtins'
+
     try:
-        path = _path_dict[module_name]
+        path = _path_dict[check_module_name]
     except KeyError:
         fake_modules[module_name] = None
         return
@@ -47,9 +48,9 @@ def _load_faked_module(grammar, module_name):
     with open(path) as f:
         source = f.read()
 
-    fake_modules[module_name] = m = grammar.parse(unicode(source))
+    fake_modules[module_name] = m = evaluator.latest_grammar.parse(unicode(source))
 
-    if module_name == 'builtins' and not is_py3:
+    if check_module_name != module_name:
         # There are two implementations of `open` for either python 2/3.
         # -> Rename the python2 version (`look at fake/builtins.pym`).
         open_func = _search_scope(m, 'open')
@@ -74,8 +75,8 @@ def get_faked_with_parent_context(parent_context, name):
     raise FakeDoesNotExist
 
 
-def get_faked_module(grammar, string_name):
-    module = _load_faked_module(grammar, string_name)
+def get_faked_module(evaluator, string_name):
+    module = _load_faked_module(evaluator, string_name)
     if module is None:
         raise FakeDoesNotExist
     return module

@@ -5,6 +5,7 @@ import re
 from functools import partial
 
 from jedi import debug
+from jedi._compatibility import force_unicode
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
@@ -313,6 +314,9 @@ class CompiledObjectFilter(AbstractFilter):
         if not has_attribute:
             return []
 
+        # Always use unicode objects in Python 2 from here.
+        name = force_unicode(name)
+
         if is_descriptor:
             return [self._get_cached_name(name, is_empty=True)]
 
@@ -442,7 +446,7 @@ def create_from_access_path(evaluator, access_path):
     for name, access in access_path.accesses:
         try:
             if parent_context is None:
-                faked = fake.get_faked_module(evaluator.latest_grammar, access_path.accesses[0][0])
+                faked = fake.get_faked_module(evaluator, access_path.accesses[0][0])
             else:
                 faked = fake.get_faked_with_parent_context(parent_context, name)
         except fake.FakeDoesNotExist:

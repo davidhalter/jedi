@@ -45,18 +45,6 @@ WrapperDescriptorType = type(set.__iter__)
 object_class_dict = type.__dict__["__dict__"].__get__(object)
 ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
 
-ALLOWED_DESCRIPTOR_ACCESS = (
-    types.FunctionType,
-    types.GetSetDescriptorType,
-    types.MemberDescriptorType,
-    MethodDescriptorType,
-    WrapperDescriptorType,
-    ClassMethodDescriptorType,
-    staticmethod,
-    classmethod,
-)
-
-
 def _a_generator(foo):
     """Used to have an object to return for generators."""
     yield 42
@@ -82,6 +70,32 @@ _OPERATORS = {
     '-': op.sub,
 }
 _OPERATORS.update(COMPARISON_OPERATORS)
+
+ALLOWED_DESCRIPTOR_ACCESS = (
+    types.FunctionType,
+    types.GetSetDescriptorType,
+    types.MemberDescriptorType,
+    MethodDescriptorType,
+    WrapperDescriptorType,
+    ClassMethodDescriptorType,
+    staticmethod,
+    classmethod,
+)
+
+
+def safe_getattr(obj, name, default=_sentinel):
+    try:
+        attr, is_get_descriptor = getattr_static(obj, name)
+    except AttributeError:
+        if default is _sentinel:
+            raise
+        return default
+    else:
+        if is_get_descriptor and type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
+            # In case of descriptors that have get methods we cannot return
+            # it's value, because that would mean code execution.
+            return getattr(obj, name)
+    return attr
 
 
 SignatureParam = namedtuple('SignatureParam', 'name has_default default has_annotation annotation')
@@ -247,13 +261,19 @@ class DirectObjectAccess(object):
 
     @_force_unicode_decorator
     def get_repr(self):
+        builtins = 'builtins', '__builtin__'
+
+        if inspect.ismodule(self._obj):
+            return repr(self._obj)
         # Try to avoid execution of the property.
+        if safe_getattr(self._obj, '__module__', default='') in builtins:
+            return repr(self._obj)
+
         type_ = type(self._obj)
         if type_ == type:
             return type.__repr__(self._obj)
 
-        builtins = 'builtins', '__builtin__'
-        if getattr_static(type_, '__module__', default='') in builtins:
+        if safe_getattr(type_, '__module__', default='') in builtins:
             # Allow direct execution of repr for builtins.
             return repr(self._obj)
         return object.__repr__(self._obj)
@@ -281,8 +301,7 @@ class DirectObjectAccess(object):
         except AttributeError:
             return False, False
         else:
-            if is_get_descriptor \
-                    and not type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
+            if is_get_descriptor and type(attr) not in ALLOWED_DESCRIPTOR_ACCESS:
                 # In case of descriptors that have get methods we cannot return
                 # it's value, because that would mean code execution.
                 return True, True

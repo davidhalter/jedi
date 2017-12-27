@@ -64,7 +64,7 @@ def _fix_forward_reference(context, node):
     if is_string(evaled_node):
         try:
             new_node = context.evaluator.grammar.parse(
-                _compatibility.unicode(evaled_node.get_safe_value()),
+                _compatibility.force_unicode(evaled_node.get_safe_value()),
                 start_symbol='eval_input',
                 error_recovery=False
             )
