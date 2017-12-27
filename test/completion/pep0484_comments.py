@@ -51,7 +51,7 @@ class Employee:
 # following tests.
 # python >= 2.7
 
-from typing import List
+from typing import List, Tuple
 x = []   # type: List[Employee]
 #? Employee()
 x[1]
@@ -107,3 +107,35 @@ aaa = some_extremely_long_function_name_that_doesnt_leave_room_for_hints() \
     # type: float # We should be able to put hints on the next line with a \
 #? float()
 aaa
+
+# Test instance methods
+class Dog:
+    def __init__(self, age, friends, name):
+        # type: (int, List[Tuple[str, Dog]], str) -> None
+        self.age = age
+        self.friends = friends
+        self.name = name
+
+    def friend_for_name(self, name):
+        # type: (str) -> Dog
+        for (friend_name, friend) in self.friends:
+            if friend_name == name:
+                return friend
+        raise ValueError()
+
+    def bark(self): pass
+
+buddy = Dog(1, [('buster', Dog(1, [], 'buster'))], 9)
+friend = buddy.friend_for_name('buster')
+# type of friend is determined by function return type
+#! 9 ['def bark']
+friend.bark()
+
+friend = buddy.friends[0][1]
+# type of friend is determined by function parameter type
+#! 9 ['def bark']
+friend.bark()
+
+# type is determined by function parameter type following nested generics
+#? str()
+friend.name
