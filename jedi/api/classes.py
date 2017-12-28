@@ -324,9 +324,9 @@ class BaseDefinition(object):
                     param_names = param_names[1:]
             elif isinstance(context, (instance.AbstractInstanceContext, ClassContext)):
                 if isinstance(context, ClassContext):
-                    search = '__init__'
+                    search = u'__init__'
                 else:
-                    search = '__call__'
+                    search = u'__call__'
                 names = context.get_function_slot_names(search)
                 if not names:
                     return []

@@ -21,7 +21,7 @@ class CheckAttribute(object):
     def __init__(self, func):
         self.func = func
         # Remove the py in front of e.g. py__call__.
-        self.check_name = func.__name__[2:]
+        self.check_name = force_unicode(func.__name__[2:])
 
     def __get__(self, instance, owner):
         if instance is None:

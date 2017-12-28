@@ -139,7 +139,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
             args = arguments.TreeArguments(self.evaluator, self, arglist)
             return [value for key, value in args.unpack() if key is None]
         else:
-            return [LazyKnownContext(compiled.builtin_from_name(self.evaluator, 'object'))]
+            return [LazyKnownContext(compiled.builtin_from_name(self.evaluator, u'object'))]
 
     def py__call__(self, params):
         from jedi.evaluate.context import TreeInstance
@@ -182,7 +182,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
         return []
 
     def get_param_names(self):
-        for name in self.get_function_slot_names('__init__'):
+        for name in self.get_function_slot_names(u'__init__'):
             for context_ in name.infer():
                 try:
                     method = context_.get_param_names

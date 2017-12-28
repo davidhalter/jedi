@@ -5,6 +5,7 @@ import copy
 
 from parso.python import tree
 
+from jedi._compatibility import force_unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
@@ -367,40 +368,41 @@ def _bool_to_context(evaluator, bool_):
 def _eval_comparison_part(evaluator, context, left, operator, right):
     l_is_num = is_number(left)
     r_is_num = is_number(right)
-    if operator == '*':
+    str_operator = force_unicode(str(operator.value))
+    if str_operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.AbstractIterable) or is_string(left):
             return ContextSet(left)
         elif isinstance(right, iterable.AbstractIterable) or is_string(right):
             return ContextSet(right)
-    elif operator == '+':
+    elif str_operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
-            return ContextSet(left.execute_operation(right, operator))
+            return ContextSet(left.execute_operation(right, str_operator))
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
             return ContextSet(iterable.MergedArray(evaluator, (left, right)))
-    elif operator == '-':
+    elif str_operator == '-':
         if l_is_num and r_is_num:
-            return ContextSet(left.execute_operation(right, operator))
-    elif operator == '%':
+            return ContextSet(left.execute_operation(right, str_operator))
+    elif str_operator == '%':
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
         return ContextSet(left)
-    elif operator in COMPARISON_OPERATORS:
+    elif str_operator in COMPARISON_OPERATORS:
         if is_compiled(left) and is_compiled(right):
             # Possible, because the return is not an option. Just compare.
             try:
-                return ContextSet(left.execute_operation(right, operator))
+                return ContextSet(left.execute_operation(right, str_operator))
             except TypeError:
                 # Could be True or False.
                 pass
         else:
-            if operator in ('is', '!=', '==', 'is not'):
-                operation = COMPARISON_OPERATORS[operator]
+            if str_operator in ('is', '!=', '==', 'is not'):
+                operation = COMPARISON_OPERATORS[str_operator]
                 bool_ = operation(left, right)
                 return ContextSet(_bool_to_context(evaluator, bool_))
 
         return ContextSet(_bool_to_context(evaluator, True), _bool_to_context(evaluator, False))
-    elif operator == 'in':
+    elif str_operator == 'in':
         return NO_CONTEXTS
 
     def check(obj):
@@ -409,7 +411,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
             obj.name.string_name in ('int', 'float')
 
     # Static analysis, one is a number, the other one is not.
-    if operator in ('+', '-') and l_is_num != r_is_num \
+    if str_operator in ('+', '-') and l_is_num != r_is_num \
             and not (check(left) or check(right)):
         message = "TypeError: unsupported operand type(s) for +: %s and %s"
         analysis.add(context, 'type-error-operation', operator,

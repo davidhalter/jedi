@@ -53,7 +53,7 @@ class AbstractInstanceContext(Context):
 
     @property
     def py__call__(self):
-        names = self.get_function_slot_names('__call__')
+        names = self.get_function_slot_names(u'__call__')
         if not names:
             # Means the Instance is not callable.
             raise AttributeError
@@ -89,7 +89,7 @@ class AbstractInstanceContext(Context):
     def py__get__(self, obj):
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
-        names = self.get_function_slot_names('__get__')
+        names = self.get_function_slot_names(u'__get__')
         if names:
             if isinstance(obj, AbstractInstanceContext):
                 return self.execute_function_slots(names, obj, obj.class_context)
@@ -118,7 +118,7 @@ class AbstractInstanceContext(Context):
 
     def py__getitem__(self, index):
         try:
-            names = self.get_function_slot_names('__getitem__')
+            names = self.get_function_slot_names(u'__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return NO_CONTEXTS
@@ -127,7 +127,7 @@ class AbstractInstanceContext(Context):
             return self.execute_function_slots(names, index_obj)
 
     def py__iter__(self):
-        iter_slot_names = self.get_function_slot_names('__iter__')
+        iter_slot_names = self.get_function_slot_names(u'__iter__')
         if not iter_slot_names:
             debug.warning('No __iter__ on %s.' % self)
             return
@@ -136,9 +136,9 @@ class AbstractInstanceContext(Context):
             if isinstance(generator, AbstractInstanceContext):
                 # `__next__` logic.
                 if self.evaluator.environment.version_info.major == 2:
-                    name = 'next'
+                    name = u'next'
                 else:
-                    name = '__next__'
+                    name = u'__next__'
                 iter_slot_names = generator.get_function_slot_names(name)
                 if iter_slot_names:
                     yield LazyKnownContexts(
@@ -166,7 +166,7 @@ class AbstractInstanceContext(Context):
         )
 
     def create_init_executions(self):
-        for name in self.get_function_slot_names('__init__'):
+        for name in self.get_function_slot_names(u'__init__'):
             if isinstance(name, SelfName):
                 yield self._create_init_execution(name.class_context, name.tree_name.parent)
 

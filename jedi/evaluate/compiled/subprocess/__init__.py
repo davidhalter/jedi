@@ -14,7 +14,7 @@ import weakref
 import pickle
 from functools import partial
 
-from jedi._compatibility import queue, is_py3
+from jedi._compatibility import queue, is_py3, force_unicode
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
@@ -286,7 +286,7 @@ class AccessHandle(object):
 
         #if not is_py3: print >> sys.stderr, name
         #print('getattr', name, file=sys.stderr)
-        return partial(self._workaround, name)
+        return partial(self._workaround, force_unicode(name))
 
     def _workaround(self, name, *args, **kwargs):
         """
@@ -294,6 +294,9 @@ class AccessHandle(object):
         happen. They are also the only unhashable objects that we're passing
         around.
         """
+        # Python 2 compatibility
+        kwargs = {force_unicode(key): value for key, value in kwargs.items()}
+
         if args and isinstance(args[0], slice):
             return self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
         return self._cached_results(name, *args, **kwargs)

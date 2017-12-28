@@ -149,8 +149,8 @@ class NameFinder(object):
         # We are inversing this, because a hand-crafted `__getattribute__`
         # could still call another hand-crafted `__getattr__`, but not the
         # other way around.
-        names = (inst.get_function_slot_names('__getattr__') or
-                 inst.get_function_slot_names('__getattribute__'))
+        names = (inst.get_function_slot_names(u'__getattr__') or
+                 inst.get_function_slot_names(u'__getattribute__'))
         return inst.execute_function_slots(names, name)
 
     def _names_to_types(self, names, attribute_lookup):
