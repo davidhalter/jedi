@@ -22,7 +22,7 @@ It is important to note that:
 """
 from jedi import debug
 from jedi import settings
-from jedi._compatibility import force_unicode
+from jedi._compatibility import force_unicode, is_py3
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate import recursion
@@ -448,8 +448,21 @@ class FakeDict(_FakeArray):
             yield LazyKnownContext(compiled.create_simple_object(self.evaluator, key))
 
     def py__getitem__(self, index):
-        if isinstance(index, bytes):
-            index = force_unicode(index)
+        if is_py3 and self.evaluator.environment.version_info.major == 2:
+            # In Python 2 bytes and unicode compare.
+            if isinstance(index, bytes):
+                index_unicode = force_unicode(index)
+                try:
+                    return self._dct[index_unicode].infer()
+                except KeyError:
+                    pass
+            elif isinstance(index, str):
+                index_bytes = index.encode('utf-8')
+                try:
+                    return self._dct[index_bytes].infer()
+                except KeyError:
+                    pass
+
         return self._dct[index].infer()
 
     def dict_values(self):
