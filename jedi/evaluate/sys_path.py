@@ -1,7 +1,7 @@
 import os
 import imp
 
-from jedi._compatibility import unicode
+from jedi._compatibility import unicode, force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextualizedNode
 from jedi.evaluate.helpers import is_string
@@ -11,16 +11,17 @@ from jedi.evaluate.utils import ignored
 
 
 def _abs_path(module_context, path):
-    module_path = module_context.py__file__()
     if os.path.isabs(path):
         return path
 
+    module_path = module_context.py__file__()
     if module_path is None:
         # In this case we have no idea where we actually are in the file
         # system.
         return None
 
     base_dir = os.path.dirname(module_path)
+    path = force_unicode(path)
     return os.path.abspath(os.path.join(base_dir, path))
 
 

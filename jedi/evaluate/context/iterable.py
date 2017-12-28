@@ -448,6 +448,8 @@ class FakeDict(_FakeArray):
             yield LazyKnownContext(compiled.create_simple_object(self.evaluator, key))
 
     def py__getitem__(self, index):
+        if isinstance(index, bytes):
+            index = force_unicode(index)
         return self._dct[index].infer()
 
     def dict_values(self):

@@ -269,8 +269,8 @@ class DictFilter(AbstractFilter):
             value = self._convert(name, self._dct[name])
         except KeyError:
             return []
-
-        return list(self._filter([value]))
+        else:
+            return list(self._filter([value]))
 
     def values(self):
         return self._filter(self._convert(*item) for item in self._dct.items())
@@ -306,7 +306,12 @@ class SpecialMethodFilter(DictFilter):
     class SpecialMethodName(AbstractNameDefinition):
         api_type = u'function'
 
-        def __init__(self, parent_context, string_name, callable_, builtin_context):
+        def __init__(self, parent_context, string_name, value, builtin_context):
+            callable_, python_version = value
+            if python_version is not None and \
+                    python_version != parent_context.evaluator.environment.version_info.major:
+                raise KeyError
+
             self.parent_context = parent_context
             self.string_name = string_name
             self._callable = callable_
@@ -355,14 +360,11 @@ def has_builtin_methods(cls):
 
 
 def register_builtin_method(method_name, python_version_match=None):
-    def wrapper(func):
-        if python_version_match and python_version_match != 2 + int(is_py3):
-            # Some functions do only apply to certain versions.
-            return func
+    def decorator(func):
         dct = func.__dict__.setdefault('registered_builtin_methods', {})
-        dct[method_name] = func
+        dct[method_name] = func, python_version_match
         return func
-    return wrapper
+    return decorator
 
 
 def get_global_filters(evaluator, context, until_position, origin_scope):
