@@ -311,7 +311,7 @@ def collect_file_tests(path, lines, lines_to_execute):
                 yield makecase(TEST_DEFINITIONS)
             correct = None
         else:
-            skip_version_info = skip_version_info or skip_python_version(line)
+            skip_version_info = skip_python_version(line) or skip_version_info
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
                 # test_type is ? for completion and ! for goto_assignments
