@@ -12,6 +12,7 @@ compiled module that returns the types for C-builtins.
 import collections
 import re
 
+from jedi._compatibility import force_unicode
 from jedi import debug
 from jedi.evaluate.arguments import ValuesArguments
 from jedi.evaluate import analysis
@@ -159,7 +160,7 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
     for obj in objects:
         for name in names:
             if is_string(name):
-                return obj.py__getattribute__(name.get_safe_value())
+                return obj.py__getattribute__(force_unicode(name.get_safe_value()))
             else:
                 debug.warning('getattr called without str')
                 continue
