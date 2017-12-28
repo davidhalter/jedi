@@ -273,7 +273,13 @@ class DictFilter(AbstractFilter):
             return list(self._filter([value]))
 
     def values(self):
-        return self._filter(self._convert(*item) for item in self._dct.items())
+        def yielder():
+            for item in self._dct.items():
+                try:
+                    yield self._convert(*item)
+                except KeyError:
+                    pass
+        return self._filter(yielder())
 
     def _convert(self, name, value):
         return value
