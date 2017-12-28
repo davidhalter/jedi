@@ -1,6 +1,5 @@
 from abc import abstractproperty
 
-from jedi._compatibility import is_py3
 from jedi import debug
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
@@ -136,7 +135,10 @@ class AbstractInstanceContext(Context):
         for generator in self.execute_function_slots(iter_slot_names):
             if isinstance(generator, AbstractInstanceContext):
                 # `__next__` logic.
-                name = '__next__' if is_py3 else 'next'
+                if self.evaluator.environment.version_info.major == 2:
+                    name = 'next'
+                else:
+                    name = '__next__'
                 iter_slot_names = generator.get_function_slot_names(name)
                 if iter_slot_names:
                     yield LazyKnownContexts(

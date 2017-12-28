@@ -7,7 +7,7 @@ mixing in Python code, the autocompletion should work much better for builtins.
 import os
 from itertools import chain
 
-from jedi._compatibility import is_py3, unicode
+from jedi._compatibility import unicode
 
 fake_modules = {}
 

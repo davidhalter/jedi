@@ -300,8 +300,8 @@ class AccessHandle(object):
 
     @memoize_method
     def _cached_results(self, name, *args, **kwargs):
-        if type(self._subprocess) == EvaluatorSubprocess:
-            print(name, args, kwargs,
-                self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
-            )
+        #if type(self._subprocess) == EvaluatorSubprocess:
+            #print(name, args, kwargs,
+                #self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
+            #)
         return self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)

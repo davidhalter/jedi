@@ -1,7 +1,7 @@
 import textwrap
 from inspect import cleandoc
 
-from jedi._compatibility import literal_eval, is_py3
+from jedi._compatibility import literal_eval, force_unicode
 from parso.python import tree
 
 _EXECUTE_NODES = set([
@@ -112,10 +112,7 @@ def clean_scope_docstring(scope_node):
         cleaned = cleandoc(safe_literal_eval(node.value))
         # Since we want the docstr output to be always unicode, just
         # force it.
-        if is_py3 or isinstance(cleaned, unicode):
-            return cleaned
-        else:
-            return unicode(cleaned, 'UTF-8', 'replace')
+        return force_unicode(cleaned)
     return ''
 
 
