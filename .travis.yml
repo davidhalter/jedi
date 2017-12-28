@@ -21,6 +21,15 @@ matrix:
       env: TOXENV=cov
     - python: 3.5
       env: TOXENV=sith
+
+    - python: 3.6
+      env: TOXENV=py36-env27
+    - python: 3.6
+      env: TOXENV=py36-env33
+    - python: 3.6
+      env: TOXENV=py36-env34
+    - python: 3.6
+      env: TOXENV=py36-env35
 install:
     - pip install --quiet tox-travis
 script:
