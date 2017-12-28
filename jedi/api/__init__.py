@@ -12,7 +12,6 @@ arguments.
 import os
 import sys
 
-import parso
 from parso.python import tree
 from parso import python_bytes_to_unicode, split_lines
 
@@ -113,7 +112,6 @@ class Script(object):
         debug.reset_time()
 
         # Load the Python grammar of the current interpreter.
-        self._grammar = parso.load_grammar()
         project = Project(sys_path=sys_path)
         self._evaluator = Evaluator(project, environment)
         project.add_script_path(self.path)
@@ -121,7 +119,7 @@ class Script(object):
 
     @cache.memoize_method
     def _get_module_node(self):
-        return self._grammar.parse(
+        return self._evaluator.grammar.parse(
             code=self._source,
             path=self.path,
             cache=False,  # No disk cache, because the current script often changes.
