@@ -10,6 +10,13 @@ python:
   - pypy
   - "3.7-dev"
 
+env:
+  - JEDI_TEST_ENVIRONMENT=2.7
+  - JEDI_TEST_ENVIRONMENT=3.3
+  - JEDI_TEST_ENVIRONMENT=3.4
+  - JEDI_TEST_ENVIRONMENT=3.5
+  - JEDI_TEST_ENVIRONMENT=3.6
+
 matrix:
   allow_failures:
     - python: pypy
@@ -21,15 +28,6 @@ matrix:
       env: TOXENV=cov
     - python: 3.5
       env: TOXENV=sith
-
-    - python: 3.6
-      env: TOXENV=py36-env27
-    - python: 3.6
-      env: TOXENV=py36-env33
-    - python: 3.6
-      env: TOXENV=py36-env34
-    - python: 3.6
-      env: TOXENV=py36-env35
 install:
     - pip install --quiet tox-travis
 script:
