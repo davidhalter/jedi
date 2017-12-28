@@ -136,7 +136,7 @@ def builtins_next(evaluator, iterators, defaults):
     TODO this function is currently not used. It's a stab at implementing next
     in a different way than fake objects. This would be a bit more flexible.
     """
-    if evaluator.python_version[0] == 2:
+    if evaluator.environment.version_info.major == 2:
         name = 'next'
     else:
         name = '__next__'
