@@ -204,7 +204,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         return names
 
     def py__class__(self):
-        return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
+        return compiled.get_special_object(self.evaluator, u'MODULE_CLASS')
 
     def __repr__(self):
         return "<%s: %s@%s-%s>" % (

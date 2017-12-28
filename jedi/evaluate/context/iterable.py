@@ -67,7 +67,7 @@ class GeneratorMixin(object):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
+        gen_obj = compiled.get_special_object(self.evaluator, u'GENERATOR_OBJECT')
         yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
         for filter in gen_obj.get_filters(search_global):
             yield filter
@@ -76,7 +76,7 @@ class GeneratorMixin(object):
         return True
 
     def py__class__(self):
-        gen_obj = compiled.get_special_object(self.evaluator, 'GENERATOR_OBJECT')
+        gen_obj = compiled.get_special_object(self.evaluator, u'GENERATOR_OBJECT')
         return gen_obj.py__class__()
 
     @property

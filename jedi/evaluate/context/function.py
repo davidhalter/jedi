@@ -83,9 +83,9 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
         # This differentiation is only necessary for Python2. Python3 does not
         # use a different method class.
         if isinstance(parser_utils.get_parent_scope(self.tree_node), tree.Class):
-            name = 'METHOD_CLASS'
+            name = u'METHOD_CLASS'
         else:
-            name = 'FUNCTION_CLASS'
+            name = u'FUNCTION_CLASS'
         return compiled.get_special_object(self.evaluator, name)
 
     @property

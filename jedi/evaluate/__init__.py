@@ -111,7 +111,7 @@ class Evaluator(object):
     @property
     @evaluator_function_cache()
     def builtins_module(self):
-        return compiled.get_special_object(self, 'BUILTINS')
+        return compiled.get_special_object(self, u'BUILTINS')
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
