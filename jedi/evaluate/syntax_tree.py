@@ -5,7 +5,7 @@ import copy
 
 from parso.python import tree
 
-from jedi._compatibility import force_unicode
+from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
@@ -368,7 +368,11 @@ def _bool_to_context(evaluator, bool_):
 def _eval_comparison_part(evaluator, context, left, operator, right):
     l_is_num = is_number(left)
     r_is_num = is_number(right)
-    str_operator = force_unicode(str(operator.value))
+    if isinstance(operator, unicode):
+        str_operator = operator
+    else:
+        str_operator = force_unicode(str(operator.value))
+
     if str_operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.AbstractIterable) or is_string(left):

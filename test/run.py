@@ -125,6 +125,7 @@ from jedi._compatibility import unicode, is_py3
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
+from jedi.api.environment import get_default_environment
 
 
 TEST_COMPLETIONS = 0
@@ -432,11 +433,12 @@ if __name__ == '__main__':
                   % (case.line_nr - 1, actual, desired))
             return 1
 
+    environment = get_default_environment()
     import traceback
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
-        if c.get_skip_reason():
+        if c.get_skip_reason(environment):
             continue
         if current != c.path:
             file_change(current, count, fails)
@@ -444,7 +446,7 @@ if __name__ == '__main__':
             count = fails = 0
 
         try:
-            if c.run(report):
+            if c.run(report, environment):
                 tests_fail += 1
                 fails += 1
         except Exception:
