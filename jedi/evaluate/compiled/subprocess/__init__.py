@@ -142,6 +142,10 @@ class _Subprocess(object):
         )
 
     def _send(self, evaluator_id, function, args=(), kwargs={}):
+        if not is_py3:
+            # Python 2 compatibility
+            kwargs = {force_unicode(key): value for key, value in kwargs.items()}
+
         data = evaluator_id, function, args, kwargs
         pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
         self._process.stdin.flush()
@@ -294,9 +298,6 @@ class AccessHandle(object):
         happen. They are also the only unhashable objects that we're passing
         around.
         """
-        # Python 2 compatibility
-        kwargs = {force_unicode(key): value for key, value in kwargs.items()}
-
         if args and isinstance(args[0], slice):
             return self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
         return self._cached_results(name, *args, **kwargs)

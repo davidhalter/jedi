@@ -344,7 +344,7 @@ class CompiledObjectFilter(AbstractFilter):
 
         # ``dir`` doesn't include the type names.
         if not self._is_instance and needs_type_completions:
-            for filter in builtin_from_name(self._evaluator, 'type').get_filters():
+            for filter in builtin_from_name(self._evaluator, u'type').get_filters():
                 names += filter.values()
         return names
 
