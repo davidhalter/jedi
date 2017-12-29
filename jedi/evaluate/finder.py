@@ -133,8 +133,8 @@ class NameFinder(object):
                                 continue
                 break
 
-        debug.dbg('finder.filter_name "%s" in (%s): %s@%s', self._string_name,
-                  self._context, names, self._position)
+        debug.dbg('finder.filter_name %s in (%s): %s@%s',
+                  repr(self._string_name), self._context, names, self._position)
         return list(names)
 
     def _check_getattr(self, inst):

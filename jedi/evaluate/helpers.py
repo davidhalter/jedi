@@ -191,9 +191,9 @@ def is_compiled(context):
 
 def is_string(context):
     if context.evaluator.environment.version_info.major == 2:
-        str_classes = (str, unicode, bytes)
+        str_classes = (unicode, bytes)
     else:
-        str_classes = (str,)
+        str_classes = (unicode,)
     return is_compiled(context) and isinstance(context.get_safe_value(default=None), str_classes)
 
 
