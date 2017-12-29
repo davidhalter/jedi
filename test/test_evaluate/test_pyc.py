@@ -10,8 +10,6 @@ import os
 import shutil
 import sys
 
-import pytest
-
 import jedi
 from ..helpers import cwd_at
 
@@ -45,8 +43,6 @@ def generate_pyc():
             shutil.copy(os.path.join("dummy_package/__pycache__", f), dst)
 
 
-# Python 2.6 does not necessarily come with `compileall.compile_file`.
-@pytest.mark.skipif("sys.version_info > (2,6)")
 @cwd_at('test/test_evaluate')
 def test_pyc():
     """
@@ -58,7 +54,3 @@ def test_pyc():
         assert len(s.completions()) >= 2
     finally:
         shutil.rmtree("dummy_package")
-
-
-if __name__ == "__main__":
-    test_pyc()

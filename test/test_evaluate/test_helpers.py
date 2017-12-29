@@ -4,12 +4,12 @@ from jedi import names
 from jedi.evaluate import helpers
 
 
-def test_call_of_leaf_in_brackets():
+def test_call_of_leaf_in_brackets(environment):
     s = dedent("""
     x = 1
     type(x)
     """)
-    last_x = names(s, references=True, definitions=False)[-1]
+    last_x = names(s, references=True, definitions=False, environment=environment)[-1]
     name = last_x._name.tree_name
 
     call = helpers.call_of_leaf(name)

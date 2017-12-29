@@ -1,16 +1,17 @@
 from os.path import dirname, join
 
-import jedi
 import pytest
 
 
-@pytest.mark.skipif('sys.version_info[:2] < (3,4)')
-def test_implicit_namespace_package():
+def test_implicit_namespace_package(Script, environment):
+    if environment.version_info < (3, 4):
+        pytest.skip()
+
     sys_path = [join(dirname(__file__), d)
                 for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
 
     def script_with_path(*args, **kwargs):
-        return jedi.Script(sys_path=sys_path, *args, **kwargs)
+        return Script(sys_path=sys_path, *args, **kwargs)
 
     # goto definition
     assert script_with_path('from pkg import ns1_file').goto_definitions()
@@ -45,13 +46,16 @@ def test_implicit_namespace_package():
         solution = "foo = '%s'" % solution
         assert completion.description == solution
 
-@pytest.mark.skipif('sys.version_info[:2] < (3,4)')
-def test_implicit_nested_namespace_package():
+
+def test_implicit_nested_namespace_package(Script, environment):
+    if environment.version_info < (3, 4):
+        pytest.skip()
+
     CODE = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
 
     sys_path = [dirname(__file__)]
 
-    script = jedi.Script(sys_path=sys_path, source=CODE, line=1, column=61)
+    script = Script(sys_path=sys_path, source=CODE, line=1, column=61)
 
     result = script.goto_definitions()
 

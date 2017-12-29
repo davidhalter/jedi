@@ -1,13 +1,12 @@
-import jedi
 from os.path import dirname, join
 
 
-def test_namespace_package():
+def test_namespace_package(Script):
     sys_path = [join(dirname(__file__), d)
                 for d in ['namespace_package/ns1', 'namespace_package/ns2']]
 
     def script_with_path(*args, **kwargs):
-        return jedi.Script(sys_path=sys_path, *args, **kwargs)
+        return Script(sys_path=sys_path, *args, **kwargs)
 
     # goto definition
     assert script_with_path('from pkg import ns1_file').goto_definitions()
@@ -53,12 +52,12 @@ def test_namespace_package():
         assert completion.description == solution
 
 
-def test_nested_namespace_package():
+def test_nested_namespace_package(Script):
     code = 'from nested_namespaces.namespace.pkg import CONST'
 
     sys_path = [dirname(__file__)]
 
-    script = jedi.Script(sys_path=sys_path, source=code, line=1, column=45)
+    script = Script(sys_path=sys_path, source=code, line=1, column=45)
 
     result = script.goto_definitions()
 
