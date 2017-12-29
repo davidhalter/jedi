@@ -2,10 +2,9 @@
 Test of keywords and ``jedi.keywords``
 """
 from jedi._compatibility import is_py3
-from jedi import Script
 
 
-def test_goto_assignments_keyword():
+def test_goto_assignments_keyword(Script):
     """
     Bug: goto assignments on ``in`` used to raise AttributeError::
 
@@ -14,7 +13,7 @@ def test_goto_assignments_keyword():
     Script('in').goto_assignments()
 
 
-def test_keyword():
+def test_keyword(Script):
     """ github jedi-vim issue #44 """
     defs = Script("print").goto_definitions()
     if is_py3:

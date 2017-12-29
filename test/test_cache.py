@@ -2,15 +2,13 @@
 Test all things related to the ``jedi.cache`` module.
 """
 
-import jedi
 
-
-def test_cache_call_signatures():
+def test_cache_call_signatures(Script):
     """
     See github issue #390.
     """
     def check(column, call_name, path=None):
-        assert jedi.Script(s, 1, column, path).call_signatures()[0].name == call_name
+        assert Script(s, 1, column, path).call_signatures()[0].name == call_name
 
     s = 'str(int())'
 
@@ -26,6 +24,6 @@ def test_cache_call_signatures():
         check(4, 'str', 'boo')
 
 
-def test_cache_line_split_issues():
+def test_cache_line_split_issues(Script):
     """Should still work even if there's a newline."""
-    assert jedi.Script('int(\n').call_signatures()[0].name == 'int'
+    assert Script('int(\n').call_signatures()[0].name == 'int'

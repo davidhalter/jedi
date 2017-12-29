@@ -31,29 +31,29 @@ def _check_speed(time_per_run, number=4, run_warm=True):
 
 
 @_check_speed(0.2)
-def test_os_path_join():
+def test_os_path_join(Script):
     s = "from posixpath import join; join('', '')."
-    assert len(jedi.Script(s).completions()) > 10  # is a str completion
+    assert len(Script(s).completions()) > 10  # is a str completion
 
 
 @_check_speed(0.15)
-def test_scipy_speed():
+def test_scipy_speed(Script):
     s = 'import scipy.weave; scipy.weave.inline('
-    script = jedi.Script(s, 1, len(s), '')
+    script = Script(s, 1, len(s), '')
     script.call_signatures()
     #print(jedi.imports.imports_processed)
 
 
 @_check_speed(0.8)
 @cwd_at('test')
-def test_precedence_slowdown():
+def test_precedence_slowdown(Script):
     """
     Precedence calculation can slow down things significantly in edge
     cases. Having strange recursion structures increases the problem.
     """
     with open('speed/precedence.py') as f:
         line = len(f.read().splitlines())
-    assert jedi.Script(line=line, path='speed/precedence.py').goto_definitions()
+    assert Script(line=line, path='speed/precedence.py').goto_definitions()
 
 
 @_check_speed(0.1)
