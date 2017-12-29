@@ -171,6 +171,7 @@ class CompiledObject(Context):
         from jedi.evaluate.compiled import builtin_from_name
         if self.api_type != 'function':
             return
+
         for name in self._parse_function_doc()[1].split():
             try:
                 # TODO wtf is this? this is exactly the same as the thing
@@ -353,11 +354,11 @@ class CompiledObjectFilter(AbstractFilter):
 
 
 docstr_defaults = {
-    'floating point number': 'float',
-    'character': 'str',
-    'integer': 'int',
-    'dictionary': 'dict',
-    'string': 'str',
+    'floating point number': u'float',
+    'character': u'str',
+    'integer': u'int',
+    'dictionary': u'dict',
+    'string': u'str',
 }
 
 
@@ -369,6 +370,7 @@ def _parse_function_doc(doc):
     TODO docstrings like utime(path, (atime, mtime)) and a(b [, b]) -> None
     TODO docstrings like 'tuple of integers'
     """
+    doc = force_unicode(doc)
     # parse round parentheses: def func(a, (b,c))
     try:
         count = 0
@@ -387,7 +389,7 @@ def _parse_function_doc(doc):
         # UnboundLocalError for undefined end in last line
         debug.dbg('no brackets found - no param')
         end = 0
-        param_str = ''
+        param_str = u''
     else:
         # remove square brackets, that show an optional param ( = None)
         def change_options(m):
@@ -405,9 +407,9 @@ def _parse_function_doc(doc):
     param_str = param_str.replace('-', '_')  # see: isinstance.__doc__
 
     # parse return value
-    r = re.search('-[>-]* ', doc[end:end + 7])
+    r = re.search(u'-[>-]* ', doc[end:end + 7])
     if r is None:
-        ret = ''
+        ret = u''
     else:
         index = end + r.end()
         # get result type, which can contain newlines

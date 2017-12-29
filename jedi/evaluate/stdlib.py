@@ -252,7 +252,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
                     analysis.add(lazy_context._context, 'type-error-isinstance', node, message)
 
     return ContextSet.from_iterable(
-        compiled.builtin_from_name(evaluator, str(b))
+        compiled.builtin_from_name(evaluator, force_unicode(str(b)))
         for b in bool_results
     )
 
