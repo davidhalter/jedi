@@ -25,6 +25,7 @@ import re
 from parso import ParserSyntaxError
 from parso.python import tree
 
+from jedi._compatibility import unicode, force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
@@ -32,7 +33,6 @@ from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.helpers import is_string
 from jedi import debug
-from jedi import _compatibility
 from jedi import parser_utils
 
 
@@ -64,7 +64,7 @@ def _fix_forward_reference(context, node):
     if is_string(evaled_node):
         try:
             new_node = context.evaluator.grammar.parse(
-                _compatibility.force_unicode(evaled_node.get_safe_value()),
+                force_unicode(evaled_node.get_safe_value()),
                 start_symbol='eval_input',
                 error_recovery=False
             )
@@ -120,7 +120,7 @@ def _get_typing_replacement_module(grammar):
         typing_path = \
             os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
         with open(typing_path) as f:
-            code = _compatibility.unicode(f.read())
+            code = unicode(f.read())
         _typing_module = grammar.parse(code)
     return _typing_module
 
@@ -216,7 +216,7 @@ def _find_type_from_comment_hint(context, node, varlist, name):
     if not match:
         return []
     annotation = tree.String(
-        repr(str(match.group(1).strip())),
+        force_unicode(repr(str(match.group(1).strip()))),
         node.start_pos)
     annotation.parent = node.parent
     return _evaluate_for_annotation(context, annotation, index)

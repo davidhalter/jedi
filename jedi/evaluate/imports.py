@@ -273,7 +273,7 @@ class Importer(object):
         This method is very similar to importlib's `_gcd_import`.
         """
         import_parts = [
-            i.value if isinstance(i, tree.Name) else i
+            force_unicode(i.value if isinstance(i, tree.Name) else i)
             for i in import_path
         ]
 
