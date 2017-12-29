@@ -91,7 +91,7 @@ def safe_getattr(obj, name, default=_sentinel):
             raise
         return default
     else:
-        if is_get_descriptor and type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
+        if type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
             # In case of descriptors that have get methods we cannot return
             # it's value, because that would mean code execution.
             return getattr(obj, name)
