@@ -12,7 +12,6 @@ This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
 import os
-import pkgutil
 import sys
 
 from parso.python import tree
@@ -383,15 +382,16 @@ class Importer(object):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
-
+        sub = self._evaluator.compiled_subprocess
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
-            names += [self._generate_name(name) for name in sys.builtin_module_names]
+            names += [self._generate_name(name) for name in sub.get_builtin_module_names()]
 
         if search_path is None:
             search_path = self.sys_path_with_modifications()
-        for module_loader, name, is_pkg in pkgutil.iter_modules(search_path):
+
+        for name in sub.list_module_names(search_path):
             names.append(self._generate_name(name, in_module=in_module))
         return names
 

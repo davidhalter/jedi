@@ -17,12 +17,12 @@ def _check_speed(time_per_run, number=4, run_warm=True):
     reintroduced to Jedi."""
     def decorated(func):
         @functools.wraps(func)
-        def wrapper():
+        def wrapper(**kwargs):
             if run_warm:
-                func()
+                func(**kwargs)
             first = time.time()
             for i in range(number):
-                func()
+                func(**kwargs)
             single_time = (time.time() - first) / number
             message = 'speed issue %s, %s' % (func, single_time)
             assert single_time < time_per_run, message
