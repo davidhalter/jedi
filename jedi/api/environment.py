@@ -78,8 +78,8 @@ def find_virtualenvs(paths=None):
         paths = []
 
     for path in paths:
-        executable = _get_executable_path(path)
         try:
+            executable = _get_executable_path(path)
             yield Environment(path, executable)
         except InvalidPythonEnvironment:
             pass
@@ -123,7 +123,7 @@ def _get_executable_path(path):
     activate = os.path.join(bin_folder, 'activate')
     python = os.path.join(bin_folder, 'python')
     if not all(os.path.exists(p) for p in (activate, python)):
-        return None
+        raise InvalidPythonEnvironment("One of bin/activate and bin/python is missing.")
     return python
 
 

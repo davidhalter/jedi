@@ -1,10 +1,12 @@
 import os
 from glob import glob
 import sys
+import shutil
 
 import pytest
-
 from jedi.evaluate import sys_path
+from jedi import find_virtualenvs
+from jedi.api.environment import Environment
 
 
 def test_paths_from_assignment(Script):
@@ -21,37 +23,44 @@ def test_paths_from_assignment(Script):
     assert paths('sys.path, other = ["a"], 2') == set()
 
 
-# Currently venv site-packages resolution only seeks pythonX.Y/site-packages
-# that belong to the same version as the interpreter to avoid issues with
-# cross-version imports.  "venvs/" dir contains "venv27" and "venv34" that
-# mimic venvs created for py2.7 and py3.4 respectively.  If test runner is
-# invoked with one of those versions, the test below will be run for the
-# matching directory.
-CUR_DIR = os.path.dirname(__file__)
-VENVS = list(glob(
-    os.path.join(CUR_DIR, 'sample_venvs/venv%d%d' % sys.version_info[:2])))
+def test_venv_and_pths(tmpdir, environment):
+    if environment.version_info.major < 3:
+        pytest.skip("python -m venv does not exist in Python 2")
 
-
-@pytest.mark.parametrize('venv', VENVS)
-def test_get_venv_path(venv):
     pjoin = os.path.join
-    venv_path = sys_path.get_venv_path(venv)
 
-    site_pkgs = (glob(pjoin(venv, 'lib', 'python*', 'site-packages')) +
-                 glob(pjoin(venv, 'lib', 'site-packages')))[0]
+    dirname = pjoin(tmpdir.dirname, 'venv')
+
+    # Ignore if it fails. It usually fails if it's not able to properly install
+    # pip. However we don't need that for this test.
+    os.system(environment._executable + ' -m venv ' + dirname)
+
+    # We cannot find the virtualenv in some cases, because the virtualenv was
+    # not created correctly.
+    virtualenv = Environment(dirname, pjoin(dirname, 'bin', 'python'))
+
+    CUR_DIR = os.path.dirname(__file__)
+    site_pkg_path = glob(pjoin(virtualenv._base_path, 'lib', 'python*', 'site-packages'))[0]
+    shutil.rmtree(site_pkg_path)
+    shutil.copytree(pjoin(CUR_DIR, 'sample_venvs/pth_directory'), site_pkg_path)
+
+    venv_paths = virtualenv.get_sys_path()
+
     ETALON = [
-        pjoin('/path', 'from', 'egg-link'),
-        pjoin(site_pkgs, '.', 'relative', 'egg-link', 'path'),
-        site_pkgs,
-        pjoin(site_pkgs, 'dir-from-foo-pth'),
+        # For now disable egg-links. I have no idea how they work... ~ dave
+        #pjoin('/path', 'from', 'egg-link'),
+        #pjoin(site_pkg_path, '.', 'relative', 'egg-link', 'path'),
+        site_pkg_path,
+        pjoin(site_pkg_path, 'dir-from-foo-pth'),
+        '/foo/smth.py:module',
+        # Not sure why it's added twice. It has to do with site.py which is not
+        # something we can change. However this obviously also doesn't matter.
+        '/foo/smth.py:from_func',
+        '/foo/smth.py:from_func',
     ]
 
     # Ensure that pth and egg-link paths were added.
-    assert venv_path[:len(ETALON)] == ETALON
+    assert venv_paths[-len(ETALON):] == ETALON
 
     # Ensure that none of venv dirs leaked to the interpreter.
     assert not set(sys.path).intersection(ETALON)
-
-    # Ensure that "import ..." lines were ignored.
-    assert pjoin('/path', 'from', 'smth.py') not in venv_path
-    assert pjoin('/path', 'from', 'smth.py:extend_path') not in venv_path
