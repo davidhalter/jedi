@@ -5,10 +5,9 @@ import sys
 import pytest
 
 from jedi.evaluate import sys_path
-from jedi import Script
 
 
-def test_paths_from_assignment():
+def test_paths_from_assignment(Script):
     def paths(src):
         script = Script(src, path='/foo/bar.py')
         expr_stmt = script._get_module_node().children[0]

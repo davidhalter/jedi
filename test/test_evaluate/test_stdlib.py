@@ -5,19 +5,22 @@ with "Black Box Tests".
 from textwrap import dedent
 
 import pytest
-from jedi import Script
 from jedi._compatibility import is_py26
+
 
 # The namedtuple is different for different Python2.7 versions. Some versions
 # are missing the attribute `_class_template`.
-pytestmark = pytest.mark.skipif('sys.version_info[0] < 3')
+@pytest.fixture(autouse=True)
+def skipping(environment):
+    if environment.version_info.major < 3:
+        pytest.skip()
 
 
 @pytest.mark.parametrize(['letter', 'expected'], [
     ('n', ['name']),
     ('s', ['smart']),
 ])
-def test_namedtuple_str(letter, expected):
+def test_namedtuple_str(letter, expected, Script):
     source = dedent("""\
         import collections
         Person = collections.namedtuple('Person', 'name smart')
@@ -31,7 +34,7 @@ def test_namedtuple_str(letter, expected):
         assert completions == set(expected)
 
 
-def test_namedtuple_list():
+def test_namedtuple_list(Script):
     source = dedent("""\
         import collections
         Cat = collections.namedtuple('Person', ['legs', u'length', 'large'])
@@ -45,7 +48,7 @@ def test_namedtuple_list():
         assert completions == set(['legs', 'length', 'large'])
 
 
-def test_namedtuple_content():
+def test_namedtuple_content(Script):
     source = dedent("""\
         import collections
         Foo = collections.namedtuple('Foo', ['bar', 'baz'])
@@ -63,7 +66,7 @@ def test_namedtuple_content():
     assert d(source + 'named.baz') == 'int'
 
 
-def test_nested_namedtuples():
+def test_nested_namedtuples(Script):
     """
     From issue #730.
     """
