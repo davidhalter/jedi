@@ -1,15 +1,14 @@
 from textwrap import dedent
-from jedi import Script
 
 
-def test_in_whitespace():
+def test_in_whitespace(Script):
     code = dedent('''
     def x():
         pass''')
     assert len(Script(code, column=2).completions()) > 20
 
 
-def test_empty_init():
+def test_empty_init(Script):
     """This was actually an issue."""
     code = dedent('''\
     class X(object): pass
@@ -17,7 +16,7 @@ def test_empty_init():
     assert Script(code).completions()
 
 
-def test_in_empty_space():
+def test_in_empty_space(Script):
     code = dedent('''\
     class X(object):
         def __init__(self):
@@ -30,7 +29,7 @@ def test_in_empty_space():
     assert def_.name == 'X'
 
 
-def test_indent_context():
+def test_indent_context(Script):
     """
     If an INDENT is the next supposed token, we should still be able to
     complete.
@@ -40,7 +39,7 @@ def test_indent_context():
     assert comp.name == 'isinstance'
 
 
-def test_keyword_context():
+def test_keyword_context(Script):
     def get_names(*args, **kwargs):
         return [d.name for d in Script(*args, **kwargs).completions()]
 

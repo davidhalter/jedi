@@ -378,7 +378,7 @@ class Interpreter(Script):
 
 
 def names(source=None, path=None, encoding='utf-8', all_scopes=False,
-          definitions=True, references=False):
+          definitions=True, references=False, environment=None):
     """
     Returns a list of `Definition` objects, containing name parts.
     This means you can call ``Definition.goto_assignments()`` and get the
@@ -398,7 +398,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         return definitions and is_def or references and not is_def
 
     # Set line/column to a random position, because they don't matter.
-    script = Script(source, line=1, column=0, path=path, encoding=encoding)
+    script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
     module_context = script._get_module()
     defs = [
         classes.Definition(

@@ -2,13 +2,14 @@ from textwrap import dedent
 import inspect
 import warnings
 
+import pytest
+
 from ..helpers import TestCase
-from jedi import Script
 from jedi import cache
-from jedi._compatibility import is_py33, py_version
+from jedi._compatibility import is_py33
 
 
-def assert_signature(source, expected_name, expected_index=0, line=None, column=None):
+def assert_signature(Script, source, expected_name, expected_index=0, line=None, column=None):
     signatures = Script(source, line, column).call_signatures()
 
     assert len(signatures) <= 1
@@ -22,12 +23,17 @@ def assert_signature(source, expected_name, expected_index=0, line=None, column=
         return signatures[0]
 
 
-class TestCallSignatures(TestCase):
-    def _run_simple(self, source, name, index=0, column=None, line=1):
-        assert_signature(source, name, index, line, column)
+def test_valid_call(Script):
+    assert_signature(Script, 'str()', 'str', column=4)
 
-    def test_valid_call(self):
-        assert_signature('str()', 'str', column=4)
+
+class TestCallSignatures(TestCase):
+    @pytest.fixture(autouse=True)
+    def init(self, Script):
+        self.Script = Script
+
+    def _run_simple(self, source, name, index=0, column=None, line=1):
+        assert_signature(self.Script, source, name, index, line, column)
 
     def test_simple(self):
         run = self._run_simple
@@ -89,170 +95,185 @@ class TestCallSignatures(TestCase):
         self._run_simple("for sorted(", 'sorted', 0)
         self._run_simple("for s in sorted(", 'sorted', 0)
 
-    def test_complex(self):
-        s = """
-                def abc(a,b):
-                    pass
 
-                def a(self):
-                    abc(
+def test_call_signatures_empty_parentheses_pre_space(Script):
+    s = dedent("""\
+    def f(a, b):
+        pass
+    f( )""")
+    assert_signature(Script, s, 'f', 0, line=3, column=3)
 
-                if 1:
-                    pass
-            """
-        assert_signature(s, 'abc', 0, line=6, column=24)
-        s = """
-                import re
-                def huhu(it):
-                    re.compile(
-                    return it * 2
-            """
-        assert_signature(s, 'compile', 0, line=4, column=31)
 
-        # jedi-vim #70
-        s = """def foo("""
-        assert Script(s).call_signatures() == []
-
-        # jedi-vim #116
-        s = """import itertools; test = getattr(itertools, 'chain'); test("""
-        assert_signature(s, 'chain', 0)
-
-    def test_call_signature_on_module(self):
-        """github issue #240"""
-        s = 'import datetime; datetime('
-        # just don't throw an exception (if numpy doesn't exist, just ignore it)
-        assert Script(s).call_signatures() == []
-
-    def test_call_signatures_empty_parentheses_pre_space(self):
-        s = dedent("""\
+def test_multiple_signatures(Script):
+    s = dedent("""\
+    if x:
         def f(a, b):
             pass
-        f( )""")
-        assert_signature(s, 'f', 0, line=3, column=3)
-
-    def test_multiple_signatures(self):
-        s = dedent("""\
-        if x:
-            def f(a, b):
-                pass
-        else:
-            def f(a, b):
-                pass
-        f(""")
-        assert len(Script(s).call_signatures()) == 2
-
-    def test_call_signatures_whitespace(self):
-        s = dedent("""\
-        abs( 
-        def x():
+    else:
+        def f(a, b):
             pass
-        """)
-        assert_signature(s, 'abs', 0, line=1, column=5)
+    f(""")
+    assert len(Script(s).call_signatures()) == 2
 
-    def test_decorator_in_class(self):
+
+def test_call_signatures_whitespace(Script):
+    s = dedent("""\
+    abs( 
+    def x():
+        pass
+    """)
+    assert_signature(Script, s, 'abs', 0, line=1, column=5)
+
+
+def test_decorator_in_class(Script):
+    """
+    There's still an implicit param, with a decorator.
+    Github issue #319.
+    """
+    s = dedent("""\
+    def static(func):
+        def wrapped(obj, *args):
+            return f(type(obj), *args)
+        return wrapped
+
+    class C(object):
+        @static
+        def test(cls):
+            return 10
+
+    C().test(""")
+
+    signatures = Script(s).call_signatures()
+    assert len(signatures) == 1
+    x = [p.description for p in signatures[0].params]
+    assert x == ['param *args']
+
+
+def test_additional_brackets(Script):
+    assert_signature(Script, 'str((', 'str', 0)
+
+
+def test_unterminated_strings(Script):
+    assert_signature(Script, 'str(";', 'str', 0)
+
+
+def test_whitespace_before_bracket(Script):
+    assert_signature(Script, 'str (', 'str', 0)
+    assert_signature(Script, 'str (";', 'str', 0)
+    assert_signature(Script, 'str\n(', None)
+
+
+def test_brackets_in_string_literals(Script):
+    assert_signature(Script, 'str (" (', 'str', 0)
+    assert_signature(Script, 'str (" )', 'str', 0)
+
+
+def test_function_definitions_should_break(Script):
+    """
+    Function definitions (and other tokens that cannot exist within call
+    signatures) should break and not be able to return a call signature.
+    """
+    assert_signature(Script, 'str(\ndef x', 'str', 0)
+    assert not Script('str(\ndef x(): pass').call_signatures()
+
+
+def test_flow_call(Script):
+    assert not Script('if (1').call_signatures()
+
+
+def test_chained_calls(Script):
+    source = dedent('''
+    class B():
+      def test2(self, arg):
+        pass
+
+    class A():
+      def test1(self):
+        return B()
+
+    A().test1().test2(''')
+
+    assert_signature(Script, source, 'test2', 0)
+
+
+def test_return(Script):
+    source = dedent('''
+    def foo():
+        return '.'.join()''')
+
+    assert_signature(Script, source, 'join', 0, column=len("    return '.'.join("))
+
+
+def test_call_signature_on_module(Script):
+    """github issue #240"""
+    s = 'import datetime; datetime('
+    # just don't throw an exception (if numpy doesn't exist, just ignore it)
+    assert Script(s).call_signatures() == []
+
+
+def test_complex(Script):
+    s = """
+            def abc(a,b):
+                pass
+
+            def a(self):
+                abc(
+
+            if 1:
+                pass
         """
-        There's still an implicit param, with a decorator.
-        Github issue #319.
+    assert_signature(Script, s, 'abc', 0, line=6, column=20)
+    s = """
+            import re
+            def huhu(it):
+                re.compile(
+                return it * 2
         """
-        s = dedent("""\
-        def static(func):
-            def wrapped(obj, *args):
-                return f(type(obj), *args)
-            return wrapped
+    assert_signature(Script, s, 'compile', 0, line=4, column=27)
 
-        class C(object):
-            @static
-            def test(cls):
-                return 10
+    # jedi-vim #70
+    s = """def foo("""
+    assert Script(s).call_signatures() == []
 
-        C().test(""")
-
-        signatures = Script(s).call_signatures()
-        assert len(signatures) == 1
-        x = [p.description for p in signatures[0].params]
-        assert x == ['param *args']
-
-    def test_additional_brackets(self):
-        assert_signature('str((', 'str', 0)
-
-    def test_unterminated_strings(self):
-        assert_signature('str(";', 'str', 0)
-
-    def test_whitespace_before_bracket(self):
-        assert_signature('str (', 'str', 0)
-        assert_signature('str (";', 'str', 0)
-        assert_signature('str\n(', None)
-
-    def test_brackets_in_string_literals(self):
-        assert_signature('str (" (', 'str', 0)
-        assert_signature('str (" )', 'str', 0)
-
-    def test_function_definitions_should_break(self):
-        """
-        Function definitions (and other tokens that cannot exist within call
-        signatures) should break and not be able to return a call signature.
-        """
-        assert_signature('str(\ndef x', 'str', 0)
-        assert not Script('str(\ndef x(): pass').call_signatures()
-
-    def test_flow_call(self):
-        assert not Script('if (1').call_signatures()
-
-    def test_chained_calls(self):
-        source = dedent('''
-        class B():
-          def test2(self, arg):
-            pass
-
-        class A():
-          def test1(self):
-            return B()
-
-        A().test1().test2(''')
-
-        assert_signature(source, 'test2', 0)
-
-    def test_return(self):
-        source = dedent('''
-        def foo():
-            return '.'.join()''')
-
-        assert_signature(source, 'join', 0, column=len("    return '.'.join("))
+    # jedi-vim #116
+    s = """import itertools; test = getattr(itertools, 'chain'); test("""
+    assert_signature(Script, s, 'chain', 0)
 
 
-class TestParams(TestCase):
-    def params(self, source, line=None, column=None):
-        signatures = Script(source, line, column).call_signatures()
-        assert len(signatures) == 1
-        return signatures[0].params
-
-    def test_param_name(self):
-        if not is_py33:
-            p = self.params('''int(''')
-            # int is defined as: `int(x[, base])`
-            assert p[0].name == 'x'
-            # `int` docstring has been redefined:
-            # http://bugs.python.org/issue14783
-            # TODO have multiple call signatures for int (like in the docstr)
-            #assert p[1].name == 'base'
-
-        p = self.params('''open(something,''')
-        assert p[0].name in ['file', 'name']
-        assert p[1].name == 'mode'
-
-    def test_builtins(self):
-        """
-        The self keyword should be visible even for builtins, if not
-        instantiated.
-        """
-        p = self.params('str.endswith(')
-        assert p[0].name == 'self'
-        assert p[1].name == 'suffix'
-        p = self.params('str().endswith(')
-        assert p[0].name == 'suffix'
+def _params(Script, source, line=None, column=None):
+    signatures = Script(source, line, column).call_signatures()
+    assert len(signatures) == 1
+    return signatures[0].params
 
 
-def test_signature_is_definition():
+def test_param_name(Script):
+    if not is_py33:
+        p = _params(Script, '''int(''')
+        # int is defined as: `int(x[, base])`
+        assert p[0].name == 'x'
+        # `int` docstring has been redefined:
+        # http://bugs.python.org/issue14783
+        # TODO have multiple call signatures for int (like in the docstr)
+        #assert p[1].name == 'base'
+
+    p = _params(Script, '''open(something,''')
+    assert p[0].name in ['file', 'name']
+    assert p[1].name == 'mode'
+
+
+def test_builtins(Script):
+    """
+    The self keyword should be visible even for builtins, if not
+    instantiated.
+    """
+    p = _params(Script, 'str.endswith(')
+    assert p[0].name == 'self'
+    assert p[1].name == 'suffix'
+    p = _params(Script, 'str().endswith(')
+    assert p[0].name == 'suffix'
+
+
+def test_signature_is_definition(Script):
     """
     Through inheritance, a call signature is a sub class of Definition.
     Check if the attributes match.
@@ -279,7 +300,7 @@ def test_signature_is_definition():
                 assert attribute == signature_attribute
 
 
-def test_no_signature():
+def test_no_signature(Script):
     # str doesn't have a __call__ method
     assert Script('str()(').call_signatures() == []
 
@@ -292,7 +313,7 @@ def test_no_signature():
     assert Script('').call_signatures() == []
 
 
-def test_dict_literal_in_incomplete_call():
+def test_dict_literal_in_incomplete_call(Script):
     source = """\
     import json
 
@@ -309,7 +330,7 @@ def test_dict_literal_in_incomplete_call():
     assert script.call_signatures()
 
 
-def test_completion_interference():
+def test_completion_interference(Script):
     """Seems to cause problems, see also #396."""
     cache.parser_cache.pop(None, None)
     assert Script('open(').call_signatures()
@@ -320,12 +341,12 @@ def test_completion_interference():
     assert Script('open(').call_signatures()
 
 
-def test_keyword_argument_index():
+def test_keyword_argument_index(Script, environment):
     def get(source, column=None):
         return Script(source, column=column).call_signatures()[0]
 
     # The signature of sorted changed from 2 to 3.
-    py2_offset = int(py_version < 30)
+    py2_offset = int(environment.version_info.major == 2)
     assert get('sorted([], key=a').index == 1 + py2_offset
     assert get('sorted([], key=').index == 1 + py2_offset
     assert get('sorted([], no_key=a').index is None
@@ -354,7 +375,7 @@ def test_keyword_argument_index():
     assert get(both + 'foo(a, b, c').index == 0
 
 
-def test_bracket_start():
+def test_bracket_start(Script):
     def bracket_start(src):
         signatures = Script(src).call_signatures()
         assert len(signatures) == 1
@@ -363,20 +384,20 @@ def test_bracket_start():
     assert bracket_start('str(') == (1, 3)
 
 
-def test_different_caller():
+def test_different_caller(Script):
     """
     It's possible to not use names, but another function result or an array
     index and then get the call signature of it.
     """
 
-    assert_signature('[str][0](', 'str', 0)
-    assert_signature('[str][0]()', 'str', 0, column=len('[str][0]('))
+    assert_signature(Script, '[str][0](', 'str', 0)
+    assert_signature(Script, '[str][0]()', 'str', 0, column=len('[str][0]('))
 
-    assert_signature('(str)(', 'str', 0)
-    assert_signature('(str)()', 'str', 0, column=len('(str)('))
+    assert_signature(Script, '(str)(', 'str', 0)
+    assert_signature(Script, '(str)()', 'str', 0, column=len('(str)('))
 
 
-def test_in_function():
+def test_in_function(Script):
     code = dedent('''\
     class X():
         @property
@@ -384,7 +405,7 @@ def test_in_function():
     assert not Script(code).call_signatures()
 
 
-def test_lambda_params():
+def test_lambda_params(Script):
     code = dedent('''\
     my_lambda = lambda x: x+1
     my_lambda(1)''')
@@ -394,7 +415,7 @@ def test_lambda_params():
     assert [p.name for p in sig.params] == ['x']
 
 
-def test_class_creation():
+def test_class_creation(Script):
     code = dedent('''\
     class X():
         def __init__(self, foo, bar):
@@ -411,7 +432,7 @@ def test_class_creation():
     assert [p.name for p in sig.params] == ['foo', 'bar']
 
 
-def test_call_magic_method():
+def test_call_magic_method(Script):
     code = dedent('''\
     class X():
         def __call__(self, baz):
