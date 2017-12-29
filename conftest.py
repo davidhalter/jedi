@@ -1,6 +1,7 @@
 import tempfile
 import shutil
 import os
+from functools import partial
 
 import pytest
 
@@ -93,6 +94,11 @@ def environment(request):
         return get_default_environment()
 
     return get_python_environment('python%s.%s' % tuple(version))
+
+
+@pytest.fixture(scope='session')
+def Script(environment):
+    return partial(jedi.Script, environment=environment)
 
 
 @pytest.fixture(scope='session')
