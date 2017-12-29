@@ -256,6 +256,8 @@ class Listener(object):
             try:
                 result = False, self._run(*payload)
             except Exception as e:
+                #import traceback
+                #print_to_stderr(traceback.format_exc())
                 result = True, e
 
             pickle.dump(result, file=stdout, protocol=_PICKLE_PROTOCOL)

@@ -20,7 +20,7 @@ from parso.tree import search_ancestor
 from parso.cache import parser_cache
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import unicode, ImplicitNSInfo
+from jedi._compatibility import unicode, ImplicitNSInfo, force_unicode
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import sys_path
@@ -254,12 +254,12 @@ class Importer(object):
             if self.import_path:  # TODO is this check really needed?
                 for path in sys_path.traverse_parents(self.file_path):
                     if os.path.basename(path) == self.str_import_path[0]:
-                        in_path.append(os.path.dirname(path))
+                        in_path.append(force_unicode(os.path.dirname(path)))
 
             # Since we know nothing about the call location of the sys.path,
             # it's a possibility that the current directory is the origin of
             # the Python execution.
-            sys_path_mod.insert(0, os.path.dirname(self.file_path))
+            sys_path_mod.insert(0, force_unicode(os.path.dirname(self.file_path)))
 
         return in_path + sys_path_mod
 

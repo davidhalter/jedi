@@ -1,3 +1,4 @@
+from jedi._compatibility import force_unicode
 from jedi.evaluate.sys_path import detect_additional_paths
 from jedi.cache import memoize_method
 
@@ -30,4 +31,8 @@ class Project(object):
         if self._script_path is None:
             return sys_path
 
-        return sys_path + detect_additional_paths(self._evaluator, self._script_path)
+        added_paths = map(
+            force_unicode,
+            detect_additional_paths(self._evaluator, self._script_path)
+        )
+        return sys_path + added_paths
