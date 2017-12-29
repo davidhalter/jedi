@@ -146,7 +146,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
         return ContextSet(TreeInstance(self.evaluator, self.parent_context, self, params))
 
     def py__class__(self):
-        return compiled.builtin_from_name(self.evaluator, 'type')
+        return compiled.builtin_from_name(self.evaluator, u'type')
 
     def get_params(self):
         from jedi.evaluate.context import AnonymousInstance

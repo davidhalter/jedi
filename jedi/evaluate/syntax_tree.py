@@ -102,7 +102,7 @@ def eval_node(context, element):
         # In Python 2 ellipsis is coded as three single dot tokens, not
         # as one token 3 dot token.
         assert element.value in ('.', '...')
-        return ContextSet(compiled.builtin_from_name(evaluator, 'Ellipsis'))
+        return ContextSet(compiled.builtin_from_name(evaluator, u'Ellipsis'))
     elif typ == 'dotted_name':
         context_set = eval_atom(context, element.children[0])
         for next_name in element.children[2::2]:
@@ -183,7 +183,7 @@ def eval_atom(context, atom):
             context_set = eval_atom(context, c[0])
             for string in c[1:]:
                 right = eval_atom(context, string)
-                context_set = _eval_comparison(context.evaluator, context, context_set, '+', right)
+                context_set = _eval_comparison(context.evaluator, context, context_set, u'+', right)
             return context_set
         # Parentheses without commas are not tuples.
         elif c[0] == '(' and not len(c) == 2 \
@@ -362,7 +362,7 @@ def _is_list(context):
 
 
 def _bool_to_context(evaluator, bool_):
-    return compiled.builtin_from_name(evaluator, str(bool_))
+    return compiled.builtin_from_name(evaluator, force_unicode(str(bool_)))
 
 
 def _eval_comparison_part(evaluator, context, left, operator, right):

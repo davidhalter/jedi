@@ -94,7 +94,7 @@ class AbstractInstanceContext(Context):
             if isinstance(obj, AbstractInstanceContext):
                 return self.execute_function_slots(names, obj, obj.class_context)
             else:
-                none_obj = compiled.builtin_from_name(self.evaluator, 'None')
+                none_obj = compiled.builtin_from_name(self.evaluator, u'None')
                 return self.execute_function_slots(names, none_obj, obj)
         else:
             return ContextSet(self)

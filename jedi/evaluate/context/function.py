@@ -146,7 +146,7 @@ class FunctionExecutionContext(TreeContext):
                     try:
                         children = r.children
                     except AttributeError:
-                        ctx = compiled.builtin_from_name(self.evaluator, 'None')
+                        ctx = compiled.builtin_from_name(self.evaluator, u'None')
                         context_set |= ContextSet(ctx)
                     else:
                         context_set |= self.eval_node(children[1])
@@ -158,7 +158,7 @@ class FunctionExecutionContext(TreeContext):
     def _eval_yield(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
-            ctx = compiled.builtin_from_name(self.evaluator, 'None')
+            ctx = compiled.builtin_from_name(self.evaluator, u'None')
             yield LazyKnownContext(ctx)
             return
 

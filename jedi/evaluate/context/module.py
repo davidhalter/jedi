@@ -25,7 +25,7 @@ class _ModuleAttributeName(AbstractNameDefinition):
         self.string_name = string_name
 
     def infer(self):
-        ctx = compiled.builtin_from_name(self.parent_context.evaluator, 'str')
+        ctx = compiled.builtin_from_name(self.parent_context.evaluator, u'str')
         return ctx.execute_evaluated()
 
 
