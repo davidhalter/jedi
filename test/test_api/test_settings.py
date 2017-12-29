@@ -4,7 +4,7 @@ import pytest
 
 from jedi import api
 from jedi.evaluate import imports
-from .helpers import cwd_at
+from ..helpers import cwd_at
 
 
 @pytest.mark.skipif('True', reason='Skip for now, test case is not really supported.')

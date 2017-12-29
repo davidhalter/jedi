@@ -273,3 +273,15 @@ def test_no_statement_parent(Script):
     defs = Script(source, column=3).goto_definitions()
     defs = sorted(defs, key=lambda d: d.line)
     assert [d.description for d in defs] == ['def f', 'class C']
+
+
+def test_backslash_continuation_and_bracket(Script):
+    code = dedent(r"""
+    x = 0
+    a = \
+      [1, 2, 3, (x)]""")
+
+    lines = code.splitlines()
+    column = lines[-1].index('(')
+    def_, = Script(code, line=len(lines), column=column).goto_definitions()
+    assert def_.name == 'int'
