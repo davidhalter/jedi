@@ -1,7 +1,7 @@
 import os
 from textwrap import dedent
 
-from jedi import Script
+from jedi._compatibility import force_unicode
 from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
                                     _get_buildout_script_paths,
                                     check_sys_path_modifications)
@@ -9,7 +9,7 @@ from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
 from ..helpers import cwd_at
 
 
-def check_module_test(code):
+def check_module_test(Script, code):
     module_context = Script(code)._get_module()
     return check_sys_path_modifications(module_context)
 
@@ -31,7 +31,7 @@ def test_buildout_detection():
     assert scripts[0] == appdir_path
 
 
-def test_append_on_non_sys_path():
+def test_append_on_non_sys_path(Script):
     code = dedent("""
         class Dummy(object):
             path = []
@@ -40,24 +40,24 @@ def test_append_on_non_sys_path():
         d.path.append('foo')"""
     )
 
-    paths = check_module_test(code)
+    paths = check_module_test(Script, code)
     assert not paths
     assert 'foo' not in paths
 
 
-def test_path_from_invalid_sys_path_assignment():
+def test_path_from_invalid_sys_path_assignment(Script):
     code = dedent("""
         import sys
         sys.path = 'invalid'"""
     )
 
-    paths = check_module_test(code)
+    paths = check_module_test(Script, code)
     assert not paths
     assert 'invalid' not in paths
 
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name/')
-def test_sys_path_with_modifications():
+def test_sys_path_with_modifications(Script):
     code = dedent("""
         import os
     """)
@@ -67,7 +67,7 @@ def test_sys_path_with_modifications():
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 
 
-def test_path_from_sys_path_assignment():
+def test_path_from_sys_path_assignment(Script):
     code = dedent("""
         #!/usr/bin/python
 
@@ -85,6 +85,7 @@ def test_path_from_sys_path_assignment():
             sys.exit(important_package.main())"""
     )
 
-    paths = check_module_test(code)
+    paths = check_module_test(Script, code)
+    paths = list(map(force_unicode, paths))
     assert 1 not in paths
     assert '/home/test/.buildout/eggs/important_package.egg' in paths

@@ -132,5 +132,5 @@ def cwd_tmpdir(monkeypatch, tmpdir):
 
 
 @pytest.fixture
-def evaluator():
-    return jedi.Script('')._evaluator
+def evaluator(Script):
+    return Script('')._evaluator

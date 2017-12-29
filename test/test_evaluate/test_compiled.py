@@ -1,16 +1,7 @@
 from textwrap import dedent
 
-import parso
-
-from jedi._compatibility import builtins, is_py3
 from jedi.evaluate import compiled
 from jedi.evaluate.context import instance
-from jedi.evaluate.context.function import FunctionContext
-from jedi.evaluate import Evaluator
-from jedi.evaluate.project import Project
-from jedi.parser_utils import clean_scope_docstring
-from jedi.api import interpreter
-from jedi import Script
 
 
 def test_simple(evaluator):
@@ -55,14 +46,14 @@ def test_doc(evaluator):
     assert obj.py__doc__() == ''
 
 
-def test_string_literals():
+def test_string_literals(Script, environment):
     def typ(string):
         d = Script("a = %s; a" % string).goto_definitions()[0]
         return d.name
 
     assert typ('""') == 'str'
     assert typ('r""') == 'str'
-    if is_py3:
+    if environment.version_info.major > 2:
         assert typ('br""') == 'bytes'
         assert typ('b""') == 'bytes'
         assert typ('u""') == 'str'
@@ -71,7 +62,7 @@ def test_string_literals():
         assert typ('u""') == 'unicode'
 
 
-def test_method_completion():
+def test_method_completion(Script, environment):
     code = dedent('''
     class Foo:
         def bar(self):
@@ -79,18 +70,18 @@ def test_method_completion():
 
     foo = Foo()
     foo.bar.__func__''')
-    if is_py3:
+    if environment.version_info.major > 2:
         result = []
     else:
         result = ['__func__']
     assert [c.name for c in Script(code).completions()] == result
 
 
-def test_time_docstring():
+def test_time_docstring(Script):
     import time
     comp, = Script('import time\ntime.sleep').completions()
     assert comp.docstring() == time.sleep.__doc__
 
 
-def test_dict_values():
+def test_dict_values(Script):
     assert Script('import sys\nsys.modules["alshdb;lasdhf"]').goto_definitions()
