@@ -222,3 +222,54 @@ def test_goto_module(Script):
 
     check(1, os.path.join(base_path, 'module.py'))
     check(5, os.path.join(base_path, 'module2.py'))
+
+
+def test_goto_definition_cursor(Script):
+
+    s = ("class A():\n"
+         "    def _something(self):\n"
+         "        return\n"
+         "    def different_line(self,\n"
+         "                   b):\n"
+         "        return\n"
+         "A._something\n"
+         "A.different_line"
+         )
+
+    in_name = 2, 9
+    under_score = 2, 8
+    cls = 2, 7
+    should1 = 7, 10
+    diff_line = 4, 10
+    should2 = 8, 10
+
+    def get_def(pos):
+        return [d.description for d in Script(s, *pos).goto_definitions()]
+
+    in_name = get_def(in_name)
+    under_score = get_def(under_score)
+    should1 = get_def(should1)
+    should2 = get_def(should2)
+
+    diff_line = get_def(diff_line)
+
+    assert should1 == in_name
+    assert should1 == under_score
+
+    assert should2 == diff_line
+
+    assert get_def(cls) == []
+
+
+def test_no_statement_parent(Script):
+    source = dedent("""
+    def f():
+        pass
+
+    class C:
+        pass
+
+    variable = f if random.choice([0, 1]) else C""")
+    defs = Script(source, column=3).goto_definitions()
+    defs = sorted(defs, key=lambda d: d.line)
+    assert [d.description for d in defs] == ['def f', 'class C']
