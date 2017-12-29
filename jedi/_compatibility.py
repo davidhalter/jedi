@@ -291,6 +291,13 @@ def no_unicode_pprint(dct):
     print(re.sub("u'", "'", s))
 
 
+def print_to_stderr(string):
+    if is_py3:
+        eval("print(string, file=sys.stderr)")
+    else:
+        print >> sys.stderr, string
+
+
 def utf8_repr(func):
     """
     ``__repr__`` methods in Python 2 don't allow unicode objects to be
