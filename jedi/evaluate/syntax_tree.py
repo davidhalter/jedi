@@ -477,7 +477,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         types = _remove_statements(evaluator, context, node, tree_name)
     elif typ == 'with_stmt':
         context_managers = context.eval_node(node.get_test_node_from_name(tree_name))
-        enter_methods = context_managers.py__getattribute__('__enter__')
+        enter_methods = context_managers.py__getattribute__(u'__enter__')
         return enter_methods.execute_evaluated()
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
