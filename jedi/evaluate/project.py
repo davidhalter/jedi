@@ -35,4 +35,4 @@ class Project(object):
             force_unicode,
             detect_additional_paths(self._evaluator, self._script_path)
         )
-        return sys_path + added_paths
+        return sys_path + list(added_paths)
