@@ -107,15 +107,15 @@ def test_completion_on_complex_literals(Script):
             set(['if', 'and', 'in', 'is', 'not', 'or']))
 
 
-def test_goto_assignments_on_non_name(Script):
+def test_goto_assignments_on_non_name(Script, environment):
     assert Script('for').goto_assignments() == []
 
     assert Script('assert').goto_assignments() == []
-    if is_py3:
-        assert Script('True').goto_assignments() == []
-    else:
+    if environment.version_info.major == 2:
         # In Python 2.7 True is still a name.
         assert Script('True').goto_assignments()[0].description == 'instance True'
+    else:
+        assert Script('True').goto_assignments() == []
 
 
 def test_goto_definitions_on_non_name(Script):
