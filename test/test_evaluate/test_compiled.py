@@ -13,14 +13,14 @@ def test_simple(evaluator):
 
 
 def test_fake_loading(evaluator):
-    builtin = compiled.get_special_object(evaluator, 'BUILTINS')
+    builtin = compiled.get_special_object(evaluator, u'BUILTINS')
     string, = builtin.py__getattribute__('str')
     from_name = compiled.context.create_from_name(evaluator, string, '__init__')
     assert from_name.tree_node
 
 
 def test_fake_docstr(evaluator):
-    next_ = compiled.builtin_from_name(evaluator, 'next')
+    next_ = compiled.builtin_from_name(evaluator, u'next')
     assert next_.py__doc__()
     assert next_.tree_node is not None
     assert next_.py__doc__() == next.__doc__

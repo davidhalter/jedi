@@ -30,9 +30,9 @@ def cwd_at(path):
     """
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwds):
+        def wrapper(Script, **kwds):
             with set_cwd(path):
-                return func(*args, **kwds)
+                return func(Script, **kwds)
         return wrapper
     return decorator
 

@@ -79,7 +79,7 @@ class TestSetupReadline(unittest.TestCase):
         assert len(set(self.completions(s)).symmetric_difference(goal)) < 20
 
     @cwd_at('test')
-    def test_local_import(self):
+    def test_local_import(self, _):
         s = 'import test_utils'
         assert self.completions(s) == [s]
 

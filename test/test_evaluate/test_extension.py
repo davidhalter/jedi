@@ -36,7 +36,7 @@ def test_call_signatures_stdlib(Script):
 # Check only on linux 64 bit platform and Python3.4.
 @pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 4)')
 @cwd_at('test/test_evaluate')
-def test_init_extension_module():
+def test_init_extension_module(Script):
     """
     ``__init__`` extension modules are also packages and Jedi should understand
     that.

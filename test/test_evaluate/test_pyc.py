@@ -44,7 +44,7 @@ def generate_pyc():
 
 
 @cwd_at('test/test_evaluate')
-def test_pyc():
+def test_pyc(Script):
     """
     The list of completion must be greater than 2.
     """
