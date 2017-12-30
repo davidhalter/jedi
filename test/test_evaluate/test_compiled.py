@@ -5,8 +5,8 @@ from jedi.evaluate.context import instance
 
 
 def test_simple(evaluator):
-    obj = compiled.create_simple_object(evaluator, '_str_')
-    upper, = obj.py__getattribute__('upper')
+    obj = compiled.create_simple_object(evaluator, u'_str_')
+    upper, = obj.py__getattribute__(u'upper')
     objs = list(upper.execute_evaluated())
     assert len(objs) == 1
     assert isinstance(objs[0], instance.CompiledInstance)
@@ -14,8 +14,8 @@ def test_simple(evaluator):
 
 def test_fake_loading(evaluator):
     builtin = compiled.get_special_object(evaluator, u'BUILTINS')
-    string, = builtin.py__getattribute__('str')
-    from_name = compiled.context.create_from_name(evaluator, string, '__init__')
+    string, = builtin.py__getattribute__(u'str')
+    from_name = compiled.context.create_from_name(evaluator, string, u'__init__')
     assert from_name.tree_node
 
 
@@ -40,9 +40,9 @@ def test_doc(evaluator):
     Even CompiledObject docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    str_ = compiled.create_simple_object(evaluator, '')
+    str_ = compiled.create_simple_object(evaluator, u'')
     # Equals `''.__getnewargs__`
-    obj = compiled.create_from_name(evaluator, str_, '__getnewargs__')
+    obj = compiled.create_from_name(evaluator, str_, u'__getnewargs__')
     assert obj.py__doc__() == ''
 
 
