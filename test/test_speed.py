@@ -17,12 +17,12 @@ def _check_speed(time_per_run, number=4, run_warm=True):
     reintroduced to Jedi."""
     def decorated(func):
         @functools.wraps(func)
-        def wrapper(**kwargs):
+        def wrapper(Script, **kwargs):
             if run_warm:
-                func(**kwargs)
+                func(Script=Script, **kwargs)
             first = time.time()
             for i in range(number):
-                func(**kwargs)
+                func(Script=Script, **kwargs)
             single_time = (time.time() - first) / number
             message = 'speed issue %s, %s' % (func, single_time)
             assert single_time < time_per_run, message
@@ -57,7 +57,7 @@ def test_precedence_slowdown(Script):
 
 
 @_check_speed(0.1)
-def test_no_repr_computation():
+def test_no_repr_computation(Script):
     """
     For Interpreter completion aquisition of sourcefile can trigger
     unwanted computation of repr(). Exemple : big pandas data.
