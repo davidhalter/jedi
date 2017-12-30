@@ -9,7 +9,6 @@ Note that this module exists only to implement very specific functionality in
 the standard library. The usual way to understand the standard library is the
 compiled module that returns the types for C-builtins.
 """
-import collections
 import re
 
 from jedi._compatibility import force_unicode
@@ -267,8 +266,11 @@ def collections_namedtuple(evaluator, obj, arguments):
     .. note:: |jedi| only supports namedtuples on Python >2.6.
 
     """
-    # Namedtuples are not supported on Python 2.6
-    if not hasattr(collections, '_class_template'):
+    collections_context = obj.parent_context
+    _class_template_set = collections_context.py__getattribute__(u'_class_template')
+    if not _class_template_set:
+        # Namedtuples are not supported on Python 2.6, early 2.7, because the
+        # _class_template variable is not defined, there.
         return NO_CONTEXTS
 
     # Process arguments
@@ -287,16 +289,20 @@ def collections_namedtuple(evaluator, obj, arguments):
     else:
         return NO_CONTEXTS
 
-    base = collections._class_template
+    def get_var(name):
+        x, = collections_context.py__getattribute__(name)
+        return x.get_safe_value()
+
+    base = next(iter(_class_template_set)).get_safe_value()
     base += _NAMEDTUPLE_INIT
     # Build source
     source = base.format(
         typename=name,
         field_names=tuple(fields),
         num_fields=len(fields),
-        arg_list = repr(tuple(fields)).replace("'", "")[1:-1],
-        repr_fmt=', '.join(collections._repr_template.format(name=name) for name in fields),
-        field_defs='\n'.join(collections._field_template.format(index=index, name=name)
+        arg_list=repr(tuple(fields)).replace("u'", "").replace("'", "")[1:-1],
+        repr_fmt=', '.join(get_var(u'_repr_template').format(name=name) for name in fields),
+        field_defs='\n'.join(get_var(u'_field_template').format(index=index, name=name)
                              for index, name in enumerate(fields))
     )
 

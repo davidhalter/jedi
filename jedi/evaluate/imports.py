@@ -12,7 +12,6 @@ This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (curser at the end would return ``datetime``).
 """
 import os
-import sys
 
 from parso.python import tree
 from parso.tree import search_ancestor
