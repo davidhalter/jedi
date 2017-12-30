@@ -33,7 +33,20 @@ def test_venv_and_pths(tmpdir, environment):
 
     # Ignore if it fails. It usually fails if it's not able to properly install
     # pip. However we don't need that for this test.
-    os.system(environment._executable + ' -m venv ' + dirname)
+    executable_path = '/usr/bin/' + os.path.basename(environment._executable)
+    if not os.path.exists(executable_path):
+        # Need to not use the path in the virtualenv. Since tox creates
+        # virtualenvs we cannot reuse them, because they have different site.py
+        # files that work differently than the default ones.
+        # Since nobody creates venv's from within virtualenvs (doesn't make
+        # sense and people are hopefully starting to avoid virtualenv now -
+        # because it's more complicated than venv), it's the correct approach
+        # to just use the systems Python directly.
+        # This doesn't work for windows and others, but I currently don't care.
+        # Feel free to improve.
+        pytest.skip()
+
+    os.system(executable_path + ' -m venv ' + dirname)
 
     # We cannot find the virtualenv in some cases, because the virtualenv was
     # not created correctly.
