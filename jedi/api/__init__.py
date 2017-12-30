@@ -15,6 +15,7 @@ import sys
 from parso.python import tree
 from parso import python_bytes_to_unicode, split_lines
 
+from jedi._compatibility import force_unicode, is_py3
 from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
@@ -110,6 +111,9 @@ class Script(object):
 
         cache.clear_time_caches()
         debug.reset_time()
+
+        if sys_path is not None and not is_py3:
+            sys_path = list(map(force_unicode, sys_path))
 
         # Load the Python grammar of the current interpreter.
         project = Project(sys_path=sys_path)
