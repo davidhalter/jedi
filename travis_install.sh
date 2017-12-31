@@ -8,4 +8,5 @@ $PYTHON --version && exit 0 || true
 # Otherwise download and install.
 wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/14.04/x86_64/$PYTHON.tar.bz2
 sudo tar xjf $PYTHON.tar.bz2 --directory /
-$PYTHON --version
+python3.3 --version
+ls /usr/bin
