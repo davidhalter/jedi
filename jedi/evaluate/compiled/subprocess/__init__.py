@@ -19,6 +19,7 @@ from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
     SignatureParam
+from jedi.api.exceptions import InternalError
 
 _PICKLE_PROTOCOL = 2
 
@@ -141,25 +142,6 @@ class _Subprocess(object):
             # stderr=subprocess.PIPE
         )
 
-    def _send(self, evaluator_id, function, args=(), kwargs={}):
-        if not is_py3:
-            # Python 2 compatibility
-            kwargs = {force_unicode(key): value for key, value in kwargs.items()}
-
-        data = evaluator_id, function, args, kwargs
-        pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
-        self._process.stdin.flush()
-        is_exception, result = _pickle_load(self._process.stdout)
-        if is_exception:
-            raise result
-        return result
-
-    def terminate(self):
-        self._process.terminate()
-
-    def kill(self):
-        self._process.kill()
-
 
 class _CompiledSubprocess(_Subprocess):
     def __init__(self, executable):
@@ -170,6 +152,7 @@ class _CompiledSubprocess(_Subprocess):
              os.path.dirname(os.path.dirname(parso_path))
              )
         )
+        self._executable = executable
         self._evaluator_deletion_queue = queue.deque()
 
     def run(self, evaluator, function, args=(), kwargs={}):
@@ -187,6 +170,38 @@ class _CompiledSubprocess(_Subprocess):
 
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
+
+    def kill(self):
+        try:
+            subprocess = _subprocesses[self._executable]
+        except KeyError:
+            # Fine it was already removed from the cache.
+            pass
+        else:
+            # In the `!=` case there is already a new subprocess in place
+            # and we don't need to do anything here anymore.
+            if subprocess == self:
+                del _subprocesses[self._executable]
+
+        self._process.kill()
+
+    def _send(self, evaluator_id, function, args=(), kwargs={}):
+        if not is_py3:
+            # Python 2 compatibility
+            kwargs = {force_unicode(key): value for key, value in kwargs.items()}
+
+        data = evaluator_id, function, args, kwargs
+        pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
+        self._process.stdin.flush()
+        try:
+            is_exception, result = _pickle_load(self._process.stdout)
+        except EOFError:
+            self.kill()
+            raise InternalError("The subprocess crashed.")
+
+        if is_exception:
+            raise result
+        return result
 
     def delete_evaluator(self, evaluator_id):
         """

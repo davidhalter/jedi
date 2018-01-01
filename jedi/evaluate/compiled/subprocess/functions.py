@@ -66,6 +66,13 @@ def get_builtin_module_names(evaluator):
     return list(map(force_unicode, sys.builtin_module_names))
 
 
+def _test_raise_error(evaluator, exception_type):
+    """
+    Raise an error to simulate certain problems for unit tests.
+    """
+    raise exception_type
+
+
 def _get_init_path(directory_path):
     """
     The __init__ file can be searched in a directory. If found return it, else

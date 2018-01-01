@@ -1,5 +1,6 @@
 import pytest
 
+import jedi
 from jedi._compatibility import py_version
 from jedi.api.environment import Environment, get_default_environment, \
     InvalidPythonEnvironment, find_python_environments
@@ -45,3 +46,12 @@ def test_load_module(evaluator):
     assert access_handle.get_api_type() == 'module'
     with pytest.raises(AttributeError):
         access_handle.py__mro__()
+
+
+def test_error_in_environment(evaluator, Script):
+    # Provoke an error to show how Jedi can recover from it.
+    with pytest.raises(jedi.InternalError):
+        evaluator.compiled_subprocess._test_raise_error(KeyboardInterrupt)
+    # Jedi should still work.
+    def_, = Script('str').goto_definitions()
+    assert def_.name == 'str'
