@@ -10,6 +10,8 @@ goals:
 import os
 import sys
 import subprocess
+import socket
+import errno
 import weakref
 import pickle
 from functools import partial
@@ -192,7 +194,16 @@ class _CompiledSubprocess(object):
 
         data = evaluator_id, function, args, kwargs
         pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
-        self._process.stdin.flush()
+        try:
+            self._process.stdin.flush()
+        except socket.error as e:
+            # Once Python2 will be removed we can just use `BrokenPipeError`.
+            if e.errno != errno.EPIPE:
+                # Not a broken pipe
+                raise
+            self.kill()
+            raise InternalError("The subprocess was killed. Maybe out of memory?")
+
         try:
             is_exception, result = _pickle_load(self._process.stdout)
         except EOFError:

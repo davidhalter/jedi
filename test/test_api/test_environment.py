@@ -58,3 +58,16 @@ def test_error_in_environment(evaluator, Script):
     # Jedi should still work.
     def_, = Script('str').goto_definitions()
     assert def_.name == 'str'
+
+
+def test_killed_subprocess(evaluator, Script):
+    # Just kill the subprocess.
+    evaluator.compiled_subprocess._compiled_subprocess._process.kill()
+    # Since the process was terminated (and nobody knows about it) the first
+    # Jedi call fails.
+    with pytest.raises(jedi.InternalError):
+        Script('str').goto_definitions()
+
+    def_, = Script('str').goto_definitions()
+    # Jedi should now work again.
+    assert def_.name == 'str'
