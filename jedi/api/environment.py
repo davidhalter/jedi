@@ -37,7 +37,26 @@ class Environment(_BaseEnvironment):
     def __init__(self, path, executable):
         self._base_path = path
         self._executable = executable
-        self.version_info = _get_version(self._executable)
+        self.version_info = self._get_version()
+
+    def _get_version(self):
+        try:
+            process = Popen([self._executable, '--version'], stdout=PIPE, stderr=PIPE)
+            stdout, stderr = process.communicate()
+            retcode = process.poll()
+            if retcode:
+                raise InvalidPythonEnvironment()
+        except OSError:
+            raise InvalidPythonEnvironment()
+
+        # Until Python 3.4 wthe version string is part of stderr, after that
+        # stdout.
+        output = stdout + stderr
+        match = re.match(br'Python (\d+)\.(\d+)\.(\d+)', output)
+        if match is None:
+            raise InvalidPythonEnvironment()
+
+        return _VersionInfo(*[int(m) for m in match.groups()])
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._base_path)
@@ -58,6 +77,14 @@ class Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
+class DefaultEnvironment(Environment):
+    def __init__(self):
+        super(DefaultEnvironment, self).__init__(sys.prefix, sys.executable)
+
+    def _get_version(self):
+        return _VersionInfo(*sys.version_info[:3])
+
+
 class InterpreterEnvironment(_BaseEnvironment):
     def __init__(self):
         self.version_info = _VersionInfo(*sys.version_info[:3])
@@ -70,7 +97,7 @@ class InterpreterEnvironment(_BaseEnvironment):
 
 
 def get_default_environment():
-    return Environment(sys.prefix, sys.executable)
+    return DefaultEnvironment()
 
 
 def find_virtualenvs(paths=None):
@@ -125,23 +152,3 @@ def _get_executable_path(path):
     if not all(os.path.exists(p) for p in (activate, python)):
         raise InvalidPythonEnvironment("One of bin/activate and bin/python is missing.")
     return python
-
-
-def _get_version(executable):
-    try:
-        process = Popen([executable, '--version'], stdout=PIPE, stderr=PIPE)
-        stdout, stderr = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            raise InvalidPythonEnvironment()
-    except OSError:
-        raise InvalidPythonEnvironment()
-
-    # Until Python 3.4 wthe version string is part of stderr, after that
-    # stdout.
-    output = stdout + stderr
-    match = re.match(br'Python (\d+)\.(\d+)\.(\d+)', output)
-    if match is None:
-        raise InvalidPythonEnvironment()
-
-    return _VersionInfo(*[int(m) for m in match.groups()])
