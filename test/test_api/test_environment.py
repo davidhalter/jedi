@@ -52,6 +52,9 @@ def test_error_in_environment(evaluator, Script):
     # Provoke an error to show how Jedi can recover from it.
     with pytest.raises(jedi.InternalError):
         evaluator.compiled_subprocess._test_raise_error(KeyboardInterrupt)
+    # The second time it should raise an InternalError again.
+    with pytest.raises(jedi.InternalError):
+        evaluator.compiled_subprocess._test_raise_error(KeyboardInterrupt)
     # Jedi should still work.
     def_, = Script('str').goto_definitions()
     assert def_.name == 'str'

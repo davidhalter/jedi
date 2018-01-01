@@ -128,32 +128,28 @@ class EvaluatorSubprocess(_EvaluatorProcess):
             self._compiled_subprocess.delete_evaluator(self._evaluator_id)
 
 
-class _Subprocess(object):
-    def __init__(self, args):
-        self._args = args
+class _CompiledSubprocess(object):
+    _crashed = False
+
+    def __init__(self, executable):
+        self._executable = executable
+        self._evaluator_deletion_queue = queue.deque()
 
     @property
     @memoize_method
     def _process(self):
+        parso_path = sys.modules['parso'].__file__
+        args = (
+            self._executable,
+            _MAIN_PATH,
+            os.path.dirname(os.path.dirname(parso_path))
+        )
         return subprocess.Popen(
-            self._args,
+            args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             # stderr=subprocess.PIPE
         )
-
-
-class _CompiledSubprocess(_Subprocess):
-    def __init__(self, executable):
-        parso_path = sys.modules['parso'].__file__
-        super(_CompiledSubprocess, self).__init__(
-            (executable,
-             _MAIN_PATH,
-             os.path.dirname(os.path.dirname(parso_path))
-             )
-        )
-        self._executable = executable
-        self._evaluator_deletion_queue = queue.deque()
 
     def run(self, evaluator, function, args=(), kwargs={}):
         # Delete old evaluators.
@@ -172,6 +168,7 @@ class _CompiledSubprocess(_Subprocess):
         return self._send(None, functions.get_sys_path, (), {})
 
     def kill(self):
+        self._crashed = True
         try:
             subprocess = _subprocesses[self._executable]
         except KeyError:
@@ -186,6 +183,9 @@ class _CompiledSubprocess(_Subprocess):
         self._process.kill()
 
     def _send(self, evaluator_id, function, args=(), kwargs={}):
+        if self._crashed:
+            raise InternalError("The subprocess has crashed.")
+
         if not is_py3:
             # Python 2 compatibility
             kwargs = {force_unicode(key): value for key, value in kwargs.items()}
