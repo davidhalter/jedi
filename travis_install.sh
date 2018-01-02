@@ -23,7 +23,7 @@ PYTHON=python-$VERSION
 # Check if the desired Python version already exists.
 $PYTHON --version && exit 0 || true
 
-if [[ -z $DOWNLOAD ]]; then
+if [[ $DOWNLOAD == 1 ]]; then
     # Otherwise download and install.
     DOWNLOAD_NAME=python-$VERSION
     wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/14.04/x86_64/$DOWNLOAD_NAME.tar.bz2
