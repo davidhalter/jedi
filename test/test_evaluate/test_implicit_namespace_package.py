@@ -76,7 +76,7 @@ def test_namespace_package_in_multiple_directories_autocompletion():
 
     script = jedi.Script(sys_path=sys_path, source=CODE)
     compl = script.completions()
-    assert set(c.name for c in compl) == {'ns1_file', 'ns2_file'}
+    assert set(c.name for c in compl) == set(['ns1_file', 'ns2_file'])
 
 
 @pytest.mark.skipif('sys.version_info[:2] < (3,4)')

@@ -166,10 +166,11 @@ def _iter_modules(paths, prefix=''):
     for path in paths:
         importer = pkgutil.get_importer(path)
 
-        if importer.path is None or not os.path.isdir(importer.path):
+        if importer is None or importer.path is None or not os.path.isdir(importer.path):
             return
 
         yielded = {}
+
         import inspect
         try:
             filenames = os.listdir(importer.path)
