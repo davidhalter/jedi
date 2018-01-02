@@ -9,9 +9,6 @@ if [[ $JEDI_TEST_ENVIRONMENT == "35" ]]; then
     VERSION=3.5
     DOWNLOAD=1
 fi
-if [[ $JEDI_TEST_ENVIRONMENT == "36" ]]; then
-    VERSION=3.6
-fi
 
 if [[ -z $VERSION ]]; then
     echo "Environments should already be installed"
@@ -30,5 +27,4 @@ if [[ $DOWNLOAD == 1 ]]; then
     sudo tar xjf $DOWNLOAD_NAME.tar.bz2 --directory /
 fi
 
-# Need to add the path in the end.
-export PATH=$PATH:/opt/python/$VERSION/bin
+echo "Successfully installed environment."

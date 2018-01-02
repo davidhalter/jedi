@@ -27,9 +27,17 @@ matrix:
       env: TOXENV=sith
     - python: pypy
     - python: "3.7-dev"
+before_install:
+    - ./travis_install.sh
+    # Need to add the path to the Python versions in the end. This might add
+    # something twice, but it doesn't really matter, because they are appended.
+    - export PATH=$PATH:/opt/python/3.3/bin
+    - export PATH=$PATH:/opt/python/3.5/bin
+    # 3.6 was not installed manually, but already is on the system. However
+    # it's not on path (unless 3.6 is selected).
+    - export PATH=$PATH:/opt/python/3.6/bin
 install:
     - pip install --quiet tox-travis
-    - ./travis_install.sh
 script:
     - tox
 after_script:
