@@ -168,7 +168,8 @@ def _iter_modules(paths, prefix=''):
         importer = pkgutil.get_importer(path)
 
         if not isinstance(importer, importlib.machinery.FileFinder):
-            yield from pkgutil.iter_modules([path], prefix)
+            for mod_info in pkgutil.iter_modules([path], prefix):
+                yield mod_info
             continue
 
         if importer.path is None or not os.path.isdir(importer.path):
