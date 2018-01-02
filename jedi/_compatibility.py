@@ -163,10 +163,15 @@ if the module is contained in a package.
 
 def _iter_modules(paths, prefix=''):
     # Copy of pkgutil.iter_modules adapted to work with namespaces
+
     for path in paths:
         importer = pkgutil.get_importer(path)
 
-        if importer is None or importer.path is None or not os.path.isdir(importer.path):
+        if not isinstance(importer, importlib.machinery.FileFinder):
+            yield from pkgutil.iter_modules([path], prefix)
+            continue
+
+        if importer.path is None or not os.path.isdir(importer.path):
             return
 
         yielded = {}
