@@ -1,3 +1,7 @@
+import os
+import sys
+from contextlib import contextmanager
+
 import pytest
 
 import jedi
@@ -71,3 +75,21 @@ def test_killed_subprocess(evaluator, Script):
     def_, = Script('str').goto_definitions()
     # Jedi should now work again.
     assert def_.name == 'str'
+
+
+@contextmanager
+def set_environment_variable(name, value):
+    tmp = os.environ.get(name)
+    try:
+        os.environ[name] = value
+        yield
+    finally:
+        if tmp is None:
+            del os.environ[name]
+        else:
+            os.environ[name] = tmp
+
+
+def test_virtualenv():
+    with set_environment_variable('VIRTUAL_ENV', '/foo/bar/jedi_baz'):
+        assert get_default_environment()._executable == sys.executable

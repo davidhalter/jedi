@@ -97,6 +97,12 @@ class InterpreterEnvironment(_BaseEnvironment):
 
 
 def get_default_environment():
+    virtual_env = os.environ.get('VIRTUAL_ENV')
+    if virtual_env is not None and virtual_env != sys.prefix:
+        try:
+            return create_environment(virtual_env)
+        except InvalidPythonEnvironment:
+            pass
     return DefaultEnvironment()
 
 
