@@ -25,8 +25,9 @@ class MixinTestFullName(object):
     operation = None
 
     @pytest.fixture(autouse=True)
-    def init(self, Script):
+    def init(self, Script, environment):
         self.Script = Script
+        self.environment = environment
 
     def check(self, source, desired):
         script = self.Script(textwrap.dedent(source))
@@ -44,8 +45,10 @@ class MixinTestFullName(object):
 class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
     operation = 'goto_definitions'
 
-    @pytest.mark.skipif('sys.version_info[0] < 3', reason='Python 2 also yields None.')
     def test_tuple_mapping(self):
+        if self.environment.version_info.major == 2:
+            pytest.skip('Python 2 also yields None.')
+
         self.check("""
         import re
         any_re = re.compile('.*')
