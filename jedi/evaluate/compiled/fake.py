@@ -11,7 +11,7 @@ from itertools import chain
 
 from parso.python import tree
 
-from jedi._compatibility import is_py3, builtins, unicode, is_py34
+from jedi._compatibility import is_py3, builtins, unicode
 
 modules = {}
 
@@ -36,11 +36,10 @@ NOT_CLASS_TYPES = (
 
 if is_py3:
     NOT_CLASS_TYPES += (
+        types.DynamicClassAttribute,
         types.MappingProxyType,
-        types.SimpleNamespace
+        types.SimpleNamespace,
     )
-    if is_py34:
-        NOT_CLASS_TYPES += (types.DynamicClassAttribute,)
 
 
 class FakeDoesNotExist(Exception):

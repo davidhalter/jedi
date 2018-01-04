@@ -3,8 +3,6 @@ Test the typing library, with docstrings. This is needed since annotations
 are not supported in python 2.7 else then annotating by comment (and this is
 still TODO at 2016-01-23)
 """
-# There's no Python 2.6 typing module.
-# python >= 2.7
 import typing
 class B:
     pass
@@ -242,7 +240,7 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
-# python >= 3.2
+# python >= 3.4
 """
 docstrings have some auto-import, annotations can use all of Python's
 import logic

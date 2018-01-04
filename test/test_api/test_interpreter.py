@@ -4,7 +4,7 @@ Tests of ``jedi.api.Interpreter``.
 import pytest
 
 import jedi
-from jedi._compatibility import is_py33, py_version
+from jedi._compatibility import is_py3, py_version
 from jedi.evaluate.compiled import mixed
 
 
@@ -138,7 +138,7 @@ def test_complete_raw_instance():
     import datetime
     dt = datetime.datetime(2013, 1, 1)
     completions = ['time', 'timetz', 'timetuple']
-    if is_py33:
+    if is_py3:
         completions += ['timestamp']
     _assert_interpreter_complete('(dt - dt).ti',
                                  locals(),

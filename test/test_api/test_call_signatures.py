@@ -5,7 +5,7 @@ import warnings
 from ..helpers import TestCase
 from jedi import Script
 from jedi import cache
-from jedi._compatibility import is_py33
+from jedi._compatibility import is_py3
 
 
 def assert_signature(source, expected_name, expected_index=0, line=None, column=None):
@@ -227,7 +227,7 @@ class TestParams(TestCase):
         return signatures[0].params
 
     def test_param_name(self):
-        if not is_py33:
+        if not is_py3:
             p = self.params('''int(''')
             # int is defined as: `int(x[, base])`
             assert p[0].name == 'x'

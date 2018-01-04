@@ -20,7 +20,7 @@ make it work.
 General Features
 ----------------
 
-- python 2.6+ and 3.3+ support
+- Python 2.7 and 3.4+ support
 - ignores syntax errors and wrong indentation
 - can deal with complex module / function / class structures
 - virtualenv support
@@ -64,7 +64,7 @@ Not yet implemented:
 
 - manipulations of instances outside the instance variables without using
   methods
-- implicit namespace packages (Python 3.3+, `PEP 420 <https://www.python.org/dev/peps/pep-0420/>`_)
+- implicit namespace packages (Python 3.4+, `PEP 420 <https://www.python.org/dev/peps/pep-0420/>`_)
 
 Will probably never be implemented:
 
@@ -88,7 +88,7 @@ etc.
 **Security**
 
 Security is an important issue for |jedi|. Therefore no Python code is
-executed.  As long as you write pure python, everything is evaluated
+executed.  As long as you write pure Python, everything is evaluated
 statically. But: If you use builtin modules (``c_builtin``) there is no other
 option than to execute those modules. However: Execute isn't that critical (as
 e.g. in pythoncomplete, which used to execute *every* import!), because it
@@ -117,7 +117,7 @@ one of the following docstring/annotation syntax styles:
 
 https://www.python.org/dev/peps/pep-0484/
 
-function annotations (python 3 only; python 2 function annotations with
+function annotations (Python 3 only; Python 2 function annotations with
 comments in planned but not yet implemented)
 
 ::
@@ -129,7 +129,7 @@ comments in planned but not yet implemented)
         node.| # complete here
 
 
-assignment, for-loop and with-statement type hints (all python versions).
+assignment, for-loop and with-statement type hints (all Python versions).
 Note that the type hints must be on the same line as the statement
 
 ::
@@ -142,7 +142,7 @@ Note that the type hints must be on the same line as the statement
         print(f + 3)
 
 Most of the features in PEP-0484 are supported including the typing module
-(for python < 3.5 you have to do ``pip install typing`` to use these),
+(for Python < 3.5 you have to do ``pip install typing`` to use these),
 and forward references.
 
 Things that are missing (and this is not an exhaustive list; some of these

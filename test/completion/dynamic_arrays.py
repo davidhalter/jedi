@@ -288,8 +288,6 @@ third()[0]
 # -----------------
 # set.add
 # -----------------
-# Set literals are not valid in 2.6.
-# python >= 2.7
 st = {1.0}
 for a in [1,2]:
     st.add(a)

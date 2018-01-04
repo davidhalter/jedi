@@ -13,7 +13,6 @@ from jedi._compatibility import find_module_py33, find_module
 from ..helpers import cwd_at
 
 from jedi import Script
-from jedi._compatibility import is_py26
 
 
 @pytest.mark.skipif('sys.version_info < (3,3)')
@@ -47,7 +46,6 @@ def test_find_module_package_zipped():
     assert len(jedi.Script('import pkg; pkg.mod', 1, 19).completions()) == 1
 
 
-@pytest.mark.skipif('sys.version_info < (2,7)')
 def test_find_module_not_package_zipped():
     if 'zipped_imports/not_pkg.zip' not in sys.path:
       sys.path.append(os.path.join(os.path.dirname(__file__),
@@ -160,8 +158,7 @@ def test_complete_on_empty_import():
 
     wanted = set(['ImportError', 'import', 'ImportWarning'])
     assert set([c.name for c in Script("import").completions()]) == wanted
-    if not is_py26:  # python 2.6 doesn't always come with a library `import*`.
-        assert len(Script("import import", path='').completions()) > 0
+    assert len(Script("import import", path='').completions()) > 0
 
     # 111
     assert Script("from datetime import").completions()[0].name == 'import'

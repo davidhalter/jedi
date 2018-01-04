@@ -286,8 +286,6 @@ with open('') as f:
         #? str()
         line
 
-# Nested with statements don't exist in Python 2.6.
-# python >= 2.7
 with open('') as f1, open('') as f2:
     #? ['closed']
     f1.closed

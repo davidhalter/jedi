@@ -116,8 +116,6 @@ tup4.index
 # -----------------
 # set
 # -----------------
-# Set literals are not valid in 2.6.
-# python >= 2.7
 set_t = {1,2}
 
 #? ['clear', 'copy']
