@@ -44,7 +44,7 @@ except (TypeError, NotImplementedError): pass
 # -----------------
 try:
     str.not_existing
-except ((AttributeError)): pass
+except (AttributeError): pass
 try:
     #! 4 attribute-error
     str.not_existing

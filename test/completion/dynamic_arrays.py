@@ -6,7 +6,7 @@ Checking for ``list.append`` and all the other possible array modifications.
 # -----------------
 arr = []
 for a in [1,2]:
-    arr.append(a);
+    arr.append(a)
 
 arr.append  # should not cause an exception
 arr.append()  # should not cause an exception
@@ -16,7 +16,7 @@ arr[10]
 
 arr = [tuple()]
 for a in [1,2]:
-    arr.append(a);
+    arr.append(a)
 
 #? int() tuple()
 arr[10]
@@ -112,9 +112,9 @@ iter(lst)[0]
 # -----------------
 # complex including +=
 # -----------------
-class C(): pass
-class D(): pass
-class E(): pass
+class C: pass
+class D: pass
+class E: pass
 lst = [1]
 lst.append(1.0)
 lst += [C]
@@ -207,7 +207,7 @@ blub()[0]
 # -----------------
 # returns, the same for classes
 # -----------------
-class C():
+class C:
     def blub(self, b):
         if 1:
             a = []
@@ -254,7 +254,7 @@ C().list_arr(1.0)[0]
 # array recursions
 # -----------------
 
-a = set([1.0])
+a = {1.0}
 a.update(a)
 a.update([1])
 
@@ -288,8 +288,6 @@ third()[0]
 # -----------------
 # set.add
 # -----------------
-# Set literals are not valid in 2.6.
-# python >= 2.7
 st = {1.0}
 for a in [1,2]:
     st.add(a)

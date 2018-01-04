@@ -7,7 +7,7 @@ from parso.python import tree
 import pytest
 
 
-class TestCallAndName():
+class TestCallAndName:
     def get_call(self, source):
         # Get the simple_stmt and then the first one.
         node = parse(source).children[0]

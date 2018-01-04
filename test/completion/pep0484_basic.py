@@ -1,9 +1,9 @@
 """ Pep-0484 type hinting """
 
-# python >= 3.2
+# python >= 3.4
 
 
-class A():
+class A:
     pass
 
 

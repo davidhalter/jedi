@@ -87,7 +87,7 @@ else:
             return getattr(klass, '__dict__', _sentinel)
         return _shadowed_dict_newstyle(klass)
 
-    class _OldStyleClass():
+    class _OldStyleClass:
         pass
 
     _oldstyle_instance_type = type(_OldStyleClass())
@@ -122,7 +122,7 @@ def _safe_hasattr(obj, name):
 
 
 def _safe_is_data_descriptor(obj):
-    return (_safe_hasattr(obj, '__set__') or _safe_hasattr(obj, '__delete__'))
+    return _safe_hasattr(obj, '__set__') or _safe_hasattr(obj, '__delete__')
 
 
 def getattr_static(obj, attr, default=_sentinel):

@@ -23,9 +23,9 @@ a(0):.
 # if/else/elif
 # -----------------
 
-if (random.choice([0, 1])):
+if random.choice([0, 1]):
     1
-elif(random.choice([0, 1])):
+elif random.choice([0, 1]):
     a = 3
 else:
     a = ''
@@ -34,7 +34,7 @@ a
 def func():
     if random.choice([0, 1]):
         1
-    elif(random.choice([0, 1])):
+    elif random.choice([0, 1]):
         a = 3
     else:
         a = ''
@@ -187,7 +187,7 @@ some_word
 # -----------------
 
 class A(object): pass
-class B(): pass
+class B: pass
 
 #? ['__init__']
 A.__init__
@@ -201,7 +201,7 @@ int().__init__
 # comments
 # -----------------
 
-class A():
+class A:
     def __init__(self):
         self.hello = {}  # comment shouldn't be a string
 #? dict()
@@ -286,8 +286,6 @@ with open('') as f:
         #? str()
         line
 
-# Nested with statements don't exist in Python 2.6.
-# python >= 2.7
 with open('') as f1, open('') as f2:
     #? ['closed']
     f1.closed

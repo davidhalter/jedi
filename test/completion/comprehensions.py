@@ -154,7 +154,7 @@ foo[1]
 # In class
 # -----------------
 
-class X():
+class X:
     def __init__(self, bar):
         self.bar = bar
 
@@ -210,6 +210,5 @@ d[2]
 next(iter({a for a in range(10)}))
 
 
-# with a set literal (also doesn't work in 2.6).
 #? int()
 [a for a in {1, 2, 3}][0]

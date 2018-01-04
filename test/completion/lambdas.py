@@ -54,7 +54,7 @@ a = lambda: 3
 #? ['__closure__']
 a.__closure__
 
-class C():
+class C:
     def __init__(self, foo=1.0):
         self.a = lambda: 1
         self.foo = foo

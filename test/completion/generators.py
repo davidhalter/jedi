@@ -52,7 +52,7 @@ for a in get():
     a
 
 
-class Get():
+class Get:
     def __iter__(self):
         if random.choice([0, 1]):
             yield 1
@@ -212,7 +212,7 @@ next(x())
 # yield from
 # -----------------
 
-# python >= 3.3
+# python >= 3.4
 
 def yield_from():
     yield from iter([1])

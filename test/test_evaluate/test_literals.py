@@ -1,7 +1,7 @@
 import pytest
 
 import jedi
-from jedi._compatibility import py_version, unicode
+from jedi._compatibility import py_version
 
 
 def _eval_literal(code):

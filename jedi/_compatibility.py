@@ -1,5 +1,5 @@
 """
-To ensure compatibility from Python ``2.6`` - ``3.3``, a module has been
+To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
 created. Clearly there is huge need to use conforming syntax.
 """
 import sys
@@ -13,13 +13,8 @@ try:
 except ImportError:
     pass
 
-# Cannot use sys.version.major and minor names, because in Python 2.6 it's not
-# a namedtuple.
 is_py3 = sys.version_info[0] >= 3
-is_py33 = is_py3 and sys.version_info[1] >= 3
-is_py34 = is_py3 and sys.version_info[1] >= 4
 is_py35 = is_py3 and sys.version_info[1] >= 5
-is_py26 = not is_py3 and sys.version_info[1] < 7
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
@@ -74,7 +69,7 @@ def find_module_py33(string, path=None, loader=None, fullname=None):
             raise ImportError("Originally  " + repr(e))
 
     if loader is None:
-        raise ImportError("Couldn't find a loader for {0}".format(string))
+        raise ImportError("Couldn't find a loader for {}".format(string))
 
     try:
         is_package = loader.is_package(string)
@@ -109,7 +104,7 @@ def find_module_py33(string, path=None, loader=None, fullname=None):
     return module_file, module_path, is_package
 
 
-def find_module_pre_py33(string, path=None, fullname=None):
+def find_module_pre_py34(string, path=None, fullname=None):
     try:
         module_file, module_path, description = imp.find_module(string, path)
         module_type = description[2]
@@ -127,14 +122,7 @@ def find_module_pre_py33(string, path=None, fullname=None):
                 if loader:
                     is_package = loader.is_package(string)
                     is_archive = hasattr(loader, 'archive')
-                    try:
-                        module_path = loader.get_filename(string)
-                    except AttributeError:
-                        # fallback for py26
-                        try:
-                            module_path = loader._get_filename(string)
-                        except AttributeError:
-                            continue
+                    module_path = loader.get_filename(string)
                     if is_package:
                         module_path = os.path.dirname(module_path)
                     if is_archive:
@@ -142,14 +130,13 @@ def find_module_pre_py33(string, path=None, fullname=None):
                     file = None
                     if not is_package or is_archive:
                         file = DummyFile(loader, string)
-                    return (file, module_path, is_package)
+                    return file, module_path, is_package
             except ImportError:
                 pass
-    raise ImportError("No module named {0}".format(string))
+    raise ImportError("No module named {}".format(string))
 
 
-find_module = find_module_py33 if is_py33 else find_module_pre_py33
-find_module = find_module_py34 if is_py34  else find_module
+find_module = find_module_py34 if is_py3  else find_module_pre_py34
 find_module.__doc__ = """
 Provides information about a module.
 
@@ -242,11 +229,6 @@ import ast
 
 
 def literal_eval(string):
-    # py3.0, py3.1 and py32 don't support unicode literals. Support those, I
-    # don't want to write two versions of the tokenizer.
-    if is_py3 and sys.version_info.minor < 3:
-        if re.match('[uU][\'"]', string):
-            string = string[1:]
     return ast.literal_eval(string)
 
 
