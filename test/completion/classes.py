@@ -6,7 +6,7 @@ def find_class():
         #? ['ret']
         TestClass.ret
 
-class FindClass():
+class FindClass:
     #? []
     TestClass.ret
     if a:
@@ -125,7 +125,7 @@ strs.second
 TestClass.var_class.var_class.var_class.var_class
 
 # operations (+, *, etc) shouldn't be InstanceElements - #246
-class A():
+class A:
     def __init__(self):
         self.addition = 1 + 2
 #? int()
@@ -219,7 +219,7 @@ class Dude(classgetter()):
 # __call__
 # -----------------
 
-class CallClass():
+class CallClass:
     def __call__(self):
         return 1
 
@@ -256,7 +256,7 @@ V(1).d()
 # -----------------
 # ordering
 # -----------------
-class A():
+class A:
     def b(self):
         #? int()
         a_func()
@@ -278,8 +278,8 @@ A().a_func()
 # -----------------
 # nested classes
 # -----------------
-class A():
-    class B():
+class A:
+    class B:
         pass
     def b(self):
         return 1.0
@@ -287,9 +287,9 @@ class A():
 #? float()
 A().b()
 
-class A():
+class A:
     def b(self):
-        class B():
+        class B:
             def b(self):
                 return []
         return B().b()
@@ -304,7 +304,7 @@ A().b()
 def meth(self):
     return self.a, self.b
 
-class WithoutMethod():
+class WithoutMethod:
     a = 1
     def __init__(self):
         self.b = 1.0
@@ -312,7 +312,7 @@ class WithoutMethod():
         return self.b
     m = meth
 
-class B():
+class B:
     b = ''
 
 a = WithoutMethod().m()
@@ -348,18 +348,18 @@ getattr(getattr, 1)
 getattr(str, [])
 
 
-class Base():
+class Base:
     def ret(self, b):
         return b
 
-class Wrapper():
+class Wrapper:
     def __init__(self, obj):
         self.obj = obj
 
     def __getattr__(self, name):
         return getattr(self.obj, name)
 
-class Wrapper2():
+class Wrapper2:
     def __getattribute__(self, name):
         return getattr(Base(), name)
 
@@ -369,7 +369,7 @@ Wrapper(Base()).ret(3)
 #? int()
 Wrapper2(Base()).ret(3)
 
-class GetattrArray():
+class GetattrArray:
     def __getattr__(self, name):
         return [1]
 
@@ -380,7 +380,7 @@ GetattrArray().something[0]
 # -----------------
 # private vars
 # -----------------
-class PrivateVar():
+class PrivateVar:
     def __init__(self):
         self.__var = 1
         #? int()
@@ -517,7 +517,7 @@ Config.mode2
 class Foo(object):
     a = 3
     def create_class(self):
-        class X():
+        class X:
             a = self.a
             self.b = 3.0
         return X

@@ -64,7 +64,7 @@ class MixedName(compiled.CompiledName):
         contexts = list(self.infer())
         if not contexts:
             # This means a start_pos that doesn't exist (compiled objects).
-            return (0, 0)
+            return 0, 0
         return contexts[0].name.start_pos
 
     @start_pos.setter

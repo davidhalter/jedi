@@ -154,7 +154,7 @@ foo[1]
 # In class
 # -----------------
 
-class X():
+class X:
     def __init__(self, bar):
         self.bar = bar
 

@@ -16,8 +16,8 @@ else:
                         exec source in global_map """, 'blub', 'exec'))
 
 
-class _GlobalNameSpace():
-    class SideEffectContainer():
+class _GlobalNameSpace:
+    class SideEffectContainer:
         pass
 
 
@@ -80,7 +80,7 @@ def test_numpy_like_non_zero():
 
 
 def test_nested_resolve():
-    class XX():
+    class XX:
         def x():
             pass
 
@@ -168,7 +168,7 @@ def test_list():
 
 
 def test_slice():
-    class Foo1():
+    class Foo1:
         bar = []
     baz = 'xbarx'
     _assert_interpreter_complete('getattr(Foo1, baz[1:-1]).append',
@@ -177,7 +177,7 @@ def test_slice():
 
 
 def test_getitem_side_effects():
-    class Foo2():
+    class Foo2:
         def __getitem__(self, index):
             # Possible side effects here, should therefore not call this.
             if True:
@@ -190,7 +190,7 @@ def test_getitem_side_effects():
 
 def test_property_error_oldstyle():
     lst = []
-    class Foo3():
+    class Foo3:
         @property
         def bar(self):
             lst.append(1)
@@ -269,7 +269,7 @@ def test_more_complex_instances():
         def foo(self, other):
             return self
 
-    class Base():
+    class Base:
         def wow(self):
             return Something()
 

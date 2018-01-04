@@ -1,4 +1,4 @@
-class Cls():
+class Cls:
     class_attr = ''
     def __init__(self, input):
         self.instance_attr = 3
@@ -77,7 +77,7 @@ return_one(''.undefined_attribute)
 [r for r in [1, 2]]
 
 # some random error that showed up
-class NotCalled():
+class NotCalled:
     def match_something(self, param):
         seems_to_need_an_assignment = param
         return [value.match_something() for value in []]

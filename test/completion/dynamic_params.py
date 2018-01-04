@@ -90,14 +90,14 @@ func.sys
 # classes
 # -----------------
 
-class A():
+class A:
     def __init__(self, a):
         #? str()
         a
 
 A("s")
 
-class A():
+class A:
     def __init__(self, a):
         #? int()
         a

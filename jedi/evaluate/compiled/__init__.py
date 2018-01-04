@@ -432,7 +432,7 @@ def dotted_from_fs_path(fs_path, sys_path):
     #     C:\path\to\Lib
     path = ''
     for s in sys_path:
-        if (fs_path.startswith(s) and len(path) < len(s)):
+        if fs_path.startswith(s) and len(path) < len(s):
             path = s
 
     # - Window

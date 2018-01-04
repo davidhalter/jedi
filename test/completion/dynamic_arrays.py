@@ -112,9 +112,9 @@ iter(lst)[0]
 # -----------------
 # complex including +=
 # -----------------
-class C(): pass
-class D(): pass
-class E(): pass
+class C: pass
+class D: pass
+class E: pass
 lst = [1]
 lst.append(1.0)
 lst += [C]
@@ -207,7 +207,7 @@ blub()[0]
 # -----------------
 # returns, the same for classes
 # -----------------
-class C():
+class C:
     def blub(self, b):
         if 1:
             a = []
