@@ -179,7 +179,7 @@ def _evaluate_for_statement_string(module_context, string):
         Need this docstring so that if the below part is not valid Python this
         is still a function.
         '''
-    {0}
+    {}
     """))
     if string is None:
         return []

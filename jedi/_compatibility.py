@@ -71,7 +71,7 @@ def find_module_py33(string, path=None, loader=None, fullname=None):
             raise ImportError("Originally  " + repr(e))
 
     if loader is None:
-        raise ImportError("Couldn't find a loader for {0}".format(string))
+        raise ImportError("Couldn't find a loader for {}".format(string))
 
     try:
         is_package = loader.is_package(string)
@@ -135,7 +135,7 @@ def find_module_pre_py33(string, path=None, fullname=None):
                     return (file, module_path, is_package)
             except ImportError:
                 pass
-    raise ImportError("No module named {0}".format(string))
+    raise ImportError("No module named {}".format(string))
 
 
 find_module = find_module_py33 if is_py33 else find_module_pre_py33
