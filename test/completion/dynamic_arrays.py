@@ -254,7 +254,7 @@ C().list_arr(1.0)[0]
 # array recursions
 # -----------------
 
-a = set([1.0])
+a = {1.0}
 a.update(a)
 a.update([1])
 

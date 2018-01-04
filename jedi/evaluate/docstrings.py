@@ -243,7 +243,7 @@ def _execute_array_values(evaluator, array):
                 for typ in lazy_context.infer()
             )
             values.append(LazyKnownContexts(objects))
-        return set([FakeSequence(evaluator, array.array_type, values)])
+        return {FakeSequence(evaluator, array.array_type, values)}
     else:
         return array.execute_evaluated()
 

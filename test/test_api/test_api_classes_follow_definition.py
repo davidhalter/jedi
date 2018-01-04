@@ -34,7 +34,8 @@ def test_follow_import_incomplete():
 
     # incomplete `from * import` part
     datetime = check_follow_definition_types("from datetime import datetim")
-    assert set(datetime) == set(['class', 'instance'])  # py33: builtin and pure py version
+    assert set(datetime) == {'class',
+                             'instance'}  # py33: builtin and pure py version
 
     # os.path check
     ospath = check_follow_definition_types("from os.path import abspat")

@@ -4,11 +4,10 @@ from inspect import cleandoc
 from jedi._compatibility import literal_eval, is_py3
 from parso.python import tree
 
-_EXECUTE_NODES = set([
-    'funcdef', 'classdef', 'import_from', 'import_name', 'test', 'or_test',
-    'and_test', 'not_test', 'comparison', 'expr', 'xor_expr', 'and_expr',
-    'shift_expr', 'arith_expr', 'atom_expr', 'term', 'factor', 'power', 'atom'
-])
+_EXECUTE_NODES = {'funcdef', 'classdef', 'import_from', 'import_name', 'test',
+                  'or_test', 'and_test', 'not_test', 'comparison', 'expr',
+                  'xor_expr', 'and_expr', 'shift_expr', 'arith_expr',
+                  'atom_expr', 'term', 'factor', 'power', 'atom'}
 
 _FLOW_KEYWORDS = (
     'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
