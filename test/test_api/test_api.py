@@ -103,7 +103,7 @@ def test_completion_on_complex_literals():
     _check_number('4.0j.', 'complex')
     # No dot no completion - I thought, but 4j is actually a literall after
     # which a keyword like or is allowed. Good times, haha!
-    assert (set([c.name for c in api.Script('4j').completions()]) ==
+    assert ({c.name for c in api.Script('4j').completions()} ==
             {'if', 'and', 'in', 'is', 'not', 'or'})
 
 

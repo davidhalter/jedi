@@ -68,7 +68,7 @@ def test_basedefinition_type(definition):
 
 def test_basedefinition_type_import():
     def get_types(source, **kwargs):
-        return set([t.type for t in Script(source, **kwargs).completions()])
+        return {t.type for t in Script(source, **kwargs).completions()}
 
     # import one level
     assert get_types('import t') == {'module'}

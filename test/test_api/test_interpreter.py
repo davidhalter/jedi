@@ -261,7 +261,7 @@ def test_completion_param_annotations():
     a, b, c = c.params
     assert a._goto_definitions() == []
     assert [d.name for d in b._goto_definitions()] == ['str']
-    assert set([d.name for d in c._goto_definitions()]) == {'int', 'float'}
+    assert {d.name for d in c._goto_definitions()} == {'int', 'float'}
 
 
 def test_more_complex_instances():

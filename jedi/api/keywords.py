@@ -52,7 +52,7 @@ def completion_names(evaluator, stmt, pos, module):
 
 
 def all_keywords(evaluator, pos=(0, 0)):
-    return set([Keyword(evaluator, k, pos) for k in keys])
+    return {Keyword(evaluator, k, pos) for k in keys}
 
 
 def keyword(evaluator, string, pos=(0, 0)):
