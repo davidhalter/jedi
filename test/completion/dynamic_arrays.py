@@ -6,7 +6,7 @@ Checking for ``list.append`` and all the other possible array modifications.
 # -----------------
 arr = []
 for a in [1,2]:
-    arr.append(a);
+    arr.append(a)
 
 arr.append  # should not cause an exception
 arr.append()  # should not cause an exception
@@ -16,7 +16,7 @@ arr[10]
 
 arr = [tuple()]
 for a in [1,2]:
-    arr.append(a);
+    arr.append(a)
 
 #? int() tuple()
 arr[10]

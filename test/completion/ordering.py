@@ -20,7 +20,7 @@ b
 temp
 
 a = 1
-temp = b;
+temp = b
 b = a
 a = temp
 #? int()
