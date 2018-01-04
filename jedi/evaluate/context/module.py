@@ -131,7 +131,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     def py__package__(self):
         if self._get_init_directory() is None:
-            return re.sub(r'\.?[^\.]+$', '', self.py__name__())
+            return re.sub(r'\.?[^.]+$', '', self.py__name__())
         else:
             return self.py__name__()
 
