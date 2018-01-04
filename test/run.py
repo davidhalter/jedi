@@ -177,7 +177,7 @@ class IntegrationTestCase(object):
         completions = self.script().completions()
         #import cProfile; cProfile.run('script.completions()')
 
-        comp_str = set([c.name for c in completions])
+        comp_str = {c.name for c in completions}
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))
 
     def run_goto_definitions(self, compare_cb):
