@@ -2,16 +2,23 @@
 Jedi - an awesome autocompletion/static analysis library for Python
 ###################################################################
 
-.. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
-    :target: http://travis-ci.org/davidhalter/jedi
-    :alt: Travis-CI build status
+.. image:: https://img.shields.io/pypi/v/jedi.svg?style=flat
+    :target: https://pypi.python.org/pypi/jedi
+    :alt: PyPI version
 
-.. image:: https://coveralls.io/repos/davidhalter/jedi/badge.png?branch=master
+.. image:: https://img.shields.io/pypi/pyversions/jedi.svg
+    :target: https://pypi.python.org/pypi/jedi
+    :alt: Supported Python versions
+
+.. image:: https://travis-ci.org/davidhalter/jedi.svg?branch=master
+    :target: https://travis-ci.org/davidhalter/jedi
+    :alt: Travis CI build status
+
+.. image:: https://coveralls.io/repos/davidhalter/jedi/badge.svg?branch=master
     :target: https://coveralls.io/r/davidhalter/jedi
-    :alt: Coverage Status
+    :alt: Coverage status
 
-
-*If you have specific questions, please add an issue or ask on* `stackoverflow
+*If you have specific questions, please add an issue or ask on* `Stack Overflow
 <https://stackoverflow.com/questions/tagged/python-jedi>`_ *with the label* ``python-jedi``.
 
 
@@ -25,7 +32,7 @@ related names and to list all names in a Python file and infer them. Jedi
 understands docstrings and you can use Jedi autocompletion in your REPL as
 well.
 
-Jedi uses a very simple API to connect with IDE's. There's a reference
+Jedi uses a very simple API to connect with IDEs. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
 which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
 It's really easy.
@@ -45,7 +52,7 @@ Jedi can currently be used with the following editors/projects:
 - Gedit (gedi_)
 - wdb_ - Web Debugger
 - `Eric IDE`_ (Available as a plugin)
-- `Ipython 6.0.0+ <https://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
+- `IPython 6.0.0+ <https://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
 
 and many more!
 
@@ -123,7 +130,7 @@ The returned objects are very powerful and really all you might need.
 Autocompletion in your REPL (IPython, etc.)
 -------------------------------------------
 
-Starting with Ipython `6.0.0` Jedi is a dependency of IPython. Autocompletion
+Starting with IPython `6.0.0` Jedi is a dependency of IPython. Autocompletion
 in IPython is therefore possible without additional configuration.
 
 It's possible to have Jedi autocompletion in REPL modes - `example video <https://vimeo.com/122332037>`_.
@@ -178,7 +185,7 @@ Tests are also run automatically on `Travis CI
 <https://travis-ci.org/davidhalter/jedi/>`_.
 
 For more detailed information visit the `testing documentation
-<https://jedi.readthedocs.org/en/latest/docs/testing.html>`_
+<https://jedi.readthedocs.org/en/latest/docs/testing.html>`_.
 
 
 Acknowledgements
