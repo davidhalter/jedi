@@ -14,9 +14,9 @@ def test_paths_from_assignment():
         expr_stmt = script._get_module_node().children[0]
         return set(sys_path._paths_from_assignment(script._get_module(), expr_stmt))
 
-    assert paths('sys.path[0:0] = ["a"]') == set(['/foo/a'])
-    assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == set(['/foo/b', '/foo/c'])
-    assert paths('sys.path = a = ["a"]') == set(['/foo/a'])
+    assert paths('sys.path[0:0] = ["a"]') == {'/foo/a'}
+    assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == {'/foo/b', '/foo/c'}
+    assert paths('sys.path = a = ["a"]') == {'/foo/a'}
 
     # Fail for complicated examples.
     assert paths('sys.path, other = ["a"], 2') == set()

@@ -35,7 +35,7 @@ def test_namedtuple_list():
         garfield.l""")
     result = Script(source).completions()
     completions = set(r.name for r in result)
-    assert completions == set(['legs', 'length', 'large'])
+    assert completions == {'legs', 'length', 'large'}
 
 
 def test_namedtuple_content():

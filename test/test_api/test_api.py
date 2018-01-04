@@ -104,7 +104,7 @@ def test_completion_on_complex_literals():
     # No dot no completion - I thought, but 4j is actually a literall after
     # which a keyword like or is allowed. Good times, haha!
     assert (set([c.name for c in api.Script('4j').completions()]) ==
-            set(['if', 'and', 'in', 'is', 'not', 'or']))
+            {'if', 'and', 'in', 'is', 'not', 'or'})
 
 
 def test_goto_assignments_on_non_name():
@@ -152,7 +152,7 @@ def test_goto_definition_not_multiple():
 
 def test_usage_description():
     descs = [u.description for u in api.Script("foo = ''; foo").usages()]
-    assert set(descs) == set(["foo = ''", 'foo'])
+    assert set(descs) == {"foo = ''", 'foo'}
 
 
 def test_get_line_code():

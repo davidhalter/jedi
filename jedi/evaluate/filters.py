@@ -27,7 +27,7 @@ class AbstractNameDefinition(object):
     def goto(self):
         # Typically names are already definitions and therefore a goto on that
         # name will always result on itself.
-        return set([self])
+        return {self}
 
     def get_root_context(self):
         return self.parent_context.get_root_context()

@@ -156,7 +156,7 @@ def test_complete_on_empty_import():
     # relative import
     assert 10 < len(Script("from . import classes", 1, 6, 'whatever.py').completions()) < 30
 
-    wanted = set(['ImportError', 'import', 'ImportWarning'])
+    wanted = {'ImportError', 'import', 'ImportWarning'}
     assert set([c.name for c in Script("import").completions()]) == wanted
     assert len(Script("import import", path='').completions()) > 0
 

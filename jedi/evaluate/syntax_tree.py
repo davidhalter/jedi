@@ -286,10 +286,10 @@ def eval_or_test(context, or_test):
         # handle lazy evaluation of and/or here.
         if operator in ('and', 'or'):
             left_bools = set(left.py__bool__() for left in types)
-            if left_bools == set([True]):
+            if left_bools == {True}:
                 if operator == 'and':
                     types = context.eval_node(right)
-            elif left_bools == set([False]):
+            elif left_bools == {False}:
                 if operator != 'and':
                     types = context.eval_node(right)
             # Otherwise continue, because of uncertainty.
