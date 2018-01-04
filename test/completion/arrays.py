@@ -43,7 +43,7 @@ b[int():]
 b[:]
 
 
-class _StrangeSlice():
+class _StrangeSlice:
     def __getitem__(self, sliced):
         return sliced
 
@@ -128,25 +128,25 @@ f
 # -----------------
 # unnessecary braces
 # -----------------
-a = (1)
+a = 1
 #? int()
 a
 #? int()
+1
+#? int()
 (1)
 #? int()
-((1))
-#? int()
-((1)+1)
+(1 + 1)
 
 u, v = 1, ""
 #? int()
 u
 
-((u1, v1)) = 1, ""
+(u1, v1) = 1, ""
 #? int()
 u1
 #? int()
-(u1)
+u1
 
 (a), b = 1, ''
 #? int()
@@ -154,15 +154,15 @@ a
 
 def a(): return ''
 #? str()
-(a)()
+a()
 #? str()
-(a)().replace()
+a().replace()
 #? int()
-(tuple).index()
+tuple.index()
 #? int()
-(tuple)().index()
+tuple().index()
 
-class C():
+class C:
     def __init__(self):
         self.a = (str()).upper()
 
@@ -283,14 +283,14 @@ dic2[index]
 # __getitem__
 # -----------------
 
-class GetItem():
+class GetItem:
     def __getitem__(self, index):
         return 1.0
 
 #? float()
 GetItem()[0]
 
-class GetItem():
+class GetItem:
     def __init__(self, el):
         self.el = el
 
@@ -300,7 +300,7 @@ class GetItem():
 #? str()
 GetItem("")[1]
 
-class GetItemWithList():
+class GetItemWithList:
     def __getitem__(self, index):
         return [1, 1.0, 's'][index]
 

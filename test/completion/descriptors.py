@@ -50,7 +50,7 @@ C.just_a_method
 # -----------------
 # properties
 # -----------------
-class B():
+class B:
     @property
     def r(self):
         return 1
@@ -71,7 +71,7 @@ B().p
 #? []
 B().p().
 
-class PropClass():
+class PropClass:
     def __init__(self, a):
         self.a = a
     @property
@@ -190,7 +190,7 @@ E.u(1)
 from functools import partial
 
 
-class Memoize():
+class Memoize:
     def __init__(self, func):
         self.func = func
 
@@ -205,7 +205,7 @@ class Memoize():
         return self.func(*args, **kwargs)
 
 
-class MemoizeTest():
+class MemoizeTest:
     def __init__(self, x):
         self.x = x
 

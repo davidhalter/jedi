@@ -130,7 +130,7 @@ def find_module_pre_py34(string, path=None, fullname=None):
                     file = None
                     if not is_package or is_archive:
                         file = DummyFile(loader, string)
-                    return (file, module_path, is_package)
+                    return file, module_path, is_package
             except ImportError:
                 pass
     raise ImportError("No module named {}".format(string))

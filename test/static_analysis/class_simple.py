@@ -1,5 +1,5 @@
 class Base(object):
-    class Nested():
+    class Nested:
         def foo():
             pass
 

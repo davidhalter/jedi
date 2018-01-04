@@ -157,7 +157,7 @@ a.real
 a.a
 
 a = 3
-class a():
+class a:
     def __init__(self, a):
         self.a = a
 

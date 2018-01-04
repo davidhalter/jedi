@@ -191,7 +191,7 @@ a
 # isinstance
 # -----------------
 
-class A(): pass
+class A: pass
 
 def isinst(x):
     if isinstance(x, A):
@@ -251,7 +251,7 @@ if False:
 # True objects like modules
 # -----------------
 
-class X():
+class X:
     pass
 if X:
     a = 1

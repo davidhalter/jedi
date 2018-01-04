@@ -59,7 +59,7 @@ class TestSpeed(TestCase):
         unwanted computation of repr(). Exemple : big pandas data.
         See issue #919.
         """
-        class SlowRepr():
+        class SlowRepr:
             "class to test what happens if __repr__ is very slow."
             def some_method(self):
                 pass
