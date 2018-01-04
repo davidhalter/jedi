@@ -34,7 +34,11 @@ def test_find_module_not_package():
     assert is_package is False
 
 
-def test_find_module_package_zipped(Script):
+def test_find_module_package_zipped(Script, environment):
+    # Python 3.3 on travis doesn't have zip support compiled. Just ignore this
+    # test since 3.3 is End-of-Life anyway.
+    if environment.version_info[:2] == (3, 3) or sys.version_info[:2] == (3, 3):
+        pytest.skip()
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
     sys.path.append(path)
     try:
@@ -50,6 +54,10 @@ def test_find_module_package_zipped(Script):
 
 
 def test_find_module_not_package_zipped(Script, environment):
+    # Comment: See previous test.
+    if environment.version_info[:2] == (3, 3) or sys.version_info[:2] == (3, 3):
+        pytest.skip()
+
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/not_pkg.zip')
     sys.path.append(path)
     try:
