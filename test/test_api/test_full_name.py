@@ -18,7 +18,7 @@ import textwrap
 import pytest
 
 import jedi
-from ..helpers import TestCase
+from ..helpers import TestCase, cwd_at
 
 
 class MixinTestFullName(object):
@@ -66,9 +66,12 @@ class TestFullDefinedName(TestCase):
     """
     Test combination of ``obj.full_name`` and ``jedi.defined_names``.
     """
+    @pytest.fixture(autouse=True)
+    def init(self, environment):
+        self.environment = environment
 
     def check(self, source, desired):
-        definitions = jedi.names(textwrap.dedent(source))
+        definitions = jedi.names(textwrap.dedent(source), environment=self.environment)
         full_names = [d.full_name for d in definitions]
         self.assertEqual(full_names, desired)
 
@@ -87,14 +90,15 @@ class TestFullDefinedName(TestCase):
         """, ['os', 'os.path', 'os.path.join', 'os.path'])
 
 
-def test_sub_module(Script):
+def test_sub_module(Script, jedi_path):
     """
     ``full_name needs to check sys.path to actually find it's real path module
     path.
     """
-    defs = Script('from jedi.api import classes; classes').goto_definitions()
+    sys_path = [jedi_path]
+    defs = Script('from jedi.api import classes; classes', sys_path=sys_path).goto_definitions()
     assert [d.full_name for d in defs] == ['jedi.api.classes']
-    defs = Script('import jedi.api; jedi.api').goto_definitions()
+    defs = Script('import jedi.api; jedi.api', sys_path=sys_path).goto_definitions()
     assert [d.full_name for d in defs] == ['jedi.api']
 
 

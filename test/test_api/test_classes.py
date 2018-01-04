@@ -61,7 +61,6 @@ def test_basedefinition_type(Script, environment):
 
         return definitions
 
-
     for definition in make_definitions():
         assert definition.type in ('module', 'class', 'instance', 'function',
                                    'generator', 'statement', 'import', 'param')
@@ -115,16 +114,15 @@ def test_position_none_if_builtin(Script):
     assert gotos[0].column is None
 
 
-@cwd_at('.')
-def test_completion_docstring(Script):
+def test_completion_docstring(Script, jedi_path):
     """
     Jedi should follow imports in certain conditions
     """
     def docstr(src, result):
-        c = Script(src).completions()[0]
+        c = Script(src, sys_path=[jedi_path]).completions()[0]
         assert c.docstring(raw=True, fast=False) == cleandoc(result)
 
-    c = Script('import jedi\njed').completions()[0]
+    c = Script('import jedi\njed', sys_path=[jedi_path]).completions()[0]
     assert c.docstring(fast=False) == cleandoc(jedi_doc)
 
     docstr('import jedi\njedi.Scr', cleandoc(jedi.Script.__doc__))

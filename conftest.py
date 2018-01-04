@@ -110,3 +110,8 @@ def has_typing(environment):
 
     script = jedi.Script('import typing', environment=environment)
     return bool(script.goto_definitions())
+
+
+@pytest.fixture(scope='session')
+def jedi_path():
+    return os.path.dirname(__file__)

@@ -5,6 +5,9 @@ import os
 _d = os.path.dirname
 _jedi_path = _d(_d(_d(_d(_d(__file__)))))
 _parso_path = sys.argv[1]
+# Remove the first entry, because it's simply a directory entry to this
+# directory.
+del sys.path[0]
 
 # This is kind of stupid. We actually don't want to modify the sys path but
 # simply import something from a specific location.
