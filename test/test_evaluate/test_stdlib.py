@@ -6,7 +6,6 @@ from textwrap import dedent
 
 import pytest
 from jedi import Script
-from jedi._compatibility import is_py26
 
 # The namedtuple is different for different Python2.7 versions. Some versions
 # are missing the attribute `_class_template`.
@@ -25,10 +24,7 @@ def test_namedtuple_str(letter, expected):
         dave.%s""") % letter
     result = Script(source).completions()
     completions = set(r.name for r in result)
-    if is_py26:
-        assert completions == set()
-    else:
-        assert completions == set(expected)
+    assert completions == set(expected)
 
 
 def test_namedtuple_list():
@@ -39,10 +35,7 @@ def test_namedtuple_list():
         garfield.l""")
     result = Script(source).completions()
     completions = set(r.name for r in result)
-    if is_py26:
-        assert completions == set()
-    else:
-        assert completions == set(['legs', 'length', 'large'])
+    assert completions == set(['legs', 'length', 'large'])
 
 
 def test_namedtuple_content():
