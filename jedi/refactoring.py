@@ -50,9 +50,8 @@ class Refactoring(object):
 
 def rename(script, new_name):
     """ The `args` / `kwargs` params are the same as in `api.Script`.
-    :param operation: The refactoring operation to execute.
-    :type operation: str
-    :type source: str
+    :param new_name: The new name of the script.
+    :param script: The source Script object.
     :return: list of changed lines/changed files
     """
     return Refactoring(_rename(script.usages(), new_name))
@@ -105,11 +104,12 @@ def extract(script, new_name):
 
     user_stmt = script._parser.user_stmt()
 
-    # TODO care for multiline extracts
+    # TODO care for multi-line extracts
     dct = {}
     if user_stmt:
         pos = script._pos
         line_index = pos[0] - 1
+        # Be careful here. 'array_for_pos' does not exist in 'helpers'.
         arr, index = helpers.array_for_pos(user_stmt, pos)
         if arr is not None:
             start_pos = arr[index].start_pos
@@ -120,7 +120,7 @@ def extract(script, new_name):
             start_line = new_lines[start_pos[0] - 1]
             text = start_line[start_pos[1]:e]
             for l in range(start_pos[0], end_pos[0] - 1):
-                text += '\n' + l
+                text += '\n' + str(l)
             if e is None:
                 end_line = new_lines[end_pos[0] - 1]
                 text += '\n' + end_line[:end_pos[1]]
@@ -140,7 +140,7 @@ def extract(script, new_name):
             new_lines[start_pos[0] - 1] = start_line
             new_lines[start_pos[0]:end_pos[0] - 1] = []
 
-            # add parentheses in multiline case
+            # add parentheses in multi-line case
             open_brackets = ['(', '[', '{']
             close_brackets = [')', ']', '}']
             if '\n' in text and not (text[0] in open_brackets and text[-1] ==
@@ -172,7 +172,7 @@ def inline(script):
     inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),
                      reverse=True)
     expression_list = stmt.expression_list()
-    # don't allow multiline refactorings for now.
+    # don't allow multi-line refactorings for now.
     assert stmt.start_pos[0] == stmt.end_pos[0]
     index = stmt.start_pos[0] - 1
 
