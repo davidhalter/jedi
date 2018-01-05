@@ -49,7 +49,7 @@ Debian
 ~~~~~~
 
 Debian packages are available in the `unstable repository
-<http://packages.debian.org/search?keywords=python%20jedi>`__.
+<https://packages.debian.org/search?keywords=python%20jedi>`__.
 
 Others
 ~~~~~~

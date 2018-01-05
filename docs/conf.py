@@ -274,7 +274,7 @@ autodoc_default_flags = []
 # -- Options for intersphinx module --------------------------------------------
 
 intersphinx_mapping = {
-    'http://docs.python.org/': None,
+    'https://docs.python.org/': None,
 }
 
 
