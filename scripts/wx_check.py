@@ -30,7 +30,7 @@ import jedi
 def process_memory():
     """
     In kB according to
-    http://stackoverflow.com/questions/938733/total-memory-used-by-python-process
+    https://stackoverflow.com/questions/938733/total-memory-used-by-python-process
     """
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 

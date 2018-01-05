@@ -45,7 +45,7 @@ Jedi can currently be used with the following editors/projects:
 - Gedit (gedi_)
 - wdb_ - Web Debugger
 - `Eric IDE`_ (Available as a plugin)
-- `Ipython 6.0.0+ <http://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
+- `Ipython 6.0.0+ <https://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
 
 and many more!
 
@@ -72,7 +72,7 @@ Get the latest version from `github <https://github.com/davidhalter/jedi>`_
 Docs are available at `https://jedi.readthedocs.org/en/latest/
 <https://jedi.readthedocs.org/en/latest/>`_. Pull requests with documentation
 enhancements and/or fixes are awesome and most welcome. Jedi uses `semantic
-versioning <http://semver.org/>`_.
+versioning <https://semver.org/>`_.
 
 
 Installation
@@ -193,7 +193,7 @@ Acknowledgements
 
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
-.. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _youcompleteme: https://valloric.github.io/YouCompleteMe/
 .. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
 .. _completor.vim: https://github.com/maralla/completor.vim
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
@@ -205,11 +205,11 @@ Acknowledgements
 .. _anaconda: https://github.com/DamnWidget/anaconda
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
-.. _Kate: http://kate-editor.org
+.. _Kate: https://kate-editor.org
 .. _Atom: https://atom.io/
 .. _autocomplete-python-jedi: https://atom.io/packages/autocomplete-python-jedi
 .. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
 .. _Visual Studio Code: https://code.visualstudio.com/
 .. _gedi: https://github.com/isamert/gedi
-.. _Eric IDE: http://eric-ide.python-projects.org
+.. _Eric IDE: https://eric-ide.python-projects.org

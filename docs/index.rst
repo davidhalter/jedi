@@ -37,4 +37,4 @@ Resources
 
 - `Source Code on Github <https://github.com/davidhalter/jedi>`_
 - `Travis Testing <https://travis-ci.org/davidhalter/jedi>`_
-- `Python Package Index <http://pypi.python.org/pypi/jedi/>`_
+- `Python Package Index <https://pypi.python.org/pypi/jedi/>`_
