@@ -50,9 +50,8 @@ class Refactoring(object):
 
 def rename(script, new_name):
     """ The `args` / `kwargs` params are the same as in `api.Script`.
-    :param operation: The refactoring operation to execute.
-    :type operation: str
-    :type source: str
+    :param new_name: The new name of the script.
+    :param script: The source Script object.
     :return: list of changed lines/changed files
     """
     return Refactoring(_rename(script.usages(), new_name))
