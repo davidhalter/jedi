@@ -29,7 +29,9 @@ matrix:
         - JEDI_TEST_ENVIRONMENT=36
     - python: 3.5
       env: TOXENV=sith
-    - python: pypy
+    # For now ignore pypy, there are so many issues that we don't really need
+    # to run it.
+    #- python: pypy
     - python: "3.7-dev"
 before_install:
     - ./travis_install.sh
