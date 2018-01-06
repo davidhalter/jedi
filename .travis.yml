@@ -18,11 +18,13 @@ matrix:
   allow_failures:
     - python: pypy
     - env: TOXENV=sith
+    - env: TOXENV=cov
     - python: 3.7-dev
   include:
     - python: 3.5
       env:
-        - TOXENV=cov JEDI_TEST_ENVIRONMENT=35
+        - TOXENV=cov
+        - JEDI_TEST_ENVIRONMENT=35
     - python: 3.5
       env: TOXENV=sith
     - python: pypy
