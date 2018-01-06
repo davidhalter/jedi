@@ -1,4 +1,7 @@
 """
+THIS is not in active development, please check
+https://github.com/davidhalter/jedi/issues/667 first before editing.
+
 Introduce some basic refactoring functions to |jedi|. This module is still in a
 very early development stage and needs much testing and improvement.
 
