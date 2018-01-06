@@ -157,7 +157,7 @@ are planned, others might be hard to implement and provide little worth):
 
 **Sphinx style**
 
-http://sphinx-doc.org/domains.html#info-field-lists
+http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 
 ::
 

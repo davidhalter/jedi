@@ -257,7 +257,7 @@ class Importer(object):
             # Since we know nothing about the call location of the sys.path,
             # it's a possibility that the current directory is the origin of
             # the Python execution.
-            sys_path_mod.insert(0, force_unicode(os.path.dirname(self.file_path)))
+            sys_path_mod.append(force_unicode(os.path.dirname(self.file_path)))
 
         return in_path + sys_path_mod
 
