@@ -5,6 +5,7 @@ Tests".
 
 import os
 import sys
+from subprocess import check_output
 
 import pytest
 
@@ -34,12 +35,27 @@ def test_find_module_not_package():
     assert is_package is False
 
 
-def test_find_module_package_zipped(Script, environment):
+@pytest.fixture(scope="session")
+def has_zlib(environment):
+    output = check_output([
+        environment._executable,
+        '-c',
+        'import sysconfig; print(sysconfig.get_config_var("MODOBJS"))',
+    ])
     # Python 3.3 on travis doesn't have zip support compiled. Just ignore this
     # test since 3.3 is End-of-Life anyway.
-    if environment.version_info[:2] == (3, 3) or sys.version_info[:2] == (3, 3):
-        pytest.skip()
+    # ZLIB is not compiled with all Python versions and therefore zipimport is
+    # not possible in this one.
+    return 'Modules/zlibmodule.o' in output
+
+
+def test_find_module_package_zipped(Script, environment, has_zlib):
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
+    script = Script('import pkg; pkg.mod', 1, 19, sys_path=[path])
+    assert len(script.completions()) == int(has_zlib)
+
+    if not has_zlib:
+        return
     sys.path.append(path)
     try:
         file, path, is_package = find_module('pkg')
@@ -49,16 +65,14 @@ def test_find_module_package_zipped(Script, environment):
     finally:
         sys.path.pop()
 
-    script = Script('import pkg; pkg.mod', 1, 19, sys_path=[path])
-    assert len(script.completions()) == 1
 
-
-def test_find_module_not_package_zipped(Script, environment):
-    # Comment: See previous test.
-    if environment.version_info[:2] == (3, 3) or sys.version_info[:2] == (3, 3):
-        pytest.skip()
-
+def test_find_module_not_package_zipped(Script, environment, has_zlib):
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/not_pkg.zip')
+    script = Script('import not_pkg; not_pkg.val', 1, 27, sys_path=[path])
+    assert len(script.completions()) == int(has_zlib)
+
+    if not has_zlib:
+        return
     sys.path.append(path)
     try:
         file, path, is_package = find_module('not_pkg')
@@ -67,8 +81,6 @@ def test_find_module_not_package_zipped(Script, environment):
         assert is_package is False
     finally:
         sys.path.pop()
-    script = Script('import not_pkg; not_pkg.val', 1, 27, sys_path=[path])
-    assert len(script.completions()) == 1
 
 
 @cwd_at('test/test_evaluate/not_in_sys_path/pkg')
