@@ -22,8 +22,7 @@ matrix:
   include:
     - python: 3.5
       env:
-        - TOXENV=cov
-        - JEDI_TEST_ENVIRONMENT=34
+        - TOXENV=cov JEDI_TEST_ENVIRONMENT=35
     - python: 3.5
       env: TOXENV=sith
     - python: pypy
