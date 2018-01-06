@@ -4,7 +4,6 @@ Tests".
 """
 
 import os
-from subprocess import check_output
 
 import pytest
 
@@ -34,30 +33,14 @@ def test_find_module_not_package():
     assert is_package is False
 
 
-@pytest.fixture(scope="session")
-def has_zlib(environment):
-    output = check_output([
-        environment._executable,
-        '-c',
-        'import sysconfig; print(sysconfig.get_config_var("MODOBJS"))',
-    ])
-    # Python 3.3 on travis doesn't have zip support compiled. Just ignore this
-    # test since 3.3 is End-of-Life anyway.
-    # ZLIB is not compiled with all Python versions and therefore zipimport is
-    # not possible in this one.
-    return b'Modules/zlibmodule.o' in output
-
-
-def test_find_module_package_zipped(Script, evaluator, has_zlib):
+def test_find_module_package_zipped(Script, evaluator, environment):
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
-    script = Script('import pkg; pkg.mod', 1, 19, sys_path=[path])
-    assert len(script.completions()) == int(has_zlib)
-
-    if not has_zlib:
-        return
+    sys_path = environment.get_sys_path() + [path]
+    script = Script('import pkg; pkg.mod', sys_path=sys_path)
+    assert len(script.completions()) == 1
 
     code, path, is_package = evaluator.compiled_subprocess.get_module_info(
-        sys_path=[path],
+        sys_path=sys_path,
         string=u'pkg',
         full_name=u'pkg'
     )
@@ -66,16 +49,14 @@ def test_find_module_package_zipped(Script, evaluator, has_zlib):
     assert is_package is True
 
 
-def test_find_module_not_package_zipped(Script, evaluator, has_zlib):
+def test_find_module_not_package_zipped(Script, evaluator, environment):
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/not_pkg.zip')
-    script = Script('import not_pkg; not_pkg.val', 1, 27, sys_path=[path])
-    assert len(script.completions()) == int(has_zlib)
-
-    if not has_zlib:
-        return
+    sys_path = environment.get_sys_path() + [path]
+    script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
+    assert len(script.completions()) == 1
 
     code, path, is_package = evaluator.compiled_subprocess.get_module_info(
-        sys_path=[path],
+        sys_path=sys_path,
         string=u'not_pkg',
         full_name=u'not_pkg'
     )
