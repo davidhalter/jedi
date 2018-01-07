@@ -242,6 +242,11 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
+
+WrappingType = typing.NewType('WrappingType', dict) # Chosen arbitrarily
+y = WrappingType({}) # Not sure what the desired behavior should be when wrapping another type.
+#? dict()
+y
 # python >= 3.2
 """
 docstrings have some auto-import, annotations can use all of Python's
