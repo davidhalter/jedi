@@ -1,5 +1,5 @@
 # classmethod
-class TarFile:
+class TarFile():
     @classmethod
     def open(cls, name, **kwargs):
         return cls.taropen(name, **kwargs)

@@ -14,7 +14,7 @@ Recursion().a
 Recursion().b
 
 
-class X:
+class X():
     def __init__(self):
         self.recursive = [1, 3]
 
@@ -39,7 +39,7 @@ def recursion1(foo):
 recursion1([1,2])[0]
 
 
-class FooListComp:
+class FooListComp():
     def __init__(self):
         self.recursive = [1]
 

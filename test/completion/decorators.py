@@ -106,7 +106,7 @@ def nothing(a,b,c):
 #? int()
 nothing("")[0]
 
-class MethodDecoratorAsClass:
+class MethodDecoratorAsClass():
     class_var = 3
     @Decorator
     def func_without_self(arg, arg2):
@@ -124,7 +124,7 @@ MethodDecoratorAsClass().func_without_self('')[1]
 MethodDecoratorAsClass().func_with_self(1)
 
 
-class SelfVars:
+class SelfVars():
     """Init decorator problem as an instance, #247"""
     @Decorator
     def __init__(self):
@@ -181,7 +181,7 @@ JustAClass.a()
 # illegal decorators
 # -----------------
 
-class DecoratorWithoutCall:
+class DecoratorWithoutCall():
     def __init__(self, func):
         self.func = func
 
@@ -200,7 +200,7 @@ f()
 g()
 
 
-class X:
+class X():
     @str
     def x(self):
         pass
@@ -220,7 +220,7 @@ def dec(f):
         return f(s)
     return wrapper
 
-class MethodDecorators:
+class MethodDecorators():
     _class_var = 1
     def __init__(self):
         self._method_var = ''
@@ -245,7 +245,7 @@ MethodDecorators().class_var()
 MethodDecorators().method_var()
 
 
-class Base:
+class Base():
     @not_existing
     def __init__(self):
         pass
@@ -298,7 +298,7 @@ follow_statement(1)
 
 # class decorators should just be ignored
 @should_ignore
-class A:
+class A():
     def ret(self):
         return 1
 

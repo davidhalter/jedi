@@ -61,7 +61,7 @@ def sphinxy_param_type_wrapped(a):
 
 
 # local classes -> github #370
-class ProgramNode:
+class ProgramNode():
     pass
 
 def local_classes(node, node2):
@@ -75,7 +75,7 @@ def local_classes(node, node2):
     #? ProgramNode2()
     node2
 
-class ProgramNode2:
+class ProgramNode2():
     pass
 
 
@@ -193,7 +193,7 @@ d.upper()
 # class docstrings
 # -----------------
 
-class InInit:
+class InInit():
     def __init__(self, foo):
         """
         :type foo: str
@@ -202,7 +202,7 @@ class InInit:
         foo
 
 
-class InClass:
+class InClass():
     """
     :type foo: str
     """
@@ -211,7 +211,7 @@ class InClass:
         foo
 
 
-class InBoth:
+class InBoth():
     """
     :type foo: str
     """

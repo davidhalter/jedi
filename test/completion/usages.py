@@ -29,7 +29,7 @@ abc = 5
 Abc = 3
 
 #< 6 (0,6), (2,4), (5,8), (17,0)
-class Abc:
+class Abc():
     #< (-2,6), (0,4), (3,8), (15,0)
     Abc
 
@@ -132,7 +132,7 @@ class TestClassVar(object):
         #< (0,8), (-7, 8)
         class_v
 
-class TestInstanceVar:
+class TestInstanceVar():
     def a(self):
         #< 13 (4,13), (0,13)
         self._instance_var = 3
@@ -145,7 +145,7 @@ class TestInstanceVar:
         self()
 
 
-class NestedClass:
+class NestedClass():
     def __getattr__(self, name):
         return self
 
@@ -249,7 +249,7 @@ if isinstance(j, int):
 # Dynamic Param Search
 # -----------------
 
-class DynamicParam:
+class DynamicParam():
     def foo(self):
         return
 

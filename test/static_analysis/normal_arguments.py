@@ -60,7 +60,7 @@ default(x=1)
 # class arguments
 # -----------------
 
-class Instance:
+class Instance():
     def __init__(self, foo):
         self.foo = foo
 

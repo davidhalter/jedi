@@ -52,7 +52,7 @@ for a in get():
     a
 
 
-class Get:
+class Get():
     def __iter__(self):
         if random.choice([0, 1]):
             yield 1

@@ -24,7 +24,7 @@ async def x2():
         #? ['readlines']
         f.readlines
 
-class A:
+class A():
     @staticmethod
     async def b(c=1, d=2):
         return 1

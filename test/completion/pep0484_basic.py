@@ -3,7 +3,7 @@
 # python >= 3.2
 
 
-class A:
+class A():
     pass
 
 

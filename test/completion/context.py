@@ -1,4 +1,4 @@
-class Base:
+class Base():
     myfoobar = 3
 
 
@@ -35,7 +35,7 @@ myfoobar
 # Inheritance
 # -----------------
 
-class Super:
+class Super():
     enabled = True
     if enabled:
         yo_dude = 4

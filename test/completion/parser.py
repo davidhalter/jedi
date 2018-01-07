@@ -2,7 +2,7 @@
 Issues with the parser and not the type inference should be part of this file.
 """
 
-class IndentIssues:
+class IndentIssues():
     """
     issue jedi-vim#288
     Which is really a fast parser issue. It used to start a new block at the

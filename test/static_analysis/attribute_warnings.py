@@ -8,7 +8,7 @@ Jedi issues warnings for possible errors if ``__getattr__``,
 # -----------------
 
 
-class Cls:
+class Cls():
     def __getattr__(self, name):
         return getattr(str, name)
 
@@ -32,7 +32,7 @@ Inherited().undefined
 # -----------------
 
 
-class SetattrCls:
+class SetattrCls():
     def __init__(self, dct):
         # Jedi doesn't even try to understand such code
         for k, v in dct.items():

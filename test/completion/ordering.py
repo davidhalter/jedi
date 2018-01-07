@@ -20,7 +20,7 @@ b
 temp
 
 a = 1
-temp = b
+temp = b;
 b = a
 a = temp
 #? int()
@@ -157,7 +157,7 @@ a.real
 a.a
 
 a = 3
-class a:
+class a():
     def __init__(self, a):
         self.a = a
 

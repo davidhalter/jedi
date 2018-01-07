@@ -83,7 +83,7 @@ c
 c()
 
 
-class ClassVar:
+class ClassVar():
     x = 3
 
 #! ['x = 3']
@@ -103,7 +103,7 @@ def f(t=None):
     t = t or 1
 
 
-class X:
+class X():
     pass
 
 #! 3 []
@@ -158,7 +158,7 @@ from . import some_variable
 # anonymous classes
 # -----------------
 def func():
-    class A:
+    class A():
         def b(self):
             return 1
     return A()
@@ -171,7 +171,7 @@ func().b()
 # -----------------
 
 #! 7 ['class ClassDef']
-class ClassDef:
+class ClassDef():
     """ abc """
     pass
 
@@ -216,7 +216,7 @@ def dec(dec_param=3):
 def y():
     pass
 
-class ClassDec:
+class ClassDec():
     def class_func(func):
         return func
 

@@ -285,7 +285,7 @@ def memoize(func):
     return wrapper
 
 
-class Something:
+class Something():
     @memoize
     def x(self, a, b=1):
         return a

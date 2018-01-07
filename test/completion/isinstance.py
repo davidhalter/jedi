@@ -78,7 +78,7 @@ def isinstance_func(arr):
 # Names with multiple indices.
 # -----------------
 
-class Test:
+class Test():
     def __init__(self, testing):
         if isinstance(testing, str):
             self.testing = testing
