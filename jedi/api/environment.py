@@ -96,26 +96,56 @@ class InterpreterEnvironment(_BaseEnvironment):
         return sys.path
 
 
-def get_default_environment():
-    virtual_env = os.environ.get('VIRTUAL_ENV')
-    if virtual_env is not None and virtual_env != sys.prefix:
+def _get_virtual_env_from_var():
+    var = os.environ.get('VIRTUAL_ENV')
+    if var is not None and var != sys.prefix:
         try:
-            return create_environment(virtual_env)
+            return create_environment(var)
         except InvalidPythonEnvironment:
             pass
+
+
+def get_default_environment():
+    virtual_env = _get_virtual_env_from_var()
+    if virtual_env is not None:
+        return virtual_env
     return DefaultEnvironment()
 
 
-def find_virtualenvs(paths=None):
-    if paths is None:
-        paths = []
+def find_virtualenvs(paths=None, **kwargs):
+    """
+    :param paths: A list of paths in your file system that this function will
+        use to search virtual env's. It will exclusively search in these paths
+        and potentially execute
+    :param safe: Default True. In case this is False, it will allow this
+        function to execute potential `python` environments. An attacker might
+        be able to drop an executable in a path this function is searching by
+        default. If the executable has not been installed by root.
+    """
+    def py27_comp(paths=None, safe=True):
+        if paths is None:
+            paths = []
 
-    for path in paths:
-        try:
-            executable = _get_executable_path(path)
-            yield Environment(path, executable)
-        except InvalidPythonEnvironment:
-            pass
+        _used_paths = set()
+
+        virtual_env = _get_virtual_env_from_var()
+        if virtual_env is not None:
+            yield virtual_env
+            _used_paths.append(virtual_env._base_path)
+
+        for path in paths:
+            if path in _used_paths:
+                # A path shouldn't be evaluated twice.
+                continue
+            _used_paths.add(path)
+
+            try:
+                executable = _get_executable_path(path, safe=safe)
+                yield Environment(path, executable)
+            except InvalidPythonEnvironment:
+                pass
+
+    return py27_comp(paths, **kwargs)
 
 
 def find_python_environments():
@@ -143,12 +173,13 @@ def get_python_environment(python_name):
 
 def create_environment(path):
     """
-    Make it possible to create
+    Make it possible to create an environment by hand.
     """
-    return Environment(path, _get_executable_path(path))
+    # Since this path is provided by the user, just use unsafe execution.
+    return Environment(path, _get_executable_path(path, safe=False))
 
 
-def _get_executable_path(path):
+def _get_executable_path(path, safe=True):
     """
     Returns None if it's not actually a virtual env.
     """
@@ -157,4 +188,35 @@ def _get_executable_path(path):
     python = os.path.join(bin_folder, 'python')
     if not all(os.path.exists(p) for p in (activate, python)):
         raise InvalidPythonEnvironment("One of bin/activate and bin/python is missing.")
+
+    if safe and not _is_safe(python):
+        raise InvalidPythonEnvironment("The python binary is potentially unsafe.")
     return python
+
+
+def _is_safe(executable_path):
+    real_path = os.path.realpath(executable_path)
+    if _is_admin():
+        # In case we are root or are part of Windows, just be conservative and
+        # only execute known paths.
+        # TODO add a proper Windows path.
+        return real_path.startswith('/usr/bin')
+
+    uid = os.stat(real_path).st_uid
+    # The interpreter needs to be owned by root. This means that it wasn't
+    # written by a user and therefore attacking Jedi is not as simple.
+    # The attack could look like the following:
+    # 1. A user clones a repository.
+    # 2. The repository has an inocent looking folder called foobar. jedi
+    #    searches for the folder and executes foobar/bin/python --version if
+    #    there's also a foobar/bin/activate.
+    # 3. The bin/python is obviously not a python script but a bash script or
+    #    whatever the attacker wants.
+    return uid == 0
+
+
+def _is_admin():
+    try:
+        return os.getuid() == 0
+    except AttributeError:
+        return False  # Windows
