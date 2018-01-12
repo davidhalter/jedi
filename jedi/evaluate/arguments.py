@@ -29,6 +29,8 @@ def try_iter_content(types, depth=0):
 
 class AbstractArguments(object):
     context = None
+    argument_node = None
+    trailer = None
 
     def eval_argument_clinic(self, parameters):
         """Uses a list with argument clinic information (see PEP 436)."""
@@ -197,7 +199,11 @@ class TreeArguments(AbstractArguments):
                 arguments = param.var_args
                 break
 
-        return [arguments.argument_node or arguments.trailer]
+        if arguments.argument_node:
+            return [arguments.argument_node]
+        if arguments.trailer:
+            return [arguments.trailer]
+        return []
 
 
 class ValuesArguments(AbstractArguments):
