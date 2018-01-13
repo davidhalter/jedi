@@ -10,6 +10,7 @@ from jedi.evaluate.base_context import NO_CONTEXTS
 from jedi.evaluate.context import iterable
 from jedi.evaluate.param import get_params, ExecutedParam
 
+
 def try_iter_content(types, depth=0):
     """Helper method for static analysis."""
     if depth > 10:
@@ -199,9 +200,9 @@ class TreeArguments(AbstractArguments):
                 arguments = param.var_args
                 break
 
-        if arguments.argument_node:
+        if arguments.argument_node is not None:
             return [arguments.argument_node]
-        if arguments.trailer:
+        if arguments.trailer is not None:
             return [arguments.trailer]
         return []
 
