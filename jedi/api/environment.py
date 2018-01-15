@@ -98,7 +98,10 @@ class InterpreterEnvironment(_BaseEnvironment):
 
 def _get_virtual_env_from_var():
     var = os.environ.get('VIRTUAL_ENV')
-    if var is not None and var != sys.prefix:
+    if var is not None:
+        if var == sys.prefix:
+            return DefaultEnvironment()
+
         try:
             return create_environment(var)
         except InvalidPythonEnvironment:
@@ -177,6 +180,11 @@ def create_environment(path):
     """
     # Since this path is provided by the user, just use unsafe execution.
     return Environment(path, _get_executable_path(path, safe=False))
+
+
+def from_executable(executable):
+    path = os.path.dirname(os.path.dirname(executable))
+    return Environment(path, executable)
 
 
 def _get_executable_path(path, safe=True):

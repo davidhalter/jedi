@@ -13,17 +13,14 @@ import subprocess
 import socket
 import errno
 import weakref
-import pickle
 from functools import partial
 
-from jedi._compatibility import queue, is_py3, force_unicode
+from jedi._compatibility import queue, is_py3, force_unicode, pickle_dump, pickle_load
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
     SignatureParam
 from jedi.api.exceptions import InternalError
-
-_PICKLE_PROTOCOL = 2
 
 _subprocesses = {}
 
@@ -36,13 +33,6 @@ def get_subprocess(executable):
     except KeyError:
         sub = _subprocesses[executable] = _CompiledSubprocess(executable)
         return sub
-
-
-def _pickle_load(file):
-    if is_py3:
-        return pickle.load(file, encoding='bytes')
-    else:
-        return pickle.load(file)
 
 
 def _get_function(name):
@@ -193,7 +183,7 @@ class _CompiledSubprocess(object):
             kwargs = {force_unicode(key): value for key, value in kwargs.items()}
 
         data = evaluator_id, function, args, kwargs
-        pickle.dump(data, self._process.stdin, protocol=_PICKLE_PROTOCOL)
+        pickle_dump(data, self._process.stdin)
         try:
             self._process.stdin.flush()
         except socket.error as e:
@@ -205,7 +195,7 @@ class _CompiledSubprocess(object):
             raise InternalError("The subprocess was killed. Maybe out of memory?")
 
         try:
-            is_exception, result = _pickle_load(self._process.stdout)
+            is_exception, result = pickle_load(self._process.stdout)
         except EOFError:
             self.kill()
             raise InternalError("The subprocess crashed.")
@@ -274,7 +264,7 @@ class Listener(object):
 
         while True:
             try:
-                payload = _pickle_load(stdin)
+                payload = pickle_load(stdin)
             except EOFError:
                 # It looks like the parent process closed. Don't make a big fuss
                 # here and just exit.
@@ -286,7 +276,7 @@ class Listener(object):
                 #print_to_stderr(traceback.format_exc())
                 result = True, e
 
-            pickle.dump(result, file=stdout, protocol=_PICKLE_PROTOCOL)
+            pickle_dump(result, file=stdout)
             stdout.flush()
 
 

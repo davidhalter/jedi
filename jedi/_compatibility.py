@@ -322,13 +322,13 @@ else:
     import Queue as queue
 
 
+import pickle
 if sys.version_info[:2] == (3, 3):
     """
     Monkeypatch the unpickler in Python 3.3. This is needed, because the
     argument `encoding='bytes'` is not supported in 3.3, but badly needed to
     communicate with Python 2.
     """
-    import pickle
 
     class NewUnpickler(pickle._Unpickler):
         dispatch = dict(pickle._Unpickler.dispatch)
@@ -381,3 +381,17 @@ if sys.version_info[:2] == (3, 3):
     pickle.Unpickler = NewUnpickler
     pickle.load = load
     pickle.loads = loads
+
+
+_PICKLE_PROTOCOL = 2
+
+
+def pickle_load(file):
+    if is_py3:
+        return pickle.load(file, encoding='bytes')
+    else:
+        return pickle.load(file)
+
+
+def pickle_dump(data, file):
+    pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
