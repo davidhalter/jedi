@@ -46,15 +46,22 @@ class Project(object):
     def __init__(self, path, **kwargs):
         """
         :param path: The base path for this project.
+        :param sys_path: list of str. You can override the sys path if you
+            want. By default the ``sys.path.`` is generated from the
+            environment (virtualenvs, etc).
+        :param smart_sys_path: If this is enabled (default), adds paths from
+            Django, buildout and local directories. Otherwise you will have to
+            rely on your packages being properly configured on the
+            ``sys.path``.
         """
-        def py2_comp(path, environment=None, sys_path=None, explicit=False):
+        def py2_comp(path, environment=None, sys_path=None, smart_sys_path=True):
             self._path = path
             if isinstance(environment, DefaultEnvironment):
                 self._environment = environment
                 self._executable = environment._executable
 
             self._sys_path = sys_path
-            self._explicit = explicit
+            self._smart_sys_path = smart_sys_path
 
         py2_comp(path, **kwargs)
 
@@ -66,7 +73,12 @@ class Project(object):
         if environment is None:
             environment = self.get_environment()
 
-        return environment.get_sys_path()
+        sys_path = environment.get_sys_path()
+        try:
+            sys_path.remove('')
+        except ValueError:
+            pass
+        return sys_path
 
     @evaluator_function_cache()
     def _get_sys_path(self, evaluator, environment=None):
@@ -75,12 +87,7 @@ class Project(object):
         one is used like a public method.
         """
         sys_path = list(self._get_base_sys_path(environment))
-        try:
-            sys_path.remove('')
-        except ValueError:
-            pass
-
-        if self._script_path is None:
+        if self._smart_sys_path:
             return sys_path
 
         added_paths = map(
