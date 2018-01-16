@@ -5,6 +5,9 @@ from jedi._compatibility import FileNotFoundError
 from jedi.api.environment import DefaultEnvironment, \
     get_default_environment, from_executable
 from jedi.api.exceptions import WrongVersion
+from jedi._compatibility import force_unicode
+from jedi.evaluate.sys_path import detect_additional_paths
+from jedi.evaluate.cache import evaluator_function_cache
 
 _CONFIG_FOLDER = '.jedi'
 _CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'MANIFEST.in'
@@ -44,17 +47,18 @@ class Project(object):
         """
         :param path: The base path for this project.
         """
-        def py2_comp(path, environment=None, sys_path=None):
+        def py2_comp(path, environment=None, sys_path=None, explicit=False):
             self._path = path
             if isinstance(environment, DefaultEnvironment):
                 self._environment = environment
                 self._executable = environment._executable
 
             self._sys_path = sys_path
+            self._explicit = explicit
 
         py2_comp(path, **kwargs)
 
-    def _get_sys_path(self, environment=None):
+    def _get_base_sys_path(self, environment=None):
         if self._sys_path is not None:
             return self._sys_path
 
@@ -63,6 +67,27 @@ class Project(object):
             environment = self.get_environment()
 
         return environment.get_sys_path()
+
+    @evaluator_function_cache()
+    def _get_sys_path(self, evaluator, environment=None):
+        """
+        Keep this method private for all users of jedi. However internally this
+        one is used like a public method.
+        """
+        sys_path = list(self._get_base_sys_path(environment))
+        try:
+            sys_path.remove('')
+        except ValueError:
+            pass
+
+        if self._script_path is None:
+            return sys_path
+
+        added_paths = map(
+            force_unicode,
+            detect_additional_paths(self._evaluator, self._script_path)
+        )
+        return sys_path + list(added_paths)
 
     def save(self):
         data = dict(self.__dict__)
