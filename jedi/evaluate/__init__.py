@@ -104,7 +104,6 @@ class Evaluator(object):
         self.is_analysis = False
         self.project = project
         self.access_cache = {}
-        project.add_evaluator(self)
 
         self.reset_recursion_limitations()
 
@@ -116,6 +115,10 @@ class Evaluator(object):
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
+
+    def get_sys_path(self):
+        """Convenience function"""
+        return self.project._get_sys_path(self, environment=self.environment)
 
     def eval_element(self, context, element):
         if isinstance(context, CompForContext):

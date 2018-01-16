@@ -59,7 +59,7 @@ def evaluator_method_cache(default=_NO_DEFAULT):
     return decorator
 
 
-def _memoize_meta_class():
+def evaluator_as_method_param_cache():
     def decorator(call):
         return _memoize_default(second_arg_is_evaluator=True)(call)
 
@@ -72,6 +72,6 @@ class CachedMetaClass(type):
     class initializations. Either you do it this way or with decorators, but
     with decorators you lose class access (isinstance, etc).
     """
-    @_memoize_meta_class()
+    @evaluator_as_method_param_cache()
     def __call__(self, *args, **kwargs):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)

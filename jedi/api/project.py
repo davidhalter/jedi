@@ -7,7 +7,7 @@ from jedi.api.environment import DefaultEnvironment, \
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.evaluate.sys_path import detect_additional_paths
-from jedi.evaluate.cache import evaluator_function_cache
+from jedi.evaluate.cache import evaluator_as_method_param_cache
 
 _CONFIG_FOLDER = '.jedi'
 _CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'MANIFEST.in'
@@ -80,7 +80,7 @@ class Project(object):
             pass
         return sys_path
 
-    @evaluator_function_cache()
+    @evaluator_as_method_param_cache()
     def _get_sys_path(self, evaluator, environment=None):
         """
         Keep this method private for all users of jedi. However internally this
@@ -135,7 +135,7 @@ def get_default_project():
 
 def _get_default_project():
     previous = None
-    curdir = dir = os.path.realpath(os.curdir())
+    curdir = dir = os.path.realpath(os.getcwd())
     probable_path = None
     while dir != previous:
         try:

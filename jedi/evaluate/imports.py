@@ -243,7 +243,7 @@ class Importer(object):
 
     def sys_path_with_modifications(self):
         in_path = []
-        sys_path_mod = self._evaluator.project.sys_path \
+        sys_path_mod = self._evaluator.get_sys_path() \
                        + sys_path.check_sys_path_modifications(self.module_context)
         if self.file_path is not None:
             # If you edit e.g. gunicorn, there will be imports like this:
@@ -459,7 +459,7 @@ class Importer(object):
 
 def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=None):
     if sys_path is None:
-        sys_path = evaluator.project.sys_path
+        sys_path = evaluator.get_sys_path()
 
     dotted_path = path and dotted_from_fs_path(path, sys_path)
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
@@ -519,7 +519,9 @@ def get_modules_containing_name(evaluator, modules, name):
             if name in code:
                 module = _load_module(evaluator, path, code)
 
-                module_name = sys_path.dotted_path_in_sys_path(evaluator.project.sys_path, path)
+                module_name = sys_path.dotted_path_in_sys_path(
+                    evaluator.get_sys_path(), path
+                )
                 if module_name is not None:
                     add_module(evaluator, module_name, module)
                 return module

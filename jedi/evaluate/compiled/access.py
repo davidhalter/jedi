@@ -135,7 +135,7 @@ def create_access(evaluator, obj):
 
 def load_module(evaluator, path=None, name=None, sys_path=None):
     if sys_path is None:
-        sys_path = list(evaluator.project.sys_path)
+        sys_path = list(evaluator.get_sys_path())
     if path is not None:
         dotted_path = dotted_from_fs_path(path, sys_path=sys_path)
     else:

@@ -25,10 +25,10 @@ from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.api.environment import InterpreterEnvironment
+from jedi.api.project import get_default_project
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
 from jedi.evaluate import usages
-from jedi.evaluate.project import Project
 from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import dotted_path_in_sys_path
@@ -82,10 +82,11 @@ class Script(object):
     :type sys_path: list
     :param environment: TODO
     :type sys_path: Environment
-
+    :param project: TODO
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', sys_path=None, environment=None):
+                 encoding='utf-8', sys_path=None, environment=None,
+                 project=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
@@ -116,9 +117,12 @@ class Script(object):
             sys_path = list(map(force_unicode, sys_path))
 
         # Load the Python grammar of the current interpreter.
-        project = Project(sys_path=sys_path)
+        if project is None:
+            project = get_default_project()
+        # TODO deprecate and remove sys_path from the Script API.
+        project._sys_path = sys_path
         self._evaluator = Evaluator(project, environment)
-        project.add_script_path(self.path)
+        self._project = project
         debug.speed('init')
 
     @cache.memoize_method
@@ -139,7 +143,7 @@ class Script(object):
             self.path
         )
         if self.path is not None:
-            name = dotted_path_in_sys_path(self._evaluator.project.sys_path, self.path)
+            name = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
             if name is not None:
                 imports.add_module(self._evaluator, name, module)
         return module

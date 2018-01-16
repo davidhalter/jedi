@@ -130,7 +130,7 @@ def check_sys_path_modifications(module_context):
 
 
 def sys_path_with_modifications(evaluator, module_context):
-    return evaluator.project.sys_path + check_sys_path_modifications(module_context)
+    return evaluator.get_sys_path() + check_sys_path_modifications(module_context)
 
 
 def detect_additional_paths(evaluator, script_path):
