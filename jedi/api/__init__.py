@@ -82,11 +82,9 @@ class Script(object):
     :type sys_path: list
     :param environment: TODO
     :type sys_path: Environment
-    :param project: TODO
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', sys_path=None, environment=None,
-                 project=None):
+                 encoding='utf-8', sys_path=None, environment=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
@@ -117,8 +115,7 @@ class Script(object):
             sys_path = list(map(force_unicode, sys_path))
 
         # Load the Python grammar of the current interpreter.
-        if project is None:
-            project = get_default_project()
+        project = get_default_project()
         # TODO deprecate and remove sys_path from the Script API.
         project._sys_path = sys_path
         self._evaluator = Evaluator(project, environment=environment, script_path=path)
