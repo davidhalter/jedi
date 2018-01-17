@@ -117,7 +117,8 @@ class Script(object):
         # Load the Python grammar of the current interpreter.
         project = get_default_project()
         # TODO deprecate and remove sys_path from the Script API.
-        project._sys_path = sys_path
+        if sys_path is not None:
+            project._sys_path = sys_path
         self._evaluator = Evaluator(project, environment=environment, script_path=path)
         self._project = project
         debug.speed('init')
