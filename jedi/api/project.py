@@ -87,12 +87,12 @@ class Project(object):
         one is used like a public method.
         """
         sys_path = list(self._get_base_sys_path(environment))
-        if self._smart_sys_path:
+        if evaluator.script_path is None or not self._smart_sys_path:
             return sys_path
 
         added_paths = map(
             force_unicode,
-            detect_additional_paths(self._evaluator, self._script_path)
+            detect_additional_paths(evaluator, evaluator.script_path)
         )
         return sys_path + list(added_paths)
 

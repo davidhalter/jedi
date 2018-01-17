@@ -121,7 +121,7 @@ class Script(object):
             project = get_default_project()
         # TODO deprecate and remove sys_path from the Script API.
         project._sys_path = sys_path
-        self._evaluator = Evaluator(project, environment)
+        self._evaluator = Evaluator(project, environment=environment, script_path=path)
         self._project = project
         debug.speed('init')
 

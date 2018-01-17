@@ -13,6 +13,7 @@ import subprocess
 import socket
 import errno
 import weakref
+import traceback
 from functools import partial
 
 from jedi._compatibility import queue, is_py3, force_unicode, pickle_dump, pickle_load
@@ -195,12 +196,15 @@ class _CompiledSubprocess(object):
             raise InternalError("The subprocess was killed. Maybe out of memory?")
 
         try:
-            is_exception, result = pickle_load(self._process.stdout)
+            is_exception, traceback, result = pickle_load(self._process.stdout)
         except EOFError:
             self.kill()
             raise InternalError("The subprocess crashed.")
 
         if is_exception:
+            # Replace the attribute error message with a the traceback. It's
+            # way more informative.
+            result.args = (traceback,)
             raise result
         return result
 
@@ -270,11 +274,9 @@ class Listener(object):
                 # here and just exit.
                 exit(1)
             try:
-                result = False, self._run(*payload)
+                result = False, None, self._run(*payload)
             except Exception as e:
-                #import traceback
-                #print_to_stderr(traceback.format_exc())
-                result = True, e
+                result = True, traceback.format_exc(), e
 
             pickle_dump(result, file=stdout)
             stdout.flush()
