@@ -234,6 +234,8 @@ class Listener(object):
         except KeyError:
             from jedi.api.environment import InterpreterEnvironment
             evaluator = Evaluator(
+                # The project is not actually needed. Nothing should need to
+                # access it.
                 project=None,
                 environment=InterpreterEnvironment()
             )
