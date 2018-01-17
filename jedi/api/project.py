@@ -121,21 +121,12 @@ def _is_potential_project(path):
     return False
 
 
-_cached_default_project = None
+def get_default_project(path=None):
+    if path is None:
+        path = os.getcwd()
 
-
-def get_default_project():
-    global _cached_default_project
-    if _cached_default_project is None:
-        # We are caching it here, because checking for it every time is just
-        # too much work.
-        _cached_default_project = _get_default_project()
-    return _cached_default_project
-
-
-def _get_default_project():
     previous = None
-    curdir = dir = os.path.realpath(os.getcwd())
+    curdir = dir = os.path.realpath(path)
     probable_path = None
     while dir != previous:
         try:
