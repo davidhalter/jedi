@@ -227,7 +227,7 @@ class Listener(object):
         self._process = _EvaluatorProcess(Listener)
 
     def _get_evaluator(self, function, evaluator_id):
-        from jedi.evaluate import Evaluator, project
+        from jedi.evaluate import Evaluator
 
         try:
             evaluator = self._evaluators[evaluator_id]
