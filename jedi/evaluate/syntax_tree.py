@@ -119,7 +119,7 @@ def eval_node(context, element):
 def eval_trailer(context, base_contexts, trailer):
     trailer_op, node = trailer.children[:2]
     if node == ')':  # `arglist` is optional.
-        node = ()
+        node = None
 
     if trailer_op == '[':
         trailer_op, node, _ = trailer.children

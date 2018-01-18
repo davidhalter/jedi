@@ -156,7 +156,7 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
     def create_func_excs():
         arglist = trailer.children[1]
         if arglist == ')':
-            arglist = ()
+            arglist = None
         args = TreeArguments(evaluator, context, arglist, trailer)
         if value_node.type == 'funcdef':
             yield value.get_function_execution(args)
