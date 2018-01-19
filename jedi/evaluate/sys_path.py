@@ -204,7 +204,7 @@ def detect_additional_paths(evaluator, script_path):
 
 def _get_paths_from_buildout_script(evaluator, buildout_script_path):
     try:
-        module_node = evaluator.grammar.parse(
+        module_node = evaluator.parse(
             path=buildout_script_path,
             cache=True,
             cache_path=settings.cache_directory
