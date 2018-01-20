@@ -104,7 +104,7 @@ class Evaluator(object):
         project.add_evaluator(self)
 
         self.reset_recursion_limitations()
-        self.allow_different_encoding = False
+        self.allow_different_encoding = True
 
         # Constants
         self.BUILTINS = compiled.get_special_object(self, 'BUILTINS')

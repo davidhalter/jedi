@@ -92,14 +92,18 @@ class Script(object):
             with open(path, 'rb') as f:
                 source = f.read()
 
-        self._module_node, code = self.evaluator.parse_and_get_code(
-            code=self._source,
+        # Load the Python grammar of the current interpreter.
+        self._grammar = parso.load_grammar()
+        project = Project(sys_path=sys_path)
+        self._evaluator = Evaluator(self._grammar, project)
+        self._module_node, source = self._evaluator.parse_and_get_code(
+            code=source,
             path=self.path,
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=True,
             cache_path=settings.cache_directory
         )
-        self._code_lines = split_lines(code)
+        self._code_lines = split_lines(source)
         line = max(len(self._code_lines), 1) if line is None else line
         if not (0 < line <= len(self._code_lines)):
             raise ValueError('`line` parameter is not in a valid range.')
@@ -114,10 +118,6 @@ class Script(object):
         cache.clear_time_caches()
         debug.reset_time()
 
-        # Load the Python grammar of the current interpreter.
-        self._grammar = parso.load_grammar()
-        project = Project(sys_path=sys_path)
-        self._evaluator = Evaluator(self._grammar, project)
         project.add_script_path(self.path)
         debug.speed('init')
 

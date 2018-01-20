@@ -369,8 +369,9 @@ class Importer(object):
             else:
                 module_path = get_init_path(module_path)
         elif module_file:
-            code = module_file.read()
             module_file.close()
+            with open(module_path, 'rb') as f:
+                code = f.read()
 
         if isinstance(module_path, ImplicitNSInfo):
             from jedi.evaluate.context.namespace import ImplicitNamespaceContext

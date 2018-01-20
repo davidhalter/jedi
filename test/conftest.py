@@ -123,5 +123,5 @@ class StaticAnalysisCase(object):
 
 @pytest.fixture()
 def cwd_tmpdir(monkeypatch, tmpdir):
-    with helpers.set_cwd(tmpdir.dirpath):
+    with helpers.set_cwd(tmpdir.strpath):
         yield tmpdir
