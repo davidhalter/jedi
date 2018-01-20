@@ -363,7 +363,7 @@ class Evaluator(object):
     def parse_and_get_code(self, code, path, **kwargs):
         if self.allow_different_encoding:
             if code is None:
-                with open('rb') as f:
+                with open(path, 'rb') as f:
                     code = f.read()
             code = python_bytes_to_unicode(code, errors='replace')
 
