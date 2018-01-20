@@ -89,7 +89,7 @@ def setup_readline(namespace_module=__main__):
                     lines = split_lines(text)
                     position = (len(lines), len(lines[-1]))
                     name = get_on_completion_name(
-                        interpreter._get_module_node(),
+                        interpreter._module_node,
                         lines,
                         position
                     )
