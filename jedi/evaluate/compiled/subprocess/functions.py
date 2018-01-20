@@ -49,7 +49,20 @@ def get_module_info(evaluator, sys_path=None, full_name=None, **kwargs):
         else:
             module_path = _get_init_path(module_path)
     elif module_file:
-        code = module_file.read()
+        if module_path.endswith(('.zip', '.egg')):
+            # Unfortunately we are reading unicode here already, not byes.
+            # It seems however hard to get bytes, because the zip importer
+            # logic just unpacks the zip file and returns a file descriptor
+            # that we cannot as easily access. Therefore we just read it as
+            # a string.
+            code = module_file.read()
+        else:
+            # Read the code with a binary file, because the binary file
+            # might not be proper unicode. This is handled by the parser
+            # wrapper.
+            with open(module_path, 'rb') as f:
+                code = f.read()
+
         module_file.close()
 
     return code, cast_path(module_path), is_pkg
