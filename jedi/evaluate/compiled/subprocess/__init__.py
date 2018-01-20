@@ -178,7 +178,7 @@ class _CompiledSubprocess(object):
 
     def _send(self, evaluator_id, function, args=(), kwargs={}):
         if self._crashed:
-            raise InternalError("The subprocess has crashed.")
+            raise InternalError("The subprocess %s has crashed." % self._executable)
 
         if not is_py3:
             # Python 2 compatibility
@@ -194,13 +194,14 @@ class _CompiledSubprocess(object):
                 # Not a broken pipe
                 raise
             self.kill()
-            raise InternalError("The subprocess was killed. Maybe out of memory?")
+            raise InternalError("The subprocess %s was killed. Maybe out of memory?"
+                                % self._executable)
 
         try:
             is_exception, traceback, result = pickle_load(self._process.stdout)
         except EOFError:
             self.kill()
-            raise InternalError("The subprocess crashed.")
+            raise InternalError("The subprocess %s has crashed." % self._executable)
 
         if is_exception:
             # Replace the attribute error message with a the traceback. It's
