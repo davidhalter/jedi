@@ -492,7 +492,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         exceptions = context.eval_node(tree_name.get_previous_sibling().get_previous_sibling())
         types = exceptions.execute_evaluated()
     else:
-        raise ValueError("Should not happen.")
+        raise ValueError("Should not happen. type: %s" % typ)
     return types
 
 
