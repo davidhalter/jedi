@@ -16,7 +16,8 @@ import weakref
 import traceback
 from functools import partial
 
-from jedi._compatibility import queue, is_py3, force_unicode, pickle_dump, pickle_load
+from jedi._compatibility import queue, is_py3, force_unicode, \
+    pickle_dump, pickle_load
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
@@ -184,10 +185,10 @@ class _CompiledSubprocess(object):
             kwargs = {force_unicode(key): value for key, value in kwargs.items()}
 
         data = evaluator_id, function, args, kwargs
-        pickle_dump(data, self._process.stdin)
         try:
+            pickle_dump(data, self._process.stdin)
             self._process.stdin.flush()
-        except socket.error as e:
+        except (socket.error, IOError) as e:
             # Once Python2 will be removed we can just use `BrokenPipeError`.
             if e.errno != errno.EPIPE:
                 # Not a broken pipe
