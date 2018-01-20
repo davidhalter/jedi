@@ -41,9 +41,9 @@ def parse_test_files_option(opt):
     opt = str(opt)
     if ':' in opt:
         (f_name, rest) = opt.split(':', 1)
-        return (f_name, list(map(int, rest.split(','))))
+        return f_name, list(map(int, rest.split(',')))
     else:
-        return (opt, [])
+        return opt, []
 
 
 def pytest_generate_tests(metafunc):
@@ -127,7 +127,7 @@ class StaticAnalysisCase(object):
 
 @pytest.fixture()
 def cwd_tmpdir(monkeypatch, tmpdir):
-    with helpers.set_cwd(tmpdir.dirpath):
+    with helpers.set_cwd(tmpdir.strpath):
         yield tmpdir
 
 

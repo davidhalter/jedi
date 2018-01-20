@@ -64,6 +64,7 @@ that are not used are just being ignored.
 
 from parso.python import tree
 import parso
+from parso import python_bytes_to_unicode
 
 from jedi import debug
 from jedi import parser_utils
@@ -106,6 +107,7 @@ class Evaluator(object):
         self.access_cache = {}
 
         self.reset_recursion_limitations()
+        self.allow_different_encoding = True
 
     @property
     @evaluator_function_cache()
@@ -366,3 +368,15 @@ class Evaluator(object):
                 node = node.parent
             scope_node = parent_scope(node)
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
+
+    def parse_and_get_code(self, code, path, **kwargs):
+        if self.allow_different_encoding:
+            if code is None:
+                with open(path, 'rb') as f:
+                    code = f.read()
+            code = python_bytes_to_unicode(code, errors='replace')
+
+        return self.grammar.parse(code=code, path=path, **kwargs), code
+
+    def parse(self, *args, **kwargs):
+        return self.parse_and_get_code(*args, **kwargs)[0]

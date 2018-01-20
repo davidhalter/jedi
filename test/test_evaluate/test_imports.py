@@ -10,8 +10,6 @@ import pytest
 from jedi._compatibility import find_module_py33, find_module
 from ..helpers import cwd_at
 
-from jedi._compatibility import is_py26
-
 
 @pytest.mark.skipif('sys.version_info < (3,3)')
 def test_find_module_py33():
@@ -163,10 +161,9 @@ def test_complete_on_empty_import(Script):
     # relative import
     assert 10 < len(Script("from . import classes", 1, 6, 'whatever.py').completions()) < 30
 
-    wanted = set(['ImportError', 'import', 'ImportWarning'])
-    assert set([c.name for c in Script("import").completions()]) == wanted
-    if not is_py26:  # python 2.6 doesn't always come with a library `import*`.
-        assert len(Script("import import", path='').completions()) > 0
+    wanted = {'ImportError', 'import', 'ImportWarning'}
+    assert {c.name for c in Script("import").completions()} == wanted
+    assert len(Script("import import", path='').completions()) > 0
 
     # 111
     assert Script("from datetime import").completions()[0].name == 'import'

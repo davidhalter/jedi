@@ -103,8 +103,8 @@ def test_completion_on_complex_literals(Script):
     _check_number(Script, '4.0j.', 'complex')
     # No dot no completion - I thought, but 4j is actually a literall after
     # which a keyword like or is allowed. Good times, haha!
-    assert (set([c.name for c in Script('4j').completions()]) ==
-            set(['if', 'and', 'in', 'is', 'not', 'or']))
+    assert ({c.name for c in Script('4j').completions()} ==
+            {'if', 'and', 'in', 'is', 'not', 'or'})
 
 
 def test_goto_assignments_on_non_name(Script, environment):
@@ -152,7 +152,7 @@ def test_goto_definition_not_multiple(Script):
 
 def test_usage_description(Script):
     descs = [u.description for u in Script("foo = ''; foo").usages()]
-    assert set(descs) == set(["foo = ''", 'foo'])
+    assert set(descs) == {"foo = ''", 'foo'}
 
 
 def test_get_line_code(Script):

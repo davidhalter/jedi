@@ -3,8 +3,6 @@ Test the typing library, with docstrings. This is needed since annotations
 are not supported in python 2.7 else then annotating by comment (and this is
 still TODO at 2016-01-23)
 """
-# There's no Python 2.6 typing module.
-# python >= 2.7
 import typing
 class B:
     pass

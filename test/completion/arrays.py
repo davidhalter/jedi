@@ -403,8 +403,6 @@ def test_func():
     x
 
 
-# python >= 2.7
-# Set literals are not valid in 2.6.
 #? int()
 tuple({1})[0]
 

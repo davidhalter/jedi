@@ -465,7 +465,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
     if path is not None and path.endswith(('.py', '.zip', '.egg')) \
             and dotted_path not in settings.auto_import_modules:
 
-        module_node = evaluator.grammar.parse(
+        module_node = evaluator.parse(
             code=code, path=path, cache=True, diff_cache=True,
             cache_path=settings.cache_directory)
 

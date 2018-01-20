@@ -63,3 +63,12 @@ def test_complete_at_zero(Script):
 
     s = Script("", 1, 0).completions()
     assert len(s) > 0
+
+
+def test_wrong_encoding(Script, cwd_tmpdir):
+    x = cwd_tmpdir.join('x.py')
+    # Use both latin-1 and utf-8 (a really broken file).
+    x.write_binary(u'foobar = 1\nä'.encode('latin-1') + 'ä'.encode())
+
+    c, = Script('import x; x.foo', sys_path=['.']).completions()
+    assert c.name == 'foobar'

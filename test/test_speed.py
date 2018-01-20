@@ -41,7 +41,6 @@ def test_scipy_speed(Script):
     s = 'import scipy.weave; scipy.weave.inline('
     script = Script(s, 1, len(s), '')
     script.call_signatures()
-    #print(jedi.imports.imports_processed)
 
 
 @_check_speed(0.8)
@@ -63,10 +62,11 @@ def test_no_repr_computation(Script):
     unwanted computation of repr(). Exemple : big pandas data.
     See issue #919.
     """
-    class SlowRepr():
+    class SlowRepr:
         "class to test what happens if __repr__ is very slow."
         def some_method(self):
             pass
+
         def __repr__(self):
             time.sleep(0.2)
     test = SlowRepr()

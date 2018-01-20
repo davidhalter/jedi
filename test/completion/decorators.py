@@ -211,6 +211,17 @@ class X():
         #?
         self.x()
 
+
+def decorator_var_args(function, *args):
+    return function(*args)
+
+@decorator_var_args
+def function_var_args(param):
+    return param
+
+#? int()
+function_var_args(1)
+
 # -----------------
 # method decorators
 # -----------------

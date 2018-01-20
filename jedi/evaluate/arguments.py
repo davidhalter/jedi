@@ -10,6 +10,7 @@ from jedi.evaluate.base_context import NO_CONTEXTS
 from jedi.evaluate.context import iterable
 from jedi.evaluate.param import get_params, ExecutedParam
 
+
 def try_iter_content(types, depth=0):
     """Helper method for static analysis."""
     if depth > 10:
@@ -29,6 +30,8 @@ def try_iter_content(types, depth=0):
 
 class AbstractArguments(object):
     context = None
+    argument_node = None
+    trailer = None
 
     def eval_argument_clinic(self, parameters):
         """Uses a list with argument clinic information (see PEP 436)."""
@@ -95,29 +98,28 @@ class TreeArguments(AbstractArguments):
         self.trailer = trailer  # Can be None, e.g. in a class definition.
 
     def _split(self):
-        if isinstance(self.argument_node, (tuple, list)):
-            for el in self.argument_node:
-                yield 0, el
-        else:
-            if not (self.argument_node.type == 'arglist' or (
-                    # in python 3.5 **arg is an argument, not arglist
-                    (self.argument_node.type == 'argument') and
-                     self.argument_node.children[0] in ('*', '**'))):
-                yield 0, self.argument_node
-                return
+        if self.argument_node is None:
+            return
 
-            iterator = iter(self.argument_node.children)
-            for child in iterator:
-                if child == ',':
-                    continue
-                elif child in ('*', '**'):
-                    yield len(child.value), next(iterator)
-                elif child.type == 'argument' and \
-                        child.children[0] in ('*', '**'):
-                    assert len(child.children) == 2
-                    yield len(child.children[0].value), child.children[1]
-                else:
-                    yield 0, child
+        if not (self.argument_node.type == 'arglist' or (
+                # in python 3.5 **arg is an argument, not arglist
+                (self.argument_node.type == 'argument') and
+                 self.argument_node.children[0] in ('*', '**'))):
+            yield 0, self.argument_node
+            return
+
+        iterator = iter(self.argument_node.children)
+        for child in iterator:
+            if child == ',':
+                continue
+            elif child in ('*', '**'):
+                yield len(child.value), next(iterator)
+            elif child.type == 'argument' and \
+                    child.children[0] in ('*', '**'):
+                assert len(child.children) == 2
+                yield len(child.children[0].value), child.children[1]
+            else:
+                yield 0, child
 
     def unpack(self, funcdef=None):
         named_args = []
@@ -197,7 +199,11 @@ class TreeArguments(AbstractArguments):
                 arguments = param.var_args
                 break
 
-        return [arguments.argument_node or arguments.trailer]
+        if arguments.argument_node is not None:
+            return [arguments.argument_node]
+        if arguments.trailer is not None:
+            return [arguments.trailer]
+        return []
 
 
 class ValuesArguments(AbstractArguments):

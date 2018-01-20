@@ -68,25 +68,25 @@ def test_basedefinition_type(Script, environment):
 
 def test_basedefinition_type_import(Script):
     def get_types(source, **kwargs):
-        return set([t.type for t in Script(source, **kwargs).completions()])
+        return {t.type for t in Script(source, **kwargs).completions()}
 
     # import one level
-    assert get_types('import t') == set(['module'])
-    assert get_types('import ') == set(['module'])
-    assert get_types('import datetime; datetime') == set(['module'])
+    assert get_types('import t') == {'module'}
+    assert get_types('import ') == {'module'}
+    assert get_types('import datetime; datetime') == {'module'}
 
     # from
-    assert get_types('from datetime import timedelta') == set(['class'])
-    assert get_types('from datetime import timedelta; timedelta') == set(['class'])
-    assert get_types('from json import tool') == set(['module'])
-    assert get_types('from json import tool; tool') == set(['module'])
+    assert get_types('from datetime import timedelta') == {'class'}
+    assert get_types('from datetime import timedelta; timedelta') == {'class'}
+    assert get_types('from json import tool') == {'module'}
+    assert get_types('from json import tool; tool') == {'module'}
 
     # import two levels
-    assert get_types('import json.tool; json') == set(['module'])
-    assert get_types('import json.tool; json.tool') == set(['module'])
-    assert get_types('import json.tool; json.tool.main') == set(['function'])
-    assert get_types('import json.tool') == set(['module'])
-    assert get_types('import json.tool', column=9) == set(['module'])
+    assert get_types('import json.tool; json') == {'module'}
+    assert get_types('import json.tool; json.tool') == {'module'}
+    assert get_types('import json.tool; json.tool.main') == {'function'}
+    assert get_types('import json.tool') == {'module'}
+    assert get_types('import json.tool', column=9) == {'module'}
 
 
 def test_function_call_signature_in_doc(Script):

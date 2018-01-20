@@ -45,7 +45,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Jedi'
-copyright = u'2012 - {today.year}, Jedi contributors'.format(today=datetime.date.today())
+copyright = u'jedi contributors'
 
 import jedi
 from jedi.utils import version_info

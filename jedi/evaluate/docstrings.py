@@ -188,7 +188,7 @@ def _evaluate_for_statement_string(module_context, string):
         Need this docstring so that if the below part is not valid Python this
         is still a function.
         '''
-    {0}
+    {}
     """))
     if string is None:
         return []
@@ -252,7 +252,7 @@ def _execute_array_values(evaluator, array):
                 for typ in lazy_context.infer()
             )
             values.append(LazyKnownContexts(objects))
-        return set([FakeSequence(evaluator, array.array_type, values)])
+        return {FakeSequence(evaluator, array.array_type, values)}
     else:
         return array.execute_evaluated()
 

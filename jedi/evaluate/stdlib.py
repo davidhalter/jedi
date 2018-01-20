@@ -263,8 +263,6 @@ def collections_namedtuple(evaluator, obj, arguments):
     This has to be done by processing the namedtuple class template and
     evaluating the result.
 
-    .. note:: |jedi| only supports namedtuples on Python >2.6.
-
     """
     collections_context = obj.parent_context
     _class_template_set = collections_context.py__getattribute__(u'_class_template')

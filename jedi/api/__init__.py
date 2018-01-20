@@ -12,8 +12,8 @@ arguments.
 import os
 import sys
 
+import parso
 from parso.python import tree
-from parso import python_bytes_to_unicode, split_lines
 
 from jedi._compatibility import force_unicode, is_py3
 from jedi.parser_utils import get_executable_nodes
@@ -94,9 +94,29 @@ class Script(object):
             with open(path, 'rb') as f:
                 source = f.read()
 
-        # TODO do we really want that?
-        self._source = python_bytes_to_unicode(source, encoding, errors='replace')
-        self._code_lines = split_lines(self._source)
+        # Load the Python grammar of the current interpreter.
+        self._grammar = parso.load_grammar()
+
+        if sys_path is not None and not is_py3:
+            sys_path = list(map(force_unicode, sys_path))
+
+        # Load the Python grammar of the current interpreter.
+        project = get_default_project()
+        # TODO deprecate and remove sys_path from the Script API.
+        if sys_path is not None:
+            project._sys_path = sys_path
+        self._evaluator = Evaluator(project, environment=environment, script_path=path)
+        self._project = project
+        debug.speed('init')
+        self._module_node, source = self._evaluator.parse_and_get_code(
+            code=source,
+            path=self.path,
+            cache=False,  # No disk cache, because the current script often changes.
+            diff_cache=True,
+            cache_path=settings.cache_directory
+        )
+        debug.speed('parsed')
+        self._code_lines = parso.split_lines(source)
         line = max(len(self._code_lines), 1) if line is None else line
         if not (0 < line <= len(self._code_lines)):
             raise ValueError('`line` parameter is not in a valid range.')
@@ -111,35 +131,8 @@ class Script(object):
         cache.clear_time_caches()
         debug.reset_time()
 
-        if sys_path is not None and not is_py3:
-            sys_path = list(map(force_unicode, sys_path))
-
-        # Load the Python grammar of the current interpreter.
-        project = get_default_project()
-        # TODO deprecate and remove sys_path from the Script API.
-        if sys_path is not None:
-            project._sys_path = sys_path
-        self._evaluator = Evaluator(project, environment=environment, script_path=path)
-        self._project = project
-        debug.speed('init')
-
-    @cache.memoize_method
-    def _get_module_node(self):
-        return self._evaluator.grammar.parse(
-            code=self._source,
-            path=self.path,
-            cache=False,  # No disk cache, because the current script often changes.
-            diff_cache=True,
-            cache_path=settings.cache_directory
-        )
-
-    @cache.memoize_method
     def _get_module(self):
-        module = ModuleContext(
-            self._evaluator,
-            self._get_module_node(),
-            self.path
-        )
+        module = ModuleContext(self._evaluator, self._module_node, self.path)
         if self.path is not None:
             name = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
             if name is not None:
@@ -178,10 +171,9 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        module_node = self._get_module_node()
-        leaf = module_node.get_name_of_position(self._pos)
+        leaf = self._module_node.get_name_of_position(self._pos)
         if leaf is None:
-            leaf = module_node.get_leaf_for_position(self._pos)
+            leaf = self._module_node.get_leaf_for_position(self._pos)
             if leaf is None:
                 return []
 
@@ -212,7 +204,7 @@ class Script(object):
                 else:
                     yield name
 
-        tree_name = self._get_module_node().get_name_of_position(self._pos)
+        tree_name = self._module_node.get_name_of_position(self._pos)
         if tree_name is None:
             return []
         context = self._evaluator.create_context(self._get_module(), tree_name)
@@ -243,7 +235,7 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        tree_name = self._get_module_node().get_name_of_position(self._pos)
+        tree_name = self._module_node.get_name_of_position(self._pos)
         if tree_name is None:
             # Must be syntax
             return []
@@ -270,7 +262,7 @@ class Script(object):
         :rtype: list of :class:`classes.CallSignature`
         """
         call_signature_details = \
-            helpers.get_call_signature_details(self._get_module_node(), self._pos)
+            helpers.get_call_signature_details(self._module_node, self._pos)
         if call_signature_details is None:
             return []
 
@@ -295,10 +287,9 @@ class Script(object):
 
     def _analysis(self):
         self._evaluator.is_analysis = True
-        module_node = self._get_module_node()
-        self._evaluator.analysis_modules = [module_node]
+        self._evaluator.analysis_modules = [self._module_node]
         try:
-            for node in get_executable_nodes(module_node):
+            for node in get_executable_nodes(self._module_node):
                 context = self._get_module().create_context(node)
                 if node.type in ('funcdef', 'classdef'):
                     # Resolve the decorators.
@@ -374,10 +365,9 @@ class Interpreter(Script):
         self.namespaces = namespaces
 
     def _get_module(self):
-        parser_module = super(Interpreter, self)._get_module_node()
         return interpreter.MixedModuleContext(
             self._evaluator,
-            parser_module,
+            self._module_node,
             self.namespaces,
             path=self.path
         )
@@ -413,7 +403,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
                 module_context.create_context(name if name.parent.type == 'file_input' else name.parent),
                 name
             )
-        ) for name in get_module_names(script._get_module_node(), all_scopes)
+        ) for name in get_module_names(script._module_node, all_scopes)
     ]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 

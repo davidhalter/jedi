@@ -26,7 +26,7 @@ class AbstractNameDefinition(object):
     def goto(self):
         # Typically names are already definitions and therefore a goto on that
         # name will always result on itself.
-        return set([self])
+        return {self}
 
     def get_root_context(self):
         return self.parent_context.get_root_context()
@@ -386,7 +386,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     ... def func():
     ...     y = None
     ... '''))
-    >>> module_node = script._get_module_node()
+    >>> module_node = script._module_node
     >>> scope = next(module_node.iter_funcdefs())
     >>> scope
     <Function: func@3-5>
