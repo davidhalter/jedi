@@ -243,10 +243,19 @@ for value in x.values():
     #? int()
     value
 
-WrappingType = typing.NewType('WrappingType', dict) # Chosen arbitrarily
-y = WrappingType({}) # Not sure what the desired behavior should be when wrapping another type.
-#? dict()
+WrappingType = typing.NewType('WrappingType', str) # Chosen arbitrarily
+y = WrappingType(0) # Per https://github.com/davidhalter/jedi/issues/1015#issuecomment-355795929
+#? WrappingType()
 y
+
+def testnewtype(y):
+    """
+    :type y: WrappingType
+    """
+    #? WrappingType()
+    y
+    #? ["upper"]
+    y.u
 # python >= 3.2
 """
 docstrings have some auto-import, annotations can use all of Python's
