@@ -11,8 +11,12 @@ def _get_paths():
     return {'jedi': _jedi_path, 'parso': _parso_path}
 
 
+# Remove the first entry, because it's simply a directory entry that equals
+# this directory.
+del sys.path[0]
+
 if sys.version_info > (3, 4):
-    from importlib.machinery import FileFinder
+    from importlib.machinery import PathFinder
 
     class _ExactImporter(object):
         def __init__(self, path_dct):
@@ -20,13 +24,10 @@ if sys.version_info > (3, 4):
 
         def find_module(self, fullname, path=None):
             if path is None and fullname in self._path_dct:
-                loader, _ = FileFinder(self._path_dct[fullname]).find_loader(fullname)
+                p = self._path_dct[fullname]
+                loader = PathFinder.find_module(fullname, path=[p])
                 return loader
             return None
-
-    # Remove the first entry, because it's simply a directory entry that equals
-    # this directory.
-    del sys.path[0]
 
     # Try to import jedi/parso.
     sys.meta_path.insert(0, _ExactImporter(_get_paths()))
