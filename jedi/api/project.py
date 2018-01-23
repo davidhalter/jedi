@@ -116,7 +116,7 @@ class Project(object):
 
 def _is_potential_project(path):
     for name in _CONTAINS_POTENTIAL_PROJECT:
-        if os.path.exists(os.path.join(path)):
+        if os.path.exists(os.path.join(path, name)):
             return True
     return False
 
