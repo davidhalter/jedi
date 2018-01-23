@@ -110,8 +110,8 @@ class Project(object):
 
         return self._environment
 
-    def __setstate__(self, state):
-        self.__dict__.update(state)
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._path)
 
 
 def _is_potential_project(path):
