@@ -134,14 +134,13 @@ def sys_path_with_modifications(evaluator, module_context):
 
 
 def detect_additional_paths(evaluator, script_path):
-    django_paths = _detect_django_path(script_path)
     buildout_script_paths = set()
 
     for buildout_script_path in _get_buildout_script_paths(script_path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script_path):
             buildout_script_paths.add(path)
 
-    return django_paths + list(buildout_script_paths)
+    return list(buildout_script_paths)
 
 
 def _get_paths_from_buildout_script(evaluator, buildout_script_path):
@@ -161,13 +160,15 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         yield path
 
 
-def traverse_parents(path):
-    while True:
-        new = os.path.dirname(path)
-        if new == path:
-            return
-        path = new
+def traverse_parents(path, include_current=False):
+    if not include_current:
+        path = os.path.dirname(path)
+
+    previous = None
+    while previous != path:
         yield path
+        previous = path
+        path = os.path.dirname(path)
 
 
 def _get_parent_dir_with_file(path, filename):
@@ -175,18 +176,6 @@ def _get_parent_dir_with_file(path, filename):
         if os.path.isfile(os.path.join(parent, filename)):
             return parent
     return None
-
-
-def _detect_django_path(module_path):
-    """ Detects the path of the very well known Django library (if used) """
-    result = []
-
-    for parent in traverse_parents(module_path):
-        with ignored(IOError):
-            with open(parent + os.path.sep + 'manage.py'):
-                debug.dbg('Found django path: %s', module_path)
-                result.append(parent)
-    return result
 
 
 def _get_buildout_script_paths(module_path):

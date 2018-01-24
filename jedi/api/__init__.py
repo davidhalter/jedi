@@ -101,7 +101,7 @@ class Script(object):
             sys_path = list(map(force_unicode, sys_path))
 
         # Load the Python grammar of the current interpreter.
-        project = get_default_project()
+        project = get_default_project(path or os.getcwd())
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path

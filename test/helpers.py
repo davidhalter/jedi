@@ -13,13 +13,18 @@ else:
 TestCase = unittest.TestCase
 
 import os
-from os.path import abspath, dirname
+from os.path import abspath, dirname, join
 import functools
 
 test_dir = dirname(abspath(__file__))
 root_dir = dirname(test_dir)
 
 sample_int = 1  # This is used in completion/imports.py
+
+
+def get_example_dir(name):
+    return join(test_dir, 'examples', name)
+
 
 def cwd_at(path):
     """

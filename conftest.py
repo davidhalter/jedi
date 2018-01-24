@@ -14,6 +14,7 @@ collect_ignore = [
     '__main__.py',
     'jedi/evaluate/compiled/subprocess/__main__.py',
     'build/',
+    'test/examples',
 ]
 
 

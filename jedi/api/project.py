@@ -1,13 +1,14 @@
 import os
 import json
 
-from jedi._compatibility import FileNotFoundError
+from jedi._compatibility import FileNotFoundError, NotADirectoryError
 from jedi.api.environment import DefaultEnvironment, \
     get_default_environment, from_executable
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.evaluate.sys_path import detect_additional_paths
 from jedi.evaluate.cache import evaluator_as_method_param_cache
+from jedi.evaluate.sys_path import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
 _CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'MANIFEST.in'
@@ -54,7 +55,8 @@ class Project(object):
             rely on your packages being properly configured on the
             ``sys.path``.
         """
-        def py2_comp(path, environment=None, sys_path=None, smart_sys_path=True):
+        def py2_comp(path, environment=None, sys_path=None,
+                     smart_sys_path=True, _django=False):
             self._path = path
             if isinstance(environment, DefaultEnvironment):
                 self._environment = environment
@@ -62,6 +64,7 @@ class Project(object):
 
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
+            self._django = _django
 
         py2_comp(path, **kwargs)
 
@@ -90,11 +93,15 @@ class Project(object):
         if evaluator.script_path is None or not self._smart_sys_path:
             return sys_path
 
+        prefixed = []
+        if self._smart_sys_path:
+            if self._django:
+                prefixed.append(self._path)
         added_paths = map(
             force_unicode,
             detect_additional_paths(evaluator, evaluator.script_path)
         )
-        return sys_path + list(added_paths)
+        return prefixed + sys_path + list(added_paths)
 
     def save(self):
         data = dict(self.__dict__)
@@ -121,26 +128,38 @@ def _is_potential_project(path):
     return False
 
 
+def _is_django_path(directory):
+    """ Detects the path of the very well known Django library (if used) """
+    try:
+        with open(os.path.join(directory, 'manage.py'), 'br') as f:
+            return b"DJANGO_SETTINGS_MODULE" in f.read()
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+
+    return False
+
+
 def get_default_project(path=None):
     if path is None:
         path = os.getcwd()
 
-    previous = None
-    curdir = dir = os.path.realpath(path)
+    check = os.path.realpath(path)
     probable_path = None
-    while dir != previous:
+    for dir in traverse_parents(check, include_current=True):
         try:
             return Project.load(dir)
-        except FileNotFoundError:
+        except (FileNotFoundError, NotADirectoryError):
             pass
+
+        if _is_django_path(dir):
+            return Project(dir, _django=True)
 
         if probable_path is None and _is_potential_project(dir):
             probable_path = dir
 
-        previous = dir
-        dir = os.path.dirname(dir)
-    else:
-        if probable_path is not None:
-            # TODO search for setup.py etc
-            return Project(probable_path)
-        return Project(curdir)
+    if probable_path is not None:
+        # TODO search for setup.py etc
+        return Project(probable_path)
+
+    curdir = path if os.path.isdir(path) else os.path.dirname(path)
+    return Project(curdir)

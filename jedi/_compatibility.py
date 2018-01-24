@@ -264,6 +264,11 @@ try:
 except NameError:
     FileNotFoundError = IOError
 
+try:
+    NotADirectoryError = NotADirectoryError
+except NameError:
+    NotADirectoryError = IOError
+
 
 def no_unicode_pprint(dct):
     """
