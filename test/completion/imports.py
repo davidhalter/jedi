@@ -280,7 +280,7 @@ def underscore():
     #? str()
     keyword.__file__
 
-    # Does that also work for the our own module?
+    # Does that also work for our own module?
     #? ['__file__']
     __file__
 
