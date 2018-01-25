@@ -419,7 +419,7 @@ class Importer(object):
 
             for context in self.follow():
                 # Non-modules are not completable.
-                if context.api_type != 'module':  # not a module
+                if context.api_type not in ('namespace', 'module'):  # not a module
                     continue
                 # namespace packages
                 if isinstance(context, ModuleContext) and context.py__file__().endswith('__init__.py'):

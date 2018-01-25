@@ -51,12 +51,15 @@ def test_implicit_nested_namespace_package(Script, environment):
     if environment.version_info < (3, 4):
         pytest.skip()
 
-    CODE = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
+    code = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
 
     sys_path = [dirname(__file__)]
 
-    script = Script(sys_path=sys_path, source=CODE, line=1, column=61)
+    script = Script(sys_path=sys_path, source=code, line=1, column=61)
 
     result = script.goto_definitions()
 
     assert len(result) == 1
+
+    implicit_pkg, = Script(code, column=10, sys_path=sys_path).goto_definitions()
+    assert implicit_pkg.type == 'namespace'

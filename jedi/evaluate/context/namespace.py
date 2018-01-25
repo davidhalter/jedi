@@ -13,21 +13,21 @@ class ImplicitNSName(AbstractNameDefinition):
     This object will prevent Jedi from raising exceptions
     """
     def __init__(self, implicit_ns_context, string_name):
-        self.implicit_ns_context = implicit_ns_context
+        self.parent_context = implicit_ns_context
         self.string_name = string_name
 
     def infer(self):
         return NO_CONTEXTS
 
     def get_root_context(self):
-        return self.implicit_ns_context
+        return self.parent_context
 
 
 class ImplicitNamespaceContext(TreeContext):
     """
     Provides support for implicit namespace packages
     """
-    api_type = u'module'
+    api_type = u'namespace'
     parent_context = None
 
     def __init__(self, evaluator, fullname, paths):

@@ -153,13 +153,13 @@ class BaseDefinition(object):
         """The path to a module/class/function definition."""
         def to_reverse():
             name = self._name
-            if name.api_type == 'module':
+            if name.api_type in ('module', 'namespace'):
                 try:
                     name = list(name.infer())[0].name
                 except IndexError:
                     pass
 
-            if name.api_type == 'module':
+            if name.api_type in ('module', 'namespace'):
                 module_contexts = name.infer()
                 if module_contexts:
                     module_context, = module_contexts
@@ -521,7 +521,7 @@ class Definition(BaseDefinition):
         """
         typ = self.type
         tree_name = self._name.tree_name
-        if typ in ('function', 'class', 'module', 'instance') or tree_name is None:
+        if typ in ('function', 'class', 'module', 'instance', 'namespace') or tree_name is None:
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
