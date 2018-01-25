@@ -187,7 +187,9 @@ def _get_executable_path(path, safe=True):
     """
     Returns None if it's not actually a virtual env.
     """
-    bin_folder = os.path.join(path, 'bin')
+
+    bin_name = 'Scripts' if os.name == 'nt' else 'bin'
+    bin_folder = os.path.join(path, bin_name)
     activate = os.path.join(bin_folder, 'activate')
     python = os.path.join(bin_folder, 'python')
     if not all(os.path.exists(p) for p in (activate, python)):
