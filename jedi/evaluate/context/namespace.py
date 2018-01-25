@@ -4,7 +4,7 @@ from itertools import chain
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import imports
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition
-from jedi.evaluate.base_context import NO_CONTEXTS, TreeContext
+from jedi.evaluate.base_context import TreeContext, ContextSet
 
 
 class ImplicitNSName(AbstractNameDefinition):
@@ -17,7 +17,7 @@ class ImplicitNSName(AbstractNameDefinition):
         self.string_name = string_name
 
     def infer(self):
-        return NO_CONTEXTS
+        return ContextSet(self.parent_context)
 
     def get_root_context(self):
         return self.parent_context
@@ -27,7 +27,10 @@ class ImplicitNamespaceContext(TreeContext):
     """
     Provides support for implicit namespace packages
     """
-    api_type = u'namespace'
+    # Is a module like every other module, because if you import an empty
+    # folder foobar it will be available as an object:
+    # <module 'foobar' (namespace)>.
+    api_type = u'module'
     parent_context = None
 
     def __init__(self, evaluator, fullname, paths):
