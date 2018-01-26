@@ -131,7 +131,7 @@ def _is_potential_project(path):
 def _is_django_path(directory):
     """ Detects the path of the very well known Django library (if used) """
     try:
-        with open(os.path.join(directory, 'manage.py'), 'br') as f:
+        with open(os.path.join(directory, 'manage.py'), 'rb') as f:
             return b"DJANGO_SETTINGS_MODULE" in f.read()
     except (FileNotFoundError, NotADirectoryError):
         return False
