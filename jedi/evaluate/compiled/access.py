@@ -399,7 +399,13 @@ class DirectObjectAccess(object):
                          or obj.__new__ != object.__new__)):
                 raise ValueError
 
-        signature = inspect.signature(obj)
+        try:
+            signature = inspect.signature(obj)
+        except (RuntimeError, TypeError):
+            # Reading the code of the function in Python 3.6 implies there are
+            # at least these errors that might occur if something is wrong with
+            # the signature. In that case we just want a simple escape for now.
+            raise ValueError
         return [
             SignatureParam(
                 name=p.name,

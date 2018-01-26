@@ -164,6 +164,15 @@ def test_completion_params(Script):
     assert [p.name for p in c.params] == ['s', 'sep']
 
 
+def test_hashlib_params(Script, environment):
+    if environment.version_info < (3,):
+        pytest.skip()
+
+    script = Script(source='from hashlib import ', line=1, column=20)
+    c = script.completions()
+    assert c[2].params
+
+
 def test_signature_params(Script):
     def check(defs):
         params = defs[0].params
