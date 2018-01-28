@@ -176,8 +176,6 @@ def get_module_names(module, all_scopes):
 @contextmanager
 def predefine_names(context, flow_scope, dct):
     predefined = context.predefined_names
-    if flow_scope in predefined:
-        raise NotImplementedError('Why does this happen?')
     predefined[flow_scope] = dct
     try:
         yield
