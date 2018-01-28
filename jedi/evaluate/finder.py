@@ -56,7 +56,10 @@ class NameFinder(object):
         names = self.filter_name(filters)
         if self._found_predefined_types is not None and names:
             check = flow_analysis.reachability_check(
-                self._context, self._context.tree_node, self._name)
+                context=self._context,
+                context_scope=self._context.tree_node,
+                node=self._name,
+            )
             if check is flow_analysis.UNREACHABLE:
                 return ContextSet()
             return self._found_predefined_types
@@ -102,8 +105,7 @@ class NameFinder(object):
         ``filters``), until a name fits.
         """
         names = []
-        if self._context.predefined_names:
-            # TODO is this ok? node might not always be a tree.Name
+        if self._context.predefined_names and isinstance(self._name, tree.Name):
             node = self._name
             while node is not None and not is_scope(node):
                 node = node.parent

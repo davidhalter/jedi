@@ -135,7 +135,11 @@ class Evaluator(object):
                 if_stmt = None
                 break
         predefined_if_name_dict = context.predefined_names.get(if_stmt)
-        if predefined_if_name_dict is None and if_stmt and if_stmt.type == 'if_stmt':
+        # TODO there's a lot of issues with this one. We actually should do
+        # this in a different way. Caching should only be active in certain
+        # cases and this all sucks.
+        if predefined_if_name_dict is None and if_stmt \
+                and if_stmt.type == 'if_stmt' and self.is_analysis:
             if_stmt_test = if_stmt.children[1]
             name_dicts = [{}]
             # If we already did a check, we don't want to do it again -> If

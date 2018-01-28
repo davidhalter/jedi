@@ -65,6 +65,10 @@ class X(): pass
 #? type
 type(X)
 
+if os.path.isfile():
+    #? ['abspath']
+    fails = os.path.abspath
+
 
 with open('foo') as f:
     for line in f.readlines():
