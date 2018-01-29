@@ -16,6 +16,10 @@ _CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'MANIFEST.in'
 _SERIALIZER_VERSION = 1
 
 
+def _force_unicode_list(lst):
+    return list(map(force_unicode, lst))
+
+
 class Project(object):
     _serializer_ignore_attributes = ('_environment',)
     _environment = None
@@ -97,11 +101,8 @@ class Project(object):
         if self._smart_sys_path:
             if self._django:
                 prefixed.append(self._path)
-        added_paths = map(
-            force_unicode,
-            detect_additional_paths(evaluator, evaluator.script_path)
-        )
-        return prefixed + sys_path + list(added_paths)
+        added_paths = detect_additional_paths(evaluator, evaluator.script_path)
+        return _force_unicode_list(prefixed) + sys_path + _force_unicode_list(added_paths)
 
     def save(self):
         data = dict(self.__dict__)
