@@ -42,6 +42,9 @@ class AbstractNameDefinition(object):
     def execute_evaluated(self, *args, **kwargs):
         return self.infer().execute_evaluated(*args, **kwargs)
 
+    def is_import(self):
+        return False
+
     @property
     def api_type(self):
         return self.parent_context.api_type
@@ -54,6 +57,10 @@ class AbstractTreeName(AbstractNameDefinition):
 
     def goto(self):
         return self.parent_context.evaluator.goto(self.parent_context, self.tree_name)
+
+    def is_import(self):
+        imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
+        return imp is not None
 
     @property
     def string_name(self):

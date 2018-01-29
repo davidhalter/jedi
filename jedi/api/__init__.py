@@ -212,9 +212,7 @@ class Script(object):
 
         if follow_imports:
             def check(name):
-                if isinstance(name, ModuleName):
-                    return False
-                return name.api_type == 'module'
+                return name.is_import()
         else:
             def check(name):
                 return isinstance(name, imports.SubModuleName)

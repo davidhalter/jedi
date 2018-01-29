@@ -199,6 +199,11 @@ def test_goto_following_on_imports(Script):
     assert (g[0].line, g[0].column) != (0, 0)
 
 
+def test_goto_assignments(Script):
+    sys, = Script("import sys", 1, 10).goto_assignments(follow_imports=True)
+    assert sys.type == 'module'
+
+
 def test_os_after_from(Script):
     def check(source, result, column=None):
         completions = Script(source, column=column).completions()
