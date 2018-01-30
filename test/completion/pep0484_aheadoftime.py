@@ -4,23 +4,16 @@
 
 somelist = [1, 2, 3, "A", "A"]
 element : int
-for element in somelist[0:3]:
+for element in somelist:
     #? int()
     element
 
-
-otherlist = [1, "A"]
-for e in otherlist:
-    #? int() str()
-    e
-
-
-test_string: str = "Hello, world!"
+test_string: str = NOT_DEFINED
 #? str()
 test_string
 
 
 char: str
-for char in test_string:
+for char in NOT_DEFINED:
     #? str()
     char
