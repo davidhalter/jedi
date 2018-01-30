@@ -290,6 +290,9 @@ def test_type(Script):
         else:
             assert c.type in ('function', 'instance')
 
+    for c in Script('list.').completions():
+        assert c.type
+
     # Github issue #397, type should never raise an error.
     for c in Script('import os; os.path.').completions():
         assert c.type

@@ -316,7 +316,7 @@ class DirectObjectAccess(object):
             # -> just set it to None
             if default is _sentinel:
                 raise
-            return default
+            return self._create_access(default)
 
     def get_safe_value(self):
         if type(self._obj) in (bool, bytes, float, int, str, unicode, slice):
