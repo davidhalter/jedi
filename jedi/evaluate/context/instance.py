@@ -189,7 +189,7 @@ class AbstractInstanceContext(Context):
                     )
                     return bound_method.get_function_execution()
             elif scope.type == 'classdef':
-                class_context = ClassContext(self.evaluator, scope, parent_context)
+                class_context = ClassContext(self.evaluator, parent_context, scope)
                 return class_context
             elif scope.type == 'comp_for':
                 # Comprehensions currently don't have a special scope in Jedi.
