@@ -443,16 +443,16 @@ def _remove_statements(evaluator, context, stmt, name):
 def tree_name_to_contexts(evaluator, context, tree_name):
 
     context_set = ContextSet()
-    module = context.get_root_context().tree_node
-    names = module.get_used_names().get(tree_name.value)
-    for name in names:
-        expr_stmt = name.parent
+    module_node = context.get_root_context().tree_node
+    if module_node is not None:
+        names = module_node.get_used_names().get(tree_name.value, [])
+        for name in names:
+            expr_stmt = name.parent
 
-        correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
+            correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
 
-        if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign" and correct_scope:
-            print("found node in correct scope!", expr_stmt.children[1].children[1])
-            context_set |= _evaluate_for_annotation(context, expr_stmt.children[1].children[1])
+            if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign" and correct_scope:
+                context_set |= _evaluate_for_annotation(context, expr_stmt.children[1].children[1])
 
     if context_set:
         return context_set

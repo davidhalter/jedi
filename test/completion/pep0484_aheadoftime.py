@@ -24,11 +24,3 @@ char: str
 for char in test_string:
     #? str()
     char
-
-
-import numpy
-somearrays = [numpy.ones((10, 10)), numpy.eye(10), 2, 2.3]
-array : numpy.ndarray
-for array in somearrays[0:2]:
-    #? numpy.ndarray()
-    array
