@@ -128,7 +128,6 @@ class TreeArguments(AbstractArguments):
                 arrays = self.context.eval_node(el)
                 iterators = [_iterate_star_args(self.context, a, el, funcdef)
                              for a in arrays]
-                iterators = list(iterators)
                 for values in list(zip_longest(*iterators)):
                     # TODO zip_longest yields None, that means this would raise
                     # an exception?

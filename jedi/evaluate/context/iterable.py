@@ -91,7 +91,7 @@ class Generator(GeneratorMixin, Context):
         self._func_execution_context = func_execution_context
 
     def py__iter__(self):
-        return self._func_execution_context.get_yield_values()
+        return self._func_execution_context.get_yield_lazy_contexts()
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)

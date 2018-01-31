@@ -140,7 +140,7 @@ class FunctionExecutionContext(TreeContext):
                 if check_yields:
                     context_set |= ContextSet.from_sets(
                         lazy_context.infer()
-                        for lazy_context in self._eval_yield(r)
+                        for lazy_context in self._get_yield_lazy_context(r)
                     )
                 else:
                     try:
@@ -155,7 +155,7 @@ class FunctionExecutionContext(TreeContext):
                 break
         return context_set
 
-    def _eval_yield(self, yield_expr):
+    def _get_yield_lazy_context(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
             ctx = compiled.builtin_from_name(self.evaluator, u'None')
@@ -171,7 +171,7 @@ class FunctionExecutionContext(TreeContext):
             yield LazyTreeContext(self, node)
 
     @recursion.execution_recursion_decorator(default=iter([]))
-    def get_yield_values(self):
+    def get_yield_lazy_contexts(self):
         for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
                                                 'while_stmt', 'if_stmt'))
                        for y in get_yield_exprs(self.evaluator, self.tree_node)]
@@ -204,7 +204,7 @@ class FunctionExecutionContext(TreeContext):
             if for_stmt is None:
                 # No for_stmt, just normal yields.
                 for yield_ in yields:
-                    for result in self._eval_yield(yield_):
+                    for result in self._get_yield_lazy_context(yield_):
                         yield result
             else:
                 input_node = for_stmt.get_testlist()
@@ -215,7 +215,7 @@ class FunctionExecutionContext(TreeContext):
                     dct = {str(for_stmt.children[1].value): lazy_context.infer()}
                     with helpers.predefine_names(self, for_stmt, dct):
                         for yield_in_same_for_stmt in yields:
-                            for result in self._eval_yield(yield_in_same_for_stmt):
+                            for result in self._get_yield_lazy_context(yield_in_same_for_stmt):
                                 yield result
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
