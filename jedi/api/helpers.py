@@ -134,7 +134,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     # completion.
     # Use Z as a prefix because it's not part of a number suffix.
     safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
-    code = code + safeword
+    code = code + ' ' + safeword
 
     p = Parser(grammar._pgen_grammar, error_recovery=True)
     try:

@@ -18,6 +18,10 @@ int(str)
 str..
 #? []
 a(0):.
+#? 2 ['and', 'or', 'if', 'is', 'in', 'not']
+0x0
+#? ['and', 'or', 'if', 'is', 'in', 'not']
+1j
 
 # -----------------
 # if/else/elif
