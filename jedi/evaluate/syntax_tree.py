@@ -470,7 +470,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             filters = [next(filters)]
             return finder.find(filters, attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
-            raise ValueError("Should not happen.")
+            raise ValueError("Should not happen. type: %s", node.type)
 
     typ = node.type
     if typ == 'for_stmt':
