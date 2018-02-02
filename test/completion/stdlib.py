@@ -35,12 +35,6 @@ next(open(''))
 #? ['__itemsize__']
 tuple.__itemsize__
 
-#? ['__iter__']
-dict().values().__iter__
-
-#? int()
-dict(a=3).values()[0]
-
 # -----------------
 # type() calls with one parameter
 # -----------------

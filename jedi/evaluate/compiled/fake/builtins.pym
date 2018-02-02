@@ -201,10 +201,13 @@ class dict():
         # has a strange docstr
         pass
 
+    def __getitem__(self, obj):
+        return self.__elements[obj]
+
     def get(self, k, d=None):
         # TODO implement
         try:
-            #return self.__elements[k]
+            return self.__elements[k]
             pass
         except KeyError:
             return d

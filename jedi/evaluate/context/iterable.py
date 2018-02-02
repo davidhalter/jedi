@@ -470,7 +470,7 @@ class FakeDict(_FakeArray):
     def _values(self):
         return ContextSet(FakeSequence(
             self.evaluator, 'tuple',
-            [LazyKnownContext(v) for v in self.dict_values()]
+            [LazyKnownContexts(self.dict_values())]
         ))
 
     def dict_values(self):
