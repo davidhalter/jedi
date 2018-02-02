@@ -438,6 +438,7 @@ class FakeSequence(_FakeArray):
         return "<%s of %s>" % (type(self).__name__, self._lazy_context_list)
 
 
+@has_builtin_methods
 class FakeDict(_FakeArray):
     def __init__(self, evaluator, dct):
         super(FakeDict, self).__init__(evaluator, dct, u'dict')
@@ -464,6 +465,13 @@ class FakeDict(_FakeArray):
                     pass
 
         return self._dct[index].infer()
+
+    @register_builtin_method('values')
+    def _values(self):
+        return ContextSet(FakeSequence(
+            self.evaluator, 'tuple',
+            [LazyKnownContext(v) for v in self.dict_values()]
+        ))
 
     def dict_values(self):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self._dct.values())
