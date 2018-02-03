@@ -9,7 +9,7 @@ This module uses imp for python up to 3.2 and importlib for python 3.3 on; the
 correct implementation is delegated to _compatibility.
 
 This module also supports import autocompletion, which means to complete
-statements like ``from datetim`` (curser at the end would return ``datetime``).
+statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """
 import os
 
