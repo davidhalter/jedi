@@ -46,7 +46,7 @@ def _evaluate_for_annotation(context, annotation, index=None):
         context_set = context.eval_node(_fix_forward_reference(context, annotation))
         if index is not None:
             context_set = context_set.filter(
-                lambda context: context.array_type == 'tuple' \
+                lambda context: context.array_type == u'tuple' \
                                 and len(list(context.py__iter__())) >= index
             ).py__getitem__(index)
         return context_set.execute_evaluated()
@@ -172,7 +172,7 @@ def py__getitem__(context, typ, node):
     from jedi.evaluate.context.iterable import FakeSequence
     args = FakeSequence(
         context.evaluator,
-        "tuple",
+        u'tuple',
         [LazyTreeContext(context, n) for n in nodes]
     )
 

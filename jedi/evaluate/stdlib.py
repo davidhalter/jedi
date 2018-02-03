@@ -209,7 +209,7 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    seq = iterable.FakeSequence(evaluator, 'list', rev)
+    seq = iterable.FakeSequence(evaluator, u'list', rev)
     arguments = ValuesArguments([ContextSet(seq)])
     return ContextSet(CompiledInstance(evaluator, evaluator.builtins_module, obj, arguments))
 

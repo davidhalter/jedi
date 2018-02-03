@@ -97,7 +97,7 @@ def get_params(execution_context, var_args):
                         var_arg_iterator.push_back((key, argument))
                         break
                     lazy_context_list.append(argument)
-            seq = iterable.FakeSequence(execution_context.evaluator, 'tuple', lazy_context_list)
+            seq = iterable.FakeSequence(execution_context.evaluator, u'tuple', lazy_context_list)
             result_arg = LazyKnownContext(seq)
         elif param.star_count == 2:
             # **kwargs param
@@ -176,7 +176,7 @@ def _error_argument_count(funcdef, actual_count):
 def _create_default_param(execution_context, param):
     if param.star_count == 1:
         result_arg = LazyKnownContext(
-            iterable.FakeSequence(execution_context.evaluator, 'tuple', [])
+            iterable.FakeSequence(execution_context.evaluator, u'tuple', [])
         )
     elif param.star_count == 2:
         result_arg = LazyKnownContext(
