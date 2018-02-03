@@ -46,5 +46,6 @@ Simon Ruggier (@sruggier)
 Élie Gouzien (@ElieGouzien)
 Robin Roth (@robinro)
 Malte Plath (@langsamer)
+Anton Zub (@zabulazza)
 
 Note: (@user) means a github user name.
