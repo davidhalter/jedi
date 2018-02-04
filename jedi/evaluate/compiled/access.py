@@ -6,7 +6,7 @@ from collections import namedtuple
 
 from jedi import debug
 from jedi._compatibility import unicode, is_py3, is_py34, builtins, \
-    py_version, force_unicode, u
+    py_version, force_unicode, u, print_to_stderr
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.utils import dotted_from_fs_path
 
@@ -144,16 +144,15 @@ def load_module(evaluator, path=None, name=None, sys_path=None):
     temp, sys.path = sys.path, sys_path
     try:
         __import__(dotted_path)
-    except RuntimeError:
-        if 'PySide' in dotted_path or 'PyQt' in dotted_path:
-            # RuntimeError: the PyQt4.QtCore and PyQt5.QtCore modules both wrap
-            # the QObject class.
-            # See https://github.com/davidhalter/jedi/pull/483
-            return None
-        raise
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
         debug.warning('Module %s not importable in path %s.', dotted_path, path)
+        return None
+    except Exception:
+        # Since __import__ pretty much makes code execution possible, just
+        # catch any error here and print it.
+        import traceback
+        print_to_stderr("Cannot import:\n", traceback.format_exc())
         return None
     finally:
         sys.path = temp
