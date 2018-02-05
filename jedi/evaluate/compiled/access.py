@@ -152,7 +152,7 @@ def load_module(evaluator, path=None, name=None, sys_path=None):
         # Since __import__ pretty much makes code execution possible, just
         # catch any error here and print it.
         import traceback
-        print_to_stderr("Cannot import:\n", traceback.format_exc())
+        print_to_stderr("Cannot import:\n%s" % traceback.format_exc())
         return None
     finally:
         sys.path = temp
