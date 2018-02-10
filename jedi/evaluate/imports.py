@@ -31,6 +31,23 @@ from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 
 
+class ModuleCache():
+    def __init__(self):
+        self._path_cache = {}
+        self._name_cache = {}
+
+    def add(self, module, name):
+        path = module.py__file__()
+        self._path_cache[path] = module
+        self._name_cache[name] = module
+
+    def iterate_modules_with_names(self):
+        return self._name_cache.items()
+
+    def get(self, name):
+        return self._name_cache[name]
+
+
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
 @evaluator_method_cache(default=NO_CONTEXTS)
@@ -289,7 +306,7 @@ class Importer(object):
 
         module_name = '.'.join(import_parts)
         try:
-            return ContextSet(self._evaluator.modules[module_name])
+            return ContextSet(self._evaluator.module_cache.get(module_name))
         except KeyError:
             pass
 
@@ -367,7 +384,7 @@ class Importer(object):
             # importable.
             return NO_CONTEXTS
 
-        self._evaluator.modules[module_name] = module
+        self._evaluator.module_cache.add(module, module_name)
         return ContextSet(module)
 
     def _generate_name(self, name, in_module=None):
@@ -481,7 +498,7 @@ def add_module(evaluator, module_name, module):
         # the sepatator dots for nested packages. Therefore we return
         # `__main__` in ModuleWrapper.py__name__(), which is similar to
         # Python behavior.
-        evaluator.modules[module_name] = module
+        evaluator.module_cache.add(module, module_name)
 
 
 def get_modules_containing_name(evaluator, modules, name):

@@ -95,8 +95,7 @@ class Evaluator(object):
 
         self.latest_grammar = parso.load_grammar(version='3.6')
         self.memoize_cache = {}  # for memoize decorators
-        # To memorize modules -> equals `sys.modules`.
-        self.modules = {}  # like `sys.modules`.
+        self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
         self.inferred_element_counts = {}
         self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`

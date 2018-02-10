@@ -65,7 +65,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
-    # to push the star imports into Evaluator.modules, if we reenable this.
+    # to push the star imports into Evaluator.module_cache, if we reenable this.
     @evaluator_method_cache([])
     def star_imports(self):
         modules = []
@@ -115,7 +115,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         return None
 
     def py__name__(self):
-        for name, module in self.evaluator.modules.items():
+        for name, module in self.evaluator.module_cache.iterate_modules_with_names():
             if module == self and name != '':
                 return name
 
