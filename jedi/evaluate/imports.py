@@ -367,15 +367,9 @@ class Importer(object):
                 _add_error(self.module_context, import_path[-1])
                 return NO_CONTEXTS
 
-        if isinstance(module_path, ImplicitNSInfo):
-            from jedi.evaluate.context.namespace import ImplicitNamespaceContext
-            module = ImplicitNamespaceContext(
-                self._evaluator,
-                fullname=module_path.name,
-                paths=module_path.paths,
-            )
-        else:
-            module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
+        module = _load_module(
+            self._evaluator, module_path, code, sys_path, parent_module
+        )
 
         if module is None:
             # The file might raise an ImportError e.g. and therefore not be
@@ -473,21 +467,29 @@ class Importer(object):
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=None):
-    if sys_path is None:
-        sys_path = evaluator.get_sys_path()
-
-    dotted_path = path and dotted_from_fs_path(path, sys_path)
-    if path is not None and path.endswith(('.py', '.zip', '.egg')) \
-            and dotted_path not in settings.auto_import_modules:
-
-        module_node = evaluator.parse(
-            code=code, path=path, cache=True, diff_cache=True,
-            cache_path=settings.cache_directory)
-
-        from jedi.evaluate.context import ModuleContext
-        module = ModuleContext(evaluator, module_node, path=path)
+    if isinstance(path, ImplicitNSInfo):
+        from jedi.evaluate.context.namespace import ImplicitNamespaceContext
+        module = ImplicitNamespaceContext(
+            evaluator,
+            fullname=path.name,
+            paths=path.paths,
+        )
     else:
-        module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
+        if sys_path is None:
+            sys_path = evaluator.get_sys_path()
+
+        dotted_path = path and dotted_from_fs_path(path, sys_path)
+        if path is not None and path.endswith(('.py', '.zip', '.egg')) \
+                and dotted_path not in settings.auto_import_modules:
+
+            module_node = evaluator.parse(
+                code=code, path=path, cache=True, diff_cache=True,
+                cache_path=settings.cache_directory)
+
+            from jedi.evaluate.context import ModuleContext
+            module = ModuleContext(evaluator, module_node, path=path)
+        else:
+            module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
     return module
 
 
