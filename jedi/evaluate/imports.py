@@ -368,7 +368,9 @@ class Importer(object):
                 return NO_CONTEXTS
 
         module = _load_module(
-            self._evaluator, module_path, code, sys_path, parent_module
+            self._evaluator, module_path, code, sys_path, parent_module,
+            module_name=module_name,
+            safe_module_name=True,
         )
 
         if module is None:
@@ -376,7 +378,6 @@ class Importer(object):
             # importable.
             return NO_CONTEXTS
 
-        self._evaluator.module_cache.add(module, module_name)
         return ContextSet(module)
 
     def _generate_name(self, name, in_module=None):
@@ -466,7 +467,8 @@ class Importer(object):
         return names
 
 
-def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=None):
+def _load_module(evaluator, path=None, code=None, sys_path=None,
+                 parent_module=None, module_name=None, safe_module_name=False):
     if isinstance(path, ImplicitNSInfo):
         from jedi.evaluate.context.namespace import ImplicitNamespaceContext
         module = ImplicitNamespaceContext(
@@ -490,15 +492,18 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
             module = ModuleContext(evaluator, module_node, path=path)
         else:
             module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
+    add_module(evaluator, module_name, module, safe=safe_module_name)
     return module
 
 
-def add_module(evaluator, module_name, module):
-    if '.' not in module_name:
-        # We cannot add paths with dots, because that would collide with
-        # the sepatator dots for nested packages. Therefore we return
-        # `__main__` in ModuleWrapper.py__name__(), which is similar to
-        # Python behavior.
+def add_module(evaluator, module_name, module, safe=False):
+    if module_name is not None:
+        if not safe and '.' not in module_name:
+            # We cannot add paths with dots, because that would collide with
+            # the sepatator dots for nested packages. Therefore we return
+            # `__main__` in ModuleWrapper.py__name__(), which is similar to
+            # Python behavior.
+            return
         evaluator.module_cache.add(module, module_name)
 
 
@@ -536,13 +541,11 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
-                module = _load_module(evaluator, path, code, sys_path=e_sys_path)
-
-                module_name = sys_path.dotted_path_in_sys_path(
-                    e_sys_path, path
+                module_name = sys_path.dotted_path_in_sys_path(e_sys_path, path)
+                module = _load_module(
+                    evaluator, path, code,
+                    sys_path=e_sys_path, module_name=module_name
                 )
-                if module_name is not None:
-                    add_module(evaluator, module_name, module)
                 return module
 
     # skip non python modules
