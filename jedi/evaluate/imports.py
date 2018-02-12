@@ -374,10 +374,8 @@ class Importer(object):
                 fullname=module_path.name,
                 paths=module_path.paths,
             )
-        elif code is not None or module_path.endswith(('.py', '.zip', '.egg')):
-            module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
         else:
-            module = compiled.load_module(self._evaluator, path=module_path, sys_path=sys_path)
+            module = _load_module(self._evaluator, module_path, code, sys_path, parent_module)
 
         if module is None:
             # The file might raise an ImportError e.g. and therefore not be
