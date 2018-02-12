@@ -293,3 +293,4 @@ def relative():
     from import_tree.pkg.mod1 import foobar
     #? int()
     foobar
+    return 1

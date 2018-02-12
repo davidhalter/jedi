@@ -31,7 +31,7 @@ from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 
 
-class ModuleCache():
+class ModuleCache(object):
     def __init__(self):
         self._path_cache = {}
         self._name_cache = {}
@@ -487,9 +487,10 @@ def _load_module(evaluator, path=None, code=None, sys_path=None, parent_module=N
             cache_path=settings.cache_directory)
 
         from jedi.evaluate.context import ModuleContext
-        return ModuleContext(evaluator, module_node, path=path)
+        module = ModuleContext(evaluator, module_node, path=path)
     else:
-        return compiled.load_module(evaluator, path=path, sys_path=sys_path)
+        module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
+    return module
 
 
 def add_module(evaluator, module_name, module):
