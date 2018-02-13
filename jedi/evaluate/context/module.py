@@ -210,5 +210,3 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         return "<%s: %s@%s-%s>" % (
             self.__class__.__name__, self._string_name,
             self.tree_node.start_pos[0], self.tree_node.end_pos[0])
-
-

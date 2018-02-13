@@ -15,7 +15,6 @@ import os
 
 from parso.python import tree
 from parso.tree import search_ancestor
-from parso.cache import parser_cache
 from parso import python_bytes_to_unicode
 
 from jedi._compatibility import unicode, ImplicitNSInfo, force_unicode
@@ -523,19 +522,6 @@ def get_modules_containing_name(evaluator, modules, name):
                     if file_name.endswith('.py'):
                         yield path
 
-    def check_python_file(path):
-        try:
-            # TODO I don't think we should use the cache here?!
-            node_cache_item = parser_cache[evaluator.grammar._hashed][path]
-        except KeyError:
-            try:
-                return check_fs(path)
-            except IOError:
-                return None
-        else:
-            module_node = node_cache_item.node
-            return ModuleContext(evaluator, module_node, path=path)
-
     def check_fs(path):
         with open(path, 'rb') as f:
             code = python_bytes_to_unicode(f.read(), errors='replace')
@@ -570,6 +556,6 @@ def get_modules_containing_name(evaluator, modules, name):
     # Sort here to make issues less random.
     for p in sorted(paths):
         # make testing easier, sort it - same results on every interpreter
-        m = check_python_file(p)
+        m = check_fs(p)
         if m is not None and not isinstance(m, compiled.CompiledObject):
             yield m
