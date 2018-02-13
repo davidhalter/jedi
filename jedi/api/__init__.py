@@ -286,9 +286,10 @@ class Script(object):
     def _analysis(self):
         self._evaluator.is_analysis = True
         self._evaluator.analysis_modules = [self._module_node]
+        module = self._get_module()
         try:
             for node in get_executable_nodes(self._module_node):
-                context = self._get_module().create_context(node)
+                context = module.create_context(node)
                 if node.type in ('funcdef', 'classdef'):
                     # Resolve the decorators.
                     tree_name_to_contexts(self._evaluator, context, node.children[1])

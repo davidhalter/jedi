@@ -5,8 +5,7 @@ import os
 
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import use_metaclass
-from jedi.evaluate.cache import CachedMetaClass, evaluator_method_cache
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter
 from jedi.evaluate import compiled
@@ -41,7 +40,7 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
-class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
+class ModuleContext(TreeContext):
     api_type = u'module'
     parent_context = None
 

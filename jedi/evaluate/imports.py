@@ -46,6 +46,9 @@ class ModuleCache(object):
     def get(self, name):
         return self._name_cache[name]
 
+    def get_from_path(self, path):
+        return self._path_cache[path]
+
 
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
@@ -468,6 +471,15 @@ class Importer(object):
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
                  parent_module=None, module_name=None, safe_module_name=False):
+    try:
+        return evaluator.module_cache.get(module_name)
+    except KeyError:
+        pass
+    try:
+        return evaluator.module_cache.get_from_path(path)
+    except KeyError:
+        pass
+
     if isinstance(path, ImplicitNSInfo):
         from jedi.evaluate.context.namespace import ImplicitNamespaceContext
         module = ImplicitNamespaceContext(
