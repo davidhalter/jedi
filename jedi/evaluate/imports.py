@@ -355,7 +355,6 @@ class Importer(object):
                     _add_error(self.module_context, import_path[-1])
                     return NO_CONTEXTS
         else:
-            parent_module = None
             debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
             # Override the sys.path. It works only good that way.
             # Injecting the path directly into `find_module` did not work.
@@ -370,7 +369,7 @@ class Importer(object):
                 return NO_CONTEXTS
 
         module = _load_module(
-            self._evaluator, module_path, code, sys_path, parent_module,
+            self._evaluator, module_path, code, sys_path,
             module_name=module_name,
             safe_module_name=True,
         )
@@ -470,7 +469,7 @@ class Importer(object):
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
-                 parent_module=None, module_name=None, safe_module_name=False):
+                 module_name=None, safe_module_name=False):
     try:
         return evaluator.module_cache.get(module_name)
     except KeyError:
@@ -522,7 +521,6 @@ def get_modules_containing_name(evaluator, modules, name):
     """
     Search a name in the directories of modules.
     """
-    from jedi.evaluate.context import ModuleContext
     def check_directories(paths):
         for p in paths:
             if p is not None:
