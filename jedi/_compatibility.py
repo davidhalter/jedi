@@ -159,10 +159,14 @@ def _iter_modules(paths, prefix=''):
         importer = pkgutil.get_importer(path)
 
         if not isinstance(importer, importlib.machinery.FileFinder):
+            # We're only modifying the case for FileFinder. All the other cases
+            # still need to be checked (like zip-importing). Do this by just
+            # calling the pkgutil version.
             for mod_info in pkgutil.iter_modules([path], prefix):
                 yield mod_info
             continue
 
+        # START COPY OF pkutils._iter_file_finder_modules.
         if importer.path is None or not os.path.isdir(importer.path):
             return
 
@@ -177,12 +181,12 @@ def _iter_modules(paths, prefix=''):
         filenames.sort()  # handle packages before same-named modules
 
         for fn in filenames:
-            # Avoid traversing special directories
-            if fn.startswith(('__', '.')):
+            modname = inspect.getmodulename(fn)
+            if modname == '__init__' or modname in yielded:
                 continue
 
-            modname = inspect.getmodulename(fn)
-            if modname in yielded:
+            # jedi addition: Avoid traversing special directories
+            if fn.startswith('.') or fn == '__pycache__':
                 continue
 
             path = os.path.join(importer.path, fn)
@@ -190,16 +194,19 @@ def _iter_modules(paths, prefix=''):
 
             if not modname and os.path.isdir(path) and '.' not in fn:
                 modname = fn
+                # A few jedi modifications: Don't check if there's an
+                # __init__.py
                 try:
-                    dircontents = os.listdir(path)
+                    os.listdir(path)
                 except OSError:
                     # ignore unreadable directories like import does
-                    dircontents = []
+                    continue
                 ispkg = True
 
             if modname and '.' not in modname:
                 yielded[modname] = 1
                 yield importer, prefix + modname, ispkg
+        # END COPY
 
 iter_modules = _iter_modules if py_version >= 34 else pkgutil.iter_modules
 
