@@ -3,10 +3,13 @@ from os.path import dirname, join
 import pytest
 
 
-def test_implicit_namespace_package(Script, environment):
+@pytest.fixture(autouse=True)
+def skip_not_supported_versions(environment):
     if environment.version_info < (3, 4):
         pytest.skip()
 
+
+def test_implicit_namespace_package(Script):
     sys_path = [join(dirname(__file__), d)
                 for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
 
@@ -47,10 +50,7 @@ def test_implicit_namespace_package(Script, environment):
         assert completion.description == solution
 
 
-def test_implicit_nested_namespace_package(Script, environment):
-    if environment.version_info < (3, 4):
-        pytest.skip()
-
+def test_implicit_nested_namespace_package(Script):
     code = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
 
     sys_path = [dirname(__file__)]
@@ -64,3 +64,32 @@ def test_implicit_nested_namespace_package(Script, environment):
     implicit_pkg, = Script(code, column=10, sys_path=sys_path).goto_definitions()
     assert implicit_pkg.type == 'module'
     assert implicit_pkg.module_path is None
+
+
+def test_implicit_namespace_package_import_autocomplete(Script):
+    CODE = 'from implicit_name'
+
+    sys_path = [dirname(__file__)]
+
+    script = Script(sys_path=sys_path, source=CODE)
+    compl = script.completions()
+    assert [c.name for c in compl] == ['implicit_namespace_package']
+
+
+def test_namespace_package_in_multiple_directories_autocompletion(Script):
+    CODE = 'from pkg.'
+    sys_path = [join(dirname(__file__), d)
+                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+
+    script = Script(sys_path=sys_path, source=CODE)
+    compl = script.completions()
+    assert set(c.name for c in compl) == set(['ns1_file', 'ns2_file'])
+
+
+def test_namespace_package_in_multiple_directories_goto_definition(Script):
+    CODE = 'from pkg import ns1_file'
+    sys_path = [join(dirname(__file__), d)
+                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+    script = Script(sys_path=sys_path, source=CODE)
+    result = script.goto_definitions()
+    assert len(result) == 1

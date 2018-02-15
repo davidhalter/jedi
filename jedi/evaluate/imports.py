@@ -393,6 +393,7 @@ class Importer(object):
         and not names defined in the files.
         """
         sub = self._evaluator.compiled_subprocess
+
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
@@ -440,7 +441,7 @@ class Importer(object):
                 # implicit namespace packages
                 elif isinstance(context, ImplicitNamespaceContext):
                     paths = context.paths
-                    names += self._get_module_names(paths)
+                    names += self._get_module_names(paths, in_module=context)
 
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to

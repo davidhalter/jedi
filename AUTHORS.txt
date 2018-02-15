@@ -47,5 +47,6 @@ Simon Ruggier (@sruggier)
 Robin Roth (@robinro)
 Malte Plath (@langsamer)
 Anton Zub (@zabulazza)
+Maksim Novikov (@m-novikov) <mnovikov.work@gmail.com>
 
 Note: (@user) means a github user name.

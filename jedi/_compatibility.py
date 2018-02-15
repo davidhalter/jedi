@@ -152,6 +152,58 @@ if the module is contained in a package.
 """
 
 
+def _iter_modules(paths, prefix=''):
+    # Copy of pkgutil.iter_modules adapted to work with namespaces
+
+    for path in paths:
+        importer = pkgutil.get_importer(path)
+
+        if not isinstance(importer, importlib.machinery.FileFinder):
+            for mod_info in pkgutil.iter_modules([path], prefix):
+                yield mod_info
+            continue
+
+        if importer.path is None or not os.path.isdir(importer.path):
+            return
+
+        yielded = {}
+
+        import inspect
+        try:
+            filenames = os.listdir(importer.path)
+        except OSError:
+            # ignore unreadable directories like import does
+            filenames = []
+        filenames.sort()  # handle packages before same-named modules
+
+        for fn in filenames:
+            # Avoid traversing special directories
+            if fn.startswith(('__', '.')):
+                continue
+
+            modname = inspect.getmodulename(fn)
+            if modname in yielded:
+                continue
+
+            path = os.path.join(importer.path, fn)
+            ispkg = False
+
+            if not modname and os.path.isdir(path) and '.' not in fn:
+                modname = fn
+                try:
+                    dircontents = os.listdir(path)
+                except OSError:
+                    # ignore unreadable directories like import does
+                    dircontents = []
+                ispkg = True
+
+            if modname and '.' not in modname:
+                yielded[modname] = 1
+                yield importer, prefix + modname, ispkg
+
+iter_modules = _iter_modules if py_version >= 34 else pkgutil.iter_modules
+
+
 class ImplicitNSInfo(object):
     """Stores information returned from an implicit namespace spec"""
     def __init__(self, name, paths):

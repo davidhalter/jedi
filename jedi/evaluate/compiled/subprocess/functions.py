@@ -1,9 +1,8 @@
 import sys
 import os
 import imp
-import pkgutil
 
-from jedi._compatibility import find_module, cast_path, force_unicode
+from jedi._compatibility import find_module, cast_path, force_unicode, iter_modules
 from jedi.evaluate.compiled import access
 from jedi import parser_utils
 
@@ -71,7 +70,7 @@ def get_module_info(evaluator, sys_path=None, full_name=None, **kwargs):
 def list_module_names(evaluator, search_path):
     return [
         name
-        for module_loader, name, is_pkg in pkgutil.iter_modules(search_path)
+        for module_loader, name, is_pkg in iter_modules(search_path)
     ]
 
 

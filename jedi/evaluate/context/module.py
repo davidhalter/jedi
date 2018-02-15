@@ -1,4 +1,3 @@
-import pkgutil
 import imp
 import re
 import os
@@ -6,6 +5,7 @@ import os
 from parso import python_bytes_to_unicode
 
 from jedi.evaluate.cache import evaluator_method_cache
+from jedi._compatibility import iter_modules
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter
 from jedi.evaluate import compiled
@@ -188,7 +188,7 @@ class ModuleContext(TreeContext):
         path = self._path
         names = {}
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
-            mods = pkgutil.iter_modules([os.path.dirname(path)])
+            mods = iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self, name)
