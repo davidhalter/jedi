@@ -213,7 +213,7 @@ class Importer(object):
 
         if level:
             base = module_context.py__package__().split('.')
-            if base == ['']:
+            if base == [''] or base == ['__main__']:
                 base = []
             if level > len(base):
                 path = module_context.py__file__()
