@@ -140,7 +140,7 @@ def detect_additional_paths(evaluator, script_path):
         for path in _get_paths_from_buildout_script(evaluator, buildout_script_path):
             buildout_script_paths.add(path)
 
-    return list(buildout_script_paths)
+    return buildout_script_paths
 
 
 def _get_paths_from_buildout_script(evaluator, buildout_script_path):

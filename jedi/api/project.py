@@ -93,16 +93,20 @@ class Project(object):
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
         """
-        sys_path = list(self._get_base_sys_path(environment))
-        if evaluator.script_path is None or not self._smart_sys_path:
-            return sys_path
-
+        suffixed = []
         prefixed = []
+
+        sys_path = list(self._get_base_sys_path(environment))
         if self._smart_sys_path:
-            if self._django:
-                prefixed.append(self._path)
-        added_paths = detect_additional_paths(evaluator, evaluator.script_path)
-        return _force_unicode_list(prefixed) + sys_path + _force_unicode_list(added_paths)
+            if evaluator.script_path is not None:
+                suffixed += detect_additional_paths(evaluator, evaluator.script_path)
+
+            suffixed.append(self._path)
+
+        if self._django:
+            prefixed.append(self._path)
+
+        return _force_unicode_list(prefixed) + sys_path + _force_unicode_list(suffixed)
 
     def save(self):
         data = dict(self.__dict__)
