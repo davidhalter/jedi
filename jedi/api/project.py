@@ -6,7 +6,7 @@ from jedi.api.environment import DefaultEnvironment, \
     get_default_environment, from_executable
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
-from jedi.evaluate.sys_path import detect_additional_paths
+from jedi.evaluate.sys_path import discover_buildout_paths
 from jedi.evaluate.cache import evaluator_as_method_param_cache
 from jedi.evaluate.sys_path import traverse_parents
 
@@ -109,7 +109,7 @@ class Project(object):
             suffixed.append(self._path)
 
             if evaluator.script_path is not None:
-                suffixed += detect_additional_paths(evaluator, evaluator.script_path)
+                suffixed += discover_buildout_paths(evaluator, evaluator.script_path)
 
                 traversed = []
                 for parent in traverse_parents(evaluator.script_path):
