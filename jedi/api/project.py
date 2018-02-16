@@ -106,7 +106,7 @@ class Project(object):
 
         sys_path = list(self._get_base_sys_path(environment))
         if self._smart_sys_path:
-            suffixed.append(self._path)
+            prefixed.append(self._path)
 
             if evaluator.script_path is not None:
                 suffixed += discover_buildout_paths(evaluator, evaluator.script_path)
@@ -126,8 +126,8 @@ class Project(object):
         if self._django:
             prefixed.append(self._path)
 
-        path = _force_unicode_list(prefixed) + sys_path + _force_unicode_list(suffixed)
-        return list(_remove_duplicates_from_path(path))
+        path = prefixed + sys_path + suffixed
+        return list(_force_unicode_list(_remove_duplicates_from_path(path)))
 
     def save(self):
         data = dict(self.__dict__)
