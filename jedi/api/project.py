@@ -64,9 +64,8 @@ class Project(object):
             want. By default the ``sys.path.`` is generated from the
             environment (virtualenvs, etc).
         :param smart_sys_path: If this is enabled (default), adds paths from
-            Django, buildout and local directories. Otherwise you will have to
-            rely on your packages being properly configured on the
-            ``sys.path``.
+            local directories. Otherwise you will have to rely on your packages
+            being properly configured on the ``sys.path``.
         """
         def py2_comp(path, environment=None, sys_path=None,
                      smart_sys_path=True, _django=False):

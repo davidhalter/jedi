@@ -264,11 +264,6 @@ class Importer(object):
     def sys_path_with_modifications(self):
         sys_path_mod = self._evaluator.get_sys_path() \
                        + sys_path.check_sys_path_modifications(self.module_context)
-        if self.file_path is not None:
-            # Since we know nothing about the call location of the sys.path,
-            # it's a possibility that the current directory is the origin of
-            # the Python execution.
-            sys_path_mod.append(force_unicode(os.path.dirname(self.file_path)))
 
         return sys_path_mod
 
