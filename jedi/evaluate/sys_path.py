@@ -178,16 +178,16 @@ def _get_parent_dir_with_file(path, filename):
     return None
 
 
-def _get_buildout_script_paths(module_path):
+def _get_buildout_script_paths(search_path):
     """
     if there is a 'buildout.cfg' file in one of the parent directories of the
     given module it will return a list of all files in the buildout bin
     directory that look like python files.
 
-    :param module_path: absolute path to the module.
-    :type module_path: str
+    :param search_path: absolute path to the module.
+    :type search_path: str
     """
-    project_root = _get_parent_dir_with_file(module_path, 'buildout.cfg')
+    project_root = _get_parent_dir_with_file(search_path, 'buildout.cfg')
     if not project_root:
         return
     bin_path = os.path.join(project_root, 'bin')
