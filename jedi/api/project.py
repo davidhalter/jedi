@@ -8,7 +8,7 @@ from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.evaluate.sys_path import discover_buildout_paths
 from jedi.evaluate.cache import evaluator_as_method_param_cache
-from jedi.evaluate.sys_path import traverse_parents
+from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
 _CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'MANIFEST.in'

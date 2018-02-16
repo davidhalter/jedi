@@ -5,9 +5,9 @@ from jedi._compatibility import unicode, force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextualizedNode
 from jedi.evaluate.helpers import is_string
+from jedi.common.utils import traverse_parents
 from jedi import settings
 from jedi import debug
-from jedi.evaluate.utils import ignored
 
 
 def _abs_path(module_context, path):
@@ -158,17 +158,6 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
     module = ModuleContext(evaluator, module_node, buildout_script_path)
     for path in check_sys_path_modifications(module):
         yield path
-
-
-def traverse_parents(path, include_current=False):
-    if not include_current:
-        path = os.path.dirname(path)
-
-    previous = None
-    while previous != path:
-        yield path
-        previous = path
-        path = os.path.dirname(path)
 
 
 def _get_parent_dir_with_file(path, filename):
