@@ -101,11 +101,13 @@ class Script(object):
             sys_path = list(map(force_unicode, sys_path))
 
         # Load the Python grammar of the current interpreter.
-        project = get_default_project(path or os.getcwd())
+        project = get_default_project(self.path or os.getcwd())
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
-        self._evaluator = Evaluator(project, environment=environment, script_path=path)
+        self._evaluator = Evaluator(
+            project, environment=environment, script_path=self.path
+        )
         self._project = project
         debug.speed('init')
         self._module_node, source = self._evaluator.parse_and_get_code(

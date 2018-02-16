@@ -16,6 +16,15 @@ _CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'MANIFEST.in'
 _SERIALIZER_VERSION = 1
 
 
+def _remove_duplicates_from_path(path):
+    used = set()
+    for p in path:
+        if p in used:
+            continue
+        used.add(p)
+        yield p
+
+
 def _force_unicode_list(lst):
     return list(map(force_unicode, lst))
 
@@ -98,15 +107,28 @@ class Project(object):
 
         sys_path = list(self._get_base_sys_path(environment))
         if self._smart_sys_path:
+            suffixed.append(self._path)
+
             if evaluator.script_path is not None:
                 suffixed += detect_additional_paths(evaluator, evaluator.script_path)
 
-            suffixed.append(self._path)
+                traversed = []
+                for parent in traverse_parents(evaluator.script_path):
+                    traversed.append(parent)
+                    if parent == self._path:
+                        # Don't go futher than the project path.
+                        break
+
+                # AFAIK some libraries have imports like `foo.foo.bar`, which
+                # leads to the conclusion to by default prefer longer paths
+                # rather than shorter ones by default.
+                suffixed += reversed(traversed)
 
         if self._django:
             prefixed.append(self._path)
 
-        return _force_unicode_list(prefixed) + sys_path + _force_unicode_list(suffixed)
+        path = _force_unicode_list(prefixed) + sys_path + _force_unicode_list(suffixed)
+        return list(_remove_duplicates_from_path(path))
 
     def save(self):
         data = dict(self.__dict__)

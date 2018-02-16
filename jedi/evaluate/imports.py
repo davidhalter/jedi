@@ -265,15 +265,6 @@ class Importer(object):
         sys_path_mod = self._evaluator.get_sys_path() \
                        + sys_path.check_sys_path_modifications(self.module_context)
         if self.file_path is not None:
-            # If you edit e.g. gunicorn, there will be imports like this:
-            # `from gunicorn import something`. But gunicorn is not in the
-            # sys.path. Therefore look if gunicorn is a parent directory, #56.
-            if self.import_path:
-                for path in sys_path.traverse_parents(self.file_path):
-                    if os.path.basename(path) == self.str_import_path[0]:
-                        sys_path_mod.insert(0, force_unicode(os.path.dirname(path)))
-                        break
-
             # Since we know nothing about the call location of the sys.path,
             # it's a possibility that the current directory is the origin of
             # the Python execution.
