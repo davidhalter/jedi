@@ -14,15 +14,15 @@ def check_module_test(Script, code):
     return check_sys_path_modifications(module_context)
 
 
-@cwd_at('test/test_evaluate/buildout_project/src/proj_name')
+@cwd_at('test/examples/buildout_project/src/proj_name')
 def test_parent_dir_with_file(Script):
     parent = _get_parent_dir_with_file(
         os.path.abspath(os.curdir), 'buildout.cfg')
     assert parent is not None
-    assert parent.endswith(os.path.join('test', 'test_evaluate', 'buildout_project'))
+    assert parent.endswith(os.path.join('test', 'examples', 'buildout_project'))
 
 
-@cwd_at('test/test_evaluate/buildout_project/src/proj_name')
+@cwd_at('test/examples/buildout_project/src/proj_name')
 def test_buildout_detection(Script):
     scripts = list(_get_buildout_script_paths(os.path.abspath('./module_name.py')))
     assert len(scripts) == 1
@@ -56,7 +56,7 @@ def test_path_from_invalid_sys_path_assignment(Script):
     assert 'invalid' not in paths
 
 
-@cwd_at('test/test_evaluate/buildout_project/src/proj_name/')
+@cwd_at('test/examples/buildout_project/src/proj_name/')
 def test_sys_path_with_modifications(Script):
     code = dedent("""
         import os
