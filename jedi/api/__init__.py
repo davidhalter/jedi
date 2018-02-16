@@ -134,11 +134,14 @@ class Script(object):
         debug.reset_time()
 
     def _get_module(self):
-        module = ModuleContext(self._evaluator, self._module_node, self.path)
+        name = '__main__'
         if self.path is not None:
-            name = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
-            if name is not None:
-                imports.add_module(self._evaluator, name, module)
+            n = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
+            if n is not None:
+                name = n
+
+        module = ModuleContext(self._evaluator, self._module_node, self.path)
+        imports.add_module(self._evaluator, name, module)
         return module
 
     def __repr__(self):

@@ -129,10 +129,6 @@ def check_sys_path_modifications(module_context):
     return added
 
 
-def sys_path_with_modifications(evaluator, module_context):
-    return evaluator.get_sys_path() + check_sys_path_modifications(module_context)
-
-
 def discover_buildout_paths(evaluator, script_path):
     buildout_script_paths = set()
 
