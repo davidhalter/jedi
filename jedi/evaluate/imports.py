@@ -265,6 +265,11 @@ class Importer(object):
         sys_path_mod = self._evaluator.get_sys_path() \
                        + sys_path.check_sys_path_modifications(self.module_context)
 
+        if self.import_path and self.file_path is not None \
+                and self._evaluator.environment.version_info.major == 2:
+            # Python2 uses an old strange way of importing relative imports.
+            sys_path_mod.append(force_unicode(os.path.dirname(self.file_path)))
+
         return sys_path_mod
 
     def follow(self):
