@@ -189,24 +189,23 @@ def _get_buildout_script_paths(module_path):
     """
     project_root = _get_parent_dir_with_file(module_path, 'buildout.cfg')
     if not project_root:
-        return []
+        return
     bin_path = os.path.join(project_root, 'bin')
     if not os.path.exists(bin_path):
-        return []
-    extra_module_paths = []
+        return
+
     for filename in os.listdir(bin_path):
         try:
             filepath = os.path.join(bin_path, filename)
             with open(filepath, 'r') as f:
                 firstline = f.readline()
                 if firstline.startswith('#!') and 'python' in firstline:
-                    extra_module_paths.append(filepath)
+                    yield filepath
         except (UnicodeDecodeError, IOError) as e:
-            # Probably a binary file; permission error or race cond. because file got deleted
-            # ignore
+            # Probably a binary file; permission error or race cond. because
+            # file got deleted. Ignore it.
             debug.warning(unicode(e))
             continue
-    return extra_module_paths
 
 
 def dotted_path_in_sys_path(sys_path, module_path):

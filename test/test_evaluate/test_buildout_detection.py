@@ -24,7 +24,7 @@ def test_parent_dir_with_file(Script):
 
 @cwd_at('test/test_evaluate/buildout_project/src/proj_name')
 def test_buildout_detection(Script):
-    scripts = _get_buildout_script_paths(os.path.abspath('./module_name.py'))
+    scripts = list(_get_buildout_script_paths(os.path.abspath('./module_name.py')))
     assert len(scripts) == 1
     curdir = os.path.abspath(os.curdir)
     appdir_path = os.path.normpath(os.path.join(curdir, '../../bin/app'))
