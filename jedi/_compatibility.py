@@ -2,6 +2,8 @@
 To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
 created. Clearly there is huge need to use conforming syntax.
 """
+import binascii
+import errno
 import sys
 import imp
 import os
@@ -434,14 +436,35 @@ if sys.version_info[:2] == (3, 3):
 
 
 _PICKLE_PROTOCOL = 2
-
+is_windows = sys.platform == 'win32'
 
 def pickle_load(file):
-    if is_py3:
-        return pickle.load(file, encoding='bytes')
+    if is_windows:
+        try:
+            data = file.readline()
+            data = binascii.unhexlify(data.strip())
+            if is_py3:
+                return pickle.loads(data, encoding='bytes')
+            else:
+                return pickle.loads(data)
+        except OSError:
+            raise EOFError()
     else:
-        return pickle.load(file)
-
+        if is_py3:
+            return pickle.load(file, encoding='bytes')
+        else:
+            return pickle.load(file)
 
 def pickle_dump(data, file):
-    pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
+    if is_windows:
+        try:
+            data = pickle.dumps(data, protocol=_PICKLE_PROTOCOL)
+            data = binascii.hexlify(data)
+            file.write(data)
+            file.write(b'\n')
+            file.flush()
+        except OSError:
+            raise IOError(errno.EPIPE)
+    else:
+        pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
+        file.flush()
