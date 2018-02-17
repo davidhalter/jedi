@@ -138,13 +138,11 @@ class _CompiledSubprocess(object):
             _MAIN_PATH,
             os.path.dirname(os.path.dirname(parso_path))
         )
-        universal_newlines = not is_py3
         return subprocess.Popen(
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             # stderr=subprocess.PIPE
-            universal_newlines=universal_newlines
         )
 
     def run(self, evaluator, function, args=(), kwargs={}):
