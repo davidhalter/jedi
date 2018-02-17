@@ -1,12 +1,11 @@
-import pkgutil
 import imp
 import re
 import os
 
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import use_metaclass
-from jedi.evaluate.cache import CachedMetaClass, evaluator_method_cache
+from jedi.evaluate.cache import evaluator_method_cache
+from jedi._compatibility import iter_modules
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter
 from jedi.evaluate import compiled
@@ -41,7 +40,7 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
-class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
+class ModuleContext(TreeContext):
     api_type = u'module'
     parent_context = None
 
@@ -65,7 +64,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
-    # to push the star imports into Evaluator.modules, if we reenable this.
+    # to push the star imports into Evaluator.module_cache, if we reenable this.
     @evaluator_method_cache([])
     def star_imports(self):
         modules = []
@@ -115,7 +114,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         return None
 
     def py__name__(self):
-        for name, module in self.evaluator.modules.items():
+        for name, module in self.evaluator.module_cache.iterate_modules_with_names():
             if module == self and name != '':
                 return name
 
@@ -189,7 +188,7 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         path = self._path
         names = {}
         if path is not None and path.endswith(os.path.sep + '__init__.py'):
-            mods = pkgutil.iter_modules([os.path.dirname(path)])
+            mods = iter_modules([os.path.dirname(path)])
             for module_loader, name, is_pkg in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self, name)
@@ -210,5 +209,3 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         return "<%s: %s@%s-%s>" % (
             self.__class__.__name__, self._string_name,
             self.tree_node.start_pos[0], self.tree_node.end_pos[0])
-
-
