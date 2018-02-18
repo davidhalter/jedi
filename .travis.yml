@@ -23,11 +23,11 @@ matrix:
         - JEDI_TEST_ENVIRONMENT=36
     - python: 3.7-dev
   include:
-    - python: 3.5
+    - python: 3.6
       env:
         - TOXENV=cov
         - JEDI_TEST_ENVIRONMENT=36
-    - python: 3.5
+    - python: 3.6
       env: TOXENV=sith
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.

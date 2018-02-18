@@ -63,11 +63,19 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
         """
         Created to be used by inheritance.
         """
-        yield_exprs = get_yield_exprs(self.evaluator, self.tree_node)
-        if yield_exprs:
-            return ContextSet(iterable.Generator(self.evaluator, function_execution))
+        is_coroutine = self.tree_node.parent.type == 'async_stmt'
+        is_generator = bool(get_yield_exprs(self.evaluator, self.tree_node))
+
+        if is_coroutine:
+            if is_generator:
+                return ContextSet(iterable.AsyncGenerator(self.evaluator, function_execution))
+            else:
+                return ContextSet(iterable.Coroutine(self.evaluator, function_execution))
         else:
-            return function_execution.get_return_values()
+            if is_generator:
+                return ContextSet(iterable.Generator(self.evaluator, function_execution))
+            else:
+                return function_execution.get_return_values()
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
@@ -171,7 +179,8 @@ class FunctionExecutionContext(TreeContext):
             yield LazyTreeContext(self, node)
 
     @recursion.execution_recursion_decorator(default=iter([]))
-    def get_yield_lazy_contexts(self):
+    def get_yield_lazy_contexts(self, is_async=False):
+        # TODO: if is_async, wrap yield statements in Awaitable/async_generator_asend
         for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
                                                 'while_stmt', 'if_stmt'))
                        for y in get_yield_exprs(self.evaluator, self.tree_node)]
