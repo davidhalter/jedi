@@ -17,6 +17,7 @@ from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
 from jedi.evaluate.context import iterable
+from jedi.evaluate.context import asynchronous
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
 
@@ -70,11 +71,11 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
             if is_generator:
                 if self.evaluator.environment.version_info < (3, 6):
                     return NO_CONTEXTS
-                return ContextSet(iterable.AsyncGenerator(self.evaluator, function_execution))
+                return ContextSet(asynchronous.AsyncGenerator(self.evaluator, function_execution))
             else:
                 if self.evaluator.environment.version_info < (3, 5):
                     return NO_CONTEXTS
-                return ContextSet(iterable.Coroutine(self.evaluator, function_execution))
+                return ContextSet(asynchronous.Coroutine(self.evaluator, function_execution))
         else:
             if is_generator:
                 return ContextSet(iterable.Generator(self.evaluator, function_execution))
