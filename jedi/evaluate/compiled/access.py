@@ -453,6 +453,8 @@ class _SPECIAL_OBJECTS(object):
     MODULE_CLASS = types.ModuleType
     GENERATOR_OBJECT = _a_generator(1.0)
     BUILTINS = builtins
+    COROUTINE_TYPE = getattr(types, 'CoroutineType', None)
+    ASYNC_GENERATOR_TYPE = getattr(types, 'AsyncGeneratorType', None)
 
 
 def get_special_object(evaluator, identifier):

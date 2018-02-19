@@ -39,19 +39,6 @@ from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
     TreeContext, ContextualizedNode
 from jedi.parser_utils import get_comp_fors
 
-try:
-    from types import CoroutineType
-except ImportError:
-    HAS_COROUTINE = False
-else:
-    HAS_COROUTINE = True
-
-try:
-    from types import AsyncGeneratorType
-except ImportError:
-    HAS_ASYNC_GENERATOR = False
-else:
-    HAS_ASYNC_GENERATOR = True
 
 class AbstractIterable(Context):
     builtin_methods = {}
@@ -73,7 +60,7 @@ class CoroutineMixin(object):
     array_type = None
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        gen_obj = compiled.create(self.evaluator, CoroutineType)
+        gen_obj = compiled.get_special_object(self.evaluator, 'COROUTINE_TYPE')
         yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
         for filter in gen_obj.get_filters(search_global):
             yield filter
@@ -82,7 +69,7 @@ class CoroutineMixin(object):
         return True
 
     def py__class__(self):
-        gen_obj = compiled.create(self.evaluator, CoroutineType)
+        gen_obj = compiled.get_special_object(self.evaluator, 'COROUTINE_TYPE')
         return gen_obj.py__class__()
 
     @property
@@ -92,9 +79,7 @@ class CoroutineMixin(object):
 
 class Coroutine(CoroutineMixin, Context):
     def __init__(self, evaluator, func_execution_context):
-        if not HAS_COROUTINE:
-            raise ImportError("Need python3.5 to support coroutines.")
-        super(Coroutine, self).__init__(evaluator, parent_context=evaluator.BUILTINS)
+        super(Coroutine, self).__init__(evaluator, parent_context=evaluator.builtins_module)
         self._func_execution_context = func_execution_context
 
     def execute_await(self):
@@ -113,7 +98,7 @@ class AsyncGeneratorMixin(object):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__aiter__())
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        gen_obj = compiled.create(self.evaluator, AsyncGeneratorType)
+        gen_obj = compiled.get_special_object(self.evaluator, 'ASYNC_GENERATOR_TYPE')
         yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
         for filter in gen_obj.get_filters(search_global):
             yield filter
@@ -122,7 +107,7 @@ class AsyncGeneratorMixin(object):
         return True
 
     def py__class__(self):
-        gen_obj = compiled.create(self.evaluator, AsyncGeneratorType)
+        gen_obj = compiled.get_special_object(self.evaluator, 'ASYNC_GENERATOR_TYPE')
         return gen_obj.py__class__()
 
     @property
@@ -133,13 +118,11 @@ class AsyncGeneratorMixin(object):
 class AsyncGenerator(AsyncGeneratorMixin, Context):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func_execution_context):
-        if not HAS_ASYNC_GENERATOR:
-            raise ImportError("Need python3.6 to support async generators.")
-        super(AsyncGenerator, self).__init__(evaluator, parent_context=evaluator.BUILTINS)
+        super(AsyncGenerator, self).__init__(evaluator, parent_context=evaluator.builtins_module)
         self._func_execution_context = func_execution_context
 
     def py__aiter__(self):
-        return self._func_execution_context.get_yield_values(is_async=True)
+        return self._func_execution_context.get_yield_lazy_contexts(is_async=True)
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)

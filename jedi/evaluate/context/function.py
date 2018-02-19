@@ -68,8 +68,12 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
 
         if is_coroutine:
             if is_generator:
+                if self.evaluator.environment.version_info < (3, 6):
+                    return NO_CONTEXTS
                 return ContextSet(iterable.AsyncGenerator(self.evaluator, function_execution))
             else:
+                if self.evaluator.environment.version_info < (3, 5):
+                    return NO_CONTEXTS
                 return ContextSet(iterable.Coroutine(self.evaluator, function_execution))
         else:
             if is_generator:
