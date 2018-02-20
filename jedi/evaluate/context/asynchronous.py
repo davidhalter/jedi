@@ -18,7 +18,8 @@ class AsyncBase(BuiltinOverwrite):
 class Coroutine(AsyncBase):
     special_object_identifier = u'COROUTINE_TYPE'
 
-    def execute_await(self):
+    @publish_method('__await__')
+    def _await(self):
         return self._func_execution_context.get_return_values()
 
 

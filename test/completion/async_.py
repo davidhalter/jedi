@@ -22,6 +22,8 @@ async def y():
     argh = await x()
     #? int()
     argh
+    #? int()
+    x().__await__()
     return 2
 
 async def asgen():

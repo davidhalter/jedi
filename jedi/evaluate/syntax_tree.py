@@ -91,16 +91,10 @@ def eval_node(context, element):
             context_set = eval_trailer(context, context_set, trailer)
 
         if had_await:
-            await_context_set = ContextSet()
-            for context in context_set:
-                try:
-                    func = context.execute_await
-                except AttributeError:
-                    debug.warning('Tried to run execute_await on context %s', context)
-                    pass
-                else:
-                    await_context_set |= func()
-            return await_context_set
+            await_context_set = context_set.py__getattribute__("__await__")
+            if not await_context_set:
+                debug.warning('Tried to run py__await__ on context %s', context)
+            return await_context_set.execute_evaluated()
         return context_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
