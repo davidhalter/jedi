@@ -34,7 +34,7 @@ async def wrapper():
     [x async for x in asgen()][0]
 
     async for y in asgen():
-        # TODO: make this an int()
+        #? int()
         y
 
 #? ['__anext__']

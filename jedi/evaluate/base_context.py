@@ -84,7 +84,7 @@ class Context(BaseContext):
 
     def get_item(self, index_contexts, contextualized_node):
         from jedi.evaluate.compiled import CompiledObject
-        from jedi.evaluate.context.iterable import Slice, AbstractIterable
+        from jedi.evaluate.context.iterable import Slice, Sequence
         result = ContextSet()
 
         for index in index_contexts:
@@ -99,7 +99,7 @@ class Context(BaseContext):
             if type(index) not in (float, int, str, unicode, slice, bytes):
                 # If the index is not clearly defined, we have to get all the
                 # possiblities.
-                if isinstance(self, AbstractIterable) and self.array_type == 'dict':
+                if isinstance(self, Sequence) and self.array_type == 'dict':
                     result |= self.dict_values()
                 else:
                     result |= iterate_contexts(ContextSet(self))

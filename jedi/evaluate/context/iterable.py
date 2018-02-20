@@ -23,6 +23,7 @@ It is important to note that:
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import force_unicode, is_py3
+from jedi.cache import memoize_method
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate import recursion
@@ -33,61 +34,38 @@ from jedi.evaluate.helpers import get_int_or_none, is_string, \
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.filters import ParserTreeFilter, has_builtin_methods, \
-    register_builtin_method, SpecialMethodFilter
+from jedi.evaluate.filters import ParserTreeFilter, BuiltinOverwrite, \
+    publish_method
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
     TreeContext, ContextualizedNode
 from jedi.parser_utils import get_comp_fors
 
 
-class AbstractIterable(Context):
-    builtin_methods = {}
-    api_type = u'instance'
-
-    def __init__(self, evaluator):
-        super(AbstractIterable, self).__init__(evaluator, evaluator.builtins_module)
-
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
-        raise NotImplementedError
-
+class AbstractIterableMixin(object):
     @property
     def name(self):
         return compiled.CompiledContextName(self, self.array_type)
 
 
-@has_builtin_methods
-class GeneratorMixin(object):
+class GeneratorBase(BuiltinOverwrite):
     array_type = None
+    special_object_identifier = u'GENERATOR_OBJECT'
 
-    @register_builtin_method('send')
-    @register_builtin_method('next', python_version_match=2)
-    @register_builtin_method('__next__', python_version_match=3)
+    @publish_method('send')
+    @publish_method('next', python_version_match=2)
+    @publish_method('__next__', python_version_match=3)
     def py__next__(self):
-        # TODO add TypeError if params are given.
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
-
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
-        gen_obj = compiled.get_special_object(self.evaluator, u'GENERATOR_OBJECT')
-        yield SpecialMethodFilter(self, self.builtin_methods, gen_obj)
-        for filter in gen_obj.get_filters(search_global):
-            yield filter
-
-    def py__bool__(self):
-        return True
-
-    def py__class__(self):
-        gen_obj = compiled.get_special_object(self.evaluator, u'GENERATOR_OBJECT')
-        return gen_obj.py__class__()
 
     @property
     def name(self):
         return compiled.CompiledContextName(self, 'generator')
 
 
-class Generator(GeneratorMixin, Context):
+class Generator(GeneratorBase):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func_execution_context):
-        super(Generator, self).__init__(evaluator, parent_context=evaluator.builtins_module)
+        super(Generator, self).__init__(evaluator)
         self._func_execution_context = func_execution_context
 
     def py__iter__(self):
@@ -113,23 +91,23 @@ class CompForContext(TreeContext):
         yield ParserTreeFilter(self.evaluator, self)
 
 
-class Comprehension(AbstractIterable):
-    @staticmethod
-    def from_atom(evaluator, context, atom):
-        bracket = atom.children[0]
-        if bracket == '{':
-            if atom.children[1].children[1] == ':':
-                cls = DictComprehension
-            else:
-                cls = SetComprehension
-        elif bracket == '(':
-            cls = GeneratorComprehension
-        elif bracket == '[':
-            cls = ListComprehension
-        return cls(evaluator, context, atom)
+def comprehension_from_atom(evaluator, context, atom):
+    bracket = atom.children[0]
+    if bracket == '{':
+        if atom.children[1].children[1] == ':':
+            cls = DictComprehension
+        else:
+            cls = SetComprehension
+    elif bracket == '(':
+        cls = GeneratorComprehension
+    elif bracket == '[':
+        cls = ListComprehension
+    return cls(evaluator, context, atom)
 
+
+class ComprehensionMixin(object):
     def __init__(self, evaluator, defining_context, atom, is_async=False):
-        super(Comprehension, self).__init__(evaluator)
+        super(ComprehensionMixin, self).__init__(evaluator)
         self._defining_context = defining_context
         self._atom = atom
 
@@ -201,14 +179,14 @@ class Comprehension(AbstractIterable):
         return "<%s of %s>" % (type(self).__name__, self._atom)
 
 
-class ArrayMixin(object):
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
-        # `array.type` is a string with the type, e.g. 'list'.
+class Sequence(BuiltinOverwrite, AbstractIterableMixin):
+    api_type = u'instance'
+
+    @memoize_method
+    def get_builtin_object(self):
         compiled_obj = compiled.builtin_from_name(self.evaluator, self.array_type)
-        yield SpecialMethodFilter(self, self.builtin_methods, compiled_obj)
-        for typ in compiled_obj.execute_evaluated(self):
-            for filter in typ.get_filters():
-                yield filter
+        only_obj, = compiled_obj.execute_evaluated(self)
+        return only_obj
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
@@ -227,7 +205,7 @@ class ArrayMixin(object):
         )
 
 
-class ListComprehension(ArrayMixin, Comprehension):
+class ListComprehension(ComprehensionMixin, Sequence):
     array_type = u'list'
 
     def py__getitem__(self, index):
@@ -238,12 +216,11 @@ class ListComprehension(ArrayMixin, Comprehension):
         return all_types[index].infer()
 
 
-class SetComprehension(ArrayMixin, Comprehension):
+class SetComprehension(ComprehensionMixin, Sequence):
     array_type = u'set'
 
 
-@has_builtin_methods
-class DictComprehension(ArrayMixin, Comprehension):
+class DictComprehension(ComprehensionMixin, Sequence):
     array_type = u'dict'
 
     def _get_comp_for(self):
@@ -264,12 +241,12 @@ class DictComprehension(ArrayMixin, Comprehension):
     def dict_values(self):
         return ContextSet.from_sets(values for keys, values in self._iterate())
 
-    @register_builtin_method('values')
+    @publish_method('values')
     def _imitate_values(self):
         lazy_context = LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, u'list', [lazy_context]))
 
-    @register_builtin_method('items')
+    @publish_method('items')
     def _imitate_items(self):
         items = ContextSet.from_iterable(
             FakeSequence(
@@ -281,11 +258,11 @@ class DictComprehension(ArrayMixin, Comprehension):
         return create_evaluated_sequence_set(self.evaluator, items, sequence_type=u'list')
 
 
-class GeneratorComprehension(GeneratorMixin, Comprehension):
+class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
     pass
 
 
-class SequenceLiteralContext(ArrayMixin, AbstractIterable):
+class SequenceLiteralContext(Sequence):
     mapping = {'(': u'tuple',
                '[': u'list',
                '{': u'set'}
@@ -387,7 +364,6 @@ class SequenceLiteralContext(ArrayMixin, AbstractIterable):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
-@has_builtin_methods
 class DictLiteralContext(SequenceLiteralContext):
     array_type = u'dict'
 
@@ -396,12 +372,12 @@ class DictLiteralContext(SequenceLiteralContext):
         self._defining_context = defining_context
         self.atom = atom
 
-    @register_builtin_method('values')
+    @publish_method('values')
     def _imitate_values(self):
         lazy_context = LazyKnownContexts(self.dict_values())
         return ContextSet(FakeSequence(self.evaluator, u'list', [lazy_context]))
 
-    @register_builtin_method('items')
+    @publish_method('items')
     def _imitate_items(self):
         lazy_contexts = [
             LazyKnownContext(FakeSequence(
@@ -443,7 +419,6 @@ class FakeSequence(_FakeArray):
         return "<%s of %s>" % (type(self).__name__, self._lazy_context_list)
 
 
-@has_builtin_methods
 class FakeDict(_FakeArray):
     def __init__(self, evaluator, dct):
         super(FakeDict, self).__init__(evaluator, dct, u'dict')
@@ -471,7 +446,7 @@ class FakeDict(_FakeArray):
 
         return self._dct[index].infer()
 
-    @register_builtin_method('values')
+    @publish_method('values')
     def _values(self):
         return ContextSet(FakeSequence(
             self.evaluator, u'tuple',

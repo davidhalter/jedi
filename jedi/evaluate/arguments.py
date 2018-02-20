@@ -240,7 +240,7 @@ def _star_star_dict(context, array, input_node, funcdef):
         # For now ignore this case. In the future add proper iterators and just
         # make one call without crazy isinstance checks.
         return {}
-    elif isinstance(array, iterable.AbstractIterable) and array.array_type == 'dict':
+    elif isinstance(array, iterable.Sequence) and array.array_type == 'dict':
         return array.exact_key_items()
     else:
         if funcdef is not None:

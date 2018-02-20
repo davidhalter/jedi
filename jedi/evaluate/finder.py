@@ -250,8 +250,7 @@ def _check_isinstance_type(context, element, search_name):
 
     context_set = ContextSet()
     for cls_or_tup in lazy_context_cls.infer():
-        if isinstance(cls_or_tup, iterable.AbstractIterable) and \
-                cls_or_tup.array_type == 'tuple':
+        if isinstance(cls_or_tup, iterable.Sequence) and cls_or_tup.array_type == 'tuple':
             for lazy_context in cls_or_tup.py__iter__():
                 for context in lazy_context.infer():
                     context_set |= context.execute_evaluated()

@@ -221,7 +221,9 @@ def eval_atom(context, atom):
                     pass
 
             if comp_for.type == 'comp_for':
-                return ContextSet(iterable.Comprehension.from_atom(context.evaluator, context, atom))
+                return ContextSet(iterable.comprehension_from_atom(
+                    context.evaluator, context, atom
+                ))
 
         # It's a dict/list/tuple literal.
         array_node = c[1]
@@ -371,11 +373,11 @@ def _eval_comparison(evaluator, context, left_contexts, operator, right_contexts
 
 
 def _is_tuple(context):
-    return isinstance(context, iterable.AbstractIterable) and context.array_type == 'tuple'
+    return isinstance(context, iterable.Sequence) and context.array_type == 'tuple'
 
 
 def _is_list(context):
-    return isinstance(context, iterable.AbstractIterable) and context.array_type == 'list'
+    return isinstance(context, iterable.Sequence) and context.array_type == 'list'
 
 
 def _bool_to_context(evaluator, bool_):
@@ -392,9 +394,9 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
 
     if str_operator == '*':
         # for iterables, ignore * operations
-        if isinstance(left, iterable.AbstractIterable) or is_string(left):
+        if isinstance(left, iterable.Sequence) or is_string(left):
             return ContextSet(left)
-        elif isinstance(right, iterable.AbstractIterable) or is_string(right):
+        elif isinstance(right, iterable.Sequence) or is_string(right):
             return ContextSet(right)
     elif str_operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):

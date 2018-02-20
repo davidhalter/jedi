@@ -6,6 +6,8 @@ from abc import abstractmethod
 
 from parso.tree import search_ancestor
 
+from jedi._compatibility import use_metaclass
+from jedi.cache import memoize_method
 from jedi.evaluate import flow_analysis
 from jedi.evaluate.base_context import ContextSet, Context
 from jedi.parser_utils import get_parent_scope
@@ -307,6 +309,7 @@ class _BuiltinMappedMethod(Context):
         self._builtin_func = builtin_func
 
     def py__call__(self, params):
+        # TODO add TypeError if params are given/or not correct.
         return self._method(self.parent_context)
 
     def __getattr__(self, name):
@@ -333,12 +336,19 @@ class SpecialMethodFilter(DictFilter):
             self._builtin_context = builtin_context
 
         def infer(self):
-            filter = next(self._builtin_context.get_filters())
-            # We can take the first index, because on builtin methods there's
-            # always only going to be one name. The same is true for the
-            # inferred values.
-            builtin_func = next(iter(filter.get(self.string_name)[0].infer()))
-            return ContextSet(_BuiltinMappedMethod(self.parent_context, self._callable, builtin_func))
+            for filter in self._builtin_context.get_filters():
+                # We can take the first index, because on builtin methods there's
+                # always only going to be one name. The same is true for the
+                # inferred values.
+                for name in filter.get(self.string_name):
+                    builtin_func = next(iter(name.infer()))
+                    break
+                else:
+                    continue
+                break
+            return ContextSet(
+                _BuiltinMappedMethod(self.parent_context, self._callable, builtin_func)
+            )
 
     def __init__(self, context, dct, builtin_context):
         super(SpecialMethodFilter, self).__init__(dct)
@@ -355,26 +365,53 @@ class SpecialMethodFilter(DictFilter):
         return self.SpecialMethodName(self.context, name, value, self._builtin_context)
 
 
-def has_builtin_methods(cls):
-    base_dct = {}
-    # Need to care properly about inheritance. Builtin Methods should not get
-    # lost, just because they are not mentioned in a class.
-    for base_cls in reversed(cls.__bases__):
-        try:
-            base_dct.update(base_cls.builtin_methods)
-        except AttributeError:
-            pass
+class _BuiltinOverwriteMeta(type):
+    def __init__(cls, name, bases, dct):
+        super(_BuiltinOverwriteMeta, cls).__init__(name, bases, dct)
 
-    cls.builtin_methods = base_dct
-    for func in cls.__dict__.values():
-        try:
-            cls.builtin_methods.update(func.registered_builtin_methods)
-        except AttributeError:
-            pass
-    return cls
+        base_dct = {}
+        for base_cls in reversed(cls.__bases__):
+            try:
+                base_dct.update(base_cls.builtin_methods)
+            except AttributeError:
+                pass
+
+        for func in cls.__dict__.values():
+            try:
+                base_dct.update(func.registered_builtin_methods)
+            except AttributeError:
+                pass
+        cls.builtin_methods = base_dct
 
 
-def register_builtin_method(method_name, python_version_match=None):
+class BuiltinOverwrite(use_metaclass(_BuiltinOverwriteMeta, Context)):
+    special_object_identifier = None
+
+    def __init__(self, evaluator):
+        super(BuiltinOverwrite, self).__init__(evaluator, evaluator.builtins_module)
+
+    @memoize_method
+    def get_builtin_object(self):
+        from jedi.evaluate import compiled
+        assert self.special_object_identifier
+        return compiled.get_special_object(self.evaluator, self.special_object_identifier)
+
+    def _get_special_method_filter(self):
+        special_method_filter = SpecialMethodFilter(
+            self, self.builtin_methods, self.get_builtin_object())
+        return special_method_filter
+
+    def py__class__(self):
+        return self.get_builtin_object().py__class__()
+
+    def get_filters(self, search_global, *args, **kwargs):
+        yield self._get_special_method_filter()
+
+        for filter in self.get_builtin_object().get_filters(search_global):
+            yield filter
+
+
+def publish_method(method_name, python_version_match=None):
     def decorator(func):
         dct = func.__dict__.setdefault('registered_builtin_methods', {})
         dct[method_name] = func, python_version_match
