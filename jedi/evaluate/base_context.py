@@ -173,14 +173,14 @@ class Context(BaseContext):
         return None
 
 
-def iterate_contexts(contexts, contextualized_node=None):
+def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     """
     Calls `iterate`, on all contexts but ignores the ordering and just returns
     all contexts that the iterate functions yield.
     """
     return ContextSet.from_sets(
         lazy_context.infer()
-        for lazy_context in contexts.iterate(contextualized_node)
+        for lazy_context in contexts.iterate(contextualized_node, is_async=is_async)
     )
 
 

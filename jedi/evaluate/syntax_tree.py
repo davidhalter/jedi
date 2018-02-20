@@ -499,7 +499,11 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
             cn = ContextualizedNode(context, node.children[3])
-            for_types = iterate_contexts(cn.infer(), cn)
+            for_types = iterate_contexts(
+                cn.infer(),
+                contextualized_node=cn,
+                is_async=node.parent.type == 'async_stmt',
+            )
             c_node = ContextualizedName(context, tree_name)
             types = check_tuple_assignments(evaluator, c_node, for_types)
     elif typ == 'expr_stmt':
