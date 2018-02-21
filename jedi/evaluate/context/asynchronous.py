@@ -1,5 +1,4 @@
 from jedi.evaluate.filters import publish_method, BuiltinOverwrite
-from jedi.evaluate.base_context import ContextSet
 
 
 class AsyncBase(BuiltinOverwrite):
@@ -16,7 +15,7 @@ class AsyncBase(BuiltinOverwrite):
 
 
 class Coroutine(AsyncBase):
-    special_object_identifier = u'COROUTINE_TYPE'
+    special_object_identifier = u'COROUTINE'
 
     @publish_method('__await__')
     def _await(self):
@@ -25,11 +24,7 @@ class Coroutine(AsyncBase):
 
 class AsyncGenerator(AsyncBase):
     """Handling of `yield` functions."""
-    special_object_identifier = u'ASYNC_GENERATOR_TYPE'
-
-    @publish_method('__anext__')
-    def py__anext__(self):
-        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__aiter__())
+    special_object_identifier = u'ASYNC_GENERATOR'
 
     def py__aiter__(self):
         return self._func_execution_context.get_yield_lazy_contexts(is_async=True)

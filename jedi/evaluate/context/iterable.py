@@ -106,7 +106,7 @@ def comprehension_from_atom(evaluator, context, atom):
 
 
 class ComprehensionMixin(object):
-    def __init__(self, evaluator, defining_context, atom, is_async=False):
+    def __init__(self, evaluator, defining_context, atom):
         super(ComprehensionMixin, self).__init__(evaluator)
         self._defining_context = defining_context
         self._atom = atom

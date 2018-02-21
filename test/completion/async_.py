@@ -41,6 +41,8 @@ async def wrapper():
 
 #? ['__anext__']
 asgen().__ane
+#? []
+asgen().mro
 
 
 async def x2():

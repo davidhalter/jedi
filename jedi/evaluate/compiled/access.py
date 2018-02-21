@@ -447,14 +447,31 @@ def _is_class_instance(obj):
         return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
 
 
+if py_version >= 35:
+    async def _coroutine(): pass
+    _coroutine = _coroutine()
+    CoroutineType = type(_coroutine)
+    _coroutine.close()  # Prevent ResourceWarning
+else:
+    _coroutine = None
+
+if py_version >= 36:
+    async def _async_generator():
+        yield
+    _async_generator = _async_generator()
+    AsyncGeneratorType = type(_async_generator)
+else:
+    _async_generator = None
+
+
 class _SPECIAL_OBJECTS(object):
     FUNCTION_CLASS = types.FunctionType
     METHOD_CLASS = type(DirectObjectAccess.py__bool__)
     MODULE_CLASS = types.ModuleType
     GENERATOR_OBJECT = _a_generator(1.0)
     BUILTINS = builtins
-    COROUTINE_TYPE = getattr(types, 'CoroutineType', None)
-    ASYNC_GENERATOR_TYPE = getattr(types, 'AsyncGeneratorType', None)
+    COROUTINE = _coroutine
+    ASYNC_GENERATOR = _async_generator
 
 
 def get_special_object(evaluator, identifier):
