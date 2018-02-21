@@ -1,12 +1,13 @@
 import inspect
 import types
 import sys
+from textwrap import dedent
 import operator as op
 from collections import namedtuple
 
 from jedi import debug
 from jedi._compatibility import unicode, is_py3, is_py34, builtins, \
-    py_version, force_unicode, u, print_to_stderr
+    py_version, force_unicode, print_to_stderr
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.utils import dotted_from_fs_path
 
@@ -448,21 +449,24 @@ def _is_class_instance(obj):
 
 
 if py_version >= 35:
-    async def _coroutine(): pass
-    _coroutine = _coroutine()
-    CoroutineType = type(_coroutine)
-    _coroutine.close()  # Prevent ResourceWarning
+    exec(compile(dedent("""
+        async def _coroutine(): pass
+        _coroutine = _coroutine()
+        CoroutineType = type(_coroutine)
+        _coroutine.close()  # Prevent ResourceWarning
+    """), 'blub', 'exec'))
 else:
     _coroutine = None
 
 if py_version >= 36:
-    async def _async_generator():
-        yield
-    _async_generator = _async_generator()
-    AsyncGeneratorType = type(_async_generator)
+    exec(compile(dedent("""
+        async def _async_generator():
+            yield
+        _async_generator = _async_generator()
+        AsyncGeneratorType = type(_async_generator)
+    """), 'blub', 'exec'))
 else:
     _async_generator = None
-
 
 class _SPECIAL_OBJECTS(object):
     FUNCTION_CLASS = types.FunctionType
