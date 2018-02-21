@@ -91,7 +91,7 @@ def eval_node(context, element):
             context_set = eval_trailer(context, context_set, trailer)
 
         if had_await:
-            await_context_set = context_set.py__getattribute__("__await__")
+            await_context_set = context_set.py__getattribute__(u"__await__")
             if not await_context_set:
                 debug.warning('Tried to run py__await__ on context %s', context)
             return await_context_set.execute_evaluated()
