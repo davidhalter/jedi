@@ -5,6 +5,8 @@ Currently we're not supporting completion of them, but they should at least not
 raise errors or return extremely strange results.
 """
 
+# python >= 3.5
+
 async def x():
     return 1
 
@@ -26,6 +28,24 @@ async def y():
     x().__await__()
     return 2
 
+async def x2():
+    async with open('asdf') as f:
+        #? ['readlines']
+        f.readlines
+
+class A():
+    @staticmethod
+    async def b(c=1, d=2):
+        return 1
+
+#! 9 ['def b']
+await A.b()
+
+#! 11 ['param d=2']
+await A.b(d=3)
+
+# python >= 3.6
+
 async def asgen():
     yield 1
     await asyncio.sleep(0)
@@ -43,20 +63,3 @@ async def wrapper():
 asgen().__ane
 #? []
 asgen().mro
-
-
-async def x2():
-    async with open('asdf') as f:
-        #? ['readlines']
-        f.readlines
-
-class A():
-    @staticmethod
-    async def b(c=1, d=2):
-        return 1
-
-#! 9 ['def b']
-await A.b()
-
-#! 11 ['param d=2']
-await A.b(d=3)
