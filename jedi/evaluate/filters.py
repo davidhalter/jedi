@@ -365,55 +365,55 @@ class SpecialMethodFilter(DictFilter):
         return self.SpecialMethodName(self.context, name, value, self._builtin_context)
 
 
-class _BuiltinOverwriteMeta(type):
+class _OverwriteMeta(type):
     def __init__(cls, name, bases, dct):
-        super(_BuiltinOverwriteMeta, cls).__init__(name, bases, dct)
+        super(_OverwriteMeta, cls).__init__(name, bases, dct)
 
         base_dct = {}
         for base_cls in reversed(cls.__bases__):
             try:
-                base_dct.update(base_cls.builtin_methods)
+                base_dct.update(base_cls.overwritten_methods)
             except AttributeError:
                 pass
 
         for func in cls.__dict__.values():
             try:
-                base_dct.update(func.registered_builtin_methods)
+                base_dct.update(func.registered_overwritten_methods)
             except AttributeError:
                 pass
-        cls.builtin_methods = base_dct
+        cls.overwritten_methods = base_dct
 
 
-class BuiltinOverwrite(use_metaclass(_BuiltinOverwriteMeta, Context)):
+class AbstractObjectOverwrite(use_metaclass(_OverwriteMeta, object)):
+    def get_object(self):
+        raise NotImplementedError
+
+    def get_filters(self, search_global, *args, **kwargs):
+        yield SpecialMethodFilter(self, self.overwritten_methods, self.get_object())
+
+        for filter in self.get_object().get_filters(search_global):
+            yield filter
+
+
+class BuiltinOverwrite(Context, AbstractObjectOverwrite):
     special_object_identifier = None
 
     def __init__(self, evaluator):
         super(BuiltinOverwrite, self).__init__(evaluator, evaluator.builtins_module)
 
     @memoize_method
-    def get_builtin_object(self):
+    def get_object(self):
         from jedi.evaluate import compiled
         assert self.special_object_identifier
         return compiled.get_special_object(self.evaluator, self.special_object_identifier)
 
-    def _get_special_method_filter(self):
-        special_method_filter = SpecialMethodFilter(
-            self, self.builtin_methods, self.get_builtin_object())
-        return special_method_filter
-
     def py__class__(self):
-        return self.get_builtin_object().py__class__()
-
-    def get_filters(self, search_global, *args, **kwargs):
-        yield self._get_special_method_filter()
-
-        for filter in self.get_builtin_object().get_filters(search_global):
-            yield filter
+        return self.get_object().py__class__()
 
 
 def publish_method(method_name, python_version_match=None):
     def decorator(func):
-        dct = func.__dict__.setdefault('registered_builtin_methods', {})
+        dct = func.__dict__.setdefault('registered_overwritten_methods', {})
         dct[method_name] = func, python_version_match
         return func
     return decorator

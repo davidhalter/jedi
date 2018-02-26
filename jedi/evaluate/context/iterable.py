@@ -183,7 +183,7 @@ class Sequence(BuiltinOverwrite, AbstractIterableMixin):
     api_type = u'instance'
 
     @memoize_method
-    def get_builtin_object(self):
+    def get_object(self):
         compiled_obj = compiled.builtin_from_name(self.evaluator, self.array_type)
         only_obj, = compiled_obj.execute_evaluated(self)
         return only_obj
