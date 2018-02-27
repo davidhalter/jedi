@@ -115,11 +115,12 @@ def find_virtualenvs(paths=None, **kwargs):
     """
     :param paths: A list of paths in your file system that this function will
         use to search virtual env's. It will exclusively search in these paths
-        and potentially execute
+        and potentially execute the Python binaries on these paths.
     :param safe: Default True. In case this is False, it will allow this
         function to execute potential `python` environments. An attacker might
         be able to drop an executable in a path this function is searching by
-        default. If the executable has not been installed by root.
+        default. If the executable has not been installed by root, it will not
+        be executed.
     """
     def py27_comp(paths=None, safe=True):
         if paths is None:
@@ -149,7 +150,7 @@ def find_virtualenvs(paths=None, **kwargs):
 
 def find_python_environments():
     """
-    Ignores virtualenvs and returns the different Python versions.
+    Ignores virtualenvs and returns the different Python version environments.
     """
     current_version = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
     for version_string in _SUPPORTED_PYTHONS:
