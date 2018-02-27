@@ -44,6 +44,17 @@ await A.b()
 #! 11 ['param d=2']
 await A.b(d=3)
 
+class Awaitable:
+    def __await__(self):
+        yield None
+        return ''
+
+async def awaitable_test():
+    foo = await Awaitable()
+    # TODO doesn't work yet.
+    ##? int()
+    foo
+
 # python >= 3.6
 
 async def asgen():
