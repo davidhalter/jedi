@@ -41,12 +41,12 @@ from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
 from jedi.parser_utils import get_comp_fors
 
 
-class AbstractIterableMixin(object):
+class IterableMixin(object):
     def py__stop_iteration_returns(self):
         return ContextSet(compiled.builtin_from_name(self.evaluator, u'None'))
 
 
-class GeneratorBase(BuiltinOverwrite, AbstractIterableMixin):
+class GeneratorBase(BuiltinOverwrite, IterableMixin):
     array_type = None
     special_object_identifier = u'GENERATOR_OBJECT'
 
@@ -181,7 +181,7 @@ class ComprehensionMixin(object):
         return "<%s of %s>" % (type(self).__name__, self._atom)
 
 
-class Sequence(BuiltinOverwrite, AbstractIterableMixin):
+class Sequence(BuiltinOverwrite, IterableMixin):
     api_type = u'instance'
 
     @property
