@@ -35,4 +35,4 @@ class AsyncGenerator(AsyncBase):
     special_object_identifier = u'ASYNC_GENERATOR'
 
     def py__aiter__(self):
-        return self._func_execution_context.get_yield_lazy_contexts(is_async=True)
+        return self.func_execution_context.get_yield_lazy_contexts(is_async=True)
