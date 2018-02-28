@@ -329,8 +329,10 @@ def test_numpydoc_yields():
                     reason='numpydoc or numpy module is unavailable')
 def test_numpy_returns():
     s = dedent('''
-    x = numpy.asarray([])
-    x.d''')
+        import numpy
+        x = numpy.asarray([])
+        x.d'''
+    )
     names = [c.name for c in jedi.Script(s).completions()]
     print(names)
     assert 'diagonal' in names
@@ -340,8 +342,10 @@ def test_numpy_returns():
                     reason='numpydoc or numpy module is unavailable')
 def test_numpy_comp_returns():
     s = dedent('''
-    x = numpy.array([])
-    x.d''')
+        import numpy
+        x = numpy.array([])
+        x.d'''
+    )
     names = [c.name for c in jedi.Script(s).completions()]
     print(names)
     assert 'diagonal' in names
