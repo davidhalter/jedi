@@ -42,12 +42,11 @@ from jedi.parser_utils import get_comp_fors
 
 
 class AbstractIterableMixin(object):
-    @property
-    def name(self):
-        return compiled.CompiledContextName(self, self.array_type)
+    def py__stop_iteration_returns(self):
+        return ContextSet(compiled.builtin_from_name(self.evaluator, u'None'))
 
 
-class GeneratorBase(BuiltinOverwrite):
+class GeneratorBase(BuiltinOverwrite, AbstractIterableMixin):
     array_type = None
     special_object_identifier = u'GENERATOR_OBJECT'
 
@@ -70,6 +69,9 @@ class Generator(GeneratorBase):
 
     def py__iter__(self):
         return self._func_execution_context.get_yield_lazy_contexts()
+
+    def py__stop_iteration_returns(self):
+        return self._func_execution_context.get_return_values()
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
@@ -181,6 +183,10 @@ class ComprehensionMixin(object):
 
 class Sequence(BuiltinOverwrite, AbstractIterableMixin):
     api_type = u'instance'
+
+    @property
+    def name(self):
+        return compiled.CompiledContextName(self, self.array_type)
 
     @memoize_method
     def get_object(self):

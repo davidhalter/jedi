@@ -124,6 +124,23 @@ def eval_node(context, element):
         return eval_node(context, element.children[0])
     elif typ == 'annassign':
         return pep0484._evaluate_for_annotation(context, element.children[1])
+    elif typ == 'yield_expr':
+        if len(element.children) and element.children[1].type == 'yield_arg':
+            # Implies that it's a yield from.
+            element = element.children[1].children[1]
+            generators = context.eval_node(element)
+            results = ContextSet()
+            for generator in generators:
+                try:
+                    method = generator.py__stop_iteration_returns
+                except AttributeError:
+                    debug.warning('%s is not actually a generator', generator)
+                else:
+                    results |= method()
+            return results
+
+        # Generator.send() is not implemented.
+        return NO_CONTEXTS
     else:
         return eval_or_test(context, element)
 
