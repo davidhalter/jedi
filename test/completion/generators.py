@@ -237,13 +237,13 @@ def test_nested():
     x
     yield x
 
-x, y, z = yield_nested()
+x, y, z = test_nested()
 #? int()
 x
 #? str()
 y
 # For whatever reason this is currently empty
-#?
+#? float()
 z
 
 
