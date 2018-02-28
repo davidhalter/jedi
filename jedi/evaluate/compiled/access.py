@@ -455,8 +455,10 @@ if py_version >= 35:
         CoroutineType = type(_coroutine)
         _coroutine.close()  # Prevent ResourceWarning
     """), 'blub', 'exec'))
+    _coroutine_wrapper = _coroutine.__await__()
 else:
     _coroutine = None
+    _coroutine_wrapper = None
 
 if py_version >= 36:
     exec(compile(dedent("""
@@ -475,6 +477,7 @@ class _SPECIAL_OBJECTS(object):
     GENERATOR_OBJECT = _a_generator(1.0)
     BUILTINS = builtins
     COROUTINE = _coroutine
+    COROUTINE_WRAPPER = _coroutine_wrapper
     ASYNC_GENERATOR = _async_generator
 
 

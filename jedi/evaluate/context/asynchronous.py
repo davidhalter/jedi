@@ -1,17 +1,18 @@
 from jedi.evaluate.filters import publish_method, BuiltinOverwrite
+from jedi.evaluate.base_context import ContextSet
 
 
 class AsyncBase(BuiltinOverwrite):
     def __init__(self, evaluator, func_execution_context):
         super(AsyncBase, self).__init__(evaluator)
-        self._func_execution_context = func_execution_context
+        self.func_execution_context = func_execution_context
 
     @property
     def name(self):
-        return self.get_builtin_object().py__name__()
+        return self.get_object().name
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
+        return "<%s of %s>" % (type(self).__name__, self.func_execution_context)
 
 
 class Coroutine(AsyncBase):
@@ -19,7 +20,14 @@ class Coroutine(AsyncBase):
 
     @publish_method('__await__')
     def _await(self):
-        return self._func_execution_context.get_return_values()
+        return ContextSet(CoroutineWrapper(self.evaluator, self.func_execution_context))
+
+
+class CoroutineWrapper(AsyncBase):
+    special_object_identifier = u'COROUTINE_WRAPPER'
+
+    def py__stop_iteration_returns(self):
+        return self.func_execution_context.get_return_values()
 
 
 class AsyncGenerator(AsyncBase):

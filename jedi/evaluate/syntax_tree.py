@@ -50,6 +50,18 @@ def _limit_context_infers(func):
     return wrapper
 
 
+def _py__stop_iteration_returns(generators):
+    results = ContextSet()
+    for generator in generators:
+        try:
+            method = generator.py__stop_iteration_returns
+        except AttributeError:
+            debug.warning('%s is not actually a generator', generator)
+        else:
+            results |= method()
+    return results
+
+
 @debug.increase_indent
 @_limit_context_infers
 def eval_node(context, element):
@@ -94,7 +106,8 @@ def eval_node(context, element):
             await_context_set = context_set.py__getattribute__(u"__await__")
             if not await_context_set:
                 debug.warning('Tried to run py__await__ on context %s', context)
-            return await_context_set.execute_evaluated()
+            context_set = ContextSet()
+            return _py__stop_iteration_returns(await_context_set.execute_evaluated())
         return context_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
@@ -129,15 +142,7 @@ def eval_node(context, element):
             # Implies that it's a yield from.
             element = element.children[1].children[1]
             generators = context.eval_node(element)
-            results = ContextSet()
-            for generator in generators:
-                try:
-                    method = generator.py__stop_iteration_returns
-                except AttributeError:
-                    debug.warning('%s is not actually a generator', generator)
-                else:
-                    results |= method()
-            return results
+            return _py__stop_iteration_returns(generators)
 
         # Generator.send() is not implemented.
         return NO_CONTEXTS
@@ -326,7 +331,7 @@ def eval_or_test(context, or_test):
             # Otherwise continue, because of uncertainty.
         else:
             types = _eval_comparison(context.evaluator, context, types, operator,
-                                         context.eval_node(right))
+                                     context.eval_node(right))
     debug.dbg('eval_or_test types %s', types)
     return types
 

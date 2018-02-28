@@ -24,8 +24,8 @@ async def y():
     argh = await x()
     #? int()
     argh
-    #? int()
-    x().__await__()
+    #? ['__next__']
+    x().__await__().__next
     return 2
 
 async def x2():
@@ -51,8 +51,7 @@ class Awaitable:
 
 async def awaitable_test():
     foo = await Awaitable()
-    # TODO doesn't work yet.
-    ##? int()
+    #? str()
     foo
 
 # python >= 3.6
