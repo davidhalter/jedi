@@ -113,3 +113,8 @@ def test_generator(Script):
         "    yield 1\n" \
         "abc()."
     assert Script(s).completions()
+
+
+def test_in_comment(Script):
+    assert Script(" # Comment").completions()
+    assert Script("max_attr_value = int(2) # Cast to int for spe").completions()

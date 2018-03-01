@@ -53,28 +53,11 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
-def _is_on_comment(leaf, position):
-    comment_lines = split_lines(leaf.prefix)
-    difference = leaf.start_pos[0] - position[0]
-    prefix_start_pos = leaf.get_start_pos_of_prefix()
-    if difference == 0:
-        indent = leaf.start_pos[1]
-    elif position[0] == prefix_start_pos[0]:
-        indent = prefix_start_pos[1]
-    else:
-        indent = 0
-    line = comment_lines[-difference - 1][:position[1] - indent]
-    return '#' in line
-
-
 def _get_code_for_stack(code_lines, module_node, position):
     leaf = module_node.get_leaf_for_position(position, include_prefixes=True)
     # It might happen that we're on whitespace or on a comment. This means
     # that we would not get the right leaf.
     if leaf.start_pos >= position:
-        if _is_on_comment(leaf, position):
-            return u('')
-
         # If we're not on a comment simply get the previous leaf and proceed.
         leaf = leaf.get_previous_leaf()
         if leaf is None:
@@ -124,6 +107,9 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         tokens = grammar._tokenize(code)
         for token_ in tokens:
             if token_.string == safeword:
+                raise EndMarkerReached()
+            elif token_.prefix.endswith(safeword):
+                # This happens with comments.
                 raise EndMarkerReached()
             else:
                 yield token_
