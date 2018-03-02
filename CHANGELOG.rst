@@ -6,8 +6,12 @@ Changelog
 0.12.0 (2018-01-01)
 +++++++++++++++++++
 
-- Remove Python 2.6
-- VirtualEnvs
+- Remove Python 2.6 support
+- Virtualenv/Environment support
+- Cannot crash with segfaults anymore
+- Cleaned up import logic
+- Understand async/await and autocomplete it (including async generators)
+- Better namespace completions
 
 0.11.1 (2017-12-14)
 +++++++++++++++++++
