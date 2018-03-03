@@ -131,7 +131,7 @@ def find_virtualenvs(paths=None, **kwargs):
         virtual_env = _get_virtual_env_from_var()
         if virtual_env is not None:
             yield virtual_env
-            _used_paths.append(virtual_env._base_path)
+            _used_paths.add(virtual_env._base_path)
 
         for path in paths:
             if path in _used_paths:
