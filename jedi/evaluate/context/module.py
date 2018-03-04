@@ -7,7 +7,7 @@ from parso import python_bytes_to_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi._compatibility import iter_modules
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
-    AbstractNameDefinition, ParserTreeFilter, DictFilter
+    AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
 from jedi.evaluate.imports import SubModuleName, infer_import
@@ -50,13 +50,15 @@ class ModuleContext(TreeContext):
         self._path = path
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield ParserTreeFilter(
-            self.evaluator,
-            context=self,
-            until_position=until_position,
-            origin_scope=origin_scope
+        yield MergedFilter(
+            ParserTreeFilter(
+                self.evaluator,
+                context=self,
+                until_position=until_position,
+                origin_scope=origin_scope
+            ),
+            GlobalNameFilter(self, self.tree_node),
         )
-        yield GlobalNameFilter(self, self.tree_node)
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         for star_module in self.star_imports():

@@ -162,6 +162,16 @@ def funct2():
     global_dict_var
 
 
+global_var_predefined = None
+
+def init_global_var_predefined():
+    global global_var_predefined
+    if global_var_predefined is None:
+        global_var_predefined = 3
+
+#? int() None
+global_var_predefined
+
 # -----------------
 # within docstrs
 # -----------------

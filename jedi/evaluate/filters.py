@@ -296,6 +296,17 @@ class DictFilter(AbstractFilter):
         return value
 
 
+class MergedFilter(object):
+    def __init__(self, *filters):
+        self._filters = filters
+
+    def get(self, name):
+        return [n for filter in self._filters for n in filter.get(name)]
+
+    def values(self):
+        return [n for filter in self._filters for n in filter.values()]
+
+
 class _BuiltinMappedMethod(Context):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
     api_type = u'function'
@@ -440,7 +451,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     >>> context = script._get_module().create_context(scope)
     >>> filters = list(get_global_filters(context.evaluator, context, (4, 0), None))
 
-    First we get the names names from the function scope.
+    First we get the names from the function scope.
 
     >>> no_unicode_pprint(filters[0])
     <ParserTreeFilter: <ModuleContext: @2-5>>
@@ -449,24 +460,21 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     >>> filters[0]._until_position
     (4, 0)
 
-    Then it yields the names from one level "lower". In this example, this is
+    # global names -> there are none in our example.
+    Then it yields the name  # global names -> there are none in our example.s from one level "lower". In this example, this is
     the module scope. As a side note, you can see, that the position in the
     filter is now None, because typically the whole module is loaded before the
     function is called.
 
-    >>> filters[1].values()  # global names -> there are none in our example.
+    >>> list(filters[1].values())  # package modules -> Also empty.
     []
-    >>> list(filters[2].values())  # package modules -> Also empty.
-    []
-    >>> sorted(name.string_name for name in filters[3].values())  # Module attributes
+    >>> sorted(name.string_name for name in filters[2].values())  # Module attributes
     ['__doc__', '__file__', '__name__', '__package__']
-    >>> print(filters[1]._until_position)
-    None
 
     Finally, it yields the builtin filter, if `include_builtin` is
     true (default).
 
-    >>> filters[4].values()                              #doctest: +ELLIPSIS
+    >>> filters[3].values()                              #doctest: +ELLIPSIS
     [<CompiledName: ...>, ...]
     """
     from jedi.evaluate.context.function import FunctionExecutionContext
