@@ -49,6 +49,7 @@ per_function_recursion_limit = 2
 A function may not be executed more than this number of times recursively.
 """
 
+
 class RecursionDetector(object):
     def __init__(self):
         self.pushed_nodes = []
@@ -67,9 +68,11 @@ def execution_allowed(evaluator, node):
                       node.start_pos)
         yield False
     else:
-        pushed_nodes.append(node)
-        yield True
-        pushed_nodes.pop()
+        try:
+            pushed_nodes.append(node)
+            yield True
+        finally:
+            pushed_nodes.pop()
 
 
 def execution_recursion_decorator(default=NO_CONTEXTS):
