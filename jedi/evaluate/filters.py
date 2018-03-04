@@ -306,6 +306,9 @@ class MergedFilter(object):
     def values(self):
         return [n for filter in self._filters for n in filter.values()]
 
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(str(f) for f in self._filters))
+
 
 class _BuiltinMappedMethod(Context):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
@@ -453,18 +456,18 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
 
     First we get the names from the function scope.
 
-    >>> no_unicode_pprint(filters[0])
-    <ParserTreeFilter: <ModuleContext: @2-5>>
+    >>> no_unicode_pprint(filters[0])                    #doctest: +ELLIPSIS
+    MergedFilter(<ParserTreeFilter: ...>, <GlobalNameFilter: ...>)
     >>> sorted(str(n) for n in filters[0].values())
     ['<TreeNameDefinition: func@(3, 4)>', '<TreeNameDefinition: x@(2, 0)>']
-    >>> filters[0]._until_position
+    >>> filters[0]._filters[0]._until_position
     (4, 0)
+    >>> filters[0]._filters[1]._until_position
 
-    # global names -> there are none in our example.
-    Then it yields the name  # global names -> there are none in our example.s from one level "lower". In this example, this is
-    the module scope. As a side note, you can see, that the position in the
-    filter is now None, because typically the whole module is loaded before the
-    function is called.
+    Then it yields the names from one level "lower". In this example, this is
+    the module scope (including globals).
+    As a side note, you can see, that the position in the filter is None on the
+    globals filter, because there the whole module is searched.
 
     >>> list(filters[1].values())  # package modules -> Also empty.
     []
