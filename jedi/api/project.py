@@ -11,7 +11,7 @@ from jedi.evaluate.cache import evaluator_as_method_param_cache
 from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
-_CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'MANIFEST.in'
+_CONTAINS_POTENTIAL_PROJECT = 'setup.py', '.git', '.hg', 'requirements.txt', 'MANIFEST.in'
 
 _SERIALIZER_VERSION = 1
 
@@ -171,11 +171,20 @@ def get_default_project(path=None):
 
     check = os.path.realpath(path)
     probable_path = None
+    first_no_init_file = None
     for dir in traverse_parents(check, include_current=True):
         try:
             return Project.load(dir)
         except (FileNotFoundError, NotADirectoryError):
             pass
+
+        if first_no_init_file is None:
+            if os.path.exists(os.path.join(dir, '__init__.py')):
+                # In the case that a __init__.py exists, it's in 99% just a
+                # Python package and the project sits at least one level above.
+                continue
+            else:
+                first_no_init_file = dir
 
         if _is_django_path(dir):
             return Project(dir, _django=True)
@@ -186,6 +195,9 @@ def get_default_project(path=None):
     if probable_path is not None:
         # TODO search for setup.py etc
         return Project(probable_path)
+
+    if first_no_init_file is not None:
+        return Project(first_no_init_file)
 
     curdir = path if os.path.isdir(path) else os.path.dirname(path)
     return Project(curdir)
