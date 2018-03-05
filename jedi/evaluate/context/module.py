@@ -94,7 +94,7 @@ class ModuleContext(TreeContext):
             sep = (re.escape(os.path.sep),) * 2
             r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self._path)
             # Remove PEP 3149 names
-            return re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+            return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
 
     @property
     @evaluator_method_cache()
