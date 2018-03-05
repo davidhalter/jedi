@@ -156,7 +156,11 @@ def get_call_signature(funcdef, width=72, call_string=None):
         p = '(' + ''.join(param.get_code() for param in funcdef.get_params()).strip() + ')'
     else:
         p = funcdef.children[2].get_code()
-    code = call_string + p
+    if funcdef.annotation:
+        rtype = " ->" + funcdef.annotation.get_code()
+    else:
+        rtype = ""
+    code = call_string + p + rtype
 
     return '\n'.join(textwrap.wrap(code, width))
 

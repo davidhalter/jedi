@@ -75,7 +75,8 @@ def test_hex_values_in_docstring():
 
 @pytest.mark.parametrize(
     'code,call_signature', [
-        ('def my_function(x, y, z) -> str:\n return', 'my_function(x, y, z)'),
+        ('def my_function(x, typed: Type, z):\n return', 'my_function(x, typed: Type, z)'),
+        ('def my_function(x, y, z) -> str:\n return', 'my_function(x, y, z) -> str'),
         ('lambda x, y, z: x + y * z\n', '<lambda>(x, y, z)')
     ])
 def test_get_call_signature(code, call_signature):
