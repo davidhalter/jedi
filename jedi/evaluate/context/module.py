@@ -1,11 +1,10 @@
-import imp
 import re
 import os
 
 from parso import python_bytes_to_unicode
 
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi._compatibility import iter_modules
+from jedi._compatibility import iter_modules, all_suffixes
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
@@ -107,7 +106,7 @@ class ModuleContext(TreeContext):
         :return: The path to the directory of a package. None in case it's not
                  a package.
         """
-        for suffix, _, _ in imp.get_suffixes():
+        for suffix in all_suffixes():
             ending = '__init__' + suffix
             py__file__ = self.py__file__()
             if py__file__ is not None and py__file__.endswith(ending):

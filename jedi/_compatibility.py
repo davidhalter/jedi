@@ -3,7 +3,6 @@ To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
 created. Clearly there is huge need to use conforming syntax.
 """
 import sys
-import imp
 import os
 import re
 import pkgutil
@@ -108,6 +107,9 @@ def find_module_py33(string, path=None, loader=None, full_name=None):
 
 
 def find_module_pre_py33(string, path=None, full_name=None):
+    # This import is here, because in other places it will raise a
+    # DeprecationWarning.
+    import imp
     try:
         module_file, module_path, description = imp.find_module(string, path)
         module_type = description[2]
@@ -216,6 +218,16 @@ class ImplicitNSInfo(object):
     def __init__(self, name, paths):
         self.name = name
         self.paths = paths
+
+
+if is_py3:
+    all_suffixes = importlib.machinery.all_suffixes
+else:
+    def all_suffixes():
+        # Is deprecated and raises a warning in Python 3.6.
+        import imp
+        return [suffix for suffix, _, _ in imp.get_suffixes()]
+
 
 # unicode function
 try:

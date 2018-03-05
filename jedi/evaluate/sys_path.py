@@ -1,7 +1,6 @@
 import os
-import imp
 
-from jedi._compatibility import unicode, force_unicode
+from jedi._compatibility import unicode, force_unicode, all_suffixes
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextualizedNode
 from jedi.evaluate.helpers import is_string
@@ -198,7 +197,7 @@ def dotted_path_in_sys_path(sys_path, module_path):
     Returns the dotted path inside a sys.path.
     """
     # First remove the suffix.
-    for suffix, _, _ in imp.get_suffixes():
+    for suffix in all_suffixes():
         if module_path.endswith(suffix):
             module_path = module_path[:-len(suffix)]
         break

@@ -1,8 +1,8 @@
 import sys
 import os
-import imp
 
-from jedi._compatibility import find_module, cast_path, force_unicode, iter_modules
+from jedi._compatibility import find_module, cast_path, force_unicode, \
+    iter_modules, all_suffixes
 from jedi.evaluate.compiled import access
 from jedi import parser_utils
 
@@ -90,7 +90,7 @@ def _get_init_path(directory_path):
     The __init__ file can be searched in a directory. If found return it, else
     None.
     """
-    for suffix, _, _ in imp.get_suffixes():
+    for suffix in all_suffixes():
         path = os.path.join(directory_path, '__init__' + suffix)
         if os.path.exists(path):
             return path
