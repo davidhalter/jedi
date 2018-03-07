@@ -98,6 +98,12 @@ def test_function_call_signature_in_doc(Script):
     assert "f(x, y=1, z='a')" in str(doc)
 
 
+def test_param_docstring():
+    param = jedi.names("def test(parameter): pass")[1]
+    assert param.name == 'parameter'
+    assert param.docstring() == ''
+
+
 def test_class_call_signature(Script):
     defs = Script("""
     class Foo:

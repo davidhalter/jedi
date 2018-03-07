@@ -32,7 +32,7 @@ from jedi.evaluate import usages
 from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import dotted_path_in_sys_path
-from jedi.evaluate.filters import TreeNameDefinition
+from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
@@ -398,16 +398,24 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         is_def = _def._name.tree_name.is_definition()
         return definitions and is_def or references and not is_def
 
+    def create_name(name):
+        if name.parent.type == 'param':
+            cls = ParamName
+        else:
+            cls = TreeNameDefinition
+        is_module = name.parent.type == 'file_input'
+        return cls(
+            module_context.create_context(name if is_module else name.parent),
+            name
+        )
+
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
     module_context = script._get_module()
     defs = [
         classes.Definition(
             script._evaluator,
-            TreeNameDefinition(
-                module_context.create_context(name if name.parent.type == 'file_input' else name.parent),
-                name
-            )
+            create_name(name)
         ) for name in get_module_names(script._module_node, all_scopes)
     ]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
