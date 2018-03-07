@@ -48,7 +48,7 @@ Jedi can currently be used with the following editors/projects:
 - Atom_ (autocomplete-python-jedi_)
 - SourceLair_
 - `GNOME Builder`_ (with support for GObject Introspection)
-- `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
+- `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=ms-python.python>`_)
 - Gedit (gedi_)
 - wdb_ - Web Debugger
 - `Eric IDE`_ (Available as a plugin)
