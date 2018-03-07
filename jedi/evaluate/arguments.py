@@ -135,7 +135,7 @@ class TreeArguments(AbstractArguments):
                         [v for v in values if v is not None]
                     )
             elif star_count == 2:
-                arrays = self._evaluator.eval_element(self.context, el)
+                arrays = self.context.eval_node(el)
                 for dct in arrays:
                     for key, values in _star_star_dict(self.context, dct, el, funcdef):
                         yield key, values

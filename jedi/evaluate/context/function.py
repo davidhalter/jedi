@@ -135,7 +135,7 @@ class FunctionExecutionContext(TreeContext):
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
         if funcdef.type == 'lambdef':
-            return self.evaluator.eval_element(self, funcdef.children[-1])
+            return self.eval_node(funcdef.children[-1])
 
         if check_yields:
             context_set = NO_CONTEXTS

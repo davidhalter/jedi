@@ -65,7 +65,7 @@ def _py__stop_iteration_returns(generators):
 @debug.increase_indent
 @_limit_context_infers
 def eval_node(context, element):
-    debug.dbg('eval_element %s@%s', element, element.start_pos)
+    debug.dbg('eval_node %s@%s', element, element.start_pos)
     evaluator = context.evaluator
     typ = element.type
     if typ in ('name', 'number', 'string', 'atom'):
@@ -91,7 +91,7 @@ def eval_node(context, element):
         context_set = eval_atom(context, first_child)
         for trailer in children:
             if trailer == '**':  # has a power operation.
-                right = evaluator.eval_element(context, children[1])
+                right = context.eval_node(children[1])
                 context_set = _eval_comparison(
                     evaluator,
                     context,
