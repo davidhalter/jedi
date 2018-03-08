@@ -24,11 +24,13 @@ from jedi.evaluate.parser_cache import get_yield_exprs
 
 class LambdaName(AbstractNameDefinition):
     string_name = '<lambda>'
+    api_type = u'function'
 
     def __init__(self, lambda_context):
         self._lambda_context = lambda_context
         self.parent_context = lambda_context.parent_context
 
+    @property
     def start_pos(self):
         return self._lambda_context.tree_node.start_pos
 
