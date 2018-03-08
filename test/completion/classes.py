@@ -422,17 +422,18 @@ class Super(object):
     a = 3
     def return_sup(self):
         return 1
+SuperCopy = Super
 
 class TestSuper(Super):
     #?
     super()
     def test(self):
-        #? Super()
+        #? SuperCopy()
         super()
         #? ['a']
         super().a
         if 1:
-            #? Super()
+            #? SuperCopy()
             super()
         def a():
             #?
@@ -445,6 +446,17 @@ class TestSuper(Super):
 #? int()
 TestSuper().return_sup()
 
+
+Super = 3
+
+class Foo():
+    def foo(self):
+        return 1
+# Somehow overwriting the same name caused problems (#1044)
+class Foo(Foo):
+    def foo(self):
+        #? int()
+        super().foo()
 
 # -----------------
 # if flow at class level

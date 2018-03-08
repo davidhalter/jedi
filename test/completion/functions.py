@@ -201,6 +201,9 @@ def default_function(a=default):
 #? int()
 default_function()
 
+def default(a=default):
+    #? int()
+    a
 
 # -----------------
 # closures

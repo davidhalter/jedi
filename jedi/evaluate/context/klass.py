@@ -136,7 +136,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
         arglist = self.tree_node.get_super_arglist()
         if arglist:
             from jedi.evaluate import arguments
-            args = arguments.TreeArguments(self.evaluator, self, arglist)
+            args = arguments.TreeArguments(self.evaluator, self.parent_context, arglist)
             return [value for key, value in args.unpack() if key is None]
         else:
             return [LazyKnownContext(compiled.builtin_from_name(self.evaluator, u'object'))]
