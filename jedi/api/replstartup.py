@@ -11,8 +11,8 @@ Then you will be able to use Jedi completer in your Python interpreter::
     [GCC 4.6.1] on linux2
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import os
-    >>> os.path.join().split().in<TAB>                     # doctest: +SKIP
-    os.path.join().split().index   os.path.join().split().insert
+    >>> os.path.join('a', 'b').split().in<TAB>            # doctest: +SKIP
+    ...dex   os.path.join().split().insert
 
 """
 import jedi.utils
