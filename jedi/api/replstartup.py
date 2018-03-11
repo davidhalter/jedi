@@ -12,7 +12,7 @@ Then you will be able to use Jedi completer in your Python interpreter::
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import os
     >>> os.path.join('a', 'b').split().in<TAB>            # doctest: +SKIP
-    ...dex   os.path.join().split().insert
+    ..dex   ..sert
 
 """
 import jedi.utils
