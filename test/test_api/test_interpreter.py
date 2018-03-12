@@ -4,7 +4,7 @@ Tests of ``jedi.api.Interpreter``.
 import pytest
 
 import jedi
-from jedi._compatibility import is_py33, py_version
+from jedi._compatibility import is_py3, py_version
 from jedi.evaluate.compiled import mixed
 
 
@@ -138,7 +138,7 @@ def test_complete_raw_instance():
     import datetime
     dt = datetime.datetime(2013, 1, 1)
     completions = ['time', 'timetz', 'timetuple']
-    if is_py33:
+    if is_py3:
         completions += ['timestamp']
     _assert_interpreter_complete('(dt - dt).ti',
                                  locals(),
@@ -310,13 +310,17 @@ def test_dir_magic_method():
             raise AttributeError(name)
 
         def __dir__(self):
-            return ['foo', 'bar'] + object.__dir__(self)
+            if is_py3:
+                names = object.__dir__(self)
+            else:
+                names = dir(object())
+            return ['foo', 'bar'] + names
 
     itp = jedi.Interpreter("ca.", [{'ca': CompleteAttrs()}])
     completions = itp.completions()
     names = [c.name for c in completions]
-    assert '__dir__' in names
-    assert '__eq__' in names
+    assert ('__dir__' in names) == is_py3
+    assert '__class__' in names
     assert 'foo' in names
     assert 'bar' in names
 
