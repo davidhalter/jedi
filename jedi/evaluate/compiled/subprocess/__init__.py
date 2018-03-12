@@ -175,6 +175,7 @@ class _CompiledSubprocess(object):
                 del _subprocesses[self._executable]
 
         self._process.kill()
+        self._process.wait()
 
     def _send(self, evaluator_id, function, args=(), kwargs={}):
         if self._crashed:
