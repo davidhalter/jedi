@@ -298,3 +298,27 @@ def test_repr_execution_issue():
     d, = script.goto_definitions()
     assert d.name == 'ErrorRepr'
     assert d.type == 'instance'
+
+
+def test_dir_magic_method():
+    class CompleteAttrs(object):
+        def __getattr__(self, name):
+            if name == 'foo':
+                return 1
+            if name == 'bar':
+                return 2
+            raise AttributeError(name)
+
+        def __dir__(self):
+            return ['foo', 'bar'] + object.__dir__(self)
+
+    itp = jedi.Interpreter("ca.", [{'ca': CompleteAttrs()}])
+    completions = itp.completions()
+    names = [c.name for c in completions]
+    assert '__dir__' in names
+    assert '__eq__' in names
+    assert 'foo' in names
+    assert 'bar' in names
+
+    foo = [c for c in completions if c.name == 'foo'][0]
+    assert foo._goto_definitions() == []

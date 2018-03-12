@@ -305,20 +305,21 @@ class CompiledObjectFilter(AbstractFilter):
             name,
             lambda: self._compiled_object.access_handle.is_allowed_getattr(name),
             lambda: self._compiled_object.access_handle.dir(),
+            check_has_attribute=True
         )
 
-    def _get(self, name, allowed_getattr_callback, dir_callback):
+    def _get(self, name, allowed_getattr_callback, dir_callback, check_has_attribute=False):
         """
         To remove quite a few access calls we introduced the callback here.
         """
         has_attribute, is_descriptor = allowed_getattr_callback()
-        if not has_attribute:
+        if check_has_attribute and not has_attribute:
             return []
 
         # Always use unicode objects in Python 2 from here.
         name = force_unicode(name)
 
-        if is_descriptor:
+        if is_descriptor or not has_attribute:
             return [self._get_cached_name(name, is_empty=True)]
 
         if self._is_instance and name not in dir_callback():
