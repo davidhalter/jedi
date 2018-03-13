@@ -95,6 +95,7 @@ def setup_readline(namespace_module=__main__):
                     )
                     before = text[:len(text) - len(name)]
                     completions = interpreter.completions()
+                    logging.debug("REPL completions: %s", completions)
                 except:
                     logging.error("REPL Completion error:\n" + traceback.format_exc())
                     raise

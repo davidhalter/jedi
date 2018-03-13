@@ -4,7 +4,7 @@ Tests of ``jedi.api.Interpreter``.
 import pytest
 
 import jedi
-from jedi._compatibility import is_py3, py_version
+from jedi._compatibility import is_py3, py_version, is_py35
 from jedi.evaluate.compiled import mixed
 
 
@@ -227,8 +227,7 @@ def test_param_completion():
     lambd = lambda xyz: 3
 
     _assert_interpreter_complete('foo(bar', locals(), ['bar'])
-    # TODO we're not yet using the Python3.5 inspect.signature, yet.
-    assert not jedi.Interpreter('lambd(xyz', [locals()]).completions()
+    assert bool(jedi.Interpreter('lambd(xyz', [locals()]).completions()) == is_py35
 
 
 def test_endless_yield():
@@ -262,6 +261,20 @@ def test_completion_param_annotations():
     assert a._goto_definitions() == []
     assert [d.name for d in b._goto_definitions()] == ['str']
     assert {d.name for d in c._goto_definitions()} == {'int', 'float'}
+
+
+def test_keyword_argument():
+    def f(some_keyword_argument):
+        pass
+
+    c, = jedi.Interpreter("f(some_keyw", [{'f': f}]).completions()
+    assert c.name == 'some_keyword_argument'
+    assert c.complete == 'ord_argument='
+
+    # Make it impossible for jedi to find the source of the function.
+    f.__name__ = 'xSOMETHING'
+    c, = jedi.Interpreter("x(some_keyw", [{'x': f}]).completions()
+    assert c.name == 'some_keyword_argument'
 
 
 def test_more_complex_instances():
@@ -326,12 +339,3 @@ def test_dir_magic_method():
 
     foo = [c for c in completions if c.name == 'foo'][0]
     assert foo._goto_definitions() == []
-
-
-def test_keyword_argument():
-    def f(some_keyword_argument):
-        pass
-
-    c, = jedi.Interpreter("f(some_keyw", [{'f': f}]).completions()
-    assert c.name == 'some_keyword_argument'
-    assert c.complete == 'ord_argument='

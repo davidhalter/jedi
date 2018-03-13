@@ -406,7 +406,7 @@ class Completion(BaseDefinition):
                 and self.type == 'Function':
             append = '('
 
-        if isinstance(self._name, ParamName) and self._stack is not None:
+        if self._name.api_type == 'param' and self._stack is not None:
             node_names = list(self._stack.get_node_names(self._evaluator.grammar._pgen_grammar))
             if 'trailer' in node_names and 'argument' not in node_names:
                 append += '='

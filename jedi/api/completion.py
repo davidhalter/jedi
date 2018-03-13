@@ -25,8 +25,10 @@ def get_call_signature_param_names(call_signatures):
                 # public API and we don't want to make the internal
                 # Name object public.
                 tree_param = tree.search_ancestor(tree_name, 'param')
-                if tree_param.star_count == 0:  # no *args/**kwargs
-                    yield p._name
+                if tree_param.star_count != 0:  # no *args/**kwargs
+                    continue
+
+            yield p._name
 
 
 def filter_names(evaluator, completion_names, stack, like_name):
