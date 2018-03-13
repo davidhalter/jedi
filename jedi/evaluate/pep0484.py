@@ -22,7 +22,7 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 import os
 import re
 
-from parso import ParserSyntaxError
+from parso import ParserSyntaxError, parse
 from parso.python import tree
 
 from jedi._compatibility import unicode, force_unicode
@@ -80,9 +80,66 @@ def _fix_forward_reference(context, node):
         return node
 
 
+def _split_mypy_param_declaration(decl_text):
+    """
+    Split decl_text on commas, but group generic expressions
+    together.
+
+    For example, given "foo, Bar[baz, biz]" we return
+    ['foo', 'Bar[baz, biz]'].
+
+    """
+    node = parse(decl_text).children[0]
+
+    if node.type == 'name':
+        return [node.get_code().strip()]
+
+    params = []
+    for child in node.children:
+        if child.type in ['name', 'atom_expr', 'power']:
+            params.append(child.get_code().strip())
+
+    return params
+
+
 @evaluator_method_cache()
 def infer_param(execution_context, param):
+    """
+    Infers the type of a function parameter, using type annotations.
+    """
     annotation = param.annotation
+    if annotation is None:
+        # If no Python 3-style annotation, look for a Python 2-style comment
+        # annotation.
+        # Identify parameters to function in the same sequence as they would
+        # appear in a type comment.
+        all_params = [child for child in param.parent.children
+                      if child.type == 'param']
+
+        node = param.parent.parent
+        comment = parser_utils.get_following_comment_same_line(node)
+        if comment is None:
+            return NO_CONTEXTS
+
+        match = re.match(r"^#\s*type:\s*\(([^#]*)\)\s*->", comment)
+        if not match:
+            return NO_CONTEXTS
+        params_comments = _split_mypy_param_declaration(match.group(1))
+
+        # Find the specific param being investigated
+        index = all_params.index(param)
+        # If the number of parameters doesn't match length of type comment,
+        # ignore first parameter (assume it's self).
+        if len(params_comments) != len(all_params):
+            if index == 0:
+                # Assume it's self, which is already handled
+                return NO_CONTEXTS
+            else:
+                index -= 1
+        param_comment = params_comments[index]
+        # Construct annotation from type comment
+        annotation = tree.String(repr(param_comment), node.start_pos)
+        annotation.parent = node.parent
     module_context = execution_context.get_root_context()
     return _evaluate_for_annotation(module_context, annotation)
 
@@ -102,7 +159,26 @@ def py__annotations__(funcdef):
 
 @evaluator_method_cache()
 def infer_return_types(function_context):
+    """
+    Infers the type of a function's return value,
+    according to type annotations.
+    """
     annotation = py__annotations__(function_context.tree_node).get("return", None)
+    if annotation is None:
+        # If there is no Python 3-type annotation, look for a Python 2-type annotation
+        node = function_context.tree_node
+        comment = parser_utils.get_following_comment_same_line(node)
+        if comment is None:
+            return NO_CONTEXTS
+
+        match = re.match(r"^#\s*type:\s*\([^#]*\)\s*->\s*([^#]*)", comment)
+        if not match:
+            return NO_CONTEXTS
+
+        annotation = tree.String(
+            repr(str(match.group(1).strip())),
+            node.start_pos)
+        annotation.parent = node.parent
     module_context = function_context.get_root_context()
     return _evaluate_for_annotation(module_context, annotation)
 
