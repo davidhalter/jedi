@@ -326,3 +326,12 @@ def test_dir_magic_method():
 
     foo = [c for c in completions if c.name == 'foo'][0]
     assert foo._goto_definitions() == []
+
+
+def test_keyword_argument():
+    def f(some_keyword_argument):
+        pass
+
+    c, = jedi.Interpreter("f(some_keyw", [{'f': f}]).completions()
+    assert c.name == 'some_keyword_argument'
+    assert c.complete == 'ord_argument='
