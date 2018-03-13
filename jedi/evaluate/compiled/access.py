@@ -99,7 +99,10 @@ def safe_getattr(obj, name, default=_sentinel):
     return attr
 
 
-SignatureParam = namedtuple('SignatureParam', 'name has_default default has_annotation annotation')
+SignatureParam = namedtuple(
+    'SignatureParam',
+    'name has_default default has_annotation annotation kind_name'
+)
 
 
 def compiled_objects_cache(attribute_name):
@@ -413,6 +416,7 @@ class DirectObjectAccess(object):
                 default=self._create_access_path(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
+                kind_name=str(p.kind)
             ) for p in signature.parameters.values()
         ]
 

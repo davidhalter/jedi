@@ -7,6 +7,7 @@ import os
 import re
 import pkgutil
 import warnings
+import inspect
 try:
     import importlib
 except ImportError:
@@ -174,7 +175,6 @@ def _iter_modules(paths, prefix=''):
 
         yielded = {}
 
-        import inspect
         try:
             filenames = os.listdir(importer.path)
         except OSError:
@@ -457,3 +457,14 @@ def pickle_load(file):
 
 def pickle_dump(data, file):
     pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
+
+
+try:
+    from inspect import Parameter
+except ImportError:
+    class Parameter(object):
+        POSITIONAL_ONLY = object()
+        POSITIONAL_OR_KEYWORD = object()
+        VAR_POSITIONAL = object()
+        KEYWORD_ONLY = object()
+        VAR_KEYWORD = object()

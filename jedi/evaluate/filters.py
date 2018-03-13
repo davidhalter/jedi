@@ -6,7 +6,7 @@ from abc import abstractmethod
 
 from parso.tree import search_ancestor
 
-from jedi._compatibility import use_metaclass
+from jedi._compatibility import use_metaclass, Parameter
 from jedi.cache import memoize_method
 from jedi.evaluate import flow_analysis
 from jedi.evaluate.base_context import ContextSet, Context
@@ -121,6 +121,22 @@ class ParamName(AbstractTreeName):
     def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
         self.tree_name = tree_name
+
+    def get_kind(self):
+        tree_param = search_ancestor(self.tree_name, 'param')
+        if tree_param.star_count == 1:  # *args
+            return Parameter.VAR_POSITIONAL
+        if tree_param.star_count == 2:  # **kwargs
+            return Parameter.VAR_KEYWORD
+
+        parent = tree_param.parent
+        for p in parent.children:
+            if p.type == 'param':
+                if p.star_count:
+                    return Parameter.KEYWORD_ONLY
+                if p == tree_param:
+                    break
+        return Parameter.POSITIONAL_OR_KEYWORD
 
     def infer(self):
         return self.get_param().infer()

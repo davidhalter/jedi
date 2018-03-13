@@ -2,6 +2,7 @@ from parso.python import token
 from parso.python import tree
 from parso.tree import search_ancestor, Leaf
 
+from jedi._compatibility import Parameter
 from jedi import debug
 from jedi import settings
 from jedi.api import classes
@@ -18,17 +19,9 @@ def get_call_signature_param_names(call_signatures):
     for call_sig in call_signatures:
         for p in call_sig.params:
             # Allow protected access, because it's a public API.
-            tree_name = p._name.tree_name
-            # Compiled modules typically don't allow keyword arguments.
-            if tree_name is not None:
-                # Allow access on _definition here, because it's a
-                # public API and we don't want to make the internal
-                # Name object public.
-                tree_param = tree.search_ancestor(tree_name, 'param')
-                if tree_param.star_count != 0:  # no *args/**kwargs
-                    continue
-
-            yield p._name
+            if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
+                                      Parameter.KEYWORD_ONLY):
+                yield p._name
 
 
 def filter_names(evaluator, completion_names, stack, like_name):

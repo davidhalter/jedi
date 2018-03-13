@@ -5,7 +5,7 @@ import re
 from functools import partial
 
 from jedi import debug
-from jedi._compatibility import force_unicode
+from jedi._compatibility import force_unicode, Parameter
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
@@ -248,6 +248,12 @@ class SignatureParamName(AbstractNameDefinition):
     def string_name(self):
         return self._signature_param.name
 
+    def get_kind(self):
+        return getattr(Parameter, self._signature_param.kind_name)
+
+    def is_keyword_param(self):
+        return self._signature_param
+
     def infer(self):
         p = self._signature_param
         evaluator = self.parent_context.evaluator
@@ -266,6 +272,9 @@ class UnresolvableParamName(AbstractNameDefinition):
     def __init__(self, compiled_obj, name):
         self.parent_context = compiled_obj.parent_context
         self.string_name = name
+
+    def get_kind(self):
+        return Parameter.POSITIONAL_ONLY
 
     def infer(self):
         return ContextSet()
