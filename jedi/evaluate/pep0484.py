@@ -80,7 +80,7 @@ def _fix_forward_reference(context, node):
         return node
 
 
-def _split_mypy_param_declaration(decl_text):
+def _split_comment_param_declaration(decl_text):
     """
     Split decl_text on commas, but group generic expressions
     together.
@@ -99,9 +99,14 @@ def _split_mypy_param_declaration(decl_text):
         return [node.get_code().strip()]
 
     params = []
-    for child in node.children:
-        if child.type in ['name', 'atom_expr', 'power']:
-            params.append(child.get_code().strip())
+    try:
+        children = node.children
+    except AttributeError:
+        return []
+    else:
+        for child in children:
+            if child.type in ['name', 'atom_expr', 'power']:
+                params.append(child.get_code().strip())
 
     return params
 
@@ -128,7 +133,7 @@ def infer_param(execution_context, param):
         match = re.match(r"^#\s*type:\s*\(([^#]*)\)\s*->", comment)
         if not match:
             return NO_CONTEXTS
-        params_comments = _split_mypy_param_declaration(match.group(1))
+        params_comments = _split_comment_param_declaration(match.group(1))
 
         # Find the specific param being investigated
         index = all_params.index(param)

@@ -157,11 +157,6 @@ x = UNKNOWN_NAME2  # type: str
 #? str()
 x
 
-def x(a, b):
-    # type: ([) -> a
-    #?
-    a
-
 class Cat(object):
     def __init__(self, age, friends, name):
         # type: (int, List[Dog], str) -> None
@@ -172,3 +167,14 @@ class Cat(object):
 cat = Cat(UNKNOWN_NAME4, UNKNOWN_NAME5, UNKNOWN_NAME6)
 #? str()
 cat.name
+
+
+# Check potential errors
+def x(a, b):
+    # type: ([) -> a
+    #?
+    a
+def x(a, b):
+    # type: (1) -> a
+    #?
+    a
