@@ -46,12 +46,26 @@ def _evaluate_for_annotation(context, annotation, index=None):
         context_set = context.eval_node(_fix_forward_reference(context, annotation))
         if index is not None:
             context_set = context_set.filter(
-                lambda context: context.array_type == u'tuple' \
+                lambda context: context.array_type == u'tuple'
                                 and len(list(context.py__iter__())) >= index
             ).py__getitem__(index)
         return context_set.execute_evaluated()
     else:
         return NO_CONTEXTS
+
+
+def _evaluate_annotation_string(context, string, index):
+    node = _get_forward_reference_node(context, string)
+    if node is None:
+        return NO_CONTEXTS
+
+    context_set = context.eval_node(node)
+    if index is not None:
+        context_set = context_set.filter(
+            lambda context: context.array_type == u'tuple'
+                            and len(list(context.py__iter__())) >= index
+        ).py__getitem__(index)
+    return context_set.execute_evaluated()
 
 
 def _fix_forward_reference(context, node):
@@ -60,24 +74,31 @@ def _fix_forward_reference(context, node):
         debug.warning("Eval'ed typing index %s should lead to 1 object, "
                       " not %s" % (node, evaled_nodes))
         return node
-    evaled_node = list(evaled_nodes)[0]
-    if is_string(evaled_node):
-        try:
-            new_node = context.evaluator.grammar.parse(
-                force_unicode(evaled_node.get_safe_value()),
-                start_symbol='eval_input',
-                error_recovery=False
-            )
-        except ParserSyntaxError:
-            debug.warning('Annotation not parsed: %s' % evaled_node)
-            return node
-        else:
-            module = node.get_root_node()
-            parser_utils.move(new_node, module.end_pos[0])
-            new_node.parent = context.tree_node
-            return new_node
+
+    evaled_context = list(evaled_nodes)[0]
+    if is_string(evaled_context):
+        result = _get_forward_reference_node(context, evaled_context.get_safe_value())
+        if result is not None:
+            return result
+
+    return node
+
+
+def _get_forward_reference_node(context, string):
+    try:
+        new_node = context.evaluator.grammar.parse(
+            force_unicode(string),
+            start_symbol='eval_input',
+            error_recovery=False
+        )
+    except ParserSyntaxError:
+        debug.warning('Annotation not parsed: %s' % string)
+        return None
     else:
-        return node
+        module = context.tree_node.get_root_node()
+        parser_utils.move(new_node, module.end_pos[0])
+        new_node.parent = context.tree_node
+        return new_node
 
 
 def _split_comment_param_declaration(decl_text):
@@ -306,10 +327,6 @@ def _find_type_from_comment_hint(context, node, varlist, name):
     if comment is None:
         return []
     match = re.match(r"^#\s*type:\s*([^#]*)", comment)
-    if not match:
+    if match is None:
         return []
-    annotation = tree.String(
-        force_unicode(repr(str(match.group(1).strip()))),
-        node.start_pos)
-    annotation.parent = node.parent
-    return _evaluate_for_annotation(context, annotation, index)
+    return _evaluate_annotation_string(context, match.group(1).strip(), index)
