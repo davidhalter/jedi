@@ -15,23 +15,27 @@ from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
 
-
-class InstanceFunctionExecution(FunctionExecutionContext):
-    def __init__(self, instance, parent_context, function_context, var_args):
+class BaseInstanceFunctionExecution(FunctionExecutionContext):
+    def __init__(self, instance, *args, **kwargs):
         self.instance = instance
+        super(BaseInstanceFunctionExecution, self).__init__(
+            instance.evaluator, *args, **kwargs)
+
+
+class InstanceFunctionExecution(BaseInstanceFunctionExecution):
+    def __init__(self, instance, parent_context, function_context, var_args):
         var_args = InstanceVarArgs(self, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
-            instance.evaluator, parent_context, function_context, var_args)
+            instance, parent_context, function_context, var_args)
 
 
-class AnonymousInstanceFunctionExecution(FunctionExecutionContext):
+class AnonymousInstanceFunctionExecution(BaseInstanceFunctionExecution):
     function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
 
     def __init__(self, instance, parent_context, function_context, var_args):
-        self.instance = instance
         super(AnonymousInstanceFunctionExecution, self).__init__(
-            instance.evaluator, parent_context, function_context, var_args)
+            instance, parent_context, function_context, var_args)
 
 
 class AbstractInstanceContext(Context):

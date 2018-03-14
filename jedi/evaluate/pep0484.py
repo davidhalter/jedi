@@ -140,11 +140,19 @@ def infer_param(execution_context, param):
         # If the number of parameters doesn't match length of type comment,
         # ignore first parameter (assume it's self).
         if len(params_comments) != len(all_params):
+            debug.warning(
+                "Comments length != Params length %s %s",
+                params_comments, all_params
+            )
+        from jedi.evaluate.context.instance import BaseInstanceFunctionExecution
+        if isinstance(execution_context, BaseInstanceFunctionExecution):
             if index == 0:
                 # Assume it's self, which is already handled
                 return NO_CONTEXTS
-            else:
-                index -= 1
+            index -= 1
+        if index >= len(params_comments):
+            return NO_CONTEXTS
+
         param_comment = params_comments[index]
         # Construct annotation from type comment
         annotation = tree.String(repr(param_comment), node.start_pos)

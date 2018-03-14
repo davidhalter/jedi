@@ -178,3 +178,9 @@ def x(a, b):
     # type: (1) -> a
     #?
     a
+def x(a, b, c):
+    # type: (str) -> a
+    #?
+    b
+    #?
+    c
