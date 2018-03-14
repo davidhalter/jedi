@@ -89,7 +89,11 @@ def _split_mypy_param_declaration(decl_text):
     ['foo', 'Bar[baz, biz]'].
 
     """
-    node = parse(decl_text).children[0]
+    try:
+        node = parse(decl_text, error_recovery=False).children[0]
+    except ParserSyntaxError:
+        debug.warning('Comment annotation is not valid Python: %s' % decl_text)
+        return []
 
     if node.type == 'name':
         return [node.get_code().strip()]

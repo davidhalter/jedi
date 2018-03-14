@@ -157,6 +157,11 @@ x = UNKNOWN_NAME2  # type: str
 #? str()
 x
 
+def x(a, b):
+    # type: ([) -> a
+    #?
+    a
+
 class Cat(object):
     def __init__(self, age, friends, name):
         # type: (int, List[Dog], str) -> None
