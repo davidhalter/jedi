@@ -47,8 +47,7 @@ Supported Python Features
 - (nested) list comprehensions / ternary expressions
 - relative imports
 - ``getattr()`` / ``__getattr__`` / ``__getattribute__``
-- function annotations (py3k feature, are ignored right now, but being parsed.
-  I don't know what to do with them.)
+- function annotations
 - class decorators (py3k feature, are being ignored too, until I find a use
   case, that doesn't work with |jedi|)
 - simple/usual ``sys.path`` modifications
@@ -116,8 +115,7 @@ one of the following docstring/annotation syntax styles:
 
 https://www.python.org/dev/peps/pep-0484/
 
-function annotations (Python 3 only; Python 2 function annotations with
-comments in planned but not yet implemented)
+function annotations
 
 ::
 
