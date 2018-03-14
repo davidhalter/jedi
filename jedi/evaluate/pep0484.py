@@ -43,12 +43,17 @@ def _evaluate_for_annotation(context, annotation, index=None):
     and we're interested in that index
     """
     context_set = context.eval_node(_fix_forward_reference(context, annotation))
-    if index is not None:
-        context_set = context_set.filter(
-            lambda context: context.array_type == u'tuple'
-                            and len(list(context.py__iter__())) >= index
-        ).py__getitem__(index)
-    return context_set.execute_evaluated()
+    return _check_index(context_set, index).execute_evaluated()
+
+
+def _check_index(context_set, index):
+    if index is None:
+        return context_set
+
+    return context_set.filter(
+        lambda context: context.array_type == u'tuple'
+                        and len(list(context.py__iter__())) >= index
+    ).py__getitem__(index)
 
 
 def _evaluate_annotation_string(context, string, index=None):
@@ -57,12 +62,7 @@ def _evaluate_annotation_string(context, string, index=None):
         return NO_CONTEXTS
 
     context_set = context.eval_node(node)
-    if index is not None:
-        context_set = context_set.filter(
-            lambda context: context.array_type == u'tuple'
-                            and len(list(context.py__iter__())) >= index
-        ).py__getitem__(index)
-    return context_set.execute_evaluated()
+    return _check_index(context_set, index).execute_evaluated()
 
 
 def _fix_forward_reference(context, node):
