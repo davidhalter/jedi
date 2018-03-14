@@ -42,19 +42,16 @@ def _evaluate_for_annotation(context, annotation, index=None):
     If index is not None, the annotation is expected to be a tuple
     and we're interested in that index
     """
-    if annotation is not None:
-        context_set = context.eval_node(_fix_forward_reference(context, annotation))
-        if index is not None:
-            context_set = context_set.filter(
-                lambda context: context.array_type == u'tuple'
-                                and len(list(context.py__iter__())) >= index
-            ).py__getitem__(index)
-        return context_set.execute_evaluated()
-    else:
-        return NO_CONTEXTS
+    context_set = context.eval_node(_fix_forward_reference(context, annotation))
+    if index is not None:
+        context_set = context_set.filter(
+            lambda context: context.array_type == u'tuple'
+                            and len(list(context.py__iter__())) >= index
+        ).py__getitem__(index)
+    return context_set.execute_evaluated()
 
 
-def _evaluate_annotation_string(context, string, index):
+def _evaluate_annotation_string(context, string, index=None):
     node = _get_forward_reference_node(context, string)
     if node is None:
         return NO_CONTEXTS
@@ -175,9 +172,10 @@ def infer_param(execution_context, param):
             return NO_CONTEXTS
 
         param_comment = params_comments[index]
-        # Construct annotation from type comment
-        annotation = tree.String(repr(param_comment), node.start_pos)
-        annotation.parent = node.parent
+        return _evaluate_annotation_string(
+            execution_context.get_root_context(),
+            param_comment
+        )
     module_context = execution_context.get_root_context()
     return _evaluate_for_annotation(module_context, annotation)
 
@@ -213,10 +211,11 @@ def infer_return_types(function_context):
         if not match:
             return NO_CONTEXTS
 
-        annotation = tree.String(
-            repr(str(match.group(1).strip())),
-            node.start_pos)
-        annotation.parent = node.parent
+        return _evaluate_annotation_string(
+            function_context.get_root_context(),
+            match.group(1).strip()
+        )
+
     module_context = function_context.get_root_context()
     return _evaluate_for_annotation(module_context, annotation)
 
