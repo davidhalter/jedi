@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-0.12.0 (2018-01-01)
+0.12.0 (XXXX-XX-XX)
 +++++++++++++++++++
 
 - Remove Python 2.6 support
