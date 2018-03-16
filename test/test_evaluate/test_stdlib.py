@@ -82,11 +82,6 @@ def test_namedtuple_goto_definitions(Script):
 
     from jedi.api import Script
 
-    lines = source.split("\n")
     d1, = Script(source).goto_definitions()
 
-    print(d1)
-    print(d1.line)
-    print(d1.module_path)
-    print(d1.get_line_code())
-    assert d1.get_line_code() == lines[-1]
+    assert d1.get_line_code() == "class Foo(tuple):"
