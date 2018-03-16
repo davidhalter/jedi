@@ -377,8 +377,7 @@ class BaseDefinition(object):
         if self.in_builtin_module():
             return ''
 
-        path = self._name.get_root_context().py__file__()
-        lines = parser_cache[self._evaluator.grammar._hashed][path].lines
+        lines = self._name.get_root_context().code_lines
 
         index = self._name.start_pos[0] - 1
         start_index = max(index - before, 0)

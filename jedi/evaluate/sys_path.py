@@ -5,6 +5,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextualizedNode
 from jedi.evaluate.helpers import is_string
 from jedi.common.utils import traverse_parents
+from jedi.parser_utils import get_cached_code_lines
 from jedi import settings
 from jedi import debug
 
@@ -150,7 +151,10 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         return
 
     from jedi.evaluate.context import ModuleContext
-    module = ModuleContext(evaluator, module_node, buildout_script_path)
+    module = ModuleContext(
+        evaluator, module_node, buildout_script_path,
+        code_lines=get_cached_code_lines(evaluator.grammar, buildout_script_path),
+    )
     for path in check_sys_path_modifications(module):
         yield path
 

@@ -11,6 +11,8 @@ compiled module that returns the types for C-builtins.
 """
 import re
 
+import parso
+
 from jedi._compatibility import force_unicode
 from jedi import debug
 from jedi.evaluate.arguments import ValuesArguments
@@ -293,8 +295,8 @@ def collections_namedtuple(evaluator, obj, arguments):
 
     base = next(iter(_class_template_set)).get_safe_value()
     base += _NAMEDTUPLE_INIT
-    # Build source
-    source = base.format(
+    # Build source code
+    code = base.format(
         typename=name,
         field_names=tuple(fields),
         num_fields=len(fields),
@@ -304,10 +306,13 @@ def collections_namedtuple(evaluator, obj, arguments):
                              for index, name in enumerate(fields))
     )
 
-    # Parse source
-    module = evaluator.grammar.parse(source)
+    # Parse source code
+    module = evaluator.grammar.parse(code)
     generated_class = next(module.iter_classdefs())
-    parent_context = ModuleContext(evaluator, module, '')
+    parent_context = ModuleContext(
+        evaluator, module, None,
+        code_lines=parso.split_lines(code),
+    )
     return ContextSet(ClassContext(evaluator, parent_context, generated_class))
 
 

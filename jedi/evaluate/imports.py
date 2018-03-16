@@ -20,6 +20,7 @@ from parso import python_bytes_to_unicode
 from jedi._compatibility import unicode, ImplicitNSInfo, force_unicode
 from jedi import debug
 from jedi import settings
+from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
@@ -492,7 +493,11 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
                 cache_path=settings.cache_directory)
 
             from jedi.evaluate.context import ModuleContext
-            module = ModuleContext(evaluator, module_node, path=path)
+            module = ModuleContext(
+                evaluator, module_node,
+                path=path,
+                code_lines=get_cached_code_lines(evaluator.grammar, path),
+            )
         else:
             module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
     add_module(evaluator, module_name, module, safe=safe_module_name)

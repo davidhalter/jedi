@@ -21,15 +21,18 @@ class NamespaceObject(object):
 
 
 class MixedModuleContext(Context):
-    resets_positions = True
     type = 'mixed_module'
 
-    def __init__(self, evaluator, tree_module, namespaces, path):
+    def __init__(self, evaluator, tree_module, namespaces, path, code_lines):
         self.evaluator = evaluator
         self._namespaces = namespaces
 
         self._namespace_objects = [NamespaceObject(n) for n in namespaces]
-        self._module_context = ModuleContext(evaluator, tree_module, path=path)
+        self._module_context = ModuleContext(
+            evaluator, tree_module,
+            path=path,
+            code_lines=code_lines
+        )
         self.tree_node = tree_module
 
     def get_node(self):
@@ -49,6 +52,10 @@ class MixedModuleContext(Context):
             )
             for filter in mixed_object.get_filters(*args, **kwargs):
                 yield filter
+
+    @property
+    def code_lines(self):
+        return self._module_context.code_lines
 
     def __getattr__(self, name):
         return getattr(self._module_context, name)

@@ -43,10 +43,11 @@ class ModuleContext(TreeContext):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node, path):
+    def __init__(self, evaluator, module_node, path, code_lines):
         super(ModuleContext, self).__init__(evaluator, parent_context=None)
         self.tree_node = module_node
         self._path = path
+        self.code_lines = code_lines
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         yield MergedFilter(

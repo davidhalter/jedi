@@ -120,6 +120,7 @@ class Script(object):
         )
         debug.speed('parsed')
         self._code_lines = parso.split_lines(source)
+        self._code = source
         line = max(len(self._code_lines), 1) if line is None else line
         if not (0 < line <= len(self._code_lines)):
             raise ValueError('`line` parameter is not in a valid range.')
@@ -141,7 +142,10 @@ class Script(object):
             if n is not None:
                 name = n
 
-        module = ModuleContext(self._evaluator, self._module_node, self.path)
+        module = ModuleContext(
+            self._evaluator, self._module_node, self.path,
+            code_lines=self._code_lines
+        )
         imports.add_module(self._evaluator, name, module)
         return module
 
@@ -374,7 +378,8 @@ class Interpreter(Script):
             self._evaluator,
             self._module_node,
             self.namespaces,
-            path=self.path
+            path=self.path,
+            code_lines=self._code_lines,
         )
 
 

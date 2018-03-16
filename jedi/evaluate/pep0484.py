@@ -22,7 +22,7 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 import os
 import re
 
-from parso import ParserSyntaxError, parse
+from parso import ParserSyntaxError, parse, split_lines
 from parso.python import tree
 
 from jedi._compatibility import unicode, force_unicode
@@ -216,6 +216,7 @@ def infer_return_types(function_context):
 
 
 _typing_module = None
+_typing_module_code_lines = None
 
 
 def _get_typing_replacement_module(grammar):
@@ -223,14 +224,15 @@ def _get_typing_replacement_module(grammar):
     The idea is to return our jedi replacement for the PEP-0484 typing module
     as discussed at https://github.com/davidhalter/jedi/issues/663
     """
-    global _typing_module
+    global _typing_module, _typing_module_code_lines
     if _typing_module is None:
         typing_path = \
             os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
         with open(typing_path) as f:
             code = unicode(f.read())
         _typing_module = grammar.parse(code)
-    return _typing_module
+        _typing_module_code_lines = split_lines(code)
+    return _typing_module, _typing_module_code_lines
 
 
 def py__getitem__(context, typ, node):
@@ -260,10 +262,12 @@ def py__getitem__(context, typ, node):
         # check for the instance typing._Optional (Python 3.6).
         return context.eval_node(nodes[0])
 
+    module_node, code_lines = _get_typing_replacement_module(context.evaluator.latest_grammar)
     typing = ModuleContext(
         context.evaluator,
-        module_node=_get_typing_replacement_module(context.evaluator.latest_grammar),
-        path=None
+        module_node=module_node,
+        path=None,
+        code_lines=code_lines,
     )
     factories = typing.py__getattribute__("factory")
     assert len(factories) == 1

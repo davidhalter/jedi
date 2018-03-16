@@ -71,3 +71,22 @@ def test_nested_namedtuples(Script):
         train_x.train.'''
     ))
     assert 'data' in [c.name for c in s.completions()]
+
+
+def test_namedtuple_goto_definitions(Script):
+    source = dedent("""
+        from collections import namedtuple
+
+        Foo = namedtuple('Foo', 'id timestamp gps_timestamp attributes')
+        Foo""")
+
+    from jedi.api import Script
+
+    lines = source.split("\n")
+    d1, = Script(source).goto_definitions()
+
+    print(d1)
+    print(d1.line)
+    print(d1.module_path)
+    print(d1.get_line_code())
+    assert d1.get_line_code() == lines[-1]
