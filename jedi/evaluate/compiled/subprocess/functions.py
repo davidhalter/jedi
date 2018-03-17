@@ -2,7 +2,7 @@ import sys
 import os
 
 from jedi._compatibility import find_module, cast_path, force_unicode, \
-    iter_modules, all_suffixes
+    iter_modules, all_suffixes, print_to_stderr
 from jedi.evaluate.compiled import access
 from jedi import parser_utils
 
@@ -83,6 +83,18 @@ def _test_raise_error(evaluator, exception_type):
     Raise an error to simulate certain problems for unit tests.
     """
     raise exception_type
+
+
+def _test_print(evaluator, stderr=None, stdout=None):
+    """
+    Force some prints in the subprocesses. This exists for unit tests.
+    """
+    if stderr is not None:
+        print_to_stderr(stderr)
+        sys.stderr.flush()
+    if stdout is not None:
+        print(stdout)
+        sys.stdout.flush()
 
 
 def _get_init_path(directory_path):

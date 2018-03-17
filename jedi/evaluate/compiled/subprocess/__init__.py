@@ -142,7 +142,6 @@ class _CompiledSubprocess(object):
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            # stderr=subprocess.PIPE
         )
 
     def run(self, evaluator, function, args=(), kwargs={}):
@@ -266,6 +265,11 @@ class Listener(object):
 
     def listen(self):
         stdout = sys.stdout
+        # Mute stdout/stderr. Nobody should actually be able to write to those,
+        # because stdout is used for IPC and stderr will just be annoying if it
+        # leaks (on module imports).
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
         stdin = sys.stdin
         if sys.version_info[0] > 2:
             stdout = stdout.buffer

@@ -67,6 +67,11 @@ def test_error_in_environment(evaluator, Script):
     assert def_.name == 'str'
 
 
+def test_stdout_in_subprocess(evaluator, Script):
+    evaluator.compiled_subprocess._test_print(stdout='.')
+    Script('1').goto_definitions()
+
+
 def test_killed_subprocess(evaluator, Script):
     # Just kill the subprocess.
     evaluator.compiled_subprocess._compiled_subprocess._process.kill()
