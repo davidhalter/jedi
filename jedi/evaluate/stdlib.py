@@ -311,7 +311,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     generated_class = next(module.iter_classdefs())
     parent_context = ModuleContext(
         evaluator, module, None,
-        code_lines=parso.split_lines(code),
+        code_lines=parso.split_lines(code, keepends=True),
     )
     return ContextSet(ClassContext(evaluator, parent_context, generated_class))
 

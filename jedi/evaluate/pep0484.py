@@ -231,7 +231,7 @@ def _get_typing_replacement_module(grammar):
         with open(typing_path) as f:
             code = unicode(f.read())
         _typing_module = grammar.parse(code)
-        _typing_module_code_lines = split_lines(code)
+        _typing_module_code_lines = split_lines(code, keepends=True)
     return _typing_module, _typing_module_code_lines
 
 

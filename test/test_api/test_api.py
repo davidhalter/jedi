@@ -165,7 +165,7 @@ def test_get_line_code(Script):
     # On custom code
     first_line = 'def foo():\n'
     line = '    foo'
-    code = '%s%s' % (first_line, line)
+    code = first_line + line
     assert get_line_code(code) == first_line
 
     # With before/after

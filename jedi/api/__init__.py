@@ -119,13 +119,19 @@ class Script(object):
             cache_path=settings.cache_directory
         )
         debug.speed('parsed')
-        self._code_lines = parso.split_lines(source)
+        self._code_lines = parso.split_lines(source, keepends=True)
         self._code = source
         line = max(len(self._code_lines), 1) if line is None else line
         if not (0 < line <= len(self._code_lines)):
             raise ValueError('`line` parameter is not in a valid range.')
 
-        line_len = len(self._code_lines[line - 1])
+        line_string = self._code_lines[line - 1]
+        line_len = len(line_string)
+        if line_string.endswith('\r\n'):
+            line_len -= 1
+        if line_string.endswith('\n'):
+            line_len -= 1
+
         column = line_len if column is None else column
         if not (0 <= column <= line_len):
             raise ValueError('`column` parameter is not in a valid range.')

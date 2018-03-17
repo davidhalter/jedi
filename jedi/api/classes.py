@@ -5,7 +5,6 @@ the interesting information about completion and goto operations.
 """
 import re
 
-from parso.cache import parser_cache
 from parso.python.tree import search_ancestor
 
 from jedi import settings
@@ -13,7 +12,6 @@ from jedi.evaluate.utils import ignored, unite
 from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
-from jedi.evaluate.filters import ParamName
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import instance
 from jedi.evaluate.context import ClassContext, FunctionContext, FunctionExecutionContext
@@ -531,7 +529,6 @@ class Definition(BaseDefinition):
                 include_comma=False
             )
             return typ + ' ' + code
-
 
         definition = tree_name.get_definition() or tree_name
         # Remove the prefix, because that's not what we want for get_code

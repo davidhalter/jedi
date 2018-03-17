@@ -84,5 +84,5 @@ def test_namedtuple_goto_definitions(Script):
 
     d1, = Script(source).goto_definitions()
 
-    assert d1.get_line_code() == "class Foo(tuple):"
+    assert d1.get_line_code() == "class Foo(tuple):\n"
     assert d1.module_path is None
