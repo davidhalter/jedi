@@ -402,6 +402,18 @@ for x in [1] + ['']:
     x
 
 # -----------------
+# Potential Recursion Issues
+# -----------------
+class X():
+    def y(self):
+        self.a = [1]
+
+    def x(self):
+        self.a = list(self.a)
+        #? int()
+        self.a[0]
+
+# -----------------
 # For loops with attribute assignment.
 # -----------------
 def test_func():

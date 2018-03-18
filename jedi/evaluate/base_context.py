@@ -64,7 +64,7 @@ class Context(BaseContext):
         return self.execute(arguments)
 
     def iterate(self, contextualized_node=None, is_async=False):
-        debug.dbg('iterate')
+        debug.dbg('iterate %s', self)
         try:
             if is_async:
                 iter_method = self.py__aiter__

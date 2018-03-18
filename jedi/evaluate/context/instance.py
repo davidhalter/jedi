@@ -212,6 +212,8 @@ class CompiledInstance(AbstractInstanceContext):
         super(CompiledInstance, self).__init__(*args, **kwargs)
         # I don't think that dynamic append lookups should happen here. That
         # sounds more like something that should go to py__iter__.
+        self._original_var_args = self.var_args
+
         if self.class_context.name.string_name in ['list', 'set'] \
                 and self.parent_context.get_root_context() == self.evaluator.builtins_module:
             # compare the module path with the builtin name.
@@ -226,6 +228,13 @@ class CompiledInstance(AbstractInstanceContext):
             return class_context
         else:
             return super(CompiledInstance, self).create_instance_context(class_context, node)
+
+    def get_first_non_keyword_argument_contexts(self):
+        key, lazy_context = next(self._original_var_args.unpack(), ('', None))
+        if key is not None:
+            return None
+
+        return lazy_context.infer()
 
 
 class TreeInstance(AbstractInstanceContext):

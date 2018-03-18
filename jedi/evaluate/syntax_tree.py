@@ -257,7 +257,21 @@ def eval_atom(context, atom):
 @_limit_context_infers
 def eval_expr_stmt(context, stmt, seek_name=None):
     with recursion.execution_allowed(context.evaluator, stmt) as allowed:
-        if allowed or context.get_root_context() == context.evaluator.builtins_module:
+        # Here we allow list/set to recurse under certain conditions. To make
+        # it possible to resolve stuff like list(set(list(x))), this is
+        # necessary.
+        if not allowed and context.get_root_context() == context.evaluator.builtins_module:
+            try:
+                instance = context.instance
+            except AttributeError:
+                pass
+            else:
+                if instance.name.string_name in ('list', 'set'):
+                    c = instance.get_first_non_keyword_argument_contexts()
+                    if instance not in c:
+                        allowed = True
+
+        if allowed:
             return _eval_expr_stmt(context, stmt, seek_name)
     return NO_CONTEXTS
 
