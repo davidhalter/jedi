@@ -35,7 +35,7 @@ try:
                 # need this.
                 initialise.atexit_done = True
                 try:
-                    init()
+                    init(strip=False)
                 except Exception:
                     # Colorama fails with initializing under vim and is buggy in
                     # version 0.3.6.
