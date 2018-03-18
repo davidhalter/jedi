@@ -650,6 +650,8 @@ def eval_subscript_list(evaluator, context, index):
         result += [None] * (3 - len(result))
 
         return ContextSet(iterable.Slice(context, *result))
+    elif index.type == 'subscriptlist':
+        return NO_CONTEXTS
 
     # No slices
     return context.eval_node(index)
