@@ -125,7 +125,9 @@ def eval_node(context, element):
         # Must be an ellipsis, other operators are not evaluated.
         # In Python 2 ellipsis is coded as three single dot tokens, not
         # as one token 3 dot token.
-        assert element.value in ('.', '...'), "The unhandled operator %s" % repr(element.value)
+        if element.value not in ('.', '...'):
+            origin = element.parent
+            raise AssertionError("unhandled operator %s in %s " % (repr(element.value), origin))
         return ContextSet(compiled.builtin_from_name(evaluator, u'Ellipsis'))
     elif typ == 'dotted_name':
         context_set = eval_atom(context, element.children[0])

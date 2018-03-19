@@ -198,6 +198,21 @@ def test_numpydoc_parameters_alternative_types():
 
 @pytest.mark.skipif(numpydoc_unavailable,
                     reason='numpydoc module is unavailable')
+def test_numpydoc_invalid():
+    s = dedent('''
+    def foobar(x, y):
+        """
+        Parameters
+        ----------
+        x : int (str, py.path.local
+        """
+        x.''')
+
+    assert not jedi.Script(s).completions()
+
+
+@pytest.mark.skipif(numpydoc_unavailable,
+                    reason='numpydoc module is unavailable')
 def test_numpydoc_returns():
     s = dedent('''
     def foobar():

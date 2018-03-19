@@ -18,7 +18,7 @@ annotations.
 import re
 from textwrap import dedent
 
-from parso import parse
+from parso import parse, ParserSyntaxError
 
 from jedi._compatibility import u
 from jedi.evaluate.utils import indent_block
@@ -202,7 +202,10 @@ def _evaluate_for_statement_string(module_context, string):
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
     grammar = module_context.evaluator.latest_grammar
-    module = grammar.parse(code.format(indent_block(string)))
+    try:
+        module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
+    except ParserSyntaxError:
+        return []
     try:
         funcdef = next(module.iter_funcdefs())
         # First pick suite, then simple_stmt and then the node,
