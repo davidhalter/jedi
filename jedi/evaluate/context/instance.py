@@ -232,7 +232,7 @@ class CompiledInstance(AbstractInstanceContext):
     def get_first_non_keyword_argument_contexts(self):
         key, lazy_context = next(self._original_var_args.unpack(), ('', None))
         if key is not None:
-            return None
+            return NO_CONTEXTS
 
         return lazy_context.infer()
 
