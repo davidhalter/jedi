@@ -26,11 +26,14 @@ def get_call_signature_param_names(call_signatures):
 
 def filter_names(evaluator, completion_names, stack, like_name):
     comp_dct = {}
+    if settings.case_insensitive_completion:
+        like_name = like_name.lower()
     for name in completion_names:
-        if settings.case_insensitive_completion \
-                and name.string_name.lower().startswith(like_name.lower()) \
-                or name.string_name.startswith(like_name):
+        string = name.string_name
+        if settings.case_insensitive_completion:
+            string = string.lower()
 
+        if string.startswith(like_name):
             new = classes.Completion(
                 evaluator,
                 name,
