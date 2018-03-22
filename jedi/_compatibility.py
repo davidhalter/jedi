@@ -2,6 +2,8 @@
 To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
 created. Clearly there is huge need to use conforming syntax.
 """
+import binascii
+import errno
 import sys
 import os
 import re
@@ -446,17 +448,52 @@ if sys.version_info[:2] == (3, 3):
 
 
 _PICKLE_PROTOCOL = 2
+is_windows = sys.platform == 'win32'
+
+# The Windows shell on Python 2 consumes all control characters (below 32) and expand on
+# all Python versions \n to \r\n.
+# pickle starting from protocol version 1 uses binary data, which could not be escaped by
+# any normal unicode encoder. Therefore, the only bytes encoder which doesn't produce
+# control characters is binascii.hexlify.
 
 
 def pickle_load(file):
-    if is_py3:
-        return pickle.load(file, encoding='bytes')
+    if is_windows:
+        try:
+            data = file.readline()
+            data = binascii.unhexlify(data.strip())
+            if is_py3:
+                return pickle.loads(data, encoding='bytes')
+            else:
+                return pickle.loads(data)
+        # Python on Windows don't throw EOF errors for pipes. So reraise them with
+        # the correct type, which is cought upwards.
+        except OSError:
+            raise EOFError()
     else:
-        return pickle.load(file)
+        if is_py3:
+            return pickle.load(file, encoding='bytes')
+        else:
+            return pickle.load(file)
 
 
 def pickle_dump(data, file):
-    pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
+    if is_windows:
+        try:
+            data = pickle.dumps(data, protocol=_PICKLE_PROTOCOL)
+            data = binascii.hexlify(data)
+            file.write(data)
+            file.write(b'\n')
+            # On Python 3.3 flush throws sometimes an error even if the two file writes
+            # should done it already before. This could be also computer / speed depending.
+            file.flush()
+        # Python on Windows don't throw EPIPE errors for pipes. So reraise them with
+        # the correct type and error number.
+        except OSError:
+            raise IOError(errno.EPIPE)
+    else:
+        pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
+        file.flush()
 
 
 try:

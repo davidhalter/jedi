@@ -187,7 +187,6 @@ class _CompiledSubprocess(object):
         data = evaluator_id, function, args, kwargs
         try:
             pickle_dump(data, self._process.stdin)
-            self._process.stdin.flush()
         except (socket.error, IOError) as e:
             # Once Python2 will be removed we can just use `BrokenPipeError`.
             if e.errno != errno.EPIPE:
@@ -288,7 +287,6 @@ class Listener(object):
                 result = True, traceback.format_exc(), e
 
             pickle_dump(result, file=stdout)
-            stdout.flush()
 
 
 class AccessHandle(object):

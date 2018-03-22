@@ -1,4 +1,4 @@
-Main Authors
+﻿Main Authors
 ============
 
 David Halter (@davidhalter) <davidhalter88@gmail.com>
@@ -48,5 +48,6 @@ Robin Roth (@robinro)
 Malte Plath (@langsamer)
 Anton Zub (@zabulazza)
 Maksim Novikov (@m-novikov) <mnovikov.work@gmail.com>
+Tobias Rzepka (@TobiasRzepka)
 
 Note: (@user) means a github user name.
