@@ -15,9 +15,14 @@ def test_paths_from_assignment(Script):
         expr_stmt = script._module_node.children[0]
         return set(sys_path._paths_from_assignment(script._get_module(), expr_stmt))
 
-    assert paths('sys.path[0:0] = ["a"]') == {'/foo/a'}
-    assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == {'/foo/b', '/foo/c'}
-    assert paths('sys.path = a = ["a"]') == {'/foo/a'}
+    # Normalize paths for Windows.
+    path_a = os.path.abspath('/foo/a')
+    path_b = os.path.abspath('/foo/b')
+    path_c = os.path.abspath('/foo/c')
+
+    assert paths('sys.path[0:0] = ["a"]') == {path_a}
+    assert paths('sys.path = ["b", 1, x + 3, y, "c"]') == {path_b, path_c}
+    assert paths('sys.path = a = ["a"]') == {path_a}
 
     # Fail for complicated examples.
     assert paths('sys.path, other = ["a"], 2') == set()
