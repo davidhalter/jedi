@@ -189,10 +189,15 @@ def _get_executable_path(path, safe=True):
     Returns None if it's not actually a virtual env.
     """
 
-    bin_name = 'Scripts' if os.name == 'nt' else 'bin'
+    if os.name == 'nt':
+        bin_name = 'Scripts'
+        extension = '.exe'
+    else:
+        bin_name = 'bin'
+        extension = ''
     bin_folder = os.path.join(path, bin_name)
     activate = os.path.join(bin_folder, 'activate')
-    python = os.path.join(bin_folder, 'python')
+    python = os.path.join(bin_folder, 'python' + extension)
     if not all(os.path.exists(p) for p in (activate, python)):
         raise InvalidPythonEnvironment("One of bin/activate and bin/python is missing.")
 
