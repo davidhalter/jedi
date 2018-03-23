@@ -2,6 +2,7 @@ import os
 from glob import glob
 import sys
 import shutil
+import subprocess
 
 import pytest
 from jedi.evaluate import sys_path
@@ -36,31 +37,36 @@ def test_venv_and_pths(tmpdir, environment):
 
     dirname = pjoin(tmpdir.dirname, 'venv')
 
-    # Ignore if it fails. It usually fails if it's not able to properly install
-    # pip. However we don't need that for this test.
-    executable_path = '/usr/bin/' + os.path.basename(environment._executable)
-    if not os.path.exists(executable_path):
-        # Need to not use the path in the virtualenv. Since tox creates
-        # virtualenvs we cannot reuse them, because they have different site.py
-        # files that work differently than the default ones.
-        # Since nobody creates venv's from within virtualenvs (doesn't make
-        # sense and people are hopefully starting to avoid virtualenv now -
-        # because it's more complicated than venv), it's the correct approach
-        # to just use the systems Python directly.
-        # This doesn't work for windows and others, but I currently don't care.
-        # Feel free to improve.
-        pytest.skip()
+    # We cannot use the Python from tox because tox creates virtualenvs and they
+    # have different site.py files that work differently than the default ones.
+    # Instead, we find the real Python executable by printing the value of
+    # sys.base_prefix or sys.real_prefix if we are in a virtualenv.
+    output = subprocess.check_output([
+      environment._executable, "-c",
+      "import sys; "
+      "print(sys.real_prefix if hasattr(sys, 'real_prefix') else "
+            "sys.base_prefix)"
+    ])
+    prefix = output.rstrip().decode('utf8')
+    if os.name == 'nt':
+        executable_path = os.path.join(prefix, 'python')
+    else:
+        executable_name = os.path.basename(environment._executable)
+        executable_path = os.path.join(prefix, 'bin', executable_name)
 
-    os.system(executable_path + ' -m venv ' + dirname)
+    subprocess.call([executable_path, '-m', 'venv', dirname])
 
-    # We cannot find the virtualenv in some cases, because the virtualenv was
-    # not created correctly.
-    virtualenv = Environment(dirname, pjoin(dirname, 'bin', 'python'))
+    bin_name = 'Scripts' if os.name == 'nt' else 'bin'
+    virtualenv = Environment(dirname, pjoin(dirname, bin_name, 'python'))
 
     CUR_DIR = os.path.dirname(__file__)
-    site_pkg_path = glob(pjoin(virtualenv._base_path, 'lib', 'python*', 'site-packages'))[0]
+    site_pkg_path = pjoin(virtualenv._base_path, 'lib')
+    if os.name == 'nt':
+        site_pkg_path = pjoin(site_pkg_path, 'site-packages')
+    else:
+        site_pkg_path = glob(pjoin(site_pkg_path, 'python*', 'site-packages'))[0]
     shutil.rmtree(site_pkg_path)
-    shutil.copytree(pjoin(CUR_DIR, 'sample_venvs/pth_directory'), site_pkg_path)
+    shutil.copytree(pjoin(CUR_DIR, 'sample_venvs', 'pth_directory'), site_pkg_path)
 
     venv_paths = virtualenv.get_sys_path()
 
