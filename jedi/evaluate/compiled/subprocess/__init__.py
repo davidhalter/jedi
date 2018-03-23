@@ -189,7 +189,9 @@ class _CompiledSubprocess(object):
             pickle_dump(data, self._process.stdin)
         except (socket.error, IOError) as e:
             # Once Python2 will be removed we can just use `BrokenPipeError`.
-            if e.errno != errno.EPIPE:
+            # Also, somehow in windows it returns EINVAL instead of EPIPE if
+            # the subprocess dies.
+            if e.errno not in (errno.EPIPE, errno.EINVAL):
                 # Not a broken pipe
                 raise
             self.kill()
