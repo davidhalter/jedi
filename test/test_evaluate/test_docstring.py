@@ -489,7 +489,7 @@ def test_google_returns_typeless():
 
 
 def test_google_infer_params():
-    from jedi.evaluate.representation import FunctionContext
+    from jedi.evaluate.context.function import FunctionContext
     from jedi.evaluate import docstrings
     google_source = dedent('''
     def foobar(x, y):
@@ -501,7 +501,7 @@ def test_google_infer_params():
         ''')
     script = jedi.Script(google_source)
     module_context = script._get_module()
-    module = script._get_module_node()
+    module = script._module_node
     funcdef = next(module.iter_funcdefs())
     function_context = FunctionContext(
         module_context.evaluator,
@@ -520,7 +520,7 @@ def test_google_infer_params():
 
 
 def test_google_infer_return_types():
-    from jedi.evaluate.representation import FunctionContext
+    from jedi.evaluate.context.function import FunctionContext
     from jedi.evaluate import docstrings
     s = dedent('''
     def foobar(x, y):
@@ -532,7 +532,7 @@ def test_google_infer_return_types():
         ''')
     script = jedi.Script(s)
     module_context = script._get_module()
-    module = script._get_module_node()
+    module = script._module_node
     funcdef = next(module.iter_funcdefs())
     function_context = FunctionContext(
         module_context.evaluator,
@@ -545,7 +545,7 @@ def test_google_infer_return_types():
 
 
 def test_google_infer_return_types_typeless():
-    from jedi.evaluate.representation import FunctionContext
+    from jedi.evaluate.context.function import FunctionContext
     from jedi.evaluate import docstrings
     s = dedent('''
     def foobar(x, y):
@@ -557,7 +557,7 @@ def test_google_infer_return_types_typeless():
         ''')
     script = jedi.Script(s)
     module_context = script._get_module()
-    module = script._get_module_node()
+    module = script._module_node
     funcdef = next(module.iter_funcdefs())
     function_context = FunctionContext(
         module_context.evaluator,
