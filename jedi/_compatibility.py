@@ -490,7 +490,7 @@ def pickle_dump(data, file):
         # Python on Windows don't throw EPIPE errors for pipes. So reraise them with
         # the correct type and error number.
         except OSError:
-            raise IOError(errno.EPIPE)
+            raise IOError(errno.EPIPE, "Broken pipe")
     else:
         pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
         file.flush()
