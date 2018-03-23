@@ -8,11 +8,11 @@ python:
   - 3.6
 
 env:
-  - JEDI_TEST_ENVIRONMENT=27
-  - JEDI_TEST_ENVIRONMENT=33
-  - JEDI_TEST_ENVIRONMENT=34
-  - JEDI_TEST_ENVIRONMENT=35
-  - JEDI_TEST_ENVIRONMENT=36
+  - JEDI_TEST_ENVIRONMENT=/opt/python/2.7/bin/python
+  - JEDI_TEST_ENVIRONMENT=/opt/python/3.3/bin/python
+  - JEDI_TEST_ENVIRONMENT=/opt/python/3.4/bin/python
+  - JEDI_TEST_ENVIRONMENT=/opt/python/3.5/bin/python
+  - JEDI_TEST_ENVIRONMENT=/opt/python/3.6/bin/python
 
 matrix:
   allow_failures:
@@ -20,13 +20,13 @@ matrix:
     - env: TOXENV=sith
     - env:
         - TOXENV=cov
-        - JEDI_TEST_ENVIRONMENT=36
+        - JEDI_TEST_ENVIRONMENT=/opt/python/3.6/bin/python
     - python: 3.7-dev
   include:
     - python: 3.6
       env:
         - TOXENV=cov
-        - JEDI_TEST_ENVIRONMENT=36
+        - JEDI_TEST_ENVIRONMENT=/opt/python/3.6/bin/python
     - python: 3.6
       env: TOXENV=sith
     # For now ignore pypy, there are so many issues that we don't really need
@@ -35,13 +35,6 @@ matrix:
     - python: "3.7-dev"
 before_install:
     - ./travis_install.sh
-    # Need to add the path to the Python versions in the end. This might add
-    # something twice, but it doesn't really matter, because they are appended.
-    - export PATH=$PATH:/opt/python/3.3/bin
-    - export PATH=$PATH:/opt/python/3.5/bin
-    # 3.6 was not installed manually, but already is on the system. However
-    # it's not on path (unless 3.6 is selected).
-    - export PATH=$PATH:/opt/python/3.6/bin
 install:
     - pip install --quiet tox-travis
 script:
