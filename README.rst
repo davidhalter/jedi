@@ -81,6 +81,10 @@ Docs are available at `https://jedi.readthedocs.org/en/latest/
 enhancements and/or fixes are awesome and most welcome. Jedi uses `semantic
 versioning <https://semver.org/>`_.
 
+If you want to stay up-to-date (News / RFCs), please subscribe to this `github
+thread <https://github.com/davidhalter/jedi/issues/1063>`_.:
+
+
 
 Installation
 ============
