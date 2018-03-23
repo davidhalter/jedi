@@ -87,14 +87,16 @@ def clean_jedi_cache(request):
 
 @pytest.fixture(scope='session')
 def environment(request):
-    version = request.config.option.env
-    if version is None:
-        version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
+    python = request.config.option.env
+    if python is None:
+        python = os.environ.get('JEDI_TEST_ENVIRONMENT', 'python')
 
-    if int(version) == py_version:
-        return get_default_environment()
+    environment = get_python_environment(python)
+    version_info = environment.version_info
+    if int(str(version_info.major) + str(version_info.minor)) == py_version:
+      return get_default_environment()
 
-    return get_python_environment('python%s.%s' % tuple(version))
+    return environment
 
 
 @pytest.fixture(scope='session')

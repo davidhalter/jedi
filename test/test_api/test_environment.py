@@ -24,22 +24,10 @@ def test_find_python_environments():
         assert parser_version[:2] == env.version_info[:2]
 
 
-@pytest.mark.parametrize(
-    'version',
-    ['2.7', '3.3', '3.4', '3.5', '3.6', '3.7']
-)
-def test_versions(version):
-    executable = 'python' + version
-    try:
-        env = Environment('some path', executable)
-    except InvalidPythonEnvironment:
-        if int(version.replace('.', '')) == py_version:
-            # At least the current version has to work
-            raise
-        return
-
+def test_version():
+    env = Environment('some path', sys.executable)
     sys_path = env.get_sys_path()
-    assert any(executable in p for p in sys_path)
+    assert any(sys.prefix in p for p in sys_path)
 
 
 def test_load_module(evaluator):

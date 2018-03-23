@@ -1,0 +1,87 @@
+environment:
+  matrix:
+  - TOXENV: py27
+    PYTHON_PATH: C:\Python27
+    JEDI_TEST_ENVIRONMENT: C:\Python27\python.exe
+  - TOXENV: py27
+    PYTHON_PATH: C:\Python27
+    JEDI_TEST_ENVIRONMENT: C:\Python33\python.exe
+  - TOXENV: py27
+    PYTHON_PATH: C:\Python27
+    JEDI_TEST_ENVIRONMENT: C:\Python34\python.exe
+  - TOXENV: py27
+    PYTHON_PATH: C:\Python27
+    JEDI_TEST_ENVIRONMENT: C:\Python35\python.exe
+  - TOXENV: py27
+    PYTHON_PATH: C:\Python27
+    JEDI_TEST_ENVIRONMENT: C:\Python36\python.exe
+
+  - TOXENV: py33
+    PYTHON_PATH: C:\Python33
+    JEDI_TEST_ENVIRONMENT: C:\Python27\python.exe
+  - TOXENV: py33
+    PYTHON_PATH: C:\Python33
+    JEDI_TEST_ENVIRONMENT: C:\Python33\python.exe
+  - TOXENV: py33
+    PYTHON_PATH: C:\Python33
+    JEDI_TEST_ENVIRONMENT: C:\Python34\python.exe
+  - TOXENV: py33
+    PYTHON_PATH: C:\Python33
+    JEDI_TEST_ENVIRONMENT: C:\Python35\python.exe
+  - TOXENV: py33
+    PYTHON_PATH: C:\Python33
+    JEDI_TEST_ENVIRONMENT: C:\Python36\python.exe
+
+  - TOXENV: py34
+    PYTHON_PATH: C:\Python34
+    JEDI_TEST_ENVIRONMENT: C:\Python27\python.exe
+  - TOXENV: py34
+    PYTHON_PATH: C:\Python34
+    JEDI_TEST_ENVIRONMENT: C:\Python33\python.exe
+  - TOXENV: py34
+    PYTHON_PATH: C:\Python34
+    JEDI_TEST_ENVIRONMENT: C:\Python34\python.exe
+  - TOXENV: py34
+    PYTHON_PATH: C:\Python34
+    JEDI_TEST_ENVIRONMENT: C:\Python35\python.exe
+  - TOXENV: py34
+    PYTHON_PATH: C:\Python34
+    JEDI_TEST_ENVIRONMENT: C:\Python36\python.exe
+
+  - TOXENV: py35
+    PYTHON_PATH: C:\Python35
+    JEDI_TEST_ENVIRONMENT: C:\Python27\python.exe
+  - TOXENV: py35
+    PYTHON_PATH: C:\Python35
+    JEDI_TEST_ENVIRONMENT: C:\Python33\python.exe
+  - TOXENV: py35
+    PYTHON_PATH: C:\Python35
+    JEDI_TEST_ENVIRONMENT: C:\Python34\python.exe
+  - TOXENV: py35
+    PYTHON_PATH: C:\Python35
+    JEDI_TEST_ENVIRONMENT: C:\Python35\python.exe
+  - TOXENV: py35
+    PYTHON_PATH: C:\Python35
+    JEDI_TEST_ENVIRONMENT: C:\Python36\python.exe
+
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python36
+    JEDI_TEST_ENVIRONMENT: C:\Python27\python.exe
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python36
+    JEDI_TEST_ENVIRONMENT: C:\Python33\python.exe
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python36
+    JEDI_TEST_ENVIRONMENT: C:\Python34\python.exe
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python36
+    JEDI_TEST_ENVIRONMENT: C:\Python35\python.exe
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python36
+    JEDI_TEST_ENVIRONMENT: C:\Python36\python.exe
+install:
+  - set PATH=%PYTHON_PATH%;%PYTHON_PATH%\Scripts;%PATH%
+  - pip install --disable-pip-version-check --user --upgrade pip
+  - pip install tox
+build_script:
+  - tox
