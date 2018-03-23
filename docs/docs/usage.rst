@@ -56,10 +56,6 @@ Atom:
 
 - autocomplete-python-jedi_
 
-SourceLair:
-
-- SourceLair_
-
 GNOME Builder:
 
 - `GNOME Builder`_ `supports it natively
@@ -115,7 +111,6 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
 .. _kate: https://kate-editor.org/
 .. _autocomplete-python-jedi: https://atom.io/packages/autocomplete-python-jedi
-.. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
 .. _gedi: https://github.com/isamert/gedi
 .. _Eric IDE: https://eric-ide.python-projects.org
