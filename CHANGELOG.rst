@@ -12,6 +12,7 @@ Changelog
 - Cleaned up import logic
 - Understand async/await and autocomplete it (including async generators)
 - Better namespace completions
+- Passing tests for Windows (including CI for Windows)
 
 0.11.1 (2017-12-14)
 +++++++++++++++++++
