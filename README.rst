@@ -12,11 +12,16 @@ Jedi - an awesome autocompletion/static analysis library for Python
 
 .. image:: https://travis-ci.org/davidhalter/jedi.svg?branch=master
     :target: https://travis-ci.org/davidhalter/jedi
-    :alt: Travis CI build status
+    :alt: Linux Tests
+
+.. image:: https://ci.appveyor.com/api/projects/status/mgva3bbawyma1new/branch/master?svg=true
+    :target: https://ci.appveyor.com/project/davidhalter/jedi/branch/master
+    :alt: Windows Tests
 
 .. image:: https://coveralls.io/repos/davidhalter/jedi/badge.svg?branch=master
     :target: https://coveralls.io/r/davidhalter/jedi
     :alt: Coverage status
+
 
 *If you have specific questions, please add an issue or ask on* `Stack Overflow
 <https://stackoverflow.com/questions/tagged/python-jedi>`_ *with the label* ``python-jedi``.
