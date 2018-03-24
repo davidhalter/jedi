@@ -49,5 +49,6 @@ Malte Plath (@langsamer)
 Anton Zub (@zabulazza)
 Maksim Novikov (@m-novikov) <mnovikov.work@gmail.com>
 Tobias Rzepka (@TobiasRzepka)
+micbou (@micbou)
 
 Note: (@user) means a github user name.
