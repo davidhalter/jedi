@@ -24,6 +24,7 @@ def test_find_python_environments():
         assert parser_version[:2] == env.version_info[:2]
 
 
+# Cannot deduce the environment from Python executable name on Windows.
 @pytest.mark.skipif("os.name == 'nt'")
 @pytest.mark.parametrize(
     'version',
