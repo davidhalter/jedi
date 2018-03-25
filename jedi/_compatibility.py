@@ -35,23 +35,18 @@ class DummyFile(object):
 
 
 def find_module_py34(string, path=None, full_name=None):
-    implicit_namespace_pkg = False
     spec = None
     loader = None
 
     spec = importlib.machinery.PathFinder.find_spec(string, path)
-    if hasattr(spec, 'origin'):
-        origin = spec.origin
-        implicit_namespace_pkg = origin == 'namespace'
+    if spec is not None:
+        # We try to disambiguate implicit namespace pkgs with non implicit namespace pkgs
+        if not spec.has_location:
+            full_name = string if not path else full_name
+            implicit_ns_info = ImplicitNSInfo(full_name, spec.submodule_search_locations._path)
+            return None, implicit_ns_info, False
 
-    # We try to disambiguate implicit namespace pkgs with non implicit namespace pkgs
-    if implicit_namespace_pkg:
-        full_name = string if not path else full_name
-        implicit_ns_info = ImplicitNSInfo(full_name, spec.submodule_search_locations._path)
-        return None, implicit_ns_info, False
-
-    # we have found the tail end of the dotted path
-    if hasattr(spec, 'loader'):
+        # we have found the tail end of the dotted path
         loader = spec.loader
     return find_module_py33(string, path, loader)
 
@@ -355,11 +350,11 @@ def no_unicode_pprint(dct):
     print(re.sub("u'", "'", s))
 
 
-def print_to_stderr(string):
+def print_to_stderr(*args):
     if is_py3:
-        eval("print(string, file=sys.stderr)")
+        eval("print(*args, file=sys.stderr)")
     else:
-        print >> sys.stderr, string
+        print >> sys.stderr, args
 
 
 def utf8_repr(func):
