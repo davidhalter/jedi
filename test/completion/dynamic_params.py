@@ -132,3 +132,19 @@ def from_comprehension(foo):
 
 [from_comprehension(1.0) for n in (1,)]
 [from_comprehension(n) for n in (1,)]
+
+# -----------------
+# lambdas
+# -----------------
+
+#? int()
+x_lambda = lambda x: x
+
+x_lambda(1)
+
+class X():
+    #? str()
+    x_method = lambda self, a: a
+
+
+X().x_method('')

@@ -73,14 +73,21 @@ def search_params(evaluator, execution_context, funcdef):
             # you will see the slowdown, especially in 3.6.
             return create_default_params(execution_context, funcdef)
 
-        debug.dbg('Dynamic param search in %s.', funcdef.name.value, color='MAGENTA')
+        if funcdef.type == 'lambdef':
+            string_name = _get_lambda_name(funcdef)
+            if string_name is None:
+                return create_default_params(execution_context, funcdef)
+        else:
+            string_name = funcdef.name.value
+        debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
 
         try:
             module_context = execution_context.get_root_context()
             function_executions = _search_function_executions(
                 evaluator,
                 module_context,
-                funcdef
+                funcdef,
+                string_name=string_name,
             )
             if function_executions:
                 zipped_params = zip(*list(
@@ -100,25 +107,24 @@ def search_params(evaluator, execution_context, funcdef):
 
 @evaluator_function_cache(default=None)
 @to_list
-def _search_function_executions(evaluator, module_context, funcdef):
+def _search_function_executions(evaluator, module_context, funcdef, string_name):
     """
     Returns a list of param names.
     """
-    func_string_name = funcdef.name.value
     compare_node = funcdef
-    if func_string_name == '__init__':
+    if string_name == '__init__':
         cls = get_parent_scope(funcdef)
         if isinstance(cls, tree.Class):
-            func_string_name = cls.name.value
+            string_name = cls.name.value
             compare_node = cls
 
     found_executions = False
     i = 0
     for for_mod_context in imports.get_modules_containing_name(
-            evaluator, [module_context], func_string_name):
+            evaluator, [module_context], string_name):
         if not isinstance(module_context, ModuleContext):
             return
-        for name, trailer in _get_possible_nodes(for_mod_context, func_string_name):
+        for name, trailer in _get_possible_nodes(for_mod_context, string_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion
@@ -137,6 +143,18 @@ def _search_function_executions(evaluator, module_context, funcdef):
         # good to process. This is a speed optimization.
         if found_executions:
             return
+
+
+def _get_lambda_name(node):
+    stmt = node.parent
+    if stmt.type == 'expr_stmt':
+        first_operator = next(stmt.yield_operators(), None)
+        if first_operator == '=':
+            first = stmt.children[0]
+            if first.type == 'name':
+                return first.value
+
+    return None
 
 
 def _get_possible_nodes(module_context, func_string_name):
@@ -160,9 +178,7 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
         if arglist == ')':
             arglist = None
         args = TreeArguments(evaluator, context, arglist, trailer)
-        if value_node.type == 'funcdef':
-            yield value.get_function_execution(args)
-        else:
+        if value_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 evaluator,
                 value.parent_context,
@@ -171,6 +187,8 @@ def _check_name_for_execution(evaluator, context, compare_node, name, trailer):
             )
             for execution in created_instance.create_init_executions():
                 yield execution
+        else:
+            yield value.get_function_execution(args)
 
     for value in evaluator.goto_definitions(context, name):
         value_node = value.tree_node
