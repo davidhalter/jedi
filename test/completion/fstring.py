@@ -15,3 +15,10 @@ Fr'{Foo.bar'
 Fr'{Foo.bar
 #? ['bar']
 Fr'{Foo.bar
+#? ['Exception']
+F"{Excepti
+
+#? 8 Foo
+Fr'a{Foo.bar'
+#? str()
+Fr'sasdf'
