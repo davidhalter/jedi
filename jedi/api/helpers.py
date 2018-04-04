@@ -11,6 +11,8 @@ from parso.python import tree
 from jedi._compatibility import u
 from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
+from jedi.evaluate.compiled import get_string_context_set
+from jedi.evaluate.base_context import ContextSet
 from jedi.cache import time_cache
 
 
@@ -193,6 +195,8 @@ def evaluate_goto_definition(evaluator, context, leaf):
         return evaluate_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         return eval_atom(context, leaf)
+    elif leaf.type == 'fstring_string':
+        return get_string_context_set(evaluator)
     return []
 
 

@@ -1,9 +1,15 @@
 import pytest
+from jedi.evaluate.context import CompiledInstance
 
 
-def _eval_literal(Script, code):
+def _eval_literal(Script, code, *, is_fstring=False):
     def_, = Script(code).goto_definitions()
-    return def_._name._context.get_safe_value()
+    if is_fstring:
+        assert def_.name == 'str'
+        assert isinstance(def_._name._context, CompiledInstance)
+        return ''
+    else:
+        return def_._name._context.get_safe_value()
 
 
 def test_f_strings(Script, environment):
@@ -14,10 +20,10 @@ def test_f_strings(Script, environment):
     if environment.version_info < (3, 6):
         pytest.skip()
 
-    assert _eval_literal(Script, 'f"asdf"') == ''
-    assert _eval_literal(Script, 'f"{asdf}"') == ''
-    assert _eval_literal(Script, 'F"{asdf}"') == ''
-    assert _eval_literal(Script, 'rF"{asdf}"') == ''
+    assert _eval_literal(Script, 'f"asdf"', is_fstring=True) == ''
+    assert _eval_literal(Script, 'f"{asdf} "', is_fstring=True) == ''
+    assert _eval_literal(Script, 'F"{asdf} "', is_fstring=True) == ''
+    assert _eval_literal(Script, 'rF"{asdf} "', is_fstring=True) == ''
 
 
 def test_rb_strings(Script, environment):

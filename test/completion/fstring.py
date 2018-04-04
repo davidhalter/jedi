@@ -23,5 +23,5 @@ Fr'a{Foo.bar'
 #? str()
 Fr'sasdf'
 
-#? 7 str()
+#? 7
 Fr'''sasdf''' + ''

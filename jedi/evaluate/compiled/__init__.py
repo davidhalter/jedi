@@ -28,6 +28,10 @@ def get_special_object(evaluator, identifier):
     )
 
 
+def get_string_context_set(evaluator):
+    return builtin_from_name(evaluator, u'str').execute_evaluated()
+
+
 def load_module(evaluator, **kwargs):
     access_path = evaluator.compiled_subprocess.load_module(**kwargs)
     if access_path is None:
