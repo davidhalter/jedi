@@ -15,7 +15,7 @@ import parso
 
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
-_SUPPORTED_PYTHONS = ['2.7', '3.3', '3.4', '3.5', '3.6']
+_SUPPORTED_PYTHONS = ['3.6', '3.5', '3.4', '3.3', '2.7']
 
 
 class InvalidPythonEnvironment(Exception):
@@ -55,7 +55,8 @@ class Environment(_BaseEnvironment):
         return _VersionInfo(*[int(m) for m in match.groups()])
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._base_path)
+        version = '.'.join(str(i) for i in self.version_info)
+        return '<%s: %s in %s>' % (self.__class__.__name__, version, self._base_path)
 
     def get_evaluator_subprocess(self, evaluator):
         return EvaluatorSubprocess(evaluator, self._get_subprocess())
@@ -105,10 +106,18 @@ def _get_virtual_env_from_var():
 
 
 def get_default_environment():
+    """
+    Tries to return an active VirtualEnv. If there is no VIRTUAL_ENV variable
+    set it will return the latest Python version installed on the system. This
+    makes it possible to use as many new Python features as possible when using
+    autocompletion and other functionality.
+    """
     virtual_env = _get_virtual_env_from_var()
     if virtual_env is not None:
         return virtual_env
-    return DefaultEnvironment()
+
+    for environment in find_python_environments():
+        return environment
 
 
 def find_virtualenvs(paths=None, **kwargs):
@@ -151,11 +160,13 @@ def find_virtualenvs(paths=None, **kwargs):
 def find_python_environments():
     """
     Ignores virtualenvs and returns the different Python version environments.
+
+    The environments are sorted from latest to oldest Python version.
     """
     current_version = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
     for version_string in _SUPPORTED_PYTHONS:
         if version_string == current_version:
-            yield get_default_environment()
+            yield DefaultEnvironment()
         else:
             try:
                 yield get_python_environment('python' + version_string)
