@@ -68,7 +68,7 @@ def eval_node(context, element):
     debug.dbg('eval_node %s@%s', element, element.start_pos)
     evaluator = context.evaluator
     typ = element.type
-    if typ in ('name', 'number', 'string', 'atom'):
+    if typ in ('name', 'number', 'string', 'atom', 'strings'):
         return eval_atom(context, element)
     elif typ == 'keyword':
         # For False/True/None
@@ -211,17 +211,17 @@ def eval_atom(context, atom):
     elif isinstance(atom, tree.Literal):
         string = context.evaluator.compiled_subprocess.safe_literal_eval(atom.value)
         return ContextSet(compiled.create_simple_object(context.evaluator, string))
+    elif atom.type == 'strings':
+        # Will be multiple string.
+        context_set = eval_atom(context, atom.children[0])
+        for string in atom.children[1:]:
+            right = eval_atom(context, string)
+            context_set = _eval_comparison(context.evaluator, context, context_set, u'+', right)
+        return context_set
     else:
         c = atom.children
-        if c[0].type == 'string':
-            # Will be one string.
-            context_set = eval_atom(context, c[0])
-            for string in c[1:]:
-                right = eval_atom(context, string)
-                context_set = _eval_comparison(context.evaluator, context, context_set, u'+', right)
-            return context_set
         # Parentheses without commas are not tuples.
-        elif c[0] == '(' and not len(c) == 2 \
+        if c[0] == '(' and not len(c) == 2 \
                 and not(c[1].type == 'testlist_comp' and
                         len(c[1].children) > 1):
             return context.eval_node(c[1])
