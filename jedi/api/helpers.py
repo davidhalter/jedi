@@ -195,7 +195,7 @@ def evaluate_goto_definition(evaluator, context, leaf):
         return evaluate_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         return eval_atom(context, leaf)
-    elif leaf.type == 'fstring_string':
+    elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
         return get_string_context_set(evaluator)
     return []
 
