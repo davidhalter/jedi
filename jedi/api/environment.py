@@ -31,8 +31,8 @@ class _BaseEnvironment(object):
 
 class Environment(_BaseEnvironment):
     def __init__(self, path, executable):
-        self._base_path = path
-        self._executable = executable
+        self._base_path = os.path.abspath(path)
+        self._executable = os.path.abspath(executable)
         self.version_info = self._get_version()
 
     def _get_version(self):
@@ -50,7 +50,7 @@ class Environment(_BaseEnvironment):
         output = stdout + stderr
         match = re.match(br'Python (\d+)\.(\d+)\.(\d+)', output)
         if match is None:
-            raise InvalidPythonEnvironment()
+            raise InvalidPythonEnvironment("--version not working")
 
         return _VersionInfo(*[int(m) for m in match.groups()])
 
@@ -107,7 +107,7 @@ def _get_virtual_env_from_var():
 
 def get_default_environment():
     """
-    Tries to return an active VirtualEnv. If there is no VIRTUAL_ENV variable
+    Tries to return an active Virtualenv. If there is no VIRTUAL_ENV variable
     set it will return the latest Python version installed on the system. This
     makes it possible to use as many new Python features as possible when using
     autocompletion and other functionality.
@@ -122,9 +122,10 @@ def get_default_environment():
 
 def find_virtualenvs(paths=None, **kwargs):
     """
-    :param paths: A list of paths in your file system that this function will
-        use to search virtual env's. It will exclusively search in these paths
-        and potentially execute the Python binaries on these paths.
+    :param paths: A list of paths in your file system to be scanned for
+        Virtualenvs. It will search in these paths and potentially execute the
+        Python binaries. Also the VIRTUAL_ENV variable will be checked if it
+        contains a valid Virtualenv.
     :param safe: Default True. In case this is False, it will allow this
         function to execute potential `python` environments. An attacker might
         be able to drop an executable in a path this function is searching by
@@ -137,22 +138,30 @@ def find_virtualenvs(paths=None, **kwargs):
 
         _used_paths = set()
 
+        # Using this variable should be safe, because attackers might be able
+        # to drop files (via git) but not environment variables.
         virtual_env = _get_virtual_env_from_var()
         if virtual_env is not None:
             yield virtual_env
             _used_paths.add(virtual_env._base_path)
 
-        for path in paths:
-            if path in _used_paths:
-                # A path shouldn't be evaluated twice.
+        for directory in paths:
+            if not os.path.isdir(directory):
                 continue
-            _used_paths.add(path)
 
-            try:
-                executable = _get_executable_path(path, safe=safe)
-                yield Environment(path, executable)
-            except InvalidPythonEnvironment:
-                pass
+            directory = os.path.abspath(directory)
+            for path in os.listdir(directory):
+                path = os.path.join(directory, path)
+                if path in _used_paths:
+                    # A path shouldn't be evaluated twice.
+                    continue
+                _used_paths.add(path)
+
+                try:
+                    executable = _get_executable_path(path, safe=safe)
+                    yield Environment(path, executable)
+                except InvalidPythonEnvironment:
+                    pass
 
     return py27_comp(paths, **kwargs)
 

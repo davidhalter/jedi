@@ -1,12 +1,13 @@
 import os
 from contextlib import contextmanager
+from distutils.spawn import find_executable
 
 import pytest
 
 import jedi
 from jedi._compatibility import py_version
 from jedi.api.environment import Environment, get_default_environment, \
-    InvalidPythonEnvironment, find_python_environments
+    InvalidPythonEnvironment, find_python_environments, find_virtualenvs
 
 
 def test_sys_path():
@@ -30,7 +31,10 @@ def test_find_python_environments():
     ['2.7', '3.3', '3.4', '3.5', '3.6', '3.7']
 )
 def test_versions(version):
-    executable = 'python' + version
+    executable_name = 'python' + version
+    executable = find_executable(executable_name)
+    if executable is None:
+        executable = executable_name
     try:
         env = Environment('some path', executable)
     except InvalidPythonEnvironment:
@@ -40,7 +44,7 @@ def test_versions(version):
         return
 
     sys_path = env.get_sys_path()
-    assert any(executable in p for p in sys_path)
+    assert any(executable_name in p for p in sys_path)
 
 
 def test_load_module(evaluator):
@@ -109,3 +113,8 @@ def test_not_existing_virtualenv():
 def test_working_venv(venv_path):
     with set_environment_variable('VIRTUAL_ENV', venv_path):
         assert get_default_environment()._base_path == venv_path
+
+
+def test_scanning_venvs(venv_path):
+    parent_dir = os.path.dirname(venv_path)
+    assert any(venv._base_path == venv_path for venv in find_virtualenvs([parent_dir]))
