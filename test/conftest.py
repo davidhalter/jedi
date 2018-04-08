@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 
 import pytest
 
@@ -123,6 +124,33 @@ class StaticAnalysisCase(object):
 
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))
+
+
+@pytest.fixture()
+def venv_path(tmpdir, environment):
+    if environment.version_info.major < 3:
+        pytest.skip("python -m venv does not exist in Python 2")
+
+    dirname = os.path.join(tmpdir.dirname, 'venv')
+
+    # We cannot use the Python from tox because tox creates virtualenvs and
+    # they have different site.py files that work differently than the default
+    # ones. Instead, we find the real Python executable by printing the value
+    # of sys.base_prefix or sys.real_prefix if we are in a virtualenv.
+    output = subprocess.check_output([
+        environment._executable, "-c",
+        "import sys; "
+        "print(sys.real_prefix if hasattr(sys, 'real_prefix') else sys.base_prefix)"
+    ])
+    prefix = output.rstrip().decode('utf8')
+    if os.name == 'nt':
+        executable_path = os.path.join(prefix, 'python')
+    else:
+        executable_name = os.path.basename(environment._executable)
+        executable_path = os.path.join(prefix, 'bin', executable_name)
+
+    subprocess.call([executable_path, '-m', 'venv', dirname])
+    return dirname
 
 
 @pytest.fixture()

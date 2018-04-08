@@ -1,5 +1,4 @@
 import os
-import sys
 from contextlib import contextmanager
 
 import pytest
@@ -100,6 +99,13 @@ def set_environment_variable(name, value):
             os.environ[name] = tmp
 
 
-def test_virtualenv():
-    with set_environment_variable('VIRTUAL_ENV', '/foo/bar/jedi_baz'):
-        assert get_default_environment()._executable == sys.executable
+def test_not_existing_virtualenv():
+    """Should not match the path that was given"""
+    path = '/foo/bar/jedi_baz'
+    with set_environment_variable('VIRTUAL_ENV', path):
+        assert get_default_environment()._executable != path
+
+
+def test_working_venv(venv_path):
+    with set_environment_variable('VIRTUAL_ENV', venv_path):
+        assert get_default_environment()._base_path == venv_path

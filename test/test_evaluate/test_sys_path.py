@@ -2,11 +2,8 @@ import os
 from glob import glob
 import sys
 import shutil
-import subprocess
 
-import pytest
 from jedi.evaluate import sys_path
-from jedi import find_virtualenvs
 from jedi.api.environment import Environment
 
 
@@ -29,35 +26,11 @@ def test_paths_from_assignment(Script):
     assert paths('sys.path, other = ["a"], 2') == set()
 
 
-def test_venv_and_pths(tmpdir, environment):
-    if environment.version_info.major < 3:
-        pytest.skip("python -m venv does not exist in Python 2")
-
+def test_venv_and_pths(venv_path):
     pjoin = os.path.join
 
-    dirname = pjoin(tmpdir.dirname, 'venv')
-
-    # We cannot use the Python from tox because tox creates virtualenvs and they
-    # have different site.py files that work differently than the default ones.
-    # Instead, we find the real Python executable by printing the value of
-    # sys.base_prefix or sys.real_prefix if we are in a virtualenv.
-    output = subprocess.check_output([
-      environment._executable, "-c",
-      "import sys; "
-      "print(sys.real_prefix if hasattr(sys, 'real_prefix') else "
-            "sys.base_prefix)"
-    ])
-    prefix = output.rstrip().decode('utf8')
-    if os.name == 'nt':
-        executable_path = os.path.join(prefix, 'python')
-    else:
-        executable_name = os.path.basename(environment._executable)
-        executable_path = os.path.join(prefix, 'bin', executable_name)
-
-    subprocess.call([executable_path, '-m', 'venv', dirname])
-
     bin_name = 'Scripts' if os.name == 'nt' else 'bin'
-    virtualenv = Environment(dirname, pjoin(dirname, bin_name, 'python'))
+    virtualenv = Environment(venv_path, pjoin(venv_path, bin_name, 'python'))
 
     CUR_DIR = os.path.dirname(__file__)
     site_pkg_path = pjoin(virtualenv._base_path, 'lib')
