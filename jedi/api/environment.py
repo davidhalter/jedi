@@ -183,12 +183,41 @@ def find_python_environments():
                 pass
 
 
-def get_python_environment(python_name):
-    exe = find_executable(python_name)
-    if exe is None:
-        raise InvalidPythonEnvironment("This executable doesn't exist.")
-    path = os.path.dirname(os.path.dirname(exe))
-    return Environment(path, exe)
+# TODO: the logic to find the Python prefix is much more complicated than that.
+# See Modules/getpath.c for UNIX and PC/getpathp.c for Windows in CPython's
+# source code. A solution would be to deduce it by running the Python
+# interpreter and printing the value of sys.prefix.
+def _get_python_prefix(executable):
+    if os.name != 'nt':
+        return os.path.dirname(os.path.dirname(executable))
+    landmark = os.path.join('Lib', 'os.py')
+    prefix = os.path.dirname(executable)
+    while prefix:
+        if os.path.join(prefix, landmark):
+            return prefix
+        prefix = os.path.dirname(prefix)
+    raise InvalidPythonEnvironment(
+        "Cannot find prefix of executable %s." % executable)
+
+
+# TODO: this function should probably return a list of environments since
+# multiple Python installations can be found on a system for the same version.
+def get_python_environment(python):
+    """
+    Return the first Python environment found for a given path or for a string
+    of the form 'pythonX.Y' where X and Y are the major and minor versions of
+    Python.
+    """
+    exe = find_executable(python)
+    if exe:
+        return Environment(_get_python_prefix(exe), exe)
+    if os.name == 'nt':
+        match = re.search('python(\d+\.\d+)$', python)
+        if match:
+            version = match.group(1)
+            for prefix, exe in _get_executables_from_windows_registry(version):
+                return Environment(prefix, exe)
+    raise InvalidPythonEnvironment("Cannot find executable %s." % python)
 
 
 def create_environment(path):
@@ -224,6 +253,33 @@ def _get_executable_path(path, safe=True):
     if safe and not _is_safe(python):
         raise InvalidPythonEnvironment("The python binary is potentially unsafe.")
     return python
+
+
+def _get_executables_from_windows_registry(version):
+    # The winreg module is named _winreg on Python 2.
+    try:
+      import winreg
+    except ImportError:
+      import _winreg as winreg
+
+    # TODO: support Python Anaconda.
+    sub_keys = [
+      r'SOFTWARE\Python\PythonCore\{version}\InstallPath',
+      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}\InstallPath',
+      r'SOFTWARE\Python\PythonCore\{version}-32\InstallPath',
+      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}-32\InstallPath'
+    ]
+    for root_key in [winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE]:
+        for sub_key in sub_keys:
+            sub_key = sub_key.format(version=version)
+            try:
+                with winreg.OpenKey(root_key, sub_key) as key:
+                    prefix = winreg.QueryValueEx(key, '')[0]
+                    exe = os.path.join(prefix, 'python.exe')
+                    if os.path.isfile(exe):
+                        yield prefix, exe
+            except WindowsError:
+                pass
 
 
 def _is_safe(executable_path):

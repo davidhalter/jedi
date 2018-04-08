@@ -1,13 +1,12 @@
 import os
 from contextlib import contextmanager
-from distutils.spawn import find_executable
 
 import pytest
 
 import jedi
 from jedi._compatibility import py_version
-from jedi.api.environment import Environment, get_default_environment, \
-    InvalidPythonEnvironment, find_python_environments, find_virtualenvs
+from jedi.api.environment import get_default_environment, \
+    InvalidPythonEnvironment, find_python_environments, get_python_environment
 
 
 def test_sys_path():
@@ -24,27 +23,21 @@ def test_find_python_environments():
         assert parser_version[:2] == env.version_info[:2]
 
 
-# Cannot deduce the environment from Python executable name on Windows.
-@pytest.mark.skipif("os.name == 'nt'")
 @pytest.mark.parametrize(
     'version',
     ['2.7', '3.3', '3.4', '3.5', '3.6', '3.7']
 )
 def test_versions(version):
-    executable_name = 'python' + version
-    executable = find_executable(executable_name)
-    if executable is None:
-        executable = executable_name
     try:
-        env = Environment('some path', executable)
+        env = get_python_environment('python' + version)
     except InvalidPythonEnvironment:
         if int(version.replace('.', '')) == py_version:
             # At least the current version has to work
             raise
-        return
+        pytest.skip()
 
-    sys_path = env.get_sys_path()
-    assert any(executable_name in p for p in sys_path)
+    assert version == str(env.version_info[0]) + '.' + str(env.version_info[1])
+    assert env.get_sys_path()
 
 
 def test_load_module(evaluator):
