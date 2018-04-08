@@ -2,7 +2,7 @@ import pytest
 from jedi.evaluate.context import CompiledInstance
 
 
-def _eval_literal(Script, code, *, is_fstring=False):
+def _eval_literal(Script, code, is_fstring=False):
     def_, = Script(code).goto_definitions()
     if is_fstring:
         assert def_.name == 'str'
