@@ -9,6 +9,14 @@ if [[ $JEDI_TEST_ENVIRONMENT == "35" ]]; then
     VERSION=3.5
     DOWNLOAD=1
 fi
+# 3.6 is already installed on Travis but not as root. This is problematic for
+# our virtualenv tests because we require the Python used to create a virtual
+# environment to be owned by root (or to be in a safe location which is not the
+# case here).
+if [[ $JEDI_TEST_ENVIRONMENT == "36" ]]; then
+    VERSION=3.6
+    DOWNLOAD=1
+fi
 
 if [[ -z $VERSION ]]; then
     echo "Environments should already be installed"

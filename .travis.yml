@@ -14,6 +14,12 @@ env:
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=36
 
+addons:
+  apt:
+    packages:
+     # Required to properly create a virtual environment with system Python 3.4.
+     - python3.4-venv
+
 matrix:
   allow_failures:
     - python: pypy
@@ -39,8 +45,6 @@ before_install:
     # something twice, but it doesn't really matter, because they are appended.
     - export PATH=$PATH:/opt/python/3.3/bin
     - export PATH=$PATH:/opt/python/3.5/bin
-    # 3.6 was not installed manually, but already is on the system. However
-    # it's not on path (unless 3.6 is selected).
     - export PATH=$PATH:/opt/python/3.6/bin
 install:
     - pip install --quiet tox-travis
