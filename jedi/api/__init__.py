@@ -152,7 +152,7 @@ class Script(object):
             self._evaluator, self._module_node, self.path,
             code_lines=self._code_lines
         )
-        imports.add_module(self._evaluator, name, module)
+        imports.add_module_to_cache(self._evaluator, name, module)
         return module
 
     def __repr__(self):

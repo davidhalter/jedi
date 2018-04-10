@@ -501,13 +501,13 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
         else:
             module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
 
-    if module_name is not None and module is not None:
-        add_module(evaluator, module_name, module, safe=safe_module_name)
+    if module is not None:
+        add_module_to_cache(evaluator, module_name, module, safe=safe_module_name)
 
     return module
 
 
-def add_module(evaluator, module_name, module, safe=False):
+def add_module_to_cache(evaluator, module_name, module, safe=False):
     if not safe and '.' not in module_name:
         # We cannot add paths with dots, because that would collide with
         # the sepatator dots for nested packages. Therefore we return

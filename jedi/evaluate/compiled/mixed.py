@@ -218,7 +218,8 @@ def _create(evaluator, access_handle, parent_context, *args):
         )
         # TODO this __name__ is probably wrong.
         name = compiled_object.get_root_context().py__name__()
-        imports.add_module(evaluator, name, module_context)
+        if name is not None:
+            imports.add_module_to_cache(evaluator, name, module_context)
 
     tree_context = module_context.create_context(
         tree_node,
