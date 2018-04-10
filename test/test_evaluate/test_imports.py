@@ -8,6 +8,7 @@ import os
 import pytest
 
 from jedi._compatibility import find_module_py33, find_module
+from jedi.evaluate import compiled
 from ..helpers import cwd_at
 
 
@@ -242,3 +243,11 @@ def test_path_issues(Script):
     """
     source = '''from datetime import '''
     assert Script(source).completions()
+
+
+def test_compiled_import_none(monkeypatch, Script):
+    """
+    Related to #1079. An import might somehow fail and return None.
+    """
+    monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
+    assert not Script('import sys').goto_definitions()
