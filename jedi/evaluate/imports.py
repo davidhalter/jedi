@@ -501,7 +501,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
         else:
             module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
 
-    if module is not None:
+    if module is not None and module_name is not None:
         add_module_to_cache(evaluator, module_name, module, safe=safe_module_name)
 
     return module
