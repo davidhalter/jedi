@@ -500,19 +500,21 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
             )
         else:
             module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
-    add_module(evaluator, module_name, module, safe=safe_module_name)
+
+    if module_name is not None and module is not None:
+        add_module(evaluator, module_name, module, safe=safe_module_name)
+
     return module
 
 
 def add_module(evaluator, module_name, module, safe=False):
-    if module_name is not None:
-        if not safe and '.' not in module_name:
-            # We cannot add paths with dots, because that would collide with
-            # the sepatator dots for nested packages. Therefore we return
-            # `__main__` in ModuleWrapper.py__name__(), which is similar to
-            # Python behavior.
-            return
-        evaluator.module_cache.add(module, module_name)
+    if not safe and '.' not in module_name:
+        # We cannot add paths with dots, because that would collide with
+        # the sepatator dots for nested packages. Therefore we return
+        # `__main__` in ModuleWrapper.py__name__(), which is similar to
+        # Python behavior.
+        return
+    evaluator.module_cache.add(module, module_name)
 
 
 def get_modules_containing_name(evaluator, modules, name):
