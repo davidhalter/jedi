@@ -125,7 +125,7 @@ from jedi._compatibility import unicode, is_py3
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
-from jedi.api.environment import get_default_environment
+from jedi.api.environment import get_default_environment, get_python_environment
 
 
 TEST_COMPLETIONS = 0
@@ -372,7 +372,7 @@ An alternative testing format, which is much more hacky, but very nice to
 work with.
 
 Usage:
-    run.py [--pdb] [--debug] [--thirdparty] [<rest>...]
+    run.py [--pdb] [--debug] [--thirdparty] [--env <dotted>] [<rest>...]
     run.py --help
 
 Options:
@@ -380,6 +380,7 @@ Options:
     --pdb           Enable pdb debugging on fail.
     -d, --debug     Enable text output debugging (please install ``colorama``).
     --thirdparty    Also run thirdparty tests (in ``completion/thirdparty``).
+    --env <dotted>  A Python version, like 2.7, 3.4, etc.
 """
 if __name__ == '__main__':
     import docopt
@@ -433,7 +434,12 @@ if __name__ == '__main__':
                   % (case.line_nr - 1, actual, desired))
             return 1
 
-    environment = get_default_environment()
+    if arguments['--env']:
+        environment = get_python_environment('python' + arguments['--env'])
+    else:
+        # Will be 3.6.
+        environment = get_default_environment()
+
     import traceback
     current = cases[0].path if cases else None
     count = fails = 0
