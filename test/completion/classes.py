@@ -216,6 +216,32 @@ class Dude(classgetter()):
         self.s
 
 # -----------------
+# multiple inheritance # 1071
+# -----------------
+
+class FactorMixin(object):
+    FACTOR_1 = 0.1
+
+class Calc(object):
+    def sum(self, a, b):
+        self.xxx = 3
+        return a + b
+
+class BetterCalc(Calc, FactorMixin):
+    def multiply_factor(self, a):
+        return a * self.FACTOR_1
+
+calc = BetterCalc()
+#? ['sum']
+calc.sum
+#? ['multiply_factor']
+calc.multip
+#? ['FACTOR_1']
+calc.FACTOR_1
+#? ['xxx']
+calc.xxx
+
+# -----------------
 # __call__
 # -----------------
 

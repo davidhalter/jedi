@@ -101,7 +101,9 @@ class TreeArguments(AbstractArguments):
         if self.argument_node is None:
             return
 
-        if not (self.argument_node.type == 'arglist' or (
+        # Allow testlist here as well for Python2's class inheritance
+        # definitions.
+        if not (self.argument_node.type in ('arglist', 'testlist') or (
                 # in python 3.5 **arg is an argument, not arglist
                 (self.argument_node.type == 'argument') and
                  self.argument_node.children[0] in ('*', '**'))):
