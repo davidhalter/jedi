@@ -14,6 +14,12 @@ env:
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=36
 
+addons:
+  apt:
+    packages:
+     # Required to properly create a virtual environment with system Python 3.4.
+     - python3.4-venv
+
 matrix:
   allow_failures:
     - python: pypy

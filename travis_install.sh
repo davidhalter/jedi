@@ -1,6 +1,13 @@
 #! /usr/bin/env bash
 set -e
 
+# 3.6 is already installed on Travis but not as root. This is problematic for
+# our virtualenv tests because we require the Python used to create a virtual
+# environment to be owned by root (or to be in a safe location which is not the
+# case here).
+sudo chown root: /opt/python/3.6/bin/python
+sudo chown root: /opt/python/3.6.3/bin/python
+
 if [[ $JEDI_TEST_ENVIRONMENT == "33" ]]; then
     VERSION=3.3
     DOWNLOAD=1

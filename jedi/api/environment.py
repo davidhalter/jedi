@@ -239,14 +239,11 @@ def _get_executable_path(path, safe=True):
     """
 
     if os.name == 'nt':
-        bin_name = 'Scripts'
-        extension = '.exe'
+        activate = os.path.join(path, 'Scripts', 'activate.bat')
+        python = os.path.join(path, 'Scripts', 'python.exe')
     else:
-        bin_name = 'bin'
-        extension = ''
-    bin_folder = os.path.join(path, bin_name)
-    activate = os.path.join(bin_folder, 'activate')
-    python = os.path.join(bin_folder, 'python' + extension)
+        activate = os.path.join(path, 'bin', 'activate')
+        python = os.path.join(path, 'bin', 'python')
     if not all(os.path.exists(p) for p in (activate, python)):
         raise InvalidPythonEnvironment("One of bin/activate and bin/python is missing.")
 
