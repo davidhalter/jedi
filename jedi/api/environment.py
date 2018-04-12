@@ -306,7 +306,7 @@ def _is_safe(executable_path):
         # it's likely an attacker or some Python that was not properly
         # installed in the system.
         for environment in find_python_environments():
-            if environment.executable == executable_path:
+            if environment.executable == real_path:
                 return True
         return False
 
