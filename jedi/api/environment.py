@@ -90,9 +90,9 @@ class _Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
-class DefaultEnvironment(_Environment):
+class SameEnvironment(_Environment):
     def __init__(self):
-        super(DefaultEnvironment, self).__init__(sys.prefix, sys.executable)
+        super(SameEnvironment, self).__init__(sys.prefix, sys.executable)
 
     def _get_version(self):
         return _VersionInfo(*sys.version_info[:3])
@@ -113,7 +113,7 @@ def _get_virtual_env_from_var():
     var = os.environ.get('VIRTUAL_ENV')
     if var is not None:
         if var == sys.prefix:
-            return DefaultEnvironment()
+            return SameEnvironment()
 
         try:
             return create_environment(var)
@@ -191,7 +191,7 @@ def find_python_environments():
     current_version = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
     for version_string in _SUPPORTED_PYTHONS:
         if version_string == current_version:
-            yield DefaultEnvironment()
+            yield SameEnvironment()
         else:
             try:
                 yield get_python_environment('python' + version_string)

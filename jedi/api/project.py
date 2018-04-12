@@ -2,7 +2,7 @@ import os
 import json
 
 from jedi._compatibility import FileNotFoundError, NotADirectoryError
-from jedi.api.environment import DefaultEnvironment, \
+from jedi.api.environment import SameEnvironment, \
     get_default_environment, from_executable
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
@@ -70,7 +70,7 @@ class Project(object):
         def py2_comp(path, environment=None, sys_path=None,
                      smart_sys_path=True, _django=False):
             self._path = path
-            if isinstance(environment, DefaultEnvironment):
+            if isinstance(environment, SameEnvironment):
                 self._environment = environment
                 self._executable = environment._executable
 
