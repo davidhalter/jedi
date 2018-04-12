@@ -220,12 +220,13 @@ def get_python_environment(python):
     raise InvalidPythonEnvironment("Cannot find executable %s." % python)
 
 
-def create_environment(path):
+def create_environment(path, safe=False):
     """
     Make it possible to create an environment by hand.
+
+    May raise InvalidPythonEnvironment.
     """
-    # Since this path is provided by the user, just use unsafe execution.
-    return Environment(path, _get_executable_path(path, safe=False))
+    return Environment(path, _get_executable_path(path, safe=safe))
 
 
 def from_executable(executable):
@@ -280,27 +281,37 @@ def _get_executables_from_windows_registry(version):
 
 
 def _is_safe(executable_path):
+    # Resolve sym links. A venv typically is a symlink to a known Python
+    # binary. Only virtualenvs copy symlinks around.
     real_path = os.path.realpath(executable_path)
-    if _is_admin():
-        # In case we are root or are part of Windows, just be conservative and
-        # only execute known paths.
-        # TODO add a proper Windows path.
-        return real_path.startswith('/usr/bin')
+    if os.name == 'nt':
+        # Just check the list of known Python versions. If it's not in there,
+        # it's likely an attacker or some Python that was not properly
+        # installed in the system.
+        for environment in find_python_environments():
+            if environment._executable == executable_path:
+                return True
+        return False
+    else:
+        if _is_unix_admin():
+            # In case we are root, just be conservative and
+            # only execute known paths.
+            return any(real_path.startswith(p) for p in '/usr/bin')
 
-    uid = os.stat(real_path).st_uid
-    # The interpreter needs to be owned by root. This means that it wasn't
-    # written by a user and therefore attacking Jedi is not as simple.
-    # The attack could look like the following:
-    # 1. A user clones a repository.
-    # 2. The repository has an inocent looking folder called foobar. jedi
-    #    searches for the folder and executes foobar/bin/python --version if
-    #    there's also a foobar/bin/activate.
-    # 3. The bin/python is obviously not a python script but a bash script or
-    #    whatever the attacker wants.
-    return uid == 0
+        uid = os.stat(real_path).st_uid
+        # The interpreter needs to be owned by root. This means that it wasn't
+        # written by a user and therefore attacking Jedi is not as simple.
+        # The attack could look like the following:
+        # 1. A user clones a repository.
+        # 2. The repository has an inocent looking folder called foobar. jedi
+        #    searches for the folder and executes foobar/bin/python --version if
+        #    there's also a foobar/bin/activate.
+        # 3. The bin/python is obviously not a python script but a bash script or
+        #    whatever the attacker wants.
+        return uid == 0
 
 
-def _is_admin():
+def _is_unix_admin():
     try:
         return os.getuid() == 0
     except AttributeError:
