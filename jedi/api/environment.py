@@ -33,13 +33,17 @@ class _Environment(_BaseEnvironment):
     def __init__(self, path, executable):
         self.path = os.path.abspath(path)
         """
+        The path to an environment, matches ``sys.prefix``.
         """
         self.executable = os.path.abspath(executable)
+        """
+        The Python executable, matches ``sys.executable``.
+        """
         self.version_info = self._get_version()
         """
 
-        :param version_info: Like sys.version_info. A tuple to show the current Environment's Python
-            version.
+        Like ``sys.version_info``. A tuple to show the current Environment's
+        Python version.
         """
 
     def _get_version(self):
