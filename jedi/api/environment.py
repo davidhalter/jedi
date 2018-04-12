@@ -30,6 +30,11 @@ class _BaseEnvironment(object):
 
 
 class _Environment(_BaseEnvironment):
+    """
+    This class is supposed to be created by internal Jedi architecture. You
+    should not create it directly. Please use create_environment or the other
+    functions instead.
+    """
     def __init__(self, path, executable):
         self.path = os.path.abspath(path)
         """
