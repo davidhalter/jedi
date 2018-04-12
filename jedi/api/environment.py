@@ -31,13 +31,13 @@ class _BaseEnvironment(object):
 
 class Environment(_BaseEnvironment):
     def __init__(self, path, executable):
-        self._base_path = os.path.abspath(path)
-        self._executable = os.path.abspath(executable)
+        self.path = os.path.abspath(path)
+        self.executable = os.path.abspath(executable)
         self.version_info = self._get_version()
 
     def _get_version(self):
         try:
-            process = Popen([self._executable, '--version'], stdout=PIPE, stderr=PIPE)
+            process = Popen([self.executable, '--version'], stdout=PIPE, stderr=PIPE)
             stdout, stderr = process.communicate()
             retcode = process.poll()
             if retcode:
@@ -56,13 +56,13 @@ class Environment(_BaseEnvironment):
 
     def __repr__(self):
         version = '.'.join(str(i) for i in self.version_info)
-        return '<%s: %s in %s>' % (self.__class__.__name__, version, self._base_path)
+        return '<%s: %s in %s>' % (self.__class__.__name__, version, self.path)
 
     def get_evaluator_subprocess(self, evaluator):
         return EvaluatorSubprocess(evaluator, self._get_subprocess())
 
     def _get_subprocess(self):
-        return get_subprocess(self._executable)
+        return get_subprocess(self.executable)
 
     @memoize_method
     def get_sys_path(self):
@@ -143,7 +143,7 @@ def find_virtualenvs(paths=None, **kwargs):
         virtual_env = _get_virtual_env_from_var()
         if virtual_env is not None:
             yield virtual_env
-            _used_paths.add(virtual_env._base_path)
+            _used_paths.add(virtual_env.path)
 
         for directory in paths:
             if not os.path.isdir(directory):
@@ -289,7 +289,7 @@ def _is_safe(executable_path):
         # it's likely an attacker or some Python that was not properly
         # installed in the system.
         for environment in find_python_environments():
-            if environment._executable == executable_path:
+            if environment.executable == executable_path:
                 return True
         return False
     else:
