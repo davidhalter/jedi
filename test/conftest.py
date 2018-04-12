@@ -138,7 +138,7 @@ def venv_path(tmpdir, environment):
     # ones. Instead, we find the real Python executable by printing the value
     # of sys.base_prefix or sys.real_prefix if we are in a virtualenv.
     output = subprocess.check_output([
-        environment._executable, "-c",
+        environment.executable, "-c",
         "import sys; "
         "print(sys.real_prefix if hasattr(sys, 'real_prefix') else sys.base_prefix)"
     ])
@@ -146,7 +146,7 @@ def venv_path(tmpdir, environment):
     if os.name == 'nt':
         executable_path = os.path.join(prefix, 'python')
     else:
-        executable_name = os.path.basename(environment._executable)
+        executable_name = os.path.basename(environment.executable)
         executable_path = os.path.join(prefix, 'bin', executable_name)
 
     subprocess.call([executable_path, '-m', 'venv', dirname])

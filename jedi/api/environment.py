@@ -16,6 +16,7 @@ import parso
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
 _SUPPORTED_PYTHONS = ['3.6', '3.5', '3.4', '3.3', '2.7']
+_SAFE_PATHS = ['/usr/bin', '/usr/local/bin']
 
 
 class InvalidPythonEnvironment(Exception):
@@ -308,23 +309,23 @@ def _is_safe(executable_path):
             if environment.executable == executable_path:
                 return True
         return False
-    else:
-        if _is_unix_admin():
-            # In case we are root, just be conservative and
-            # only execute known paths.
-            return any(real_path.startswith(p) for p in '/usr/bin')
 
-        uid = os.stat(real_path).st_uid
-        # The interpreter needs to be owned by root. This means that it wasn't
-        # written by a user and therefore attacking Jedi is not as simple.
-        # The attack could look like the following:
-        # 1. A user clones a repository.
-        # 2. The repository has an inocent looking folder called foobar. jedi
-        #    searches for the folder and executes foobar/bin/python --version if
-        #    there's also a foobar/bin/activate.
-        # 3. The bin/python is obviously not a python script but a bash script or
-        #    whatever the attacker wants.
-        return uid == 0
+    if _is_unix_admin():
+        # In case we are root, just be conservative and
+        # only execute known paths.
+        return any(real_path.startswith(p) for p in _SAFE_PATHS)
+
+    uid = os.stat(real_path).st_uid
+    # The interpreter needs to be owned by root. This means that it wasn't
+    # written by a user and therefore attacking Jedi is not as simple.
+    # The attack could look like the following:
+    # 1. A user clones a repository.
+    # 2. The repository has an inocent looking folder called foobar. jedi
+    #    searches for the folder and executes foobar/bin/python --version if
+    #    there's also a foobar/bin/activate.
+    # 3. The bin/python is obviously not a python script but a bash script or
+    #    whatever the attacker wants.
+    return uid == 0
 
 
 def _is_unix_admin():

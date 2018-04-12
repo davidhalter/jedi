@@ -100,14 +100,14 @@ def test_not_existing_virtualenv():
     """Should not match the path that was given"""
     path = '/foo/bar/jedi_baz'
     with set_environment_variable('VIRTUAL_ENV', path):
-        assert get_default_environment()._executable != path
+        assert get_default_environment().executable != path
 
 
 def test_working_venv(venv_path):
     with set_environment_variable('VIRTUAL_ENV', venv_path):
-        assert get_default_environment()._base_path == venv_path
+        assert get_default_environment().path == venv_path
 
 
 def test_scanning_venvs(venv_path):
     parent_dir = os.path.dirname(venv_path)
-    assert any(venv._base_path == venv_path for venv in find_virtualenvs([parent_dir]))
+    assert any(venv.path == venv_path for venv in find_virtualenvs([parent_dir]))

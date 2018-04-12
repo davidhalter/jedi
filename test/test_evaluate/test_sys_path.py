@@ -4,7 +4,7 @@ import sys
 import shutil
 
 from jedi.evaluate import sys_path
-from jedi.api.environment import Environment
+from jedi.api.environment import create_environment
 
 
 def test_paths_from_assignment(Script):
@@ -29,11 +29,10 @@ def test_paths_from_assignment(Script):
 def test_venv_and_pths(venv_path):
     pjoin = os.path.join
 
-    bin_name = 'Scripts' if os.name == 'nt' else 'bin'
-    virtualenv = Environment(venv_path, pjoin(venv_path, bin_name, 'python'))
+    virtualenv = create_environment(venv_path)
 
     CUR_DIR = os.path.dirname(__file__)
-    site_pkg_path = pjoin(virtualenv._base_path, 'lib')
+    site_pkg_path = pjoin(virtualenv.path, 'lib')
     if os.name == 'nt':
         site_pkg_path = pjoin(site_pkg_path, 'site-packages')
     else:
