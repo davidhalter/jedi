@@ -29,11 +29,18 @@ class _BaseEnvironment(object):
         return parso.load_grammar(version=version_string)
 
 
-class Environment(_BaseEnvironment):
+class _Environment(_BaseEnvironment):
     def __init__(self, path, executable):
         self.path = os.path.abspath(path)
+        """
+        """
         self.executable = os.path.abspath(executable)
         self.version_info = self._get_version()
+        """
+
+        :param version_info: Like sys.version_info. A tuple to show the current Environment's Python
+            version.
+        """
 
     def _get_version(self):
         try:
@@ -74,7 +81,7 @@ class Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
-class DefaultEnvironment(Environment):
+class DefaultEnvironment(_Environment):
     def __init__(self):
         super(DefaultEnvironment, self).__init__(sys.prefix, sys.executable)
 
@@ -159,7 +166,7 @@ def find_virtualenvs(paths=None, **kwargs):
 
                 try:
                     executable = _get_executable_path(path, safe=safe)
-                    yield Environment(path, executable)
+                    yield _Environment(path, executable)
                 except InvalidPythonEnvironment:
                     pass
 
@@ -210,13 +217,13 @@ def get_python_environment(python):
     """
     exe = find_executable(python)
     if exe:
-        return Environment(_get_python_prefix(exe), exe)
+        return _Environment(_get_python_prefix(exe), exe)
     if os.name == 'nt':
         match = re.search('python(\d+\.\d+)$', python)
         if match:
             version = match.group(1)
             for prefix, exe in _get_executables_from_windows_registry(version):
-                return Environment(prefix, exe)
+                return _Environment(prefix, exe)
     raise InvalidPythonEnvironment("Cannot find executable %s." % python)
 
 
@@ -226,12 +233,12 @@ def create_environment(path, safe=False):
 
     May raise InvalidPythonEnvironment.
     """
-    return Environment(path, _get_executable_path(path, safe=safe))
+    return _Environment(path, _get_executable_path(path, safe=safe))
 
 
 def from_executable(executable):
     path = os.path.dirname(os.path.dirname(executable))
-    return Environment(path, executable)
+    return _Environment(path, executable)
 
 
 def _get_executable_path(path, safe=True):
