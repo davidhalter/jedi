@@ -508,4 +508,4 @@ class GeneralizedPopen(subprocess.Popen):
         creation_flags = 0
         if os.name == 'nt':
             creation_flags = subprocess.CREATE_NO_WINDOW
-        super(GeneralizedPopen, self).__init__(*args, creation_flags=creation_flags, **kwargs)
+        super(GeneralizedPopen, self).__init__(*args, creationflags=creation_flags, **kwargs)
