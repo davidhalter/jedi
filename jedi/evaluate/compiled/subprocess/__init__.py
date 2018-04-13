@@ -17,7 +17,7 @@ import traceback
 from functools import partial
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load
+    pickle_dump, pickle_load, GeneralizedPopen
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
@@ -138,7 +138,7 @@ class _CompiledSubprocess(object):
             _MAIN_PATH,
             os.path.dirname(os.path.dirname(parso_path))
         )
-        return subprocess.Popen(
+        return GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,

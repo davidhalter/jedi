@@ -10,6 +10,7 @@ import re
 import pkgutil
 import warnings
 import inspect
+import subprocess
 try:
     import importlib
 except ImportError:
@@ -500,3 +501,11 @@ except ImportError:
         VAR_POSITIONAL = object()
         KEYWORD_ONLY = object()
         VAR_KEYWORD = object()
+
+
+class GeneralizedPopen(subprocess.Popen):
+    def __init__(self, *args, **kwargs):
+        creation_flags = 0
+        if os.name == 'nt':
+            creation_flags = subprocess.CREATE_NO_WINDOW
+        super(GeneralizedPopen, self).__init__(*args, creation_flags=creation_flags, **kwargs)
