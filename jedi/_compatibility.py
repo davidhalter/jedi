@@ -505,12 +505,11 @@ except ImportError:
 
 class GeneralizedPopen(subprocess.Popen):
     def __init__(self, *args, **kwargs):
-        creation_flags = 0
         if os.name == 'nt':
             try:
                 # Was introduced in Python 3.7.
                 CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW
             except AttributeError:
                 CREATE_NO_WINDOW = 0x08000000
-            creation_flags = CREATE_NO_WINDOW
-        super(GeneralizedPopen, self).__init__(*args, creationflags=creation_flags, **kwargs)
+            kwargs['creation_flags'] = CREATE_NO_WINDOW
+        super(GeneralizedPopen, self).__init__(*args, **kwargs)
