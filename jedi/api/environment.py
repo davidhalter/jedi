@@ -1,6 +1,8 @@
 import os
 import re
 import sys
+import hashlib
+import filecmp
 from subprocess import PIPE
 from collections import namedtuple
 # When dropping Python 2.7 support we should consider switching to
@@ -29,6 +31,14 @@ class _BaseEnvironment(object):
     def get_grammar(self):
         version_string = '%s.%s' % (self.version_info.major, self.version_info.minor)
         return parso.load_grammar(version=version_string)
+
+    @property
+    def _sha256(self):
+        try:
+            return self._hash
+        except AttributeError:
+            self._hash = _calculate_sha256_for_file(self.executable)
+            return self._hash
 
 
 class _Environment(_BaseEnvironment):
@@ -121,6 +131,14 @@ def _get_virtual_env_from_var():
             return create_environment(var)
         except InvalidPythonEnvironment:
             pass
+
+
+def _calculate_sha256_for_file(path):
+    sha256 = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for block in iter(lambda: f.read(filecmp.BUFSIZE), b''):
+            sha256.update(block)
+    return sha256.hexdigest()
 
 
 def get_default_environment():
@@ -302,15 +320,31 @@ def _is_safe(executable_path):
     # Resolve sym links. A venv typically is a symlink to a known Python
     # binary. Only virtualenvs copy symlinks around.
     real_path = os.path.realpath(executable_path)
-    if os.name == 'nt':
-        # Just check the list of known Python versions. If it's not in there,
-        # it's likely an attacker or some Python that was not properly
-        # installed in the system.
-        for environment in find_python_environments():
-            if environment.executable == real_path:
-                return True
-        return False
 
+    if _is_unix_safe_simple(real_path):
+        return True
+
+    # Just check the list of known Python versions. If it's not in there,
+    # it's likely an attacker or some Python that was not properly
+    # installed in the system.
+    for environment in find_python_environments():
+        if environment.executable == real_path:
+            return True
+        else:
+            # If the versions don't match, just compare the binary files. If we
+            # don't do that, only venvs will be working and not virtualenvs.
+            # venvs are symlinks while virtualenvs are actual copies of the
+            # Python files.
+            # This still means that if the system Python is updated and the
+            # virtualenv's Python is not (which is probably never going to get
+            # upgraded), it will not work with Jedi. IMO that's fine, because
+            # people should just be using venv. ~ dave
+            if environment._sha256 == _calculate_sha256_for_file(real_path):
+                return True
+    return False
+
+
+def _is_unix_safe_simple(real_path):
     if _is_unix_admin():
         # In case we are root, just be conservative and
         # only execute known paths.
