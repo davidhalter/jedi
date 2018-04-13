@@ -336,17 +336,17 @@ def _is_safe(executable_path):
     for environment in find_python_environments():
         if environment.executable == real_path:
             return True
-        else:
-            # If the versions don't match, just compare the binary files. If we
-            # don't do that, only venvs will be working and not virtualenvs.
-            # venvs are symlinks while virtualenvs are actual copies of the
-            # Python files.
-            # This still means that if the system Python is updated and the
-            # virtualenv's Python is not (which is probably never going to get
-            # upgraded), it will not work with Jedi. IMO that's fine, because
-            # people should just be using venv. ~ dave
-            if environment._sha256 == _calculate_sha256_for_file(real_path):
-                return True
+
+        # If the versions don't match, just compare the binary files. If we
+        # don't do that, only venvs will be working and not virtualenvs.
+        # venvs are symlinks while virtualenvs are actual copies of the
+        # Python files.
+        # This still means that if the system Python is updated and the
+        # virtualenv's Python is not (which is probably never going to get
+        # upgraded), it will not work with Jedi. IMO that's fine, because
+        # people should just be using venv. ~ dave
+        if environment._sha256 == _calculate_sha256_for_file(real_path):
+            return True
     return False
 
 
