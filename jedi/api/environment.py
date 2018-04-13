@@ -20,6 +20,7 @@ _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
 _SUPPORTED_PYTHONS = ['3.6', '3.5', '3.4', '3.3', '2.7']
 _SAFE_PATHS = ['/usr/bin', '/usr/local/bin']
+_CURRENT_VERSION = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
 
 
 class InvalidPythonEnvironment(Exception):
@@ -155,6 +156,10 @@ def get_default_environment():
     for environment in find_python_environments():
         return environment
 
+    # If no Python Environment is found, use the environment we're already
+    # using.
+    return SameEnvironment()
+
 
 def find_virtualenvs(paths=None, **kwargs):
     """
@@ -204,19 +209,17 @@ def find_virtualenvs(paths=None, **kwargs):
 
 def find_python_environments():
     """
-    Ignores virtualenvs and returns the different Python version environments.
+    Ignores virtualenvs and returns the Python versions that were installed on
+    your system. This might return nothing, if you're running Python e.g. from
+    a portable version.
 
     The environments are sorted from latest to oldest Python version.
     """
-    current_version = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
     for version_string in _SUPPORTED_PYTHONS:
-        if version_string == current_version:
-            yield SameEnvironment()
-        else:
-            try:
-                yield get_python_environment('python' + version_string)
-            except InvalidPythonEnvironment:
-                pass
+        try:
+            yield get_python_environment('python' + version_string)
+        except InvalidPythonEnvironment:
+            pass
 
 
 # TODO: the logic to find the Python prefix is much more complicated than that.
@@ -246,7 +249,10 @@ def get_python_environment(python):
     """
     exe = find_executable(python)
     if exe:
+        if exe == sys.executable:
+            return SameEnvironment()
         return _Environment(_get_python_prefix(exe), exe)
+
     if os.name == 'nt':
         match = re.search('python(\d+\.\d+)$', python)
         if match:
