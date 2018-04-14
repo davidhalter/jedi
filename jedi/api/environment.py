@@ -262,18 +262,13 @@ def get_python_environment(python):
     raise InvalidPythonEnvironment("Cannot find executable %s." % python)
 
 
-def create_environment(path, safe=False):
+def create_environment(path, safe=True):
     """
     Make it possible to create an environment by hand.
 
     May raise InvalidPythonEnvironment.
     """
     return _Environment(path, _get_executable_path(path, safe=safe))
-
-
-def from_executable(executable):
-    path = os.path.dirname(os.path.dirname(executable))
-    return _Environment(path, executable)
 
 
 def _get_executable_path(path, safe=True):

@@ -3,7 +3,7 @@ import json
 
 from jedi._compatibility import FileNotFoundError, NotADirectoryError
 from jedi.api.environment import SameEnvironment, \
-    get_default_environment, from_executable
+    get_default_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.evaluate.sys_path import discover_buildout_paths
@@ -30,9 +30,9 @@ def _force_unicode_list(lst):
 
 
 class Project(object):
+    # TODO serialize environment
     _serializer_ignore_attributes = ('_environment',)
     _environment = None
-    _executable = None
 
     @staticmethod
     def _get_json_path(base_path):
@@ -49,8 +49,6 @@ class Project(object):
         if version == 1:
             self = cls.__new__()
             self.__dict__.update(data)
-            if self._executable is not None:
-                self._environment = from_executable(self._executable)
             return self
         else:
             raise WrongVersion(
@@ -72,7 +70,6 @@ class Project(object):
             self._path = path
             if isinstance(environment, SameEnvironment):
                 self._environment = environment
-                self._executable = environment._executable
 
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
