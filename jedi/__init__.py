@@ -43,5 +43,5 @@ from jedi.api import Script, Interpreter, set_debug_function, \
 from jedi import settings
 from jedi.api.environment import find_virtualenvs, find_python_environments, \
     get_default_environment, InvalidPythonEnvironment, create_environment, \
-    find_executable, get_python_environment
+    get_python_environment
 from jedi.api.exceptions import InternalError

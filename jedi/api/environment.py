@@ -241,25 +241,25 @@ def _get_python_prefix(executable):
 
 # TODO: this function should probably return a list of environments since
 # multiple Python installations can be found on a system for the same version.
-def get_python_environment(python):
+def get_python_environment(name):
     """
     Return the first Python environment found for a given path or for a string
     of the form 'pythonX.Y' where X and Y are the major and minor versions of
     Python.
     """
-    exe = find_executable(python)
+    exe = find_executable(name)
     if exe:
         if exe == sys.executable:
             return SameEnvironment()
         return _Environment(_get_python_prefix(exe), exe)
 
     if os.name == 'nt':
-        match = re.search('python(\d+\.\d+)$', python)
+        match = re.search('python(\d+\.\d+)$', name)
         if match:
             version = match.group(1)
             for prefix, exe in _get_executables_from_windows_registry(version):
                 return _Environment(prefix, exe)
-    raise InvalidPythonEnvironment("Cannot find executable %s." % python)
+    raise InvalidPythonEnvironment("Cannot find executable %s." % name)
 
 
 def create_environment(path, safe=True):
