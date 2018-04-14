@@ -511,5 +511,5 @@ class GeneralizedPopen(subprocess.Popen):
                 CREATE_NO_WINDOW = subprocess.CREATE_NO_WINDOW
             except AttributeError:
                 CREATE_NO_WINDOW = 0x08000000
-            kwargs['creation_flags'] = CREATE_NO_WINDOW
+            kwargs['creationflags'] = CREATE_NO_WINDOW
         super(GeneralizedPopen, self).__init__(*args, **kwargs)
