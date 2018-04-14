@@ -6,15 +6,15 @@ import pytest
 import jedi
 from jedi._compatibility import py_version
 from jedi.api.environment import get_default_environment, find_virtualenvs, \
-    InvalidPythonEnvironment, find_python_environments, get_python_environment
+    InvalidPythonEnvironment, find_system_environments, get_system_environment
 
 
 def test_sys_path():
     assert get_default_environment().get_sys_path()
 
 
-def test_find_python_environments():
-    envs = list(find_python_environments())
+def test_find_system_environments():
+    envs = list(find_system_environments())
     assert len(envs)
     for env in envs:
         assert env.version_info
@@ -29,7 +29,7 @@ def test_find_python_environments():
 )
 def test_versions(version):
     try:
-        env = get_python_environment('python' + version)
+        env = get_system_environment('python' + version)
     except InvalidPythonEnvironment:
         if int(version.replace('.', '')) == py_version:
             # At least the current version has to work

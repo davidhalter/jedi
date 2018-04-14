@@ -153,7 +153,7 @@ def get_default_environment():
     if virtual_env is not None:
         return virtual_env
 
-    for environment in find_python_environments():
+    for environment in find_system_environments():
         return environment
 
     # If no Python Environment is found, use the environment we're already
@@ -207,7 +207,7 @@ def find_virtualenvs(paths=None, **kwargs):
     return py27_comp(paths, **kwargs)
 
 
-def find_python_environments():
+def find_system_environments():
     """
     Ignores virtualenvs and returns the Python versions that were installed on
     your system. This might return nothing, if you're running Python e.g. from
@@ -217,7 +217,7 @@ def find_python_environments():
     """
     for version_string in _SUPPORTED_PYTHONS:
         try:
-            yield get_python_environment('python' + version_string)
+            yield get_system_environment('python' + version_string)
         except InvalidPythonEnvironment:
             pass
 
@@ -241,7 +241,7 @@ def _get_python_prefix(executable):
 
 # TODO: this function should probably return a list of environments since
 # multiple Python installations can be found on a system for the same version.
-def get_python_environment(name):
+def get_system_environment(name):
     """
     Return the first Python environment found for a given path or for a string
     of the form 'pythonX.Y' where X and Y are the major and minor versions of
@@ -328,7 +328,7 @@ def _is_safe(executable_path):
     # Just check the list of known Python versions. If it's not in there,
     # it's likely an attacker or some Python that was not properly
     # installed in the system.
-    for environment in find_python_environments():
+    for environment in find_system_environments():
         if environment.executable == real_path:
             return True
 

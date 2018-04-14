@@ -125,7 +125,7 @@ from jedi._compatibility import unicode, is_py3
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
-from jedi.api.environment import get_default_environment, get_python_environment
+from jedi.api.environment import get_default_environment, get_system_environment
 
 
 TEST_COMPLETIONS = 0
@@ -435,7 +435,7 @@ if __name__ == '__main__':
             return 1
 
     if arguments['--env']:
-        environment = get_python_environment('python' + arguments['--env'])
+        environment = get_system_environment('python' + arguments['--env'])
     else:
         # Will be 3.6.
         environment = get_default_environment()

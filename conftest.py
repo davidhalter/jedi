@@ -6,7 +6,7 @@ from functools import partial
 import pytest
 
 import jedi
-from jedi.api.environment import get_default_environment, get_python_environment
+from jedi.api.environment import get_default_environment, get_system_environment
 from jedi._compatibility import py_version
 
 collect_ignore = [
@@ -94,7 +94,7 @@ def environment(request):
     if int(version) == py_version:
         return get_default_environment()
 
-    return get_python_environment('python%s.%s' % tuple(version))
+    return get_system_environment('python%s.%s' % tuple(version))
 
 
 @pytest.fixture(scope='session')
