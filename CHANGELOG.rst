@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-0.12.0 (XXXX-XX-XX)
+0.12.0 (2018-04-15)
 +++++++++++++++++++
 
 - Virtualenv/Environment support
