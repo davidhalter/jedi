@@ -27,12 +27,20 @@ The deprecation process is as follows:
 API documentation
 -----------------
 
+.. _api:
+
 API Interface
 ~~~~~~~~~~~~~
 
-.. automodule:: jedi.api
+.. automodule:: jedi
+
+.. autoclass:: jedi.Script
     :members:
-    :undoc-members:
+.. autoclass:: jedi.Interpreter
+    :members:
+.. autofunction:: jedi.names
+.. autofunction:: jedi.preload_module
+.. autofunction:: jedi.set_debug_function
 
 .. _environments:
 
