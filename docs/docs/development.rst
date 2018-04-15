@@ -94,8 +94,8 @@ Name resolution (evaluate/finder.py)
 
 .. _dev-api:
 
-API (api.py and api_classes.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+API (api/__init__.py and api/classes.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The API has been designed to be as easy to use as possible. The API
 documentation can be found `here <api.html>`_. The API itself contains
