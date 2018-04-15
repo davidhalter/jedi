@@ -112,7 +112,9 @@ understands, see: `Features
 caveats can be found on the same page.
 
 You can run Jedi on CPython 2.7 or 3.3+ but it should also
-understand/parse code older than those versions.
+understand/parse code older than those versions. Additonally you should be able
+to use `Virtualenvs <https://jedi.readthedocs.org/en/latest/docs/api.html#environments>`_
+very well.
 
 Tips on how to use Jedi efficiently can be found `here
 <https://jedi.readthedocs.org/en/latest/docs/features.html#recipes>`_.

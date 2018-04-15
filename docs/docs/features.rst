@@ -21,10 +21,10 @@ General Features
 ----------------
 
 - Python 2.7 and 3.3+ support
-- ignores syntax errors and wrong indentation
-- can deal with complex module / function / class structures
-- virtualenv support
-- can infer function arguments from sphinx, epydoc and basic numpydoc docstrings,
+- Ignores syntax errors and wrong indentation
+- Can deal with complex module / function / class structures
+- Great Virtualenv support
+- Can infer function arguments from sphinx, epydoc and basic numpydoc docstrings,
   and PEP0484-style type hints (:ref:`type hinting <type-hinting>`)
 
 

@@ -1,7 +1,7 @@
 .. include:: ../global.rst
 
-The API
-=======
+API Overview
+============
 
 .. currentmodule:: jedi
 
