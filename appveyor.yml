@@ -81,7 +81,6 @@ environment:
     JEDI_TEST_ENVIRONMENT: 36
 install:
   - set PATH=%PYTHON_PATH%;%PYTHON_PATH%\Scripts;%PATH%
-  - pip install --disable-pip-version-check --user --upgrade pip
   - pip install tox
 build_script:
   - tox
