@@ -1,3 +1,7 @@
+"""
+Environments are a way to activate different Python versions or Virtualenvs for
+static analysis. The Python binary in that environment is going to be executed.
+"""
 import os
 import re
 import sys
@@ -24,7 +28,10 @@ _CURRENT_VERSION = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
 
 
 class InvalidPythonEnvironment(Exception):
-    pass
+    """
+    If you see this exception, the Virtualenv you have been trying to use was
+    not created.
+    """
 
 
 class _BaseEnvironment(object):
@@ -42,11 +49,11 @@ class _BaseEnvironment(object):
             return self._hash
 
 
-class _Environment(_BaseEnvironment):
+class Environment(_BaseEnvironment):
     """
     This class is supposed to be created by internal Jedi architecture. You
     should not create it directly. Please use create_environment or the other
-    functions instead.
+    functions instead. It is then returned by that function.
     """
     def __init__(self, path, executable):
         self.path = os.path.abspath(path)
@@ -103,7 +110,7 @@ class _Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
-class SameEnvironment(_Environment):
+class SameEnvironment(Environment):
     def __init__(self):
         super(SameEnvironment, self).__init__(sys.prefix, sys.executable)
 
@@ -200,7 +207,7 @@ def find_virtualenvs(paths=None, **kwargs):
 
                 try:
                     executable = _get_executable_path(path, safe=safe)
-                    yield _Environment(path, executable)
+                    yield Environment(path, executable)
                 except InvalidPythonEnvironment:
                     pass
 
@@ -251,14 +258,14 @@ def get_system_environment(name):
     if exe:
         if exe == sys.executable:
             return SameEnvironment()
-        return _Environment(_get_python_prefix(exe), exe)
+        return Environment(_get_python_prefix(exe), exe)
 
     if os.name == 'nt':
         match = re.search('python(\d+\.\d+)$', name)
         if match:
             version = match.group(1)
             for prefix, exe in _get_executables_from_windows_registry(version):
-                return _Environment(prefix, exe)
+                return Environment(prefix, exe)
     raise InvalidPythonEnvironment("Cannot find executable %s." % name)
 
 
@@ -266,9 +273,9 @@ def create_environment(path, safe=True):
     """
     Make it possible to create an environment by hand.
 
-    May raise InvalidPythonEnvironment.
+    :raises: InvalidPythonEnvironment
     """
-    return _Environment(path, _get_executable_path(path, safe=safe))
+    return Environment(path, _get_executable_path(path, safe=safe))
 
 
 def _get_executable_path(path, safe=True):

@@ -34,6 +34,21 @@ API Interface
     :members:
     :undoc-members:
 
+.. _environments:
+
+Environments
+~~~~~~~~~~~~
+
+.. automodule:: jedi.api.environment
+
+.. autofunction:: jedi.find_system_environments
+.. autofunction:: jedi.find_virtualenvs
+.. autofunction:: jedi.get_system_environment
+.. autofunction:: jedi.create_environment
+.. autofunction:: jedi.get_default_environment
+.. autoexception:: jedi.InvalidPythonEnvironment
+.. autoclass:: jedi.api.environment.Environment
+    :members:
 
 Examples
 --------
