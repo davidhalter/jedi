@@ -102,6 +102,12 @@ class Environment(_BaseEnvironment):
 
     @memoize_method
     def get_sys_path(self):
+        """
+        The sys path for this environment. Does not include potential
+        modifications like ``sys.path.append``.
+
+        :returns: list of str
+        """
         # It's pretty much impossible to generate the sys path without actually
         # executing Python. The sys path (when starting with -S) itself depends
         # on how the Python version was compiled (ENV variables).
@@ -235,7 +241,7 @@ def find_system_environments():
     """
     for version_string in _SUPPORTED_PYTHONS:
         try:
-            yield get_system_environment('python' + version_string)
+            yield get_system_environment(version_string)
         except InvalidPythonEnvironment:
             pass
 
@@ -259,28 +265,24 @@ def _get_python_prefix(executable):
 
 # TODO: this function should probably return a list of environments since
 # multiple Python installations can be found on a system for the same version.
-def get_system_environment(name):
+def get_system_environment(version):
     """
-    Return the first Python environment found for a given path or for a string
-    of the form 'pythonX.Y' where X and Y are the major and minor versions of
-    Python.
+    Return the first Python environment found for a string of the form 'X.Y'
+    where X and Y are the major and minor versions of Python.
 
     :raises: :exc:`.InvalidPythonEnvironment`
     :returns: :class:`Environment`
     """
-    exe = find_executable(name)
+    exe = find_executable('python' + version)
     if exe:
         if exe == sys.executable:
             return SameEnvironment()
         return Environment(_get_python_prefix(exe), exe)
 
     if os.name == 'nt':
-        match = re.search('python(\d+\.\d+)$', name)
-        if match:
-            version = match.group(1)
-            for prefix, exe in _get_executables_from_windows_registry(version):
-                return Environment(prefix, exe)
-    raise InvalidPythonEnvironment("Cannot find executable %s." % name)
+        for prefix, exe in _get_executables_from_windows_registry(version):
+            return Environment(prefix, exe)
+    raise InvalidPythonEnvironment("Cannot find executable python%s." % version)
 
 
 def create_environment(path, safe=True):

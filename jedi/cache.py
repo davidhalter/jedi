@@ -131,6 +131,7 @@ def time_cache(seconds):
 
 def memoize_method(method):
     """A normal memoize function."""
+    @wraps(method)
     def wrapper(self, *args, **kwargs):
         cache_dict = self.__dict__.setdefault('_memoize_method_dct', {})
         dct = cache_dict.setdefault(method, {})
