@@ -23,8 +23,8 @@ Docs
    docs/usage
    docs/installation
    docs/features
-   docs/plugin-api
-   docs/plugin-api-classes
+   docs/api
+   docs/api-classes
    docs/settings
    docs/development
    docs/testing

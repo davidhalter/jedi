@@ -1,7 +1,7 @@
 .. include:: ../global.rst
 
-The Plugin API
-==============
+The API
+=======
 
 .. currentmodule:: jedi
 
@@ -11,7 +11,7 @@ editors/IDE autocompletion
 If you want to use |jedi|, you first need to ``import jedi``.  You then have
 direct access to the :class:`.Script`. You can then call the functions
 documented here. These functions return :ref:`API classes
-<plugin-api-classes>`.
+<api-classes>`.
 
 
 Deprecations
@@ -27,10 +27,12 @@ The deprecation process is as follows:
 API documentation
 -----------------
 
+The API can generally  
+
 .. _api:
 
-API Interface
-~~~~~~~~~~~~~
+Static Analysis Interface
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi
 

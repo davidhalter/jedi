@@ -1,6 +1,6 @@
 .. include:: ../global.rst
 
-.. _plugin-api-classes:
+.. _api-classes:
 
 API Return Classes
 ------------------

@@ -8,7 +8,7 @@ very early development stage and needs much testing and improvement.
 .. warning:: I won't do too much here, but if anyone wants to step in, please
              do. Refactoring is none of my priorities
 
-It uses the |jedi| `API <plugin-api.html>`_ and supports currently the
+It uses the |jedi| `API <api.html>`_ and supports currently the
 following functions (sometimes bug-prone):
 
 - rename

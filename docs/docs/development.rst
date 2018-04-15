@@ -7,7 +7,7 @@ Jedi Development
 
 .. note:: This documentation is for Jedi developers who want to improve Jedi
     itself, but have no idea how Jedi works. If you want to use Jedi for 
-    your IDE, look at the `plugin api <plugin-api.html>`_.
+    your IDE, look at the `plugin api <api.html>`_.
 
 
 Introduction
@@ -114,7 +114,7 @@ API (api.py and api_classes.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The API has been designed to be as easy to use as possible. The API
-documentation can be found `here <plugin-api.html>`_. The API itself contains
+documentation can be found `here <api.html>`_. The API itself contains
 little code that needs to be mentioned here. Generally I'm trying to be
 conservative with the API.  I'd rather not add new API features if they are not
 necessary, because it's much harder to deprecate stuff than to add it later.
