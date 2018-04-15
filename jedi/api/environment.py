@@ -170,7 +170,7 @@ def get_default_environment():
     return SameEnvironment()
 
 
-@time_cache("_default_environment_validity")
+@time_cache(seconds=10 * 60)  # 10 Minutes
 def get_cached_default_environment():
     return get_default_environment()
 

@@ -13,7 +13,7 @@ from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi.evaluate.compiled import get_string_context_set
 from jedi.evaluate.base_context import ContextSet
-from jedi.cache import time_cache
+from jedi.cache import call_signature_time_cache
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
@@ -283,7 +283,7 @@ def get_call_signature_details(module, position):
     return None
 
 
-@time_cache("call_signatures_validity")
+@call_signature_time_cache("call_signatures_validity")
 def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
     line_index = user_pos[0] - 1
