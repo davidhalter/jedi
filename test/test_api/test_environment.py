@@ -29,7 +29,7 @@ def test_find_system_environments():
 )
 def test_versions(version):
     try:
-        env = get_system_environment('python' + version)
+        env = get_system_environment(version)
     except InvalidPythonEnvironment:
         if int(version.replace('.', '')) == py_version:
             # At least the current version has to work
