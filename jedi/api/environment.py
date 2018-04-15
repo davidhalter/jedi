@@ -301,13 +301,11 @@ def _get_executable_path(path, safe=True):
     """
 
     if os.name == 'nt':
-        activate = os.path.join(path, 'Scripts', 'activate.bat')
         python = os.path.join(path, 'Scripts', 'python.exe')
     else:
-        activate = os.path.join(path, 'bin', 'activate')
         python = os.path.join(path, 'bin', 'python')
-    if not all(os.path.exists(p) for p in (activate, python)):
-        raise InvalidPythonEnvironment("One of bin/activate and bin/python is missing.")
+    if not os.path.exists(python):
+        raise InvalidPythonEnvironment("%s seems to be missing." % python)
 
     if safe and not _is_safe(python):
         raise InvalidPythonEnvironment("The python binary is potentially unsafe.")
@@ -380,7 +378,7 @@ def _is_unix_safe_simple(real_path):
     # written by a user and therefore attacking Jedi is not as simple.
     # The attack could look like the following:
     # 1. A user clones a repository.
-    # 2. The repository has an inocent looking folder called foobar. jedi
+    # 2. The repository has an innocent looking folder called foobar. jedi
     #    searches for the folder and executes foobar/bin/python --version if
     #    there's also a foobar/bin/activate.
     # 3. The bin/python is obviously not a python script but a bash script or
