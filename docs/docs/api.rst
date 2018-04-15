@@ -27,7 +27,14 @@ The deprecation process is as follows:
 API documentation
 -----------------
 
-The API can generally  
+The API consists of a few different parts:
+
+- The main starting points for completions/goto: :class:`.Script` and :class:`.Interpreter`
+- Helpful functions: :func:`.names`, :func:`.preload_module` and
+  :func:`.set_debug_function`
+- :ref:`API Result Classes <api-classes>`
+- :ref:`Python Versions/Virtualenv Support <environments>` with functions like
+  :func:`.find_system_environments` and :func:`.find_virtualenvs`
 
 .. _api:
 
