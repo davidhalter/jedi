@@ -54,33 +54,15 @@ because that's where all the magic happens. I need to introduce the :ref:`parser
 
 .. _parser:
 
-Parser (parser/__init__.py)
+Parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.parser
+Jedi used to have it's internal parser, however this is now a separate project
+and is called `parso <http://parso.readthedocs.io>`_.
 
-Parser Tree (parser/tree.py)
-++++++++++++++++++++++++++++++++++++++++++++++++
-
-.. automodule:: jedi.parser.tree
-
-Class inheritance diagram:
-
-.. inheritance-diagram::
-   Module
-   Class
-   Function
-   Lambda
-   Flow
-   ForStmt
-   Import
-   ExprStmt
-   Param
-   Name
-   CompFor
-   :parts: 1
-
-.. _evaluate:
+The parser creates a syntax tree that |jedi| analyses and tries to understand.
+The grammar that this parsers uses is very similar to the official Python
+`grammar files <https://docs.python.org/3/reference/grammar.html>`_.
 
 Evaluation of python code (evaluate/__init__.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,13 +137,6 @@ Parameter completion (evaluate/dynamic.py)
 
 .. automodule:: jedi.evaluate.dynamic
 
-
-.. _diff-parser:
-
-Diff Parser (parser/diff.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: jedi.parser.python.diff
 
 .. _docstrings:
 
