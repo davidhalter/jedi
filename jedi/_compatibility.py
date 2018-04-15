@@ -268,7 +268,7 @@ def use_metaclass(meta, *bases):
     """ Create a class with a metaclass. """
     if not bases:
         bases = (object,)
-    return meta("HackClass", bases, {})
+    return meta("Py2CompatibilityMetaClass", bases, {})
 
 
 try:

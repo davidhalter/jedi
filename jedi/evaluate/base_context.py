@@ -1,3 +1,11 @@
+"""
+Contexts are the "values" that Python would return. However Contexts are at the
+same time also the "contexts" that a user is currently sitting in.
+
+A ContextSet is typically used to specify the return of a function or any other
+static analysis operation. In jedi there are always multiple returns and not
+just one.
+"""
 from parso.python.tree import ExprStmt, CompFor
 
 from jedi import debug

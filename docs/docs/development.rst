@@ -64,21 +64,23 @@ The parser creates a syntax tree that |jedi| analyses and tries to understand.
 The grammar that this parsers uses is very similar to the official Python
 `grammar files <https://docs.python.org/3/reference/grammar.html>`_.
 
+.. _evaluate:
+
 Evaluation of python code (evaluate/__init__.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.evaluate
 
-Evaluation Representation (evaluate/representation.py)
+Evaluation Contexts (evaluate/base_context.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: jedi.evaluate.representation
+.. automodule:: jedi.evaluate.base_context
 
 .. inheritance-diagram::
-   jedi.evaluate.instance.TreeInstance
-   jedi.evaluate.representation.ClassContext
-   jedi.evaluate.representation.FunctionContext
-   jedi.evaluate.representation.FunctionExecutionContext
+   jedi.evaluate.context.instance.TreeInstance
+   jedi.evaluate.context.klass.ClassContext
+   jedi.evaluate.context.function.FunctionContext
+   jedi.evaluate.context.function.FunctionExecutionContext
    :parts: 1
 
 
@@ -111,7 +113,6 @@ Core Extensions is a summary of the following topics:
 
 - :ref:`Iterables & Dynamic Arrays <iterables>`
 - :ref:`Dynamic Parameters <dynamic>`
-- :ref:`Diff Parser <diff-parser>`
 - :ref:`Docstrings <docstrings>`
 - :ref:`Refactoring <refactoring>`
 
@@ -121,13 +122,13 @@ without some features.
 
 .. _iterables:
 
-Iterables & Dynamic Arrays (evaluate/iterable.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Iterables & Dynamic Arrays (evaluate/context/iterable.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To understand Python on a deeper level, |jedi| needs to understand some of the
 dynamic features of Python like lists that are filled after creation:
 
-.. automodule:: jedi.evaluate.iterable
+.. automodule:: jedi.evaluate.context.iterable
 
 
 .. _dynamic:
