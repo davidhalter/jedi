@@ -3,7 +3,7 @@ import json
 
 from jedi._compatibility import FileNotFoundError, NotADirectoryError
 from jedi.api.environment import SameEnvironment, \
-    get_default_environment
+    get_cached_default_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
 from jedi.evaluate.sys_path import discover_buildout_paths
@@ -136,7 +136,7 @@ class Project(object):
 
     def get_environment(self):
         if self._environment is None:
-            return get_default_environment()
+            return get_cached_default_environment()
 
         return self._environment
 

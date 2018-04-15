@@ -14,7 +14,7 @@ from collections import namedtuple
 from distutils.spawn import find_executable
 
 from jedi._compatibility import GeneralizedPopen
-from jedi.cache import memoize_method
+from jedi.cache import memoize_method, time_cache
 from jedi.evaluate.compiled.subprocess import get_subprocess, \
     EvaluatorSameProcess, EvaluatorSubprocess
 
@@ -168,6 +168,11 @@ def get_default_environment():
     # If no Python Environment is found, use the environment we're already
     # using.
     return SameEnvironment()
+
+
+@time_cache("_default_environment_validity")
+def get_cached_default_environment():
+    return get_default_environment()
 
 
 def find_virtualenvs(paths=None, **kwargs):
