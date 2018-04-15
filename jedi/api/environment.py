@@ -29,8 +29,8 @@ _CURRENT_VERSION = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
 
 class InvalidPythonEnvironment(Exception):
     """
-    If you see this exception, the Virtualenv you have been trying to use was
-    not created.
+    If you see this exception, the Python executable or Virtualenv you have
+    been trying to use is probably not a correct Python version.
     """
 
 
@@ -155,6 +155,8 @@ def get_default_environment():
     set it will return the latest Python version installed on the system. This
     makes it possible to use as many new Python features as possible when using
     autocompletion and other functionality.
+
+    :returns: :class:`Environment`
     """
     virtual_env = _get_virtual_env_from_var()
     if virtual_env is not None:
@@ -179,6 +181,8 @@ def find_virtualenvs(paths=None, **kwargs):
         be able to drop an executable in a path this function is searching by
         default. If the executable has not been installed by root, it will not
         be executed.
+
+    :yields: :class:`Environment`
     """
     def py27_comp(paths=None, safe=True):
         if paths is None:
@@ -221,6 +225,8 @@ def find_system_environments():
     a portable version.
 
     The environments are sorted from latest to oldest Python version.
+
+    :yields: :class:`Environment`
     """
     for version_string in _SUPPORTED_PYTHONS:
         try:
@@ -253,6 +259,9 @@ def get_system_environment(name):
     Return the first Python environment found for a given path or for a string
     of the form 'pythonX.Y' where X and Y are the major and minor versions of
     Python.
+
+    :raises: :exc:`.InvalidPythonEnvironment`
+    :returns: :class:`Environment`
     """
     exe = find_executable(name)
     if exe:
@@ -273,7 +282,8 @@ def create_environment(path, safe=True):
     """
     Make it possible to create an environment by hand.
 
-    :raises: InvalidPythonEnvironment
+    :raises: :exc:`.InvalidPythonEnvironment`
+    :returns: :class:`Environment`
     """
     return Environment(path, _get_executable_path(path, safe=safe))
 
