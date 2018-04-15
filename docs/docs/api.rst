@@ -24,7 +24,7 @@ The deprecation process is as follows:
    the deprecated functionality.
 
 
-API documentation
+API Documentation
 -----------------
 
 The API consists of a few different parts:
