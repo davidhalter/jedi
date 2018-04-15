@@ -435,7 +435,7 @@ if __name__ == '__main__':
             return 1
 
     if arguments['--env']:
-        environment = get_system_environment('python' + arguments['--env'])
+        environment = get_system_environment(arguments['--env'])
     else:
         # Will be 3.6.
         environment = get_default_environment()

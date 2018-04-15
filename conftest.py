@@ -94,7 +94,7 @@ def environment(request):
     if int(version) == py_version:
         return get_default_environment()
 
-    return get_system_environment('python%s.%s' % tuple(version))
+    return get_system_environment(version[0] + '.' + version[1:])
 
 
 @pytest.fixture(scope='session')
