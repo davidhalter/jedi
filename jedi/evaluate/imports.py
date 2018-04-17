@@ -17,7 +17,8 @@ from parso.python import tree
 from parso.tree import search_ancestor
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import unicode, ImplicitNSInfo, force_unicode
+from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
+                                 force_unicode, unicode)
 from jedi import debug
 from jedi import settings
 from jedi.parser_utils import get_cached_code_lines
@@ -533,7 +534,11 @@ def get_modules_containing_name(evaluator, modules, name):
                         yield path
 
     def check_fs(path):
-        with open(path, 'rb') as f:
+        try:
+            f = open(path, 'rb')
+        except FileNotFoundError:
+            return
+        with f:
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
