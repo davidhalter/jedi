@@ -287,11 +287,15 @@ def get_system_environment(version):
 
 def create_environment(path, safe=True):
     """
-    Make it possible to create an environment by hand.
+    Make it possible to manually create an environment by specifying a
+    Virtualenv path or an executable path.
 
     :raises: :exc:`.InvalidPythonEnvironment`
     :returns: :class:`Environment`
     """
+    if os.path.isfile(path):
+        _assert_safe(path, safe)
+        return Environment(_get_python_prefix(path), path)
     return Environment(path, _get_executable_path(path, safe=safe))
 
 
@@ -307,8 +311,7 @@ def _get_executable_path(path, safe=True):
     if not os.path.exists(python):
         raise InvalidPythonEnvironment("%s seems to be missing." % python)
 
-    if safe and not _is_safe(python):
-        raise InvalidPythonEnvironment("The python binary is potentially unsafe.")
+    _assert_safe(python, safe)
     return python
 
 
@@ -337,6 +340,12 @@ def _get_executables_from_windows_registry(version):
                         yield prefix, exe
             except WindowsError:
                 pass
+
+
+def _assert_safe(executable_path, safe):
+    if safe and not _is_safe(executable_path):
+        raise InvalidPythonEnvironment(
+            "The python binary is potentially unsafe.")
 
 
 def _is_safe(executable_path):
