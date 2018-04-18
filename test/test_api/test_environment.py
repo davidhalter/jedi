@@ -1,4 +1,5 @@
 import os
+import sys
 from contextlib import contextmanager
 
 import pytest
@@ -6,7 +7,8 @@ import pytest
 import jedi
 from jedi._compatibility import py_version
 from jedi.api.environment import get_default_environment, find_virtualenvs, \
-    InvalidPythonEnvironment, find_system_environments, get_system_environment
+    InvalidPythonEnvironment, find_system_environments, \
+    get_system_environment, create_environment
 
 
 def test_sys_path():
@@ -111,3 +113,13 @@ def test_working_venv(venv_path):
 def test_scanning_venvs(venv_path):
     parent_dir = os.path.dirname(venv_path)
     assert any(venv.path == venv_path for venv in find_virtualenvs([parent_dir]))
+
+
+def test_create_environment_venv_path(venv_path):
+    environment = create_environment(venv_path)
+    assert environment.path == venv_path
+
+
+def test_create_environment_executable():
+    environment = create_environment(sys.executable)
+    assert environment.executable == sys.executable
