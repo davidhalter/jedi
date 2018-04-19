@@ -9,7 +9,6 @@ from parso.python import tree
 
 from jedi._compatibility import unicode
 from jedi.parser_utils import get_parent_scope
-from jedi.evaluate.compiled import CompiledObject
 
 
 def is_stdlib_path(path):
@@ -184,6 +183,7 @@ def predefine_names(context, flow_scope, dct):
 
 
 def is_compiled(context):
+    from jedi.evaluate.compiled import CompiledObject
     return isinstance(context, CompiledObject)
 
 
@@ -212,3 +212,24 @@ def get_int_or_none(context):
 
 def is_number(context):
     return _get_safe_value_or_none(context, (int, float)) is not None
+
+
+class EvaluatorTypeError(Exception):
+    pass
+
+
+class EvaluatorIndexError(Exception):
+    pass
+
+
+class EvaluatorKeyError(Exception):
+    pass
+
+
+@contextmanager
+def reraise_as_evaluator(*exception_classes):
+    try:
+        yield
+    except exception_classes as e:
+        new_exc_cls = globals()['Evaluator' + e.__class__.__name__]
+        raise new_exc_cls(e)

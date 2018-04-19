@@ -30,7 +30,8 @@ from jedi.evaluate import recursion
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext
 from jedi.evaluate.helpers import get_int_or_none, is_string, \
-    predefine_names, evaluate_call_of_leaf
+    predefine_names, evaluate_call_of_leaf, reraise_as_evaluator, \
+    EvaluatorKeyError
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_method_cache
@@ -219,7 +220,9 @@ class ListComprehension(ComprehensionMixin, Sequence):
             return ContextSet(self)
 
         all_types = list(self.py__iter__())
-        return all_types[index].infer()
+        with reraise_as_evaluator(IndexError, TypeError):
+            lazy_context = all_types[index]
+        return lazy_context.infer()
 
 
 class SetComprehension(ComprehensionMixin, Sequence):
@@ -293,13 +296,15 @@ class SequenceLiteralContext(Sequence):
                     if isinstance(k, compiled.CompiledObject) \
                             and k.execute_operation(compiled_obj_index, u'==').get_safe_value():
                         return self._defining_context.eval_node(value)
-            raise KeyError('No key found in dictionary %s.' % self)
+            raise EvaluatorKeyError('No key found in dictionary %s.' % self)
 
         # Can raise an IndexError
         if isinstance(index, slice):
             return ContextSet(self)
         else:
-            return self._defining_context.eval_node(self._items()[index])
+            with reraise_as_evaluator(TypeError, KeyError, IndexError):
+                node = self._items()[index]
+            return self._defining_context.eval_node(node)
 
     def py__iter__(self):
         """
@@ -413,7 +418,9 @@ class FakeSequence(_FakeArray):
         self._lazy_context_list = lazy_context_list
 
     def py__getitem__(self, index):
-        return self._lazy_context_list[index].infer()
+        with reraise_as_evaluator(IndexError, TypeError):
+            lazy_context = self._lazy_context_list[index]
+        return lazy_context.infer()
 
     def py__iter__(self):
         return self._lazy_context_list
@@ -450,7 +457,9 @@ class FakeDict(_FakeArray):
                 except KeyError:
                     pass
 
-        return self._dct[index].infer()
+        with reraise_as_evaluator(KeyError):
+            lazy_context = self._dct[index]
+        return lazy_context.infer()
 
     @publish_method('values')
     def _values(self):

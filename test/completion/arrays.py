@@ -29,6 +29,9 @@ b = [6,7]
 
 #? int()
 b[8-7]
+# Something unreasonable:
+#?
+b['']
 
 # -----------------
 # Slices

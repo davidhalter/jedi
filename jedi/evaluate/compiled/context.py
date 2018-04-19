@@ -13,6 +13,7 @@ from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
+from jedi.evaluate.helpers import reraise_as_evaluator
 from . import fake
 
 
@@ -145,7 +146,8 @@ class CompiledObject(Context):
 
     @CheckAttribute
     def py__getitem__(self, index):
-        access = self.access_handle.py__getitem__(index)
+        with reraise_as_evaluator(IndexError, KeyError, TypeError):
+            access = self.access_handle.py__getitem__(index)
         if access is None:
             return ContextSet()
 
