@@ -1,4 +1,5 @@
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
+from jedi.common.utils import monkeypatch
 
 class AbstractLazyContext(object):
     def __init__(self, data):
@@ -40,12 +41,8 @@ class LazyTreeContext(AbstractLazyContext):
         self._predefined_names = dict(context.predefined_names)
 
     def infer(self):
-        old, self._context.predefined_names = \
-            self._context.predefined_names, self._predefined_names
-        try:
+        with monkeypatch(self._context, 'predefined_names', self._predefined_names):
             return self._context.eval_node(self.data)
-        finally:
-            self._context.predefined_names = old
 
 
 def get_merged_lazy_context(lazy_contexts):
