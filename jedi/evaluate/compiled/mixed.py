@@ -166,11 +166,10 @@ def _find_syntax_node_name(evaluator, access_handle):
         return None  # It's too hard to find lambdas.
 
     # Doesn't always work (e.g. os.stat_result)
-    try:
-        names = module_node.get_used_names()[name_str]
-    except KeyError:
-        return None
+    names = module_node.get_used_names().get(name_str, [])
     names = [n for n in names if n.is_definition()]
+    if not names:
+        return None
 
     try:
         code = python_object.__code__

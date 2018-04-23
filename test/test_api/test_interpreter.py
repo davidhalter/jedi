@@ -341,3 +341,18 @@ def test_dir_magic_method():
 
     foo = [c for c in completions if c.name == 'foo'][0]
     assert foo._goto_definitions() == []
+
+
+def test_name_not_findable():
+    class X():
+        if 0:
+            NOT_FINDABLE
+
+        def hidden(self):
+            return
+
+        hidden.__name__ = 'NOT_FINDABLE'
+
+    setattr(X, 'NOT_FINDABLE', X.hidden)
+
+    assert jedi.Interpreter("X.NOT_FINDA", [locals()]).completions()
