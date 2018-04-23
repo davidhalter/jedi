@@ -57,7 +57,8 @@ def get_user_scope(module_context, position):
         def scan(scope):
             for s in scope.children:
                 if s.start_pos <= position <= s.end_pos:
-                    if isinstance(s, (tree.Scope, tree.Flow)):
+                    if isinstance(s, (tree.Scope, tree.Flow)) \
+                            or s.type in ('async_stmt', 'async_funcdef'):
                         return scan(s) or s
                     elif s.type in ('suite', 'decorated'):
                         return scan(s)

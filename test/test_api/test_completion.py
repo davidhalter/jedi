@@ -2,6 +2,8 @@ import os
 import sys
 from textwrap import dedent
 
+import pytest
+
 
 def test_in_whitespace(Script):
     code = dedent('''
@@ -118,3 +120,20 @@ def test_generator(Script):
 def test_in_comment(Script):
     assert Script(" # Comment").completions()
     assert Script("max_attr_value = int(2) # Cast to int for spe").completions()
+
+
+def test_async(Script, environment):
+    if environment.version_info < (3, 5):
+        pytest.skip()
+
+    code = dedent('''
+        foo = 3
+        async def x():
+            hey = 3
+              ho'''
+    )
+    print(code)
+    comps = Script(code, column=4).completions()
+    names = [c.name for c in comps]
+    assert 'foo' in names
+    assert 'hey' in names
