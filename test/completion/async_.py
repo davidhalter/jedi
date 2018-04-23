@@ -73,3 +73,12 @@ async def wrapper():
 asgen().__ane
 #? []
 asgen().mro
+
+
+# Normal completion (#1092)
+normal_var1 = 42
+
+async def foo():
+    normal_var2 = False
+    #? ['normal_var1', 'normal_var2']
+    normal_var
