@@ -214,6 +214,9 @@ def _evaluate_for_statement_string(module_context, string):
     except (AttributeError, IndexError):
         return []
 
+    if stmt.type not in ('name', 'atom', 'atom_expr'):
+        return []
+
     from jedi.evaluate.context import FunctionContext
     function_context = FunctionContext(
         module_context.evaluator,

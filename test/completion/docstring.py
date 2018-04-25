@@ -30,13 +30,17 @@ def sphinxy(a, b, c, d, x):
 sphinxy()
 
 # wrong declarations
-def sphinxy2(a, b, x):
+def sphinxy2(a, b, x, y, z):
     """
     :param a: Forgot type declaration
     :type a:
     :param b: Just something
     :type b: ``
     :param x: Just something without type
+    :param y: A function
+    :type y: def l(): pass
+    :param z: A keyword
+    :type z: return
     :rtype:
     """
     #? 
@@ -45,6 +49,10 @@ def sphinxy2(a, b, x):
     b
     #?
     x
+    #?
+    y
+    #?
+    z
 
 #? 
 sphinxy2()

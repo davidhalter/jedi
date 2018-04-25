@@ -74,8 +74,10 @@ def eval_node(context, element):
         # For False/True/None
         if element.value in ('False', 'True', 'None'):
             return ContextSet(compiled.builtin_from_name(evaluator, element.value))
-        # else: print e.g. could be evaluated like this in Python 2.7
-        return NO_CONTEXTS
+        if element.value == 'print':
+            # print e.g. could be evaluated like this in Python 2.7
+            return NO_CONTEXTS
+        assert False, 'Cannot evaluate the keyword %s' % element
     elif typ == 'lambdef':
         return ContextSet(FunctionContext(evaluator, context, element))
     elif typ == 'expr_stmt':
