@@ -17,7 +17,7 @@ import traceback
 from functools import partial
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load, highest_pickle_protocol, GeneralizedPopen
+    pickle_dump, pickle_load, GeneralizedPopen
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
@@ -29,12 +29,11 @@ _subprocesses = {}
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
 
 
-def get_subprocess(executable, version):
+def get_subprocess(executable):
     try:
         return _subprocesses[executable]
     except KeyError:
-        sub = _subprocesses[executable] = _CompiledSubprocess(executable,
-                                                              version)
+        sub = _subprocesses[executable] = _CompiledSubprocess(executable)
         return sub
 
 
@@ -125,12 +124,21 @@ class EvaluatorSubprocess(_EvaluatorProcess):
 
 class _CompiledSubprocess(object):
     _crashed = False
+    # Start with 2, gets set after _get_info.
+    _pickle_protocol = 2
 
-    def __init__(self, executable, version):
+    def __init__(self, executable):
         self._executable = executable
         self._evaluator_deletion_queue = queue.deque()
-        self._pickle_protocol = highest_pickle_protocol([sys.version_info,
-                                                         version])
+
+    def __repr__(self):
+        pid = os.getpid()
+        return '<_CompiledSubprocess _executable=%r, _pickle_protocol=%r, _crashed=%r, pid=%r>' % (
+            self._executable,
+            self._pickle_protocol,
+            self._crashed,
+            pid,
+        )
 
     @property
     @memoize_method
@@ -140,7 +148,7 @@ class _CompiledSubprocess(object):
             self._executable,
             _MAIN_PATH,
             os.path.dirname(os.path.dirname(parso_path)),
-            str(self._pickle_protocol)
+            '.'.join(str(x) for x in sys.version_info[:3]),
         )
         return GeneralizedPopen(
             args,
