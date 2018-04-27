@@ -77,9 +77,12 @@ class Environment(_BaseEnvironment):
             stdout, stderr = process.communicate()
             retcode = process.poll()
             if retcode:
-                raise InvalidPythonEnvironment()
-        except OSError:
-            raise InvalidPythonEnvironment()
+                raise InvalidPythonEnvironment(
+                    "Exited with %d (stdout=%r, stderr=%r)" % (
+                        retcode, stdout, stderr))
+        except OSError as exc:
+            raise InvalidPythonEnvironment(
+                "Could not get version information: %r" % exc)
 
         # Until Python 3.4 wthe version string is part of stderr, after that
         # stdout.
