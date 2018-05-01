@@ -22,6 +22,9 @@ a(0):.
 0x0
 #? ['and', 'or', 'if', 'is', 'in', 'not']
 1j
+x = None()
+#?
+x
 
 # -----------------
 # if/else/elif
