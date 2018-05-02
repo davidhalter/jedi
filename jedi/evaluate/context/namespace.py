@@ -3,24 +3,18 @@ from itertools import chain
 
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import imports
-from jedi.evaluate.filters import DictFilter, AbstractNameDefinition
+from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, ContextNameMixin
 from jedi.evaluate.base_context import TreeContext, ContextSet
 
 
-class ImplicitNSName(AbstractNameDefinition):
+class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
     """
     Accessing names for implicit namespace packages should infer to nothing.
     This object will prevent Jedi from raising exceptions
     """
     def __init__(self, implicit_ns_context, string_name):
-        self.parent_context = implicit_ns_context
+        self._context = implicit_ns_context
         self.string_name = string_name
-
-    def infer(self):
-        return ContextSet(self.parent_context)
-
-    def get_root_context(self):
-        return self.parent_context
 
 
 class ImplicitNamespaceContext(TreeContext):
@@ -56,9 +50,11 @@ class ImplicitNamespaceContext(TreeContext):
         """
         return self._fullname
 
-    @property
     def py__path__(self):
-        return lambda: [self.paths]
+        return [self.paths]
+
+    def py__name__(self):
+        return self._fullname
 
     @evaluator_method_cache()
     def _sub_modules_dict(self):
