@@ -93,3 +93,13 @@ def test_namespace_package_in_multiple_directories_goto_definition(Script):
     script = Script(sys_path=sys_path, source=CODE)
     result = script.goto_definitions()
     assert len(result) == 1
+
+
+def test_namespace_name_autocompletion_full_name(Script):
+    CODE = 'from pk'
+    sys_path = [join(dirname(__file__), d)
+                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+
+    script = Script(sys_path=sys_path, source=CODE)
+    compl = script.completions()
+    assert set(c.full_name for c in compl) == set(['pkg'])
