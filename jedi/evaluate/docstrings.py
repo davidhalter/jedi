@@ -47,13 +47,14 @@ _numpy_doc_string_cache = None
 
 def _get_numpy_doc_string_cls():
     global _numpy_doc_string_cache
+    if isinstance(_numpy_doc_string_cache, ImportError):
+        raise _numpy_doc_string_cache
     try:
         from numpydoc.docscrape import NumpyDocString
         _numpy_doc_string_cache = NumpyDocString
     except ImportError as e:
         _numpy_doc_string_cache = e
-    if isinstance(_numpy_doc_string_cache, ImportError):
-        raise _numpy_doc_string_cache
+        raise
     return _numpy_doc_string_cache
 
 
