@@ -360,7 +360,11 @@ class BaseDefinition(object):
         return Definition(self._evaluator, context.name)
 
     def __repr__(self):
-        return "<%s %s>" % (type(self).__name__, self.description)
+        return "<%s full_name=%r, description=%r>" % (
+            self.__class__.__name__,
+            self.full_name,
+            self.description,
+        )
 
     def get_line_code(self, before=0, after=0):
         """
