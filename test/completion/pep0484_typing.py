@@ -240,7 +240,7 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
-# python >= 3.2
+# python >= 3.4
 """
 docstrings have some auto-import, annotations can use all of Python's
 import logic

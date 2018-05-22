@@ -6,7 +6,7 @@ import operator as op
 from collections import namedtuple
 
 from jedi import debug
-from jedi._compatibility import unicode, is_py3, is_py34, builtins, \
+from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode, print_to_stderr
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.utils import dotted_from_fs_path
@@ -33,10 +33,9 @@ NOT_CLASS_TYPES = (
 if is_py3:
     NOT_CLASS_TYPES += (
         types.MappingProxyType,
-        types.SimpleNamespace
+        types.SimpleNamespace,
+        types.DynamicClassAttribute,
     )
-    if is_py34:
-        NOT_CLASS_TYPES += (types.DynamicClassAttribute,)
 
 
 # Those types don't exist in typing.

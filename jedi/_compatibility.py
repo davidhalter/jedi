@@ -17,8 +17,6 @@ except ImportError:
     pass
 
 is_py3 = sys.version_info[0] >= 3
-is_py33 = is_py3 and sys.version_info[1] >= 3
-is_py34 = is_py3 and sys.version_info[1] >= 4
 is_py35 = is_py3 and sys.version_info[1] >= 5
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
@@ -105,7 +103,7 @@ def find_module_py33(string, path=None, loader=None, full_name=None):
     return module_file, module_path, is_package
 
 
-def find_module_pre_py33(string, path=None, full_name=None):
+def find_module_pre_py34(string, path=None, full_name=None):
     # This import is here, because in other places it will raise a
     # DeprecationWarning.
     import imp
@@ -140,8 +138,7 @@ def find_module_pre_py33(string, path=None, full_name=None):
     raise ImportError("No module named {}".format(string))
 
 
-find_module = find_module_py33 if is_py33 else find_module_pre_py33
-find_module = find_module_py34 if is_py34 else find_module
+find_module = find_module_py34 if is_py3 else find_module_pre_py34
 find_module.__doc__ = """
 Provides information about a module.
 

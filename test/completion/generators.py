@@ -212,7 +212,7 @@ next(x())
 # yield from
 # -----------------
 
-# python >= 3.3
+# python >= 3.4
 
 def yield_from():
     yield from iter([1])
