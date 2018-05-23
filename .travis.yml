@@ -1,5 +1,6 @@
 language: python
 sudo: true
+cache: false
 python:
   - 2.7
   - 3.4
@@ -45,7 +46,8 @@ before_install:
     # it's not on path (unless 3.6 is selected).
     - export PATH=$PATH:/opt/python/3.6/bin
 install:
-    - pip install --quiet tox-travis
+    - pip install -U pip
+    - pip install tox-travis
 script:
     - tox
 after_script:
