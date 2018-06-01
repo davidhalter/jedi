@@ -29,6 +29,10 @@ finally:
     x
     x = tuple
 
+if False:
+    with open("") as defined_in_false:
+        #? ['seekable']
+        defined_in_false.seekab
 
 # -----------------
 # Return checks

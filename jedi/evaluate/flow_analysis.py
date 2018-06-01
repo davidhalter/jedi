@@ -60,7 +60,8 @@ def reachability_check(context, context_scope, node, origin_scope=None):
                     if not branch_matches and origin_keyword == 'else' \
                             and node_keyword == 'except':
                         return UNREACHABLE
-                break
+                if branch_matches:
+                    break
 
         # Direct parents get resolved, we filter scopes that are separate
         # branches.  This makes sense for autocompletion and static analysis.
