@@ -257,14 +257,19 @@ class DictComprehension(ComprehensionMixin, Sequence):
 
     @publish_method('items')
     def _imitate_items(self):
-        items = ContextSet.from_iterable(
-            FakeSequence(
-                self.evaluator, u'tuple'
-                (LazyKnownContexts(keys), LazyKnownContexts(values))
-            ) for keys, values in self._iterate()
-        )
+        lazy_contexts = [
+            LazyKnownContext(
+                FakeSequence(
+                    self.evaluator,
+                    u'tuple',
+                    [LazyKnownContexts(key),
+                     LazyKnownContexts(value)]
+                )
+            )
+            for key, value in self._iterate()
+        ]
 
-        return create_evaluated_sequence_set(self.evaluator, items, sequence_type=u'list')
+        return ContextSet(FakeSequence(self.evaluator, u'list', lazy_contexts))
 
 
 class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
