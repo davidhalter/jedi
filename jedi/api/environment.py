@@ -9,11 +9,8 @@ import hashlib
 import filecmp
 from subprocess import PIPE
 from collections import namedtuple
-# When dropping Python 2.7 support we should consider switching to
-# `shutil.which`.
-from distutils.spawn import find_executable
 
-from jedi._compatibility import GeneralizedPopen
+from jedi._compatibility import GeneralizedPopen, which
 from jedi.cache import memoize_method, time_cache
 from jedi.evaluate.compiled.subprocess import get_subprocess, \
     EvaluatorSameProcess, EvaluatorSubprocess
@@ -276,7 +273,7 @@ def get_system_environment(version):
     :raises: :exc:`.InvalidPythonEnvironment`
     :returns: :class:`Environment`
     """
-    exe = find_executable('python' + version)
+    exe = which('python' + version)
     if exe:
         if exe == sys.executable:
             return SameEnvironment()
