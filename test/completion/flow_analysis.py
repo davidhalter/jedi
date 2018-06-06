@@ -31,8 +31,8 @@ finally:
 
 if False:
     with open("") as defined_in_false:
-        #? ['seekable']
-        defined_in_false.seekab
+        #? ['flush']
+        defined_in_false.flu
 
 # -----------------
 # Return checks
