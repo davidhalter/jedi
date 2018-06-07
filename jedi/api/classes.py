@@ -342,7 +342,7 @@ class BaseDefinition(object):
 
         followed = list(self._name.infer())
         if not followed or not hasattr(followed[0], 'py__call__'):
-            raise AttributeError()
+            raise AttributeError('There are no params defined on this.')
         context = followed[0]  # only check the first one.
 
         return [Definition(self._evaluator, n) for n in get_param_names(context)]
