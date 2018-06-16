@@ -81,6 +81,9 @@ def factory(typing_name, indextypes):
     class Dict(MutableMapping, dict):
         pass
 
+    class DefaultDict(MutableMapping, dict):
+        pass
+
     dct = {
         "Sequence": Sequence,
         "MutableSequence": MutableSequence,
@@ -96,5 +99,6 @@ def factory(typing_name, indextypes):
         "ItemsView": ItemsView,
         "ValuesView": ValuesView,
         "Dict": Dict,
+        "DefaultDict": DefaultDict,
     }
     return dct[typing_name]
