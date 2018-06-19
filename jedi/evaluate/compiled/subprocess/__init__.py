@@ -142,6 +142,9 @@ class _CompiledSubprocess(object):
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            # Use system default buffering on Python 2 to improve performance
+            # (this is already the case on Python 3).
+            bufsize=-1
         )
 
     def run(self, evaluator, function, args=(), kwargs={}):
