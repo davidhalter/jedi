@@ -278,6 +278,12 @@ class Listener(object):
         if sys.version_info[0] > 2:
             stdout = stdout.buffer
             stdin = stdin.buffer
+        # Python 2 opens streams in text mode on Windows. Set stdout and stdin
+        # to binary mode.
+        elif sys.platform == 'win32':
+            import msvcrt
+            msvcrt.setmode(stdout.fileno(), os.O_BINARY)
+            msvcrt.setmode(stdin.fileno(), os.O_BINARY)
 
         while True:
             try:
