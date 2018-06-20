@@ -98,7 +98,7 @@ class Environment(_BaseEnvironment):
         return EvaluatorSubprocess(evaluator, self._get_subprocess())
 
     def _get_subprocess(self):
-        return get_subprocess(self.executable)
+        return get_subprocess(self.executable, self.version_info)
 
     @memoize_method
     def get_sys_path(self):
