@@ -142,6 +142,7 @@ class _CompiledSubprocess(object):
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             # Use system default buffering on Python 2 to improve performance
             # (this is already the case on Python 3).
             bufsize=-1
@@ -203,9 +204,18 @@ class _CompiledSubprocess(object):
 
         try:
             is_exception, traceback, result = pickle_load(self._process.stdout)
-        except EOFError:
+        except EOFError as eof_error:
+            try:
+                stderr = self._process.stderr.read()
+            except Exception as exc:
+                stderr = '<empty/not available (%r)>' % exc
             self.kill()
-            raise InternalError("The subprocess %s has crashed." % self._executable)
+            raise InternalError(
+                "The subprocess %s has crashed (%r, stderr=%s)." % (
+                    self._executable,
+                    eof_error,
+                    stderr,
+                ))
 
         if is_exception:
             # Replace the attribute error message with a the traceback. It's
