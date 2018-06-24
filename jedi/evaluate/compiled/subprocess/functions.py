@@ -69,7 +69,7 @@ def get_module_info(evaluator, sys_path=None, full_name=None, **kwargs):
 
 def list_module_names(evaluator, search_path):
     return [
-        name
+        force_unicode(name)
         for module_loader, name, is_pkg in iter_modules(search_path)
     ]
 
