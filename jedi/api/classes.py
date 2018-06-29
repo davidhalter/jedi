@@ -404,7 +404,7 @@ class Completion(BaseDefinition):
             append = '('
 
         if self._name.api_type == 'param' and self._stack is not None:
-            nonterminals = list(self._stack._list_nonterminals())
+            nonterminals = [stack_node.nonterminal for stack_node in self._stack]
             if 'trailer' in nonterminals and 'argument' not in nonterminals:
                 # TODO this doesn't work for nested calls.
                 append += '='

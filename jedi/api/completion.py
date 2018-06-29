@@ -176,9 +176,9 @@ class Completion:
                                                   PythonTokenTypes.INDENT)):
             # This means that we actually have to do type inference.
 
-            nonterminals = stack._list_nonterminals()
+            nonterminals = [stack_node.nonterminal for stack_node in stack]
 
-            nodes = stack._list_all_nodes()
+            nodes = [node for stack_node in stack for node in stack_node.nodes]
 
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
