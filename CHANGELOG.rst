@@ -3,6 +3,12 @@
 Changelog
 ---------
 
+0.12.1 (2018-06-30)
++++++++++++++++++++
+
+- This release forces you to upgrade parso. If you don't, nothing will work
+  anymore. Otherwise changes should be limited to bug fixes.
+
 0.12.0 (2018-04-15)
 +++++++++++++++++++
 
