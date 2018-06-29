@@ -404,8 +404,9 @@ class Completion(BaseDefinition):
             append = '('
 
         if self._name.api_type == 'param' and self._stack is not None:
-            node_names = list(self._stack.get_node_names(self._evaluator.grammar._pgen_grammar))
-            if 'trailer' in node_names and 'argument' not in node_names:
+            nonterminals = list(self._stack._list_nonterminals())
+            if 'trailer' in nonterminals and 'argument' not in nonterminals:
+                # TODO this doesn't work for nested calls.
                 append += '='
 
         name = self._name.string_name

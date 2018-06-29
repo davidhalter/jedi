@@ -127,7 +127,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     try:
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
-        return Stack(p.pgen_parser.stack)
+        return p.stack
     raise SystemError("This really shouldn't happen. There's a bug in Jedi.")
 
 
@@ -153,7 +153,6 @@ def get_possible_completion_types(pgen_grammar, stack):
                 t, v = pgen_grammar.labels[label_index]
                 assert t >= 256
                 # See if it's a symbol and if we're in its first set
-                inversed_keywords
                 itsdfa = pgen_grammar.dfas[t]
                 itsstates, itsfirst = itsdfa
                 for first_label_index in itsfirst.keys():
