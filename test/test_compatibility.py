@@ -24,3 +24,4 @@ def test_highest_pickle_protocol():
     assert highest_pickle_protocol([v(3, 6), v(3, 4)]) == 4
     assert highest_pickle_protocol([v(3, 6), v(3, 5)]) == 4
     assert highest_pickle_protocol([v(3, 6), v(3, 6)]) == 4
+    assert highest_pickle_protocol([]) == 2
