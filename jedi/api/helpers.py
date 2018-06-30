@@ -12,7 +12,6 @@ from jedi._compatibility import u
 from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi.evaluate.compiled import get_string_context_set
-from jedi.evaluate.base_context import ContextSet
 from jedi.cache import call_signature_time_cache
 
 
@@ -127,59 +126,8 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     try:
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
-        return Stack(p.pgen_parser.stack)
+        return p.stack
     raise SystemError("This really shouldn't happen. There's a bug in Jedi.")
-
-
-class Stack(list):
-    def get_node_names(self, grammar):
-        for dfa, state, (node_number, nodes) in self:
-            yield grammar.number2symbol[node_number]
-
-    def get_nodes(self):
-        for dfa, state, (node_number, nodes) in self:
-            for node in nodes:
-                yield node
-
-
-def get_possible_completion_types(pgen_grammar, stack):
-    def add_results(label_index):
-        try:
-            grammar_labels.append(inversed_tokens[label_index])
-        except KeyError:
-            try:
-                keywords.append(inversed_keywords[label_index])
-            except KeyError:
-                t, v = pgen_grammar.labels[label_index]
-                assert t >= 256
-                # See if it's a symbol and if we're in its first set
-                inversed_keywords
-                itsdfa = pgen_grammar.dfas[t]
-                itsstates, itsfirst = itsdfa
-                for first_label_index in itsfirst.keys():
-                    add_results(first_label_index)
-
-    inversed_keywords = dict((v, k) for k, v in pgen_grammar.keywords.items())
-    inversed_tokens = dict((v, k) for k, v in pgen_grammar.tokens.items())
-
-    keywords = []
-    grammar_labels = []
-
-    def scan_stack(index):
-        dfa, state, node = stack[index]
-        states, first = dfa
-        arcs = states[state]
-
-        for label_index, new_state in arcs:
-            if label_index == 0:
-                # An accepting state, check the stack below.
-                scan_stack(index - 1)
-            else:
-                add_results(label_index)
-
-    scan_stack(-1)
-
-    return keywords, grammar_labels
 
 
 def evaluate_goto_definition(evaluator, context, leaf):
