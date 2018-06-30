@@ -472,10 +472,13 @@ def pickle_dump(data, file, protocol):
             raise IOError(errno.EPIPE, "Broken pipe")
         raise
 
-
-# Determine the highest protocol version compatible for a given list of Python
-# versions.
 def highest_pickle_protocol(python_versions):
+    """Get highest pickle protocol version for given Python versions.
+
+    Returns the minimum version for an empty list (i.e. unknown versions).
+    """
+    if not python_versions:
+        return 2
     protocol = 4
     for version in python_versions:
         if version[0] == 2:
