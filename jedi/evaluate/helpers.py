@@ -64,6 +64,10 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
     The option ``cut_own_trailer`` must be set to true for the second purpose.
     """
     trailer = leaf.parent
+    if trailer.type == 'fstring':
+        from jedi.evaluate import compiled
+        return compiled.get_string_context_set(context.evaluator)
+
     # The leaf may not be the last or first child, because there exist three
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
