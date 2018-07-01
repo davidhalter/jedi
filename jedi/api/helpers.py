@@ -166,7 +166,8 @@ def _get_index_and_key(nodes, position):
 
     if nodes_before:
         last = nodes_before[-1]
-        if last.type == 'argument' and last.children[1].end_pos <= position:
+        if last.type == 'argument' and last.children[1] == '=' \
+                and last.children[1].end_pos <= position:
             # Checked if the argument
             key_str = last.children[0].value
         elif last == '=':
