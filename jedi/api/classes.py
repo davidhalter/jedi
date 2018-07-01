@@ -311,8 +311,9 @@ class BaseDefinition(object):
     @memoize_method
     def params(self):
         """
-        Raises an ``AttributeError``if the definition is not callable.
-        Otherwise returns a list of `Definition` that represents the params.
+        Raises :exc:`AttributeError` if the definition is not callable.
+        Otherwise returns a list of :class:`.Definition` that represents the
+        params.
         """
         def get_param_names(context):
             param_names = []

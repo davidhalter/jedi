@@ -55,10 +55,8 @@ class Script(object):
     - if `sys_path` parameter is not ``None``, it will be used as ``sys.path``
       for the script;
 
-    - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
-      variable is defined, ``sys.path`` for the specified environment will be
-      guessed (see :func:`jedi.evaluate.sys_path.get_venv_path`) and used for
-      the script;
+    - if `environment` is provided, its ``sys.path`` will be used
+      (see :func:`Environment.get_sys_path <jedi.api.environment.Environment.get_sys_path>`);
 
     - otherwise ``sys.path`` will match that of |jedi|.
 
@@ -160,11 +158,13 @@ class Script(object):
 
     def completions(self):
         """
-        Return :class:`classes.Completion` objects. Those objects contain
-        information about the completions, more than just names.
+        Return :class:`.Completion` objects.
+
+        Those objects contain information about the completions, more than just
+        names.
 
         :return: Completion objects, sorted by name and __ comes last.
-        :rtype: list of :class:`classes.Completion`
+        :rtype: list of :class:`.Completion`
         """
         debug.speed('completions start')
         completion = Completion(
@@ -185,7 +185,7 @@ class Script(object):
         because Python itself is a dynamic language, which means depending on
         an option you can have two different versions of a function.
 
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Definition`
         """
         leaf = self._module_node.get_name_of_position(self._pos)
         if leaf is None:
@@ -210,7 +210,7 @@ class Script(object):
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Definition`
         """
         def filter_follow_imports(names, check):
             for name in names:
@@ -240,14 +240,14 @@ class Script(object):
 
     def usages(self, additional_module_paths=()):
         """
-        Return :class:`classes.Definition` objects, which contain all
+        Return :class:`.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
         is very useful for refactoring (renaming), or to show all usages of a
         variable.
 
         .. todo:: Implement additional_module_paths
 
-        :rtype: list of :class:`classes.Definition`
+        :rtype: list of :class:`.Definition`
         """
         tree_name = self._module_node.get_name_of_position(self._pos)
         if tree_name is None:
@@ -273,7 +273,7 @@ class Script(object):
 
         This would return an empty list..
 
-        :rtype: list of :class:`classes.CallSignature`
+        :rtype: list of :class:`.CallSignature`
         """
         call_signature_details = \
             helpers.get_call_signature_details(self._module_node, self._pos)

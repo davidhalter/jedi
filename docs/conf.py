@@ -13,7 +13,6 @@
 
 import sys
 import os
-import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -274,7 +273,8 @@ autodoc_default_flags = []
 # -- Options for intersphinx module --------------------------------------------
 
 intersphinx_mapping = {
-    'https://docs.python.org/': None,
+    'python': ('https://docs.python.org/', None),
+    'parso': ('https://parso.readthedocs.io/en/latest/', None),
 }
 
 

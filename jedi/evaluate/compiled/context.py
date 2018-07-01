@@ -18,7 +18,7 @@ from . import fake
 
 
 class CheckAttribute(object):
-    """Raises an AttributeError if the attribute X isn't available."""
+    """Raises :exc:`AttributeError` if the attribute X is not available."""
     def __init__(self, func):
         self.func = func
         # Remove the py in front of e.g. py__call__.

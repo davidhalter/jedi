@@ -3,8 +3,8 @@ Recursions are the recipe of |jedi| to conquer Python code. However, someone
 must stop recursions going mad. Some settings are here to make |jedi| stop at
 the right time. You can read more about them :ref:`here <settings-recursion>`.
 
-Next to :mod:`jedi.evaluate.cache` this module also makes |jedi| not
-thread-safe. Why?  ``execution_recursion_decorator`` uses class variables to
+Next to the internal ``jedi.evaluate.cache`` this module also makes |jedi| not
+thread-safe, because ``execution_recursion_decorator`` uses class variables to
 count the function calls.
 
 .. _settings-recursion:
@@ -34,7 +34,7 @@ from jedi.evaluate.base_context import NO_CONTEXTS
 
 recursion_limit = 15
 """
-Like ``sys.getrecursionlimit()``, just for |jedi|.
+Like :func:`sys.getrecursionlimit()`, just for |jedi|.
 """
 total_function_execution_limit = 200
 """

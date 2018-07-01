@@ -57,11 +57,11 @@ because that's where all the magic happens. I need to introduce the :ref:`parser
 Parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Jedi used to have it's internal parser, however this is now a separate project
+Jedi used to have its internal parser, however this is now a separate project
 and is called `parso <http://parso.readthedocs.io>`_.
 
 The parser creates a syntax tree that |jedi| analyses and tries to understand.
-The grammar that this parsers uses is very similar to the official Python
+The grammar that this parser uses is very similar to the official Python
 `grammar files <https://docs.python.org/3/reference/grammar.html>`_.
 
 .. _evaluate:

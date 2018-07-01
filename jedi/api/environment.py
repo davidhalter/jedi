@@ -64,8 +64,8 @@ class Environment(_BaseEnvironment):
         self.version_info = self._get_version()
         """
 
-        Like ``sys.version_info``. A tuple to show the current Environment's
-        Python version.
+        Like :data:`sys.version_info`: a tuple to show the current
+        Environment's Python version.
         """
 
     def _get_version(self):
@@ -104,7 +104,7 @@ class Environment(_BaseEnvironment):
     def get_sys_path(self):
         """
         The sys path for this environment. Does not include potential
-        modifications like ``sys.path.append``.
+        modifications from e.g. appending to :data:`sys.path`.
 
         :returns: list of str
         """
@@ -162,7 +162,7 @@ def get_default_environment():
     makes it possible to use as many new Python features as possible when using
     autocompletion and other functionality.
 
-    :returns: :class:`Environment`
+    :returns: :class:`.Environment`
     """
     virtual_env = _get_virtual_env_from_var()
     if virtual_env is not None:
@@ -193,7 +193,7 @@ def find_virtualenvs(paths=None, **kwargs):
         default. If the executable has not been installed by root, it will not
         be executed.
 
-    :yields: :class:`Environment`
+    :yields: :class:`.Environment`
     """
     def py27_comp(paths=None, safe=True):
         if paths is None:
@@ -237,7 +237,7 @@ def find_system_environments():
 
     The environments are sorted from latest to oldest Python version.
 
-    :yields: :class:`Environment`
+    :yields: :class:`.Environment`
     """
     for version_string in _SUPPORTED_PYTHONS:
         try:
@@ -271,7 +271,7 @@ def get_system_environment(version):
     where X and Y are the major and minor versions of Python.
 
     :raises: :exc:`.InvalidPythonEnvironment`
-    :returns: :class:`Environment`
+    :returns: :class:`.Environment`
     """
     exe = which('python' + version)
     if exe:

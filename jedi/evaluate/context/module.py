@@ -171,7 +171,7 @@ class ModuleContext(TreeContext):
 
         In case of a package, this returns Python's __path__ attribute, which
         is a list of paths (strings).
-        Raises an AttributeError if the module is not a package.
+        Raises :exc:`AttributeError` if the module is not a package.
         """
         path = self._get_init_directory()
 
