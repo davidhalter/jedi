@@ -150,7 +150,7 @@ def load_module(evaluator, path=None, name=None, sys_path=None):
         __import__(dotted_path)
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        debug.warning('Module %s not importable in path %s.', dotted_path, path)
+        print_to_stderr('Module %s not importable in path %s.' % (dotted_path, path))
         return None
     except Exception:
         # Since __import__ pretty much makes code execution possible, just
@@ -261,6 +261,9 @@ class DirectObjectAccess(object):
 
     def py__bases__(self):
         return [self._create_access_path(base) for base in self._obj.__bases__]
+
+    def py__path__(self):
+        return self._obj.__path__
 
     @_force_unicode_decorator
     def get_repr(self):

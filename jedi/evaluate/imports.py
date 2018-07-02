@@ -277,6 +277,7 @@ class Importer(object):
     def follow(self):
         if not self.import_path:
             return NO_CONTEXTS
+
         return self._do_import(self.import_path, self.sys_path_with_modifications())
 
     def _do_import(self, import_path, sys_path):
@@ -299,6 +300,14 @@ class Importer(object):
             else:
                 # Old style
                 return self._do_import(('flaskext',) + import_path[2:], sys_path)
+
+        if import_parts[0] in settings.auto_import_modules:
+            module = compiled.load_module(
+                self._evaluator,
+                name='.'.join(import_parts),
+                sys_path=sys_path,
+            )
+            return ContextSet(module)
 
         module_name = '.'.join(import_parts)
         try:
@@ -464,7 +473,7 @@ class Importer(object):
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
-                 module_name=None, safe_module_name=False):
+                 module_name=None, safe_module_name=False, auto_import=False):
     try:
         return evaluator.module_cache.get(module_name)
     except KeyError:
@@ -485,9 +494,8 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
         if sys_path is None:
             sys_path = evaluator.get_sys_path()
 
-        dotted_path = path and dotted_from_fs_path(path, sys_path)
         if path is not None and path.endswith(('.py', '.zip', '.egg')) \
-                and dotted_path not in settings.auto_import_modules:
+                and not auto_import:
 
             module_node = evaluator.parse(
                 code=code, path=path, cache=True, diff_cache=True,
