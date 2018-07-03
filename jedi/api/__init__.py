@@ -11,6 +11,7 @@ arguments.
 """
 import os
 import sys
+import warnings
 
 import parso
 from parso.python import tree
@@ -247,10 +248,18 @@ class Script(object):
 
         .. todo:: Implement additional_module_paths
 
+        :param additional_module_paths: Deprecated, never ever worked.
         :param include_builtins: Default True, checks if a usage is a builtin
             (e.g. ``sys``) and in that case does not return it.
         :rtype: list of :class:`classes.Definition`
         """
+        if additional_module_paths:
+            warnings.warn(
+                "Deprecated since version 0.12.0. This never even worked, just ignore it.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+
         def _usages(include_builtins=True):
             tree_name = self._module_node.get_name_of_position(self._pos)
             if tree_name is None:
