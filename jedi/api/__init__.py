@@ -238,7 +238,7 @@ class Script(object):
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
-    def usages(self, additional_module_paths=()):
+    def usages(self, additional_module_paths=(), **kwargs):
         """
         Return :class:`classes.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
@@ -247,17 +247,23 @@ class Script(object):
 
         .. todo:: Implement additional_module_paths
 
+        :param include_builtins: Default True, checks if a usage is a builtin
+            (e.g. ``sys``) and in that case does not return it.
         :rtype: list of :class:`classes.Definition`
         """
-        tree_name = self._module_node.get_name_of_position(self._pos)
-        if tree_name is None:
-            # Must be syntax
-            return []
+        def _usages(include_builtins=True):
+            tree_name = self._module_node.get_name_of_position(self._pos)
+            if tree_name is None:
+                # Must be syntax
+                return []
 
-        names = usages.usages(self._get_module(), tree_name)
+            names = usages.usages(self._get_module(), tree_name)
 
-        definitions = [classes.Definition(self._evaluator, n) for n in names]
-        return helpers.sorted_definitions(definitions)
+            definitions = [classes.Definition(self._evaluator, n) for n in names]
+            if not include_builtins:
+                definitions = [d for d in definitions if not d.in_builtin_module()]
+            return helpers.sorted_definitions(definitions)
+        return _usages(**kwargs)
 
     def call_signatures(self):
         """
