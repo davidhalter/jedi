@@ -139,9 +139,17 @@ class _CompiledSubprocess(object):
         args = (
             self._executable,
             _MAIN_PATH,
-            os.path.dirname(os.path.dirname(parso_path)),
             str(self._pickle_protocol)
         )
+
+        # Add parso to PYTHONPATH for the subprocess.
+        python_path = [os.path.dirname(os.path.dirname(parso_path))]
+        if 'PYTHONPATH' in os.environ:
+            python_path += [os.environ['PYTHONPATH']]
+        python_path = os.pathsep.join(python_path)
+        env = os.environ.copy()
+        env['PYTHONPATH'] = python_path
+
         return GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
@@ -149,7 +157,8 @@ class _CompiledSubprocess(object):
             stderr=subprocess.PIPE,
             # Use system default buffering on Python 2 to improve performance
             # (this is already the case on Python 3).
-            bufsize=-1
+            bufsize=-1,
+            env=env,
         )
 
     def run(self, evaluator, function, args=(), kwargs={}):
