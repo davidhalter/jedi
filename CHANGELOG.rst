@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.12.2 ()
++++++++++++++++++++
+
+- Added ``include_builtins`` as a parameter to usages.
+
 0.12.1 (2018-06-30)
 +++++++++++++++++++
 
