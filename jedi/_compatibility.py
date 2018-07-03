@@ -446,6 +446,8 @@ if sys.version_info[:2] == (3, 3):
     pickle.loads = loads
 
 
+# Use version 4 of the pickle protocol when support for Python 2.7 and 3.3 is
+# dropped.
 _PICKLE_PROTOCOL = 2
 
 
