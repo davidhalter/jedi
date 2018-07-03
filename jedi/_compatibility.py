@@ -446,6 +446,9 @@ if sys.version_info[:2] == (3, 3):
     pickle.loads = loads
 
 
+_PICKLE_PROTOCOL = 2
+
+
 def pickle_load(file):
     try:
         if is_py3:
@@ -459,9 +462,9 @@ def pickle_load(file):
         raise
 
 
-def pickle_dump(data, file, protocol):
+def pickle_dump(data, file):
     try:
-        pickle.dump(data, file, protocol)
+        pickle.dump(data, file, protocol=_PICKLE_PROTOCOL)
         # On Python 3.3 flush throws sometimes an error even though the writing
         # operation should be completed.
         file.flush()
@@ -471,20 +474,6 @@ def pickle_dump(data, file, protocol):
         if sys.platform == 'win32':
             raise IOError(errno.EPIPE, "Broken pipe")
         raise
-
-
-# Determine the highest protocol version compatible for a given list of Python
-# versions.
-def highest_pickle_protocol(python_versions):
-    protocol = 4
-    for version in python_versions:
-        if version[0] == 2:
-            # The minimum protocol version for the versions of Python that we
-            # support (2.7 and 3.3+) is 2.
-            return 2
-        if version[1] < 4:
-            protocol = 3
-    return protocol
 
 
 try:

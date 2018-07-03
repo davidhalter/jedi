@@ -17,7 +17,7 @@ import traceback
 from functools import partial
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load, highest_pickle_protocol, GeneralizedPopen
+    pickle_dump, pickle_load, GeneralizedPopen
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
@@ -29,12 +29,11 @@ _subprocesses = {}
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
 
 
-def get_subprocess(executable, version):
+def get_subprocess(executable):
     try:
         return _subprocesses[executable]
     except KeyError:
-        sub = _subprocesses[executable] = _CompiledSubprocess(executable,
-                                                              version)
+        sub = _subprocesses[executable] = _CompiledSubprocess(executable)
         return sub
 
 
@@ -126,11 +125,9 @@ class EvaluatorSubprocess(_EvaluatorProcess):
 class _CompiledSubprocess(object):
     _crashed = False
 
-    def __init__(self, executable, version):
+    def __init__(self, executable):
         self._executable = executable
         self._evaluator_deletion_queue = queue.deque()
-        self._pickle_protocol = highest_pickle_protocol([sys.version_info,
-                                                         version])
 
     @property
     @memoize_method
@@ -139,8 +136,7 @@ class _CompiledSubprocess(object):
         args = (
             self._executable,
             _MAIN_PATH,
-            os.path.dirname(os.path.dirname(parso_path)),
-            str(self._pickle_protocol)
+            os.path.dirname(os.path.dirname(parso_path))
         )
         return GeneralizedPopen(
             args,
@@ -194,7 +190,7 @@ class _CompiledSubprocess(object):
 
         data = evaluator_id, function, args, kwargs
         try:
-            pickle_dump(data, self._process.stdin, self._pickle_protocol)
+            pickle_dump(data, self._process.stdin)
         except (socket.error, IOError) as e:
             # Once Python2 will be removed we can just use `BrokenPipeError`.
             # Also, somehow in windows it returns EINVAL instead of EPIPE if
@@ -240,12 +236,11 @@ class _CompiledSubprocess(object):
 
 
 class Listener(object):
-    def __init__(self, pickle_protocol):
+    def __init__(self):
         self._evaluators = {}
         # TODO refactor so we don't need to process anymore just handle
         # controlling.
         self._process = _EvaluatorProcess(Listener)
-        self._pickle_protocol = pickle_protocol
 
     def _get_evaluator(self, function, evaluator_id):
         from jedi.evaluate import Evaluator
@@ -312,7 +307,7 @@ class Listener(object):
             except Exception as e:
                 result = True, traceback.format_exc(), e
 
-            pickle_dump(result, stdout, self._pickle_protocol)
+            pickle_dump(result, file=stdout)
 
 
 class AccessHandle(object):
