@@ -204,20 +204,33 @@ class Script(object):
         # the API.
         return helpers.sorted_definitions(set(defs))
 
-    def goto_assignments(self, follow_imports=False):
+    def goto_assignments(self, follow_imports=False, follow_builtin_imports=False):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
+        :param follow_imports: The goto call will follow imports.
+        :param follow_builtin_imports: If follow_imports is True will decide if
+            it follow builtin imports.
         :rtype: list of :class:`classes.Definition`
         """
         def filter_follow_imports(names, check):
             for name in names:
                 if check(name):
-                    for result in filter_follow_imports(name.goto(), check):
-                        yield result
+                    new_names = list(filter_follow_imports(name.goto(), check))
+                    found_builtin = False
+                    if follow_builtin_imports:
+                        for new_name in new_names:
+                            if new_name.start_pos is None:
+                                found_builtin = True
+
+                    if found_builtin and not isinstance(name, imports.SubModuleName):
+                        yield name
+                    else:
+                        for new_name in new_names:
+                            yield new_name
                 else:
                     yield name
 

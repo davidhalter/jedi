@@ -7,6 +7,8 @@ Changelog
 +++++++++++++++++++
 
 - Added ``include_builtins`` as a parameter to usages.
+- ``goto_assignments`` has a new ``follow_builtin_imports`` parameter that
+  changes the previous behavior slightly.
 
 0.12.1 (2018-06-30)
 +++++++++++++++++++
