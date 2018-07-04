@@ -85,7 +85,7 @@ class Project(object):
         if environment is None:
             environment = self.get_environment()
 
-        sys_path = environment.get_sys_path()
+        sys_path = list(environment.get_sys_path())
         try:
             sys_path.remove('')
         except ValueError:
