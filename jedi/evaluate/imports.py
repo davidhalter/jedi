@@ -500,7 +500,8 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
 
         if path is not None and path.endswith(('.py', '.zip', '.egg')):
             module_node = evaluator.parse(
-                code=code, path=path, cache=True, diff_cache=True,
+                code=code, path=path, cache=True,
+                diff_cache=settings.fast_parser,
                 cache_path=settings.cache_directory)
 
             from jedi.evaluate.context import ModuleContext

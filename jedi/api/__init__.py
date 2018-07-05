@@ -116,7 +116,7 @@ class Script(object):
             code=source,
             path=self.path,
             cache=False,  # No disk cache, because the current script often changes.
-            diff_cache=True,
+            diff_cache=settings.fast_parser,
             cache_path=settings.cache_directory
         )
         debug.speed('parsed')
