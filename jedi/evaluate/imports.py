@@ -302,9 +302,9 @@ class Importer(object):
                 return self._do_import(('flaskext',) + import_path[2:], sys_path)
 
         if import_parts[0] in settings.auto_import_modules:
-            module = compiled.load_module(
+            module = _load_module(
                 self._evaluator,
-                dotted_name='.'.join(import_parts),
+                import_names=import_parts,
                 sys_path=sys_path,
             )
             return ContextSet(module)
@@ -473,7 +473,7 @@ class Importer(object):
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
-                 import_names=None, safe_module_name=False, auto_import=False):
+                 import_names=None, safe_module_name=False):
     if import_names is None:
         dotted_name = None
     else:
@@ -498,9 +498,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
         if sys_path is None:
             sys_path = evaluator.get_sys_path()
 
-        if path is not None and path.endswith(('.py', '.zip', '.egg')) \
-                and not auto_import:
-
+        if path is not None and path.endswith(('.py', '.zip', '.egg')):
             module_node = evaluator.parse(
                 code=code, path=path, cache=True, diff_cache=True,
                 cache_path=settings.cache_directory)
