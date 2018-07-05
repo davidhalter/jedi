@@ -44,7 +44,7 @@ def test_versions(version):
 
 def test_load_module(evaluator):
     access_path = evaluator.compiled_subprocess.load_module(
-        name=u'math',
+        dotted_name=u'math',
         sys_path=evaluator.get_sys_path()
     )
     name, access_handle = access_path.accesses[0]

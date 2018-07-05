@@ -26,7 +26,7 @@ from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
-from jedi.evaluate.utils import unite, dotted_from_fs_path
+from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
@@ -304,7 +304,7 @@ class Importer(object):
         if import_parts[0] in settings.auto_import_modules:
             module = compiled.load_module(
                 self._evaluator,
-                name='.'.join(import_parts),
+                dotted_name='.'.join(import_parts),
                 sys_path=sys_path,
             )
             return ContextSet(module)
@@ -508,7 +508,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
                 code_lines=get_cached_code_lines(evaluator.grammar, path),
             )
         else:
-            module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
+            module = compiled.load_module(evaluator, dotted_name=module_name, sys_path=sys_path)
 
     if module is not None and module_name is not None:
         add_module_to_cache(evaluator, module_name, module, safe=safe_module_name)
@@ -553,7 +553,8 @@ def get_modules_containing_name(evaluator, modules, name):
                 module_name = sys_path.dotted_path_in_sys_path(e_sys_path, path)
                 module = _load_module(
                     evaluator, path, code,
-                    sys_path=e_sys_path, module_name=module_name
+                    sys_path=e_sys_path,
+                    module_name=module_name
                 )
                 return module
 
