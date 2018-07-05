@@ -198,7 +198,7 @@ def _get_buildout_script_paths(search_path):
 
 def dotted_path_in_sys_path(sys_path, module_path):
     """
-    Returns the dotted path inside a sys.path.
+    Returns the dotted path inside a sys.path as a list of names.
     """
     # First remove the suffix.
     for suffix in all_suffixes():
@@ -221,6 +221,6 @@ def dotted_path_in_sys_path(sys_path, module_path):
                 for string in split:
                     if not string or '.' in string:
                         return None
-                return '.'.join(split)
+                return split
 
     return None

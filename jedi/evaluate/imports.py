@@ -373,7 +373,7 @@ class Importer(object):
 
         module = _load_module(
             self._evaluator, module_path, code, sys_path,
-            module_name=module_name,
+            import_names=import_parts,
             safe_module_name=True,
         )
 
@@ -473,9 +473,13 @@ class Importer(object):
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
-                 module_name=None, safe_module_name=False, auto_import=False):
+                 import_names=None, safe_module_name=False, auto_import=False):
+    if import_names is None:
+        dotted_name = None
+    else:
+        dotted_name = '.'.join(import_names)
     try:
-        return evaluator.module_cache.get(module_name)
+        return evaluator.module_cache.get(dotted_name)
     except KeyError:
         pass
     try:
@@ -508,10 +512,11 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
                 code_lines=get_cached_code_lines(evaluator.grammar, path),
             )
         else:
-            module = compiled.load_module(evaluator, dotted_name=module_name, sys_path=sys_path)
+            assert dotted_name is not None
+            module = compiled.load_module(evaluator, dotted_name=dotted_name, sys_path=sys_path)
 
-    if module is not None and module_name is not None:
-        add_module_to_cache(evaluator, module_name, module, safe=safe_module_name)
+    if module is not None and dotted_name is not None:
+        add_module_to_cache(evaluator, dotted_name, module, safe=safe_module_name)
 
     return module
 
@@ -550,11 +555,11 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
-                module_name = sys_path.dotted_path_in_sys_path(e_sys_path, path)
+                import_names = sys_path.dotted_path_in_sys_path(e_sys_path, path)
                 module = _load_module(
                     evaluator, path, code,
                     sys_path=e_sys_path,
-                    module_name=module_name
+                    import_names=import_names,
                 )
                 return module
 

@@ -145,9 +145,9 @@ class Script(object):
     def _get_module(self):
         name = '__main__'
         if self.path is not None:
-            n = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
-            if n is not None:
-                name = n
+            import_names = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
+            if import_names is not None:
+                name = '.'.join(import_names)
 
         module = ModuleContext(
             self._evaluator, self._module_node, self.path,
