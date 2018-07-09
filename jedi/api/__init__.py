@@ -112,9 +112,10 @@ class Script(object):
         self._module_node, source = self._evaluator.parse_and_get_code(
             code=source,
             path=self.path,
+            encoding=encoding,
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
-            cache_path=settings.cache_directory
+            cache_path=settings.cache_directory,
         )
         debug.speed('parsed')
         self._code_lines = parso.split_lines(source, keepends=True)
