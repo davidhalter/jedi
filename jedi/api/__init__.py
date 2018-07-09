@@ -75,9 +75,6 @@ class Script(object):
     :param encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
-    :param source_encoding: The encoding of ``source``, if it is not a
-        ``unicode`` object (default ``'utf-8'``).
-    :type encoding: str
     :param sys_path: ``sys.path`` to use during analysis of the script
     :type sys_path: list
     :param environment: TODO
