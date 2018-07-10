@@ -304,9 +304,9 @@ class Listener(object):
             try:
                 payload = pickle_load(stdin)
             except EOFError:
-                # It looks like the parent process closed. Don't make a big fuss
-                # here and just exit.
-                exit(1)
+                # It looks like the parent process closed.
+                # Don't make a big fuss here and just exit.
+                exit(0)
             try:
                 result = False, None, self._run(*payload)
             except Exception as e:
