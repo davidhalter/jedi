@@ -29,10 +29,8 @@ def test_paths_from_assignment(Script):
 def test_venv_and_pths(venv_path):
     pjoin = os.path.join
 
-    virtualenv = create_environment(venv_path)
-
     CUR_DIR = os.path.dirname(__file__)
-    site_pkg_path = pjoin(virtualenv.path, 'lib')
+    site_pkg_path = pjoin(venv_path, 'lib')
     if os.name == 'nt':
         site_pkg_path = pjoin(site_pkg_path, 'site-packages')
     else:
@@ -40,6 +38,7 @@ def test_venv_and_pths(venv_path):
     shutil.rmtree(site_pkg_path)
     shutil.copytree(pjoin(CUR_DIR, 'sample_venvs', 'pth_directory'), site_pkg_path)
 
+    virtualenv = create_environment(venv_path)
     venv_paths = virtualenv.get_sys_path()
 
     ETALON = [
