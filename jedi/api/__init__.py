@@ -133,7 +133,9 @@ class Script(object):
 
         column = line_len if column is None else column
         if not (0 <= column <= line_len):
-            raise ValueError('`column` parameter is not in a valid range.')
+            raise ValueError('`column` parameter (%d) is not in a valid range '
+                             '(0-%d) for line %d (%r).' % (
+                                 column, line_len, line, line_string))
         self._pos = line, column
         self._path = path
 
