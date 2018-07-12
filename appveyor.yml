@@ -51,6 +51,25 @@ environment:
   - TOXENV: py36
     PYTHON_PATH: C:\Python36
     JEDI_TEST_ENVIRONMENT: 36
+
+  - TOXENV: py37
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 27
+  - TOXENV: py37
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 33
+  - TOXENV: py37
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 34
+  - TOXENV: py37
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 35
+  - TOXENV: py37
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 36
+  - TOXENV: py37
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 37
 install:
   - set PATH=%PYTHON_PATH%;%PYTHON_PATH%\Scripts;%PATH%
   - pip install tox
