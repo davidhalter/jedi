@@ -116,6 +116,12 @@ class Environment(_BaseEnvironment):
         # site.py gets executed.
         return self._get_subprocess().get_sys_path()
 
+    def __del__(self):
+        try:
+            self._subprocess.kill()
+        except AttributeError:
+            pass
+
 
 class SameEnvironment(Environment):
     def __init__(self):
