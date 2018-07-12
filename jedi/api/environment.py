@@ -32,7 +32,8 @@ class InvalidPythonEnvironment(Exception):
 class _BaseEnvironment(object):
     @memoize_method
     def get_grammar(self):
-        version_string = '%s.%s' % (self.version_info.major, self.version_info.minor)
+        version_string = '%s.%s' % (self.version_info.major,
+                                    self.version_info.minor)
         return parso.load_grammar(version=version_string)
 
     @property
@@ -271,7 +272,8 @@ def get_system_environment(version):
     if os.name == 'nt':
         for exe in _get_executables_from_windows_registry(version):
             return Environment(exe)
-    raise InvalidPythonEnvironment("Cannot find executable python%s." % version)
+    raise InvalidPythonEnvironment(
+        "Cannot find executable python%s." % version)
 
 
 def create_environment(path, safe=True):
