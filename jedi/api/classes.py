@@ -536,9 +536,9 @@ class Definition(BaseDefinition):
         # here.
         txt = definition.get_code(include_prefix=False)
         # Delete comments:
-        txt = re.sub('#[^\n]+\n', ' ', txt)
+        txt = re.sub(r'#[^\n]+\n', ' ', txt)
         # Delete multi spaces/newlines
-        txt = re.sub('\s+', ' ', txt).strip()
+        txt = re.sub(r'\s+', ' ', txt).strip()
         return txt
 
     @property

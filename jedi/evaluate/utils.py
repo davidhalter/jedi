@@ -11,7 +11,7 @@ from jedi._compatibility import reraise
 _sep = os.path.sep
 if os.path.altsep is not None:
     _sep += os.path.altsep
-_path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
+_path_re = re.compile(r'(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
 del _sep
 
 

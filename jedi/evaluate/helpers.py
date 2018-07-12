@@ -19,7 +19,7 @@ def is_stdlib_path(path):
         return False
 
     base_path = os.path.join(sys.prefix, 'lib', 'python')
-    return bool(re.match(re.escape(base_path) + '\d.\d', path))
+    return bool(re.match(re.escape(base_path) + r'\d.\d', path))
 
 
 def deep_ast_copy(obj):

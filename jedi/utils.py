@@ -138,5 +138,5 @@ def version_info():
     """
     Version = namedtuple('Version', 'major, minor, micro')
     from jedi import __version__
-    tupl = re.findall('[a-z]+|\d+', __version__)
+    tupl = re.findall(r'[a-z]+|\d+', __version__)
     return Version(*[x if i == 3 else int(x) for i, x in enumerate(tupl)])
