@@ -1,6 +1,5 @@
 import os
 import sys
-from contextlib import contextmanager
 
 import pytest
 
@@ -85,34 +84,22 @@ def test_killed_subprocess(evaluator, Script):
     assert def_.name == 'str'
 
 
-@contextmanager
-def set_environment_variable(name, value):
-    tmp = os.environ.get(name)
-    try:
-        os.environ[name] = value
-        yield
-    finally:
-        if tmp is None:
-            del os.environ[name]
-        else:
-            os.environ[name] = tmp
-
-
-def test_not_existing_virtualenv():
+def test_not_existing_virtualenv(monkeypatch):
     """Should not match the path that was given"""
     path = '/foo/bar/jedi_baz'
-    with set_environment_variable('VIRTUAL_ENV', path):
-        assert get_default_environment().executable != path
+    monkeypatch.setenv('VIRTUAL_ENV', path)
+    assert get_default_environment().executable != path
 
 
-def test_working_venv(venv_path):
-    with set_environment_variable('VIRTUAL_ENV', venv_path):
-        assert get_default_environment().path == venv_path
+def test_working_venv(venv_path, monkeypatch):
+    monkeypatch.setenv('VIRTUAL_ENV', venv_path)
+    assert get_default_environment().path == venv_path
 
 
 def test_scanning_venvs(venv_path):
     parent_dir = os.path.dirname(venv_path)
-    assert any(venv.path == venv_path for venv in find_virtualenvs([parent_dir]))
+    assert any(venv.path == venv_path
+               for venv in find_virtualenvs([parent_dir]))
 
 
 def test_create_environment_venv_path(venv_path):
