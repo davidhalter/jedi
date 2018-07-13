@@ -45,7 +45,5 @@ else:
     load('jedi')
     from jedi.evaluate.compiled import subprocess  # NOQA
 
-# Retrieve the pickle protocol.
-pickle_protocol = int(sys.argv[2])
 # And finally start the client.
-subprocess.Listener(pickle_protocol).listen()
+subprocess.Listener().listen()
