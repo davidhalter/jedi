@@ -24,17 +24,8 @@ from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
     SignatureParam
 from jedi.api.exceptions import InternalError
 
-_subprocesses = {}
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
-
-
-def get_subprocess(executable):
-    try:
-        return _subprocesses[executable]
-    except KeyError:
-        sub = _subprocesses[executable] = _CompiledSubprocess(executable)
-        return sub
 
 
 def _get_function(name):
@@ -118,12 +109,12 @@ class EvaluatorSubprocess(_EvaluatorProcess):
         return obj
 
     def __del__(self):
-        if self._used:
+        if self._used and not self._compiled_subprocess.is_crashed:
             self._compiled_subprocess.delete_evaluator(self._evaluator_id)
 
 
-class _CompiledSubprocess(object):
-    _crashed = False
+class CompiledSubprocess(object):
+    is_crashed = False
     # Start with 2, gets set after _get_info.
     _pickle_protocol = 2
 
@@ -133,10 +124,11 @@ class _CompiledSubprocess(object):
 
     def __repr__(self):
         pid = os.getpid()
-        return '<_CompiledSubprocess _executable=%r, _pickle_protocol=%r, _crashed=%r, pid=%r>' % (
+        return '<%s _executable=%r, _pickle_protocol=%r, is_crashed=%r, pid=%r>' % (
+            self.__class__.__name__,
             self._executable,
             self._pickle_protocol,
-            self._crashed,
+            self.is_crashed,
             pid,
         )
 
@@ -176,24 +168,22 @@ class _CompiledSubprocess(object):
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
 
-    def kill(self):
-        self._crashed = True
-        try:
-            subprocess = _subprocesses[self._executable]
-        except KeyError:
-            # Fine it was already removed from the cache.
-            pass
-        else:
-            # In the `!=` case there is already a new subprocess in place
-            # and we don't need to do anything here anymore.
-            if subprocess == self:
-                del _subprocesses[self._executable]
-
+    def _kill(self):
+        self.is_crashed = True
+        if subprocess.signal is None:
+            # If the Python process is terminating, sometimes it will remove
+            # the signal module before a lot of other things, so check for it
+            # and don't do anything, because the process is killed anyways.
+            return
         self._process.kill()
         self._process.wait()
 
+    def __del__(self):
+        if not self.is_crashed:
+            self._kill()
+
     def _send(self, evaluator_id, function, args=(), kwargs={}):
-        if self._crashed:
+        if self.is_crashed:
             raise InternalError("The subprocess %s has crashed." % self._executable)
 
         if not is_py3:
@@ -210,7 +200,7 @@ class _CompiledSubprocess(object):
             if e.errno not in (errno.EPIPE, errno.EINVAL):
                 # Not a broken pipe
                 raise
-            self.kill()
+            self._kill()
             raise InternalError("The subprocess %s was killed. Maybe out of memory?"
                                 % self._executable)
 
@@ -221,7 +211,7 @@ class _CompiledSubprocess(object):
                 stderr = self._process.stderr.read()
             except Exception as exc:
                 stderr = '<empty/not available (%r)>' % exc
-            self.kill()
+            self._kill()
             raise InternalError(
                 "The subprocess %s has crashed (%r, stderr=%s)." % (
                     self._executable,
