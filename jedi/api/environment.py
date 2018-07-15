@@ -10,7 +10,7 @@ from collections import namedtuple
 
 from jedi._compatibility import highest_pickle_protocol, which
 from jedi.cache import memoize_method, time_cache
-from jedi.evaluate.compiled.subprocess import get_subprocess, \
+from jedi.evaluate.compiled.subprocess import CompiledSubprocess, \
     EvaluatorSameProcess, EvaluatorSubprocess
 
 import parso
@@ -58,16 +58,28 @@ class Environment(_BaseEnvironment):
     should not create it directly. Please use create_environment or the other
     functions instead. It is then returned by that function.
     """
+    _subprocess = None
+
     def __init__(self, executable):
+        self._start_executable = executable
+        # Initialize the environment
+        self._get_subprocess()
+
+    def _get_subprocess(self):
+        if self._subprocess is not None and not self._subprocess.is_crashed:
+            return self._subprocess
+
         try:
-            self._subprocess = get_subprocess(executable)
+            self._subprocess = CompiledSubprocess(self._start_executable)
             info = self._subprocess._send(None, _get_info)
         except Exception as exc:
             raise InvalidPythonEnvironment(
                 "Could not get version information for %r: %r" % (
-                    executable,
+                    self._start_executable,
                     exc))
 
+        # Since it could change and might not be the same(?) as the one given,
+        # set it here.
         self.executable = info[0]
         """
         The Python executable, matches ``sys.executable``.
@@ -82,14 +94,16 @@ class Environment(_BaseEnvironment):
         Python version.
         """
 
-        # Adjust pickle protocol according to host and client version.
-        self._subprocess._pickle_protocol = highest_pickle_protocol([
-            sys.version_info, self.version_info])
-
         # py2 sends bytes via pickle apparently?!
         if self.version_info.major == 2:
             self.executable = self.executable.decode()
             self.path = self.path.decode()
+
+        # Adjust pickle protocol according to host and client version.
+        self._subprocess._pickle_protocol = highest_pickle_protocol([
+            sys.version_info, self.version_info])
+
+        return self._subprocess
 
     def __repr__(self):
         version = '.'.join(str(i) for i in self.version_info)
@@ -97,9 +111,6 @@ class Environment(_BaseEnvironment):
 
     def get_evaluator_subprocess(self, evaluator):
         return EvaluatorSubprocess(evaluator, self._get_subprocess())
-
-    def _get_subprocess(self):
-        return get_subprocess(self.executable)
 
     @memoize_method
     def get_sys_path(self):
@@ -119,7 +130,7 @@ class Environment(_BaseEnvironment):
 
 class SameEnvironment(Environment):
     def __init__(self):
-        self.executable = sys.executable
+        self._start_executable = self.executable = sys.executable
         self.path = sys.prefix
         self.version_info = _VersionInfo(*sys.version_info[:3])
 
