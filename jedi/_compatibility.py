@@ -207,6 +207,7 @@ def _iter_modules(paths, prefix=''):
                 yield importer, prefix + modname, ispkg
         # END COPY
 
+
 iter_modules = _iter_modules if py_version >= 34 else pkgutil.iter_modules
 
 
@@ -251,6 +252,7 @@ Usage::
     reraise(Exception, sys.exc_info()[2])
 
 """
+
 
 class Python3Method(object):
     def __init__(self, func):
@@ -312,10 +314,10 @@ def force_unicode(obj):
 try:
     import builtins  # module name in python 3
 except ImportError:
-    import __builtin__ as builtins
+    import __builtin__ as builtins  # noqa: F401
 
 
-import ast
+import ast  # noqa: F401
 
 
 def literal_eval(string):
@@ -325,7 +327,7 @@ def literal_eval(string):
 try:
     from itertools import zip_longest
 except ImportError:
-    from itertools import izip_longest as zip_longest  # Python 2
+    from itertools import izip_longest as zip_longest  # Python 2  # noqa: F401
 
 try:
     FileNotFoundError = FileNotFoundError
@@ -378,7 +380,7 @@ def utf8_repr(func):
 if is_py3:
     import queue
 else:
-    import Queue as queue
+    import Queue as queue  # noqa: F401
 
 try:
     # Attempt to load the C implementation of pickle on Python 2 as it is way
@@ -544,7 +546,7 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
 
     if sys.platform == "win32":
         # The current directory takes precedence on Windows.
-        if not os.curdir in path:
+        if os.curdir not in path:
             path.insert(0, os.curdir)
 
         # PATHEXT is necessary to check on Windows.
@@ -565,7 +567,7 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
     seen = set()
     for dir in path:
         normdir = os.path.normcase(dir)
-        if not normdir in seen:
+        if normdir not in seen:
             seen.add(normdir)
             for thefile in files:
                 name = os.path.join(dir, thefile)
