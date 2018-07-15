@@ -2,16 +2,17 @@ from jedi._compatibility import encoding, is_py3, u
 import os
 import time
 
+_inited = False
+
+
 def _lazy_colorama_init():
     """
-    Lazily init colorama if necessary, not to screw up stdout is debug not
-    enabled.
+    Lazily init colorama if necessary, not to screw up stdout if debugging is
+    not enabled.
 
     This version of the function does nothing.
     """
-    pass
 
-_inited=False
 
 try:
     if os.name == 'nt':
@@ -21,7 +22,8 @@ try:
         # Use colorama for nicer console output.
         from colorama import Fore, init
         from colorama import initialise
-        def _lazy_colorama_init():
+
+        def _lazy_colorama_init():  # noqa: F811
             """
             Lazily init colorama if necessary, not to screw up stdout is
             debug not enabled.
