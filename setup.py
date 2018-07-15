@@ -39,6 +39,9 @@ setup(name='jedi',
               # coloroma for colored debug output
               'colorama',
           ],
+          'qa': [
+              'flake8==3.5.0',
+          ],
       },
       package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
       platforms=['any'],
