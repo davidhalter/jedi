@@ -157,7 +157,11 @@ class Script(object):
         return module
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, repr(self._orig_path))
+        return '<%s: %s %r>' % (
+            self.__class__.__name__,
+            repr(self._orig_path),
+            self._evaluator.environment,
+        )
 
     def completions(self):
         """
