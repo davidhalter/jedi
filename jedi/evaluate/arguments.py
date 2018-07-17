@@ -82,6 +82,9 @@ class AnonymousArguments(AbstractArguments):
             execution_context.tree_node
         )
 
+    def __repr__(self):
+        return '%s()' % self.__class__.__name__
+
 
 class TreeArguments(AbstractArguments):
     def __init__(self, evaluator, context, argument_node, trailer=None):
