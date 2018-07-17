@@ -90,6 +90,10 @@ def search_params(evaluator, execution_context, funcdef):
                 string_name=string_name,
             )
             if function_executions:
+                if len(function_executions) == 1:
+                    # Don't need to wrap this one.
+                    return function_executions[0].get_params()
+
                 zipped_params = zip(*list(
                     function_execution.get_params()
                     for function_execution in function_executions
