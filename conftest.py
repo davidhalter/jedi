@@ -6,7 +6,8 @@ from functools import partial
 import pytest
 
 import jedi
-from jedi.api.environment import get_default_environment, get_system_environment
+from jedi.api.environment import get_default_environment, \
+    get_system_environment, InterpreterEnvironment
 from jedi._compatibility import py_version
 
 collect_ignore = [
@@ -41,6 +42,9 @@ def pytest_addoption(parser):
 
     parser.addoption("--env", action='store',
                      help="Execute the tests in that environment (e.g. 35 for python3.5).")
+    parser.addoption("--interpreter-env", "-I", action='store_true',
+                     help="Don't use subprocesses to guarantee having safe "
+                          "code execution. Useful for debugging.")
 
 
 def pytest_configure(config):
@@ -87,6 +91,9 @@ def clean_jedi_cache(request):
 
 @pytest.fixture(scope='session')
 def environment(request):
+    if request.config.option.interpreter_env:
+        return InterpreterEnvironment()
+
     version = request.config.option.env
     if version is None:
         version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
