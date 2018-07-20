@@ -108,12 +108,7 @@ class Project(object):
             if evaluator.script_path is not None:
                 suffixed += discover_buildout_paths(evaluator, evaluator.script_path)
 
-                traversed = []
-                for parent in traverse_parents(evaluator.script_path):
-                    traversed.append(parent)
-                    if parent == self._path:
-                        # Don't go futher than the project path.
-                        break
+                traversed = list(traverse_parents(evaluator.script_path))
 
                 # AFAIK some libraries have imports like `foo.foo.bar`, which
                 # leads to the conclusion to by default prefer longer paths

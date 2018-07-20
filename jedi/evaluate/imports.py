@@ -21,6 +21,7 @@ from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
 from jedi import debug
 from jedi import settings
+from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -264,8 +265,11 @@ class Importer(object):
         )
 
     def sys_path_with_modifications(self):
-        sys_path_mod = self._evaluator.get_sys_path() \
-                       + sys_path.check_sys_path_modifications(self.module_context)
+
+        sys_path_mod = (
+            self._evaluator.get_sys_path()
+            + sys_path.check_sys_path_modifications(self.module_context)
+        )
 
         if self.import_path and self.file_path is not None \
                 and self._evaluator.environment.version_info.major == 2:
@@ -350,7 +354,8 @@ class Importer(object):
                     code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
                         string=import_parts[-1],
                         path=path,
-                        full_name=module_name
+                        full_name=module_name,
+                        is_global_search=False,
                     )
                     if module_path is not None:
                         break
@@ -358,13 +363,14 @@ class Importer(object):
                     _add_error(self.module_context, import_path[-1])
                     return NO_CONTEXTS
         else:
-            debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
+            debug.dbg('global search_module %s in %s', import_parts[-1], self.file_path)
             # Override the sys.path. It works only good that way.
             # Injecting the path directly into `find_module` did not work.
             code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
                 string=import_parts[-1],
                 full_name=module_name,
                 sys_path=sys_path,
+                is_global_search=True,
             )
             if module_path is None:
                 # The module is not a package.

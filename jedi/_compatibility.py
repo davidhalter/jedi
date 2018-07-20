@@ -34,24 +34,36 @@ class DummyFile(object):
         del self.loader
 
 
-def find_module_py34(string, path=None, full_name=None):
+def find_module_py34(string, path=None, full_name=None, is_global_search=True):
     spec = None
     loader = None
 
-    spec = importlib.machinery.PathFinder.find_spec(string, path)
-    if spec is not None:
-        # We try to disambiguate implicit namespace pkgs with non implicit namespace pkgs
-        if not spec.has_location:
-            full_name = string if not path else full_name
-            implicit_ns_info = ImplicitNSInfo(full_name, spec.submodule_search_locations._path)
-            return None, implicit_ns_info, False
+    for finder in sys.meta_path:
+        if is_global_search and finder != importlib.machinery.PathFinder:
+            p = None
+        else:
+            p = path
+        try:
+            find_spec = finder.find_spec
+        except AttributeError:
+            # These are old-school clases that still have a different API, just
+            # ignore those.
+            continue
 
-        # we have found the tail end of the dotted path
-        loader = spec.loader
+        spec = find_spec(string, p)
+        if spec is not None:
+            loader = spec.loader
+            if loader is None and not spec.has_location:
+                # This is a namespace package.
+                full_name = string if not path else full_name
+                implicit_ns_info = ImplicitNSInfo(full_name, spec.submodule_search_locations._path)
+                return None, implicit_ns_info, False
+            break
+
     return find_module_py33(string, path, loader)
 
 
-def find_module_py33(string, path=None, loader=None, full_name=None):
+def find_module_py33(string, path=None, loader=None, full_name=None, is_global_search=True):
     loader = loader or importlib.machinery.PathFinder.find_module(string, path)
 
     if loader is None and path is None:  # Fallback to find builtins
@@ -104,7 +116,7 @@ def find_module_py33(string, path=None, loader=None, full_name=None):
     return module_file, module_path, is_package
 
 
-def find_module_pre_py33(string, path=None, full_name=None):
+def find_module_pre_py33(string, path=None, full_name=None, is_global_search=True):
     # This import is here, because in other places it will raise a
     # DeprecationWarning.
     import imp
