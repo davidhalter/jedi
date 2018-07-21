@@ -53,17 +53,17 @@ class Context(BaseContext):
         except stdlib.NotInStdLib:
             pass
 
-        try:
-            func = self.py__call__
-        except AttributeError:
-            debug.warning("no execution possible %s", self)
-            return NO_CONTEXTS
-        else:
-            context_set = func(arguments)
-            debug.dbg('execute result: %s in %s', context_set, self)
-            return context_set
-
-        return self.evaluator.execute(self, arguments)
+        def default(arguments):
+            try:
+                func = self.py__call__
+            except AttributeError:
+                debug.warning("no execution possible %s", self)
+                return NO_CONTEXTS
+            else:
+                context_set = func(arguments)
+                debug.dbg('execute result: %s in %s', context_set, self)
+                return context_set
+        return self.evaluator.plugin_callbacks.execute(default, arguments)
 
     def execute_evaluated(self, *value_list):
         """
