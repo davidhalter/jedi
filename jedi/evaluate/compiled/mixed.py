@@ -93,14 +93,6 @@ class MixedName(compiled.CompiledName):
 class MixedObjectFilter(compiled.CompiledObjectFilter):
     name_class = MixedName
 
-    def __init__(self, evaluator, mixed_object, is_instance=False):
-        super(MixedObjectFilter, self).__init__(
-            evaluator, mixed_object, is_instance)
-        self._mixed_object = mixed_object
-
-    #def _create(self, name):
-        #return MixedName(self._evaluator, self._compiled_object, name)
-
 
 @evaluator_function_cache()
 def _load_module(evaluator, path):
