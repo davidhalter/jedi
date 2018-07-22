@@ -50,46 +50,32 @@ _NAMEDTUPLE_INIT = """
 class StdlibPlugin(BasePlugin):
     def execute(self, callback):
         def wrapper(context, arguments):
+            if isinstance(context, BoundMethod):
+                return callback(context, arguments)
+
             debug.dbg('execute: %s %s', context, arguments)
             try:
-                # Some stdlib functions like super(), namedtuple(), etc. have been
-                # hard-coded in Jedi to support them.
-                return execute(self._evaluator, context, arguments)
-            except _NotInStdLib:
+                obj_name = context.name.string_name
+            except AttributeError:
                 pass
+            else:
+                if context.parent_context == self._evaluator.builtins_module:
+                    module_name = 'builtins'
+                elif isinstance(context.parent_context, ModuleContext):
+                    module_name = context.parent_context.name.string_name
+                else:
+                    module_name = ''
+
+                # for now we just support builtin functions.
+                try:
+                    func = _implemented[module_name][obj_name]
+                except KeyError:
+                    pass
+                else:
+                    return func(self._evaluator, context, arguments)
             return callback(context, arguments)
 
         return wrapper
-
-
-class _NotInStdLib(LookupError):
-    pass
-
-
-def execute(evaluator, obj, arguments):
-    if isinstance(obj, BoundMethod):
-        raise _NotInStdLib()
-
-    try:
-        obj_name = obj.name.string_name
-    except AttributeError:
-        pass
-    else:
-        if obj.parent_context == evaluator.builtins_module:
-            module_name = 'builtins'
-        elif isinstance(obj.parent_context, ModuleContext):
-            module_name = obj.parent_context.name.string_name
-        else:
-            module_name = ''
-
-        # for now we just support builtin functions.
-        try:
-            func = _implemented[module_name][obj_name]
-        except KeyError:
-            pass
-        else:
-            return func(evaluator, obj, arguments)
-    raise _NotInStdLib()
 
 
 def _follow_param(evaluator, arguments, index):
