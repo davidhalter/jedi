@@ -44,26 +44,7 @@ class Context(BaseContext):
         if self.evaluator.is_analysis:
             arguments.eval_all()
 
-        debug.dbg('execute: %s %s', self, arguments)
-        from jedi.evaluate import stdlib
-        try:
-            # Some stdlib functions like super(), namedtuple(), etc. have been
-            # hard-coded in Jedi to support them.
-            return stdlib.execute(self.evaluator, self, arguments)
-        except stdlib.NotInStdLib:
-            pass
-
-        def default(arguments):
-            try:
-                func = self.py__call__
-            except AttributeError:
-                debug.warning("no execution possible %s", self)
-                return NO_CONTEXTS
-            else:
-                context_set = func(arguments)
-                debug.dbg('execute result: %s in %s', context_set, self)
-                return context_set
-        return self.evaluator.plugin_callbacks.execute(default, arguments)
+        return self.evaluator.execute(self, arguments)
 
     def execute_evaluated(self, *value_list):
         """

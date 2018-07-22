@@ -1,4 +1,4 @@
-from functools import partial
+from jedi.plugins.stdlib import StdlibPlugin
 
 
 class _PluginManager(object):
@@ -21,23 +21,15 @@ class _PluginManager(object):
 
 class _PluginCallbacks(object):
     def __init__(self, plugins):
-        plugins = list(plugins)
-        self.execute = self._wrap(plugins, 'execute')
+        self._plugins = list(plugins)
 
-    def _wrap(self, plugins, name):
-        if not plugins:
-            def default_callback(callback, *args, **kwargs):
-                return callback(*args, **kwargs)
-
-            return default_callback
-
-        func = None
-        for plugin in plugins:
-            if func is None:
-                func = getattr(plugin, name)
-            else:
-                func = partial(getattr(plugin, name), func)
-        return func
+    def decorate(self, name, callback):
+        for plugin in reversed(self._plugins):
+            # Need to reverse so the first plugin is run first.
+            callback = getattr(plugin, name)(callback)
+        return callback
 
 
-plugin_manager = _PluginManager()
+plugin_manager = _PluginManager([
+    StdlibPlugin,
+])

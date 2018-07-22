@@ -6,5 +6,8 @@ class BasePlugin(object):
         # In __init__ you can do some caching.
         self._evaluator = evaluator
 
-    def execute(self, default_callback, arguments):
-        return default_callback(arguments)
+    def execute(self, callback):
+        """
+        Decorates the execute(context, arguments) function.
+        """
+        return callback

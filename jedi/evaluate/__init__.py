@@ -85,6 +85,18 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 
 
+def execute(context, arguments):
+    try:
+        func = context.py__call__
+    except AttributeError:
+        debug.warning("no execution possible %s", context)
+        return NO_CONTEXTS
+    else:
+        context_set = func(arguments)
+        debug.dbg('execute result: %s in %s', context_set, context)
+        return context_set
+
+
 class Evaluator(object):
     def __init__(self, project, environment=None, script_path=None):
         if environment is None:
@@ -109,7 +121,8 @@ class Evaluator(object):
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
         from jedi.plugins import plugin_manager
-        self.plugin_callbacks = plugin_manager.get_callbacks(self)
+        plugin_callbacks = plugin_manager.get_callbacks(self)
+        self.execute = plugin_callbacks.decorate('execute', callback=execute)
 
     @property
     @evaluator_function_cache()
