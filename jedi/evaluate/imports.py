@@ -466,11 +466,6 @@ def import_module(evaluator, import_names, sys_path):
         safe_module_name=True,
     )
 
-    if module is None:
-        # The file might raise an ImportError e.g. and therefore not be
-        # importable.
-        return NO_CONTEXTS
-
     return ContextSet(module)
 
 
@@ -515,6 +510,10 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
         else:
             assert dotted_name is not None
             module = compiled.load_module(evaluator, dotted_name=dotted_name, sys_path=sys_path)
+            if module is None:
+                # The file might raise an ImportError e.g. and therefore not be
+                # importable.
+                raise JediImportError(import_names)
 
     if module is not None and dotted_name is not None:
         add_module_to_cache(evaluator, dotted_name, module, safe=safe_module_name)
