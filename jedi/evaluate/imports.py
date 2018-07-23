@@ -12,7 +12,6 @@ This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """
 import os
-from functools import partial
 
 from parso.python import tree
 from parso.tree import search_ancestor
@@ -287,20 +286,22 @@ class Importer(object):
             for i in self.import_path
         )
 
-        try:
-            return self._evaluator.import_module(
-                self._evaluator,
-                import_names,
-                self.sys_path_with_modifications(),
-
-            )
-        except JediImportError as e:
-            # Try to look up the name that was responsible for the import
-            # error. Since this is a plugin API, we intentionally just use
-            # strings, because every plugin would need to unpack the names.
-            name = self.import_path[len(e.import_names) - 1]
-            _add_error(self.module_context, name)
-            return NO_CONTEXTS
+        context_set = [None]
+        for i, name in enumerate(self.import_path):
+            try:
+                context_set = ContextSet.from_sets([
+                    self._evaluator.import_module(
+                        self._evaluator,
+                        import_names[:i+1],
+                        module_context,
+                        self.sys_path_with_modifications(),
+                    )
+                    for module_context in context_set
+                ])
+            except JediImportError:
+                _add_error(self.module_context, name)
+                return NO_CONTEXTS
+        return context_set
 
     def _generate_name(self, name, in_module=None):
         # Create a pseudo import to be able to follow them.
@@ -355,7 +356,8 @@ class Importer(object):
                 if context.api_type != 'module':  # not a module
                     continue
                 # namespace packages
-                if isinstance(context, ModuleContext) and context.py__file__().endswith('__init__.py'):
+                if isinstance(context, ModuleContext) \
+                        and context.py__file__().endswith('__init__.py'):
                     paths = context.py__path__()
                     names += self._get_module_names(paths, in_module=context)
 
@@ -395,7 +397,7 @@ class JediImportError(Exception):
         self.import_names = import_names
 
 
-def import_module(evaluator, import_names, sys_path):
+def import_module(evaluator, import_names, module_context, sys_path):
     """
     This method is very similar to importlib's `_gcd_import`.
     """
@@ -413,19 +415,21 @@ def import_module(evaluator, import_names, sys_path):
     except KeyError:
         pass
 
-    if len(import_names) > 1:
-        # This is a recursive way of importing that works great with
-        # the module cache.
-        bases = evaluator.import_module(evaluator, import_names[:-1], sys_path)
-        if not bases:
-            return NO_CONTEXTS
-        # We can take the first element, because only the os special
-        # case yields multiple modules, which is not important for
-        # further imports.
-        parent_module = list(bases)[0]
-
+    if module_context is None:
+        debug.dbg('global search_module %s', import_names[-1])
+        # Override the sys.path. It works only good that way.
+        # Injecting the path directly into `find_module` did not work.
+        code, module_path, is_pkg = evaluator.compiled_subprocess.get_module_info(
+            string=import_names[-1],
+            full_name=module_name,
+            sys_path=sys_path,
+            is_global_search=True,
+        )
+        if module_path is None:
+            raise JediImportError(import_names)
+    else:
         try:
-            method = parent_module.py__path__
+            method = module_context.py__path__
         except AttributeError:
             # The module is not a package.
             raise JediImportError(import_names)
@@ -447,18 +451,6 @@ def import_module(evaluator, import_names, sys_path):
                     break
             else:
                 raise JediImportError(import_names)
-    else:
-        debug.dbg('global search_module %s', import_names[-1])
-        # Override the sys.path. It works only good that way.
-        # Injecting the path directly into `find_module` did not work.
-        code, module_path, is_pkg = evaluator.compiled_subprocess.get_module_info(
-            string=import_names[-1],
-            full_name=module_name,
-            sys_path=sys_path,
-            is_global_search=True,
-        )
-        if module_path is None:
-            raise JediImportError(import_names)
 
     module = _load_module(
         evaluator, module_path, code, sys_path,
