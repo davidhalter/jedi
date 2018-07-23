@@ -424,13 +424,6 @@ def import_module(evaluator, import_names, sys_path):
         # further imports.
         parent_module = list(bases)[0]
 
-        # This is a huge exception, we follow a nested import
-        # ``os.path``, because it's a very important one in Python
-        # that is being achieved by messing with ``sys.modules`` in
-        # ``os``.
-        if import_names == ('os', 'path'):
-            return parent_module.py__getattribute__('path')
-
         try:
             method = parent_module.py__path__
         except AttributeError:

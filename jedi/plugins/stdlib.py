@@ -77,6 +77,19 @@ class StdlibPlugin(BasePlugin):
 
         return wrapper
 
+    def import_module(self, callback):
+        def wrapper(evaluator, import_names, sys_path):
+            # This is a huge exception, we follow a nested import
+            # ``os.path``, because it's a very important one in Python
+            # that is being achieved by messing with ``sys.modules`` in
+            # ``os``.
+            if import_names == ('os', 'path'):
+                return callback(evaluator, ('os',), sys_path).py__getattribute__('path')
+            return callback(evaluator, import_names, sys_path)
+
+
+        return wrapper
+
 
 def _follow_param(evaluator, arguments, index):
     try:
