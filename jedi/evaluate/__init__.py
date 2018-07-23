@@ -120,6 +120,8 @@ class Evaluator(object):
 
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
+
+        # Plugin API
         from jedi.plugins import plugin_manager
         plugin_callbacks = plugin_manager.get_callbacks(self)
         self.execute = plugin_callbacks.decorate('execute', callback=execute)
