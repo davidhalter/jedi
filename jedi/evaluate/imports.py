@@ -282,7 +282,7 @@ class Importer(object):
         if not self.import_path:
             return NO_CONTEXTS
 
-        return import_module(
+        return self._evaluator.import_module(
             self._evaluator,
             self.import_path,
             self.sys_path_with_modifications(),
@@ -387,16 +387,6 @@ def import_module(evaluator, import_path, sys_path, add_error_callback):
         for i in import_path
     ]
 
-    if len(import_path) > 2 and import_parts[:2] == ['flask', 'ext']:
-        # New style.
-        ipath = ('flask_' + str(import_parts[2]),) + import_path[3:]
-        modules = import_module(evaluator, ipath, sys_path, add_error_callback)
-        if modules:
-            return modules
-        else:
-            # Old style
-            return import_module(evaluator, ('flaskext',) + import_path[2:], sys_path, add_error_callback)
-
     if import_parts[0] in settings.auto_import_modules:
         module = _load_module(
             evaluator,
@@ -414,7 +404,7 @@ def import_module(evaluator, import_path, sys_path, add_error_callback):
     if len(import_path) > 1:
         # This is a recursive way of importing that works great with
         # the module cache.
-        bases = import_module(evaluator, import_path[:-1], sys_path, add_error_callback)
+        bases = evaluator.import_module(evaluator, import_path[:-1], sys_path, add_error_callback)
         if not bases:
             return NO_CONTEXTS
         # We can take the first element, because only the os special

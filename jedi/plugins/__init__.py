@@ -1,5 +1,6 @@
 from jedi.plugins.stdlib import StdlibPlugin
 from jedi.plugins.typeshed import TypeshedPlugin
+from jedi.plugins.flask import FlaskPlugin
 
 
 class _PluginManager(object):
@@ -34,4 +35,5 @@ class _PluginCallbacks(object):
 plugin_manager = _PluginManager([
     StdlibPlugin,
     TypeshedPlugin,
+    FlaskPlugin,
 ])

@@ -123,6 +123,10 @@ class Evaluator(object):
         from jedi.plugins import plugin_manager
         plugin_callbacks = plugin_manager.get_callbacks(self)
         self.execute = plugin_callbacks.decorate('execute', callback=execute)
+        self.import_module = plugin_callbacks.decorate(
+            'import_module',
+            callback=imports.import_module
+        )
 
     @property
     @evaluator_function_cache()

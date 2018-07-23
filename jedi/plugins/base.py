@@ -12,7 +12,7 @@ class BasePlugin(object):
         """
         return callback
 
-    def import_module(callback):
+    def import_module(self, callback):
         """
         Decorates the
         import_module(evaluator, import_path, sys_path, add_error_callback)
