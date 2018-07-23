@@ -12,6 +12,7 @@ This module also supports import autocompletion, which means to complete
 statements like ``from datetim`` (cursor at the end would return ``datetime``).
 """
 import os
+from functools import partial
 
 from parso.python import tree
 from parso.tree import search_ancestor
@@ -21,7 +22,6 @@ from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
 from jedi import debug
 from jedi import settings
-from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -282,113 +282,13 @@ class Importer(object):
         if not self.import_path:
             return NO_CONTEXTS
 
-        return self._do_import(self.import_path, self.sys_path_with_modifications())
+        return import_module(
+            self._evaluator,
+            self.import_path,
+            self.sys_path_with_modifications(),
+            partial(_add_error, self.module_context),
 
-    def _do_import(self, import_path, sys_path):
-        """
-        This method is very similar to importlib's `_gcd_import`.
-        """
-        import_parts = [
-            force_unicode(i.value if isinstance(i, tree.Name) else i)
-            for i in import_path
-        ]
-
-        # Handle "magic" Flask extension imports:
-        # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
-        if len(import_path) > 2 and import_parts[:2] == ['flask', 'ext']:
-            # New style.
-            ipath = ('flask_' + str(import_parts[2]),) + import_path[3:]
-            modules = self._do_import(ipath, sys_path)
-            if modules:
-                return modules
-            else:
-                # Old style
-                return self._do_import(('flaskext',) + import_path[2:], sys_path)
-
-        if import_parts[0] in settings.auto_import_modules:
-            module = _load_module(
-                self._evaluator,
-                import_names=import_parts,
-                sys_path=sys_path,
-            )
-            return ContextSet(module)
-
-        module_name = '.'.join(import_parts)
-        try:
-            return ContextSet(self._evaluator.module_cache.get(module_name))
-        except KeyError:
-            pass
-
-        if len(import_path) > 1:
-            # This is a recursive way of importing that works great with
-            # the module cache.
-            bases = self._do_import(import_path[:-1], sys_path)
-            if not bases:
-                return NO_CONTEXTS
-            # We can take the first element, because only the os special
-            # case yields multiple modules, which is not important for
-            # further imports.
-            parent_module = list(bases)[0]
-
-            # This is a huge exception, we follow a nested import
-            # ``os.path``, because it's a very important one in Python
-            # that is being achieved by messing with ``sys.modules`` in
-            # ``os``.
-            if import_parts == ['os', 'path']:
-                return parent_module.py__getattribute__('path')
-
-            try:
-                method = parent_module.py__path__
-            except AttributeError:
-                # The module is not a package.
-                _add_error(self.module_context, import_path[-1])
-                return NO_CONTEXTS
-            else:
-                paths = method()
-                debug.dbg('search_module %s in paths %s', module_name, paths)
-                for path in paths:
-                    # At the moment we are only using one path. So this is
-                    # not important to be correct.
-                    if not isinstance(path, list):
-                        path = [path]
-                    code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
-                        string=import_parts[-1],
-                        path=path,
-                        full_name=module_name,
-                        is_global_search=False,
-                    )
-                    if module_path is not None:
-                        break
-                else:
-                    _add_error(self.module_context, import_path[-1])
-                    return NO_CONTEXTS
-        else:
-            debug.dbg('global search_module %s in %s', import_parts[-1], self.file_path)
-            # Override the sys.path. It works only good that way.
-            # Injecting the path directly into `find_module` did not work.
-            code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
-                string=import_parts[-1],
-                full_name=module_name,
-                sys_path=sys_path,
-                is_global_search=True,
-            )
-            if module_path is None:
-                # The module is not a package.
-                _add_error(self.module_context, import_path[-1])
-                return NO_CONTEXTS
-
-        module = _load_module(
-            self._evaluator, module_path, code, sys_path,
-            import_names=import_parts,
-            safe_module_name=True,
         )
-
-        if module is None:
-            # The file might raise an ImportError e.g. and therefore not be
-            # importable.
-            return NO_CONTEXTS
-
-        return ContextSet(module)
 
     def _generate_name(self, name, in_module=None):
         # Create a pseudo import to be able to follow them.
@@ -476,6 +376,111 @@ class Importer(object):
                 names += self._get_module_names([path])
 
         return names
+
+
+def import_module(evaluator, import_path, sys_path, add_error_callback):
+    """
+    This method is very similar to importlib's `_gcd_import`.
+    """
+    import_parts = [
+        force_unicode(i.value if isinstance(i, tree.Name) else i)
+        for i in import_path
+    ]
+
+    if len(import_path) > 2 and import_parts[:2] == ['flask', 'ext']:
+        # New style.
+        ipath = ('flask_' + str(import_parts[2]),) + import_path[3:]
+        modules = import_module(evaluator, ipath, sys_path, add_error_callback)
+        if modules:
+            return modules
+        else:
+            # Old style
+            return import_module(evaluator, ('flaskext',) + import_path[2:], sys_path, add_error_callback)
+
+    if import_parts[0] in settings.auto_import_modules:
+        module = _load_module(
+            evaluator,
+            import_names=import_parts,
+            sys_path=sys_path,
+        )
+        return ContextSet(module)
+
+    module_name = '.'.join(import_parts)
+    try:
+        return ContextSet(evaluator.module_cache.get(module_name))
+    except KeyError:
+        pass
+
+    if len(import_path) > 1:
+        # This is a recursive way of importing that works great with
+        # the module cache.
+        bases = import_module(evaluator, import_path[:-1], sys_path, add_error_callback)
+        if not bases:
+            return NO_CONTEXTS
+        # We can take the first element, because only the os special
+        # case yields multiple modules, which is not important for
+        # further imports.
+        parent_module = list(bases)[0]
+
+        # This is a huge exception, we follow a nested import
+        # ``os.path``, because it's a very important one in Python
+        # that is being achieved by messing with ``sys.modules`` in
+        # ``os``.
+        if import_parts == ['os', 'path']:
+            return parent_module.py__getattribute__('path')
+
+        try:
+            method = parent_module.py__path__
+        except AttributeError:
+            # The module is not a package.
+            add_error_callback(import_path[-1])
+            return NO_CONTEXTS
+        else:
+            paths = method()
+            debug.dbg('search_module %s in paths %s', module_name, paths)
+            for path in paths:
+                # At the moment we are only using one path. So this is
+                # not important to be correct.
+                if not isinstance(path, list):
+                    path = [path]
+                code, module_path, is_pkg = evaluator.compiled_subprocess.get_module_info(
+                    string=import_parts[-1],
+                    path=path,
+                    full_name=module_name,
+                    is_global_search=False,
+                )
+                if module_path is not None:
+                    break
+            else:
+                add_error_callback(import_path[-1])
+                return NO_CONTEXTS
+    else:
+        debug.dbg('global search_module %s', import_parts[-1])
+        # Override the sys.path. It works only good that way.
+        # Injecting the path directly into `find_module` did not work.
+        code, module_path, is_pkg = evaluator.compiled_subprocess.get_module_info(
+            string=import_parts[-1],
+            full_name=module_name,
+            sys_path=sys_path,
+            is_global_search=True,
+        )
+        if module_path is None:
+            # The module is not a package.
+            add_error_callback(import_path[-1])
+            return NO_CONTEXTS
+
+    module = _load_module(
+        evaluator, module_path, code, sys_path,
+        import_names=import_parts,
+        safe_module_name=True,
+    )
+
+    if module is None:
+        # The file might raise an ImportError e.g. and therefore not be
+        # importable.
+        return NO_CONTEXTS
+
+    return ContextSet(module)
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,

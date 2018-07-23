@@ -11,3 +11,11 @@ class BasePlugin(object):
         Decorates the execute(context, arguments) function.
         """
         return callback
+
+    def import_module(callback):
+        """
+        Decorates the
+        import_module(evaluator, import_path, sys_path, add_error_callback)
+        function.
+        """
+        return callback
