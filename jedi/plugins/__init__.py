@@ -1,4 +1,5 @@
 from jedi.plugins.stdlib import StdlibPlugin
+from jedi.plugins.typeshed import TypeshedPlugin
 
 
 class _PluginManager(object):
@@ -32,4 +33,5 @@ class _PluginCallbacks(object):
 
 plugin_manager = _PluginManager([
     StdlibPlugin,
+    TypeshedPlugin,
 ])
