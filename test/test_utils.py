@@ -76,7 +76,7 @@ class TestSetupReadline(unittest.TestCase):
         goal = {s + el for el in dir(os)}
         # There are minor differences, e.g. the dir doesn't include deleted
         # items as well as items that are not only available on linux.
-        assert len(set(self.completions(s)).symmetric_difference(goal)) < 20
+        assert len(set(self.completions(s)).symmetric_difference(goal)) < 27
 
     @cwd_at('test')
     def test_local_import(self):
