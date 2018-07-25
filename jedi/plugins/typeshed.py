@@ -1,5 +1,6 @@
 import os
 import re
+from pkg_resources import resource_filename
 
 from jedi._compatibility import FileNotFoundError
 from jedi.plugins.base import BasePlugin
@@ -8,11 +9,7 @@ from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.context import ModuleContext
 
 
-_TYPESHED_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    'third_party',
-    'typeshed',
-)
+_TYPESHED_PATH = resource_filename('jedi', os.path.join('third_party', 'typeshed'))
 
 
 def _create_stub_map(directory):
@@ -125,6 +122,8 @@ class StubProxy(object):
         typeshed_results = self._stub_context.py__getattribute__(
             *args, **kwargs
         )
+        print()
+        print(context_results, typeshed_results)
         return context_results
 
     def __getattr__(self, name):
