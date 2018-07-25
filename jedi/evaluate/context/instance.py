@@ -63,7 +63,7 @@ class AbstractInstanceContext(Context):
             raise AttributeError
 
         def execute(arguments):
-            return ContextSet.from_sets(name.execute(arguments) for name in names)
+            return ContextSet.from_sets(name.infer().execute(arguments) for name in names)
 
         return execute
 

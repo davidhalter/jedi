@@ -5,7 +5,7 @@ from pkg_resources import resource_filename
 from jedi._compatibility import FileNotFoundError
 from jedi.plugins.base import BasePlugin
 from jedi.evaluate.cache import evaluator_as_method_param_cache
-from jedi.evaluate.base_context import Context, ContextSet
+from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.evaluate.context import ModuleContext
 
 
@@ -19,7 +19,8 @@ def _create_stub_map(directory):
     def generate():
         try:
             listed = os.listdir(directory)
-        except FileNotFoundError:
+        except (FileNotFoundError, OSError):
+            # OSError is Python 2
             return
 
         for entry in listed:
@@ -85,7 +86,7 @@ class TypeshedPlugin(BasePlugin):
             # ``os``.
             mapped = self._cache_stub_file_map(evaluator.grammar.version_info)
             context_set = callback(evaluator, import_names, module_context, sys_path)
-            if len(import_names) == 1:
+            if len(import_names) == 1 and import_names[0] != 'typing':
                 path = mapped.get(import_names[0])
                 if path is not None:
                     try:
@@ -119,15 +120,25 @@ class StubProxy(object):
         context_results = self._context.py__getattribute__(
             *args, **kwargs
         )
-        typeshed_results = self._stub_context.py__getattribute__(
+        typeshed_results = list(self._stub_context.py__getattribute__(
             *args, **kwargs
+        ))
+        if not typeshed_results:
+            return NO_CONTEXTS
+
+        return ContextSet.from_iterable(
+            StubProxy(c.parent_context, c, typeshed_results[0]) for c in context_results
         )
-        print()
-        print(context_results, typeshed_results)
-        return context_results
+
+    @property
+    def py__call__(self):
+        def py__call__(arguments):
+            return self._stub_context.py__call__(arguments)
+
+        return py__call__
 
     def __getattr__(self, name):
         return getattr(self._context, name)
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.access_handle.get_repr())
+        return '<%s: %s %s>' % (type(self).__name__, self._context, self._stub_context)

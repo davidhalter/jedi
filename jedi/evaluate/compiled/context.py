@@ -187,7 +187,7 @@ class CompiledObject(Context):
                 continue
             else:
                 bltn_obj = builtin_from_name(self.evaluator, name)
-                for result in bltn_obj.execute(params):
+                for result in self.evaluator.execute(bltn_obj, params):
                     yield result
         for type_ in docstrings.infer_return_types(self):
             yield type_

@@ -33,26 +33,14 @@ class Context(BaseContext):
         # overwritten.
         return self.__class__.__name__.lower()
 
-    @debug.increase_indent
-    def execute(self, arguments):
-        """
-        In contrast to py__call__ this function is always available.
-
-        `hasattr(x, py__call__)` can also be checked to see if a context is
-        executable.
-        """
-        if self.evaluator.is_analysis:
-            arguments.eval_all()
-
-        return self.evaluator.execute(self, arguments)
-
     def execute_evaluated(self, *value_list):
         """
         Execute a function with already executed arguments.
         """
+        # TODO move this out of here to the evaluator.
         from jedi.evaluate.arguments import ValuesArguments
         arguments = ValuesArguments([ContextSet(value) for value in value_list])
-        return self.execute(arguments)
+        return self.evaluator.execute(self, arguments)
 
     def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
@@ -247,6 +235,9 @@ class ContextSet(BaseContextSet):
             yield get_merged_lazy_context(
                 [l for l in lazy_contexts if l is not None]
             )
+
+    def execute(self, arguments):
+        return ContextSet.from_sets(c.evaluator.execute(c, arguments) for c in self._set)
 
 
 NO_CONTEXTS = ContextSet()
