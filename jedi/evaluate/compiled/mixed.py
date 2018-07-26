@@ -107,7 +107,7 @@ def _load_module(evaluator, path):
     module_node = evaluator.grammar.parse(
         path=path,
         cache=True,
-        diff_cache=True,
+        diff_cache=settings.fast_parser,
         cache_path=settings.cache_directory
     ).get_root_node()
     # python_module = inspect.getmodule(python_object)

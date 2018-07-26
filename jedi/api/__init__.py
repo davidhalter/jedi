@@ -11,6 +11,7 @@ arguments.
 """
 import os
 import sys
+import warnings
 
 import parso
 from parso.python import tree
@@ -74,9 +75,6 @@ class Script(object):
     :param encoding: The encoding of ``source``, if it is not a
         ``unicode`` object (default ``'utf-8'``).
     :type encoding: str
-    :param source_encoding: The encoding of ``source``, if it is not a
-        ``unicode`` object (default ``'utf-8'``).
-    :type encoding: str
     :param sys_path: ``sys.path`` to use during analysis of the script
     :type sys_path: list
     :param environment: TODO
@@ -114,9 +112,10 @@ class Script(object):
         self._module_node, source = self._evaluator.parse_and_get_code(
             code=source,
             path=self.path,
+            encoding=encoding,
             cache=False,  # No disk cache, because the current script often changes.
-            diff_cache=True,
-            cache_path=settings.cache_directory
+            diff_cache=settings.fast_parser,
+            cache_path=settings.cache_directory,
         )
         debug.speed('parsed')
         self._code_lines = parso.split_lines(source, keepends=True)
@@ -134,7 +133,9 @@ class Script(object):
 
         column = line_len if column is None else column
         if not (0 <= column <= line_len):
-            raise ValueError('`column` parameter is not in a valid range.')
+            raise ValueError('`column` parameter (%d) is not in a valid range '
+                             '(0-%d) for line %d (%r).' % (
+                                 column, line_len, line, line_string))
         self._pos = line, column
         self._path = path
 
@@ -144,9 +145,9 @@ class Script(object):
     def _get_module(self):
         name = '__main__'
         if self.path is not None:
-            n = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
-            if n is not None:
-                name = n
+            import_names = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
+            if import_names is not None:
+                name = '.'.join(import_names)
 
         module = ModuleContext(
             self._evaluator, self._module_node, self.path,
@@ -156,7 +157,11 @@ class Script(object):
         return module
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, repr(self._orig_path))
+        return '<%s: %s %r>' % (
+            self.__class__.__name__,
+            repr(self._orig_path),
+            self._evaluator.environment,
+        )
 
     def completions(self):
         """
@@ -203,20 +208,33 @@ class Script(object):
         # the API.
         return helpers.sorted_definitions(set(defs))
 
-    def goto_assignments(self, follow_imports=False):
+    def goto_assignments(self, follow_imports=False, follow_builtin_imports=False):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
+        :param follow_imports: The goto call will follow imports.
+        :param follow_builtin_imports: If follow_imports is True will decide if
+            it follow builtin imports.
         :rtype: list of :class:`classes.Definition`
         """
         def filter_follow_imports(names, check):
             for name in names:
                 if check(name):
-                    for result in filter_follow_imports(name.goto(), check):
-                        yield result
+                    new_names = list(filter_follow_imports(name.goto(), check))
+                    found_builtin = False
+                    if follow_builtin_imports:
+                        for new_name in new_names:
+                            if new_name.start_pos is None:
+                                found_builtin = True
+
+                    if found_builtin and not isinstance(name, imports.SubModuleName):
+                        yield name
+                    else:
+                        for new_name in new_names:
+                            yield new_name
                 else:
                     yield name
 
@@ -238,7 +256,7 @@ class Script(object):
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
-    def usages(self, additional_module_paths=()):
+    def usages(self, additional_module_paths=(), **kwargs):
         """
         Return :class:`classes.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
@@ -247,17 +265,31 @@ class Script(object):
 
         .. todo:: Implement additional_module_paths
 
+        :param additional_module_paths: Deprecated, never ever worked.
+        :param include_builtins: Default True, checks if a usage is a builtin
+            (e.g. ``sys``) and in that case does not return it.
         :rtype: list of :class:`classes.Definition`
         """
-        tree_name = self._module_node.get_name_of_position(self._pos)
-        if tree_name is None:
-            # Must be syntax
-            return []
+        if additional_module_paths:
+            warnings.warn(
+                "Deprecated since version 0.12.0. This never even worked, just ignore it.",
+                DeprecationWarning,
+                stacklevel=2
+            )
 
-        names = usages.usages(self._get_module(), tree_name)
+        def _usages(include_builtins=True):
+            tree_name = self._module_node.get_name_of_position(self._pos)
+            if tree_name is None:
+                # Must be syntax
+                return []
 
-        definitions = [classes.Definition(self._evaluator, n) for n in names]
-        return helpers.sorted_definitions(definitions)
+            names = usages.usages(self._get_module(), tree_name)
+
+            definitions = [classes.Definition(self._evaluator, n) for n in names]
+            if not include_builtins:
+                definitions = [d for d in definitions if not d.in_builtin_module()]
+            return helpers.sorted_definitions(definitions)
+        return _usages(**kwargs)
 
     def call_signatures(self):
         """

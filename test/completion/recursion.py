@@ -76,3 +76,18 @@ class InstanceAttributeIfs:
 InstanceAttributeIfs().a1
 #? int() str()
 InstanceAttributeIfs().a2
+
+
+
+class A:
+    def a(self, b):
+        for x in [self.a(i) for i in b]:
+            #?
+            x
+
+class B:
+    def a(self, b):
+        for i in b:
+            for i in self.a(i):
+                #?
+                yield i

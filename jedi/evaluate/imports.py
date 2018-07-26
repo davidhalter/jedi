@@ -21,12 +21,13 @@ from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
 from jedi import debug
 from jedi import settings
+from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
-from jedi.evaluate.utils import unite, dotted_from_fs_path
+from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
@@ -264,8 +265,11 @@ class Importer(object):
         )
 
     def sys_path_with_modifications(self):
-        sys_path_mod = self._evaluator.get_sys_path() \
-                       + sys_path.check_sys_path_modifications(self.module_context)
+
+        sys_path_mod = (
+            self._evaluator.get_sys_path()
+            + sys_path.check_sys_path_modifications(self.module_context)
+        )
 
         if self.import_path and self.file_path is not None \
                 and self._evaluator.environment.version_info.major == 2:
@@ -277,6 +281,7 @@ class Importer(object):
     def follow(self):
         if not self.import_path:
             return NO_CONTEXTS
+
         return self._do_import(self.import_path, self.sys_path_with_modifications())
 
     def _do_import(self, import_path, sys_path):
@@ -299,6 +304,14 @@ class Importer(object):
             else:
                 # Old style
                 return self._do_import(('flaskext',) + import_path[2:], sys_path)
+
+        if import_parts[0] in settings.auto_import_modules:
+            module = _load_module(
+                self._evaluator,
+                import_names=import_parts,
+                sys_path=sys_path,
+            )
+            return ContextSet(module)
 
         module_name = '.'.join(import_parts)
         try:
@@ -341,7 +354,8 @@ class Importer(object):
                     code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
                         string=import_parts[-1],
                         path=path,
-                        full_name=module_name
+                        full_name=module_name,
+                        is_global_search=False,
                     )
                     if module_path is not None:
                         break
@@ -349,13 +363,14 @@ class Importer(object):
                     _add_error(self.module_context, import_path[-1])
                     return NO_CONTEXTS
         else:
-            debug.dbg('search_module %s in %s', import_parts[-1], self.file_path)
+            debug.dbg('global search_module %s in %s', import_parts[-1], self.file_path)
             # Override the sys.path. It works only good that way.
             # Injecting the path directly into `find_module` did not work.
             code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
                 string=import_parts[-1],
                 full_name=module_name,
                 sys_path=sys_path,
+                is_global_search=True,
             )
             if module_path is None:
                 # The module is not a package.
@@ -364,7 +379,7 @@ class Importer(object):
 
         module = _load_module(
             self._evaluator, module_path, code, sys_path,
-            module_name=module_name,
+            import_names=import_parts,
             safe_module_name=True,
         )
 
@@ -464,9 +479,13 @@ class Importer(object):
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
-                 module_name=None, safe_module_name=False):
+                 import_names=None, safe_module_name=False):
+    if import_names is None:
+        dotted_name = None
+    else:
+        dotted_name = '.'.join(import_names)
     try:
-        return evaluator.module_cache.get(module_name)
+        return evaluator.module_cache.get(dotted_name)
     except KeyError:
         pass
     try:
@@ -485,12 +504,10 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
         if sys_path is None:
             sys_path = evaluator.get_sys_path()
 
-        dotted_path = path and dotted_from_fs_path(path, sys_path)
-        if path is not None and path.endswith(('.py', '.zip', '.egg')) \
-                and dotted_path not in settings.auto_import_modules:
-
+        if path is not None and path.endswith(('.py', '.zip', '.egg')):
             module_node = evaluator.parse(
-                code=code, path=path, cache=True, diff_cache=True,
+                code=code, path=path, cache=True,
+                diff_cache=settings.fast_parser,
                 cache_path=settings.cache_directory)
 
             from jedi.evaluate.context import ModuleContext
@@ -500,10 +517,11 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
                 code_lines=get_cached_code_lines(evaluator.grammar, path),
             )
         else:
-            module = compiled.load_module(evaluator, path=path, sys_path=sys_path)
+            assert dotted_name is not None
+            module = compiled.load_module(evaluator, dotted_name=dotted_name, sys_path=sys_path)
 
-    if module is not None and module_name is not None:
-        add_module_to_cache(evaluator, module_name, module, safe=safe_module_name)
+    if module is not None and dotted_name is not None:
+        add_module_to_cache(evaluator, dotted_name, module, safe=safe_module_name)
 
     return module
 
@@ -542,10 +560,11 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
-                module_name = sys_path.dotted_path_in_sys_path(e_sys_path, path)
+                import_names = sys_path.dotted_path_in_sys_path(e_sys_path, path)
                 module = _load_module(
                     evaluator, path, code,
-                    sys_path=e_sys_path, module_name=module_name
+                    sys_path=e_sys_path,
+                    import_names=import_names,
                 )
                 return module
 

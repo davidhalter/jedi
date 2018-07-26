@@ -68,7 +68,7 @@ def _search_param_in_numpydocstr(docstr, param_str):
         return []
     for p_name, p_type, p_descr in params:
         if p_name == param_str:
-            m = re.match('([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
+            m = re.match(r'([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
             if m:
                 p_type = m.group(1)
             return list(_expand_typestr(p_type))
@@ -103,11 +103,11 @@ def _expand_typestr(type_str):
     Attempts to interpret the possible types in `type_str`
     """
     # Check if alternative types are specified with 'or'
-    if re.search('\\bor\\b', type_str):
+    if re.search(r'\bor\b', type_str):
         for t in type_str.split('or'):
             yield t.split('of')[0].strip()
     # Check if like "list of `type`" and set type to list
-    elif re.search('\\bof\\b', type_str):
+    elif re.search(r'\bof\b', type_str):
         yield type_str.split('of')[0]
     # Check if type has is a set of valid literal values eg: {'C', 'F', 'A'}
     elif type_str.startswith('{'):
@@ -194,7 +194,7 @@ def _evaluate_for_statement_string(module_context, string):
     if string is None:
         return []
 
-    for element in re.findall('((?:\w+\.)*\w+)\.', string):
+    for element in re.findall(r'((?:\w+\.)*\w+)\.', string):
         # Try to import module part in dotted name.
         # (e.g., 'threading' in 'threading.Thread').
         string = 'import %s\n' % element + string

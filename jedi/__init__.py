@@ -23,7 +23,7 @@ example for the autocompletion feature:
 ... datetime.da'''
 >>> script = jedi.Script(source, 3, len('datetime.da'), 'example.py')
 >>> script
-<Script: 'example.py'>
+<Script: 'example.py' ...>
 >>> completions = script.completions()
 >>> completions                                         #doctest: +ELLIPSIS
 [<Completion: date>, <Completion: datetime>, ...]
@@ -36,7 +36,7 @@ As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 
-__version__ = '0.12.0'
+__version__ = '0.12.1'
 
 from jedi.api import Script, Interpreter, set_debug_function, \
     preload_module, names

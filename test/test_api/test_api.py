@@ -285,3 +285,11 @@ def test_backslash_continuation_and_bracket(Script):
     column = lines[-1].index('(')
     def_, = Script(code, line=len(lines), column=column).goto_definitions()
     assert def_.name == 'int'
+
+
+def test_goto_follow_builtin_imports(Script):
+    s = Script('import sys; sys')
+    d, = s.goto_assignments(follow_imports=True)
+    assert d.in_builtin_module() is True
+    d, = s.goto_assignments(follow_imports=True, follow_builtin_imports=True)
+    assert d.in_builtin_module() is False

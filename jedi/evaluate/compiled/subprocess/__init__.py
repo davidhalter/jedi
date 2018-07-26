@@ -24,17 +24,8 @@ from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
     SignatureParam
 from jedi.api.exceptions import InternalError
 
-_subprocesses = {}
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
-
-
-def get_subprocess(executable):
-    try:
-        return _subprocesses[executable]
-    except KeyError:
-        sub = _subprocesses[executable] = _CompiledSubprocess(executable)
-        return sub
 
 
 def _get_function(name):
@@ -118,16 +109,28 @@ class EvaluatorSubprocess(_EvaluatorProcess):
         return obj
 
     def __del__(self):
-        if self._used:
+        if self._used and not self._compiled_subprocess.is_crashed:
             self._compiled_subprocess.delete_evaluator(self._evaluator_id)
 
 
-class _CompiledSubprocess(object):
-    _crashed = False
+class CompiledSubprocess(object):
+    is_crashed = False
+    # Start with 2, gets set after _get_info.
+    _pickle_protocol = 2
 
     def __init__(self, executable):
         self._executable = executable
         self._evaluator_deletion_queue = queue.deque()
+
+    def __repr__(self):
+        pid = os.getpid()
+        return '<%s _executable=%r, _pickle_protocol=%r, is_crashed=%r, pid=%r>' % (
+            self.__class__.__name__,
+            self._executable,
+            self._pickle_protocol,
+            self.is_crashed,
+            pid,
+        )
 
     @property
     @memoize_method
@@ -136,12 +139,17 @@ class _CompiledSubprocess(object):
         args = (
             self._executable,
             _MAIN_PATH,
-            os.path.dirname(os.path.dirname(parso_path))
+            os.path.dirname(os.path.dirname(parso_path)),
+            '.'.join(str(x) for x in sys.version_info[:3]),
         )
         return GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            # Use system default buffering on Python 2 to improve performance
+            # (this is already the case on Python 3).
+            bufsize=-1
         )
 
     def run(self, evaluator, function, args=(), kwargs={}):
@@ -160,24 +168,22 @@ class _CompiledSubprocess(object):
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
 
-    def kill(self):
-        self._crashed = True
-        try:
-            subprocess = _subprocesses[self._executable]
-        except KeyError:
-            # Fine it was already removed from the cache.
-            pass
-        else:
-            # In the `!=` case there is already a new subprocess in place
-            # and we don't need to do anything here anymore.
-            if subprocess == self:
-                del _subprocesses[self._executable]
-
+    def _kill(self):
+        self.is_crashed = True
+        if subprocess.signal is None:
+            # If the Python process is terminating, sometimes it will remove
+            # the signal module before a lot of other things, so check for it
+            # and don't do anything, because the process is killed anyways.
+            return
         self._process.kill()
         self._process.wait()
 
+    def __del__(self):
+        if not self.is_crashed:
+            self._kill()
+
     def _send(self, evaluator_id, function, args=(), kwargs={}):
-        if self._crashed:
+        if self.is_crashed:
             raise InternalError("The subprocess %s has crashed." % self._executable)
 
         if not is_py3:
@@ -186,7 +192,7 @@ class _CompiledSubprocess(object):
 
         data = evaluator_id, function, args, kwargs
         try:
-            pickle_dump(data, self._process.stdin)
+            pickle_dump(data, self._process.stdin, self._pickle_protocol)
         except (socket.error, IOError) as e:
             # Once Python2 will be removed we can just use `BrokenPipeError`.
             # Also, somehow in windows it returns EINVAL instead of EPIPE if
@@ -194,15 +200,24 @@ class _CompiledSubprocess(object):
             if e.errno not in (errno.EPIPE, errno.EINVAL):
                 # Not a broken pipe
                 raise
-            self.kill()
+            self._kill()
             raise InternalError("The subprocess %s was killed. Maybe out of memory?"
                                 % self._executable)
 
         try:
             is_exception, traceback, result = pickle_load(self._process.stdout)
-        except EOFError:
-            self.kill()
-            raise InternalError("The subprocess %s has crashed." % self._executable)
+        except EOFError as eof_error:
+            try:
+                stderr = self._process.stderr.read()
+            except Exception as exc:
+                stderr = '<empty/not available (%r)>' % exc
+            self._kill()
+            raise InternalError(
+                "The subprocess %s has crashed (%r, stderr=%s)." % (
+                    self._executable,
+                    eof_error,
+                    stderr,
+                ))
 
         if is_exception:
             # Replace the attribute error message with a the traceback. It's
@@ -223,11 +238,12 @@ class _CompiledSubprocess(object):
 
 
 class Listener(object):
-    def __init__(self):
+    def __init__(self, pickle_protocol):
         self._evaluators = {}
         # TODO refactor so we don't need to process anymore just handle
         # controlling.
         self._process = _EvaluatorProcess(Listener)
+        self._pickle_protocol = pickle_protocol
 
     def _get_evaluator(self, function, evaluator_id):
         from jedi.evaluate import Evaluator
@@ -275,20 +291,26 @@ class Listener(object):
         if sys.version_info[0] > 2:
             stdout = stdout.buffer
             stdin = stdin.buffer
+        # Python 2 opens streams in text mode on Windows. Set stdout and stdin
+        # to binary mode.
+        elif sys.platform == 'win32':
+            import msvcrt
+            msvcrt.setmode(stdout.fileno(), os.O_BINARY)
+            msvcrt.setmode(stdin.fileno(), os.O_BINARY)
 
         while True:
             try:
                 payload = pickle_load(stdin)
             except EOFError:
-                # It looks like the parent process closed. Don't make a big fuss
-                # here and just exit.
-                exit(1)
+                # It looks like the parent process closed.
+                # Don't make a big fuss here and just exit.
+                exit(0)
             try:
                 result = False, None, self._run(*payload)
             except Exception as e:
                 result = True, traceback.format_exc(), e
 
-            pickle_dump(result, file=stdout)
+            pickle_dump(result, stdout, self._pickle_protocol)
 
 
 class AccessHandle(object):

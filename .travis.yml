@@ -47,7 +47,11 @@ install:
 script:
     - tox
 after_script:
-    - if [ $TOXENV == "cov" ]; then
-      pip install --quiet coveralls;
-      coveralls;
+    - |
+      if [ $TOXENV == "cov" ]; then
+        pip install --quiet codecov coveralls
+        coverage xml
+        coverage report -m
+        coveralls
+        bash <(curl -s https://codecov.io/bash) -X gcov -X coveragepy -X search -X fix -X xcode -f coverage.xml
       fi

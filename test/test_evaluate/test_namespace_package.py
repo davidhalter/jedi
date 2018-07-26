@@ -1,6 +1,9 @@
 from os.path import dirname, join
 
 import pytest
+import py
+
+from ..helpers import get_example_dir
 
 
 SYS_PATH = [join(dirname(__file__), d)
@@ -72,3 +75,22 @@ def test_nested_namespace_package(Script):
     result = script.goto_definitions()
 
     assert len(result) == 1
+
+
+def test_relative_import(Script, environment, tmpdir):
+    """
+    Attempt a relative import in a very simple namespace package.
+    """
+    if environment.version_info < (3, 4):
+        pytest.skip()
+
+    directory = get_example_dir('namespace_package_relative_import')
+    # Need to copy the content in a directory where there's no __init__.py.
+    py.path.local(directory).copy(tmpdir)
+    file_path = join(tmpdir.strpath, "rel1.py")
+    script = Script(path=file_path, line=1)
+    d, = script.goto_definitions()
+    assert d.name == 'int'
+    d, = script.goto_assignments()
+    assert d.name == 'name'
+    assert d.module_name == 'rel2'

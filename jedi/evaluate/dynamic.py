@@ -28,22 +28,30 @@ from jedi.evaluate.helpers import is_stdlib_path
 from jedi.evaluate.utils import to_list
 from jedi.parser_utils import get_parent_scope
 from jedi.evaluate.context import ModuleContext, instance
-from jedi.evaluate.base_context import ContextSet
-
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
+from jedi.evaluate import recursion
 
 
 MAX_PARAM_SEARCHES = 20
 
 
-class MergedExecutedParams(object):
+class DynamicExecutedParams(object):
     """
     Simulates being a parameter while actually just being multiple params.
     """
-    def __init__(self, executed_params):
+
+    def __init__(self, evaluator, executed_params):
+        self.evaluator = evaluator
         self._executed_params = executed_params
 
     def infer(self):
-        return ContextSet.from_sets(p.infer() for p in self._executed_params)
+        with recursion.execution_allowed(self.evaluator, self) as allowed:
+            # We need to catch recursions that may occur, because an
+            # anonymous functions can create an anonymous parameter that is
+            # more or less self referencing.
+            if allowed:
+                return ContextSet.from_sets(p.infer() for p in self._executed_params)
+            return NO_CONTEXTS
 
 
 @debug.increase_indent
@@ -94,7 +102,7 @@ def search_params(evaluator, execution_context, funcdef):
                     function_execution.get_params()
                     for function_execution in function_executions
                 ))
-                params = [MergedExecutedParams(executed_params) for executed_params in zipped_params]
+                params = [DynamicExecutedParams(evaluator, executed_params) for executed_params in zipped_params]
                 # Evaluate the ExecutedParams to types.
             else:
                 return create_default_params(execution_context, funcdef)

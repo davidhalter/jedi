@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 
 def _get_paths():
@@ -45,5 +45,11 @@ else:
     load('jedi')
     from jedi.evaluate.compiled import subprocess  # NOQA
 
+from jedi._compatibility import highest_pickle_protocol  # noqa: E402
+
+
+# Retrieve the pickle protocol.
+host_sys_version = [int(x) for x in sys.argv[2].split('.')]
+pickle_protocol = highest_pickle_protocol([sys.version_info, host_sys_version])
 # And finally start the client.
-subprocess.Listener().listen()
+subprocess.Listener(pickle_protocol=pickle_protocol).listen()

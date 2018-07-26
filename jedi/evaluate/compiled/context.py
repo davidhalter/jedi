@@ -81,6 +81,10 @@ class CompiledObject(Context):
             for access in self.access_handle.py__bases__()
         )
 
+    @CheckAttribute
+    def py__path__(self):
+        return self.access_handle.py__path__()
+
     def py__bool__(self):
         return self.access_handle.py__bool__()
 

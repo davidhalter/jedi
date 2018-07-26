@@ -205,8 +205,12 @@ def eval_atom(context, atom):
         # For False/True/None
         if atom.value in ('False', 'True', 'None'):
             return ContextSet(compiled.builtin_from_name(context.evaluator, atom.value))
-        if atom.value == 'print':
+        elif atom.value == 'print':
             # print e.g. could be evaluated like this in Python 2.7
+            return NO_CONTEXTS
+        elif atom.value == 'yield':
+            # Contrary to yield from, yield can just appear alone to return a
+            # value when used with `.send()`.
             return NO_CONTEXTS
         assert False, 'Cannot evaluate the keyword %s' % atom
 

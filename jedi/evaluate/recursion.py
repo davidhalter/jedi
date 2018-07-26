@@ -65,7 +65,7 @@ def execution_allowed(evaluator, node):
 
     if node in pushed_nodes:
         debug.warning('catched stmt recursion: %s @%s', node,
-                      node.start_pos)
+                      getattr(node, 'start_pos', None))
         yield False
     else:
         try:
@@ -77,14 +77,14 @@ def execution_allowed(evaluator, node):
 
 def execution_recursion_decorator(default=NO_CONTEXTS):
     def decorator(func):
-        def wrapper(execution, **kwargs):
-            detector = execution.evaluator.execution_recursion_detector
-            allowed = detector.push_execution(execution)
+        def wrapper(self, **kwargs):
+            detector = self.evaluator.execution_recursion_detector
+            allowed = detector.push_execution(self)
             try:
                 if allowed:
                     result = default
                 else:
-                    result = func(execution, **kwargs)
+                    result = func(self, **kwargs)
             finally:
                 detector.pop_execution()
             return result

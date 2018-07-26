@@ -11,7 +11,7 @@ from jedi._compatibility import reraise
 _sep = os.path.sep
 if os.path.altsep is not None:
     _sep += os.path.altsep
-_path_re = re.compile('(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
+_path_re = re.compile(r'(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
 del _sep
 
 
@@ -117,38 +117,3 @@ def indent_block(text, indention='    '):
         text = text[:-1]
     lines = text.split('\n')
     return '\n'.join(map(lambda s: indention + s, lines)) + temp
-
-
-def dotted_from_fs_path(fs_path, sys_path):
-    """
-    Changes `/usr/lib/python3.4/email/utils.py` to `email.utils`.  I.e.
-    compares the path with sys.path and then returns the dotted_path. If the
-    path is not in the sys.path, just returns None.
-    """
-    if os.path.basename(fs_path).startswith('__init__.'):
-        # We are calculating the path. __init__ files are not interesting.
-        fs_path = os.path.dirname(fs_path)
-
-    # prefer
-    #   - UNIX
-    #     /path/to/pythonX.Y/lib-dynload
-    #     /path/to/pythonX.Y/site-packages
-    #   - Windows
-    #     C:\path\to\DLLs
-    #     C:\path\to\Lib\site-packages
-    # over
-    #   - UNIX
-    #     /path/to/pythonX.Y
-    #   - Windows
-    #     C:\path\to\Lib
-    path = ''
-    for s in sys_path:
-        if (fs_path.startswith(s) and len(path) < len(s)):
-            path = s
-
-    # - Window
-    # X:\path\to\lib-dynload/datetime.pyd => datetime
-    module_path = fs_path[len(path):].lstrip(os.path.sep).lstrip('/')
-    # - Window
-    # Replace like X:\path\to\something/foo/bar.py
-    return _path_re.sub('', module_path).replace(os.path.sep, '.').replace('/', '.')

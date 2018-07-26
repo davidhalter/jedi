@@ -144,7 +144,8 @@ Check for `isinstance` and other information to infer a type.
 """
 
 auto_import_modules = [
-    'hashlib',  # setattr
+    'hashlib',  # hashlib is mostly using setattr, which jedi doesn't understand
+    'gi',  # This third-party repository (GTK stuff) doesn't really work with jedi
 ]
 """
 Modules that are not analyzed but imported, although they contain Python code.

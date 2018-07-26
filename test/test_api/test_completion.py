@@ -137,3 +137,7 @@ def test_async(Script, environment):
     names = [c.name for c in comps]
     assert 'foo' in names
     assert 'hey' in names
+
+
+def test_with_stmt_error_recovery(Script):
+    assert Script('with open('') as foo: foo.\na', line=1).completions()

@@ -3,7 +3,6 @@
 from setuptools import setup, find_packages
 
 import ast
-import sys
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
@@ -11,10 +10,7 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 # Get the version from within jedi. It's defined in exactly one place now.
 with open('jedi/__init__.py') as f:
     tree = ast.parse(f.read())
-if sys.version_info > (3, 7):
-    version = tree.body[0].value.s
-else:
-    version = tree.body[1].value.s
+version = tree.body[1].value.s
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 with open('requirements.txt') as f:

@@ -129,11 +129,12 @@ class Key:
 class Value:
     pass
 
-def mapping(p, q, d, r, s, t):
+def mapping(p, q, d, dd, r, s, t):
     """
     :type p: typing.Mapping[Key, Value]
     :type q: typing.MutableMapping[Key, Value]
     :type d: typing.Dict[Key, Value]
+    :type dd: typing.DefaultDict[Key, Value]
     :type r: typing.KeysView[Key]
     :type s: typing.ValuesView[Value]
     :type t: typing.ItemsView[Key, Value]
@@ -144,6 +145,8 @@ def mapping(p, q, d, r, s, t):
     q.setd
     #? ["setdefault"]
     d.setd
+    #? ["setdefault"]
+    dd.setd
     #? Value()
     p[1]
     for key in p:
@@ -241,6 +244,36 @@ for value in x.values():
     #? int()
     value
 # python >= 3.4
+
+class TestDefaultDict(typing.DefaultDict[str, int]):
+    def setdud(self):
+        pass
+
+def testdict(x):
+    """
+    :type x: TestDefaultDict
+    """
+    #? ["setdud", "setdefault"]
+    x.setd
+    for key in x.keys():
+        #? str()
+        key
+    for value in x.values():
+        #? int()
+        value
+
+x = TestDefaultDict()
+#? ["setdud", "setdefault"]
+x.setd
+for key in x.keys():
+    #? str()
+    key
+for value in x.values():
+    #? int()
+    value
+# python >= 3.4
+
+
 """
 docstrings have some auto-import, annotations can use all of Python's
 import logic

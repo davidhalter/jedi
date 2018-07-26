@@ -29,6 +29,10 @@ finally:
     x
     x = tuple
 
+if False:
+    with open("") as defined_in_false:
+        #? ['flush']
+        defined_in_false.flu
 
 # -----------------
 # Return checks
