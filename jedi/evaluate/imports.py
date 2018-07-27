@@ -293,10 +293,10 @@ class Importer(object):
                     self._evaluator.import_module(
                         self._evaluator,
                         import_names[:i+1],
-                        module_context,
+                        parent_module_context,
                         self.sys_path_with_modifications(),
                     )
-                    for module_context in context_set
+                    for parent_module_context in context_set
                 ])
             except JediImportError:
                 _add_error(self.module_context, name)
@@ -397,7 +397,7 @@ class JediImportError(Exception):
         self.import_names = import_names
 
 
-def import_module(evaluator, import_names, module_context, sys_path):
+def import_module(evaluator, import_names, parent_module_context, sys_path):
     """
     This method is very similar to importlib's `_gcd_import`.
     """
@@ -415,7 +415,7 @@ def import_module(evaluator, import_names, module_context, sys_path):
     except KeyError:
         pass
 
-    if module_context is None:
+    if parent_module_context is None:
         debug.dbg('global search_module %s', import_names[-1])
         # Override the sys.path. It works only good that way.
         # Injecting the path directly into `find_module` did not work.
@@ -429,7 +429,7 @@ def import_module(evaluator, import_names, module_context, sys_path):
             raise JediImportError(import_names)
     else:
         try:
-            method = module_context.py__path__
+            method = parent_module_context.py__path__
         except AttributeError:
             # The module is not a package.
             raise JediImportError(import_names)

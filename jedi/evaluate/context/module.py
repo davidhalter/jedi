@@ -88,11 +88,13 @@ class ModuleContext(TreeContext):
     @property
     def _string_name(self):
         """ This is used for the goto functions. """
+        # TODO It's ugly that we even use this, the name is usually well known
+        # ahead so just pass it when create a ModuleContext.
         if self._path is None:
             return ''  # no path -> empty name
         else:
             sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self._path)
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.pyi?|\.so)?$' % sep, self._path)
             # Remove PEP 3149 names
             return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
 
@@ -106,7 +108,7 @@ class ModuleContext(TreeContext):
         :return: The path to the directory of a package. None in case it's not
                  a package.
         """
-        for suffix in all_suffixes():
+        for suffix in all_suffixes() + ['.pyi']:
             ending = '__init__' + suffix
             py__file__ = self.py__file__()
             if py__file__ is not None and py__file__.endswith(ending):
@@ -139,7 +141,7 @@ class ModuleContext(TreeContext):
     def _py__path__(self):
         search_path = self.evaluator.get_sys_path()
         init_path = self.py__file__()
-        if os.path.basename(init_path) == '__init__.py':
+        if os.path.basename(init_path) in ('__init__.py', '__init__.pyi'):
             with open(init_path, 'rb') as f:
                 content = python_bytes_to_unicode(f.read(), errors='replace')
                 # these are strings that need to be used for namespace packages,

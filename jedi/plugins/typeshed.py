@@ -4,12 +4,19 @@ from pkg_resources import resource_filename
 
 from jedi._compatibility import FileNotFoundError
 from jedi.plugins.base import BasePlugin
-from jedi.evaluate.cache import evaluator_as_method_param_cache
+from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.evaluate.context import ModuleContext
 
 
 _TYPESHED_PATH = resource_filename('jedi', os.path.join('third_party', 'typeshed'))
+
+
+def _merge_create_stub_map(directories):
+    map_ = {}
+    for directory in directories:
+        map_.update(_create_stub_map(directory))
+    return map_
 
 
 def _create_stub_map(directory):
@@ -53,6 +60,11 @@ def _get_typeshed_directories(version_info):
             yield os.path.join(base, check_version)
 
 
+@evaluator_function_cache()
+def _load_stub(evaluator, path):
+    return evaluator.parse(path=path, cache=True)
+
+
 class TypeshedPlugin(BasePlugin):
     _version_cache = {}
 
@@ -68,48 +80,53 @@ class TypeshedPlugin(BasePlugin):
         except KeyError:
             pass
 
-        self._version_cache[version] = file_set = {}
-        for dir_ in _get_typeshed_directories(version_info):
-            file_set.update(_create_stub_map(dir_))
-
+        self._version_cache[version] = file_set = \
+            _merge_create_stub_map(_get_typeshed_directories(version_info))
         return file_set
 
-    @evaluator_as_method_param_cache()
-    def _load_stub(self, evaluator, path):
-        return evaluator.parse(path=path, cache=True)
-
     def import_module(self, callback):
-        def wrapper(evaluator, import_names, module_context, sys_path):
+        def wrapper(evaluator, import_names, parent_module_context, sys_path):
             # This is a huge exception, we follow a nested import
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
-            mapped = self._cache_stub_file_map(evaluator.grammar.version_info)
-            context_set = callback(evaluator, import_names, module_context, sys_path)
-            if len(import_names) == 1 and import_names[0] != 'typing':
-                path = mapped.get(import_names[0])
+            def _find_and_load_stub_module(stub_map):
+                path = stub_map.get(import_name)
                 if path is not None:
                     try:
-                        stub_module = self._load_stub(evaluator, path)
+                        stub_module = _load_stub(evaluator, path)
                     except FileNotFoundError:
                         # The file has since been removed after looking for it.
                         # TODO maybe empty cache?
-                        pass
+                        return None
                     else:
                         return ContextSet.from_iterable(
-                            StubProxy(
-                                context.parent_context,
+                            ModuleStubProxy(
+                                parent_module_context,
                                 context,
-                                ModuleContext(evaluator, stub_module, path, code_lines=[])
+                                ModuleContext(evaluator, stub_module, path, code_lines=[]),
                             ) for context in context_set
                         )
+                return None
+
+            context_set = callback(evaluator, import_names, parent_module_context, sys_path)
+            import_name = import_names[0]
+            if len(import_names) == 1 and import_name != 'typing':
+                map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
+                result = _find_and_load_stub_module(map_)
+                if result is not None:
+                    return result
+            elif isinstance(parent_module_context, ModuleStubProxy):
+                map_ = _merge_create_stub_map(parent_module_context.stub_py__path__())
+                result = _find_and_load_stub_module(map_)
+                if result is not None:
+                    return result
             return context_set
         return wrapper
 
 
 class StubProxy(object):
-    def __init__(self, parent_context, context, stub_context):
-        self.parent_context = parent_context
+    def __init__(self, context, stub_context):
         self._context = context
         self._stub_context = stub_context
 
@@ -127,7 +144,7 @@ class StubProxy(object):
             return NO_CONTEXTS
 
         return ContextSet.from_iterable(
-            StubProxy(c.parent_context, c, typeshed_results[0]) for c in context_results
+            StubProxy(c, typeshed_results[0]) for c in context_results
         )
 
     @property
@@ -142,3 +159,12 @@ class StubProxy(object):
 
     def __repr__(self):
         return '<%s: %s %s>' % (type(self).__name__, self._context, self._stub_context)
+
+
+class ModuleStubProxy(StubProxy):
+    def __init__(self, parent_module_context, *args, **kwargs):
+        super(ModuleStubProxy, self).__init__(*args, **kwargs)
+        self._parent_module_context = parent_module_context
+
+    def stub_py__path__(self):
+        return self._stub_context.py__path__()
