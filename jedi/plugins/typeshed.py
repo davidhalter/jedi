@@ -38,7 +38,8 @@ def _create_stub_map(directory):
                     yield entry, init
             elif entry.endswith('.pyi') and os.path.isfile(path):
                 name = entry.rstrip('.pyi')
-                yield name, path
+                if name != '__init__':
+                    yield name, path
 
     # Create a dictionary from the tuple generator.
     return dict(generate())
@@ -90,53 +91,54 @@ class TypeshedPlugin(BasePlugin):
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
-            def _find_and_load_stub_module(stub_map):
-                path = stub_map.get(import_name)
+            context_set = callback(
+                evaluator,
+                import_names,
+                parent_module_context.actual_context  # noqa
+                    if isinstance(parent_module_context, ModuleStubProxy)
+                    else parent_module_context,
+                sys_path
+            )
+            import_name = import_names[0]
+            map_ = None
+            if len(import_names) == 1 and import_name != 'typing':
+                map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
+            elif isinstance(parent_module_context, ModuleStubProxy):
+                map_ = _merge_create_stub_map(parent_module_context.py__path__())
+
+            if map_ is not None:
+                path = map_.get(import_name)
                 if path is not None:
                     try:
                         stub_module = _load_stub(evaluator, path)
                     except FileNotFoundError:
                         # The file has since been removed after looking for it.
                         # TODO maybe empty cache?
-                        return None
+                        pass
                     else:
                         return ContextSet.from_iterable(
                             ModuleStubProxy(
                                 parent_module_context,
-                                context,
                                 ModuleContext(evaluator, stub_module, path, code_lines=[]),
+                                context,
                             ) for context in context_set
                         )
-                return None
-
-            context_set = callback(evaluator, import_names, parent_module_context, sys_path)
-            import_name = import_names[0]
-            if len(import_names) == 1 and import_name != 'typing':
-                map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
-                result = _find_and_load_stub_module(map_)
-                if result is not None:
-                    return result
-            elif isinstance(parent_module_context, ModuleStubProxy):
-                map_ = _merge_create_stub_map(parent_module_context.stub_py__path__())
-                result = _find_and_load_stub_module(map_)
-                if result is not None:
-                    return result
+            # If no stub is found, just return the default.
             return context_set
         return wrapper
 
 
 class StubProxy(object):
-    def __init__(self, context, stub_context):
-        self._context = context
+    def __init__(self, stub_context):
         self._stub_context = stub_context
 
     # We have to overwrite everything that has to do with trailers, name
     # lookups and filters to make it possible to route name lookups towards
     # compiled objects and the rest towards tree node contexts.
     def py__getattribute__(self, *args, **kwargs):
-        context_results = self._context.py__getattribute__(
-            *args, **kwargs
-        )
+        #context_results = self._context.py__getattribute__(
+        #    *args, **kwargs
+        #)
         typeshed_results = list(self._stub_context.py__getattribute__(
             *args, **kwargs
         ))
@@ -144,27 +146,18 @@ class StubProxy(object):
             return NO_CONTEXTS
 
         return ContextSet.from_iterable(
-            StubProxy(c, typeshed_results[0]) for c in context_results
+            StubProxy(c) for c in typeshed_results
         )
 
-    @property
-    def py__call__(self):
-        def py__call__(arguments):
-            return self._stub_context.py__call__(arguments)
-
-        return py__call__
-
     def __getattr__(self, name):
-        return getattr(self._context, name)
+        return getattr(self._stub_context, name)
 
     def __repr__(self):
-        return '<%s: %s %s>' % (type(self).__name__, self._context, self._stub_context)
+        return '<%s: %s>' % (type(self).__name__, self._stub_context)
 
 
 class ModuleStubProxy(StubProxy):
-    def __init__(self, parent_module_context, *args, **kwargs):
-        super(ModuleStubProxy, self).__init__(*args, **kwargs)
+    def __init__(self, parent_module_context, stub_context, actual_context):
+        super(ModuleStubProxy, self).__init__(stub_context)
         self._parent_module_context = parent_module_context
-
-    def stub_py__path__(self):
-        return self._stub_context.py__path__()
+        self.actual_context = actual_context

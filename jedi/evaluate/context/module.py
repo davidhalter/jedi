@@ -213,6 +213,8 @@ class ModuleContext(TreeContext):
         return compiled.get_special_object(self.evaluator, u'MODULE_CLASS')
 
     def __repr__(self):
-        return "<%s: %s@%s-%s>" % (
+        return "<%s: %s@%s-%s is_stub=%s>" % (
             self.__class__.__name__, self._string_name,
-            self.tree_node.start_pos[0], self.tree_node.end_pos[0])
+            self.tree_node.start_pos[0], self.tree_node.end_pos[0],
+            self._path.endswith('.pyi')
+        )
