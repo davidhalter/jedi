@@ -196,9 +196,17 @@ def eval_atom(context, atom):
         ) or atom
         if stmt.type == 'lambdef':
             stmt = atom
+        position = stmt.start_pos
+        if _is_annotation_name(atom):
+            # Since Python 3.7 (with from __future__ import annotations),
+            # annotations are essentially strings and can reference objects
+            # that are defined further down in code. Therefore just set the
+            # position to None, so the finder will not try to stop at a certain
+            # position in the module.
+            position = None
         return context.py__getattribute__(
             name_or_str=atom,
-            position=stmt.start_pos,
+            position=position,
             search_global=True
         )
     elif atom.type == 'keyword':
@@ -410,6 +418,22 @@ def _eval_comparison(evaluator, context, left_contexts, operator, right_contexts
             )
 
 
+def _is_annotation_name(name):
+    ancestor = tree.search_ancestor(name, 'param', 'funcdef', 'expr_stmt')
+    if ancestor is None:
+        return False
+
+    if ancestor.type in ('param', 'funcdef'):
+        annotation = ancestor.annotation
+        if annotation is not None:
+            return annotation.start_pos <= name.start_pos < annotation.end_pos
+    elif ancestor.type == 'expr_stmt':
+        c = ancestor.children
+        if len(c) > 1 and c[1].type == 'annassign':
+            return c[1].start_pos <= name.start_pos < c[1].end_pos
+    return True
+
+
 def _is_tuple(context):
     return isinstance(context, iterable.Sequence) and context.array_type == 'tuple'
 
@@ -497,7 +521,6 @@ def _remove_statements(evaluator, context, stmt, name):
 
 
 def tree_name_to_contexts(evaluator, context, tree_name):
-
     context_set = ContextSet()
     module_node = context.get_root_context().tree_node
     if module_node is not None:

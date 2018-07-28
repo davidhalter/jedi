@@ -216,5 +216,5 @@ class ModuleContext(TreeContext):
         return "<%s: %s@%s-%s is_stub=%s>" % (
             self.__class__.__name__, self._string_name,
             self.tree_node.start_pos[0], self.tree_node.end_pos[0],
-            self._path.endswith('.pyi')
+            self._path is not None and self._path.endswith('.pyi')
         )

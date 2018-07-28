@@ -110,7 +110,7 @@ class NameFinder(object):
                     ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef')
                 if ancestor is not None:
                     colon = ancestor.children[-2]
-                    if position < colon.start_pos:
+                    if position is not None and position < colon.start_pos:
                         if lambdef is None or position < lambdef.children[-2].start_pos:
                             position = ancestor.start_pos
 

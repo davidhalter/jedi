@@ -54,7 +54,7 @@ def _evaluate_annotation_string(context, string, index=None):
     context_set = context.eval_node(node)
     if index is not None:
         context_set = context_set.filter(
-            lambda context: context.array_type == u'tuple'
+            lambda context: context.array_type == u'tuple'  # noqa
                             and len(list(context.py__iter__())) >= index
         ).py__getitem__(index)
     return context_set.execute_evaluated()
