@@ -79,9 +79,9 @@ def execution_recursion_decorator(default=NO_CONTEXTS):
     def decorator(func):
         def wrapper(self, **kwargs):
             detector = self.evaluator.execution_recursion_detector
-            allowed = detector.push_execution(self)
+            limit_reached = detector.push_execution(self)
             try:
-                if allowed:
+                if limit_reached:
                     result = default
                 else:
                     result = func(self, **kwargs)
@@ -123,16 +123,28 @@ class ExecutionRecursionDetector(object):
             return False
 
         if self._recursion_level > recursion_limit:
+            debug.warning('Recursion limit (%s) reached', recursion_limit)
             return True
 
         if self._execution_count >= total_function_execution_limit:
+            debug.warning('Function execution limit (%s) reached', total_function_execution_limit)
             return True
         self._execution_count += 1
 
         if self._funcdef_execution_counts.setdefault(funcdef, 0) >= per_function_execution_limit:
+            debug.warning(
+                'Per function execution limit (%s) reached: %s',
+                per_function_execution_limit,
+                funcdef
+            )
             return True
         self._funcdef_execution_counts[funcdef] += 1
 
         if self._parent_execution_funcs.count(funcdef) > per_function_recursion_limit:
+            debug.warning(
+                'Per function recursion limit (%s) reached: %s',
+                per_function_recursion_limit,
+                funcdef
+            )
             return True
         return False
