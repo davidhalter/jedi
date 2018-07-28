@@ -219,6 +219,14 @@ _typing_module = None
 _typing_module_code_lines = None
 
 
+class TypingModuleContext(ModuleContext):
+    """
+    TODO this is currently used for recursion checks. We should just completely
+    refactor the typing module integration.
+    """
+    pass
+
+
 def _get_typing_replacement_module(grammar):
     """
     The idea is to return our jedi replacement for the PEP-0484 typing module
@@ -263,7 +271,7 @@ def py__getitem__(context, typ, node):
         return context.eval_node(nodes[0])
 
     module_node, code_lines = _get_typing_replacement_module(context.evaluator.latest_grammar)
-    typing = ModuleContext(
+    typing = TypingModuleContext(
         context.evaluator,
         module_node=module_node,
         path=None,
