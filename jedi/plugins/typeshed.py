@@ -99,7 +99,7 @@ class TypeshedPlugin(BasePlugin):
                     else parent_module_context,
                 sys_path
             )
-            import_name = import_names[0]
+            import_name = import_names[-1]
             map_ = None
             if len(import_names) == 1 and import_name != 'typing':
                 map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
