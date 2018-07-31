@@ -99,7 +99,7 @@ class TypeshedPlugin(BasePlugin):
                 evaluator,
                 import_names,
                 parent_module_context.actual_context  # noqa
-                    if isinstance(parent_module_context, ModuleStubProxy)
+                    if isinstance(parent_module_context, ModuleStubContext)
                     else parent_module_context,
                 sys_path
             )
@@ -107,7 +107,7 @@ class TypeshedPlugin(BasePlugin):
             map_ = None
             if len(import_names) == 1 and import_name != 'typing':
                 map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
-            elif isinstance(parent_module_context, ModuleStubProxy):
+            elif isinstance(parent_module_context, ModuleStubContext):
                 map_ = _merge_create_stub_map(parent_module_context.py__path__())
 
             if map_ is not None:
@@ -133,7 +133,7 @@ class TypeshedPlugin(BasePlugin):
                             # merge the actual module contexts with stubs.
                             return ModuleContext(*args)
                         return ContextSet.from_iterable(
-                            ModuleStubProxy(
+                            ModuleStubContext(
                                 *args,
                                 context,
                                 parent_module_context,
@@ -157,13 +157,24 @@ class StubName(TreeNameDefinition):
         self._stub_tree_name = stub_tree_name
 
     def infer(self):
-        # The position and everything should come from the actual position
-        # (not the stub), but everything else
-        return tree_name_to_contexts(
+        def iterate(contexts):
+            for c in contexts:
+                if isinstance(c, FunctionContext):
+                    yield FunctionStubContext(
+                        c.evaluator,
+                        c.parent_context,
+                        c.tree_node,
+                    )
+                else:
+                    yield c
+
+        contexts =  tree_name_to_contexts(
             self.parent_context.evaluator,
             self._stub_parent_context,
             self._stub_tree_name
         )
+        return ContextSet.from_iterable(iterate(contexts))
+
 
 
 class StubParserTreeFilter(ParserTreeFilter):
@@ -250,15 +261,15 @@ class StubProxy(object):
         return '<%s: %s>' % (type(self).__name__, self._stub_context)
 
 
-class ModuleStubProxy(ModuleContext):
+class ModuleStubContext(ModuleContext):
     def __init__(self, evaluator, stub_module_node, path, code_lines,
                  actual_context, parent_module_context):
-        super(ModuleStubProxy, self).__init__(evaluator, stub_module_node, path, code_lines),
+        super(ModuleStubContext, self).__init__(evaluator, stub_module_node, path, code_lines),
         self._parent_module_context = parent_module_context
         self.actual_context = actual_context
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
-        filters = super(ModuleStubProxy, self).get_filters(
+        filters = super(ModuleStubContext, self).get_filters(
             search_global, until_position, origin_scope
         )
         yield StubParserTreeFilter(
@@ -275,9 +286,9 @@ class ModuleStubProxy(ModuleContext):
             yield f
 
 
-class ClassStubProxy(ClassContext):
+class ClassStubContext(ClassContext):
     pass
 
 
-class FunctionStubProxy(FunctionContext):
+class FunctionStubContext(FunctionContext):
     pass

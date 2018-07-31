@@ -3,6 +3,8 @@ import os
 from jedi.plugins import typeshed
 from parso.utils import PythonVersionInfo
 
+TYPESHED_PYTHON3 = os.path.join(typeshed._TYPESHED_PATH, 'stdlib', '3')
+
 
 def test_get_typeshed_directories():
     def get_dirs(version_info):
@@ -30,6 +32,26 @@ def test_get_stub_files():
     def get_map(version_info):
         return typeshed._create_stub_map(version_info)
 
-    base = os.path.join(typeshed._TYPESHED_PATH, 'stdlib', '3')
-    map_ = typeshed._create_stub_map(base)
-    assert map_['functools'] == os.path.join(base, 'functools.pyi')
+    map_ = typeshed._create_stub_map(TYPESHED_PYTHON3)
+    assert map_['functools'] == os.path.join(TYPESHED_PYTHON3, 'functools.pyi')
+
+
+def test_function(Script):
+    s = Script('import threading; threading.current_thread')
+    def_, = s.goto_definitions()
+    context = def_._name._context
+    assert isinstance(context, typeshed.FunctionStubContext), context
+
+
+def test_class(Script):
+    s = Script('import threading; threading.Lock')
+
+
+def test_instance(Script):
+    s = Script('import threading; threading.Lock()')
+
+
+def test_method(Script):
+    s = Script('import threading; threading.Lock().locked')
+
+
