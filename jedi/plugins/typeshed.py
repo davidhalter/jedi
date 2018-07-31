@@ -10,6 +10,7 @@ from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, ClassContext
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
+from jedi.evaluate.utils import to_list
 
 
 _TYPESHED_PATH = resource_filename('jedi', os.path.join('third_party', 'typeshed'))
@@ -144,36 +145,61 @@ class TypeshedPlugin(BasePlugin):
 
 
 class StubName(TreeNameDefinition):
-    def __init__(self, parent_context, stub_name):
-        for f in parent_context.actual_context.get_filters(search_global=False):
-            print(f)
-            names = f.get(stub_name.value)
-            print(stub_name.value, parent_context, f.values())
-            if names:
-                break
-        print(names)
+    """
+    This name is only here to mix stub names with non-stub names. The idea is
+    that the user can goto the actual name, but end up on the definition of the
+    stub when inferring types.
+    """
+
+    def __init__(self, parent_context, tree_name, stub_parent_context, stub_tree_name):
         super(StubName, self).__init__(parent_context.actual_context, tree_name)
-        self._stub_name = stub_name
+        self._stub_parent_context = stub_parent_context
+        self._stub_tree_name = stub_tree_name
 
     def infer(self):
+        # The position and everything should come from the actual position
+        # (not the stub), but everything else
         return tree_name_to_contexts(
             self.parent_context.evaluator,
-            self.context.parent_context,
-            self._stub_name
+            self._stub_parent_context,
+            self._stub_tree_name
         )
 
 
 class StubParserTreeFilter(ParserTreeFilter):
     name_class = StubName
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, non_stub_filter, *args, **kwargs):
         self._search_global = kwargs.pop('search_global')  # Python 2 :/
         super(StubParserTreeFilter, self).__init__(*args, **kwargs)
+        self._non_stub_filter = non_stub_filter
 
     def _check_flows(self, names):
         return names
 
+    @to_list
+    def _convert_names(self, names):
+        for name in names:
+            found_actual_names = self._non_stub_filter.get(name.value)
+            # Try to match the names of stubs with non-stubs. If there's no
+            # match, just use the stub name. The user will be directed there
+            # for all API accesses. Otherwise the user will be directed to the
+            # non-stub positions (see StubName).
+            if not found_actual_names:
+                yield TreeNameDefinition(self.context, name)
+            for non_stub_name in found_actual_names:
+                assert isinstance(non_stub_name, AbstractTreeName), non_stub_name
+                yield self.name_class(
+                    non_stub_name.parent_context,
+                    non_stub_name.tree_name,
+                    self.context,
+                    name,
+                )
+
     def _is_name_reachable(self, name):
+        if not super(StubParserTreeFilter, self)._is_name_reachable(name):
+            return False
+
         if not self._search_global:
             # Imports in stub files are only public if they have an "as"
             # export.
@@ -181,7 +207,7 @@ class StubParserTreeFilter(ParserTreeFilter):
             if definition.type in ('import_from', 'import_name'):
                 if name.parent.type not in ('import_as_name', 'dotted_as_name'):
                     return False
-        return super(StubParserTreeFilter, self)._is_name_reachable(name)
+        return True
 
 
 class StubProxy(object):
@@ -232,16 +258,20 @@ class ModuleStubProxy(ModuleContext):
         self.actual_context = actual_context
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
+        filters = super(ModuleStubProxy, self).get_filters(
+            search_global, until_position, origin_scope
+        )
         yield StubParserTreeFilter(
+            # Take the first filter, which is here to filter module contents
+            # and wrap it.
+            next(filters),
             self.evaluator,
             context=self,
             until_position=until_position,
             origin_scope=origin_scope,
             search_global=search_global,
         )
-        for f in super(ModuleStubProxy, self).get_filters(search_global,
-                                                          until_position,
-                                                          origin_scope):
+        for f in filters:
             yield f
 
 
