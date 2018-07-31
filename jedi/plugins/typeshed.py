@@ -6,7 +6,10 @@ from jedi._compatibility import FileNotFoundError
 from jedi.plugins.base import BasePlugin
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
-from jedi.evaluate.context import ModuleContext
+from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
+    TreeNameDefinition
+from jedi.evaluate.context import ModuleContext, FunctionContext, ClassContext
+from jedi.evaluate.syntax_tree import tree_name_to_contexts
 
 
 _TYPESHED_PATH = resource_filename('jedi', os.path.join('third_party', 'typeshed'))
@@ -110,17 +113,29 @@ class TypeshedPlugin(BasePlugin):
                 path = map_.get(import_name)
                 if path is not None:
                     try:
-                        stub_module = _load_stub(evaluator, path)
+                        stub_module_node = _load_stub(evaluator, path)
                     except FileNotFoundError:
                         # The file has since been removed after looking for it.
                         # TODO maybe empty cache?
                         pass
                     else:
+                        code_lines = []
+                        args = (
+                            evaluator,
+                            stub_module_node,
+                            path,
+                            code_lines,
+                        )
+                        if not context_set:
+                            # If there are no results for normal modules, just
+                            # use a normal context for stub modules and don't
+                            # merge the actual module contexts with stubs.
+                            return ModuleContext(*args)
                         return ContextSet.from_iterable(
                             ModuleStubProxy(
-                                parent_module_context,
-                                ModuleContext(evaluator, stub_module, path, code_lines=[]),
+                                *args,
                                 context,
+                                parent_module_context,
                             ) for context in context_set
                         )
             # If no stub is found, just return the default.
@@ -128,14 +143,61 @@ class TypeshedPlugin(BasePlugin):
         return wrapper
 
 
+class StubName(TreeNameDefinition):
+    def __init__(self, parent_context, stub_name):
+        for f in parent_context.actual_context.get_filters(search_global=False):
+            print(f)
+            names = f.get(stub_name.value)
+            print(stub_name.value, parent_context, f.values())
+            if names:
+                break
+        print(names)
+        super(StubName, self).__init__(parent_context.actual_context, tree_name)
+        self._stub_name = stub_name
+
+    def infer(self):
+        return tree_name_to_contexts(
+            self.parent_context.evaluator,
+            self.context.parent_context,
+            self._stub_name
+        )
+
+
+class StubParserTreeFilter(ParserTreeFilter):
+    name_class = StubName
+
+    def __init__(self, *args, **kwargs):
+        self._search_global = kwargs.pop('search_global')  # Python 2 :/
+        super(StubParserTreeFilter, self).__init__(*args, **kwargs)
+
+    def _check_flows(self, names):
+        return names
+
+    def _is_name_reachable(self, name):
+        if not self._search_global:
+            # Imports in stub files are only public if they have an "as"
+            # export.
+            definition = name.get_definition()
+            if definition.type in ('import_from', 'import_name'):
+                if name.parent.type not in ('import_as_name', 'dotted_as_name'):
+                    return False
+        return super(StubParserTreeFilter, self)._is_name_reachable(name)
+
+
 class StubProxy(object):
-    def __init__(self, stub_context):
+    def __init__(self, stub_context, parent_context):
         self._stub_context = stub_context
+        self._parent_context = parent_context
+
+    def get_filters(self, *args, **kwargs):
+        for f in self._stub_context.get_filters(*args, **kwargs):
+            yield StubFilterWrapper(f)
 
     # We have to overwrite everything that has to do with trailers, name
     # lookups and filters to make it possible to route name lookups towards
     # compiled objects and the rest towards tree node contexts.
     def py__getattribute__(self, *args, **kwargs):
+        return self._stub_context.py__getattribute__(*args, **kwargs)
         #context_results = self._context.py__getattribute__(
         #    *args, **kwargs
         #)
@@ -149,6 +211,12 @@ class StubProxy(object):
             StubProxy(c) for c in typeshed_results
         )
 
+    def get_root_context(self):
+        if self._parent_context is None:
+            return self
+
+        return self._parent_context.get_root_context()
+
     def __getattr__(self, name):
         return getattr(self._stub_context, name)
 
@@ -156,8 +224,30 @@ class StubProxy(object):
         return '<%s: %s>' % (type(self).__name__, self._stub_context)
 
 
-class ModuleStubProxy(StubProxy):
-    def __init__(self, parent_module_context, stub_context, actual_context):
-        super(ModuleStubProxy, self).__init__(stub_context)
+class ModuleStubProxy(ModuleContext):
+    def __init__(self, evaluator, stub_module_node, path, code_lines,
+                 actual_context, parent_module_context):
+        super(ModuleStubProxy, self).__init__(evaluator, stub_module_node, path, code_lines),
         self._parent_module_context = parent_module_context
         self.actual_context = actual_context
+
+    def get_filters(self, search_global, until_position=None, origin_scope=None):
+        yield StubParserTreeFilter(
+            self.evaluator,
+            context=self,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            search_global=search_global,
+        )
+        for f in super(ModuleStubProxy, self).get_filters(search_global,
+                                                          until_position,
+                                                          origin_scope):
+            yield f
+
+
+class ClassStubProxy(ClassContext):
+    pass
+
+
+class FunctionStubProxy(FunctionContext):
+    pass
