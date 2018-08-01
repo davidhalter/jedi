@@ -165,16 +165,21 @@ class StubName(TreeNameDefinition):
                         c.parent_context,
                         c.tree_node,
                     )
+                elif isinstance(c, ClassContext):
+                    yield ClassStubContext(
+                        c.evaluator,
+                        c.parent_context,
+                        c.tree_node
+                    )
                 else:
                     yield c
 
-        contexts =  tree_name_to_contexts(
+        contexts = tree_name_to_contexts(
             self.parent_context.evaluator,
             self._stub_parent_context,
             self._stub_tree_name
         )
         return ContextSet.from_iterable(iterate(contexts))
-
 
 
 class StubParserTreeFilter(ParserTreeFilter):

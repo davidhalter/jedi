@@ -37,14 +37,20 @@ def test_get_stub_files():
 
 
 def test_function(Script):
-    s = Script('import threading; threading.current_thread')
-    def_, = s.goto_definitions()
+    code = 'import threading; threading.current_thread'
+    def_, = Script(code).goto_definitions()
     context = def_._name._context
     assert isinstance(context, typeshed.FunctionStubContext), context
 
+    def_, = Script(code + '()').goto_definitions()
+    context = def_._name._context
+    assert isinstance(context, typeshed.ClassStubContext), context
+
 
 def test_class(Script):
-    s = Script('import threading; threading.Lock')
+    def_, = Script('import threading; threading.Lock').goto_definitions()
+    context = def_._name._context
+    assert isinstance(context, typeshed.ClassStubContext), context
 
 
 def test_instance(Script):
