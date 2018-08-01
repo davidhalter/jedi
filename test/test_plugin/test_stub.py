@@ -1,6 +1,7 @@
 import os
 
 from jedi.plugins import typeshed
+from jedi.evaluate.context import TreeInstance
 from parso.utils import PythonVersionInfo
 
 TYPESHED_PYTHON3 = os.path.join(typeshed._TYPESHED_PATH, 'stdlib', '3')
@@ -44,7 +45,8 @@ def test_function(Script):
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
-    assert isinstance(context, typeshed.ClassStubContext), context
+    assert isinstance(context, TreeInstance)
+    assert isinstance(context.class_context, typeshed.ClassStubContext), context
 
 
 def test_class(Script):
@@ -54,7 +56,10 @@ def test_class(Script):
 
 
 def test_instance(Script):
-    s = Script('import threading; threading.Thread()')
+    def_, = Script('import threading; threading.Thread()').goto_definitions()
+    context = def_._name._context
+    assert isinstance(context, TreeInstance)
+    assert isinstance(context.class_context, typeshed.ClassStubContext), context
 
 
 def test_class_function(Script):
