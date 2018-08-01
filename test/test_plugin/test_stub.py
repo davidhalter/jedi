@@ -48,16 +48,23 @@ def test_function(Script):
 
 
 def test_class(Script):
-    def_, = Script('import threading; threading.Lock').goto_definitions()
+    def_, = Script('import threading; threading.Thread').goto_definitions()
     context = def_._name._context
     assert isinstance(context, typeshed.ClassStubContext), context
 
 
 def test_instance(Script):
-    s = Script('import threading; threading.Lock()')
+    s = Script('import threading; threading.Thread()')
+
+
+def test_class_function(Script):
+    def_, = Script('import threading; threading.Thread.getName').goto_definitions()
+    context = def_._name._context
+    assert isinstance(context, typeshed.FunctionStubContext), context
 
 
 def test_method(Script):
-    s = Script('import threading; threading.Lock().locked')
-
-
+    code = 'import threading; threading.Thread().getName'
+    def_, = Script(code).goto_definitions()
+    context = def_._name._context
+    assert isinstance(context, typeshed.ClassStubContext), context

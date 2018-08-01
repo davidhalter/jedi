@@ -64,9 +64,7 @@ class ClassName(TreeNameDefinition):
 
     @iterator_to_context_set
     def infer(self):
-        # TODO this _name_to_types might get refactored and be a part of the
-        # parent class. Once it is, we can probably just overwrite method to
-        # achieve this.
+        # We're using a different context to infer, so we cannot call super().
         from jedi.evaluate.syntax_tree import tree_name_to_contexts
         inferred = tree_name_to_contexts(
             self.parent_context.evaluator, self._name_context, self.tree_name)
