@@ -271,8 +271,6 @@ class CompiledInstanceName(compiled.CompiledName):
             is_function = result_context.api_type == 'function'
             if result_context.tree_node is not None and is_function:
                 parent_context = result_context.parent_context
-                while parent_context.is_class():
-                    parent_context = parent_context.parent_context
 
                 yield BoundMethod(
                     result_context.evaluator, self._instance, self.parent_context,
