@@ -38,18 +38,8 @@ class LambdaName(AbstractNameDefinition):
         return ContextSet(self._lambda_context)
 
 
-class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
-    """
-    Needed because of decorators. Decorators are evaluated here.
-    """
+class AbstractFunction(TreeContext):
     api_type = u'function'
-
-    @classmethod
-    def from_context(cls, context, tree_node):
-        while context.is_class():
-            context = context.parent_context
-
-        return cls(context.evaluator, parent_context=context, tree_node=tree_node)
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
@@ -63,6 +53,24 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
             scope = self.py__class__()
             for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
                 yield filter
+
+    def get_param_names(self):
+        function_execution = self.get_function_execution()
+        return [ParamName(function_execution, param.name)
+                for param in self.tree_node.get_params()]
+
+    @property
+    def name(self):
+        if self.tree_node.type == 'lambdef':
+            return LambdaName(self)
+        return ContextName(self, self.tree_node.name)
+
+    def get_function_execution(self, arguments=None):
+        raise NotImplementedError
+
+    def py__call__(self, arguments):
+        function_execution = self.get_function_execution(arguments)
+        return self.infer_function_execution(function_execution)
 
     def infer_function_execution(self, function_execution):
         """
@@ -86,35 +94,28 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
             else:
                 return function_execution.get_return_values()
 
+
+class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
+    """
+    Needed because of decorators. Decorators are evaluated here.
+    """
+    @classmethod
+    def from_context(cls, context, tree_node):
+        from jedi.evaluate.context import AbstractInstanceContext
+
+        while context.is_class() or isinstance(context, AbstractInstanceContext):
+            context = context.parent_context
+
+        return cls(context.evaluator, parent_context=context, tree_node=tree_node)
+
     def get_function_execution(self, arguments=None):
         if arguments is None:
             arguments = AnonymousArguments()
 
         return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
 
-    def py__call__(self, arguments):
-        function_execution = self.get_function_execution(arguments)
-        return self.infer_function_execution(function_execution)
-
     def py__class__(self):
-        # This differentiation is only necessary for Python2. Python3 does not
-        # use a different method class.
-        if isinstance(parser_utils.get_parent_scope(self.tree_node), tree.Class):
-            name = u'METHOD_CLASS'
-        else:
-            name = u'FUNCTION_CLASS'
-        return compiled.get_special_object(self.evaluator, name)
-
-    @property
-    def name(self):
-        if self.tree_node.type == 'lambdef':
-            return LambdaName(self)
-        return ContextName(self, self.tree_node.name)
-
-    def get_param_names(self):
-        function_execution = self.get_function_execution()
-        return [ParamName(function_execution, param.name)
-                for param in self.tree_node.get_params()]
+        return compiled.get_special_object(self.evaluator, u'FUNCTION_CLASS')
 
 
 class FunctionExecutionContext(TreeContext):

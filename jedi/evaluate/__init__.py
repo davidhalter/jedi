@@ -334,15 +334,15 @@ class Evaluator(object):
             parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
 
             if is_funcdef:
+                func = FunctionContext.from_context(
+                    parent_context,
+                    scope_node
+                )
                 if isinstance(parent_context, AnonymousInstance):
                     func = BoundMethod(
-                        self, parent_context, parent_context.class_context,
-                        parent_context.parent_context, scope_node
-                    )
-                else:
-                    func = FunctionContext.from_context(
-                        parent_context,
-                        scope_node
+                        instance=parent_context,
+                        klass=parent_context.class_context,
+                        function=func
                     )
                 if is_nested and not node_is_object:
                     return func.get_function_execution()
