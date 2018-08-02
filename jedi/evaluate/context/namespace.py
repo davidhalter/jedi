@@ -4,7 +4,7 @@ from itertools import chain
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import imports
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, ContextNameMixin
-from jedi.evaluate.base_context import TreeContext, ContextSet
+from jedi.evaluate.base_context import Context
 
 
 class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
@@ -17,7 +17,7 @@ class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
         self.string_name = string_name
 
 
-class ImplicitNamespaceContext(TreeContext):
+class ImplicitNamespaceContext(Context):
     """
     Provides support for implicit namespace packages
     """

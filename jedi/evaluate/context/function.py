@@ -44,11 +44,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
     """
     api_type = u'function'
 
-    def __init__(self, evaluator, parent_context, funcdef):
-        """ This should not be called directly """
-        super(FunctionContext, self).__init__(evaluator, parent_context)
-        self.tree_node = funcdef
-
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
             yield ParserTreeFilter(
@@ -127,9 +122,12 @@ class FunctionExecutionContext(TreeContext):
     function_execution_filter = FunctionExecutionFilter
 
     def __init__(self, evaluator, parent_context, function_context, var_args):
-        super(FunctionExecutionContext, self).__init__(evaluator, parent_context)
+        super(FunctionExecutionContext, self).__init__(
+            evaluator,
+            parent_context,
+            function_context.tree_node,
+        )
         self.function_context = function_context
-        self.tree_node = function_context.tree_node
         self.var_args = var_args
 
     @evaluator_method_cache(default=NO_CONTEXTS)

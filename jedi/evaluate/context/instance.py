@@ -28,6 +28,7 @@ class InstanceFunctionExecution(BaseInstanceFunctionExecution):
 
         super(InstanceFunctionExecution, self).__init__(
             instance, parent_context, function_context, var_args)
+        print(parent_context, self.parent_context, function_context)
 
 
 class AnonymousInstanceFunctionExecution(BaseInstanceFunctionExecution):

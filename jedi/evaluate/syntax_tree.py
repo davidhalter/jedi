@@ -580,13 +580,13 @@ def _apply_decorators(context, node):
         decoratee_context = ClassContext(
             context.evaluator,
             parent_context=context,
-            classdef=node
+            tree_node=node
         )
     else:
         decoratee_context = FunctionContext(
             context.evaluator,
             parent_context=context,
-            funcdef=node
+            tree_node=node
         )
     initial = values = ContextSet(decoratee_context)
     for dec in reversed(node.get_decorators()):

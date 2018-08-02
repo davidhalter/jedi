@@ -199,9 +199,10 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
 
 
 class TreeContext(Context):
-    def __init__(self, evaluator, parent_context=None):
+    def __init__(self, evaluator, parent_context, tree_node):
         super(TreeContext, self).__init__(evaluator, parent_context)
         self.predefined_names = {}
+        self.tree_node = tree_node
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.tree_node)
