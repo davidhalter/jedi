@@ -73,4 +73,4 @@ def test_method(Script):
     def_, = Script(code).goto_definitions()
     context = def_._name._context
     assert isinstance(context, BoundMethod), context
-    assert isinstance(context.function, typeshed.ClassStubContext), context
+    assert isinstance(context._function, typeshed.FunctionStubContext), context
