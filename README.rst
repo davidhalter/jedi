@@ -122,7 +122,7 @@ Tips on how to use Jedi efficiently can be found `here
 API
 ---
 
-You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_.
+You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/api.html>`_.
 
 
 Autocompletion / Goto / Pydoc

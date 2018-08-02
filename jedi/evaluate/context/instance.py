@@ -9,7 +9,8 @@ from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
-from jedi.evaluate.context.function import FunctionExecutionContext, FunctionContext
+from jedi.evaluate.context.function import FunctionExecutionContext, \
+    FunctionContext, AbstractFunction
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__
 from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
@@ -158,10 +159,7 @@ class AbstractInstanceContext(Context):
     def name(self):
         pass
 
-    def _create_init_execution(self, class_context, func_node):
-        bound_method = BoundMethod(
-            self.evaluator, self, class_context, self.parent_context, func_node
-        )
+    def _create_init_execution(self, class_context, bound_method):
         return self.function_execution_cls(
             self,
             class_context.parent_context,
@@ -172,7 +170,12 @@ class AbstractInstanceContext(Context):
     def create_init_executions(self):
         for name in self.get_function_slot_names(u'__init__'):
             if isinstance(name, SelfName):
-                yield self._create_init_execution(name.class_context, name.tree_name.parent)
+                function = FunctionContext.from_context(
+                    self.parent_context,
+                    name.tree_name.parent
+                )
+                bound_method = BoundMethod(self, name.class_context, function)
+                yield self._create_init_execution(name.class_context, bound_method)
 
     @evaluator_method_cache()
     def create_instance_context(self, class_context, node):
@@ -184,13 +187,14 @@ class AbstractInstanceContext(Context):
         else:
             parent_context = self.create_instance_context(class_context, scope)
             if scope.type == 'funcdef':
+                func = FunctionContext.from_context(
+                    parent_context,
+                    scope,
+                )
+                bound_method = BoundMethod(self, class_context, func)
                 if scope.name.value == '__init__' and parent_context == class_context:
-                    return self._create_init_execution(class_context, scope)
+                    return self._create_init_execution(class_context, bound_method)
                 else:
-                    bound_method = BoundMethod(
-                        self.evaluator, self, class_context,
-                        parent_context, scope
-                    )
                     return bound_method.get_function_execution()
             elif scope.type == 'classdef':
                 class_context = ClassContext(self.evaluator, parent_context, scope)
@@ -270,14 +274,8 @@ class CompiledInstanceName(compiled.CompiledName):
         for result_context in super(CompiledInstanceName, self).infer():
             is_function = result_context.api_type == 'function'
             if result_context.tree_node is not None and is_function:
-                parent_context = result_context.parent_context
-                while parent_context.is_class():
-                    parent_context = parent_context.parent_context
 
-                yield BoundMethod(
-                    result_context.evaluator, self._instance, self.parent_context,
-                    parent_context, result_context.tree_node
-                )
+                yield BoundMethod(self._instance, self.parent_context, result_context)
             else:
                 if is_function:
                     yield CompiledBoundMethod(result_context)
@@ -301,11 +299,19 @@ class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
             self._evaluator, self._instance, self._compiled_object, name)
 
 
-class BoundMethod(FunctionContext):
-    def __init__(self, evaluator, instance, class_context, *args, **kwargs):
-        super(BoundMethod, self).__init__(evaluator, *args, **kwargs)
+class BoundMethod(AbstractFunction):
+    def __init__(self, instance, klass, function):
+        super(BoundMethod, self).__init__(
+            function.evaluator,
+            function.parent_context,
+            function.tree_node,
+        )
         self._instance = instance
-        self._class_context = class_context
+        self._class = klass
+        self._function = function
+
+    def py__class__(self):
+        return compiled.get_special_object(self.evaluator, u'BOUND_METHOD_CLASS')
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
@@ -353,14 +359,7 @@ class LazyInstanceClassName(SelfName):
                 # Classes are never used to resolve anything within the
                 # functions. Only other functions and modules will resolve
                 # those things.
-                parent_context = result_context.parent_context
-                while parent_context.is_class():
-                    parent_context = parent_context.parent_context
-
-                yield BoundMethod(
-                    result_context.evaluator, self._instance, self.class_context,
-                    parent_context, result_context.tree_node
-                )
+                yield BoundMethod(self._instance, self.class_context, result_context)
             else:
                 for c in apply_py__get__(result_context, self._instance):
                     yield c

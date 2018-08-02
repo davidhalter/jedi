@@ -71,7 +71,7 @@ def eval_node(context, element):
     if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword'):
         return eval_atom(context, element)
     elif typ == 'lambdef':
-        return ContextSet(FunctionContext(evaluator, context, element))
+        return ContextSet(FunctionContext.from_context(context, element))
     elif typ == 'expr_stmt':
         return eval_expr_stmt(context, element)
     elif typ in ('power', 'atom_expr'):
@@ -603,14 +603,10 @@ def _apply_decorators(context, node):
         decoratee_context = ClassContext(
             context.evaluator,
             parent_context=context,
-            classdef=node
+            tree_node=node
         )
     else:
-        decoratee_context = FunctionContext(
-            context.evaluator,
-            parent_context=context,
-            funcdef=node
-        )
+        decoratee_context = FunctionContext.from_context(context, node)
     initial = values = ContextSet(decoratee_context)
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values)

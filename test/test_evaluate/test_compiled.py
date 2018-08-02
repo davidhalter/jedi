@@ -70,11 +70,7 @@ def test_method_completion(Script, environment):
 
     foo = Foo()
     foo.bar.__func__''')
-    if environment.version_info.major > 2:
-        result = []
-    else:
-        result = ['__func__']
-    assert [c.name for c in Script(code).completions()] == result
+    assert [c.name for c in Script(code).completions()] == ['__func__']
 
 
 def test_time_docstring(Script):

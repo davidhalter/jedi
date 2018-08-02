@@ -470,7 +470,7 @@ else:
 
 class _SPECIAL_OBJECTS(object):
     FUNCTION_CLASS = types.FunctionType
-    METHOD_CLASS = type(DirectObjectAccess.py__bool__)
+    BOUND_METHOD_CLASS = type(DirectObjectAccess(None, None).py__bool__)
     MODULE_CLASS = types.ModuleType
     GENERATOR_OBJECT = _a_generator(1.0)
     BUILTINS = builtins

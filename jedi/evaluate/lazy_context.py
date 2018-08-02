@@ -1,6 +1,7 @@
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.common.utils import monkeypatch
 
+
 class AbstractLazyContext(object):
     def __init__(self, data):
         self.data = data

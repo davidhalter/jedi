@@ -89,10 +89,6 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     """
     api_type = u'class'
 
-    def __init__(self, evaluator, parent_context, classdef):
-        super(ClassContext, self).__init__(evaluator, parent_context=parent_context)
-        self.tree_node = classdef
-
     @evaluator_method_cache(default=())
     def py__mro__(self):
         def add(cls):

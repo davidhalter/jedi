@@ -132,7 +132,6 @@ def test_async(Script, environment):
             hey = 3
               ho'''
     )
-    print(code)
     comps = Script(code, column=4).completions()
     names = [c.name for c in comps]
     assert 'foo' in names

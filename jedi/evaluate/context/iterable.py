@@ -83,10 +83,6 @@ class CompForContext(TreeContext):
     def from_comp_for(cls, parent_context, comp_for):
         return cls(parent_context.evaluator, parent_context, comp_for)
 
-    def __init__(self, evaluator, parent_context, comp_for):
-        super(CompForContext, self).__init__(evaluator, parent_context)
-        self.tree_node = comp_for
-
     def get_node(self):
         return self.tree_node
 

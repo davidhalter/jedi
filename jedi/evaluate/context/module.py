@@ -43,8 +43,11 @@ class ModuleContext(TreeContext):
     parent_context = None
 
     def __init__(self, evaluator, module_node, path, code_lines):
-        super(ModuleContext, self).__init__(evaluator, parent_context=None)
-        self.tree_node = module_node
+        super(ModuleContext, self).__init__(
+            evaluator,
+            parent_context=None,
+            tree_node=module_node
+        )
         self._path = path
         self.code_lines = code_lines
 

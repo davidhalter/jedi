@@ -55,7 +55,7 @@ class CompiledObject(Context):
             return FunctionContext(
                 self.evaluator,
                 parent_context=self.parent_context,
-                funcdef=self.tree_node
+                tree_node=self.tree_node
             ).py__call__(params)
         if self.access_handle.is_class():
             from jedi.evaluate.context import CompiledInstance
