@@ -14,7 +14,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import instance
-from jedi.evaluate.context import ClassContext, FunctionContext, FunctionExecutionContext
+from jedi.evaluate.context import ClassContext, FunctionExecutionContext
 from jedi.api.keywords import KeywordName
 
 
@@ -353,10 +353,7 @@ class BaseDefinition(object):
             return None
 
         if isinstance(context, FunctionExecutionContext):
-            # TODO the function context should be a part of the function
-            # execution context.
-            context = FunctionContext(
-                self._evaluator, context.parent_context, context.tree_node)
+            context = context.function_context
         return Definition(self._evaluator, context.name)
 
     def __repr__(self):
