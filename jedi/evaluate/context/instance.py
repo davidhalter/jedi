@@ -28,7 +28,6 @@ class InstanceFunctionExecution(BaseInstanceFunctionExecution):
 
         super(InstanceFunctionExecution, self).__init__(
             instance, parent_context, function_context, var_args)
-        print(parent_context, self.parent_context, function_context)
 
 
 class AnonymousInstanceFunctionExecution(BaseInstanceFunctionExecution):
@@ -355,9 +354,6 @@ class LazyInstanceClassName(SelfName):
                 # functions. Only other functions and modules will resolve
                 # those things.
                 parent_context = result_context.parent_context
-                while parent_context.is_class():
-                    parent_context = parent_context.parent_context
-
                 yield BoundMethod(
                     result_context.evaluator, self._instance, self.class_context,
                     parent_context, result_context.tree_node

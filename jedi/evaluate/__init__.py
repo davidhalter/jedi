@@ -216,7 +216,7 @@ class Evaluator(object):
             if type_ == 'classdef':
                 return [ClassContext(self, context, name.parent)]
             elif type_ == 'funcdef':
-                return [FunctionContext(self, context, name.parent)]
+                return [FunctionContext.from_context(context, name.parent)]
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
@@ -340,8 +340,7 @@ class Evaluator(object):
                         parent_context.parent_context, scope_node
                     )
                 else:
-                    func = FunctionContext(
-                        self,
+                    func = FunctionContext.from_context(
                         parent_context,
                         scope_node
                     )

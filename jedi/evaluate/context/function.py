@@ -44,6 +44,13 @@ class FunctionContext(use_metaclass(CachedMetaClass, TreeContext)):
     """
     api_type = u'function'
 
+    @classmethod
+    def from_context(cls, context, tree_node):
+        while context.is_class():
+            context = context.parent_context
+
+        return cls(context.evaluator, parent_context=context, tree_node=tree_node)
+
     def get_filters(self, search_global, until_position=None, origin_scope=None):
         if search_global:
             yield ParserTreeFilter(
