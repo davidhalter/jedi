@@ -141,7 +141,7 @@ def load_module(evaluator, dotted_name, sys_path):
         __import__(dotted_name)
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        print_to_stderr('Module %s not importable.' % dotted_name)
+        print_to_stderr('Module %s not importable in path %s.' % (dotted_name, sys_path))
         return None
     except Exception:
         # Since __import__ pretty much makes code execution possible, just
