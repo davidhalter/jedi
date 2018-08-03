@@ -6,7 +6,7 @@ import pytest
 
 from ..helpers import TestCase
 from jedi import cache
-from jedi._compatibility import is_py33
+from jedi._compatibility import is_py3
 
 
 def assert_signature(Script, source, expected_name, expected_index=0, line=None, column=None):
@@ -247,7 +247,7 @@ def _params(Script, source, line=None, column=None):
 
 
 def test_param_name(Script):
-    if not is_py33:
+    if not is_py3:
         p = _params(Script, '''int(''')
         # int is defined as: `int(x[, base])`
         assert p[0].name == 'x'
