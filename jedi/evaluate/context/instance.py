@@ -11,7 +11,7 @@ from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
 from jedi.cache import memoize_method
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction
-from jedi.evaluate.context.klass import ClassContext, apply_py__get__
+from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
 from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
@@ -400,7 +400,7 @@ class InstanceClassFilter(filters.AbstractFilter):
         return [LazyInstanceClassName(self._instance, self._class_context, n) for n in names]
 
 
-class SelfAttributeFilter(filters.ParserTreeFilter):
+class SelfAttributeFilter(ClassFilter):
     """
     This class basically filters all the use cases where `self.*` was assigned.
     """
@@ -411,7 +411,8 @@ class SelfAttributeFilter(filters.ParserTreeFilter):
             evaluator=evaluator,
             context=context,
             node_context=class_context,
-            origin_scope=origin_scope
+            origin_scope=origin_scope,
+            is_instance=True,
         )
         self._class_context = class_context
 
@@ -432,18 +433,6 @@ class SelfAttributeFilter(filters.ParserTreeFilter):
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name):
                     yield name
-
-    def _equals_origin_scope(self):
-        node = self._origin_scope
-        while node is not None:
-            if node == self._parser_scope or node == self.context:
-                return True
-            node = get_parent_scope(node)
-        return False
-
-    def _access_possible(self, name):
-        return not name.value.startswith('__') or name.value.endswith('__') \
-            or self._equals_origin_scope()
 
     def _convert_names(self, names):
         return [self.name_class(self.context, self._class_context, name) for name in names]

@@ -85,7 +85,7 @@ class ClassFilter(ParserTreeFilter):
     name_class = ClassName
 
     def __init__(self, *args, **kwargs):
-        self._is_instance = kwargs.pop('is_instance')
+        self._is_instance = kwargs.pop('is_instance')  # Python 2 :/
         super(ClassFilter, self).__init__(*args, **kwargs)
 
     def _convert_names(self, names):
