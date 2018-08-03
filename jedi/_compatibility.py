@@ -369,6 +369,7 @@ def print_to_stderr(*args):
         eval("print(*args, file=sys.stderr)")
     else:
         print >> sys.stderr, args
+    sys.stderr.flush()
 
 
 def utf8_repr(func):
