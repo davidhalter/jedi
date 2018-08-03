@@ -417,6 +417,9 @@ class PrivateVar():
     def __private_func(self):
         return 1
 
+    #? int()
+    __private_func()
+
     def wrap_private(self):
         return self.__private_func()
 #? []
@@ -425,6 +428,8 @@ PrivateVar().__var
 PrivateVar().__var
 #? []
 PrivateVar().__private_func
+#? []
+PrivateVar.__private_func
 #? int()
 PrivateVar().wrap_private()
 

@@ -38,6 +38,7 @@ py__doc__(include_call_signature:      Returns the docstring for a context.
 
 """
 from jedi._compatibility import use_metaclass
+from jedi.parser_utils import get_parent_scope
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate.lazy_context import LazyKnownContext
@@ -82,6 +83,22 @@ class ClassFilter(ParserTreeFilter):
     def _convert_names(self, names):
         return [self.name_class(self.context, name, self._node_context)
                 for name in names]
+
+    def _equals_origin_scope(self):
+        node = self._origin_scope
+        while node is not None:
+            if node == self._parser_scope or node == self.context:
+                return True
+            node = get_parent_scope(node)
+        return False
+
+    def _access_possible(self, name):
+        return not name.value.startswith('__') or name.value.endswith('__') \
+            or self._equals_origin_scope()
+
+    def _filter(self, names):
+        names = super(ClassFilter, self)._filter(names)
+        return [name for name in names if self._access_possible(name)]
 
 
 class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
