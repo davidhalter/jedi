@@ -169,7 +169,7 @@ class AbstractInstanceContext(Context):
 
     def create_init_executions(self):
         for name in self.get_function_slot_names(u'__init__'):
-            if isinstance(name, SelfName):
+            if isinstance(name, LazyInstanceClassName):
                 function = FunctionContext.from_context(
                     self.parent_context,
                     name.tree_name.parent
@@ -351,10 +351,15 @@ class SelfName(filters.TreeNameDefinition):
         return self._instance.create_instance_context(self.class_context, self.tree_name)
 
 
-class LazyInstanceClassName(SelfName):
+class LazyInstanceClassName(object):
+    def __init__(self, instance, class_context, class_member_name):
+        self._instance = instance
+        self.class_context = class_context
+        self._class_member_name = class_member_name
+
     @iterator_to_context_set
     def infer(self):
-        for result_context in super(LazyInstanceClassName, self).infer():
+        for result_context in self._class_member_name.infer():
             if isinstance(result_context, FunctionContext):
                 # Classes are never used to resolve anything within the
                 # functions. Only other functions and modules will resolve
@@ -364,44 +369,51 @@ class LazyInstanceClassName(SelfName):
                 for c in apply_py__get__(result_context, self._instance):
                     yield c
 
+    def __getattr__(self, name):
+        return getattr(self._class_member_name, name)
 
-class InstanceClassFilter(filters.ParserTreeFilter):
+
+class InstanceClassFilter(filters.AbstractFilter):
+    """
+    This filter is special in that it uses the class filter and wraps the
+    resulting names in LazyINstanceClassName. The idea is that the class name
+    filtering can be very flexible and always be reflected in instances.
+    """
     name_class = LazyInstanceClassName
 
     def __init__(self, evaluator, context, class_context, origin_scope):
-        super(InstanceClassFilter, self).__init__(
+        self._instance = context
+        self._class_context = class_context
+        self._class_filter = next(class_context.get_filters(
+            search_global=False,
+            origin_scope=origin_scope,
+            is_instance=True,
+        ))
+
+    def get(self, name):
+        return self._convert(self._class_filter.get(name))
+
+    def values(self):
+        return self._convert(self._class_filter.values())
+
+    def _convert(self, names):
+        return [LazyInstanceClassName(self._instance, self._class_context, n) for n in names]
+
+
+class SelfAttributeFilter(filters.ParserTreeFilter):
+    """
+    This class basically filters all the use cases where `self.*` was assigned.
+    """
+    name_class = SelfName
+
+    def __init__(self, evaluator, context, class_context, origin_scope):
+        super(SelfAttributeFilter, self).__init__(
             evaluator=evaluator,
             context=context,
             node_context=class_context,
             origin_scope=origin_scope
         )
         self._class_context = class_context
-
-    def _equals_origin_scope(self):
-        node = self._origin_scope
-        while node is not None:
-            if node == self._parser_scope or node == self.context:
-                return True
-            node = get_parent_scope(node)
-        return False
-
-    def _access_possible(self, name):
-        return not name.value.startswith('__') or name.value.endswith('__') \
-            or self._equals_origin_scope()
-
-    def _filter(self, names):
-        names = super(InstanceClassFilter, self)._filter(names)
-        return [name for name in names if self._access_possible(name)]
-
-    def _convert_names(self, names):
-        return [self.name_class(self.context, self._class_context, name) for name in names]
-
-
-class SelfAttributeFilter(InstanceClassFilter):
-    """
-    This class basically filters all the use cases where `self.*` was assigned.
-    """
-    name_class = SelfName
 
     def _filter(self, names):
         names = self._filter_self_names(names)
@@ -420,6 +432,21 @@ class SelfAttributeFilter(InstanceClassFilter):
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name):
                     yield name
+
+    def _equals_origin_scope(self):
+        node = self._origin_scope
+        while node is not None:
+            if node == self._parser_scope or node == self.context:
+                return True
+            node = get_parent_scope(node)
+        return False
+
+    def _access_possible(self, name):
+        return not name.value.startswith('__') or name.value.endswith('__') \
+            or self._equals_origin_scope()
+
+    def _convert_names(self, names):
+        return [self.name_class(self.context, self._class_context, name) for name in names]
 
     def _check_flows(self, names):
         return names

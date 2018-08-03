@@ -59,9 +59,10 @@ def apply_py__get__(context, base_context):
 
 
 class ClassName(TreeNameDefinition):
-    def __init__(self, parent_context, tree_name, name_context):
+    def __init__(self, parent_context, tree_name, name_context, apply_decorators):
         super(ClassName, self).__init__(parent_context, tree_name)
         self._name_context = name_context
+        self._apply_decorators = apply_decorators
 
     @iterator_to_context_set
     def infer(self):
@@ -73,16 +74,29 @@ class ClassName(TreeNameDefinition):
             self.parent_context.evaluator, self._name_context, self.tree_name)
 
         for result_context in inferred:
-            for c in apply_py__get__(result_context, self.parent_context):
-                yield c
+            if self._apply_decorators:
+                for c in apply_py__get__(result_context, self.parent_context):
+                    yield c
+            else:
+                yield result_context
 
 
 class ClassFilter(ParserTreeFilter):
     name_class = ClassName
 
+    def __init__(self, *args, **kwargs):
+        self._is_instance = kwargs.pop('is_instance')
+        super(ClassFilter, self).__init__(*args, **kwargs)
+
     def _convert_names(self, names):
-        return [self.name_class(self.context, name, self._node_context)
-                for name in names]
+        return [
+            self.name_class(
+                parent_context=self.context,
+                tree_name=name,
+                name_context=self._node_context,
+                apply_decorators=not self._is_instance,
+            ) for name in names
+        ]
 
     def _equals_origin_scope(self):
         node = self._origin_scope
@@ -182,7 +196,9 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
                 else:
                     yield ClassFilter(
                         self.evaluator, self, node_context=cls,
-                        origin_scope=origin_scope)
+                        origin_scope=origin_scope,
+                        is_instance=is_instance
+                    )
 
     def is_class(self):
         return True
