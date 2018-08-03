@@ -521,6 +521,9 @@ class GeneralizedPopen(subprocess.Popen):
             except AttributeError:
                 CREATE_NO_WINDOW = 0x08000000
             kwargs['creationflags'] = CREATE_NO_WINDOW
+        # The child process doesn't need file descriptors except 0, 1, 2.
+        # This is unix only.
+        kwargs['close_fds'] = 'posix' in sys.builtin_module_names
         super(GeneralizedPopen, self).__init__(*args, **kwargs)
 
 
