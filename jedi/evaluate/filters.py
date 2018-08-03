@@ -38,12 +38,6 @@ class AbstractNameDefinition(object):
             return '<%s: %s>' % (self.__class__.__name__, self.string_name)
         return '<%s: %s@%s>' % (self.__class__.__name__, self.string_name, self.start_pos)
 
-    def execute(self, arguments):
-        return self.infer().execute(arguments)
-
-    def execute_evaluated(self, *args, **kwargs):
-        return self.infer().execute_evaluated(*args, **kwargs)
-
     def is_import(self):
         return False
 
