@@ -244,6 +244,7 @@ class CompiledSubprocess(object):
             # stderr contents.
             try:
                 line = self._stderr_queue.get_nowait()
+                line = line.decode('utf-8', 'replace')
                 debug.warning('stderr output: %s' % line.rstrip('\n'))
             except Empty:
                 break
