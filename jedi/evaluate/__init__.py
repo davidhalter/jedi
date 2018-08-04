@@ -85,7 +85,7 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 
 
-def execute(context, arguments):
+def _execute(context, arguments):
     try:
         func = context.py__call__
     except AttributeError:
@@ -124,7 +124,7 @@ class Evaluator(object):
         # Plugin API
         from jedi.plugins import plugin_manager
         plugin_callbacks = plugin_manager.get_callbacks(self)
-        self.execute = plugin_callbacks.decorate('execute', callback=execute)
+        self.execute = plugin_callbacks.decorate('execute', callback=_execute)
         self.import_module = plugin_callbacks.decorate(
             'import_module',
             callback=imports.import_module
