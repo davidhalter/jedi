@@ -262,9 +262,10 @@ class _MixedStubContextMixin(object):
 
 
 class _StubContextFilterMixin(_MixedStubContextMixin):
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
+    def get_filters(self, search_global, until_position=None,
+                    origin_scope=None, **kwargs):
         filters = super(_StubContextFilterMixin, self).get_filters(
-            search_global, until_position, origin_scope
+            search_global, until_position, origin_scope, **kwargs
         )
         yield StubParserTreeFilter(
             # Take the first filter, which is here to filter module contents
