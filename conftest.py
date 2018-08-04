@@ -6,8 +6,7 @@ from functools import partial
 import pytest
 
 import jedi
-from jedi.api.environment import get_default_environment, \
-    get_system_environment, InterpreterEnvironment
+from jedi.api.environment import get_system_environment, InterpreterEnvironment
 from jedi._compatibility import py_version
 
 collect_ignore = [
@@ -97,9 +96,6 @@ def environment(request):
     version = request.config.option.env
     if version is None:
         version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
-
-    if int(version) == py_version:
-        return get_default_environment()
 
     return get_system_environment(version[0] + '.' + version[1:])
 

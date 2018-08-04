@@ -15,9 +15,15 @@ import errno
 import weakref
 import traceback
 from functools import partial
+from threading import Thread
+try:
+    from queue import Queue, Empty
+except ImportError:
+    from Queue import Queue, Empty  # python 2.7
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
     pickle_dump, pickle_load, GeneralizedPopen
+from jedi import debug
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
@@ -26,6 +32,12 @@ from jedi.api.exceptions import InternalError
 
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
+
+
+def _enqueue_output(out, queue):
+    for line in iter(out.readline, b''):
+        queue.put(line)
+    out.close()
 
 
 def _get_function(name):
@@ -135,6 +147,7 @@ class CompiledSubprocess(object):
     @property
     @memoize_method
     def _process(self):
+        debug.dbg('Start environment subprocess %s', self._executable)
         parso_path = sys.modules['parso'].__file__
         args = (
             self._executable,
@@ -142,7 +155,7 @@ class CompiledSubprocess(object):
             os.path.dirname(os.path.dirname(parso_path)),
             '.'.join(str(x) for x in sys.version_info[:3]),
         )
-        return GeneralizedPopen(
+        process = GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -151,6 +164,14 @@ class CompiledSubprocess(object):
             # (this is already the case on Python 3).
             bufsize=-1
         )
+        self._stderr_queue = Queue()
+        self._stderr_thread = t = Thread(
+            target=_enqueue_output,
+            args=(process.stderr, self._stderr_queue)
+        )
+        t.daemon = True
+        t.start()
+        return process
 
     def run(self, evaluator, function, args=(), kwargs={}):
         # Delete old evaluators.
@@ -219,6 +240,16 @@ class CompiledSubprocess(object):
                     stderr,
                 ))
 
+        while True:
+            # Try to do some error reporting from the subprocess and print its
+            # stderr contents.
+            try:
+                line = self._stderr_queue.get_nowait()
+                line = line.decode('utf-8', 'replace')
+                debug.warning('stderr output: %s' % line.rstrip('\n'))
+            except Empty:
+                break
+
         if is_exception:
             # Replace the attribute error message with a the traceback. It's
             # way more informative.
@@ -282,11 +313,9 @@ class Listener(object):
 
     def listen(self):
         stdout = sys.stdout
-        # Mute stdout/stderr. Nobody should actually be able to write to those,
-        # because stdout is used for IPC and stderr will just be annoying if it
-        # leaks (on module imports).
+        # Mute stdout. Nobody should actually be able to write to it,
+        # because stdout is used for IPC.
         sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
         stdin = sys.stdin
         if sys.version_info[0] > 2:
             stdout = stdout.buffer

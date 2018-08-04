@@ -3,9 +3,11 @@
 Changelog
 ---------
 
-0.12.2 ()
+0.13.0 ()
 +++++++++++++++++++
 
+- Remove Python 3.3 support. Python 3.3 support has been dropped by the Python
+  foundation.
 - Added ``include_builtins`` as a parameter to usages.
 - ``goto_assignments`` has a new ``follow_builtin_imports`` parameter that
   changes the previous behavior slightly.

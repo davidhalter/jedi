@@ -8,10 +8,6 @@ set -e
 sudo chown root: /opt/python/3.6/bin/python
 sudo chown root: /opt/python/3.6.3/bin/python
 
-if [[ $JEDI_TEST_ENVIRONMENT == "33" ]]; then
-    VERSION=3.3
-    DOWNLOAD=1
-fi
 if [[ $JEDI_TEST_ENVIRONMENT == "35" ]]; then
     VERSION=3.5
     DOWNLOAD=1

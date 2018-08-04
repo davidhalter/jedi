@@ -437,7 +437,7 @@ def test_func():
 #? int()
 tuple({1})[0]
 
-# python >= 3.3
+# python >= 3.4
 # -----------------
 # PEP 3132 Extended Iterable Unpacking (star unpacking)
 # -----------------

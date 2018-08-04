@@ -16,8 +16,6 @@ except ImportError:
     pass
 
 is_py3 = sys.version_info[0] >= 3
-is_py33 = is_py3 and sys.version_info[1] >= 3
-is_py34 = is_py3 and sys.version_info[1] >= 4
 is_py35 = is_py3 and sys.version_info[1] >= 5
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
@@ -116,7 +114,7 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
     return module_file, module_path, is_package
 
 
-def find_module_pre_py33(string, path=None, full_name=None, is_global_search=True):
+def find_module_pre_py34(string, path=None, full_name=None, is_global_search=True):
     # This import is here, because in other places it will raise a
     # DeprecationWarning.
     import imp
@@ -151,8 +149,7 @@ def find_module_pre_py33(string, path=None, full_name=None, is_global_search=Tru
     raise ImportError("No module named {}".format(string))
 
 
-find_module = find_module_py33 if is_py33 else find_module_pre_py33
-find_module = find_module_py34 if is_py34 else find_module
+find_module = find_module_py34 if is_py3 else find_module_pre_py34
 find_module.__doc__ = """
 Provides information about a module.
 
@@ -369,6 +366,7 @@ def print_to_stderr(*args):
         eval("print(*args, file=sys.stderr)")
     else:
         print >> sys.stderr, args
+    sys.stderr.flush()
 
 
 def utf8_repr(func):
@@ -521,6 +519,9 @@ class GeneralizedPopen(subprocess.Popen):
             except AttributeError:
                 CREATE_NO_WINDOW = 0x08000000
             kwargs['creationflags'] = CREATE_NO_WINDOW
+        # The child process doesn't need file descriptors except 0, 1, 2.
+        # This is unix only.
+        kwargs['close_fds'] = 'posix' in sys.builtin_module_names
         super(GeneralizedPopen, self).__init__(*args, **kwargs)
 
 

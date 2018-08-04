@@ -5,7 +5,7 @@ from textwrap import dedent
 import operator as op
 from collections import namedtuple
 
-from jedi._compatibility import unicode, is_py3, is_py34, builtins, \
+from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode, print_to_stderr
 from jedi.evaluate.compiled.getattr_static import getattr_static
 
@@ -31,10 +31,9 @@ NOT_CLASS_TYPES = (
 if is_py3:
     NOT_CLASS_TYPES += (
         types.MappingProxyType,
-        types.SimpleNamespace
+        types.SimpleNamespace,
+        types.DynamicClassAttribute,
     )
-    if is_py34:
-        NOT_CLASS_TYPES += (types.DynamicClassAttribute,)
 
 
 # Those types don't exist in typing.
@@ -141,7 +140,7 @@ def load_module(evaluator, dotted_name, sys_path):
         __import__(dotted_name)
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        print_to_stderr('Module %s not importable.' % dotted_name)
+        print_to_stderr('Module %s not importable in path %s.' % (dotted_name, sys_path))
         return None
     except Exception:
         # Since __import__ pretty much makes code execution possible, just

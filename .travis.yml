@@ -8,7 +8,6 @@ python:
 
 env:
   - JEDI_TEST_ENVIRONMENT=27
-  - JEDI_TEST_ENVIRONMENT=33
   - JEDI_TEST_ENVIRONMENT=34
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=36
@@ -39,7 +38,6 @@ before_install:
     - ./travis_install.sh
     # Need to add the path to the Python versions in the end. This might add
     # something twice, but it doesn't really matter, because they are appended.
-    - export PATH=$PATH:/opt/python/3.3/bin
     - export PATH=$PATH:/opt/python/3.5/bin
     # 3.6 was not installed manually, but already is on the system. However
     # it's not on path (unless 3.6 is selected).
