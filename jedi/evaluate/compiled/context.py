@@ -13,7 +13,7 @@ from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate.helpers import reraise_as_evaluator
+from jedi.evaluate.helpers import reraise_as_evaluator, execute_evaluated
 from . import fake
 
 
@@ -268,7 +268,7 @@ class SignatureParamName(AbstractNameDefinition):
             contexts = ContextSet(create_from_access_path(evaluator, p.default))
         if p.has_annotation:
             annotation = create_from_access_path(evaluator, p.annotation)
-            contexts |= annotation.execute_evaluated()
+            contexts |= execute_evaluated(annotation)
         return contexts
 
 

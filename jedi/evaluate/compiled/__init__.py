@@ -2,6 +2,7 @@ from jedi._compatibility import unicode
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
     CompiledObjectFilter, CompiledContextName, create_from_access_path, \
     create_from_name
+from jedi.evaluate.helpers import execute_evaluated
 
 
 def builtin_from_name(evaluator, string):
@@ -29,7 +30,7 @@ def get_special_object(evaluator, identifier):
 
 
 def get_string_context_set(evaluator):
-    return builtin_from_name(evaluator, u'str').execute_evaluated()
+    return execute_evaluated(builtin_from_name(evaluator, u'str'))
 
 
 def load_module(evaluator, **kwargs):

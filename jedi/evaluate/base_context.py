@@ -13,7 +13,7 @@ from jedi._compatibility import Python3Method, zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 from jedi.common import BaseContextSet, BaseContext
 from jedi.evaluate.helpers import EvaluatorIndexError, EvaluatorTypeError, \
-    EvaluatorKeyError
+    EvaluatorKeyError, execute_evaluated
 
 
 class Context(BaseContext):
@@ -32,15 +32,6 @@ class Context(BaseContext):
         # By default just lower name of the class. Can and should be
         # overwritten.
         return self.__class__.__name__.lower()
-
-    def execute_evaluated(self, *value_list):
-        """
-        Execute a function with already executed arguments.
-        """
-        # TODO move this out of here to the evaluator.
-        from jedi.evaluate.arguments import ValuesArguments
-        arguments = ValuesArguments([ContextSet(value) for value in value_list])
-        return self.evaluator.execute(self, arguments)
 
     def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
@@ -239,6 +230,9 @@ class ContextSet(BaseContextSet):
 
     def execute(self, arguments):
         return ContextSet.from_sets(c.evaluator.execute(c, arguments) for c in self._set)
+
+    def execute_evaluated(self, *args, **kwargs):
+        return ContextSet.from_sets(execute_evaluated(c, *args, **kwargs) for c in self._set)
 
 
 NO_CONTEXTS = ContextSet()

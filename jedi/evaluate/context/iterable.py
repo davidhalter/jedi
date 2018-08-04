@@ -35,6 +35,7 @@ from jedi.evaluate.helpers import get_int_or_none, is_string, \
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_method_cache
+from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.filters import ParserTreeFilter, BuiltinOverwrite, \
     publish_method
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
@@ -188,7 +189,7 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     @memoize_method
     def get_object(self):
         compiled_obj = compiled.builtin_from_name(self.evaluator, self.array_type)
-        only_obj, = compiled_obj.execute_evaluated(self)
+        only_obj, = execute_evaluated(compiled_obj, self)
         return only_obj
 
     def py__bool__(self):

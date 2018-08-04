@@ -23,6 +23,7 @@ from parso import parse, ParserSyntaxError
 from jedi._compatibility import u
 from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
+from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.base_context import iterator_to_context_set, ContextSet, \
     NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContexts
@@ -261,7 +262,7 @@ def _execute_array_values(evaluator, array):
             values.append(LazyKnownContexts(objects))
         return {FakeSequence(evaluator, array.array_type, values)}
     else:
-        return array.execute_evaluated()
+        return execute_evaluated(array)
 
 
 @evaluator_method_cache()

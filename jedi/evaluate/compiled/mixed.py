@@ -14,6 +14,7 @@ from jedi.evaluate import imports
 from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
+from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.compiled.access import compiled_objects_cache
 from jedi.evaluate.compiled.context import create_cached_compiled_object
@@ -220,7 +221,7 @@ def _create(evaluator, access_handle, parent_context, *args):
     if tree_node.type == 'classdef':
         if not access_handle.is_class():
             # Is an instance, not a class.
-            tree_context, = tree_context.execute_evaluated()
+            tree_context, = execute_evaluated(tree_context)
 
     return MixedObject(
         evaluator,

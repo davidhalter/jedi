@@ -31,7 +31,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
 from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.context import ModuleContext
-from jedi.evaluate.helpers import is_string
+from jedi.evaluate.helpers import is_string, execute_evaluated
 from jedi import debug
 from jedi import parser_utils
 
@@ -296,7 +296,7 @@ def py__getitem__(context, typ, node):
         [LazyTreeContext(context, n) for n in nodes]
     )
 
-    result = factory.execute_evaluated(compiled_classname, args)
+    result = execute_evaluated(factory, compiled_classname, args)
     return result
 
 
