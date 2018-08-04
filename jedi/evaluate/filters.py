@@ -332,7 +332,7 @@ class _BuiltinMappedMethod(Context):
         self._method = method
         self._builtin_func = builtin_func
 
-    def py__call__(self, params):
+    def py__call__(self, arguments):
         # TODO add TypeError if params are given/or not correct.
         return self._method(self.parent_context)
 

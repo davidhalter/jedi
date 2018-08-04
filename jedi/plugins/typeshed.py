@@ -290,4 +290,5 @@ class ClassStubContext(_StubContextFilterMixin, ClassContext):
 
 
 class FunctionStubContext(_MixedStubContextMixin, FunctionContext):
-    pass
+    def py__call__(self, arguments):
+        return self.stub_context.py__call__(arguments)
