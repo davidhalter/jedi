@@ -447,8 +447,11 @@ def create_from_name(evaluator, compiled_object, name):
         pass
 
     access = compiled_object.access_handle.getattr(name, default=None)
+    parent_context = compiled_object
+    if parent_context.is_class():
+        parent_context = parent_context.parent_context
     return create_cached_compiled_object(
-        evaluator, access, parent_context=compiled_object, faked=faked
+        evaluator, access, parent_context=parent_context, faked=faked
     )
 
 
