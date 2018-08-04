@@ -265,17 +265,23 @@ class AnonymousInstance(TreeInstance):
 
 
 class CompiledInstanceName(compiled.CompiledName):
-    def __init__(self, evaluator, instance, parent_context, name):
-        super(CompiledInstanceName, self).__init__(evaluator, parent_context, name)
+
+    def __init__(self, evaluator, instance, klass, name):
+        super(CompiledInstanceName, self).__init__(
+            evaluator,
+            klass.parent_context,
+            name.string_name
+        )
         self._instance = instance
+        self._class = klass
+        self._class_member_name = name
 
     @iterator_to_context_set
     def infer(self):
-        for result_context in super(CompiledInstanceName, self).infer():
+        for result_context in self._class_member_name.infer():
             is_function = result_context.api_type == 'function'
             if result_context.tree_node is not None and is_function:
-
-                yield BoundMethod(self._instance, self.parent_context, result_context)
+                yield BoundMethod(self._instance, self._class, result_context)
             else:
                 if is_function:
                     yield CompiledBoundMethod(result_context)
@@ -283,20 +289,26 @@ class CompiledInstanceName(compiled.CompiledName):
                     yield result_context
 
 
-class CompiledInstanceClassFilter(compiled.CompiledObjectFilter):
+class CompiledInstanceClassFilter(filters.AbstractFilter):
     name_class = CompiledInstanceName
 
-    def __init__(self, evaluator, instance, compiled_object):
-        super(CompiledInstanceClassFilter, self).__init__(
-            evaluator,
-            compiled_object,
-            is_instance=True,
-        )
+    def __init__(self, evaluator, instance, klass):
+        self._evaluator = evaluator
         self._instance = instance
+        self._class = klass
+        self._class_filter = next(klass.get_filters(is_instance=True))
 
-    def _create_name(self, name):
-        return self.name_class(
-            self._evaluator, self._instance, self._compiled_object, name)
+    def get(self, name):
+        return self._convert(self._class_filter.get(name))
+
+    def values(self):
+        return self._convert(self._class_filter.values())
+
+    def _convert(self, names):
+        return [
+            CompiledInstanceName(self._evaluator, self._instance, self._class, n)
+            for n in names
+        ]
 
 
 class BoundMethod(AbstractFunction):
@@ -330,11 +342,6 @@ class CompiledBoundMethod(compiled.CompiledObject):
 
     def get_param_names(self):
         return list(super(CompiledBoundMethod, self).get_param_names())[1:]
-
-
-class InstanceNameDefinition(filters.TreeNameDefinition):
-    def infer(self):
-        return super(InstanceNameDefinition, self).infer()
 
 
 class SelfName(filters.TreeNameDefinition):
@@ -379,8 +386,6 @@ class InstanceClassFilter(filters.AbstractFilter):
     resulting names in LazyINstanceClassName. The idea is that the class name
     filtering can be very flexible and always be reflected in instances.
     """
-    name_class = LazyInstanceClassName
-
     def __init__(self, evaluator, context, class_context, origin_scope):
         self._instance = context
         self._class_context = class_context
