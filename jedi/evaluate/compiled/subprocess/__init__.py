@@ -17,9 +17,9 @@ import traceback
 from functools import partial
 from threading import Thread
 try:
-    from Queue import Queue, Empty
+    from queue import Queue, Empty
 except ImportError:
-    from queue import Queue, Empty  # python 3.x
+    from Queue import Queue, Empty  # python 2.7
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
     pickle_dump, pickle_load, GeneralizedPopen
