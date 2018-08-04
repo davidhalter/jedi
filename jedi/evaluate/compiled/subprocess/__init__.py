@@ -147,6 +147,7 @@ class CompiledSubprocess(object):
     @property
     @memoize_method
     def _process(self):
+        debug.dbg('Start environment subprocess %s', self._executable)
         parso_path = sys.modules['parso'].__file__
         args = (
             self._executable,
