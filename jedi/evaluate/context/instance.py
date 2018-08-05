@@ -334,6 +334,9 @@ class BoundMethod(AbstractFunction):
             return InstanceFunctionExecution(
                 self._instance, self.parent_context, self, arguments)
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._function)
+
 
 class CompiledBoundMethod(compiled.CompiledObject):
     def __init__(self, func):

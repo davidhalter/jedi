@@ -41,7 +41,7 @@ class ExecutedParam(object):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
-def get_params(execution_context, var_args):
+def get_executed_params(execution_context, var_args):
     result_params = []
     param_dict = {}
     funcdef = execution_context.tree_node

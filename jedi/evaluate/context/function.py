@@ -247,4 +247,4 @@ class FunctionExecutionContext(TreeContext):
 
     @evaluator_method_cache()
     def get_params(self):
-        return self.var_args.get_params(self)
+        return self.var_args.get_executed_params(self)
