@@ -141,19 +141,6 @@ class ParamName(AbstractTreeName):
         return params[param_node.position_index]
 
 
-class AnonymousInstanceParamName(ParamName):
-    def infer(self):
-        param_node = search_ancestor(self.tree_name, 'param')
-        # TODO I think this should not belong here. It's not even really true,
-        #      because classmethod and other descriptors can change it.
-        if param_node.position_index == 0:
-            # This is a speed optimization, to return the self param (because
-            # it's known). This only affects anonymous instances.
-            return ContextSet(self.parent_context.instance)
-        else:
-            return self.get_param().infer()
-
-
 class AbstractFilter(object):
     _until_position = None
 
@@ -264,10 +251,6 @@ class FunctionExecutionFilter(ParserTreeFilter):
                 yield self.param_name(self.context, name)
             else:
                 yield TreeNameDefinition(self.context, name)
-
-
-class AnonymousInstanceFunctionExecutionFilter(FunctionExecutionFilter):
-    param_name = AnonymousInstanceParamName
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):

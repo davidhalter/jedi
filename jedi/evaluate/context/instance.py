@@ -1,5 +1,7 @@
 from abc import abstractproperty
 
+from parso.tree import search_ancestor
+
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
@@ -11,13 +13,31 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction
+from jedi.evaluate.filters import FunctionExecutionFilter, ParamName
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
 from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
 
+class _AnonymousInstanceParamName(ParamName):
+    def infer(self):
+        param_node = search_ancestor(self.tree_name, 'param')
+        # TODO I think this should not belong here. It's not even really true,
+        #      because classmethod and other descriptors can change it.
+        if param_node.position_index == 0:
+            # This is a speed optimization, to return the self param (because
+            # it's known). This only affects anonymous instances.
+            return ContextSet(self.parent_context.instance)
+        else:
+            return self.get_param().infer()
+
+
+class _AnonymousInstanceFunctionExecutionFilter(FunctionExecutionFilter):
+    param_name = _AnonymousInstanceParamName
+
+
 class AnonymousInstanceFunctionExecution(FunctionExecutionContext):
-    function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
+    function_execution_filter = _AnonymousInstanceFunctionExecutionFilter
 
     def __init__(self, instance, *args, **kwargs):
         self.instance = instance
