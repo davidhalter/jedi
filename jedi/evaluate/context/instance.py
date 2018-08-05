@@ -8,7 +8,6 @@ from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
-from jedi.cache import memoize_method
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
@@ -454,10 +453,6 @@ class InstanceVarArgs(AbstractArguments):
         self._instance = instance
         self._var_args = var_args
 
-    @memoize_method
-    def _get_var_args(self):
-        return self._var_args
-
     @property
     def argument_node(self):
         return self._var_args.argument_node
@@ -468,8 +463,8 @@ class InstanceVarArgs(AbstractArguments):
 
     def unpack(self, func=None):
         yield None, LazyKnownContext(self._instance)
-        for values in self._get_var_args().unpack(func):
+        for values in self._var_args.unpack(func):
             yield values
 
     def get_calling_nodes(self):
-        return self._get_var_args().get_calling_nodes()
+        return self._var_args.get_calling_nodes()
