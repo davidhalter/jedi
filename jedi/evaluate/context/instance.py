@@ -454,7 +454,7 @@ class SelfAttributeFilter(ClassFilter):
 
 class InstanceArguments(AbstractArguments):
     def __init__(self, instance, var_args):
-        self._instance = instance
+        self.instance = instance
         self._var_args = var_args
 
     @property
@@ -466,7 +466,7 @@ class InstanceArguments(AbstractArguments):
         return self._var_args.trailer
 
     def unpack(self, func=None):
-        yield None, LazyKnownContext(self._instance)
+        yield None, LazyKnownContext(self.instance)
         for values in self._var_args.unpack(func):
             yield values
 
