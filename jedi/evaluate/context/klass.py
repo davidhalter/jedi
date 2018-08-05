@@ -175,11 +175,6 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     def py__class__(self):
         return compiled.builtin_from_name(self.evaluator, u'type')
 
-    def get_params(self):
-        from jedi.evaluate.context import AnonymousInstance
-        anon = AnonymousInstance(self.evaluator, self.parent_context, self)
-        return [AnonymousInstanceParamName(anon, param.name) for param in self.funcdef.get_params()]
-
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:
             yield ParserTreeFilter(

@@ -136,7 +136,7 @@ class ParamName(AbstractTreeName):
         return self.get_param().infer()
 
     def get_param(self):
-        params = self.parent_context.get_params()
+        params = self.parent_context.get_executed_params()
         param_node = search_ancestor(self.tree_name, 'param')
         return params[param_node.position_index]
 
