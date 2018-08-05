@@ -24,7 +24,7 @@ class BaseInstanceFunctionExecution(FunctionExecutionContext):
 
 class InstanceFunctionExecution(BaseInstanceFunctionExecution):
     def __init__(self, instance, parent_context, function_context, var_args):
-        var_args = InstanceVarArgs(instance, var_args)
+        var_args = InstanceArguments(instance, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
             instance, parent_context, function_context, var_args)
@@ -330,8 +330,12 @@ class BoundMethod(AbstractFunction):
             return AnonymousInstanceFunctionExecution(
                 self._instance, self.parent_context, self, arguments)
         else:
-            return InstanceFunctionExecution(
-                self._instance, self.parent_context, self, arguments)
+            return FunctionExecutionContext(
+                self.evaluator,
+                self.parent_context,
+                self,
+                InstanceArguments(self._instance, arguments)
+            )
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._function)
@@ -448,7 +452,7 @@ class SelfAttributeFilter(ClassFilter):
         return names
 
 
-class InstanceVarArgs(AbstractArguments):
+class InstanceArguments(AbstractArguments):
     def __init__(self, instance, var_args):
         self._instance = instance
         self._var_args = var_args
