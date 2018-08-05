@@ -1,6 +1,7 @@
 from abc import abstractproperty
 
 from jedi import debug
+from jedi import settings
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
 from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
@@ -15,27 +16,13 @@ from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
 
-class BaseInstanceFunctionExecution(FunctionExecutionContext):
-    def __init__(self, instance, *args, **kwargs):
-        self.instance = instance
-        super(BaseInstanceFunctionExecution, self).__init__(
-            instance.evaluator, *args, **kwargs)
-
-
-class InstanceFunctionExecution(BaseInstanceFunctionExecution):
-    def __init__(self, instance, parent_context, function_context, var_args):
-        var_args = InstanceArguments(instance, var_args)
-
-        super(InstanceFunctionExecution, self).__init__(
-            instance, parent_context, function_context, var_args)
-
-
-class AnonymousInstanceFunctionExecution(BaseInstanceFunctionExecution):
+class AnonymousInstanceFunctionExecution(FunctionExecutionContext):
     function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
 
-    def __init__(self, instance, parent_context, function_context, var_args):
+    def __init__(self, instance, *args, **kwargs):
+        self.instance = instance
         super(AnonymousInstanceFunctionExecution, self).__init__(
-            instance, parent_context, function_context, var_args)
+            instance.evaluator, *args, **kwargs)
 
 
 class AbstractInstanceContext(Context):
@@ -43,7 +30,6 @@ class AbstractInstanceContext(Context):
     This class is used to evaluate instances.
     """
     api_type = u'instance'
-    function_execution_cls = InstanceFunctionExecution
 
     def __init__(self, evaluator, parent_context, class_context, var_args):
         super(AbstractInstanceContext, self).__init__(evaluator, parent_context)
@@ -159,12 +145,7 @@ class AbstractInstanceContext(Context):
         pass
 
     def _create_init_execution(self, class_context, bound_method):
-        return self.function_execution_cls(
-            self,
-            class_context.parent_context,
-            bound_method,
-            self.var_args
-        )
+        return bound_method.get_function_execution(self.var_args)
 
     def create_init_executions(self):
         for name in self.get_function_slot_names(u'__init__'):
@@ -211,16 +192,18 @@ class AbstractInstanceContext(Context):
 
 
 class CompiledInstance(AbstractInstanceContext):
-    def __init__(self, *args, **kwargs):
-        super(CompiledInstance, self).__init__(*args, **kwargs)
+    def __init__(self, evaluator, parent_context, class_context, var_args):
+        self._original_var_args = var_args
+
         # I don't think that dynamic append lookups should happen here. That
         # sounds more like something that should go to py__iter__.
-        self._original_var_args = self.var_args
-
-        if self.class_context.name.string_name in ['list', 'set'] \
-                and self.parent_context.get_root_context() == self.evaluator.builtins_module:
+        if class_context.py__name__() in ['list', 'set'] \
+                and parent_context.get_root_context() == evaluator.builtins_module:
             # compare the module path with the builtin name.
-            self.var_args = iterable.get_dynamic_array_instance(self)
+            if settings.dynamic_array_additions:
+                var_args = iterable.get_dynamic_array_instance(self, var_args)
+
+        super(CompiledInstance, self).__init__(evaluator, parent_context, class_context, var_args)
 
     @property
     def name(self):
@@ -252,14 +235,20 @@ class TreeInstance(AbstractInstanceContext):
 
 
 class AnonymousInstance(TreeInstance):
-    function_execution_cls = AnonymousInstanceFunctionExecution
-
     def __init__(self, evaluator, parent_context, class_context):
         super(AnonymousInstance, self).__init__(
             evaluator,
             parent_context,
             class_context,
             var_args=AnonymousArguments(),
+        )
+
+    def _create_init_execution(self, class_context, bound_method):
+        return AnonymousInstanceFunctionExecution(
+            self,
+            class_context.parent_context,
+            bound_method,
+            self.var_args
         )
 
 

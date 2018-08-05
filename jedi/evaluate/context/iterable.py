@@ -630,12 +630,9 @@ def _check_array_additions(context, sequence):
     return added_types
 
 
-def get_dynamic_array_instance(instance):
+def get_dynamic_array_instance(instance, arguments):
     """Used for set() and list() instances."""
-    if not settings.dynamic_array_additions:
-        return instance.var_args
-
-    ai = _ArrayInstance(instance)
+    ai = _ArrayInstance(instance, arguments)
     from jedi.evaluate import arguments
     return arguments.ValuesArguments([ContextSet(ai)])
 
@@ -651,9 +648,9 @@ class _ArrayInstance(object):
     and therefore doesn't need filters, `py__bool__` and so on, because
     we don't use these operations in `builtins.py`.
     """
-    def __init__(self, instance):
+    def __init__(self, instance, var_args):
         self.instance = instance
-        self.var_args = instance.var_args
+        self.var_args = var_args
 
     def py__iter__(self):
         var_args = self.var_args
