@@ -25,7 +25,7 @@ class BaseInstanceFunctionExecution(FunctionExecutionContext):
 
 class InstanceFunctionExecution(BaseInstanceFunctionExecution):
     def __init__(self, instance, parent_context, function_context, var_args):
-        var_args = InstanceVarArgs(self, var_args)
+        var_args = InstanceVarArgs(instance, var_args)
 
         super(InstanceFunctionExecution, self).__init__(
             instance, parent_context, function_context, var_args)
@@ -450,8 +450,8 @@ class SelfAttributeFilter(ClassFilter):
 
 
 class InstanceVarArgs(AbstractArguments):
-    def __init__(self, execution_context, var_args):
-        self._execution_context = execution_context
+    def __init__(self, instance, var_args):
+        self._instance = instance
         self._var_args = var_args
 
     @memoize_method
@@ -467,7 +467,7 @@ class InstanceVarArgs(AbstractArguments):
         return self._var_args.trailer
 
     def unpack(self, func=None):
-        yield None, LazyKnownContext(self._execution_context.instance)
+        yield None, LazyKnownContext(self._instance)
         for values in self._get_var_args().unpack(func):
             yield values
 
