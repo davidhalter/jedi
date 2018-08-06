@@ -94,6 +94,9 @@ class AbstractFunction(TreeContext):
             else:
                 return function_execution.get_return_values()
 
+    def py__name__(self):
+        return self.name.string_name
+
 
 class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
     """
@@ -250,5 +253,5 @@ class FunctionExecutionContext(TreeContext):
                                              origin_scope=origin_scope)
 
     @evaluator_method_cache()
-    def get_params(self):
-        return self.var_args.get_params(self)
+    def get_executed_params(self):
+        return self.var_args.get_executed_params(self)

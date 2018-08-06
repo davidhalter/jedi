@@ -157,8 +157,8 @@ def infer_param(execution_context, param):
                 "Comments length != Params length %s %s",
                 params_comments, all_params
             )
-        from jedi.evaluate.context.instance import BaseInstanceFunctionExecution
-        if isinstance(execution_context, BaseInstanceFunctionExecution):
+        from jedi.evaluate.context.instance import InstanceArguments
+        if isinstance(execution_context.var_args, InstanceArguments):
             if index == 0:
                 # Assume it's self, which is already handled
                 return NO_CONTEXTS

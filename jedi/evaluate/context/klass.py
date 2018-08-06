@@ -43,7 +43,7 @@ from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
-    ContextName, AnonymousInstanceParamName
+    ContextName
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     TreeContext
 
@@ -172,11 +172,6 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     def py__class__(self):
         return compiled.builtin_from_name(self.evaluator, u'type')
-
-    def get_params(self):
-        from jedi.evaluate.context import AnonymousInstance
-        anon = AnonymousInstance(self.evaluator, self.parent_context, self)
-        return [AnonymousInstanceParamName(anon, param.name) for param in self.funcdef.get_params()]
 
     def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
         if search_global:

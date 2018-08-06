@@ -8,7 +8,7 @@ from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
 from jedi.evaluate.filters import ParamName
 from jedi.evaluate.base_context import NO_CONTEXTS
 from jedi.evaluate.context import iterable
-from jedi.evaluate.param import get_params, ExecutedParam
+from jedi.evaluate.param import get_executed_params, ExecutedParam
 
 
 def try_iter_content(types, depth=0):
@@ -64,17 +64,17 @@ class AbstractArguments(object):
             try_iter_content(types)
 
     def get_calling_nodes(self):
-        raise NotImplementedError
+        return []
 
     def unpack(self, funcdef=None):
         raise NotImplementedError
 
-    def get_params(self, execution_context):
-        return get_params(execution_context, self)
+    def get_executed_params(self, execution_context):
+        return get_executed_params(execution_context, self)
 
 
 class AnonymousArguments(AbstractArguments):
-    def get_params(self, execution_context):
+    def get_executed_params(self, execution_context):
         from jedi.evaluate.dynamic import search_params
         return search_params(
             execution_context.evaluator,
@@ -217,9 +217,6 @@ class ValuesArguments(AbstractArguments):
     def unpack(self, funcdef=None):
         for values in self._values_list:
             yield None, LazyKnownContexts(values)
-
-    def get_calling_nodes(self):
-        return []
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._values_list)

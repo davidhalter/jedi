@@ -278,7 +278,7 @@ def eval_expr_stmt(context, stmt, seek_name=None):
         # necessary.
         if not allowed and context.get_root_context() == context.evaluator.builtins_module:
             try:
-                instance = context.instance
+                instance = context.var_args.instance
             except AttributeError:
                 pass
             else:

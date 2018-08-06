@@ -22,7 +22,7 @@ except ImportError:
     from Queue import Queue, Empty  # python 2.7
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load, GeneralizedPopen
+    pickle_dump, pickle_load, GeneralizedPopen, print_to_stderr
 from jedi import debug
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
@@ -38,6 +38,18 @@ def _enqueue_output(out, queue):
     for line in iter(out.readline, b''):
         queue.put(line)
     out.close()
+
+
+def _add_stderr_to_debug(stderr_queue):
+    while True:
+        # Try to do some error reporting from the subprocess and print its
+        # stderr contents.
+        try:
+            line = stderr_queue.get_nowait()
+            line = line.decode('utf-8', 'replace')
+            debug.warning('stderr output: %s' % line.rstrip('\n'))
+        except Empty:
+            break
 
 
 def _get_function(name):
@@ -229,10 +241,11 @@ class CompiledSubprocess(object):
             is_exception, traceback, result = pickle_load(self._process.stdout)
         except EOFError as eof_error:
             try:
-                stderr = self._process.stderr.read()
+                stderr = self._process.stderr.read().decode('utf-8', 'replace')
             except Exception as exc:
                 stderr = '<empty/not available (%r)>' % exc
             self._kill()
+            _add_stderr_to_debug(self._stderr_queue)
             raise InternalError(
                 "The subprocess %s has crashed (%r, stderr=%s)." % (
                     self._executable,
@@ -240,15 +253,7 @@ class CompiledSubprocess(object):
                     stderr,
                 ))
 
-        while True:
-            # Try to do some error reporting from the subprocess and print its
-            # stderr contents.
-            try:
-                line = self._stderr_queue.get_nowait()
-                line = line.decode('utf-8', 'replace')
-                debug.warning('stderr output: %s' % line.rstrip('\n'))
-            except Empty:
-                break
+        _add_stderr_to_debug(self._stderr_queue)
 
         if is_exception:
             # Replace the attribute error message with a the traceback. It's

@@ -1,6 +1,7 @@
 from abc import abstractproperty
 
 from jedi import debug
+from jedi import settings
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
 from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
@@ -8,7 +9,6 @@ from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
-from jedi.cache import memoize_method
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
@@ -16,27 +16,27 @@ from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
 
-class BaseInstanceFunctionExecution(FunctionExecutionContext):
-    def __init__(self, instance, *args, **kwargs):
-        self.instance = instance
-        super(BaseInstanceFunctionExecution, self).__init__(
-            instance.evaluator, *args, **kwargs)
+class InstanceExecutedParam(object):
+    def __init__(self, instance):
+        self._instance = instance
+
+    def infer(self):
+        return ContextSet(self._instance)
 
 
-class InstanceFunctionExecution(BaseInstanceFunctionExecution):
-    def __init__(self, instance, parent_context, function_context, var_args):
-        var_args = InstanceVarArgs(self, var_args)
+class AnonymousInstanceArguments(AnonymousArguments):
+    def __init__(self, instance):
+        self._instance = instance
 
-        super(InstanceFunctionExecution, self).__init__(
-            instance, parent_context, function_context, var_args)
-
-
-class AnonymousInstanceFunctionExecution(BaseInstanceFunctionExecution):
-    function_execution_filter = filters.AnonymousInstanceFunctionExecutionFilter
-
-    def __init__(self, instance, parent_context, function_context, var_args):
-        super(AnonymousInstanceFunctionExecution, self).__init__(
-            instance, parent_context, function_context, var_args)
+    def get_executed_params(self, execution_context):
+        from jedi.evaluate.dynamic import search_params
+        executed_params = list(search_params(
+            execution_context.evaluator,
+            execution_context,
+            execution_context.tree_node
+        ))
+        executed_params[0] = InstanceExecutedParam(self._instance)
+        return executed_params
 
 
 class AbstractInstanceContext(Context):
@@ -44,7 +44,6 @@ class AbstractInstanceContext(Context):
     This class is used to evaluate instances.
     """
     api_type = u'instance'
-    function_execution_cls = InstanceFunctionExecution
 
     def __init__(self, evaluator, parent_context, class_context, var_args):
         super(AbstractInstanceContext, self).__init__(evaluator, parent_context)
@@ -160,12 +159,7 @@ class AbstractInstanceContext(Context):
         pass
 
     def _create_init_execution(self, class_context, bound_method):
-        return self.function_execution_cls(
-            self,
-            class_context.parent_context,
-            bound_method,
-            self.var_args
-        )
+        return bound_method.get_function_execution(self.var_args)
 
     def create_init_executions(self):
         for name in self.get_function_slot_names(u'__init__'):
@@ -212,16 +206,18 @@ class AbstractInstanceContext(Context):
 
 
 class CompiledInstance(AbstractInstanceContext):
-    def __init__(self, *args, **kwargs):
-        super(CompiledInstance, self).__init__(*args, **kwargs)
+    def __init__(self, evaluator, parent_context, class_context, var_args):
+        self._original_var_args = var_args
+
         # I don't think that dynamic append lookups should happen here. That
         # sounds more like something that should go to py__iter__.
-        self._original_var_args = self.var_args
-
-        if self.class_context.name.string_name in ['list', 'set'] \
-                and self.parent_context.get_root_context() == self.evaluator.builtins_module:
+        if class_context.py__name__() in ['list', 'set'] \
+                and parent_context.get_root_context() == evaluator.builtins_module:
             # compare the module path with the builtin name.
-            self.var_args = iterable.get_dynamic_array_instance(self)
+            if settings.dynamic_array_additions:
+                var_args = iterable.get_dynamic_array_instance(self, var_args)
+
+        super(CompiledInstance, self).__init__(evaluator, parent_context, class_context, var_args)
 
     @property
     def name(self):
@@ -253,14 +249,12 @@ class TreeInstance(AbstractInstanceContext):
 
 
 class AnonymousInstance(TreeInstance):
-    function_execution_cls = AnonymousInstanceFunctionExecution
-
     def __init__(self, evaluator, parent_context, class_context):
         super(AnonymousInstance, self).__init__(
             evaluator,
             parent_context,
             class_context,
-            var_args=AnonymousArguments(),
+            var_args=AnonymousInstanceArguments(self),
         )
 
 
@@ -327,12 +321,21 @@ class BoundMethod(AbstractFunction):
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
-            arguments = AnonymousArguments()
-            return AnonymousInstanceFunctionExecution(
-                self._instance, self.parent_context, self, arguments)
-        else:
-            return InstanceFunctionExecution(
-                self._instance, self.parent_context, self, arguments)
+            arguments = AnonymousInstanceArguments(self._instance)
+
+        arguments = InstanceArguments(self._instance, arguments)
+
+        if isinstance(self._function, compiled.CompiledObject):
+            # This is kind of weird, because it's coming from a compiled object
+            # and we're not sure if we want that in the future.
+            return FunctionExecutionContext(
+                self.evaluator, self.parent_context, self, arguments
+            )
+
+        return self._function.get_function_execution(arguments)
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._function)
 
 
 class CompiledBoundMethod(compiled.CompiledObject):
@@ -446,14 +449,10 @@ class SelfAttributeFilter(ClassFilter):
         return names
 
 
-class InstanceVarArgs(AbstractArguments):
-    def __init__(self, execution_context, var_args):
-        self._execution_context = execution_context
+class InstanceArguments(AbstractArguments):
+    def __init__(self, instance, var_args):
+        self.instance = instance
         self._var_args = var_args
-
-    @memoize_method
-    def _get_var_args(self):
-        return self._var_args
 
     @property
     def argument_node(self):
@@ -464,9 +463,15 @@ class InstanceVarArgs(AbstractArguments):
         return self._var_args.trailer
 
     def unpack(self, func=None):
-        yield None, LazyKnownContext(self._execution_context.instance)
-        for values in self._get_var_args().unpack(func):
+        yield None, LazyKnownContext(self.instance)
+        for values in self._var_args.unpack(func):
             yield values
 
     def get_calling_nodes(self):
-        return self._get_var_args().get_calling_nodes()
+        return self._var_args.get_calling_nodes()
+
+    def get_executed_params(self, execution_context):
+        if isinstance(self._var_args, AnonymousInstanceArguments):
+            return self._var_args.get_executed_params(execution_context)
+
+        return super(InstanceArguments, self).get_executed_params(execution_context)
