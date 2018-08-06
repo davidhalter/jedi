@@ -323,12 +323,16 @@ class BoundMethod(AbstractFunction):
         if arguments is None:
             arguments = AnonymousInstanceArguments(self._instance)
 
-        return FunctionExecutionContext(
-            self.evaluator,
-            self.parent_context,
-            self,
-            InstanceArguments(self._instance, arguments)
-        )
+        arguments = InstanceArguments(self._instance, arguments)
+
+        if isinstance(self._function, compiled.CompiledObject):
+            # This is kind of weird, because it's coming from a compiled object
+            # and we're not sure if we want that in the future.
+            return FunctionExecutionContext(
+                self.evaluator, self.parent_context, self, arguments
+            )
+
+        return self._function.get_function_execution(arguments)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._function)
