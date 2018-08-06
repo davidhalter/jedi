@@ -64,7 +64,7 @@ class AbstractArguments(object):
             try_iter_content(types)
 
     def get_calling_nodes(self):
-        raise NotImplementedError
+        return []
 
     def unpack(self, funcdef=None):
         raise NotImplementedError
@@ -217,9 +217,6 @@ class ValuesArguments(AbstractArguments):
     def unpack(self, funcdef=None):
         for values in self._values_list:
             yield None, LazyKnownContexts(values)
-
-    def get_calling_nodes(self):
-        return []
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._values_list)

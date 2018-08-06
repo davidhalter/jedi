@@ -19,8 +19,7 @@ from jedi.evaluate.arguments import ValuesArguments
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import \
-    AbstractInstanceContext, CompiledInstance, BoundMethod, \
-    AnonymousInstanceFunctionExecution, InstanceArguments
+    AbstractInstanceContext, CompiledInstance, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet
 from jedi.evaluate.context import ClassContext, ModuleContext, FunctionExecutionContext
@@ -191,10 +190,6 @@ def builtins_super(evaluator, types, objects, context):
         if isinstance(context.var_args, InstanceArguments):
             su = context.var_args.instance.py__class__().py__bases__()
             return su[0].infer().execute_evaluated()
-
-    if isinstance(context, AnonymousInstanceFunctionExecution):
-        su = context.instance.py__class__().py__bases__()
-        return su[0].infer().execute_evaluated()
 
     return NO_CONTEXTS
 

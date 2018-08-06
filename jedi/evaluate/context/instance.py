@@ -1,7 +1,5 @@
 from abc import abstractproperty
 
-from parso.tree import search_ancestor
-
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
@@ -13,36 +11,32 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction
-from jedi.evaluate.filters import FunctionExecutionFilter, ParamName
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
 from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
 
-class _AnonymousInstanceParamName(ParamName):
+class InstanceExecutedParam(object):
+    def __init__(self, instance):
+        self._instance = instance
+
     def infer(self):
-        param_node = search_ancestor(self.tree_name, 'param')
-        # TODO I think this should not belong here. It's not even really true,
-        #      because classmethod and other descriptors can change it.
-        if param_node.position_index == 0:
-            # This is a speed optimization, to return the self param (because
-            # it's known). This only affects anonymous instances.
-            return ContextSet(self.parent_context.instance)
-        else:
-            return self.get_param().infer()
+        return ContextSet(self._instance)
 
 
-class _AnonymousInstanceFunctionExecutionFilter(FunctionExecutionFilter):
-    param_name = _AnonymousInstanceParamName
+class AnonymousInstanceArguments(AnonymousArguments):
+    def __init__(self, instance):
+        self._instance = instance
 
-
-class AnonymousInstanceFunctionExecution(FunctionExecutionContext):
-    function_execution_filter = _AnonymousInstanceFunctionExecutionFilter
-
-    def __init__(self, instance, *args, **kwargs):
-        self.instance = instance
-        super(AnonymousInstanceFunctionExecution, self).__init__(
-            instance.evaluator, *args, **kwargs)
+    def get_executed_params(self, execution_context):
+        from jedi.evaluate.dynamic import search_params
+        executed_params = list(search_params(
+            execution_context.evaluator,
+            execution_context,
+            execution_context.tree_node
+        ))
+        executed_params[0] = InstanceExecutedParam(self._instance)
+        return executed_params
 
 
 class AbstractInstanceContext(Context):
@@ -260,15 +254,7 @@ class AnonymousInstance(TreeInstance):
             evaluator,
             parent_context,
             class_context,
-            var_args=AnonymousArguments(),
-        )
-
-    def _create_init_execution(self, class_context, bound_method):
-        return AnonymousInstanceFunctionExecution(
-            self,
-            class_context.parent_context,
-            bound_method,
-            self.var_args
+            var_args=AnonymousInstanceArguments(self),
         )
 
 
@@ -335,16 +321,14 @@ class BoundMethod(AbstractFunction):
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
-            arguments = AnonymousArguments()
-            return AnonymousInstanceFunctionExecution(
-                self._instance, self.parent_context, self, arguments)
-        else:
-            return FunctionExecutionContext(
-                self.evaluator,
-                self.parent_context,
-                self,
-                InstanceArguments(self._instance, arguments)
-            )
+            arguments = AnonymousInstanceArguments(self._instance)
+
+        return FunctionExecutionContext(
+            self.evaluator,
+            self.parent_context,
+            self,
+            InstanceArguments(self._instance, arguments)
+        )
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._function)
@@ -481,3 +465,9 @@ class InstanceArguments(AbstractArguments):
 
     def get_calling_nodes(self):
         return self._var_args.get_calling_nodes()
+
+    def get_executed_params(self, execution_context):
+        if isinstance(self._var_args, AnonymousInstanceArguments):
+            return self._var_args.get_executed_params(execution_context)
+
+        return super(InstanceArguments, self).get_executed_params(execution_context)
