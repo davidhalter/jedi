@@ -290,5 +290,5 @@ class ClassStubContext(_StubContextFilterMixin, ClassContext):
 
 
 class FunctionStubContext(_MixedStubContextMixin, FunctionContext):
-    def py__call__(self, arguments):
-        return self.stub_context.py__call__(arguments)
+    def get_function_execution(self, arguments):
+        return self.stub_context.get_function_execution(arguments)

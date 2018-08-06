@@ -1,7 +1,7 @@
 import os
 
 from jedi.plugins import typeshed
-from jedi.evaluate.context import TreeInstance, BoundMethod
+from jedi.evaluate.context import TreeInstance, BoundMethod, CompiledInstance
 from parso.utils import PythonVersionInfo
 
 TYPESHED_PYTHON3 = os.path.join(typeshed._TYPESHED_PATH, 'stdlib', '3')
@@ -77,4 +77,5 @@ def test_method(Script):
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
-    assert isinstance(context, BoundMethod), context
+    assert isinstance(context, CompiledInstance)
+    assert context.class_context.py__name__() == 'str'
