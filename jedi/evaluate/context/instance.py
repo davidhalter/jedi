@@ -30,12 +30,18 @@ class AnonymousInstanceArguments(AnonymousArguments):
 
     def get_executed_params(self, execution_context):
         from jedi.evaluate.dynamic import search_params
+        self_param = InstanceExecutedParam(self._instance)
+        tree_params = execution_context.tree_node.get_params()
+        if len(tree_params) == 1:
+            # If the only param is self, we don't need to try to find
+            # executions of this function, we have all the params already.
+            return [self_param]
         executed_params = list(search_params(
             execution_context.evaluator,
             execution_context,
             execution_context.tree_node
         ))
-        executed_params[0] = InstanceExecutedParam(self._instance)
+        executed_params[0] = self_param
         return executed_params
 
 
