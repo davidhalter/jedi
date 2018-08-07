@@ -82,7 +82,7 @@ def _merge_modules(context_set, stub_context):
     for context in context_set:
         # TODO what about compiled?
         if isinstance(context, ModuleContext):
-            yield ModuleStubContext(
+            yield StubModuleContext(
                 context.evaluator,
                 stub_context,
                 context.tree_node,
@@ -123,7 +123,7 @@ class TypeshedPlugin(BasePlugin):
                 evaluator,
                 import_names,
                 parent_module_context.actual_context  # noqa
-                    if isinstance(parent_module_context, ModuleStubContext)
+                    if isinstance(parent_module_context, StubModuleContext)
                     else parent_module_context,
                 sys_path
             )
@@ -131,7 +131,7 @@ class TypeshedPlugin(BasePlugin):
             map_ = None
             if len(import_names) == 1 and import_name != 'typing':
                 map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
-            elif isinstance(parent_module_context, ModuleStubContext):
+            elif isinstance(parent_module_context, StubModuleContext):
                 map_ = _merge_create_stub_map(parent_module_context.py__path__())
 
             if map_ is not None:
@@ -194,7 +194,7 @@ class StubName(TreeNameDefinition):
                     )
                 elif isinstance(stub_context, ClassContext) \
                         and isinstance(actual_context, ClassContext):
-                    yield ClassStubContext(
+                    yield StubClassContext(
                         actual_context.evaluator,
                         stub_context,
                         actual_context.parent_context,
@@ -281,11 +281,11 @@ class _StubContextFilterMixin(_MixedStubContextMixin):
             yield f
 
 
-class ModuleStubContext(_StubContextFilterMixin, ModuleContext):
+class StubModuleContext(_StubContextFilterMixin, ModuleContext):
     pass
 
 
-class ClassStubContext(_StubContextFilterMixin, ClassContext):
+class StubClassContext(_StubContextFilterMixin, ClassContext):
     pass
 
 

@@ -41,31 +41,31 @@ def test_function(Script):
     code = 'import threading; threading.current_thread'
     def_, = Script(code).goto_definitions()
     context = def_._name._context
-    assert isinstance(context, typeshed.FunctionStubContext), context
+    assert isinstance(context, typeshed.StubFunctionContext), context
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, typeshed.ClassStubContext), context
+    assert isinstance(context.class_context, typeshed.StubClassContext), context
 
 
 def test_class(Script):
     def_, = Script('import threading; threading.Thread').goto_definitions()
     context = def_._name._context
-    assert isinstance(context, typeshed.ClassStubContext), context
+    assert isinstance(context, typeshed.StubClassContext), context
 
 
 def test_instance(Script):
     def_, = Script('import threading; threading.Thread()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, typeshed.ClassStubContext), context
+    assert isinstance(context.class_context, typeshed.StubClassContext), context
 
 
 def test_class_function(Script):
     def_, = Script('import threading; threading.Thread.getName').goto_definitions()
     context = def_._name._context
-    assert isinstance(context, typeshed.FunctionStubContext), context
+    assert isinstance(context, typeshed.StubFunctionContext), context
 
 
 def test_method(Script):
@@ -73,7 +73,7 @@ def test_method(Script):
     def_, = Script(code).goto_definitions()
     context = def_._name._context
     assert isinstance(context, BoundMethod), context
-    assert isinstance(context._function, typeshed.FunctionStubContext), context
+    assert isinstance(context._function, typeshed.StubFunctionContext), context
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
