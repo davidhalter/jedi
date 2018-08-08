@@ -79,3 +79,10 @@ def test_method(Script):
     context = def_._name._context
     assert isinstance(context, CompiledInstance)
     assert context.class_context.py__name__() == 'str'
+
+
+def test_math(Script):
+    def_, = Script('import math; math.acos()').goto_definitions()
+    assert def_.name == 'float'
+    context = def_._name._context
+    assert context

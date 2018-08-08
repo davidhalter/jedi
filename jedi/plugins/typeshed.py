@@ -10,6 +10,7 @@ from jedi.evaluate.base_context import ContextSet, iterator_to_context_set
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, ClassContext
+from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.utils import to_list
 
@@ -126,6 +127,11 @@ class TypeshedPlugin(BasePlugin):
                     if isinstance(parent_module_context, StubModuleContext)
                     else parent_module_context,
                 sys_path
+            )
+            # Don't use CompiledObjects, they are just annoying and don't
+            # really help with anything. Just use the stub files instead.
+            context_set = ContextSet.from_iterable(
+                c for c in context_set if not isinstance(c, CompiledObject)
             )
             import_name = import_names[-1]
             map_ = None
