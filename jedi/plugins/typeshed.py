@@ -186,6 +186,7 @@ class StubName(TreeNameDefinition):
             for c in stub_contexts:
                 yield c
 
+        # This basically merges stub contexts with actual contexts.
         for actual_context in actual_contexts:
             for stub_context in stub_contexts:
                 if isinstance(stub_context, FunctionContext) \

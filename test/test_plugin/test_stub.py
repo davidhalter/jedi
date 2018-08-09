@@ -50,6 +50,14 @@ def test_function(Script):
     assert isinstance(context.class_context, typeshed.StubClassContext), context
 
 
+def test_keywords_variable(Script):
+    code = 'import keyword; keyword.kwlist'
+    def_, = Script(code).goto_definitions()
+    assert def_.name == 'Sequence'
+    # We want this to show towards the actual definition
+    assert typeshed._TYPESHED_PATH not in def_.module_path
+
+
 def test_class(Script):
     def_, = Script('import threading; threading.Thread').goto_definitions()
     context = def_._name._context
@@ -102,7 +110,7 @@ def test_sys_hexversion(Script):
     script = Script('import sys; sys.hexversion')
     def_, = script.completions()
     assert isinstance(def_._name, TreeNameDefinition)
-    assert typeshed._TYPESHED_PATH in def_._name.get_root_context().py__file__()
+    assert typeshed._TYPESHED_PATH in def_.module_path
     def_, = script.goto_definitions()
     assert def_.name == 'int'
 
