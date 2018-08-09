@@ -2,12 +2,13 @@ from textwrap import dedent
 
 from jedi.evaluate import compiled
 from jedi.evaluate.context import instance
+from jedi.evaluate.helpers import execute_evaluated
 
 
 def test_simple(evaluator):
     obj = compiled.create_simple_object(evaluator, u'_str_')
     upper, = obj.py__getattribute__(u'upper')
-    objs = list(upper.execute_evaluated())
+    objs = list(execute_evaluated(upper))
     assert len(objs) == 1
     assert isinstance(objs[0], instance.CompiledInstance)
 

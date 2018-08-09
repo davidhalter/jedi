@@ -431,7 +431,7 @@ def _is_annotation_name(name):
         c = ancestor.children
         if len(c) > 1 and c[1].type == 'annassign':
             return c[1].start_pos <= name.start_pos < c[1].end_pos
-    return True
+    return False
 
 
 def _is_tuple(context):
