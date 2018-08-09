@@ -81,10 +81,18 @@ def test_method(Script):
     assert context.class_context.py__name__() == 'str'
 
 
-def test_sys(Script):
+def test_sys(Script, environment):
     code = 'import sys; sys.exc_info()[1]'
     def_, = Script(code).goto_definitions()
     assert def_.name == 'BaseException'
+
+    # This should only exist on Windows, but cmpletion should happen
+    # everywhere.
+    def_, = Script('import sys; sys.getwindowsversion().major').goto_definitions()
+    if environment.version_info.major == 2:
+        assert def_.name == 'Any'
+    else:
+        assert def_.name == 'int'
 
 
 def test_math(Script):
