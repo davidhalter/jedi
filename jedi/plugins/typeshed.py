@@ -123,9 +123,7 @@ class TypeshedPlugin(BasePlugin):
             context_set = callback(
                 evaluator,
                 import_names,
-                parent_module_context.actual_context  # noqa
-                    if isinstance(parent_module_context, StubModuleContext)
-                    else parent_module_context,
+                parent_module_context,
                 sys_path
             )
             # Don't use CompiledObjects, they are just annoying and don't

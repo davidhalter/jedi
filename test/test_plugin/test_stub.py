@@ -81,6 +81,12 @@ def test_method(Script):
     assert context.class_context.py__name__() == 'str'
 
 
+def test_sys(Script):
+    code = 'import sys; sys.exc_info()[1]'
+    def_, = Script(code).goto_definitions()
+    assert def_.name == 'BaseException'
+
+
 def test_math(Script):
     def_, = Script('import math; math.acos()').goto_definitions()
     assert def_.name == 'float'
