@@ -3,6 +3,7 @@ import os
 from jedi.plugins import typeshed
 from jedi.evaluate.context import TreeInstance, BoundMethod, CompiledInstance
 from parso.utils import PythonVersionInfo
+from jedi.evaluate.filters import TreeNameDefinition
 
 TYPESHED_PYTHON3 = os.path.join(typeshed._TYPESHED_PATH, 'stdlib', '3')
 
@@ -81,11 +82,13 @@ def test_method(Script):
     assert context.class_context.py__name__() == 'str'
 
 
-def test_sys(Script, environment):
+def test_sys_exc_info(Script):
     code = 'import sys; sys.exc_info()[1]'
     def_, = Script(code).goto_definitions()
     assert def_.name == 'BaseException'
 
+
+def test_sys_getwindowsversion(Script, environment):
     # This should only exist on Windows, but cmpletion should happen
     # everywhere.
     def_, = Script('import sys; sys.getwindowsversion().major').goto_definitions()
@@ -93,6 +96,15 @@ def test_sys(Script, environment):
         assert def_.name == 'Any'
     else:
         assert def_.name == 'int'
+
+
+def test_sys_hexversion(Script):
+    script = Script('import sys; sys.hexversion')
+    def_, = script.completions()
+    assert isinstance(def_._name, TreeNameDefinition)
+    assert typeshed._TYPESHED_PATH in def_._name.get_root_context().py__file__()
+    def_, = script.goto_definitions()
+    assert def_.name == 'int'
 
 
 def test_math(Script):
