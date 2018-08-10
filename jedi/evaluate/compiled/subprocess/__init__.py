@@ -203,7 +203,7 @@ class CompiledSubprocess(object):
 
     def _kill(self):
         self.is_crashed = True
-        if subprocess.signal is None:
+        if getattr(subprocess, 'signal', None) is None:
             # If the Python process is terminating, sometimes it will remove
             # the signal module before a lot of other things, so check for it
             # and don't do anything, because the process is killed anyways.
