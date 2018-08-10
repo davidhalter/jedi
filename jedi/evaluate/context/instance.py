@@ -126,7 +126,7 @@ class AbstractInstanceContext(Context):
             else:
                 yield InstanceClassFilter(self.evaluator, self, cls, origin_scope)
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         try:
             names = self.get_function_slot_names(u'__getitem__')
         except KeyError:

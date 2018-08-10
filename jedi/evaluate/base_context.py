@@ -77,7 +77,7 @@ class Context(BaseContext):
 
             # The actual getitem call.
             try:
-                getitem = self.py__getitem__
+                getitem = self.py__simple_getitem__
             except AttributeError:
                 from jedi.evaluate import analysis
                 # TODO this context is probably not right.

@@ -161,7 +161,7 @@ def eval_trailer(context, base_contexts, trailer):
         result = ContextSet()
         for typ in list(foo):
             if isinstance(typ, (ClassContext, TreeInstance)):
-                typing_module_types = pep0484.py__getitem__(context, typ, node)
+                typing_module_types = pep0484.py__simple_getitem__(context, typ, node)
                 if typing_module_types is not None:
                     foo.remove(typ)
                     result |= typing_module_types

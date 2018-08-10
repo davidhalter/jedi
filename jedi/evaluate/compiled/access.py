@@ -226,7 +226,7 @@ class DirectObjectAccess(object):
     def py__mro__accesses(self):
         return tuple(self._create_access_path(cls) for cls in self._obj.__mro__[1:])
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return None

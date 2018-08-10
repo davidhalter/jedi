@@ -56,7 +56,7 @@ def _evaluate_annotation_string(context, string, index=None):
         context_set = context_set.filter(
             lambda context: context.array_type == u'tuple'  # noqa
                             and len(list(context.py__iter__())) >= index
-        ).py__getitem__(index)
+        ).py__simple_getitem__(index)
     return context_set.execute_evaluated()
 
 
@@ -243,7 +243,7 @@ def _get_typing_replacement_module(grammar):
     return _typing_module, _typing_module_code_lines
 
 
-def py__getitem__(context, typ, node):
+def py__simple_getitem__(context, typ, node):
     if not typ.get_root_context().name.string_name == "typing":
         return None
     # we assume that any class using [] in a module called

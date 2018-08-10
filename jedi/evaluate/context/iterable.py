@@ -212,7 +212,7 @@ class Sequence(BuiltinOverwrite, IterableMixin):
 class ListComprehension(ComprehensionMixin, Sequence):
     array_type = u'list'
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         if isinstance(index, slice):
             return ContextSet(self)
 
@@ -236,7 +236,7 @@ class DictComprehension(ComprehensionMixin, Sequence):
         for keys, values in self._iterate():
             yield LazyKnownContexts(keys)
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         for keys, values in self._iterate():
             for k in keys:
                 if isinstance(k, compiled.CompiledObject):
@@ -289,7 +289,7 @@ class SequenceLiteralContext(Sequence):
             self.array_type = SequenceLiteralContext.mapping[atom.children[0]]
             """The builtin name of the array (list, set, tuple or dict)."""
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.array_type == u'dict':
             compiled_obj_index = compiled.create_simple_object(self.evaluator, index)
@@ -419,7 +419,7 @@ class FakeSequence(_FakeArray):
         super(FakeSequence, self).__init__(evaluator, None, array_type)
         self._lazy_context_list = lazy_context_list
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         with reraise_as_evaluator(IndexError, TypeError):
             lazy_context = self._lazy_context_list[index]
         return lazy_context.infer()
@@ -443,7 +443,7 @@ class FakeDict(_FakeArray):
         for key in self._dct:
             yield LazyKnownContext(compiled.create_simple_object(self.evaluator, key))
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         if is_py3 and self.evaluator.environment.version_info.major == 2:
             # In Python 2 bytes and unicode compare.
             if isinstance(index, bytes):
@@ -487,7 +487,7 @@ class MergedArray(_FakeArray):
             for lazy_context in array.py__iter__():
                 yield lazy_context
 
-    def py__getitem__(self, index):
+    def py__simple_getitem__(self, index):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
 
     def _items(self):

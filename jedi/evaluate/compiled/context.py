@@ -19,10 +19,15 @@ from . import fake
 
 class CheckAttribute(object):
     """Raises an AttributeError if the attribute X isn't available."""
-    def __init__(self, func):
-        self.func = func
+    def __init__(self, check_name=None):
         # Remove the py in front of e.g. py__call__.
-        self.check_name = force_unicode(func.__name__[2:])
+        self.check_name = check_name
+
+    def __call__(self, func):
+        self.func = func
+        if self.check_name is None:
+            self.check_name = force_unicode(func.__name__[2:])
+        return self
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -48,7 +53,7 @@ class CompiledObject(Context):
         # This attribute will not be set for most classes, except for fakes.
         self.tree_node = faked_class
 
-    @CheckAttribute
+    @CheckAttribute()
     def py__call__(self, params):
         if self.tree_node is not None and self.tree_node.type == 'funcdef':
             from jedi.evaluate.context.function import FunctionContext
@@ -63,25 +68,25 @@ class CompiledObject(Context):
         else:
             return ContextSet.from_iterable(self._execute_function(params))
 
-    @CheckAttribute
+    @CheckAttribute()
     def py__class__(self):
         return create_from_access_path(self.evaluator, self.access_handle.py__class__())
 
-    @CheckAttribute
+    @CheckAttribute()
     def py__mro__(self):
         return (self,) + tuple(
             create_from_access_path(self.evaluator, access)
             for access in self.access_handle.py__mro__accesses()
         )
 
-    @CheckAttribute
+    @CheckAttribute()
     def py__bases__(self):
         return tuple(
             create_from_access_path(self.evaluator, access)
             for access in self.access_handle.py__bases__()
         )
 
-    @CheckAttribute
+    @CheckAttribute()
     def py__path__(self):
         return self.access_handle.py__path__()
 
@@ -148,16 +153,16 @@ class CompiledObject(Context):
         """
         return CompiledObjectFilter(self.evaluator, self, is_instance)
 
-    @CheckAttribute
-    def py__getitem__(self, index):
+    @CheckAttribute('__getitem__')
+    def py__simple_getitem__(self, index):
         with reraise_as_evaluator(IndexError, KeyError, TypeError):
-            access = self.access_handle.py__getitem__(index)
+            access = self.access_handle.py__simple_getitem__(index)
         if access is None:
             return ContextSet()
 
         return ContextSet(create_from_access_path(self.evaluator, access))
 
-    @CheckAttribute
+    @CheckAttribute()
     def py__iter__(self):
         for access in self.access_handle.py__iter__list():
             yield LazyKnownContext(create_from_access_path(self.evaluator, access))

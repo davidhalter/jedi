@@ -1,5 +1,3 @@
-from parso.python.tree import Name
-
 from jedi.plugins.base import BasePlugin
 from jedi.evaluate.imports import JediImportError
 

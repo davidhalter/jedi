@@ -24,8 +24,9 @@ py__bases__()                          Returns a list of base classes.
 py__mro__()                            Returns a list of classes (the mro).
 py__iter__()                           Returns a generator of a set of types.
 py__class__()                          Returns the class of an instance.
-py__getitem__(index: int/str)          Returns a a set of types of the index.
+py__simple_getitem__(index: int/str)   Returns a a set of types of the index.
                                        Can raise an IndexError/KeyError.
+py__getitem__(indexes: ContextSet)     Returns a a set of types of the index.
 py__file__()                           Only on modules. Returns None if does
                                        not exist.
 py__package__()                        Only on modules. For the import system.
