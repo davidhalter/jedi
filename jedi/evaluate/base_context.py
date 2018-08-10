@@ -52,55 +52,6 @@ class Context(BaseContext):
         else:
             return iter_method()
 
-    def get_item(self, index_contexts, contextualized_node):
-        from jedi.evaluate.compiled import CompiledObject
-        from jedi.evaluate.context.iterable import Slice, Sequence
-        result = ContextSet()
-
-        for index in index_contexts:
-            if isinstance(index, Slice):
-                index = index.obj
-            if isinstance(index, CompiledObject):
-                try:
-                    index = index.get_safe_value()
-                except ValueError:
-                    pass
-
-            if type(index) not in (float, int, str, unicode, slice, bytes):
-                # If the index is not clearly defined, we have to get all the
-                # possiblities.
-                if isinstance(self, Sequence) and self.array_type == 'dict':
-                    result |= self.dict_values()
-                else:
-                    result |= iterate_contexts(ContextSet(self))
-                continue
-
-            # The actual getitem call.
-            try:
-                getitem = self.py__simple_getitem__
-            except AttributeError:
-                from jedi.evaluate import analysis
-                # TODO this context is probably not right.
-                analysis.add(
-                    contextualized_node.context,
-                    'type-error-not-subscriptable',
-                    contextualized_node.node,
-                    message="TypeError: '%s' object is not subscriptable" % self
-                )
-            else:
-                try:
-                    result |= getitem(index)
-                except EvaluatorIndexError:
-                    result |= iterate_contexts(ContextSet(self))
-                except EvaluatorKeyError:
-                    # Must be a dict. Lists don't raise KeyErrors.
-                    result |= self.dict_values()
-                except EvaluatorTypeError:
-                    # The type is wrong and therefore it makes no sense to do
-                    # anything anymore.
-                    result = NO_CONTEXTS
-        return result
-
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
 
@@ -216,6 +167,57 @@ class ContextualizedName(ContextualizedNode):
         return indexes
 
 
+def _get_item(context, index_contexts, contextualized_node):
+    from jedi.evaluate.compiled import CompiledObject
+    from jedi.evaluate.context.iterable import Slice, Sequence
+
+    # The actual getitem call.
+    try:
+        getitem = context.py__simple_getitem__
+    except AttributeError:
+        from jedi.evaluate import analysis
+        # TODO this context is probably not right.
+        analysis.add(
+            contextualized_node.context,
+            'type-error-not-subscriptable',
+            contextualized_node.node,
+            message="TypeError: '%s' object is not subscriptable" % context
+        )
+        return NO_CONTEXTS
+
+    result = ContextSet()
+    for index in index_contexts:
+        if isinstance(index, Slice):
+            index = index.obj
+        if isinstance(index, CompiledObject):
+            try:
+                index = index.get_safe_value()
+            except ValueError:
+                pass
+
+        if type(index) not in (float, int, str, unicode, slice, bytes):
+            # If the index is not clearly defined, we have to get all the
+            # possiblities.
+            if isinstance(context, Sequence) and context.array_type == 'dict':
+                result |= context.dict_values()
+            else:
+                result |= iterate_contexts(ContextSet(context))
+            continue
+        else:
+            try:
+                result |= getitem(index)
+            except EvaluatorIndexError:
+                result |= iterate_contexts(ContextSet(context))
+            except EvaluatorKeyError:
+                # Must be a dict. Lists don't raise KeyErrors.
+                result |= context.dict_values()
+            except EvaluatorTypeError:
+                # The type is wrong and therefore it makes no sense to do
+                # anything anymore.
+                result = NO_CONTEXTS
+    return result
+
+
 class ContextSet(BaseContextSet):
     def py__class__(self):
         return ContextSet.from_iterable(c.py__class__() for c in self._set)
@@ -233,6 +235,9 @@ class ContextSet(BaseContextSet):
 
     def execute_evaluated(self, *args, **kwargs):
         return ContextSet.from_sets(execute_evaluated(c, *args, **kwargs) for c in self._set)
+
+    def get_item(self, *args, **kwargs):
+        return ContextSet.from_sets(_get_item(c, *args, **kwargs) for c in self._set)
 
 
 NO_CONTEXTS = ContextSet()
