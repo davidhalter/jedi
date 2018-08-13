@@ -153,7 +153,7 @@ class CompiledObject(Context):
         """
         return CompiledObjectFilter(self.evaluator, self, is_instance)
 
-    @CheckAttribute('__getitem__')
+    @CheckAttribute(u'__getitem__')
     def py__simple_getitem__(self, index):
         with reraise_as_evaluator(IndexError, KeyError, TypeError):
             access = self.access_handle.py__simple_getitem__(index)
