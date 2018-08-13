@@ -147,13 +147,18 @@ class InterpreterEnvironment(_BaseEnvironment):
 
 
 def _get_virtual_env_from_var():
+    """Get virtualenv environment from VIRTUAL_ENV environment variable.
+
+    It uses `safe=False` with ``create_environment``, because the environment
+    variable is considered to be safe / controlled by the user solely.
+    """
     var = os.environ.get('VIRTUAL_ENV')
     if var is not None:
         if var == sys.prefix:
             return SameEnvironment()
 
         try:
-            return create_environment(var)
+            return create_environment(var, safe=False)
         except InvalidPythonEnvironment:
             pass
 

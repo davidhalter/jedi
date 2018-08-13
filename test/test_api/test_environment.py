@@ -110,3 +110,22 @@ def test_create_environment_venv_path(venv_path):
 def test_create_environment_executable():
     environment = create_environment(sys.executable)
     assert environment.executable == sys.executable
+
+
+def test_get_default_environment_from_env_does_not_use_safe(tmpdir, monkeypatch):
+    fake_python = os.path.join(str(tmpdir), 'fake_python')
+    with open(fake_python, 'w') as f:
+        f.write('')
+
+    def _get_subprocess(self):
+        if self._start_executable != fake_python:
+            raise RuntimeError('Should not get called!')
+        self.executable = fake_python
+        self.path = 'fake'
+
+    monkeypatch.setattr('jedi.api.environment.Environment._get_subprocess',
+                        _get_subprocess)
+
+    monkeypatch.setenv('VIRTUAL_ENV', fake_python)
+    env = get_default_environment()
+    assert env.path == 'fake'
