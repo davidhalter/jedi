@@ -226,6 +226,11 @@ class DirectObjectAccess(object):
     def py__mro__accesses(self):
         return tuple(self._create_access_path(cls) for cls in self._obj.__mro__[1:])
 
+    def py__getitem__all_values(self):
+        if isinstance(self._obj, dict):
+            return [self._create_access_path(v) for v in self._obj.values()]
+        return self.py__iter__list()
+
     def py__simple_getitem__(self, index):
         if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
@@ -415,9 +420,6 @@ class DirectObjectAccess(object):
 
     def negate(self):
         return self._create_access_path(-self._obj)
-
-    def dict_values(self):
-        return [self._create_access_path(v) for v in self._obj.values()]
 
     def is_super_class(self, exception):
         return issubclass(exception, self._obj)

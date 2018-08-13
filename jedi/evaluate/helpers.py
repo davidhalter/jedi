@@ -218,25 +218,16 @@ def is_number(context):
     return _get_safe_value_or_none(context, (int, float)) is not None
 
 
-class EvaluatorTypeError(Exception):
-    pass
-
-
-class EvaluatorIndexError(Exception):
-    pass
-
-
-class EvaluatorKeyError(Exception):
+class SimpleGetItemNotFound(Exception):
     pass
 
 
 @contextmanager
-def reraise_as_evaluator(*exception_classes):
+def reraise_getitem_errors(*exception_classes):
     try:
         yield
     except exception_classes as e:
-        new_exc_cls = globals()['Evaluator' + e.__class__.__name__]
-        raise new_exc_cls(e)
+        raise SimpleGetItemNotFound(e)
 
 
 def execute_evaluated(context, *value_list):

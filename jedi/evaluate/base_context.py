@@ -12,8 +12,7 @@ from jedi import debug
 from jedi._compatibility import Python3Method, zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 from jedi.common import BaseContextSet, BaseContext
-from jedi.evaluate.helpers import EvaluatorIndexError, EvaluatorTypeError, \
-    EvaluatorKeyError, execute_evaluated
+from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
 
 
 class Context(BaseContext):
@@ -172,9 +171,10 @@ def _get_item(context, index_contexts, contextualized_node):
     from jedi.evaluate.context.iterable import Slice, Sequence
 
     # The actual getitem call.
-    try:
-        getitem = context.py__simple_getitem__
-    except AttributeError:
+    simple_getitem = getattr(context, 'py__simple_getitem__', None)
+    getitem = getattr(context, 'py__getitem__', None)
+
+    if getitem is None and simple_getitem is None:
         from jedi.evaluate import analysis
         # TODO this context is probably not right.
         analysis.add(
@@ -186,35 +186,29 @@ def _get_item(context, index_contexts, contextualized_node):
         return NO_CONTEXTS
 
     result = ContextSet()
-    for index in index_contexts:
-        if isinstance(index, Slice):
-            index = index.obj
-        if isinstance(index, CompiledObject):
-            try:
-                index = index.get_safe_value()
-            except ValueError:
-                pass
+    for index_context in index_contexts:
+        if simple_getitem is not None:
+            index = index_context
+            if isinstance(index_context, Slice):
+                index = index.obj
+            if isinstance(index, CompiledObject):
+                try:
+                    index = index.get_safe_value()
+                except ValueError:
+                    pass
 
-        if type(index) not in (float, int, str, unicode, slice, bytes):
-            # If the index is not clearly defined, we have to get all the
-            # possiblities.
-            if isinstance(context, Sequence) and context.array_type == 'dict':
-                result |= context.dict_values()
-            else:
-                result |= iterate_contexts(ContextSet(context))
-            continue
-        else:
-            try:
-                result |= getitem(index)
-            except EvaluatorIndexError:
-                result |= iterate_contexts(ContextSet(context))
-            except EvaluatorKeyError:
-                # Must be a dict. Lists don't raise KeyErrors.
-                result |= context.dict_values()
-            except EvaluatorTypeError:
-                # The type is wrong and therefore it makes no sense to do
-                # anything anymore.
-                result = NO_CONTEXTS
+            if type(index) in (float, int, str, unicode, slice, bytes):
+                try:
+                    result |= simple_getitem(index)
+                    continue
+                except SimpleGetItemNotFound:
+                    pass
+
+        # The index was somehow not good enough or simply a wrong type.
+        # Therefore we now iterate through all the contexts and just take
+        # all results.
+        if getitem is not None:
+            result |= getitem(index_context, contextualized_node)
     return result
 
 

@@ -67,7 +67,6 @@ from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.evaluate.utils import unite
@@ -84,8 +83,6 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi.evaluate.helpers import EvaluatorIndexError, EvaluatorKeyError, \
-    EvaluatorTypeError
 
 
 def _execute(context, arguments):

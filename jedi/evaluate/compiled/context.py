@@ -13,7 +13,7 @@ from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate.helpers import reraise_as_evaluator, execute_evaluated
+from jedi.evaluate.helpers import reraise_getitem_errors, execute_evaluated
 from . import fake
 
 
@@ -155,12 +155,19 @@ class CompiledObject(Context):
 
     @CheckAttribute(u'__getitem__')
     def py__simple_getitem__(self, index):
-        with reraise_as_evaluator(IndexError, KeyError, TypeError):
+        with reraise_getitem_errors(IndexError, KeyError, TypeError):
             access = self.access_handle.py__simple_getitem__(index)
         if access is None:
             return ContextSet()
 
         return ContextSet(create_from_access_path(self.evaluator, access))
+
+    @CheckAttribute()
+    def py__getitem__(self, index_context, contextualized_node):
+        return ContextSet.from_iterable(
+            create_from_access_path(self.evaluator, access)
+            for access in self.access_handle.py__getitem__all_values()
+        )
 
     @CheckAttribute()
     def py__iter__(self):
@@ -196,12 +203,6 @@ class CompiledObject(Context):
                     yield result
         for type_ in docstrings.infer_return_types(self):
             yield type_
-
-    def dict_values(self):
-        return ContextSet.from_iterable(
-            create_from_access_path(self.evaluator, access)
-            for access in self.access_handle.dict_values()
-        )
 
     def get_safe_value(self, default=_sentinel):
         try:

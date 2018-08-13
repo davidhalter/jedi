@@ -30,8 +30,8 @@ from jedi.evaluate import recursion
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext
 from jedi.evaluate.helpers import get_int_or_none, is_string, \
-    predefine_names, evaluate_call_of_leaf, reraise_as_evaluator, \
-    EvaluatorKeyError
+    predefine_names, evaluate_call_of_leaf, reraise_getitem_errors, \
+    SimpleGetItemNotFound
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_method_cache
@@ -39,7 +39,7 @@ from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.filters import ParserTreeFilter, BuiltinOverwrite, \
     publish_method
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
-    TreeContext, ContextualizedNode
+    TreeContext, ContextualizedNode, iterate_contexts
 from jedi.parser_utils import get_comp_fors
 
 
@@ -202,11 +202,10 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     def parent(self):
         return self.evaluator.builtins_module
 
-    def dict_values(self):
-        return ContextSet.from_sets(
-            self._defining_context.eval_node(v)
-            for k, v in self._items()
-        )
+    def py__getitem__(self, index_context, contextualized_node):
+        if self.array_type == 'dict':
+            return self._dict_values()
+        return iterate_contexts(ContextSet(self))
 
 
 class ListComprehension(ComprehensionMixin, Sequence):
@@ -217,7 +216,7 @@ class ListComprehension(ComprehensionMixin, Sequence):
             return ContextSet(self)
 
         all_types = list(self.py__iter__())
-        with reraise_as_evaluator(IndexError, TypeError):
+        with reraise_getitem_errors(IndexError, TypeError):
             lazy_context = all_types[index]
         return lazy_context.infer()
 
@@ -242,14 +241,14 @@ class DictComprehension(ComprehensionMixin, Sequence):
                 if isinstance(k, compiled.CompiledObject):
                     if k.get_safe_value(default=object()) == index:
                         return values
-        return self.dict_values()
+        raise SimpleGetItemNotFound()
 
-    def dict_values(self):
+    def _dict_values(self):
         return ContextSet.from_sets(values for keys, values in self._iterate())
 
     @publish_method('values')
     def _imitate_values(self):
-        lazy_context = LazyKnownContexts(self.dict_values())
+        lazy_context = LazyKnownContexts(self._dict_values())
         return ContextSet(FakeSequence(self.evaluator, u'list', [lazy_context]))
 
     @publish_method('items')
@@ -298,13 +297,12 @@ class SequenceLiteralContext(Sequence):
                     if isinstance(k, compiled.CompiledObject) \
                             and k.execute_operation(compiled_obj_index, u'==').get_safe_value():
                         return self._defining_context.eval_node(value)
-            raise EvaluatorKeyError('No key found in dictionary %s.' % self)
+            raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
 
-        # Can raise an IndexError
         if isinstance(index, slice):
             return ContextSet(self)
         else:
-            with reraise_as_evaluator(TypeError, KeyError, IndexError):
+            with reraise_getitem_errors(TypeError, KeyError, IndexError):
                 node = self._items()[index]
             return self._defining_context.eval_node(node)
 
@@ -329,12 +327,11 @@ class SequenceLiteralContext(Sequence):
             for addition in check_array_additions(self._defining_context, self):
                 yield addition
 
-    def _values(self):
-        """Returns a list of a list of node."""
-        if self.array_type == u'dict':
-            return ContextSet.from_sets(v for k, v in self._items())
-        else:
-            return self._items()
+    def _dict_values(self):
+        return ContextSet.from_sets(
+            self._defining_context.eval_node(v)
+            for k, v in self._items()
+        )
 
     def _items(self):
         c = self.atom.children
@@ -387,7 +384,7 @@ class DictLiteralContext(SequenceLiteralContext):
 
     @publish_method('values')
     def _imitate_values(self):
-        lazy_context = LazyKnownContexts(self.dict_values())
+        lazy_context = LazyKnownContexts(self._dict_values())
         return ContextSet(FakeSequence(self.evaluator, u'list', [lazy_context]))
 
     @publish_method('items')
@@ -420,7 +417,7 @@ class FakeSequence(_FakeArray):
         self._lazy_context_list = lazy_context_list
 
     def py__simple_getitem__(self, index):
-        with reraise_as_evaluator(IndexError, TypeError):
+        with reraise_getitem_errors(IndexError, TypeError):
             lazy_context = self._lazy_context_list[index]
         return lazy_context.infer()
 
@@ -459,7 +456,7 @@ class FakeDict(_FakeArray):
                 except KeyError:
                     pass
 
-        with reraise_as_evaluator(KeyError):
+        with reraise_getitem_errors(KeyError):
             lazy_context = self._dct[index]
         return lazy_context.infer()
 
@@ -467,10 +464,10 @@ class FakeDict(_FakeArray):
     def _values(self):
         return ContextSet(FakeSequence(
             self.evaluator, u'tuple',
-            [LazyKnownContexts(self.dict_values())]
+            [LazyKnownContexts(self._dict_values())]
         ))
 
-    def dict_values(self):
+    def _dict_values(self):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self._dct.values())
 
     def exact_key_items(self):
