@@ -3,6 +3,7 @@ We need to somehow work with the typing objects. Since the typing objects are
 pretty bare we need to add all the Jedi customizations to make them work as
 contexts.
 """
+from parso.python import tree
 
 from jedi import debug
 from jedi.evaluate.compiled import builtin_from_name
@@ -13,10 +14,30 @@ _PROXY_TYPES = 'Optional Union Callable Type ClassVar Tuple Generic Protocol'.sp
 _TYPE_ALIAS_TYPES = 'List Dict DefaultDict Set FrozenSet Counter Deque ChainMap'.split()
 
 
-def check(context, name):
+class _TypingBase(object):
+    def __init__(self, name, typing_context):
+        self._name = name
+        self._context = typing_context
 
+    def __getattr__(self, name):
+        return getattr(self._context, name)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self._context)
+
+
+class TypingModuleWrapper(_TypingBase):
+    def py__getattribute__(self, name_or_str, *args, **kwargs):
+        result = self._context.py__getattribute__(name_or_str)
+        if kwargs.get('is_goto'):
+            return result
+        name = name_or_str.value if isinstance(name_or_str, tree.Name) else name_or_str
+        return ContextSet.from_iterable(_remap(c, name) for c in result)
+
+
+def _remap(context, name):
     if name in _PROXY_TYPES:
-        return TypingProxy(context)
+        return TypingProxy(name, context)
     elif name in _TYPE_ALIAS_TYPES:
         # TODO
         raise NotImplementedError
@@ -45,31 +66,22 @@ def check(context, name):
     return context
 
 
-class _TypingBase(object):
-    def __init__(self, typing_context):
-        self._class_context = typing_context
+class TypingProxy(_TypingBase):
+    py__simple_getitem__ = None
 
-    def __getattr__(self, name):
-        return getattr(self._class_context, name)
-
-
-class TypingProxy(object):
     def py__getitem__(self, index_context, contextualized_node):
-        return TypingProxyWithIndex(self._class_context, index_context)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._class_context)
+        return ContextSet(TypingProxyWithIndex(self._name, self._context, index_context))
 
 
 class _WithIndexBase(_TypingBase):
-    def __init__(self, class_context, index_context):
-        super(_WithIndexBase, self).__init__(class_context)
+    def __init__(self, name, class_context, index_context):
+        super(_WithIndexBase, self).__init__(name, class_context)
         self._index_context = index_context
 
     def __repr__(self):
         return '%s(%s, %s)' % (
             self.__class__.__name__,
-            self._class_context,
+            self._context,
             self._index_context
         )
 
@@ -80,12 +92,8 @@ class _WithIndexBase(_TypingBase):
 
 
 class TypingProxyWithIndex(_WithIndexBase):
-    def __init__(self, typing_context, index_context):
-        self._class_context = typing_context
-        self._index_context = index_context
-
     def execute_annotation(self):
-        name = self._class_context.py__name__()
+        name = self._name
         if name == 'Union':
             # This is kind of a special case, because we have Unions (in Jedi
             # ContextSets).
@@ -93,17 +101,17 @@ class TypingProxyWithIndex(_WithIndexBase):
         elif name == 'Optional':
             # Optional is basically just saying it's either None or the actual
             # type.
-            return ContextSet(self._class_context) \
+            return ContextSet(self._context) \
                 | ContextSet(builtin_from_name(self.evaluator, u'None'))
         elif name == 'Type':
             # The type is actually already given in the index_context
             return ContextSet(self._index_context)
         elif name == 'ClassVar':
             # For now don't do anything here, ClassVars are always used.
-            return self._class_context.execute_annotation()
+            return self._context.execute_annotation()
 
         cls = globals()[name]
-        return cls(self._class_context, self._index_context)
+        return ContextSet(cls(name, self._context, self._index_context))
 
 
 def _iter_over_arguments(maybe_tuple_context):
@@ -146,14 +154,14 @@ class Tuple(_ContainerBase):
             return self._get_getitem_contexts(0)
         else:
             if isinstance(index, int):
-                return self._get_getitem_contexts(index)
+                return self._get_getitem_contexts(index).execute_annotation()
 
-            debug.dbg('The getitem is')
+            debug.dbg('The getitem type on Tuple was %s' % index)
             return NO_CONTEXTS
 
     def py__getitem__(self):
         if self._is_homogenous():
-            return self._get_getitem_contexts(0)
+            return self._get_getitem_contexts(0).execute_annotation()
 
         return self._execute_annotations_for_all_indexes()
 

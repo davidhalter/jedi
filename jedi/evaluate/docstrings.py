@@ -21,9 +21,9 @@ from textwrap import dedent
 from parso import parse, ParserSyntaxError
 
 from jedi._compatibility import u
+from jedi import debug
 from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.base_context import iterator_to_context_set, ContextSet, \
     NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContexts
@@ -203,6 +203,7 @@ def _evaluate_for_statement_string(module_context, string):
     # Take the default grammar here, if we load the Python 2.7 grammar here, it
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
+    debug.dbg('Parse docstring code %s', string, color='BLUE')
     grammar = module_context.evaluator.latest_grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
@@ -262,7 +263,7 @@ def _execute_array_values(evaluator, array):
             values.append(LazyKnownContexts(objects))
         return {FakeSequence(evaluator, array.array_type, values)}
     else:
-        return execute_evaluated(array)
+        return array.execute_annotation()
 
 
 @evaluator_method_cache()
@@ -288,6 +289,7 @@ def infer_param(execution_context, param):
         class_context = execution_context.var_args.instance.class_context
         types |= eval_docstring(class_context.py__doc__())
 
+    debug.dbg('Found param types for docstring %s', types, color='BLUE')
     return types
 
 

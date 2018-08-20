@@ -10,6 +10,7 @@ from jedi.evaluate.base_context import ContextSet, iterator_to_context_set
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, ClassContext
+from jedi.evaluate.context.typing import TypingModuleWrapper
 from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.utils import to_list
@@ -133,7 +134,7 @@ class TypeshedPlugin(BasePlugin):
             )
             import_name = import_names[-1]
             map_ = None
-            if len(import_names) == 1 and import_name != 'typing':
+            if len(import_names) == 1:
                 map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
             elif isinstance(parent_module_context, StubModuleContext):
                 map_ = _merge_create_stub_map(parent_module_context.py__path__())
@@ -152,9 +153,10 @@ class TypeshedPlugin(BasePlugin):
                         stub_module_context = StubOnlyModuleContext(
                             context_set, evaluator, stub_module_node, path, code_lines=[]
                         )
-                        return ContextSet.from_iterable(
-                            _merge_modules(context_set, stub_module_context)
-                        )
+                        modules = _merge_modules(context_set, stub_module_context)
+                        if import_names == ('typing',):
+                            modules = [TypingModuleWrapper('typing', m) for m in modules]
+                        return ContextSet.from_iterable(modules)
             # If no stub is found, just return the default.
             return context_set
         return wrapper

@@ -273,6 +273,7 @@ class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
 
 
 class SequenceLiteralContext(Sequence):
+    _TUPLE_LIKE = 'testlist_star_expr', 'testlist', 'subscriptlist'
     mapping = {'(': u'tuple',
                '[': u'list',
                '{': u'set'}
@@ -282,7 +283,7 @@ class SequenceLiteralContext(Sequence):
         self.atom = atom
         self._defining_context = defining_context
 
-        if self.atom.type in ('testlist_star_expr', 'testlist'):
+        if self.atom.type in self._TUPLE_LIKE:
             self.array_type = u'tuple'
         else:
             self.array_type = SequenceLiteralContext.mapping[atom.children[0]]
@@ -336,7 +337,7 @@ class SequenceLiteralContext(Sequence):
     def _items(self):
         c = self.atom.children
 
-        if self.atom.type in ('testlist_star_expr', 'testlist'):
+        if self.atom.type in self._TUPLE_LIKE:
             return c[::2]
 
         array_node = c[1]

@@ -35,5 +35,5 @@ class _PluginCallbacks(object):
 plugin_manager = _PluginManager([
     StdlibPlugin,
     FlaskPlugin,
-    #TypeshedPlugin,
+    TypeshedPlugin,
 ])

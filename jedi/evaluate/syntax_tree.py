@@ -160,6 +160,7 @@ def eval_trailer(context, base_contexts, trailer):
         # https://github.com/davidhalter/jedi/issues/663
         result = ContextSet()
         for typ in list(foo):
+            continue
             if isinstance(typ, (ClassContext, TreeInstance)):
                 typing_module_types = pep0484.py__simple_getitem__(context, typ, node)
                 if typing_module_types is not None:
@@ -678,7 +679,7 @@ def eval_subscript_list(evaluator, context, index):
 
         return ContextSet(iterable.Slice(context, *result))
     elif index.type == 'subscriptlist':
-        return NO_CONTEXTS
+        return ContextSet(iterable.SequenceLiteralContext(evaluator, context, index))
 
     # No slices
     return context.eval_node(index)
