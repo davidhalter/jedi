@@ -10,7 +10,7 @@ from jedi.evaluate.base_context import ContextSet, iterator_to_context_set
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, ClassContext
-from jedi.evaluate.context.typing import TypingModuleWrapper
+from jedi.evaluate.context.typing import TypingModuleFilterWrapper
 from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.utils import to_list
@@ -149,13 +149,15 @@ class TypeshedPlugin(BasePlugin):
                         # TODO maybe empty cache?
                         pass
                     else:
+                        if import_names == ('typing',):
+                            module_cls = TypingModuleWrapper
+                        else:
+                            module_cls = StubOnlyModuleContext
                         # TODO use code_lines
-                        stub_module_context = StubOnlyModuleContext(
+                        stub_module_context = module_cls(
                             context_set, evaluator, stub_module_node, path, code_lines=[]
                         )
                         modules = _merge_modules(context_set, stub_module_context)
-                        if import_names == ('typing',):
-                            modules = [TypingModuleWrapper('typing', m) for m in modules]
                         return ContextSet.from_iterable(modules)
             # If no stub is found, just return the default.
             return context_set
@@ -300,7 +302,11 @@ class StubModuleContext(_StubContextFilterMixin, ModuleContext):
 
 
 class StubClassContext(_StubContextFilterMixin, ClassContext):
-    pass
+    def __getattribute__(self, name):
+        if name == ('py__getitem__', 'py__bases__'):
+            # getitem is always done in the stub class.
+            return getattr(self.stub_context, name)
+        return super(StubClassContext, self).__getattribute__(name)
 
 
 class StubFunctionContext(_MixedStubContextMixin, FunctionContext):
@@ -335,5 +341,13 @@ class StubOnlyModuleContext(ModuleContext):
             origin_scope=origin_scope,
             search_global=search_global,
         )
+        for f in filters:
+            yield f
+
+
+class TypingModuleWrapper(StubOnlyModuleContext):
+    def get_filters(self, *args, **kwargs):
+        filters = super(TypingModuleWrapper, self).get_filters(*args, **kwargs)
+        yield TypingModuleFilterWrapper(next(filters))
         for f in filters:
             yield f

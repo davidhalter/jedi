@@ -202,7 +202,7 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     def parent(self):
         return self.evaluator.builtins_module
 
-    def py__getitem__(self, index_context, contextualized_node):
+    def py__getitem__(self, index_context_set, contextualized_node):
         if self.array_type == 'dict':
             return self._dict_values()
         return iterate_contexts(ContextSet(self))

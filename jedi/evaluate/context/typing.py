@@ -6,9 +6,10 @@ contexts.
 from parso.python import tree
 
 from jedi import debug
-from jedi.evaluate.compiled import builtin_from_name
-from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
+from jedi.evaluate.compiled import builtin_from_name, CompiledObject
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context
 from jedi.evaluate.context.iterable import SequenceLiteralContext
+from jedi.evaluate.filters import FilterWrapper, NameWrapper
 
 _PROXY_TYPES = 'Optional Union Callable Type ClassVar Tuple Generic Protocol'.split()
 _TYPE_ALIAS_TYPES = 'List Dict DefaultDict Set FrozenSet Counter Deque ChainMap'.split()
@@ -26,51 +27,54 @@ class _TypingBase(object):
         return '%s(%s)' % (self.__class__.__name__, self._context)
 
 
-class TypingModuleWrapper(_TypingBase):
-    def py__getattribute__(self, name_or_str, *args, **kwargs):
-        result = self._context.py__getattribute__(name_or_str)
-        if kwargs.get('is_goto'):
-            return result
-        name = name_or_str.value if isinstance(name_or_str, tree.Name) else name_or_str
-        return ContextSet.from_iterable(_remap(c, name) for c in result)
+class TypingModuleName(NameWrapper):
+    def infer(self):
+        return ContextSet.from_iterable(
+            self._remap(context) for context in self._wrapped_name.infer()
+        )
+
+    def _remap(self, context):
+        name = self.string_name
+        print('name', name)
+        if name in (_PROXY_TYPES + _TYPE_ALIAS_TYPES):
+            print('NAME', name)
+            return TypingProxy(name, context)
+        elif name == 'TypeVar':
+            return TypeVarClass(context.evaluator)
+        elif name == 'Any':
+            return Any(context)
+        elif name == 'TYPE_CHECKING':
+            # This is needed for e.g. imports that are only available for type
+            # checking or are in cycles. The user can then check this variable.
+            return builtin_from_name(context.evaluator, u'True')
+        elif name == 'overload':
+            # TODO implement overload
+            return context
+        elif name == 'cast':
+            # TODO implement cast
+            return context
+        elif name == 'TypedDict':
+            # TODO implement
+            # e.g. Movie = TypedDict('Movie', {'name': str, 'year': int})
+            return context
+        elif name in ('no_type_check', 'no_type_check_decorator'):
+            # This is not necessary, as long as we are not doing type checking.
+            return context
+        return context
 
 
-def _remap(context, name):
-    if name in _PROXY_TYPES:
-        return TypingProxy(name, context)
-    elif name in _TYPE_ALIAS_TYPES:
-        # TODO
-        raise NotImplementedError
-    elif name == 'TypeVar':
-        raise NotImplementedError
-        return TypeVar(context)
-    elif name == 'Any':
-        return Any(context)
-    elif name == 'TYPE_CHECKING':
-        # This is needed for e.g. imports that are only available for type
-        # checking or are in cycles. The user can then check this variable.
-        return builtin_from_name(context.evaluator, u'True')
-    elif name == 'overload':
-        # TODO implement overload
-        return context
-    elif name == 'cast':
-        # TODO implement cast
-        return context
-    elif name == 'TypedDict':
-        # TODO implement
-        # e.g. Movie = TypedDict('Movie', {'name': str, 'year': int})
-        return context
-    elif name in ('no_type_check', 'no_type_check_decorator'):
-        # This is not necessary, as long as we are not doing type checking.
-        return context
-    return context
+class TypingModuleFilterWrapper(FilterWrapper):
+    name_wrapper_class = TypingModuleName
 
 
 class TypingProxy(_TypingBase):
     py__simple_getitem__ = None
 
-    def py__getitem__(self, index_context, contextualized_node):
-        return ContextSet(TypingProxyWithIndex(self._name, self._context, index_context))
+    def py__getitem__(self, index_context_set, contextualized_node):
+        return ContextSet.from_iterable(
+            TypingProxyWithIndex(self._name, self._context, index_context)
+            for index_context in index_context_set
+        )
 
 
 class _WithIndexBase(_TypingBase):
@@ -94,6 +98,10 @@ class _WithIndexBase(_TypingBase):
 class TypingProxyWithIndex(_WithIndexBase):
     def execute_annotation(self):
         name = self._name
+        if name in _TYPE_ALIAS_TYPES:
+            debug.warning('type aliases are not yet implemented')
+            return NO_CONTEXTS
+
         if name == 'Union':
             # This is kind of a special case, because we have Unions (in Jedi
             # ContextSets).
@@ -181,4 +189,71 @@ class Any(_TypingBase):
         # Any is basically object, when it comes to type inference/completions.
         # This is obviously not correct, but let's just use this for now.
         context = ContextSet(builtin_from_name(self.evaluator, u'object'))
-        super(_WithIndexBase, self).__init__(context)
+        super(Any, self).__init__(context)
+
+    def execute_annotation(self):
+        debug.warning('Used Any, which is not implemented, yet.')
+        return NO_CONTEXTS
+
+
+class GenericClass(object):
+    def __init__(self, class_context, ):
+        self._class_context = class_context
+
+    def __getattr__(self, name):
+        return getattr(self._class_context, name)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self._class_context)
+
+
+class TypeVarClass(Context):
+    def py__call__(self, arguments):
+        unpacked = arguments.unpack()
+
+        key, lazy_context = next(unpacked, (None, None))
+        name = self._find_name(lazy_context)
+        # The name must be given, otherwise it's useless.
+        if name is None or key is not None:
+            debug.warning('Found a variable without a name %s', arguments)
+            return NO_CONTEXTS
+
+        return ContextSet(TypeVar(self.evaluator, name, unpacked))
+
+    def _find_name(self, lazy_context):
+        if lazy_context is None:
+            return None
+
+        context_set = lazy_context.infer()
+        if not context_set:
+            return None
+        if len(context_set) > 1:
+            debug.warning('Found multiple contexts for a type variable: %s', context_set)
+
+        name_context = next(iter(context_set))
+        if isinstance(name_context, CompiledObject):
+            return name_context.get_safe_value(default=None)
+        return None
+
+
+class TypeVar(Context):
+    def __init__(self, evaluator, name, unpacked_args):
+        super(TypeVar, self).__init__(evaluator)
+        self._name = name
+        self._unpacked_args = unpacked_args
+
+    def _unpack(self):
+        # TODO
+        constraints = ContextSet()
+        bound = None
+        covariant = False
+        contravariant = False
+        for key, lazy_context in unpacked:
+            if key is None:
+                constraints |= lazy_context.infer()
+            else:
+                if name == 'bound':
+                    bound = lazy_context.infer()
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._name)

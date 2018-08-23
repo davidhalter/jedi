@@ -163,7 +163,7 @@ class CompiledObject(Context):
         return ContextSet(create_from_access_path(self.evaluator, access))
 
     @CheckAttribute()
-    def py__getitem__(self, index_context, contextualized_node):
+    def py__getitem__(self, index_context_set, contextualized_node):
         return ContextSet.from_iterable(
             create_from_access_path(self.evaluator, access)
             for access in self.access_handle.py__getitem__all_values()

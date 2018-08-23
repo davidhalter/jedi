@@ -71,6 +71,17 @@ class Context(BaseContext):
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
 
+    def py__getitem__(self, index_context_set, contextualized_node):
+        from jedi.evaluate import analysis
+        # TODO this context is probably not right.
+        analysis.add(
+            contextualized_node.context,
+            'type-error-not-subscriptable',
+            contextualized_node.node,
+            message="TypeError: '%s' object is not subscriptable" % self
+        )
+        return NO_CONTEXTS
+
     def execute_annotation(self):
         return execute_evaluated(self)
 
@@ -171,24 +182,13 @@ class ContextualizedName(ContextualizedNode):
 
 def _get_item(context, index_contexts, contextualized_node):
     from jedi.evaluate.compiled import CompiledObject
-    from jedi.evaluate.context.iterable import Slice, Sequence
+    from jedi.evaluate.context.iterable import Slice
 
     # The actual getitem call.
     simple_getitem = getattr(context, 'py__simple_getitem__', None)
-    getitem = getattr(context, 'py__getitem__', None)
-
-    if getitem is None and simple_getitem is None:
-        from jedi.evaluate import analysis
-        # TODO this context is probably not right.
-        analysis.add(
-            contextualized_node.context,
-            'type-error-not-subscriptable',
-            contextualized_node.node,
-            message="TypeError: '%s' object is not subscriptable" % context
-        )
-        return NO_CONTEXTS
 
     result = ContextSet()
+    unused_contexts = set()
     for index_context in index_contexts:
         if simple_getitem is not None:
             index = index_context
@@ -207,11 +207,16 @@ def _get_item(context, index_contexts, contextualized_node):
                 except SimpleGetItemNotFound:
                     pass
 
-        # The index was somehow not good enough or simply a wrong type.
-        # Therefore we now iterate through all the contexts and just take
-        # all results.
-        if getitem is not None:
-            result |= getitem(index_context, contextualized_node)
+        unused_contexts.add(index_context)
+
+    # The index was somehow not good enough or simply a wrong type.
+    # Therefore we now iterate through all the contexts and just take
+    # all results.
+    if unused_contexts or not index_contexts:
+        result |= context.py__getitem__(
+            ContextSet.from_set(unused_contexts),
+            contextualized_node
+        )
     return result
 
 

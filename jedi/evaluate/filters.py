@@ -158,6 +158,37 @@ class AbstractFilter(object):
         raise NotImplementedError
 
 
+class FilterWrapper(object):
+    name_wrapper_class = None
+
+    def __init__(self, wrapped_filter):
+        self._wrapped_filter = wrapped_filter
+
+    def wrap_names(self, names):
+        return [self.name_wrapper_class(name) for name in names]
+
+    def get(self, name):
+        return self.wrap_names(self._wrapped_filter.get(name))
+
+    def values(self, name):
+        return self.wrap_names(self._wrapped_filter.values())
+
+
+class NameWrapper(object):
+    def __init__(self, wrapped_name):
+        self._wrapped_name = wrapped_name
+
+    @abstractmethod
+    def infer(self):
+        raise NotImplementedError
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped_name, name)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self._wrapped_name)
+
+
 class AbstractUsedNamesFilter(AbstractFilter):
     name_class = TreeNameDefinition
 

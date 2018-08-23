@@ -218,3 +218,11 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     @property
     def name(self):
         return ContextName(self, self.tree_node.name)
+
+    def py__getitem__(self, index_context_set, contextualized_node):
+        for cls in list(self.py__mro__()):
+            pass
+        print('ha', self,  list(self.py__mro__()))
+
+        #print(index_context_set)
+        return super(ClassContext, self).py__getitem__(index_context_set, contextualized_node)

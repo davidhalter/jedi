@@ -289,7 +289,7 @@ def infer_param(execution_context, param):
         class_context = execution_context.var_args.instance.class_context
         types |= eval_docstring(class_context.py__doc__())
 
-    debug.dbg('Found param types for docstring %s', types, color='BLUE')
+    debug.dbg('Found param types for docstring: %s', types, color='BLUE')
     return types
 
 
