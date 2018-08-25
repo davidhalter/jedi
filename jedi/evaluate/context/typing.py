@@ -33,6 +33,14 @@ class _BaseTypingContext(Context):
         self._name = name
 
     @property
+    def tree_node(self):
+        return self._name.tree_name
+
+    def get_filters(self, *args, **kwargs):
+        # TODO this is obviously wrong.
+        return iter([])
+
+    @property
     def name(self):
         return TypingName(self, self._name)
 
@@ -147,14 +155,6 @@ class TypingContext(_BaseTypingContext):
 
 
 class TypingClassMixin(object):
-    @property
-    def tree_node(self):
-        return self.name.tree_name
-
-    def get_filters(self, *args, **kwargs):
-        # TODO this is obviously wrong.
-        return iter([])
-
     def py__mro__(self):
         return (self,)
 
@@ -176,10 +176,6 @@ def _iter_over_arguments(maybe_tuple_context):
 
 
 class _ContainerBase(_WithIndexBase):
-    def get_filters(self, *args, **kwargs):
-        # TODO this is obviously wrong.
-        return iter([])
-
     def _get_getitem_contexts(self, index):
         for i, contexts in enumerate(_iter_over_arguments(self._index_context)):
             if i == index:

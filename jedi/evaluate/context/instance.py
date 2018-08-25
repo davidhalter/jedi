@@ -128,14 +128,13 @@ class AbstractInstanceContext(Context):
                 yield InstanceClassFilter(self.evaluator, self, cls, origin_scope)
 
     def py__getitem__(self, index_context_set, contextualized_node):
-        try:
-            names = self.get_function_slot_names(u'__getitem__')
-        except KeyError:
+        names = self.get_function_slot_names(u'__getitem__')
+        if not names:
             debug.warning('No __getitem__, cannot access the array.')
             return NO_CONTEXTS
-        else:
-            args = ValuesArguments([index_context_set])
-            return ContextSet.from_sets(name.infer().execute(args) for name in names)
+
+        args = ValuesArguments([index_context_set])
+        return ContextSet.from_sets(name.infer().execute(args) for name in names)
 
     def py__iter__(self):
         iter_slot_names = self.get_function_slot_names(u'__iter__')
