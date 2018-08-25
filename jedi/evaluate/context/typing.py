@@ -110,29 +110,29 @@ class _WithIndexBase(_BaseTypingContext):
 
 class TypingContextWithIndex(_WithIndexBase):
     def execute_annotation(self):
-        name = self._name
-        if name in _TYPE_ALIAS_TYPES:
+        string_name = self._name.string_name
+        if string_name in _TYPE_ALIAS_TYPES:
             debug.warning('type aliases are not yet implemented')
             return NO_CONTEXTS
 
-        if name == 'Union':
+        if string_name == 'Union':
             # This is kind of a special case, because we have Unions (in Jedi
             # ContextSets).
             return self._execute_annotations_for_all_indexes()
-        elif name == 'Optional':
+        elif string_name == 'Optional':
             # Optional is basically just saying it's either None or the actual
             # type.
             return ContextSet(self._context) \
                 | ContextSet(builtin_from_name(self.evaluator, u'None'))
-        elif name == 'Type':
+        elif string_name == 'Type':
             # The type is actually already given in the index_context
             return ContextSet(self._index_context)
-        elif name == 'ClassVar':
+        elif string_name == 'ClassVar':
             # For now don't do anything here, ClassVars are always used.
             return self._context.execute_annotation()
 
-        cls = globals()[name]
-        return ContextSet(cls(name, self._context, self._index_context))
+        cls = globals()[string_name]
+        return ContextSet(cls(self._name, self._index_context))
 
 
 class TypingContext(_BaseTypingContext):
@@ -147,6 +147,14 @@ class TypingContext(_BaseTypingContext):
 
 
 class TypingClassMixin(object):
+    @property
+    def tree_node(self):
+        return self.name.tree_name
+
+    def get_filters(self, *args, **kwargs):
+        # TODO this is obviously wrong.
+        return iter([])
+
     def py__mro__(self):
         return (self,)
 
@@ -168,8 +176,9 @@ def _iter_over_arguments(maybe_tuple_context):
 
 
 class _ContainerBase(_WithIndexBase):
-    def get_filters(self):
-        pass
+    def get_filters(self, *args, **kwargs):
+        # TODO this is obviously wrong.
+        return iter([])
 
     def _get_getitem_contexts(self, index):
         for i, contexts in enumerate(_iter_over_arguments(self._index_context)):
