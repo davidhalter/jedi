@@ -8,7 +8,8 @@ from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
     iterator_to_context_set
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments
+from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments, \
+    ValuesArguments
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
@@ -126,15 +127,15 @@ class AbstractInstanceContext(Context):
             else:
                 yield InstanceClassFilter(self.evaluator, self, cls, origin_scope)
 
-    def py__simple_getitem__(self, index):
+    def py__getitem__(self, index_context_set, contextualized_node):
         try:
             names = self.get_function_slot_names(u'__getitem__')
         except KeyError:
             debug.warning('No __getitem__, cannot access the array.')
             return NO_CONTEXTS
         else:
-            index_obj = compiled.create_simple_object(self.evaluator, index)
-            return self.execute_function_slots(names, index_obj)
+            args = ValuesArguments([index_context_set])
+            return ContextSet.from_sets(name.infer().execute(args) for name in names)
 
     def py__iter__(self):
         iter_slot_names = self.get_function_slot_names(u'__iter__')
