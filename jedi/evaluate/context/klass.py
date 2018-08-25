@@ -38,6 +38,7 @@ py__doc__(include_call_signature:      Returns the docstring for a context.
 ====================================== ========================================
 
 """
+from jedi import debug
 from jedi._compatibility import use_metaclass
 from jedi.parser_utils import get_parent_scope
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
@@ -150,7 +151,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
                       File "<stdin>", line 1, in <module>
                     TypeError: int() takes at most 2 arguments (3 given)
                     """
-                    pass
+                    debug.warning('Super class of %s is not a class: %s', self, cls)
                 else:
                     add(cls)
                     for cls_new in mro_method():
@@ -220,6 +221,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
         return ContextName(self, self.tree_node.name)
 
     def py__getitem__(self, index_context_set, contextualized_node):
+        print(self.parent_context.__class__.__name__)
         for cls in list(self.py__mro__()):
             pass
         print('ha', self,  list(self.py__mro__()))

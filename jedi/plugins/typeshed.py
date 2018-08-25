@@ -10,9 +10,9 @@ from jedi.evaluate.base_context import ContextSet, iterator_to_context_set
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, ClassContext
-from jedi.evaluate.context.typing import TypingModuleFilterWrapper
+from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
+    TypingModuleName
 from jedi.evaluate.compiled import CompiledObject
-from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.utils import to_list
 
 
@@ -164,27 +164,22 @@ class TypeshedPlugin(BasePlugin):
         return wrapper
 
 
-class StubName(TreeNameDefinition):
+class NameWithStub(TreeNameDefinition):
     """
     This name is only here to mix stub names with non-stub names. The idea is
     that the user can goto the actual name, but end up on the definition of the
     stub when inferring types.
     """
 
-    def __init__(self, parent_context, tree_name, stub_parent_context, stub_tree_name):
-        super(StubName, self).__init__(parent_context, tree_name)
-        self._stub_parent_context = stub_parent_context
-        self._stub_tree_name = stub_tree_name
+    def __init__(self, parent_context, tree_name, stub_name):
+        super(NameWithStub, self).__init__(parent_context, tree_name)
+        self._stub_name = stub_name
 
     @memoize_method
     @iterator_to_context_set
     def infer(self):
-        actual_contexts = super(StubName, self).infer()
-        stub_contexts = tree_name_to_contexts(
-            self.parent_context.evaluator,
-            self._stub_parent_context,
-            self._stub_tree_name
-        )
+        actual_contexts = super(NameWithStub, self).infer()
+        stub_contexts = self._stub_name.infer()
 
         if not actual_contexts:
             for c in stub_contexts:
@@ -217,12 +212,23 @@ class StubName(TreeNameDefinition):
 
 
 class StubParserTreeFilter(ParserTreeFilter):
-    name_class = StubName
+    name_class = NameWithStub
 
     def __init__(self, non_stub_filters, *args, **kwargs):
         self._search_global = kwargs.pop('search_global')  # Python 2 :/
         super(StubParserTreeFilter, self).__init__(*args, **kwargs)
         self._non_stub_filters = non_stub_filters
+
+    def get(self, name):
+        try:
+            names = self._used_names[name]
+        except KeyError:
+            return self._get_non_stub_names(name)
+
+        return self._convert_names(self._filter(names))
+
+    # TODO maybe implement values, because currently the names that don't exist
+    # in the stub file are not part of values.
 
     def _check_flows(self, names):
         return names
@@ -241,18 +247,20 @@ class StubParserTreeFilter(ParserTreeFilter):
             # Try to match the names of stubs with non-stubs. If there's no
             # match, just use the stub name. The user will be directed there
             # for all API accesses. Otherwise the user will be directed to the
-            # non-stub positions (see StubName).
-            if not len(non_stub_names):
-                yield TreeNameDefinition(self.context, name)
-            else:
+            # non-stub positions (see NameWithStub).
+            n = TreeNameDefinition(self.context, name)
+            if isinstance(self.context, TypingModuleWrapper):
+                n = TypingModuleName(n)
+            if len(non_stub_names):
                 for non_stub_name in non_stub_names:
                     assert isinstance(non_stub_name, AbstractTreeName), non_stub_name
                     yield self.name_class(
                         non_stub_name.parent_context,
                         non_stub_name.tree_name,
-                        self.context,
-                        name,
+                        stub_name=n,
                     )
+            else:
+                yield n
 
     def _is_name_reachable(self, name):
         if not super(StubParserTreeFilter, self)._is_name_reachable(name):

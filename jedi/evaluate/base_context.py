@@ -217,6 +217,7 @@ def _get_item(context, index_contexts, contextualized_node):
             ContextSet.from_set(unused_contexts),
             contextualized_node
         )
+    debug.dbg('py__getitem__ result: %s', result)
     return result
 
 

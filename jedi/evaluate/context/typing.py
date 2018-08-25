@@ -3,90 +3,103 @@ We need to somehow work with the typing objects. Since the typing objects are
 pretty bare we need to add all the Jedi customizations to make them work as
 contexts.
 """
-from parso.python import tree
-
 from jedi import debug
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context
 from jedi.evaluate.context.iterable import SequenceLiteralContext
-from jedi.evaluate.filters import FilterWrapper, NameWrapper
+from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
+    AbstractTreeName
 
-_PROXY_TYPES = 'Optional Union Callable Type ClassVar Tuple Generic Protocol'.split()
+_PROXY_CLASS_TYPES = 'Tuple Generic Protocol'.split()
 _TYPE_ALIAS_TYPES = 'List Dict DefaultDict Set FrozenSet Counter Deque ChainMap'.split()
+_PROXY_TYPES = 'Optional Union Callable Type ClassVar'.split()
 
 
-class _TypingBase(object):
-    def __init__(self, name, typing_context):
+class TypingName(AbstractTreeName):
+    def __init__(self, context, other_name):
+        super(TypingName, self).__init__(context.parent_context, other_name.tree_name)
+        self._context = context
+
+    def infer(self):
+        return ContextSet(self._context)
+
+
+class _BaseTypingContext(Context):
+    def __init__(self, name):
+        super(_BaseTypingContext, self).__init__(
+            name.parent_context.evaluator,
+            parent_context=name.parent_context,
+        )
         self._name = name
-        self._context = typing_context
 
-    def __getattr__(self, name):
-        return getattr(self._context, name)
+    @property
+    def name(self):
+        return TypingName(self, self._name)
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._context)
+        return '%s(%s)' % (self.__class__.__name__, self._name.string_name)
 
 
 class TypingModuleName(NameWrapper):
     def infer(self):
-        return ContextSet.from_iterable(
-            self._remap(context) for context in self._wrapped_name.infer()
-        )
+        return ContextSet.from_iterable(self._remap())
 
-    def _remap(self, context):
+    def _remap(self):
+        # TODO we don't want the SpecialForm bullshit
         name = self.string_name
-        print('name', name)
-        if name in (_PROXY_TYPES + _TYPE_ALIAS_TYPES):
-            print('NAME', name)
-            return TypingProxy(name, context)
+        evaluator = self.parent_context.evaluator
+        if name in (_PROXY_CLASS_TYPES + _TYPE_ALIAS_TYPES):
+            yield TypingClassContext(self)
+        elif name == _PROXY_TYPES:
+            yield TypingContext(self)
+        elif name == 'runtime':
+            # We don't want anything here, not sure what this function is
+            # supposed to do, since it just appears in the stubs and shouldn't
+            # have any effects there (because it's never executed).
+            return
         elif name == 'TypeVar':
-            return TypeVarClass(context.evaluator)
+            yield TypeVarClass(evaluator)
         elif name == 'Any':
-            return Any(context)
+            yield Any()
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
-            return builtin_from_name(context.evaluator, u'True')
+            yield builtin_from_name(evaluator, u'True')
         elif name == 'overload':
             # TODO implement overload
-            return context
+            pass
         elif name == 'cast':
             # TODO implement cast
-            return context
+            for c in self._wrapped_name.infer():  # Fuck my life Python 2
+                yield c
         elif name == 'TypedDict':
-            # TODO implement
-            # e.g. Movie = TypedDict('Movie', {'name': str, 'year': int})
-            return context
+            # TODO doesn't even exist in typeshed/typing.py, yet. But will be
+            # added soon.
+            pass
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
-            return context
-        return context
+            for c in self._wrapped_name.infer():  # Fuck my life Python 2
+                yield c
+        else:
+            # Everything else shouldn't be relevant for type checking.
+            for c in self._wrapped_name.infer():  # Fuck my life Python 2
+                yield c
 
 
 class TypingModuleFilterWrapper(FilterWrapper):
     name_wrapper_class = TypingModuleName
 
 
-class TypingProxy(_TypingBase):
-    py__simple_getitem__ = None
-
-    def py__getitem__(self, index_context_set, contextualized_node):
-        return ContextSet.from_iterable(
-            TypingProxyWithIndex(self._name, self._context, index_context)
-            for index_context in index_context_set
-        )
-
-
-class _WithIndexBase(_TypingBase):
-    def __init__(self, name, class_context, index_context):
-        super(_WithIndexBase, self).__init__(name, class_context)
+class _WithIndexBase(_BaseTypingContext):
+    def __init__(self, name, index_context):
+        super(_WithIndexBase, self).__init__(name)
         self._index_context = index_context
 
     def __repr__(self):
-        return '%s(%s, %s)' % (
+        return '<%s: %s[%s]>' % (
             self.__class__.__name__,
-            self._context,
-            self._index_context
+            self._name.string_name,
+            self._index_context,
         )
 
     def _execute_annotations_for_all_indexes(self):
@@ -95,7 +108,7 @@ class _WithIndexBase(_TypingBase):
         ).execute_annotation()
 
 
-class TypingProxyWithIndex(_WithIndexBase):
+class TypingContextWithIndex(_WithIndexBase):
     def execute_annotation(self):
         name = self._name
         if name in _TYPE_ALIAS_TYPES:
@@ -120,6 +133,30 @@ class TypingProxyWithIndex(_WithIndexBase):
 
         cls = globals()[name]
         return ContextSet(cls(name, self._context, self._index_context))
+
+
+class TypingContext(_BaseTypingContext):
+    index_class = TypingContextWithIndex
+    py__simple_getitem__ = None
+
+    def py__getitem__(self, index_context_set, contextualized_node):
+        return ContextSet.from_iterable(
+            self.index_class(self._name, index_context)
+            for index_context in index_context_set
+        )
+
+
+class TypingClassMixin(object):
+    def py__mro__(self):
+        return (self,)
+
+
+class TypingClassContextWithIndex(TypingClassMixin, TypingContextWithIndex):
+    pass
+
+
+class TypingClassContext(TypingClassMixin, TypingContext):
+    index_class = TypingClassContextWithIndex
 
 
 def _iter_over_arguments(maybe_tuple_context):
@@ -175,16 +212,14 @@ class Tuple(_ContainerBase):
 
 
 class Generic(_ContainerBase):
-    # TODO implement typevars
     pass
 
 
-# For pure type inference these two classes are basically the same. It's much
-# more interesting once you do type checking.
-Protocol = Generic
+class Protocol(_ContainerBase):
+    pass
 
 
-class Any(_TypingBase):
+class Any(_BaseTypingContext):
     def __init__(self):
         # Any is basically object, when it comes to type inference/completions.
         # This is obviously not correct, but let's just use this for now.
@@ -240,20 +275,28 @@ class TypeVar(Context):
     def __init__(self, evaluator, name, unpacked_args):
         super(TypeVar, self).__init__(evaluator)
         self._name = name
-        self._unpacked_args = unpacked_args
 
-    def _unpack(self):
-        # TODO
-        constraints = ContextSet()
-        bound = None
-        covariant = False
-        contravariant = False
-        for key, lazy_context in unpacked:
+        self._constraints_lazy_contexts = []
+        self._bound_lazy_context = None
+        self._covariant_lazy_context = None
+        self._contravariant_lazy_context = None
+        for key, lazy_context in unpacked_args:
             if key is None:
-                constraints |= lazy_context.infer()
+                self._constraints_lazy_contexts.append(lazy_context)
             else:
-                if name == 'bound':
-                    bound = lazy_context.infer()
+                if key == 'bound':
+                    self._bound_lazy_context = lazy_context
+                elif key == 'covariant':
+                    self._covariant_lazy_context = lazy_context
+                elif key == 'contravariant':
+                    self._contra_variant_lazy_context = lazy_context
+                else:
+                    debug.warning('Invalid TypeVar param name %s', key)
+
+    def execute_annotation(self):
+        if self._bound_lazy_context is not None:
+            return self._bound_lazy_context.infer()
+        return NO_CONTEXTS
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._name)
