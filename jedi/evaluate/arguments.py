@@ -1,3 +1,5 @@
+import re
+
 from parso.python import tree
 
 from jedi._compatibility import zip_longest
@@ -28,31 +30,82 @@ def try_iter_content(types, depth=0):
                 try_iter_content(lazy_context.infer(), depth + 1)
 
 
+def repack_with_argument_clinic(string, keep_arguments_param=False):
+    """
+    Transforms a function or method with arguments to the signature that is
+    given as an argument clinic notation.
+
+    Argument clinic is part of CPython and used for all the functions that are
+    implemented in C (Python 3.7):
+
+        str.split.__text_signature__
+        # Results in: '($self, /, sep=None, maxsplit=-1)'
+    """
+    clinic_args = list(_parse_argument_clinic(string))
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if keep_arguments_param:
+                arguments = kwargs['arguments']
+            else:
+                arguments = kwargs.pop('arguments')
+            try:
+                args += tuple(_iterate_argument_clinic(arguments, clinic_args))
+            except ValueError:
+                return NO_CONTEXTS
+            else:
+                return func(*args, **kwargs)
+
+        return wrapper
+    return decorator
+
+
+def _iterate_argument_clinic(arguments, parameters):
+    """Uses a list with argument clinic information (see PEP 436)."""
+    iterator = arguments.unpack()
+    for i, (name, optional, allow_kwargs) in enumerate(parameters):
+        key, argument = next(iterator, (None, None))
+        if key is not None:
+            debug.warning('Keyword arguments in argument clinic are currently not supported.')
+            raise ValueError
+        if argument is None and not optional:
+            debug.warning('TypeError: %s expected at least %s arguments, got %s',
+                          name, len(parameters), i)
+            raise ValueError
+
+        context_set = NO_CONTEXTS if argument is None else argument.infer()
+
+        if not context_set and not optional:
+            # For the stdlib we always want values. If we don't get them,
+            # that's ok, maybe something is too hard to resolve, however,
+            # we will not proceed with the evaluation of that function.
+            debug.warning('argument_clinic "%s" not resolvable.', name)
+            raise ValueError
+        yield context_set
+
+
+def _parse_argument_clinic(string):
+    allow_kwargs = False
+    optional = False
+    while string:
+        # Optional arguments have to begin with a bracket. And should always be
+        # at the end of the arguments. This is therefore not a proper argument
+        # clinic implementation. `range()` for exmple allows an optional start
+        # value at the beginning.
+        match = re.match('(?:(?:(\[),? ?|, ?|)(\w+)|, ?/)\]*', string)
+        string = string[len(match.group(0)):]
+        if not match.group(2):  # A slash -> allow named arguments
+            allow_kwargs = True
+            continue
+        optional = optional or bool(match.group(1))
+        word = match.group(2)
+        yield (word, optional, allow_kwargs)
+
+
 class AbstractArguments(object):
     context = None
     argument_node = None
     trailer = None
-
-    def eval_argument_clinic(self, parameters):
-        """Uses a list with argument clinic information (see PEP 436)."""
-        iterator = self.unpack()
-        for i, (name, optional, allow_kwargs) in enumerate(parameters):
-            key, argument = next(iterator, (None, None))
-            if key is not None:
-                raise NotImplementedError
-            if argument is None and not optional:
-                debug.warning('TypeError: %s expected at least %s arguments, got %s',
-                              name, len(parameters), i)
-                raise ValueError
-            values = NO_CONTEXTS if argument is None else argument.infer()
-
-            if not values and not optional:
-                # For the stdlib we always want values. If we don't get them,
-                # that's ok, maybe something is too hard to resolve, however,
-                # we will not proceed with the evaluation of that function.
-                debug.warning('argument_clinic "%s" not resolvable.', name)
-                raise ValueError
-            yield values
 
     def eval_all(self, funcdef=None):
         """
