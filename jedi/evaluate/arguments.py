@@ -38,8 +38,8 @@ def repack_with_argument_clinic(string, keep_arguments_param=False):
     Argument clinic is part of CPython and used for all the functions that are
     implemented in C (Python 3.7):
 
-        >>> str.split.__text_signature__
-        '($self, /, sep=None, maxsplit=-1)'
+        str.split.__text_signature__
+        # Results in: '($self, /, sep=None, maxsplit=-1)'
     """
     clinic_args = list(_parse_argument_clinic(string))
 
