@@ -331,4 +331,9 @@ _implemented = {
     'collections': {
         'namedtuple': collections_namedtuple,
     },
+    'abc': {
+        # Not sure if this is necessary, but it's used a lot in typeshed and
+        # it's for now easier to just pass the function.
+        'abstractmethod': _return_first_param,
+    }
 }
