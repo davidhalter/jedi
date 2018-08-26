@@ -17,7 +17,7 @@ and others. Here's a list:
 ====================================== ========================================
 **Method**                             **Description**
 -------------------------------------- ----------------------------------------
-py__call__(params: Array)              On callable objects, returns types.
+py__call__(arguments: Array)           On callable objects, returns types.
 py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
 py__bases__()                          Returns a list of base classes.
@@ -168,9 +168,9 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
         else:
             return [LazyKnownContext(compiled.builtin_from_name(self.evaluator, u'object'))]
 
-    def py__call__(self, params):
+    def py__call__(self, arguments):
         from jedi.evaluate.context import TreeInstance
-        return ContextSet(TreeInstance(self.evaluator, self.parent_context, self, params))
+        return ContextSet(TreeInstance(self.evaluator, self.parent_context, self, arguments))
 
     def py__class__(self):
         return compiled.builtin_from_name(self.evaluator, u'type')

@@ -48,7 +48,7 @@ class StdlibPlugin(BasePlugin):
     def execute(self, callback):
         def wrapper(context, arguments):
             if isinstance(context, BoundMethod):
-                return callback(context, arguments)
+                return callback(context, arguments=arguments)
 
             debug.dbg('execute: %s %s', context, arguments)
             try:
@@ -69,8 +69,8 @@ class StdlibPlugin(BasePlugin):
                 except KeyError:
                     pass
                 else:
-                    return func(self._evaluator, context, arguments)
-            return callback(context, arguments)
+                    return func(self._evaluator, context, arguments=arguments)
+            return callback(context, arguments=arguments)
 
         return wrapper
 

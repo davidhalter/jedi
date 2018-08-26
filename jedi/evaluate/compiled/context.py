@@ -54,19 +54,21 @@ class CompiledObject(Context):
         self.tree_node = faked_class
 
     @CheckAttribute()
-    def py__call__(self, params):
+    def py__call__(self, arguments):
         if self.tree_node is not None and self.tree_node.type == 'funcdef':
             from jedi.evaluate.context.function import FunctionContext
             return FunctionContext(
                 self.evaluator,
                 parent_context=self.parent_context,
                 tree_node=self.tree_node
-            ).py__call__(params)
+            ).py__call__(arguments=arguments)
         if self.access_handle.is_class():
             from jedi.evaluate.context import CompiledInstance
-            return ContextSet(CompiledInstance(self.evaluator, self.parent_context, self, params))
+            return ContextSet(
+                CompiledInstance(self.evaluator, self.parent_context, self, arguments)
+            )
         else:
-            return ContextSet.from_iterable(self._execute_function(params))
+            return ContextSet.from_iterable(self._execute_function(arguments))
 
     @CheckAttribute()
     def py__class__(self):

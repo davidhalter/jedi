@@ -7,6 +7,7 @@ from jedi import debug
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context
 from jedi.evaluate.context.iterable import SequenceLiteralContext
+from jedi.evaluate.arguments import repack_with_argument_clinic
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName
 
@@ -58,7 +59,7 @@ class TypingModuleName(NameWrapper):
         evaluator = self.parent_context.evaluator
         if name in (_PROXY_CLASS_TYPES + _TYPE_ALIAS_TYPES):
             yield TypingClassContext(self)
-        elif name == _PROXY_TYPES:
+        elif name in _PROXY_TYPES:
             yield TypingContext(self)
         elif name == 'runtime':
             # We don't want anything here, not sure what this function is
@@ -75,7 +76,7 @@ class TypingModuleName(NameWrapper):
             yield builtin_from_name(evaluator, u'True')
         elif name == 'overload':
             # TODO implement overload
-            pass
+            yield OverloadFunction(self)
         elif name == 'cast':
             # TODO implement cast
             for c in self._wrapped_name.infer():  # Fuck my life Python 2
@@ -305,3 +306,10 @@ class TypeVar(Context):
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._name)
+
+
+class OverloadFunction(_BaseTypingContext):
+    @repack_with_argument_clinic('func, /')
+    def py__call__(self, func_context_set):
+        debug.warning('overload used')
+        return NO_CONTEXTS

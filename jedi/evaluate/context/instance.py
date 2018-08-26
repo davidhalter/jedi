@@ -130,7 +130,7 @@ class AbstractInstanceContext(Context):
     def py__getitem__(self, index_context_set, contextualized_node):
         names = self.get_function_slot_names(u'__getitem__')
         if not names:
-            debug.warning('No __getitem__, cannot access the array.')
+            debug.warning('Found no __getitem__ on %s', self)
             return NO_CONTEXTS
 
         args = ValuesArguments([index_context_set])

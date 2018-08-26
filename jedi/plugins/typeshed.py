@@ -311,7 +311,8 @@ class StubModuleContext(_StubContextFilterMixin, ModuleContext):
 
 class StubClassContext(_StubContextFilterMixin, ClassContext):
     def __getattribute__(self, name):
-        if name == ('py__getitem__', 'py__simple_getitem__', 'py__bases__'):
+        if name in ('py__getitem__', 'py__simple_getitem__', 'py__bases__',
+                    'execute_annotation'):
             # getitem is always done in the stub class.
             return getattr(self.stub_context, name)
         return super(StubClassContext, self).__getattribute__(name)
