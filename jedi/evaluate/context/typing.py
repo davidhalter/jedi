@@ -69,7 +69,7 @@ class TypingModuleName(NameWrapper):
         elif name == 'TypeVar':
             yield TypeVarClass(evaluator)
         elif name == 'Any':
-            yield Any()
+            yield Any(self)
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
@@ -189,7 +189,7 @@ class _ContainerBase(_WithIndexBase):
 class Callable(_ContainerBase):
     def py__call__(self, arguments):
         # The 0th index are the arguments.
-        return self._get_getitem_contexts(1)
+        return self._get_getitem_contexts(1).execute_annotation()
 
 
 class Tuple(_ContainerBase):
@@ -226,12 +226,6 @@ class Protocol(_ContainerBase):
 
 
 class Any(_BaseTypingContext):
-    def __init__(self):
-        # Any is basically object, when it comes to type inference/completions.
-        # This is obviously not correct, but let's just use this for now.
-        context = ContextSet(builtin_from_name(self.evaluator, u'object'))
-        super(Any, self).__init__(context)
-
     def execute_annotation(self):
         debug.warning('Used Any, which is not implemented, yet.')
         return NO_CONTEXTS
@@ -301,7 +295,7 @@ class TypeVar(Context):
 
     def execute_annotation(self):
         if self._bound_lazy_context is not None:
-            return self._bound_lazy_context.infer()
+            return self._bound_lazy_context.infer().execute_annotation()
         return NO_CONTEXTS
 
     def __repr__(self):
@@ -311,5 +305,5 @@ class TypeVar(Context):
 class OverloadFunction(_BaseTypingContext):
     @repack_with_argument_clinic('func, /')
     def py__call__(self, func_context_set):
-        debug.warning('overload used')
-        return NO_CONTEXTS
+        debug.warning('overload used %s', func_context_set)
+        return func_context_set
