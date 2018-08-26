@@ -68,32 +68,6 @@ class AbstractFunction(TreeContext):
     def get_function_execution(self, arguments=None):
         raise NotImplementedError
 
-    def py__call__(self, arguments):
-        function_execution = self.get_function_execution(arguments)
-        return self.infer_function_execution(function_execution)
-
-    def infer_function_execution(self, function_execution):
-        """
-        Created to be used by inheritance.
-        """
-        is_coroutine = self.tree_node.parent.type == 'async_stmt'
-        is_generator = bool(get_yield_exprs(self.evaluator, self.tree_node))
-
-        if is_coroutine:
-            if is_generator:
-                if self.evaluator.environment.version_info < (3, 6):
-                    return NO_CONTEXTS
-                return ContextSet(asynchronous.AsyncGenerator(self.evaluator, function_execution))
-            else:
-                if self.evaluator.environment.version_info < (3, 5):
-                    return NO_CONTEXTS
-                return ContextSet(asynchronous.Coroutine(self.evaluator, function_execution))
-        else:
-            if is_generator:
-                return ContextSet(iterable.Generator(self.evaluator, function_execution))
-            else:
-                return function_execution.get_return_values()
-
     def py__name__(self):
         return self.name.string_name
 
@@ -122,6 +96,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
                 ContextSet.from_iterable(create(f) for f in overloaded_funcs)
             )
         return function
+
+    def py__call__(self, arguments):
+        function_execution = self.get_function_execution(arguments)
+        return function_execution.infer()
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
@@ -268,6 +246,29 @@ class FunctionExecutionContext(TreeContext):
     def get_executed_params(self):
         return self.var_args.get_executed_params(self)
 
+    def infer(self):
+        """
+        Created to be used by inheritance.
+        """
+        evaluator = self.evaluator
+        is_coroutine = self.tree_node.parent.type == 'async_stmt'
+        is_generator = bool(get_yield_exprs(evaluator, self.tree_node))
+
+        if is_coroutine:
+            if is_generator:
+                if evaluator.environment.version_info < (3, 6):
+                    return NO_CONTEXTS
+                return ContextSet(asynchronous.AsyncGenerator(evaluator, self))
+            else:
+                if evaluator.environment.version_info < (3, 5):
+                    return NO_CONTEXTS
+                return ContextSet(asynchronous.Coroutine(evaluator, self))
+        else:
+            if is_generator:
+                return ContextSet(iterable.Generator(evaluator, self))
+            else:
+                return self.get_return_values()
+
 
 class OverloadedFunctionContext(object):
     def __init__(self, function, overloaded_functions):
@@ -275,11 +276,16 @@ class OverloadedFunctionContext(object):
         self._overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):
-        return ContextSet.from_sets(
-            f.py__call__(arguments=arguments)
-            for f in self._overloaded_functions
-            if signature_matches(f, arguments)
-        )
+        context_set = ContextSet()
+        debug.dbg("Execute overloaded function %s", self._function, color='BLUE')
+        for f in self._overloaded_functions:
+            signature = parser_utils.get_call_signature(f.tree_node)
+            if signature_matches(f, arguments):
+                debug.dbg("Overloading - signature %s matches", signature, color='BLUE')
+                context_set |= f.py__call__(arguments=arguments)
+            else:
+                debug.dbg("Overloading - signature %s doesn't match", signature, color='BLUE')
+        return context_set
 
     def __getattr__(self, name):
         return getattr(self._function, name)
@@ -289,7 +295,6 @@ def signature_matches(function_context, arguments):
     unpacked_arguments = arguments.unpack()
     for param_node in function_context.tree_node.get_params():
         key, argument = next(unpacked_arguments, (None, None))
-        print(param_node)
         if argument is None:
             # This signature has an parameter more than arguments were given.
             return False
@@ -299,13 +304,17 @@ def signature_matches(function_context, arguments):
             return False
 
         if param_node.annotation is not None:
-            annotation_result = function_context.evaluator.eval_node(
+            annotation_result = function_context.evaluator.eval_element(
                 function_context.parent_context,
                 param_node.annotation
             )
-            print(annotation_result)
+            return has_same_class(argument.infer().py__class__(), annotation_result)
 
     return True
+
+
+def has_same_class(context_set1, context_set2):
+    return bool(context_set1 & context_set2)
 
 
 def _find_overload_functions(context, tree_node):

@@ -40,7 +40,10 @@ class BaseContextSet(object):
         return cls.from_set(aggregated)
 
     def __or__(self, other):
-        return type(self).from_set(self._set | other._set)
+        return self.from_set(self._set | other._set)
+
+    def __and__(self, other):
+        return self.from_set(self._set & other._set)
 
     def __iter__(self):
         for element in self._set:
@@ -56,11 +59,11 @@ class BaseContextSet(object):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))
 
     def filter(self, filter_func):
-        return type(self).from_iterable(filter(filter_func, self._set))
+        return self.from_iterable(filter(filter_func, self._set))
 
     def __getattr__(self, name):
         def mapper(*args, **kwargs):
-            return type(self).from_sets(
+            return self.from_sets(
                 getattr(context, name)(*args, **kwargs)
                 for context in self._set
             )

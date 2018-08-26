@@ -11,7 +11,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments, \
     ValuesArguments
 from jedi.evaluate.context.function import FunctionExecutionContext, \
-    FunctionContext, AbstractFunction
+    FunctionContext, AbstractFunction, OverloadedFunctionContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
 from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
@@ -325,11 +325,14 @@ class BoundMethod(AbstractFunction):
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, u'BOUND_METHOD_CLASS')
 
-    def get_function_execution(self, arguments=None):
+    def _get_arguments(self, arguments):
         if arguments is None:
             arguments = AnonymousInstanceArguments(self._instance)
 
-        arguments = InstanceArguments(self._instance, arguments)
+        return InstanceArguments(self._instance, arguments)
+
+    def get_function_execution(self, arguments=None):
+        arguments = self._get_arguments(arguments)
 
         if isinstance(self._function, compiled.CompiledObject):
             # This is kind of weird, because it's coming from a compiled object
@@ -339,6 +342,12 @@ class BoundMethod(AbstractFunction):
             )
 
         return self._function.get_function_execution(arguments)
+
+    def py__call__(self, arguments):
+        if isinstance(self._function, OverloadedFunctionContext):
+            return self._function.py__call__(self._get_arguments(arguments))
+        function_execution = self.get_function_execution(arguments)
+        return function_execution.infer()
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._function)
@@ -376,7 +385,7 @@ class LazyInstanceClassName(object):
     @iterator_to_context_set
     def infer(self):
         for result_context in self._class_member_name.infer():
-            if isinstance(result_context, FunctionContext):
+            if isinstance(result_context, (FunctionContext, OverloadedFunctionContext)):
                 # Classes are never used to resolve anything within the
                 # functions. Only other functions and modules will resolve
                 # those things.
