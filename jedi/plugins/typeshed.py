@@ -9,7 +9,8 @@ from jedi.cache import memoize_method
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition
-from jedi.evaluate.context import ModuleContext, FunctionContext, ClassContext
+from jedi.evaluate.context import ModuleContext, FunctionContext, \
+    ClassContext, BoundMethod
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
 from jedi.evaluate.compiled import CompiledObject

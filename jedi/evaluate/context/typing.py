@@ -296,6 +296,7 @@ class TypeVar(Context):
     def execute_annotation(self):
         if self._bound_lazy_context is not None:
             return self._bound_lazy_context.infer().execute_annotation()
+        debug.warning('Tried to infer a TypeVar without a given type')
         return NO_CONTEXTS
 
     def __repr__(self):
@@ -305,5 +306,5 @@ class TypeVar(Context):
 class OverloadFunction(_BaseTypingContext):
     @repack_with_argument_clinic('func, /')
     def py__call__(self, func_context_set):
-        debug.warning('overload used %s', func_context_set)
+        # Just pass arguments through.
         return func_context_set

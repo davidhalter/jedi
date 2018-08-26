@@ -104,12 +104,24 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
     """
     @classmethod
     def from_context(cls, context, tree_node):
+        def create(tree_node):
+            return cls(context.evaluator, parent_context=context, tree_node=tree_node)
+
         from jedi.evaluate.context import AbstractInstanceContext
+
+        overloaded_funcs = list(_find_overload_functions(context, tree_node))
 
         while context.is_class() or isinstance(context, AbstractInstanceContext):
             context = context.parent_context
 
-        return cls(context.evaluator, parent_context=context, tree_node=tree_node)
+        function = create(tree_node)
+
+        if len(overloaded_funcs) > 1:
+            return OverloadedFunctionContext(
+                function,
+                ContextSet.from_iterable(create(f) for f in overloaded_funcs)
+            )
+        return function
 
     def get_function_execution(self, arguments=None):
         if arguments is None:
@@ -255,3 +267,76 @@ class FunctionExecutionContext(TreeContext):
     @evaluator_method_cache()
     def get_executed_params(self):
         return self.var_args.get_executed_params(self)
+
+
+class OverloadedFunctionContext(object):
+    def __init__(self, function, overloaded_functions):
+        self._function = function
+        self._overloaded_functions = overloaded_functions
+
+    def py__call__(self, arguments):
+        return ContextSet.from_sets(
+            f.py__call__(arguments=arguments)
+            for f in self._overloaded_functions
+            if signature_matches(f, arguments)
+        )
+
+    def __getattr__(self, name):
+        return getattr(self._function, name)
+
+
+def signature_matches(function_context, arguments):
+    unpacked_arguments = arguments.unpack()
+    for param_node in function_context.tree_node.get_params():
+        key, argument = next(unpacked_arguments, (None, None))
+        print(param_node)
+        if argument is None:
+            # This signature has an parameter more than arguments were given.
+            return False
+        if key is not None:
+            # TODO this is obviously wrong, we cannot just ignore keyword
+            # arguments, but it's easier for now.
+            return False
+
+        if param_node.annotation is not None:
+            annotation_result = function_context.evaluator.eval_node(
+                function_context.parent_context,
+                param_node.annotation
+            )
+            print(annotation_result)
+
+    return True
+
+
+def _find_overload_functions(context, tree_node):
+    def _is_overload_decorated(funcdef):
+        if funcdef.parent.type == 'decorated':
+            decorators = funcdef.parent.children[0]
+            if decorators.type == 'decorator':
+                decorators = [decorators]
+            else:
+                decorators = decorators.children
+            for decorator in decorators:
+                dotted_name = decorator.children[1]
+                if dotted_name.type == 'name' and dotted_name.value == 'overload':
+                    # TODO check with contexts if it's the right overload
+                    return True
+        return False
+
+    if _is_overload_decorated(tree_node):
+        yield tree_node
+
+    while True:
+        filter = ParserTreeFilter(
+            context.evaluator,
+            context,
+            until_position=tree_node.start_pos
+        )
+        names = filter.get(tree_node.name.value)
+
+        for name in names:
+            funcdef = name.tree_name.parent
+            if funcdef.type == 'funcdef' and _is_overload_decorated(funcdef):
+                yield funcdef
+
+        break  # By default break
