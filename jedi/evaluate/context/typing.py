@@ -380,7 +380,7 @@ class AnnotatedClass(ClassContext):
     def find_annotation_variables(self):
         arglist = self.tree_node.get_super_arglist()
         if arglist is None:
-            return []
+            return
 
         for stars, node in unpack_arglist(arglist):
             if stars:
