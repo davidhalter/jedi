@@ -133,7 +133,8 @@ class TypingContextWithIndex(_WithIndexBase):
         elif string_name == 'Optional':
             # Optional is basically just saying it's either None or the actual
             # type.
-            return ContextSet(self._context) \
+            # TODO raise a warning if multiple params are given
+            return self._execute_annotations_for_all_indexes() \
                 | ContextSet(builtin_from_name(self.evaluator, u'None'))
         elif string_name == 'Type':
             # The type is actually already given in the index_context

@@ -48,7 +48,7 @@ def get_executed_params(execution_context, var_args):
     # Default params are part of the context where the function was defined.
     # This means that they might have access on class variables that the
     # function itself doesn't have.
-    default_param_context = execution_context.get_default_param_context()
+    default_param_context = execution_context.function_context.get_default_param_context()
 
     for param in funcdef.get_params():
         param_dict[param.name.value] = param
