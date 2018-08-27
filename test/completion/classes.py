@@ -576,3 +576,26 @@ class Foo(object):
 
 #? int()
 Foo().b
+
+# -----------------
+# default arguments
+# -----------------
+
+default = ''
+class DefaultArg():
+    default = 3
+    def x(self, arg=default):
+        #? str()
+        default
+        return arg
+    def y(self):
+        return default
+
+#? int()
+DefaultArg().x()
+#? str()
+DefaultArg().y()
+#? int()
+DefaultArg.x()
+#? str()
+DefaultArg.y()

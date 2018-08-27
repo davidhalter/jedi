@@ -45,7 +45,10 @@ def get_executed_params(execution_context, var_args):
     result_params = []
     param_dict = {}
     funcdef = execution_context.tree_node
-    parent_context = execution_context.parent_context
+    # Default params are part of the context where the function was defined.
+    # This means that they might have access on class variables that the
+    # function itself doesn't have.
+    default_param_context = execution_context.get_default_param_context()
 
     for param in funcdef.get_params():
         param_dict[param.name.value] = param
@@ -74,7 +77,7 @@ def get_executed_params(execution_context, var_args):
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
                          % (funcdef.name, key))
                     for node in var_args.get_calling_nodes():
-                        analysis.add(parent_context, 'type-error-multiple-values',
+                        analysis.add(default_param_context, 'type-error-multiple-values',
                                      node, message=m)
                 else:
                     keys_used[key] = ExecutedParam(execution_context, key_param, argument)
@@ -113,10 +116,10 @@ def get_executed_params(execution_context, var_args):
                     if not keys_only:
                         for node in var_args.get_calling_nodes():
                             m = _error_argument_count(funcdef, len(unpacked_va))
-                            analysis.add(parent_context, 'type-error-too-few-arguments',
+                            analysis.add(default_param_context, 'type-error-too-few-arguments',
                                          node, message=m)
                 else:
-                    result_arg = LazyTreeContext(parent_context, param.default)
+                    result_arg = LazyTreeContext(default_param_context, param.default)
             else:
                 result_arg = argument
 
@@ -136,14 +139,14 @@ def get_executed_params(execution_context, var_args):
                 # add a warning only if there's not another one.
                 for node in var_args.get_calling_nodes():
                     m = _error_argument_count(funcdef, len(unpacked_va))
-                    analysis.add(parent_context, 'type-error-too-few-arguments',
+                    analysis.add(default_param_context, 'type-error-too-few-arguments',
                                  node, message=m)
 
     for key, lazy_context in non_matching_keys.items():
         m = "TypeError: %s() got an unexpected keyword argument '%s'." \
             % (funcdef.name, key)
         _add_argument_issue(
-            parent_context,
+            default_param_context,
             'type-error-keyword-argument',
             lazy_context,
             message=m
@@ -157,7 +160,12 @@ def get_executed_params(execution_context, var_args):
         first_key, lazy_context = remaining_arguments[0]
         if var_args.get_calling_nodes():
             # There might not be a valid calling node so check for that first.
-            _add_argument_issue(parent_context, 'type-error-too-many-arguments', lazy_context, message=m)
+            _add_argument_issue(
+                default_param_context,
+                'type-error-too-many-arguments',
+                lazy_context,
+                message=m
+            )
     return result_params
 
 

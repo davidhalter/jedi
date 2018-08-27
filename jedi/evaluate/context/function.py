@@ -192,6 +192,11 @@ class FunctionExecutionContext(TreeContext):
                 break
         return context_set
 
+    def get_default_param_context(self):
+        if isinstance(self.function_context, MethodContext):
+            return self.function_context.class_context
+        return self.parent_context
+
     def _get_yield_lazy_context(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
