@@ -79,14 +79,27 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
     @classmethod
     def from_context(cls, context, tree_node):
         def create(tree_node):
-            return cls(context.evaluator, parent_context=context, tree_node=tree_node)
+            if context.is_class():
+                return MethodContext(
+                    context.evaluator,
+                    context,
+                    parent_context=parent_context,
+                    tree_node=tree_node
+                )
+            else:
+                return cls(
+                    context.evaluator,
+                    parent_context=parent_context,
+                    tree_node=tree_node
+                )
 
         from jedi.evaluate.context import AbstractInstanceContext
 
         overloaded_funcs = list(_find_overload_functions(context, tree_node))
 
-        while context.is_class() or isinstance(context, AbstractInstanceContext):
-            context = context.parent_context
+        parent_context = context
+        while parent_context.is_class() or isinstance(parent_context, AbstractInstanceContext):
+            parent_context = parent_context.parent_context
 
         function = create(tree_node)
 
@@ -109,6 +122,12 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, u'FUNCTION_CLASS')
+
+
+class MethodContext(FunctionContext):
+    def __init__(self, evaluator, class_context, *args, **kwargs):
+        super(MethodContext, self).__init__(evaluator, *args, **kwargs)
+        self.class_context = class_context
 
 
 class FunctionExecutionContext(TreeContext):
