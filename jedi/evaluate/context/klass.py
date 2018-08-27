@@ -221,11 +221,19 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
         return ContextName(self, self.tree_node.name)
 
     def py__getitem__(self, index_context_set, contextualized_node):
-        from jedi.evaluate.context.typing import TypingClassMixin
+        from jedi.evaluate.context.typing import TypingClassMixin, AnnotatedClass
         for cls in self.py__mro__():
             if isinstance(cls, TypingClassMixin):
                 #print('ha', self,  list(self.py__mro__()))
                 # TODO get the right classes.
-                return ContextSet(self)
+                return ContextSet.from_iterable(
+                    AnnotatedClass(
+                        self.evaluator,
+                        self.parent_context,
+                        self.tree_node,
+                        index_context
+                    )
+                    for index_context in index_context_set
+                )
 
         return super(ClassContext, self).py__getitem__(index_context_set, contextualized_node)

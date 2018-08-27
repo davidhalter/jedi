@@ -140,6 +140,33 @@ class AnonymousArguments(AbstractArguments):
         return '%s()' % self.__class__.__name__
 
 
+def unpack_arglist(arglist):
+    if arglist is None:
+        return
+
+    # Allow testlist here as well for Python2's class inheritance
+    # definitions.
+    if not (arglist.type in ('arglist', 'testlist') or (
+            # in python 3.5 **arg is an argument, not arglist
+            (arglist.type == 'argument') and
+            arglist.children[0] in ('*', '**'))):
+        yield 0, arglist
+        return
+
+    iterator = iter(arglist.children)
+    for child in iterator:
+        if child == ',':
+            continue
+        elif child in ('*', '**'):
+            yield len(child.value), next(iterator)
+        elif child.type == 'argument' and \
+                child.children[0] in ('*', '**'):
+            assert len(child.children) == 2
+            yield len(child.children[0].value), child.children[1]
+        else:
+            yield 0, child
+
+
 class TreeArguments(AbstractArguments):
     def __init__(self, evaluator, context, argument_node, trailer=None):
         """
@@ -154,35 +181,9 @@ class TreeArguments(AbstractArguments):
         self._evaluator = evaluator
         self.trailer = trailer  # Can be None, e.g. in a class definition.
 
-    def _split(self):
-        if self.argument_node is None:
-            return
-
-        # Allow testlist here as well for Python2's class inheritance
-        # definitions.
-        if not (self.argument_node.type in ('arglist', 'testlist') or (
-                # in python 3.5 **arg is an argument, not arglist
-                (self.argument_node.type == 'argument') and
-                 self.argument_node.children[0] in ('*', '**'))):
-            yield 0, self.argument_node
-            return
-
-        iterator = iter(self.argument_node.children)
-        for child in iterator:
-            if child == ',':
-                continue
-            elif child in ('*', '**'):
-                yield len(child.value), next(iterator)
-            elif child.type == 'argument' and \
-                    child.children[0] in ('*', '**'):
-                assert len(child.children) == 2
-                yield len(child.children[0].value), child.children[1]
-            else:
-                yield 0, child
-
     def unpack(self, funcdef=None):
         named_args = []
-        for star_count, el in self._split():
+        for star_count, el in unpack_arglist(self.argument_node):
             if star_count == 1:
                 arrays = self.context.eval_node(el)
                 iterators = [_iterate_star_args(self.context, a, el, funcdef)
@@ -217,7 +218,7 @@ class TreeArguments(AbstractArguments):
             yield named_arg
 
     def as_tree_tuple_objects(self):
-        for star_count, argument in self._split():
+        for star_count, argument in unpack_arglist(self.argument_node):
             if argument.type == 'argument':
                 argument, default = argument.children[::2]
             else:

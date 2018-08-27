@@ -4,12 +4,14 @@ pretty bare we need to add all the Jedi customizations to make them work as
 contexts.
 """
 from jedi import debug
+from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context
 from jedi.evaluate.context.iterable import SequenceLiteralContext
-from jedi.evaluate.arguments import repack_with_argument_clinic
+from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
-    AbstractTreeName
+    AbstractTreeName, AbstractNameDefinition
+from jedi.evaluate.context import ClassContext
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol'.split()
 _TYPE_ALIAS_TYPES = 'List Dict DefaultDict Set FrozenSet Counter Deque ChainMap'.split()
@@ -247,15 +249,15 @@ class TypeVarClass(Context):
         unpacked = arguments.unpack()
 
         key, lazy_context = next(unpacked, (None, None))
-        name = self._find_name(lazy_context)
+        string_name = self._find_string_name(lazy_context)
         # The name must be given, otherwise it's useless.
-        if name is None or key is not None:
+        if string_name is None or key is not None:
             debug.warning('Found a variable without a name %s', arguments)
             return NO_CONTEXTS
 
-        return ContextSet(TypeVar(self.evaluator, name, unpacked))
+        return ContextSet(TypeVar(self.evaluator, string_name, unpacked))
 
-    def _find_name(self, lazy_context):
+    def _find_string_name(self, lazy_context):
         if lazy_context is None:
             return None
 
@@ -272,9 +274,11 @@ class TypeVarClass(Context):
 
 
 class TypeVar(Context):
-    def __init__(self, evaluator, name, unpacked_args):
+    # TODO add parent_context
+    # TODO add name
+    def __init__(self, evaluator, string_name, unpacked_args):
         super(TypeVar, self).__init__(evaluator)
-        self._name = name
+        self.string_name = string_name
 
         self._constraints_lazy_contexts = []
         self._bound_lazy_context = None
@@ -308,3 +312,91 @@ class OverloadFunction(_BaseTypingContext):
     def py__call__(self, func_context_set):
         # Just pass arguments through.
         return func_context_set
+
+
+class BoundTypeVarName(AbstractNameDefinition):
+    """
+    This type var was bound to a certain type, e.g. int.
+    """
+    def __init__(self, type_var, context_set):
+        self._type_var = type_var
+        self.parent_context = type_var.parent_context
+        self.string_name = self._type_var.string_name
+        self._context_set = context_set
+
+    def infer(self):
+        return self._context_set.execute_annotation()
+
+
+class TypeVarFilter(object):
+    """
+    A filter for all given variables in a class.
+
+        A = TypeVar('A')
+        B = TypeVar('B')
+        class Foo(Mapping[A, B]):
+            ...
+
+    In this example we would have two type vars given: A and B
+    """
+    def __init__(self, given_types, type_vars):
+        self._given_types = given_types
+        self._type_vars = type_vars
+
+    def get(self, name):
+        for i, type_var in enumerate(self._type_vars):
+            if type_var.string_name == name:
+                try:
+                    return [BoundTypeVarName(type_var, self._given_types[i])]
+                except IndexError:
+                    return [type_var.name]
+        return []
+
+    def values(self):
+        # The values are not relevant. If it's not searched exactly, the type
+        # vars are just global and should be looked up as that.
+        return []
+
+
+class AnnotatedClass(ClassContext):
+    def __init__(self, evaluator, parent_context, tree_node, index_context):
+        super(AnnotatedClass, self).__init__(evaluator, parent_context, tree_node)
+        self._index_context = index_context
+
+    def get_filters(self, search_global, *args, **kwargs):
+        for f in super(AnnotatedClass, self).get_filters(search_global, *args, **kwargs):
+            yield f
+
+        if search_global:
+            # The type vars can only be looked up if it's a global search and
+            # not a direct lookup on the class.
+            yield TypeVarFilter(self._given_types(), self.find_annotation_variables())
+
+    @evaluator_method_cache()
+    def _given_types(self):
+        return list(_iter_over_arguments(self._index_context))
+
+    @evaluator_method_cache()
+    def find_annotation_variables(self):
+        arglist = self.tree_node.get_super_arglist()
+        if arglist is None:
+            return []
+
+        for stars, node in unpack_arglist(arglist):
+            if stars:
+                continue  # These are not relevant for this search.
+
+            if node.type == 'atom_expr':
+                trailer = node.children[1]
+                if trailer.type == 'trailer' and trailer.children[0] == '[':
+                    type_var_set = self.parent_context.eval_node(trailer.children[1])
+                    for type_var in type_var_set:
+                        if isinstance(type_var, TypeVar):
+                            yield type_var
+
+    def __repr__(self):
+        return '<%s: %s[%s]>' % (
+            self.__class__.__name__,
+            self.name.string_name,
+            self._index_context
+        )
