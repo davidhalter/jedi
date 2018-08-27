@@ -168,10 +168,11 @@ def infer_param(execution_context, param):
 
         param_comment = params_comments[index]
         return _evaluate_annotation_string(
-            execution_context.get_root_context(),
+            execution_context.function_context.get_default_param_context(),
             param_comment
         )
-    module_context = execution_context.get_root_context()
+    # Annotations are like default params and resolve in the same way.
+    module_context = execution_context.function_context.get_default_param_context()
     return _evaluate_for_annotation(module_context, annotation)
 
 
@@ -207,11 +208,11 @@ def infer_return_types(function_context):
             return NO_CONTEXTS
 
         return _evaluate_annotation_string(
-            function_context.get_root_context(),
+            function_context.get_default_param_context(),
             match.group(1).strip()
         )
 
-    module_context = function_context.get_root_context()
+    module_context = function_context.get_default_param_context()
     return _evaluate_for_annotation(module_context, annotation)
 
 

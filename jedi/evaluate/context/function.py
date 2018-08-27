@@ -123,11 +123,17 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, u'FUNCTION_CLASS')
 
+    def get_default_param_context(self):
+        return self.parent_context
+
 
 class MethodContext(FunctionContext):
     def __init__(self, evaluator, class_context, *args, **kwargs):
         super(MethodContext, self).__init__(evaluator, *args, **kwargs)
         self.class_context = class_context
+
+    def get_default_param_context(self):
+        return self.class_context
 
 
 class FunctionExecutionContext(TreeContext):
@@ -191,11 +197,6 @@ class FunctionExecutionContext(TreeContext):
                 debug.dbg('Return reachable: %s', r)
                 break
         return context_set
-
-    def get_default_param_context(self):
-        if isinstance(self.function_context, MethodContext):
-            return self.function_context.class_context
-        return self.parent_context
 
     def _get_yield_lazy_context(self, yield_expr):
         if yield_expr.type == 'keyword':

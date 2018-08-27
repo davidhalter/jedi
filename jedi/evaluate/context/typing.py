@@ -304,7 +304,7 @@ class TypeVar(Context):
         return NO_CONTEXTS
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._name)
+        return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
 class OverloadFunction(_BaseTypingContext):
@@ -325,7 +325,7 @@ class BoundTypeVarName(AbstractNameDefinition):
         self._context_set = context_set
 
     def infer(self):
-        return self._context_set.execute_annotation()
+        return self._context_set
 
 
 class TypeVarFilter(object):
@@ -378,9 +378,10 @@ class AnnotatedClass(ClassContext):
 
     @evaluator_method_cache()
     def find_annotation_variables(self):
+        found = []
         arglist = self.tree_node.get_super_arglist()
         if arglist is None:
-            return
+            return []
 
         for stars, node in unpack_arglist(arglist):
             if stars:
@@ -391,8 +392,9 @@ class AnnotatedClass(ClassContext):
                 if trailer.type == 'trailer' and trailer.children[0] == '[':
                     type_var_set = self.parent_context.eval_node(trailer.children[1])
                     for type_var in type_var_set:
-                        if isinstance(type_var, TypeVar):
-                            yield type_var
+                        if isinstance(type_var, TypeVar) and type_var not in found:
+                            found.append(type_var)
+        return found
 
     def __repr__(self):
         return '<%s: %s[%s]>' % (
