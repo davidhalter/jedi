@@ -6,9 +6,10 @@ contexts.
 from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
-from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, iterator_to_context_set
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
+from jedi.evaluate.utils import to_list
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition
 from jedi.evaluate.context import ClassContext
@@ -328,6 +329,9 @@ class BoundTypeVarName(AbstractNameDefinition):
     def infer(self):
         return self._context_set
 
+    def __repr__(self):
+        return '<%s %s -> %s>' % (self.__class__.__name__, self.string_name, self._context_set)
+
 
 class TypeVarFilter(object):
     """
@@ -359,23 +363,18 @@ class TypeVarFilter(object):
         return []
 
 
-class AnnotatedClass(ClassContext):
-    def __init__(self, evaluator, parent_context, tree_node, index_context):
-        super(AnnotatedClass, self).__init__(evaluator, parent_context, tree_node)
-        self._index_context = index_context
+class _AbstractAnnotatedClass(ClassContext):
+    def get_type_var_filter(self):
+        return TypeVarFilter(self.get_given_types(), self.find_annotation_variables())
 
     def get_filters(self, search_global, *args, **kwargs):
-        for f in super(AnnotatedClass, self).get_filters(search_global, *args, **kwargs):
+        for f in super(_AbstractAnnotatedClass, self).get_filters(search_global, *args, **kwargs):
             yield f
 
         if search_global:
             # The type vars can only be looked up if it's a global search and
             # not a direct lookup on the class.
-            yield TypeVarFilter(self._given_types(), self.find_annotation_variables())
-
-    @evaluator_method_cache()
-    def _given_types(self):
-        return list(_iter_over_arguments(self._index_context))
+            yield self.get_type_var_filter()
 
     @evaluator_method_cache()
     def find_annotation_variables(self):
@@ -397,9 +396,73 @@ class AnnotatedClass(ClassContext):
                             found.append(type_var)
         return found
 
+    def get_given_types(self):
+        raise NotImplementedError
+
     def __repr__(self):
-        return '<%s: %s[%s]>' % (
+        return '<%s: %s%s>' % (
             self.__class__.__name__,
             self.name.string_name,
-            self._index_context
+            self.get_given_types(),
         )
+
+    @to_list
+    def py__bases__(self):
+        for base in super().py__bases__():
+            yield LazyAnnotatedBaseClass(self, base)
+
+
+class AnnotatedClass(_AbstractAnnotatedClass):
+    def __init__(self, evaluator, parent_context, tree_node, index_context):
+        super(AnnotatedClass, self).__init__(evaluator, parent_context, tree_node)
+        self._index_context = index_context
+
+    @evaluator_method_cache()
+    def get_given_types(self):
+        return list(_iter_over_arguments(self._index_context))
+
+
+class AnnotatedSubClass(_AbstractAnnotatedClass):
+    def __init__(self, evaluator, parent_context, tree_node, given_types):
+        super(AnnotatedSubClass, self).__init__(evaluator, parent_context, tree_node)
+        self._given_types = given_types
+
+    def get_given_types(self):
+        return self._given_types
+
+
+class LazyAnnotatedBaseClass(object):
+    def __init__(self, class_context, lazy_base_class):
+        self._class_context = class_context
+        self._lazy_base_class = lazy_base_class
+
+    @iterator_to_context_set
+    def infer(self):
+        for base in self._lazy_base_class.infer():
+            if isinstance(base, _AbstractAnnotatedClass):
+                # Here we have to recalculate the given types.
+                yield AnnotatedSubClass(
+                    base.evaluator,
+                    base.parent_context,
+                    base.tree_node,
+                    tuple(self._remap_type_vars(base)),
+                )
+            else:
+                yield base
+
+    def _remap_type_vars(self, base):
+        filter = self._class_context.get_type_var_filter()
+        for type_var_set in base.get_given_types():
+            new = ContextSet()
+            for type_var in type_var_set:
+                if isinstance(type_var, TypeVar):
+                    names = filter.get(type_var.string_name)
+                    new |= ContextSet.from_sets(
+                        name.infer() for name in names
+                    )
+                else:
+                    # Mostly will be type vars, except if in some cases
+                    # a concrete type will already be there. In that
+                    # case just add it to the context set.
+                    new |= ContextSet(type_var)
+            yield new
