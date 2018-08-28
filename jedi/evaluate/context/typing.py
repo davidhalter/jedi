@@ -12,10 +12,20 @@ from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition
+from jedi.evaluate.imports import Importer
 from jedi.evaluate.context import ClassContext
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol'.split()
-_TYPE_ALIAS_TYPES = 'List Dict DefaultDict Set FrozenSet Counter Deque ChainMap'.split()
+_TYPE_ALIAS_TYPES = {
+    'List': 'builtins.list',
+    'Dict': 'builtins.dict',
+    'Set': 'builtins.set',
+    'FrozenSet': 'builtins.frozenset',
+    'ChainMap': 'collections.ChainMap',
+    'Counter': 'collections.Counter',
+    'DefaultDict': 'collections.defaultdict',
+    'Deque': 'collections.deque',
+}
 _PROXY_TYPES = 'Optional Union Callable Type ClassVar'.split()
 
 
@@ -60,7 +70,7 @@ class TypingModuleName(NameWrapper):
         # TODO we don't want the SpecialForm bullshit
         name = self.string_name
         evaluator = self.parent_context.evaluator
-        if name in (_PROXY_CLASS_TYPES + _TYPE_ALIAS_TYPES):
+        if name in (_PROXY_CLASS_TYPES + list(_TYPE_ALIAS_TYPES)):
             yield TypingClassContext(self)
         elif name in _PROXY_TYPES:
             yield TypingContext(self)
@@ -123,9 +133,6 @@ class _WithIndexBase(_BaseTypingContext):
 class TypingContextWithIndex(_WithIndexBase):
     def execute_annotation(self):
         string_name = self._name.string_name
-        if string_name in _TYPE_ALIAS_TYPES:
-            debug.warning('type aliases are not yet implemented')
-            return NO_CONTEXTS
 
         if string_name == 'Union':
             # This is kind of a special case, because we have Unions (in Jedi
@@ -144,8 +151,25 @@ class TypingContextWithIndex(_WithIndexBase):
             # For now don't do anything here, ClassVars are always used.
             return self._context.execute_annotation()
 
-        cls = globals()[string_name]
-        return ContextSet(cls(self._name, self._index_context))
+        try:
+            alias = _TYPE_ALIAS_TYPES[string_name]
+        except KeyError:
+            cls = globals()[string_name]
+            return ContextSet(cls(self._name, self._index_context))
+        else:
+            module_name, class_name = alias.split('.')
+            cls = _find_type_alias_class(
+                self.evaluator,
+                self.get_root_context(),
+                module_name,
+                class_name
+            )
+            return AnnotatedClass(
+                cls.evaluator,
+                cls.parent_context,
+                cls.tree_node,
+                self._index_context
+            ).execute_annotation()
 
 
 class TypingContext(_BaseTypingContext):
@@ -178,6 +202,17 @@ def _iter_over_arguments(maybe_tuple_context):
             yield lazy_context.infer()
     else:
         yield ContextSet(maybe_tuple_context)
+
+
+def _find_type_alias_class(evaluator, module_context, module_name, class_name):
+    if evaluator.environment.version_info.major == 2 and module_name == 'builtins':
+        module_name = '__builtin__'
+
+    module, = Importer(evaluator, [module_name], module_context).follow()
+    classes = module.py__getattribute__(class_name)
+    # There should only be one, because it's code that we control.
+    assert len(classes) == 1, classes
+    return next(iter(classes))
 
 
 class _ContainerBase(_WithIndexBase):
