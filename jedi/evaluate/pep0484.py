@@ -172,8 +172,8 @@ def infer_param(execution_context, param):
             param_comment
         )
     # Annotations are like default params and resolve in the same way.
-    module_context = execution_context.function_context.get_default_param_context()
-    return _evaluate_for_annotation(module_context, annotation)
+    context = execution_context.function_context.get_default_param_context()
+    return _evaluate_for_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):
@@ -212,8 +212,8 @@ def infer_return_types(function_context):
             match.group(1).strip()
         )
 
-    module_context = function_context.get_default_param_context()
-    return _evaluate_for_annotation(module_context, annotation)
+    context = function_context.get_default_param_context()
+    return _evaluate_for_annotation(context, annotation)
 
 
 _typing_module = None

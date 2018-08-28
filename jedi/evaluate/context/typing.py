@@ -12,6 +12,7 @@ from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition
+from jedi.evaluate.helpers import is_string
 from jedi.evaluate.imports import Importer
 from jedi.evaluate.context import ClassContext
 
@@ -113,9 +114,10 @@ class TypingModuleFilterWrapper(FilterWrapper):
 
 
 class _WithIndexBase(_BaseTypingContext):
-    def __init__(self, name, index_context):
+    def __init__(self, name, index_context, context_of_index):
         super(_WithIndexBase, self).__init__(name)
         self._index_context = index_context
+        self._context_of_index = context_of_index
 
     def __repr__(self):
         return '<%s: %s[%s]>' % (
@@ -126,7 +128,7 @@ class _WithIndexBase(_BaseTypingContext):
 
     def _execute_annotations_for_all_indexes(self):
         return ContextSet.from_sets(
-            _iter_over_arguments(self._index_context)
+            _iter_over_arguments(self._index_context, self._context_of_index)
         ).execute_annotation()
 
 
@@ -155,7 +157,7 @@ class TypingContextWithIndex(_WithIndexBase):
             alias = _TYPE_ALIAS_TYPES[string_name]
         except KeyError:
             cls = globals()[string_name]
-            return ContextSet(cls(self._name, self._index_context))
+            return ContextSet(cls(self._name, self._index_context, self._context_of_index))
         else:
             module_name, class_name = alias.split('.')
             cls = _find_type_alias_class(
@@ -168,7 +170,8 @@ class TypingContextWithIndex(_WithIndexBase):
                 cls.evaluator,
                 cls.parent_context,
                 cls.tree_node,
-                self._index_context
+                self._index_context,
+                self._context_of_index,
             ).execute_annotation()
 
 
@@ -178,7 +181,10 @@ class TypingContext(_BaseTypingContext):
 
     def py__getitem__(self, index_context_set, contextualized_node):
         return ContextSet.from_iterable(
-            self.index_class(self._name, index_context)
+            self.index_class(
+                self._name,
+                index_context,
+                context_of_index=contextualized_node.context)
             for index_context in index_context_set
         )
 
@@ -196,12 +202,27 @@ class TypingClassContext(TypingClassMixin, TypingContext):
     index_class = TypingClassContextWithIndex
 
 
-def _iter_over_arguments(maybe_tuple_context):
-    if isinstance(maybe_tuple_context, SequenceLiteralContext):
-        for lazy_context in maybe_tuple_context.py__iter__():
-            yield lazy_context.infer()
-    else:
-        yield ContextSet(maybe_tuple_context)
+def _iter_over_arguments(maybe_tuple_context, defining_context):
+    def iterate():
+        if isinstance(maybe_tuple_context, SequenceLiteralContext):
+            for lazy_context in maybe_tuple_context.py__iter__():
+                yield lazy_context.infer()
+        else:
+            yield ContextSet(maybe_tuple_context)
+
+    def resolve_forward_references(context_set):
+        for context in context_set:
+            if is_string(context):
+                from jedi.evaluate.pep0484 import _get_forward_reference_node
+                node = _get_forward_reference_node(defining_context, context.get_safe_value())
+                if node is not None:
+                    for c in defining_context.eval_node(node):
+                        yield c
+            else:
+                yield context
+
+    for context_set in iterate():
+        yield ContextSet.from_iterable(resolve_forward_references(context_set))
 
 
 def _find_type_alias_class(evaluator, module_context, module_name, class_name):
@@ -219,7 +240,8 @@ def _find_type_alias_class(evaluator, module_context, module_name, class_name):
 
 class _ContainerBase(_WithIndexBase):
     def _get_getitem_contexts(self, index):
-        for i, contexts in enumerate(_iter_over_arguments(self._index_context)):
+        args = _iter_over_arguments(self._index_context, self._context_of_index)
+        for i, contexts in enumerate(args):
             if i == index:
                 return contexts
 
@@ -450,13 +472,14 @@ class _AbstractAnnotatedClass(ClassContext):
 
 
 class AnnotatedClass(_AbstractAnnotatedClass):
-    def __init__(self, evaluator, parent_context, tree_node, index_context):
+    def __init__(self, evaluator, parent_context, tree_node, index_context, context_of_index):
         super(AnnotatedClass, self).__init__(evaluator, parent_context, tree_node)
         self._index_context = index_context
+        self._context_of_index = context_of_index
 
     @evaluator_method_cache()
     def get_given_types(self):
-        return list(_iter_over_arguments(self._index_context))
+        return list(_iter_over_arguments(self._index_context, self._context_of_index))
 
 
 class AnnotatedSubClass(_AbstractAnnotatedClass):

@@ -231,7 +231,8 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
                         self.evaluator,
                         self.parent_context,
                         self.tree_node,
-                        index_context
+                        index_context,
+                        context_of_index=contextualized_node.context,
                     )
                     for index_context in index_context_set
                 )

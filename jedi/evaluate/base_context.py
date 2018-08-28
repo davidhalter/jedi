@@ -143,6 +143,9 @@ class ContextualizedNode(object):
     def infer(self):
         return self.context.eval_node(self.node)
 
+    def __repr__(self):
+        return '<%s: %s in %s>' % (self.__class__.__name__, self.node, self.context)
+
 
 class ContextualizedName(ContextualizedNode):
     # TODO merge with TreeNameDefinition?!
