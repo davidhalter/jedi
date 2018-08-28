@@ -490,3 +490,6 @@ class InstanceArguments(AbstractArguments):
             return self._var_args.get_executed_params(execution_context)
 
         return super(InstanceArguments, self).get_executed_params(execution_context)
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._var_args)

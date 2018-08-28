@@ -306,10 +306,12 @@ class OverloadedFunctionContext(object):
         for f in self._overloaded_functions:
             signature = parser_utils.get_call_signature(f.tree_node)
             if signature_matches(f, arguments):
-                debug.dbg("Overloading - signature %s matches", signature, color='BLUE')
+                debug.dbg("Overloading - signature %s@%s matches",
+                          signature, f.tree_node.start_pos[0], color='BLUE')
                 context_set |= f.py__call__(arguments=arguments)
             else:
-                debug.dbg("Overloading - signature %s doesn't match", signature, color='BLUE')
+                debug.dbg("Overloading - signature %s@%s doesn't match with (%s)",
+                          signature, f.tree_node.start_pos[0], arguments, color='BLUE')
         return context_set
 
     def __getattr__(self, name):
@@ -339,6 +341,12 @@ def signature_matches(function_context, arguments):
 
 
 def has_same_class(context_set1, context_set2):
+    for c1 in context_set1:
+        for c2 in context_set2:
+            if c1.name.string_name == c2.name.string_name:
+                # TODO This is wrong, it doesn't account for a lot of things.
+                return True
+
     return bool(context_set1 & context_set2)
 
 

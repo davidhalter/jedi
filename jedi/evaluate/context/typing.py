@@ -212,7 +212,9 @@ def _find_type_alias_class(evaluator, module_context, module_name, class_name):
     classes = module.py__getattribute__(class_name)
     # There should only be one, because it's code that we control.
     assert len(classes) == 1, classes
-    return next(iter(classes))
+    cls = next(iter(classes))
+    assert isinstance(cls, ClassContext), cls
+    return cls
 
 
 class _ContainerBase(_WithIndexBase):
