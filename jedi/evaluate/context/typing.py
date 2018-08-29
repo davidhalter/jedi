@@ -166,7 +166,7 @@ class TypingContextWithIndex(_WithIndexBase):
             return ContextSet(self._index_context)
         elif string_name == 'ClassVar':
             # For now don't do anything here, ClassVars are always used.
-            return self._context.execute_annotation()
+            return self._index_context.execute_annotation()
 
         cls = globals()[string_name]
         return ContextSet(cls(self._name, self._index_context, self._context_of_index))
