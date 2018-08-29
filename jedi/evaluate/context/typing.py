@@ -84,7 +84,7 @@ class TypingModuleName(NameWrapper):
         except KeyError:
             pass
         else:
-            yield TypeAlias(evaluator, name, actual)
+            yield TypeAlias(evaluator, self.tree_name, actual)
             return
 
         if name in _PROXY_CLASS_TYPES:
@@ -171,25 +171,6 @@ class TypingContextWithIndex(_WithIndexBase):
 
         cls = globals()[string_name]
         return ContextSet(cls(self._name, self._index_context, self._context_of_index))
-        try:
-           alias = _TYPE_ALIAS_TYPES[string_name]
-        except KeyError:
-            cls = globals()[string_name]
-            return ContextSet(cls(self._name, self._index_context, self._context_of_index))
-        else:
-            module_name, class_name = alias.split('.')
-            cls = _find_type_alias_class(
-                self.evaluator,
-                module_name,
-                class_name
-            )
-            return AnnotatedClass(
-                cls.evaluator,
-                cls.parent_context,
-                cls.tree_node,
-                self._index_context,
-                self._context_of_index,
-            ).execute_annotation()
 
 
 class TypingContext(_BaseTypingContext):
@@ -243,14 +224,14 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
 
 
 class TypeAlias(object):
-    def __init__(self, evaluator, origin_name, actual):
+    def __init__(self, evaluator, origin_tree_name, actual):
         self.evaluator = evaluator
-        self._origin_name = origin_name
+        self._origin_tree_name = origin_tree_name
         self._actual = actual  # e.g. builtins.list
 
     @property
     def name(self):
-        return ContextName(self, self._origin_name.tree_name)
+        return ContextName(self, self._origin_tree_name)
 
     def py__name__(self):
         return self.name.string_name
