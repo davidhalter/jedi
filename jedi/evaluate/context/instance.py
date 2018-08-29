@@ -422,6 +422,9 @@ class InstanceClassFilter(filters.AbstractFilter):
     def _convert(self, names):
         return [LazyInstanceClassName(self._instance, self._class_context, n) for n in names]
 
+    def __repr__(self):
+        return '<%s for %s>' % (self.__class__.__name__, self._class_context)
+
 
 class SelfAttributeFilter(ClassFilter):
     """

@@ -53,7 +53,14 @@ class _BaseTypingContext(Context):
 
     def get_filters(self, *args, **kwargs):
         # TODO this is obviously wrong.
-        return iter([])
+        class EmptyFilter():
+            def get(self, name):
+                return []
+
+            def values(self):
+                return []
+
+        yield EmptyFilter()
 
     @property
     def name(self):
