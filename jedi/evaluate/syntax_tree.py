@@ -503,7 +503,9 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
         analysis.add(context, 'type-error-operation', operator,
                      message % (left, right))
 
-    return ContextSet(left, right)
+    result = ContextSet(left, right)
+    debug.dbg('Used operator %s resulting in %s', result)
+    return result
 
 
 def _remove_statements(evaluator, context, stmt, name):

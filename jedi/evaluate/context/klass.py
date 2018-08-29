@@ -220,6 +220,9 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     def name(self):
         return ContextName(self, self.tree_node.name)
 
+    def py__name__(self):
+        return self.name.string_name
+
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate.context.typing import TypingClassMixin, AnnotatedClass
         for cls in self.py__mro__():

@@ -209,7 +209,7 @@ def optional(p):
     as being of that type. Jedi doesn't do anything with the extra into that
     it can be None as well
     """
-    #? int()
+    #? int() None
     p
 
 class ForwardReference:

@@ -481,11 +481,21 @@ class _AbstractAnnotatedClass(ClassContext):
             if node.type == 'atom_expr':
                 trailer = node.children[1]
                 if trailer.type == 'trailer' and trailer.children[0] == '[':
-                    type_var_set = self.parent_context.eval_node(trailer.children[1])
-                    for type_var in type_var_set:
-                        if isinstance(type_var, TypeVar) and type_var not in found:
-                            found.append(type_var)
+                    for subscript_node in self._unpack_subscriptlist(trailer.children[1]):
+                        type_var_set = self.parent_context.eval_node(subscript_node)
+                        for type_var in type_var_set:
+                            if isinstance(type_var, TypeVar) and type_var not in found:
+                                found.append(type_var)
         return found
+
+    def _unpack_subscriptlist(self, subscriptlist):
+        if subscriptlist.type == 'subscriptlist':
+            for subscript in subscriptlist.children[::2]:
+                if subscript.type != 'subscript':
+                    yield subscript
+        else:
+            if subscriptlist.type != 'subscript':
+                yield subscriptlist
 
     def get_given_types(self):
         raise NotImplementedError
