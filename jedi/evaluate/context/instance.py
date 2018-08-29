@@ -397,6 +397,9 @@ class LazyInstanceClassName(object):
     def __getattr__(self, name):
         return getattr(self._class_member_name, name)
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._class_member_name)
+
 
 class InstanceClassFilter(filters.AbstractFilter):
     """

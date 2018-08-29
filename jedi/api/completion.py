@@ -233,7 +233,7 @@ class Completion:
         )
         contexts = evaluate_call_of_leaf(evaluation_context, previous_leaf)
         completion_names = []
-        debug.dbg('trailer completion contexts: %s', contexts)
+        debug.dbg('trailer completion contexts: %s', contexts, color='MAGENTA')
         for context in contexts:
             for filter in context.get_filters(
                     search_global=False, origin_scope=user_context.tree_node):

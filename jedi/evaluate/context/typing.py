@@ -12,7 +12,7 @@ from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
-    AbstractTreeName, AbstractNameDefinition
+    AbstractTreeName, AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
 from jedi.evaluate.imports import Importer
 from jedi.evaluate.context import ClassContext
@@ -79,7 +79,15 @@ class TypingModuleName(NameWrapper):
         # TODO we don't want the SpecialForm bullshit
         name = self.string_name
         evaluator = self.parent_context.evaluator
-        if name in (_PROXY_CLASS_TYPES + list(_TYPE_ALIAS_TYPES)):
+        try:
+            actual = _TYPE_ALIAS_TYPES[name]
+        except KeyError:
+            pass
+        else:
+            yield TypeAlias(evaluator, name, actual)
+            return
+
+        if name in _PROXY_CLASS_TYPES:
             yield TypingClassContext(self)
         elif name in _PROXY_TYPES:
             yield TypingContext(self)
@@ -161,8 +169,10 @@ class TypingContextWithIndex(_WithIndexBase):
             # For now don't do anything here, ClassVars are always used.
             return self._context.execute_annotation()
 
+        cls = globals()[string_name]
+        return ContextSet(cls(self._name, self._index_context, self._context_of_index))
         try:
-            alias = _TYPE_ALIAS_TYPES[string_name]
+           alias = _TYPE_ALIAS_TYPES[string_name]
         except KeyError:
             cls = globals()[string_name]
             return ContextSet(cls(self._name, self._index_context, self._context_of_index))
@@ -170,7 +180,6 @@ class TypingContextWithIndex(_WithIndexBase):
             module_name, class_name = alias.split('.')
             cls = _find_type_alias_class(
                 self.evaluator,
-                self.get_root_context(),
                 module_name,
                 class_name
             )
@@ -233,17 +242,40 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
         yield ContextSet.from_iterable(resolve_forward_references(context_set))
 
 
-def _find_type_alias_class(evaluator, module_context, module_name, class_name):
-    if evaluator.environment.version_info.major == 2 and module_name == 'builtins':
-        module_name = '__builtin__'
+class TypeAlias(object):
+    def __init__(self, evaluator, origin_name, actual):
+        self.evaluator = evaluator
+        self._origin_name = origin_name
+        self._actual = actual  # e.g. builtins.list
 
-    module, = Importer(evaluator, [module_name], module_context).follow()
-    classes = module.py__getattribute__(class_name)
-    # There should only be one, because it's code that we control.
-    assert len(classes) == 1, classes
-    cls = next(iter(classes))
-    assert isinstance(cls, ClassContext), cls
-    return cls
+    @property
+    def name(self):
+        return ContextName(self, self._origin_name.tree_name)
+
+    def py__name__(self):
+        return self.name.string_name
+
+    def __getattr__(self, name):
+        return getattr(self._get_type_alias_class(), name)
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._actual)
+
+    @evaluator_method_cache()
+    def _get_type_alias_class(self):
+        module_name, class_name = self._actual.split('.')
+        if self.evaluator.environment.version_info.major == 2 and module_name == 'builtins':
+            module_name = '__builtin__'
+
+        module, = Importer(
+            self.evaluator, [module_name], self.evaluator.builtins_module
+        ).follow()
+        classes = module.py__getattribute__(class_name)
+        # There should only be one, because it's code that we control.
+        assert len(classes) == 1, classes
+        cls = next(iter(classes))
+        assert isinstance(cls, ClassContext), cls
+        return cls
 
 
 class _ContainerBase(_WithIndexBase):
