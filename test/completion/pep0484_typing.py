@@ -171,6 +171,21 @@ def mapping(p, q, d, dd, r, s, t):
         key
         #? Value()
         value
+    for key, value in q.items():
+        #? Key()
+        key
+        #? Value()
+        value
+    for key, value in d.items():
+        #? Key()
+        key
+        #? Value()
+        value
+    for key, value in dd.items():
+        #? Key()
+        key
+        #? Value()
+        value
     for key in r:
         #? Key()
         key
