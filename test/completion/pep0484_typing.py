@@ -308,7 +308,9 @@ def union4(x: U[int, str]):
 
 
 TYPE_VAR = typing.TypeVar('TYPE_VAR')
-
+# TODO there should at least be some results.
+#? []
+TYPE_VAR.
 
 class WithTypeVar(typing.Generic[TYPE_VAR]):
     def lala(self) -> TYPE_VAR:

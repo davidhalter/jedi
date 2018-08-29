@@ -322,7 +322,7 @@ class Protocol(_ContainerBase):
 
 class Any(_BaseTypingContext):
     def execute_annotation(self):
-        debug.warning('Used Any, which is not implemented, yet.')
+        debug.warning('Used Any - returned no results')
         return NO_CONTEXTS
 
 
@@ -389,6 +389,9 @@ class TypeVar(Context):
                     self._contra_variant_lazy_context = lazy_context
                 else:
                     debug.warning('Invalid TypeVar param name %s', key)
+
+    def get_filters(self, *args, **kwargs):
+        return iter([])
 
     def execute_annotation(self):
         if self._bound_lazy_context is not None:
