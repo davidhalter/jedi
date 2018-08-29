@@ -318,3 +318,13 @@ class WithTypeVar(typing.Generic[TYPE_VAR]):
 def maaan(p: WithTypeVar[int]):
     #? int()
     p.lala()
+
+
+if typing.TYPE_CHECKING:
+    with_type_checking = 1
+else:
+    without_type_checking = 1.0
+#? int()
+with_type_checking
+#?
+without_type_checking
