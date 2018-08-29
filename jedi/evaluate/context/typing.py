@@ -104,7 +104,6 @@ class TypingModuleName(NameWrapper):
             # checking or are in cycles. The user can then check this variable.
             yield builtin_from_name(evaluator, u'True')
         elif name == 'overload':
-            # TODO implement overload
             yield OverloadFunction(self)
         elif name == 'cast':
             # TODO implement cast
