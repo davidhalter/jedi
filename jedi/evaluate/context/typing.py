@@ -7,6 +7,7 @@ from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, iterator_to_context_set
+from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
 from jedi.evaluate.utils import to_list
@@ -267,18 +268,29 @@ class Tuple(_ContainerBase):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
         if isinstance(self._index_context, SequenceLiteralContext):
-            pass
+            entries = self._index_context.get_tree_entries()
+            if len(entries) == 2 and entries[1] == '...':
+                return True
         return False
 
     def py__simple_getitem__(self, index):
         if self._is_homogenous():
-            return self._get_getitem_contexts(0)
+            return self._get_getitem_contexts(0).execute_annotation()
         else:
             if isinstance(index, int):
                 return self._get_getitem_contexts(index).execute_annotation()
 
             debug.dbg('The getitem type on Tuple was %s' % index)
             return NO_CONTEXTS
+
+    def py__iter__(self):
+        if self._is_homogenous():
+            while True:
+                yield LazyKnownContexts(self._get_getitem_contexts(0).execute_annotation())
+        else:
+            if isinstance(self._index_context, SequenceLiteralContext):
+                for i in range(self._index_context.py__len__()):
+                    yield LazyKnownContexts(self._get_getitem_contexts(i).execute_annotation())
 
     def py__getitem__(self):
         if self._is_homogenous():

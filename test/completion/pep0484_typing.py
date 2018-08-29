@@ -116,13 +116,9 @@ def tuple(p, q, r):
     i, s, f = q
     #? int()
     i
-    ##? str()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    #?
+    #? str()
     s
-    ##? float()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    #?
+    #? float()
     f
 
 class Key:

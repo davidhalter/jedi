@@ -293,7 +293,7 @@ class SequenceLiteralContext(Sequence):
         """Here the index is an int/str. Raises IndexError/KeyError."""
         if self.array_type == u'dict':
             compiled_obj_index = compiled.create_simple_object(self.evaluator, index)
-            for key, value in self._items():
+            for key, value in self.get_tree_entries():
                 for k in self._defining_context.eval_node(key):
                     if isinstance(k, compiled.CompiledObject) \
                             and k.execute_operation(compiled_obj_index, u'==').get_safe_value():
@@ -304,7 +304,7 @@ class SequenceLiteralContext(Sequence):
             return ContextSet(self)
         else:
             with reraise_getitem_errors(TypeError, KeyError, IndexError):
-                node = self._items()[index]
+                node = self.get_tree_entries()[index]
             return self._defining_context.eval_node(node)
 
     def py__iter__(self):
@@ -315,26 +315,30 @@ class SequenceLiteralContext(Sequence):
         if self.array_type == u'dict':
             # Get keys.
             types = ContextSet()
-            for k, _ in self._items():
+            for k, _ in self.get_tree_entries():
                 types |= self._defining_context.eval_node(k)
             # We don't know which dict index comes first, therefore always
             # yield all the types.
             for _ in types:
                 yield LazyKnownContexts(types)
         else:
-            for node in self._items():
+            for node in self.get_tree_entries():
                 yield LazyTreeContext(self._defining_context, node)
 
             for addition in check_array_additions(self._defining_context, self):
                 yield addition
 
+    def py__len__(self):
+        # This function is not really used often. It's more of a try.
+        return len(self.get_tree_entries())
+
     def _dict_values(self):
         return ContextSet.from_sets(
             self._defining_context.eval_node(v)
-            for k, v in self._items()
+            for k, v in self.get_tree_entries()
         )
 
-    def _items(self):
+    def get_tree_entries(self):
         c = self.atom.children
 
         if self.atom.type in self._TUPLE_LIKE:
@@ -366,7 +370,7 @@ class SequenceLiteralContext(Sequence):
         Returns a generator of tuples like dict.items(), where the key is
         resolved (as a string) and the values are still lazy contexts.
         """
-        for key_node, value in self._items():
+        for key_node, value in self.get_tree_entries():
             for key in self._defining_context.eval_node(key_node):
                 if is_string(key):
                     yield key.get_safe_value(), LazyTreeContext(self._defining_context, value)
@@ -395,7 +399,7 @@ class DictLiteralContext(SequenceLiteralContext):
                 self.evaluator, u'tuple',
                 (LazyTreeContext(self._defining_context, key_node),
                  LazyTreeContext(self._defining_context, value_node))
-            )) for key_node, value_node in self._items()
+            )) for key_node, value_node in self.get_tree_entries()
         ]
 
         return ContextSet(FakeSequence(self.evaluator, u'list', lazy_contexts))
@@ -488,9 +492,9 @@ class MergedArray(_FakeArray):
     def py__simple_getitem__(self, index):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
 
-    def _items(self):
+    def get_tree_entries(self):
         for array in self._arrays:
-            for a in array._items():
+            for a in array.get_tree_entries():
                 yield a
 
     def __len__(self):
