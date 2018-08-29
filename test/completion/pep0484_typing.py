@@ -305,3 +305,16 @@ from typing import Union as U
 def union4(x: U[int, str]):
     #? int() str()
     x
+
+
+TYPE_VAR = typing.TypeVar('TYPE_VAR')
+
+
+class WithTypeVar(typing.Generic[TYPE_VAR]):
+    def lala(self) -> TYPE_VAR:
+        ...
+
+
+def maaan(p: WithTypeVar[int]):
+    #? int()
+    p.lala()

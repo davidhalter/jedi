@@ -479,7 +479,7 @@ class _AbstractAnnotatedClass(ClassContext):
                 continue  # These are not relevant for this search.
 
             if node.type == 'atom_expr':
-                trailer = node.children[1]
+                trailer = node.children[-1]
                 if trailer.type == 'trailer' and trailer.children[0] == '[':
                     for subscript_node in self._unpack_subscriptlist(trailer.children[1]):
                         type_var_set = self.parent_context.eval_node(subscript_node)
