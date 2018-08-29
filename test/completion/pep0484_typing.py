@@ -331,6 +331,20 @@ with_type_checking
 #?
 without_type_checking
 
-def foo() -> typing.Type[int]: pass
+def foo(a: typing.List, b: typing.Dict, c: typing.MutableMapping) -> typing.Type[int]:
+    #? ['append']
+    a.appen
+    #? list()
+    a
+    #?
+    a[0]
+    #? ['setdefault']
+    b.setd
+    #? ['setdefault']
+    c.setd
+    #? typing.MutableMapping()
+    c
+    #?
+    c['asdf']
 #? int
 foo()
