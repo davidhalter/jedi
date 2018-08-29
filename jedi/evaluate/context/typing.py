@@ -17,7 +17,7 @@ from jedi.evaluate.helpers import is_string
 from jedi.evaluate.imports import Importer
 from jedi.evaluate.context import ClassContext
 
-_PROXY_CLASS_TYPES = 'Tuple Generic Protocol'.split()
+_PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
     'List': 'builtins.list',
     'Dict': 'builtins.dict',
@@ -28,7 +28,7 @@ _TYPE_ALIAS_TYPES = {
     'DefaultDict': 'collections.defaultdict',
     'Deque': 'collections.deque',
 }
-_PROXY_TYPES = 'Optional Union Callable Type ClassVar'.split()
+_PROXY_TYPES = 'Optional Union ClassVar'.split()
 
 
 class TypingName(AbstractTreeName):
@@ -76,7 +76,6 @@ class TypingModuleName(NameWrapper):
         return ContextSet.from_iterable(self._remap())
 
     def _remap(self):
-        # TODO we don't want the SpecialForm bullshit
         name = self.string_name
         evaluator = self.parent_context.evaluator
         try:

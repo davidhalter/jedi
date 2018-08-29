@@ -330,3 +330,7 @@ else:
 with_type_checking
 #?
 without_type_checking
+
+def foo() -> typing.Type[int]: pass
+#? int
+foo()
