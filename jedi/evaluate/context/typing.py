@@ -65,7 +65,7 @@ class _BaseTypingContext(Context):
 
     @property
     def name(self):
-        return TypingName(self, self._name)
+        return ContextName(self, self._name)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._name.string_name)
@@ -96,7 +96,7 @@ class TypingModuleName(NameWrapper):
             # have any effects there (because it's never executed).
             return
         elif name == 'TypeVar':
-            yield TypeVarClass(evaluator)
+            yield TypeVarClass(self)
         elif name == 'Any':
             yield Any(self)
         elif name == 'TYPE_CHECKING':
@@ -157,7 +157,6 @@ class TypingContextWithIndex(_WithIndexBase):
         elif string_name == 'Optional':
             # Optional is basically just saying it's either None or the actual
             # type.
-            # TODO raise a warning if multiple params are given
             return self._execute_annotations_for_all_indexes() \
                 | ContextSet(builtin_from_name(self.evaluator, u'None'))
         elif string_name == 'Type':
@@ -335,18 +334,18 @@ class GenericClass(object):
         return '%s(%s)' % (self.__class__.__name__, self._class_context)
 
 
-class TypeVarClass(Context):
+class TypeVarClass(_BaseTypingContext):
     def py__call__(self, arguments):
         unpacked = arguments.unpack()
 
         key, lazy_context = next(unpacked, (None, None))
-        string_name = self._find_string_name(lazy_context)
+        var_name = self._find_string_name(lazy_context)
         # The name must be given, otherwise it's useless.
-        if string_name is None or key is not None:
+        if var_name is None or key is not None:
             debug.warning('Found a variable without a name %s', arguments)
             return NO_CONTEXTS
 
-        return ContextSet(TypeVar(self.evaluator, string_name, unpacked))
+        return ContextSet(TypeVar(self._name, var_name, unpacked))
 
     def _find_string_name(self, lazy_context):
         if lazy_context is None:
@@ -364,12 +363,10 @@ class TypeVarClass(Context):
         return None
 
 
-class TypeVar(Context):
-    # TODO add parent_context
-    # TODO add name
-    def __init__(self, evaluator, string_name, unpacked_args):
-        super(TypeVar, self).__init__(evaluator)
-        self.string_name = string_name
+class TypeVar(_BaseTypingContext):
+    def __init__(self, class_name, var_name, unpacked_args):
+        super(TypeVar, self).__init__(class_name)
+        self.var_name = var_name
 
         self._constraints_lazy_contexts = []
         self._bound_lazy_context = None
@@ -398,7 +395,7 @@ class TypeVar(Context):
         return NO_CONTEXTS
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.string_name)
+        return '<%s: %s>' % (self.__class__.__name__, self.var_name)
 
 
 class OverloadFunction(_BaseTypingContext):
@@ -415,14 +412,14 @@ class BoundTypeVarName(AbstractNameDefinition):
     def __init__(self, type_var, context_set):
         self._type_var = type_var
         self.parent_context = type_var.parent_context
-        self.string_name = self._type_var.string_name
+        self.var_name = self._type_var.var_name
         self._context_set = context_set
 
     def infer(self):
         return self._context_set
 
     def __repr__(self):
-        return '<%s %s -> %s>' % (self.__class__.__name__, self.string_name, self._context_set)
+        return '<%s %s -> %s>' % (self.__class__.__name__, self.var_name, self._context_set)
 
 
 class TypeVarFilter(object):
@@ -442,7 +439,7 @@ class TypeVarFilter(object):
 
     def get(self, name):
         for i, type_var in enumerate(self._type_vars):
-            if type_var.string_name == name:
+            if type_var.var_name == name:
                 try:
                     return [BoundTypeVarName(type_var, self._given_types[i])]
                 except IndexError:
@@ -559,7 +556,7 @@ class LazyAnnotatedBaseClass(object):
             new = ContextSet()
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar):
-                    names = filter.get(type_var.string_name)
+                    names = filter.get(type_var.var_name)
                     new |= ContextSet.from_sets(
                         name.infer() for name in names
                     )

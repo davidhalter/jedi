@@ -343,6 +343,9 @@ class BoundMethod(AbstractFunction):
 
         return self._function.get_function_execution(arguments)
 
+    def get_default_param_context(self):
+        return self._class
+
     def py__call__(self, arguments):
         if isinstance(self._function, OverloadedFunctionContext):
             return self._function.py__call__(self._get_arguments(arguments))
