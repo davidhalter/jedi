@@ -1,7 +1,8 @@
 import os
 
 from jedi.plugins import typeshed
-from jedi.evaluate.context import TreeInstance, BoundMethod, CompiledInstance
+from jedi.evaluate.context import TreeInstance, BoundMethod, \
+    CompiledInstance, ClassContext
 from parso.utils import PythonVersionInfo
 from jedi.evaluate.filters import TreeNameDefinition
 
@@ -47,7 +48,10 @@ def test_function(Script):
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, typeshed.StubClassContext), context
+    assert isinstance(context.class_context, ClassContext), context
+
+    def_, = Script('import threading; threading.Thread').goto_definitions()
+    assert isinstance(def_._name._context, typeshed.StubClassContext), def_
 
 
 def test_keywords_variable(Script):
