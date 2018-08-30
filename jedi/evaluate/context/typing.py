@@ -65,7 +65,7 @@ class _BaseTypingContext(Context):
 
     @property
     def name(self):
-        return ContextName(self, self._name)
+        return ContextName(self, self._name.tree_name)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._name.string_name)
