@@ -54,8 +54,8 @@ def test_keywords_variable(Script):
     code = 'import keyword; keyword.kwlist'
     def_, = Script(code).goto_definitions()
     assert def_.name == 'Sequence'
-    # We want this to show towards the actual definition
-    assert typeshed._TYPESHED_PATH not in def_.module_path
+    # This points towards the typeshed implementation
+    assert typeshed._TYPESHED_PATH in def_.module_path
 
 
 def test_class(Script):
@@ -91,9 +91,16 @@ def test_method(Script):
 
 
 def test_sys_exc_info(Script):
-    code = 'import sys; sys.exc_info()[1]'
-    def_, = Script(code).goto_definitions()
+    code = 'import sys; sys.exc_info()'
+    def_, none = Script(code + '[1]').goto_definitions()
+    # It's an optional.
     assert def_.name == 'BaseException'
+    assert def_.type == 'instance'
+    assert none.name == 'NoneType'
+
+    def_, none = Script(code + '[0]').goto_definitions()
+    assert def_.name == 'BaseException'
+    assert def_.type == 'class'
 
 
 def test_sys_getwindowsversion(Script, environment):
