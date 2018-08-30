@@ -675,17 +675,20 @@ class _ArrayInstance(object):
         return self.py__iter__()
 
 
-class Slice(Context):
+class Slice(object):
     def __init__(self, context, start, stop, step):
-        super(Slice, self).__init__(
-            context.evaluator,
-            parent_context=context.evaluator.builtins_module
-        )
         self._context = context
-        # all of them are either a Precedence or None.
+        self._slice_object = None
+        # All of them are either a Precedence or None.
         self._start = start
         self._stop = stop
         self._step = step
+
+    def __getattr__(self, name):
+        if self._slice_object is None:
+            context = compiled.builtin_from_name(self._context.evaluator, 'slice')
+            self._slice_object, = execute_evaluated(context)
+        return getattr(self._slice_object, name)
 
     @property
     def obj(self):
