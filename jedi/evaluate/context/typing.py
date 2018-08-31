@@ -7,7 +7,7 @@ from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, iterator_to_context_set
-from jedi.evaluate.lazy_context import LazyKnownContexts
+from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
 from jedi.evaluate.utils import to_list
@@ -186,7 +186,10 @@ class TypingContext(_BaseTypingContext):
 
 class TypingClassMixin(object):
     def py__mro__(self):
-        return (self,)
+        return [self, builtin_from_name(self.evaluator, u'object')]
+
+    def py__bases__(self,):
+        return [LazyKnownContext(builtin_from_name(self.evaluator, u'object'))]
 
 
 class TypingClassContextWithIndex(TypingClassMixin, TypingContextWithIndex):
