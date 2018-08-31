@@ -154,7 +154,11 @@ def _get_virtual_env_from_var():
     """
     var = os.environ.get('VIRTUAL_ENV')
     if var:
-        if var == sys.prefix:
+        # Under macOS in some cases - notably when using Pipenv - the
+        # sys.prefix of the virtualenv is /path/to/env/bin/.. instead of
+        # /path/to/env so we need to fully resolve the paths in order to
+        # compare them.
+        if os.path.realpath(var) == os.path.realpath(sys.prefix):
             return _try_get_same_env()
 
         try:
