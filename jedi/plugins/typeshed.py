@@ -122,12 +122,15 @@ class TypeshedPlugin(BasePlugin):
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
-            context_set = callback(
-                evaluator,
-                import_names,
-                parent_module_context,
-                sys_path
-            )
+            if import_names == ('os', 'path'):
+                context_set = parent_module_context.py__getattribute__('path')
+            else:
+                context_set = callback(
+                    evaluator,
+                    import_names,
+                    parent_module_context,
+                    sys_path
+                )
             # Don't use CompiledObjects, they are just annoying and don't
             # really help with anything. Just use the stub files instead.
             context_set = ContextSet.from_iterable(
