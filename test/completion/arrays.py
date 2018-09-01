@@ -45,7 +45,7 @@ b[int():]
 #? list()
 b[:]
 
-#?
+#? int()
 b[:, 1]
 
 class _StrangeSlice():
