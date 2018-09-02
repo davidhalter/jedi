@@ -37,16 +37,14 @@ class ModuleCache(object):
         self._path_cache = {}
         self._name_cache = {}
 
-    def add(self, module, name):
-        path = module.py__file__()
-        self._path_cache[path] = module
-        self._name_cache[name] = module
+    def add(self, string_names, context_set):
+        #path = module.py__file__()
+        #self._path_cache[path] = context_set
+        if string_names is not None:
+            self._name_cache[string_names] = context_set
 
-    def iterate_modules_with_names(self):
-        return self._name_cache.items()
-
-    def get(self, name):
-        return self._name_cache[name]
+    def get(self, string_names):
+        return self._name_cache[string_names]
 
     def get_from_path(self, path):
         return self._path_cache[path]
@@ -291,7 +289,6 @@ class Importer(object):
             try:
                 context_set = ContextSet.from_sets([
                     self._evaluator.import_module(
-                        self._evaluator,
                         import_names[:i+1],
                         parent_module_context,
                         self.sys_path_with_modifications(),
@@ -410,11 +407,6 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
         return ContextSet(module)
 
     module_name = '.'.join(import_names)
-    try:
-        return ContextSet(evaluator.module_cache.get(module_name))
-    except KeyError:
-        pass
-
     if parent_module_context is None:
         debug.dbg('global search_module %s', import_names[-1])
         # Override the sys.path. It works only good that way.
@@ -468,10 +460,6 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
     else:
         dotted_name = '.'.join(import_names)
     try:
-        return evaluator.module_cache.get(dotted_name)
-    except KeyError:
-        pass
-    try:
         return evaluator.module_cache.get_from_path(path)
     except KeyError:
         pass
@@ -497,6 +485,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
             module = ModuleContext(
                 evaluator, module_node,
                 path=path,
+                string_names=import_names,
                 code_lines=get_cached_code_lines(evaluator.grammar, path),
             )
         else:
@@ -506,21 +495,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
                 # The file might raise an ImportError e.g. and therefore not be
                 # importable.
                 raise JediImportError(import_names)
-
-    if module is not None and dotted_name is not None:
-        add_module_to_cache(evaluator, dotted_name, module, safe=safe_module_name)
-
     return module
-
-
-def add_module_to_cache(evaluator, module_name, module, safe=False):
-    if not safe and '.' not in module_name:
-        # We cannot add paths with dots, because that would collide with
-        # the sepatator dots for nested packages. Therefore we return
-        # `__main__` in ModuleWrapper.py__name__(), which is similar to
-        # Python behavior.
-        return
-    evaluator.module_cache.add(module, module_name)
 
 
 def get_modules_containing_name(evaluator, modules, name):
@@ -553,6 +528,7 @@ def get_modules_containing_name(evaluator, modules, name):
                     sys_path=e_sys_path,
                     import_names=import_names,
                 )
+                evaluator.module_cache.add(import_names, ContextSet(module))
                 return module
 
     # skip non python modules

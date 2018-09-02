@@ -27,6 +27,7 @@ class MixedModuleContext(Context):
         self.evaluator = evaluator
         self._namespaces = namespaces
 
+        raise NotImplementedError("module names")
         self._namespace_objects = [NamespaceObject(n) for n in namespaces]
         self._module_context = ModuleContext(
             evaluator, tree_module,

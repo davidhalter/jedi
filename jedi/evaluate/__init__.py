@@ -62,6 +62,7 @@ I need to mention now that lazy evaluation is really good because it
 only *evaluates* what needs to be *evaluated*. All the statements and modules
 that are not used are just being ignored.
 """
+from functools import partial
 
 from parso.python import tree
 import parso
@@ -125,10 +126,23 @@ class Evaluator(object):
         from jedi.plugins import plugin_manager
         plugin_callbacks = plugin_manager.get_callbacks(self)
         self.execute = plugin_callbacks.decorate('execute', callback=_execute)
-        self.import_module = plugin_callbacks.decorate(
-            'import_module',
-            callback=imports.import_module
+        self._import_module = partial(
+            plugin_callbacks.decorate(
+                'import_module',
+                callback=imports.import_module
+            ),
+            self,
         )
+
+    def import_module(self, import_names, parent_module_context, sys_path):
+        try:
+            return ContextSet(self.module_cache.get(import_names))
+        except KeyError:
+            pass
+
+        context_set = self._import_module(import_names, parent_module_context, sys_path)
+        self.module_cache.add(context_set, import_names)
+        return context_set
 
     @property
     @evaluator_function_cache()

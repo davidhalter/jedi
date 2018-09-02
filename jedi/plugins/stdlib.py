@@ -289,10 +289,9 @@ def collections_namedtuple(evaluator, obj, arguments):
     # Parse source code
     module = evaluator.grammar.parse(code)
     generated_class = next(module.iter_classdefs())
-    parent_context = ModuleContext(
-        evaluator, module, None,
-        code_lines=parso.split_lines(code, keepends=True),
-    )
+    parent_context = None
+    raise NotImplementedError('TODO implement parent_context')
+
     return ContextSet(ClassContext(evaluator, parent_context, generated_class))
 
 

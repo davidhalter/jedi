@@ -89,8 +89,9 @@ def _merge_modules(context_set, stub_context):
                 context.evaluator,
                 stub_context,
                 context.tree_node,
-                context._path,
-                context.code_lines
+                path=context._path,
+                string_names=context._string_names,
+                code_lines=context.code_lines
             )
         else:
             # TODO do we want this?
@@ -160,7 +161,10 @@ class TypeshedPlugin(BasePlugin):
                             module_cls = StubOnlyModuleContext
                         # TODO use code_lines
                         stub_module_context = module_cls(
-                            context_set, evaluator, stub_module_node, path, code_lines=[]
+                            context_set, evaluator, stub_module_node,
+                            path=path,
+                            string_names=import_names,
+                            code_lines=[],
                         )
                         modules = _merge_modules(context_set, stub_module_context)
                         return ContextSet.from_iterable(modules)

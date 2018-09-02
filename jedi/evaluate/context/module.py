@@ -42,13 +42,14 @@ class ModuleContext(TreeContext):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node, path, code_lines):
+    def __init__(self, evaluator, module_node, path, string_names, code_lines):
         super(ModuleContext, self).__init__(
             evaluator,
             parent_context=None,
             tree_node=module_node
         )
         self._path = path
+        self._string_names = string_names
         self.code_lines = code_lines
 
     def get_filters(self, search_global, until_position=None, origin_scope=None):
@@ -120,11 +121,7 @@ class ModuleContext(TreeContext):
         return None
 
     def py__name__(self):
-        for name, module in self.evaluator.module_cache.iterate_modules_with_names():
-            if module == self and name != '':
-                return name
-
-        return '__main__'
+        return '.'.join(self._string_names)
 
     def py__file__(self):
         """

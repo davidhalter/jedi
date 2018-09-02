@@ -203,6 +203,7 @@ def _create(evaluator, access_handle, parent_context, *args):
     if parent_context.tree_node.get_root_node() == module_node:
         module_context = parent_context.get_root_context()
     else:
+        raise NotImplementedError('module misses string_names arg')
         module_context = ModuleContext(
             evaluator, module_node,
             path=path,

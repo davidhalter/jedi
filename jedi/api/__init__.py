@@ -36,6 +36,7 @@ from jedi.evaluate.sys_path import dotted_path_in_sys_path
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
+from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -143,17 +144,18 @@ class Script(object):
         debug.reset_time()
 
     def _get_module(self):
-        name = '__main__'
+        names = ('__main__',)
         if self.path is not None:
             import_names = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
             if import_names is not None:
-                name = '.'.join(import_names)
+                names = import_names
 
         module = ModuleContext(
             self._evaluator, self._module_node, self.path,
-            code_lines=self._code_lines
+            string_names=names,
+            code_lines=self._code_lines,
         )
-        imports.add_module_to_cache(self._evaluator, name, module)
+        self._evaluator.module_cache.add(names, ContextSet(module))
         return module
 
     def __repr__(self):

@@ -151,6 +151,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
         return
 
     from jedi.evaluate.context import ModuleContext
+    raise NotImplementedError("No module string_names, yet")
     module = ModuleContext(
         evaluator, module_node, buildout_script_path,
         code_lines=get_cached_code_lines(evaluator.grammar, buildout_script_path),
