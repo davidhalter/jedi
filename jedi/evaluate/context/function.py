@@ -103,7 +103,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
 
         function = create(tree_node)
 
-        if len(overloaded_funcs) > 1:
+        if overloaded_funcs:
             return OverloadedFunctionContext(
                 function,
                 ContextSet.from_iterable(create(f) for f in overloaded_funcs)
@@ -365,6 +365,9 @@ def _find_overload_functions(context, tree_node):
                     return True
         return False
 
+    if tree_node.type == 'lambdef':
+        return
+
     if _is_overload_decorated(tree_node):
         yield tree_node
 
@@ -381,4 +384,5 @@ def _find_overload_functions(context, tree_node):
             if funcdef.type == 'funcdef' and _is_overload_decorated(funcdef):
                 yield funcdef
 
+        # TODO this is probably not good enough? Why are we always breaking?
         break  # By default break

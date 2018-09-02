@@ -136,12 +136,12 @@ class Evaluator(object):
 
     def import_module(self, import_names, parent_module_context, sys_path):
         try:
-            return ContextSet(self.module_cache.get(import_names))
+            return self.module_cache.get(import_names)
         except KeyError:
             pass
 
         context_set = self._import_module(import_names, parent_module_context, sys_path)
-        self.module_cache.add(context_set, import_names)
+        self.module_cache.add(import_names, context_set)
         return context_set
 
     @property

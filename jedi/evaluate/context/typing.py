@@ -510,7 +510,7 @@ class _AbstractAnnotatedClass(ClassContext):
 
     @to_list
     def py__bases__(self):
-        for base in super().py__bases__():
+        for base in super(_AbstractAnnotatedClass, self).py__bases__():
             yield LazyAnnotatedBaseClass(self, base)
 
 
