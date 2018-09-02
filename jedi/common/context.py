@@ -31,7 +31,6 @@ class BaseContextSet(object):
         Used to work with an iterable of set.
         """
         aggregated = set()
-        sets = list(sets)
         for set_ in sets:
             if isinstance(set_, BaseContextSet):
                 aggregated |= set_._set

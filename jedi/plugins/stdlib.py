@@ -344,6 +344,15 @@ def _return_first_param(evaluator, firsts):
     return firsts
 
 
+@argument_clinic('seq')
+def _random_choice(evaluator, sequences):
+    return ContextSet.from_sets(
+        lazy_context.infer()
+        for sequence in sequences
+        for lazy_context in sequence.py__iter__()
+    )
+
+
 _implemented = {
     'builtins': {
         'getattr': builtins_getattr,
@@ -365,6 +374,13 @@ _implemented = {
     },
     'functools': {
         'partial': functools_partial,
+        'wraps': _return_first_param,
+    },
+    '_weakref': {
+        'proxy': _return_first_param,
+    },
+    'random': {
+        'choice': _random_choice,
     },
     'abc': {
         # Not sure if this is necessary, but it's used a lot in typeshed and
