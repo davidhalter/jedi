@@ -14,14 +14,16 @@ import parso
 from jedi._compatibility import force_unicode
 from jedi.plugins.base import BasePlugin
 from jedi import debug
-from jedi.evaluate.arguments import ValuesArguments, repack_with_argument_clinic
+from jedi.evaluate.arguments import ValuesArguments, \
+    repack_with_argument_clinic, AbstractArguments
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import \
     AbstractInstanceContext, CompiledInstance, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet
-from jedi.evaluate.context import ClassContext, ModuleContext, FunctionExecutionContext
+from jedi.evaluate.context import ClassContext, ModuleContext, \
+    FunctionExecutionContext
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.syntax_tree import is_string
@@ -295,6 +297,48 @@ def collections_namedtuple(evaluator, obj, arguments):
     return ContextSet(ClassContext(evaluator, parent_context, generated_class))
 
 
+class PartialObject(object):
+    def __init__(self, actual_context, arguments):
+        self._actual_context = actual_context
+        self._arguments = arguments
+
+    def __getattr__(self, name):
+        return getattr(self._actual_context, name)
+
+    def py__call__(self, arguments):
+        key, lazy_context = next(self._arguments.unpack(), (None, None))
+        if key is not None or lazy_context is None:
+            debug.warning("Partial should have a proper function %s", self._arguments)
+            return NO_CONTEXTS
+
+        return lazy_context.infer().execute(
+            MergedPartialArguments(self._arguments, arguments)
+        )
+
+
+class MergedPartialArguments(AbstractArguments):
+    def __init__(self, partial_arguments, call_arguments):
+        self._partial_arguments = partial_arguments
+        self._call_arguments = call_arguments
+
+    def unpack(self, funcdef=None):
+        unpacked = self._partial_arguments.unpack(funcdef)
+        # Ignore this one, it's the function. It was checked before that it's
+        # there.
+        next(unpacked)
+        for key_lazy_context in unpacked:
+            yield key_lazy_context
+        for key_lazy_context in self._call_arguments.unpack(funcdef):
+            yield key_lazy_context
+
+
+def functools_partial(evaluator, obj, arguments):
+    return ContextSet.from_iterable(
+        PartialObject(instance, arguments)
+        for instance in obj.py__call__(arguments)
+    )
+
+
 @argument_clinic('first, /')
 def _return_first_param(evaluator, firsts):
     return firsts
@@ -318,6 +362,9 @@ _implemented = {
     },
     'collections': {
         'namedtuple': collections_namedtuple,
+    },
+    'functools': {
+        'partial': functools_partial,
     },
     'abc': {
         # Not sure if this is necessary, but it's used a lot in typeshed and
