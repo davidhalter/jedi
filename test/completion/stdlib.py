@@ -101,7 +101,7 @@ for a in re.finditer('a', 'a'):
     #? int()
     a.start()
 
-#? str()
+#? str() bytes()
 re.sub('a', 'a')
 
 # -----------------
