@@ -391,11 +391,18 @@ class TypeVar(_BaseTypingContext):
     def get_filters(self, *args, **kwargs):
         return iter([])
 
-    def execute_annotation(self):
+    def get_classes(self):
         if self._bound_lazy_context is not None:
-            return self._bound_lazy_context.infer().execute_annotation()
+            return self._bound_lazy_context.infer()
+        if self._constraints_lazy_contexts:
+            return ContextSet.from_sets(
+                l.infer() for l in self._constraints_lazy_contexts
+            )
         debug.warning('Tried to infer a TypeVar without a given type')
         return NO_CONTEXTS
+
+    def execute_annotation(self):
+        return self.get_classes().execute_annotation()
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.var_name)

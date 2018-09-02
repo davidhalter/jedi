@@ -16,6 +16,7 @@ from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
     ContextSet, TreeContext
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
+from jedi.evaluate.context.typing import TypeVar
 from jedi.evaluate.context import iterable
 from jedi.evaluate.context import asynchronous
 from jedi import parser_utils
@@ -335,9 +336,19 @@ def signature_matches(function_context, arguments):
                 function_context.parent_context,
                 param_node.annotation
             )
-            return has_same_class(argument.infer().py__class__(), annotation_result)
+            return has_same_class(
+                argument.infer().py__class__(),
+                _type_vars_to_classes(annotation_result),
+            )
 
     return True
+
+
+def _type_vars_to_classes(context_set):
+    return ContextSet.from_sets(
+        context.get_classes() if isinstance(context, TypeVar) else set([context])
+        for context in context_set
+    )
 
 
 def has_same_class(context_set1, context_set2):
