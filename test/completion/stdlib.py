@@ -249,5 +249,5 @@ with contextlib.closing('asd') as string:
 import shlex
 qsplit = shlex.split("foo, ferwerwerw werw werw e")
 for part in qsplit:
-    #? str() None
+    #? str()
     part
