@@ -203,16 +203,17 @@ def _create(evaluator, access_handle, parent_context, *args):
     if parent_context.tree_node.get_root_node() == module_node:
         module_context = parent_context.get_root_context()
     else:
-        raise NotImplementedError('module misses string_names arg')
+        # TODO this __name__ is probably wrong.
+        name = compiled_object.get_root_context().py__name__()
+        string_names = tuple(name.split('.'))
         module_context = ModuleContext(
             evaluator, module_node,
             path=path,
+            string_names=string_names,
             code_lines=code_lines,
         )
-        # TODO this __name__ is probably wrong.
-        name = compiled_object.get_root_context().py__name__()
         if name is not None:
-            imports.add_module_to_cache(evaluator, name, module_context)
+            evaluator.module_cache.add(string_names, ContextSet(module_context))
 
     tree_context = module_context.create_context(
         tree_node,
