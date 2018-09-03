@@ -15,13 +15,13 @@ from jedi._compatibility import force_unicode
 from jedi.plugins.base import BasePlugin
 from jedi import debug
 from jedi.evaluate.arguments import ValuesArguments, \
-    repack_with_argument_clinic, AbstractArguments
+    repack_with_argument_clinic, AbstractArguments, TreeArguments
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import \
     AbstractInstanceContext, CompiledInstance, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
-    NO_CONTEXTS, ContextSet
+    NO_CONTEXTS, ContextSet, ContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
 from jedi.evaluate.context import iterable
@@ -49,9 +49,6 @@ _NAMEDTUPLE_INIT = """
 class StdlibPlugin(BasePlugin):
     def execute(self, callback):
         def wrapper(context, arguments):
-            if isinstance(context, BoundMethod):
-                return callback(context, arguments=arguments)
-
             debug.dbg('execute: %s %s', context, arguments)
             try:
                 obj_name = context.name.string_name
@@ -64,6 +61,16 @@ class StdlibPlugin(BasePlugin):
                     module_name = context.parent_context.name.string_name
                 else:
                     module_name = ''
+
+                if isinstance(context, BoundMethod):
+                    if module_name == 'builtins' and context.py__name__() == '__get__':
+                        if context.class_context.py__name__() == 'property':
+                            return builtins_property(
+                                self._evaluator,
+                                context,
+                                arguments=arguments
+                            )
+                    return callback(context, arguments=arguments)
 
                 # for now we just support builtin functions.
                 try:
@@ -110,6 +117,21 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
 
         return wrapper
     return f
+
+
+@argument_clinic('obj, type, /', want_obj=True, want_arguments=True)
+def builtins_property(evaluator, objects, types, obj, arguments):
+    print(obj)
+    print(obj.instance.var_args)
+    property_args = obj.instance.var_args.unpack()
+    key, lazy_context = next(property_args, (None, None))
+    if key is not None or lazy_context is None:
+        debug.warning('property expected a first param, not %s', arguments)
+        return NO_CONTEXTS
+    print('lazy_context', lazy_context, lazy_context.infer())
+    print()
+    print(objects, type)
+    return NO_CONTEXTS
 
 
 @argument_clinic('iterator[, default], /')
@@ -291,8 +313,12 @@ def collections_namedtuple(evaluator, obj, arguments):
     # Parse source code
     module = evaluator.grammar.parse(code)
     generated_class = next(module.iter_classdefs())
-    parent_context = None
-    raise NotImplementedError('TODO implement parent_context')
+    parent_context = ModuleContext(
+        evaluator, module,
+        path=None,
+        string_names=None,
+        code_lines=parso.split_lines(code, keepends=True),
+    )
 
     return ContextSet(ClassContext(evaluator, parent_context, generated_class))
 
@@ -353,6 +379,24 @@ def _random_choice(evaluator, sequences):
     )
 
 
+class ItemGetterCallable(object):
+    def __init__(self, args_context_set):
+        # TODO this context is totally incomplete and will raise exceptions.
+        self._args_context_set = args_context_set
+
+    @repack_with_argument_clinic('item, /')
+    def py__call__(self, item):
+        return self._args_context_set.py__getitem__(item)
+
+
+@argument_clinic('*args, /', want_obj=True, want_arguments=True)
+def _operator_itemgetter(evaluator, args_context_set, obj, arguments):
+    final = obj.py__call__(arguments)
+    print(final)
+    return final
+    return ItemGetterCallable(args_context_set)
+
+
 _implemented = {
     'builtins': {
         'getattr': builtins_getattr,
@@ -381,6 +425,9 @@ _implemented = {
     },
     'random': {
         'choice': _random_choice,
+    },
+    'operator': {
+        'itemgetter': _operator_itemgetter,
     },
     'abc': {
         # Not sure if this is necessary, but it's used a lot in typeshed and

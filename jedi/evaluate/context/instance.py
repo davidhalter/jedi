@@ -318,8 +318,8 @@ class BoundMethod(AbstractFunction):
             function.parent_context,
             function.tree_node,
         )
-        self._instance = instance
-        self._class = klass
+        self.instance = instance
+        self.class_context = klass
         self._function = function
 
     def py__class__(self):
@@ -327,9 +327,9 @@ class BoundMethod(AbstractFunction):
 
     def _get_arguments(self, arguments):
         if arguments is None:
-            arguments = AnonymousInstanceArguments(self._instance)
+            arguments = AnonymousInstanceArguments(self.instance)
 
-        return InstanceArguments(self._instance, arguments)
+        return InstanceArguments(self.instance, arguments)
 
     def get_function_execution(self, arguments=None):
         arguments = self._get_arguments(arguments)
@@ -344,7 +344,7 @@ class BoundMethod(AbstractFunction):
         return self._function.get_function_execution(arguments)
 
     def get_default_param_context(self):
-        return self._class
+        return self.class_context
 
     def py__call__(self, arguments):
         if isinstance(self._function, OverloadedFunctionContext):

@@ -4,12 +4,12 @@ from parso.python import tree
 
 from jedi._compatibility import zip_longest
 from jedi import debug
-from jedi.evaluate.utils import to_list
+from jedi.evaluate.utils import to_list, PushBackIterator
 from jedi.evaluate import analysis
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext, get_merged_lazy_context
 from jedi.evaluate.filters import ParamName
-from jedi.evaluate.base_context import NO_CONTEXTS
+from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
 from jedi.evaluate.context import iterable
 from jedi.evaluate.param import get_executed_params, ExecutedParam
 
@@ -63,9 +63,23 @@ def repack_with_argument_clinic(string, keep_arguments_param=False):
 
 def _iterate_argument_clinic(arguments, parameters):
     """Uses a list with argument clinic information (see PEP 436)."""
-    iterator = arguments.unpack()
-    for i, (name, optional, allow_kwargs) in enumerate(parameters):
+    iterator = PushBackIterator(arguments.unpack())
+    for i, (name, optional, allow_kwargs, stars) in enumerate(parameters):
+        if stars == 1:
+            lazy_contexts = []
+            for key, argument in iterator:
+                if key is not None:
+                    iterator.push_back((key, argument))
+                    break
+
+                lazy_contexts.append(argument)
+            yield ContextSet(iterable.FakeSequence(evaluator, u'tuple', lazy_contexts))
+            lazy_contexts
+            continue
+        elif stars == 2:
+            raise NotImplementedError()
         key, argument = next(iterator, (None, None))
+        print(stars)
         if key is not None:
             debug.warning('Keyword arguments in argument clinic are currently not supported.')
             raise ValueError
@@ -93,14 +107,18 @@ def _parse_argument_clinic(string):
         # at the end of the arguments. This is therefore not a proper argument
         # clinic implementation. `range()` for exmple allows an optional start
         # value at the beginning.
-        match = re.match('(?:(?:(\[),? ?|, ?|)(\w+)|, ?/)\]*', string)
+        match = re.match('(?:(?:(\[),? ?|, ?|)(\**\w+)|, ?/)\]*', string)
         string = string[len(match.group(0)):]
         if not match.group(2):  # A slash -> allow named arguments
             allow_kwargs = True
             continue
         optional = optional or bool(match.group(1))
         word = match.group(2)
-        yield (word, optional, allow_kwargs)
+        stars = word.count('*')
+        word = word[stars:]
+        yield (word, optional, allow_kwargs, stars)
+        if stars:
+            allow_kwargs = True
 
 
 class AbstractArguments(object):

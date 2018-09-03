@@ -122,6 +122,17 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     )
 
 
+class ContextWrapper(object):
+    def __init__(self, wrapped_context):
+        self._wrapped_context = wrapped_context
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped_context, name)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self._wrapped_context)
+
+
 class TreeContext(Context):
     def __init__(self, evaluator, parent_context, tree_node):
         super(TreeContext, self).__init__(evaluator, parent_context)

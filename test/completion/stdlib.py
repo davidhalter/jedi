@@ -242,6 +242,18 @@ with contextlib.closing('asd') as string:
     string
 
 # -----------------
+# operator
+# -----------------
+
+import operator
+
+f = operator.itemgetter([1])
+#? float()
+f([1.0])
+#? str()
+f([1, ''])
+
+# -----------------
 # shlex
 # -----------------
 
