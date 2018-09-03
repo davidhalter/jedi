@@ -247,11 +247,24 @@ with contextlib.closing('asd') as string:
 
 import operator
 
-f = operator.itemgetter([1])
+f = operator.itemgetter(1)
 #? float()
 f([1.0])
 #? str()
 f([1, ''])
+
+g = operator.itemgetter(1, 2)
+x1, x2 = g([1, 1.0, ''])
+#? float()
+x1
+#? float()
+x2
+
+x1, x2 = g([1, ''])
+#? str()
+x1
+#? int() str()
+x2
 
 # -----------------
 # shlex

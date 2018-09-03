@@ -194,7 +194,7 @@ class ContextualizedName(ContextualizedNode):
         return indexes
 
 
-def _get_item(context, index_contexts, contextualized_node):
+def _getitem(context, index_contexts, contextualized_node):
     from jedi.evaluate.compiled import CompiledObject
     from jedi.evaluate.context.iterable import Slice
 
@@ -254,7 +254,7 @@ class ContextSet(BaseContextSet):
         return ContextSet.from_sets(execute_evaluated(c, *args, **kwargs) for c in self._set)
 
     def get_item(self, *args, **kwargs):
-        return ContextSet.from_sets(_get_item(c, *args, **kwargs) for c in self._set)
+        return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
 
 
 NO_CONTEXTS = ContextSet()

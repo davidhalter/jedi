@@ -83,7 +83,6 @@ def _iterate_argument_clinic(evaluator, arguments, parameters):
         elif stars == 2:
             raise NotImplementedError()
         key, argument = next(iterator, (None, None))
-        print(stars)
         if key is not None:
             debug.warning('Keyword arguments in argument clinic are currently not supported.')
             raise ValueError
