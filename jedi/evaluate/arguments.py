@@ -45,23 +45,27 @@ def repack_with_argument_clinic(string, keep_arguments_param=False):
     clinic_args = list(_parse_argument_clinic(string))
 
     def decorator(func):
-        def wrapper(*args, **kwargs):
+        def wrapper(context, *args, **kwargs):
             if keep_arguments_param:
                 arguments = kwargs['arguments']
             else:
                 arguments = kwargs.pop('arguments')
             try:
-                args += tuple(_iterate_argument_clinic(arguments, clinic_args))
+                args += tuple(_iterate_argument_clinic(
+                    context.evaluator,
+                    arguments,
+                    clinic_args
+                ))
             except ValueError:
                 return NO_CONTEXTS
             else:
-                return func(*args, **kwargs)
+                return func(context, *args, **kwargs)
 
         return wrapper
     return decorator
 
 
-def _iterate_argument_clinic(arguments, parameters):
+def _iterate_argument_clinic(evaluator, arguments, parameters):
     """Uses a list with argument clinic information (see PEP 436)."""
     iterator = PushBackIterator(arguments.unpack())
     for i, (name, optional, allow_kwargs, stars) in enumerate(parameters):

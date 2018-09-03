@@ -66,7 +66,6 @@ class StdlibPlugin(BasePlugin):
                     if module_name == 'builtins' and context.py__name__() == '__get__':
                         if context.class_context.py__name__() == 'property':
                             return builtins_property(
-                                self._evaluator,
                                 context,
                                 arguments=arguments
                             )
@@ -78,7 +77,7 @@ class StdlibPlugin(BasePlugin):
                 except KeyError:
                     pass
                 else:
-                    return func(self._evaluator, context, arguments=arguments)
+                    return func(context, arguments=arguments)
             return callback(context, arguments=arguments)
 
         return wrapper
@@ -93,14 +92,15 @@ def _follow_param(evaluator, arguments, index):
         return lazy_context.infer()
 
 
-def argument_clinic(string, want_obj=False, want_context=False, want_arguments=False):
+def argument_clinic(string, want_obj=False, want_context=False,
+                    want_arguments=False, want_evaluator=False):
     """
     Works like Argument Clinic (PEP 436), to validate function params.
     """
 
     def f(func):
         @repack_with_argument_clinic(string, keep_arguments_param=True)
-        def wrapper(evaluator, obj, *args, **kwargs):
+        def wrapper(obj, *args, **kwargs):
             arguments = kwargs.pop('arguments')
             assert not kwargs  # Python 2...
             debug.dbg('builtin start %s' % obj, color='MAGENTA')
@@ -109,9 +109,11 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
                 kwargs['context'] = arguments.context
             if want_obj:
                 kwargs['obj'] = obj
+            if want_evaluator:
+                kwargs['evaluator'] = obj.evaluator
             if want_arguments:
                 kwargs['arguments'] = arguments
-            result = func(evaluator, *args, **kwargs)
+            result = func(*args, **kwargs)
             debug.dbg('builtin end: %s', result, color='MAGENTA')
             return result
 
@@ -120,7 +122,7 @@ def argument_clinic(string, want_obj=False, want_context=False, want_arguments=F
 
 
 @argument_clinic('obj, type, /', want_obj=True, want_arguments=True)
-def builtins_property(evaluator, objects, types, obj, arguments):
+def builtins_property(objects, types, obj, arguments):
     print(obj)
     print(obj.instance.var_args)
     property_args = obj.instance.var_args.unpack()
@@ -134,8 +136,8 @@ def builtins_property(evaluator, objects, types, obj, arguments):
     return NO_CONTEXTS
 
 
-@argument_clinic('iterator[, default], /')
-def builtins_next(evaluator, iterators, defaults):
+@argument_clinic('iterator[, default], /', want_evaluator=True)
+def builtins_next(iterators, defaults, evaluator):
     """
     TODO this function is currently not used. It's a stab at implementing next
     in a different way than fake objects. This would be a bit more flexible.
@@ -159,7 +161,7 @@ def builtins_next(evaluator, iterators, defaults):
 
 
 @argument_clinic('object, name[, default], /')
-def builtins_getattr(evaluator, objects, names, defaults=None):
+def builtins_getattr(objects, names, defaults=None):
     # follow the first param
     for obj in objects:
         for name in names:
@@ -172,7 +174,7 @@ def builtins_getattr(evaluator, objects, names, defaults=None):
 
 
 @argument_clinic('object[, bases, dict], /')
-def builtins_type(evaluator, objects, bases, dicts):
+def builtins_type(objects, bases, dicts):
     if bases or dicts:
         # It's a type creation... maybe someday...
         return NO_CONTEXTS
@@ -188,7 +190,7 @@ class SuperInstance(AbstractInstanceContext):
 
 
 @argument_clinic('[type[, obj]], /', want_context=True)
-def builtins_super(evaluator, types, objects, context):
+def builtins_super(types, objects, context):
     # TODO make this able to detect multiple inheritance super
     if isinstance(context, FunctionExecutionContext):
         if isinstance(context.var_args, InstanceArguments):
@@ -199,7 +201,7 @@ def builtins_super(evaluator, types, objects, context):
 
 
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)
-def builtins_reversed(evaluator, sequences, obj, arguments):
+def builtins_reversed(sequences, obj, arguments):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
@@ -215,13 +217,18 @@ def builtins_reversed(evaluator, sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    seq = iterable.FakeSequence(evaluator, u'list', rev)
+    seq = iterable.FakeSequence(obj.evaluator, u'list', rev)
     arguments = ValuesArguments([ContextSet(seq)])
-    return ContextSet(CompiledInstance(evaluator, evaluator.builtins_module, obj, arguments))
+    return ContextSet(CompiledInstance(
+        obj.evaluator,
+        obj.evaluator.builtins_module,
+        obj,
+        arguments
+    ))
 
 
-@argument_clinic('obj, type, /', want_arguments=True)
-def builtins_isinstance(evaluator, objects, types, arguments):
+@argument_clinic('obj, type, /', want_arguments=True, want_evaluator=True)
+def builtins_isinstance(objects, types, arguments, evaluator):
     bool_results = set()
     for o in objects:
         cls = o.py__class__()
@@ -262,7 +269,7 @@ def builtins_isinstance(evaluator, objects, types, arguments):
     )
 
 
-def collections_namedtuple(evaluator, obj, arguments):
+def collections_namedtuple(obj, arguments):
     """
     Implementation of the namedtuple function.
 
@@ -270,6 +277,7 @@ def collections_namedtuple(evaluator, obj, arguments):
     evaluating the result.
 
     """
+    evaluator = obj.evaluator
     collections_context = obj.parent_context
     _class_template_set = collections_context.py__getattribute__(u'_class_template')
     if not _class_template_set:
@@ -358,7 +366,7 @@ class MergedPartialArguments(AbstractArguments):
             yield key_lazy_context
 
 
-def functools_partial(evaluator, obj, arguments):
+def functools_partial(obj, arguments):
     return ContextSet.from_iterable(
         PartialObject(instance, arguments)
         for instance in obj.py__call__(arguments)
@@ -366,12 +374,12 @@ def functools_partial(evaluator, obj, arguments):
 
 
 @argument_clinic('first, /')
-def _return_first_param(evaluator, firsts):
+def _return_first_param(firsts):
     return firsts
 
 
 @argument_clinic('seq')
-def _random_choice(evaluator, sequences):
+def _random_choice(sequences):
     return ContextSet.from_sets(
         lazy_context.infer()
         for sequence in sequences
@@ -390,7 +398,7 @@ class ItemGetterCallable(object):
 
 
 @argument_clinic('*args, /', want_obj=True, want_arguments=True)
-def _operator_itemgetter(evaluator, args_context_set, obj, arguments):
+def _operator_itemgetter(args_context_set, obj, arguments):
     final = obj.py__call__(arguments)
     print(final)
     return final
@@ -410,8 +418,8 @@ _implemented = {
         'deepcopy': _return_first_param,
     },
     'json': {
-        'load': lambda evaluator, obj, arguments: NO_CONTEXTS,
-        'loads': lambda evaluator, obj, arguments: NO_CONTEXTS,
+        'load': lambda obj, arguments: NO_CONTEXTS,
+        'loads': lambda obj, arguments: NO_CONTEXTS,
     },
     'collections': {
         'namedtuple': collections_namedtuple,
