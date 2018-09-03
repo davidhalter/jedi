@@ -14,6 +14,7 @@ from jedi.evaluate.context import ModuleContext, FunctionContext, \
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
 from jedi.evaluate.compiled import CompiledObject
+from jedi.evaluate.compiled.context import CompiledName
 from jedi.evaluate.utils import to_list
 
 
@@ -83,7 +84,6 @@ def _merge_modules(context_set, stub_context):
         return
 
     for context in context_set:
-        # TODO what about compiled?
         if isinstance(context, ModuleContext):
             yield StubModuleContext(
                 context.evaluator,
@@ -94,8 +94,8 @@ def _merge_modules(context_set, stub_context):
                 code_lines=context.code_lines
             )
         else:
-            # TODO do we want this?
-            yield context
+            # TODO do we want this? This includes compiled?!
+            yield stub_context
 
 
 class TypeshedPlugin(BasePlugin):
@@ -132,11 +132,6 @@ class TypeshedPlugin(BasePlugin):
                     parent_module_context,
                     sys_path
                 )
-            # Don't use CompiledObjects, they are just annoying and don't
-            # really help with anything. Just use the stub files instead.
-            context_set = ContextSet.from_iterable(
-                c for c in context_set if not isinstance(c, CompiledObject)
-            )
             import_name = import_names[-1]
             map_ = None
             if len(import_names) == 1:
@@ -173,21 +168,16 @@ class TypeshedPlugin(BasePlugin):
         return wrapper
 
 
-class NameWithStub(TreeNameDefinition):
+class NameWithStubMixin(object):
     """
     This name is only here to mix stub names with non-stub names. The idea is
     that the user can goto the actual name, but end up on the definition of the
     stub when inferring types.
     """
-
-    def __init__(self, parent_context, tree_name, stub_name):
-        super(NameWithStub, self).__init__(parent_context, tree_name)
-        self._stub_name = stub_name
-
     @memoize_method
     @iterator_to_context_set
     def infer(self):
-        actual_contexts = super(NameWithStub, self).infer()
+        actual_contexts = super(NameWithStubMixin, self).infer()
         stub_contexts = self._stub_name.infer()
 
         if not actual_contexts:
@@ -218,6 +208,18 @@ class NameWithStub(TreeNameDefinition):
 
             if not stub_contexts:
                 yield actual_context
+
+
+class NameWithStub(NameWithStubMixin, TreeNameDefinition):
+    def __init__(self, parent_context, tree_name, stub_name):
+        super(NameWithStub, self).__init__(parent_context, tree_name)
+        self._stub_name = stub_name
+
+
+class CompiledNameWithStub(NameWithStubMixin, CompiledName):
+    def __init__(self, evaluator, parent_context, name, stub_name):
+        super(CompiledNameWithStub, self).__init__(evaluator, parent_context, name)
+        self._stub_name = stub_name
 
 
 class StubParserTreeFilter(ParserTreeFilter):
@@ -262,12 +264,20 @@ class StubParserTreeFilter(ParserTreeFilter):
                 n = TypingModuleName(n)
             if len(non_stub_names):
                 for non_stub_name in non_stub_names:
-                    assert isinstance(non_stub_name, AbstractTreeName), non_stub_name
-                    yield self.name_class(
-                        non_stub_name.parent_context,
-                        non_stub_name.tree_name,
-                        stub_name=n,
-                    )
+                    if isinstance(non_stub_name, CompiledName):
+                        yield CompiledNameWithStub(
+                            self.context.evaluator,
+                            non_stub_name.parent_context,
+                            non_stub_name.string_name,
+                            n
+                        )
+                    else:
+                        assert isinstance(non_stub_name, AbstractTreeName), non_stub_name
+                        yield self.name_class(
+                            non_stub_name.parent_context,
+                            non_stub_name.tree_name,
+                            stub_name=n,
+                        )
             else:
                 yield n
 
