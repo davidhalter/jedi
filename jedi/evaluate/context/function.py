@@ -13,7 +13,7 @@ from jedi.evaluate.arguments import AnonymousArguments
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ContextName, AbstractNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
-    ContextSet, TreeContext
+    ContextSet, TreeContext, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
 from jedi.evaluate.context.typing import TypeVar
@@ -296,14 +296,14 @@ class FunctionExecutionContext(TreeContext):
                 return self.get_return_values()
 
 
-class OverloadedFunctionContext(object):
+class OverloadedFunctionContext(ContextWrapper):
     def __init__(self, function, overloaded_functions):
-        self._function = function
+        super(OverloadedFunctionContext, self).__init__(function)
         self._overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):
         context_set = ContextSet()
-        debug.dbg("Execute overloaded function %s", self._function, color='BLUE')
+        debug.dbg("Execute overloaded function %s", self._wrapped_context, color='BLUE')
         for f in self._overloaded_functions:
             signature = parser_utils.get_call_signature(f.tree_node)
             if signature_matches(f, arguments):
@@ -314,9 +314,6 @@ class OverloadedFunctionContext(object):
                 debug.dbg("Overloading - signature %s@%s doesn't match with (%s)",
                           signature, f.tree_node.start_pos[0], arguments, color='BLUE')
         return context_set
-
-    def __getattr__(self, name):
-        return getattr(self._function, name)
 
 
 def signature_matches(function_context, arguments):

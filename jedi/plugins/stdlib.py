@@ -123,17 +123,13 @@ def argument_clinic(string, want_obj=False, want_context=False,
 
 @argument_clinic('obj, type, /', want_obj=True, want_arguments=True)
 def builtins_property(objects, types, obj, arguments):
-    print(obj)
-    print(obj.instance.var_args)
     property_args = obj.instance.var_args.unpack()
     key, lazy_context = next(property_args, (None, None))
     if key is not None or lazy_context is None:
         debug.warning('property expected a first param, not %s', arguments)
         return NO_CONTEXTS
-    print('lazy_context', lazy_context, lazy_context.infer())
-    print()
-    print(objects, type)
-    return NO_CONTEXTS
+
+    return lazy_context.infer().py__call__(arguments=ValuesArguments([objects]))
 
 
 @argument_clinic('iterator[, default], /', want_evaluator=True)
