@@ -6,7 +6,9 @@ from jedi._compatibility import FileNotFoundError
 from jedi.plugins.base import BasePlugin
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.cache import memoize_method
-from jedi.evaluate.base_context import ContextSet, iterator_to_context_set
+from jedi.parser_utils import get_call_signature_for_any
+from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
+    ContextWrapper
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition, NameWrapper
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
@@ -187,7 +189,9 @@ class NameWithStubMixin(object):
         # This basically merges stub contexts with actual contexts.
         for actual_context in actual_contexts:
             for stub_context in stub_contexts:
-                if isinstance(stub_context, FunctionContext) \
+                if isinstance(actual_context, CompiledObject):
+                    yield StubContextWithCompiled(stub_context, actual_context)
+                elif isinstance(stub_context, FunctionContext) \
                         and isinstance(actual_context, FunctionContext):
                     yield StubFunctionContext(
                         actual_context.evaluator,
@@ -378,6 +382,20 @@ class StubOnlyModuleContext(ModuleContext):
         )
         for f in filters:
             yield f
+
+
+class StubContextWithCompiled(ContextWrapper):
+    def __init__(self, stub_context, compiled_context):
+        super(StubContextWithCompiled, self).__init__(stub_context)
+        self._compiled_context = compiled_context
+
+    def py__doc__(self, include_call_signature=False):
+        doc = self._compiled_context.py__doc__()
+        if include_call_signature:
+            call_sig = get_call_signature_for_any(self._wrapped_context.tree_node)
+            if call_sig is not None:
+                doc = call_sig + '\n\n' + doc
+        return doc
 
 
 class TypingModuleWrapper(StubOnlyModuleContext):

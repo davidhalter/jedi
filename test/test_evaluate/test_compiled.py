@@ -77,7 +77,9 @@ def test_method_completion(Script, environment):
 def test_time_docstring(Script):
     import time
     comp, = Script('import time\ntime.sleep').completions()
-    assert comp.docstring() == time.sleep.__doc__
+    assert comp.docstring(raw=True) == time.sleep.__doc__
+    expected = 'sleep(secs: float) -> None\n\n' + time.sleep.__doc__
+    assert comp.docstring() == expected
 
 
 def test_dict_values(Script):
