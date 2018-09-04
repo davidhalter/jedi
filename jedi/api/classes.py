@@ -65,10 +65,12 @@ class BaseDefinition(object):
 
         # generate a path to the definition
         self._module = name.get_root_context()
-        if self.in_builtin_module():
+        try:
+            py__file__ = self._module.py__file__
+        except AttributeError:
             self.module_path = None
         else:
-            self.module_path = self._module.py__file__()
+            self.module_path = py__file__()
             """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
 
     @property

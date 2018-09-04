@@ -260,11 +260,16 @@ class StubParserTreeFilter(ParserTreeFilter):
 
         non_stub_filters = []
         for f in self._non_stub_filters:
+            # TODO this is really ugly. accessing some random _used_names and
+            # _filters. Please change.
             if isinstance(f, MergedFilter):
                 non_stub_filters += f._filters
             else:
                 non_stub_filters.append(f)
+
         for non_stub_filter in non_stub_filters:
+            if not hasattr(non_stub_filter, '_used_names'):
+                continue
             for key_name in non_stub_filter._used_names:
                 if key_name not in used_stub_names:
                     result_names += non_stub_filter.get(key_name)
@@ -377,28 +382,25 @@ class StubOnlyModuleContext(ModuleContext):
 
     def _get_first_non_stub_filters(self):
         for context in self.non_stub_context_set:
-            if not isinstance(context, CompiledObject):
-                yield next(context.get_filters(search_global=False))
+            yield next(context.get_filters(search_global=False))
 
     def get_filters(self, search_global, until_position=None,
                     origin_scope=None, **kwargs):
         filters = super(StubOnlyModuleContext, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
-        first_non_stub_filters = list(self._get_first_non_stub_filters())
+        next(filters)  # Ignore the first filter and replace it with our own
 
-        if first_non_stub_filters:
-            next(filters)  # Ignore the first filter and replace it with our own
-            # Here we remap the names from stubs to the actual module. This is
-            # important if type inferences is needed in that module.
-            yield StubParserTreeFilter(
-                list(self._get_first_non_stub_filters()),
-                self.evaluator,
-                context=self,
-                until_position=until_position,
-                origin_scope=origin_scope,
-                search_global=search_global,
-            )
+        # Here we remap the names from stubs to the actual module. This is
+        # important if type inferences is needed in that module.
+        yield StubParserTreeFilter(
+            list(self._get_first_non_stub_filters()),
+            self.evaluator,
+            context=self,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            search_global=search_global,
+        )
         for f in filters:
             yield f
 
