@@ -204,7 +204,6 @@ class BaseDefinition(object):
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        print(self._module)
         if isinstance(self._module, StubOnlyModuleContext):
             return any(isinstance(context, compiled.CompiledObject)
                        for context in self._module.non_stub_context_set)

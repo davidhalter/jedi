@@ -10,9 +10,9 @@ from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     ContextWrapper
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
-    TreeNameDefinition, NameWrapper
+    TreeNameDefinition, NameWrapper, MergedFilter
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
-    ClassContext, BoundMethod
+    ClassContext
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
 from jedi.evaluate.compiled import CompiledObject
@@ -251,8 +251,24 @@ class StubParserTreeFilter(ParserTreeFilter):
 
         return self._convert_names(self._filter(names))
 
-    # TODO maybe implement values, because currently the names that don't exist
-    # in the stub file are not part of values.
+    def values(self):
+        used_stub_names = set()
+        result_names = []
+        for key_name, names in self._used_names.items():
+            result_names += self._convert_names(self._filter(names))
+            used_stub_names.add(key_name)
+
+        non_stub_filters = []
+        for f in self._non_stub_filters:
+            if isinstance(f, MergedFilter):
+                non_stub_filters += f._filters
+            else:
+                non_stub_filters.append(f)
+        for non_stub_filter in non_stub_filters:
+            for key_name in non_stub_filter._used_names:
+                if key_name not in used_stub_names:
+                    result_names += non_stub_filter.get(key_name)
+        return result_names
 
     def _check_flows(self, names):
         return names
@@ -361,25 +377,28 @@ class StubOnlyModuleContext(ModuleContext):
 
     def _get_first_non_stub_filters(self):
         for context in self.non_stub_context_set:
-            yield next(context.get_filters(search_global=False))
+            if not isinstance(context, CompiledObject):
+                yield next(context.get_filters(search_global=False))
 
     def get_filters(self, search_global, until_position=None,
                     origin_scope=None, **kwargs):
         filters = super(StubOnlyModuleContext, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
-        next(filters)  # Ignore the first filter and replace it with our own
+        first_non_stub_filters = list(self._get_first_non_stub_filters())
 
-        # Here we remap the names from stubs to the actual module. This is
-        # important if type inferences is needed in that module.
-        yield StubParserTreeFilter(
-            list(self._get_first_non_stub_filters()),
-            self.evaluator,
-            context=self,
-            until_position=until_position,
-            origin_scope=origin_scope,
-            search_global=search_global,
-        )
+        if first_non_stub_filters:
+            next(filters)  # Ignore the first filter and replace it with our own
+            # Here we remap the names from stubs to the actual module. This is
+            # important if type inferences is needed in that module.
+            yield StubParserTreeFilter(
+                list(self._get_first_non_stub_filters()),
+                self.evaluator,
+                context=self,
+                until_position=until_position,
+                origin_scope=origin_scope,
+                search_global=search_global,
+            )
         for f in filters:
             yield f
 

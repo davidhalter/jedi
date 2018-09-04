@@ -116,8 +116,9 @@ def test_class_call_signature(Script):
 
 def test_position_none_if_builtin(Script):
     gotos = Script('import sys; sys.path').goto_assignments()
-    assert gotos[0].line is None
-    assert gotos[0].column is None
+    assert gotos[0].in_builtin_module()
+    assert gotos[0].line is not None
+    assert gotos[0].column is not None
 
 
 def test_completion_docstring(Script, jedi_path):
