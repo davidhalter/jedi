@@ -8,7 +8,7 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.cache import memoize_method
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
-    TreeNameDefinition
+    TreeNameDefinition, NameWrapper
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
     ClassContext, BoundMethod
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
@@ -177,7 +177,7 @@ class NameWithStubMixin(object):
     @memoize_method
     @iterator_to_context_set
     def infer(self):
-        actual_contexts = super(NameWithStubMixin, self).infer()
+        actual_contexts = self._get_actual_contexts()
         stub_contexts = self._stub_name.infer()
 
         if not actual_contexts:
@@ -215,11 +215,20 @@ class NameWithStub(NameWithStubMixin, TreeNameDefinition):
         super(NameWithStub, self).__init__(parent_context, tree_name)
         self._stub_name = stub_name
 
+    def _get_actual_contexts(self):
+        # This is intentionally a subclass of NameWithStubMixin.
+        return super(NameWithStubMixin, self).infer()
 
-class CompiledNameWithStub(NameWithStubMixin, CompiledName):
-    def __init__(self, evaluator, parent_context, name, stub_name):
-        super(CompiledNameWithStub, self).__init__(evaluator, parent_context, name)
+
+class CompiledNameWithStub(NameWithStubMixin, NameWrapper):
+    def __init__(self, compiled_name, stub_name):
+        super(CompiledNameWithStub, self).__init__(stub_name)
+        self._compiled_name = compiled_name
         self._stub_name = stub_name
+
+    def _get_actual_contexts(self):
+        # This is intentionally a subclass of NameWithStubMixin.
+        return self._compiled_name.infer()
 
 
 class StubParserTreeFilter(ParserTreeFilter):
@@ -266,9 +275,7 @@ class StubParserTreeFilter(ParserTreeFilter):
                 for non_stub_name in non_stub_names:
                     if isinstance(non_stub_name, CompiledName):
                         yield CompiledNameWithStub(
-                            self.context.evaluator,
-                            non_stub_name.parent_context,
-                            non_stub_name.string_name,
+                            non_stub_name,
                             n
                         )
                     else:
@@ -338,7 +345,7 @@ class StubClassContext(_StubContextFilterMixin, ClassContext):
 
 
 class StubFunctionContext(_MixedStubContextMixin, FunctionContext):
-    def get_function_execution(self, arguments):
+    def get_function_execution(self, arguments=None):
         return self.stub_context.get_function_execution(arguments)
         return super().get_function_execution(arguments, tree_node=self.stub_context.tree_node)
 

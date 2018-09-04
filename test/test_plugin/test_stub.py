@@ -120,7 +120,8 @@ def test_sys_getwindowsversion(Script, environment):
 def test_sys_hexversion(Script):
     script = Script('import sys; sys.hexversion')
     def_, = script.completions()
-    assert isinstance(def_._name, TreeNameDefinition)
+    assert isinstance(def_._name, typeshed.CompiledNameWithStub), def_._name
+    assert isinstance(def_._name._stub_name, TreeNameDefinition)
     assert typeshed._TYPESHED_PATH in def_.module_path
     def_, = script.goto_definitions()
     assert def_.name == 'int'
