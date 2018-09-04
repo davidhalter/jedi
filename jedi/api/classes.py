@@ -15,6 +15,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import instance
 from jedi.evaluate.context import ClassContext, FunctionExecutionContext
+from jedi.plugins.typeshed import StubOnlyModuleContext
 from jedi.api.keywords import KeywordName
 
 
@@ -203,6 +204,10 @@ class BaseDefinition(object):
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
+        print(self._module)
+        if isinstance(self._module, StubOnlyModuleContext):
+            return any(isinstance(context, compiled.CompiledObject)
+                       for context in self._module.non_stub_context_set)
         return isinstance(self._module, compiled.CompiledObject)
 
     @property

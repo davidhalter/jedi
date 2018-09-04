@@ -357,10 +357,10 @@ class StubFunctionContext(_MixedStubContextMixin, FunctionContext):
 class StubOnlyModuleContext(ModuleContext):
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubOnlyModuleContext, self).__init__(*args, **kwargs)
-        self._non_stub_context_set = non_stub_context_set
+        self.non_stub_context_set = non_stub_context_set
 
     def _get_first_non_stub_filters(self):
-        for context in self._non_stub_context_set:
+        for context in self.non_stub_context_set:
             yield next(context.get_filters(search_global=False))
 
     def get_filters(self, search_global, until_position=None,

@@ -6,6 +6,7 @@ import pytest
 
 from ..helpers import TestCase
 from jedi import cache
+from jedi.parser_utils import get_call_signature
 from jedi._compatibility import is_py3
 
 
@@ -229,7 +230,15 @@ def test_complex(Script):
                 re.compile(
                 return it * 2
         """
-    assert_signature(Script, s, 'compile', 0, line=4, column=27)
+    sig1, sig2 = sorted(Script(s, line=4, column=27).call_signatures(), key=lambda s: s.line)
+    assert sig1.name == sig2.name == 'compile'
+    assert sig1.index == sig2.index == 0
+    func1, = sig1._name.infer()
+    func2, = sig2._name.infer()
+    assert get_call_signature(func1.tree_node) \
+        == 'compile(pattern: AnyStr, flags: _FlagsType = ...) -> Pattern[AnyStr]'
+    assert get_call_signature(func2.tree_node) \
+        == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = ...) ->\nPattern[AnyStr]'
 
     # jedi-vim #70
     s = """def foo("""

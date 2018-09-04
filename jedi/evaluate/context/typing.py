@@ -255,7 +255,6 @@ class TypeAlias(object):
         # There should only be one, because it's code that we control.
         assert len(classes) == 1, classes
         cls = next(iter(classes))
-        assert isinstance(cls, ClassContext), cls
         return cls
 
 

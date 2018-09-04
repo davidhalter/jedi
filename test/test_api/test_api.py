@@ -5,17 +5,24 @@ Test all things related to the ``jedi.api`` module.
 import os
 from textwrap import dedent
 
-from jedi import preload_module
-from jedi._compatibility import is_py3
 from pytest import raises
 from parso import cache
+
+from jedi import preload_module
+from jedi._compatibility import is_py3
+from jedi.plugins import typeshed
 
 
 def test_preload_modules():
     def check_loaded(*modules):
         # +1 for None module (currently used)
         grammar_cache = next(iter(cache.parser_cache.values()))
-        assert len(grammar_cache) == len(modules) + 1
+        # Filter the typeshed parser cache.
+        typeshed_cache_count = sum(
+            1 for path in grammar_cache
+            if path is not None and path.startswith(typeshed._TYPESHED_PATH)
+        )
+        assert len(grammar_cache) - typeshed_cache_count == len(modules) + 1
         for i in modules:
             assert [i in k for k in grammar_cache.keys() if k is not None]
 
@@ -292,4 +299,4 @@ def test_goto_follow_builtin_imports(Script):
     d, = s.goto_assignments(follow_imports=True)
     assert d.in_builtin_module() is True
     d, = s.goto_assignments(follow_imports=True, follow_builtin_imports=True)
-    assert d.in_builtin_module() is False
+    assert d.in_builtin_module() is True
