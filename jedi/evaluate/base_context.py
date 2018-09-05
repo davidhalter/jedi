@@ -13,6 +13,7 @@ from jedi._compatibility import Python3Method, zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 from jedi.common import BaseContextSet, BaseContext
 from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
+from jedi.evaluate.utils import safe_property
 
 
 class Context(BaseContext):
@@ -122,9 +123,15 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     )
 
 
-class ContextWrapper(object):
+class TreeContextWrapper(object):
     def __init__(self, wrapped_context):
         self._wrapped_context = wrapped_context
+        assert wrapped_context.tree_node
+
+    @safe_property
+    def name(self):
+        from jedi.evaluate.filters import ContextName
+        return ContextName(self, self._wrapped_context.name.tree_name)
 
     def __getattr__(self, name):
         return getattr(self._wrapped_context, name)

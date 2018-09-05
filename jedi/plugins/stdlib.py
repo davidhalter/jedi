@@ -21,7 +21,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import \
     AbstractInstanceContext, CompiledInstance, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
-    NO_CONTEXTS, ContextSet, ContextWrapper
+    NO_CONTEXTS, ContextSet, TreeContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
 from jedi.evaluate.context import iterable
@@ -398,6 +398,7 @@ class ItemGetterCallable(object):
                 # TODO we need to add the contextualized context.
                 context_set |= item_context_set.get_item(lazy_contexts[0].infer(), None)
             else:
+                return NO_CONTEXTS
                 raise NotImplementedError
         return context_set
 

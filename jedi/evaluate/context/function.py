@@ -13,7 +13,7 @@ from jedi.evaluate.arguments import AnonymousArguments
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ContextName, AbstractNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
-    ContextSet, TreeContext, ContextWrapper
+    ContextSet, TreeContext, TreeContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
 from jedi.evaluate.context.typing import TypeVar
@@ -296,7 +296,7 @@ class FunctionExecutionContext(TreeContext):
                 return self.get_return_values()
 
 
-class OverloadedFunctionContext(ContextWrapper):
+class OverloadedFunctionContext(TreeContextWrapper):
     def __init__(self, function, overloaded_functions):
         super(OverloadedFunctionContext, self).__init__(function)
         self._overloaded_functions = overloaded_functions
