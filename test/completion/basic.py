@@ -300,7 +300,7 @@ with open('') as f:
     #? ['closed']
     f.closed
     for line in f:
-        #? str()
+        #? str() bytes()
         line
 
 with open('') as f1, open('') as f2:

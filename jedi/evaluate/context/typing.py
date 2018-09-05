@@ -400,6 +400,12 @@ class TypeVar(_BaseTypingContext):
         debug.warning('Tried to infer a TypeVar without a given type')
         return NO_CONTEXTS
 
+    @property
+    def constraints(self):
+        return ContextSet.from_sets(
+            lazy.infer() for lazy in self._constraints_lazy_contexts
+        )
+
     def execute_annotation(self):
         return self.get_classes().execute_annotation()
 
@@ -425,7 +431,15 @@ class BoundTypeVarName(AbstractNameDefinition):
         self._context_set = context_set
 
     def infer(self):
-        return self._context_set
+        def iter_():
+            for context in self._context_set:
+                # Replace any with the constraints if they are there.
+                if isinstance(context, Any):
+                    for constraint in self._type_var.constraints:
+                        yield constraint
+                else:
+                    yield context
+        return ContextSet.from_iterable(iter_())
 
     def __repr__(self):
         return '<%s %s -> %s>' % (self.__class__.__name__, self.var_name, self._context_set)
