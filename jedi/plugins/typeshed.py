@@ -1,6 +1,5 @@
 import os
 import re
-from pkg_resources import resource_filename
 
 from jedi._compatibility import FileNotFoundError
 from jedi.plugins.base import BasePlugin
@@ -20,7 +19,8 @@ from jedi.evaluate.compiled.context import CompiledName
 from jedi.evaluate.utils import to_list
 
 
-_TYPESHED_PATH = resource_filename('jedi', os.path.join('third_party', 'typeshed'))
+_jedi_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
 
 
 def _merge_create_stub_map(directories):
