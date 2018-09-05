@@ -175,7 +175,8 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     def py__class__(self):
         return compiled.builtin_from_name(self.evaluator, u'type')
 
-    def get_filters(self, search_global, until_position=None, origin_scope=None, is_instance=False):
+    def get_filters(self, search_global=False, until_position=None,
+                    origin_scope=None, is_instance=False):
         if search_global:
             yield ParserTreeFilter(
                 self.evaluator,

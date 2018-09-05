@@ -337,7 +337,7 @@ class _MixedStubContextMixin(object):
 
 
 class _StubContextFilterMixin(_MixedStubContextMixin):
-    def get_filters(self, search_global, until_position=None,
+    def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
         filters = super(_StubContextFilterMixin, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
@@ -384,7 +384,7 @@ class StubOnlyModuleContext(ModuleContext):
         for context in self.non_stub_context_set:
             yield next(context.get_filters(search_global=False))
 
-    def get_filters(self, search_global, until_position=None,
+    def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
         filters = super(StubOnlyModuleContext, self).get_filters(
             search_global, until_position, origin_scope, **kwargs

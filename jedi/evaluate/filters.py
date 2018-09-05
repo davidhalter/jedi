@@ -426,7 +426,7 @@ class AbstractObjectOverwrite(use_metaclass(_OverwriteMeta, object)):
     def get_object(self):
         raise NotImplementedError
 
-    def get_filters(self, search_global, *args, **kwargs):
+    def get_filters(self, search_global=False, *args, **kwargs):
         yield SpecialMethodFilter(self, self.overwritten_methods, self.get_object())
 
         for filter in self.get_object().get_filters(search_global):

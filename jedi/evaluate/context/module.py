@@ -52,7 +52,7 @@ class ModuleContext(TreeContext):
         self._string_names = string_names
         self.code_lines = code_lines
 
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
                 self.evaluator,

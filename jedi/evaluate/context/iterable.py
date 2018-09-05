@@ -87,7 +87,7 @@ class CompForContext(TreeContext):
     def get_node(self):
         return self.tree_node
 
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self.evaluator, self)
 
 

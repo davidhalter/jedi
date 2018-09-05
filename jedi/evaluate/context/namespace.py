@@ -33,7 +33,7 @@ class ImplicitNamespaceContext(Context):
         self._fullname = fullname
         self.paths = paths
 
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield DictFilter(self._sub_modules_dict())
 
     @property

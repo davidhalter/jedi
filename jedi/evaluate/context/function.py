@@ -42,7 +42,7 @@ class LambdaName(AbstractNameDefinition):
 class AbstractFunction(TreeContext):
     api_type = u'function'
 
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         if search_global:
             yield ParserTreeFilter(
                 self.evaluator,
@@ -263,7 +263,7 @@ class FunctionExecutionContext(TreeContext):
                             for result in self._get_yield_lazy_context(yield_in_same_for_stmt):
                                 yield result
 
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield self.function_execution_filter(self.evaluator, self,
                                              until_position=until_position,
                                              origin_scope=origin_scope)

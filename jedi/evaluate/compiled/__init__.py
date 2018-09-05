@@ -7,7 +7,7 @@ from jedi.evaluate.helpers import execute_evaluated
 
 def builtin_from_name(evaluator, string):
     builtins = evaluator.builtins_module
-    filter_ = next(builtins.get_filters(search_global=False))
+    filter_ = next(builtins.get_filters())
     name, = filter_.get(string)
     context, = name.infer()
     return context
