@@ -7,7 +7,10 @@ from jedi.evaluate.helpers import execute_evaluated
 
 def builtin_from_name(evaluator, string):
     builtins = evaluator.builtins_module
-    return create_from_name(evaluator, builtins, string)
+    filter_ = next(builtins.get_filters(search_global=False))
+    name, = filter_.get(string)
+    context, = name.infer()
+    return context
 
 
 def create_simple_object(evaluator, obj):
