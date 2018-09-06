@@ -417,6 +417,7 @@ _implemented = {
         'super': builtins_super,
         'reversed': builtins_reversed,
         'isinstance': builtins_isinstance,
+        'next': builtins_next,
     },
     'copy': {
         'copy': _return_first_param,
