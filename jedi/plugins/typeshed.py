@@ -7,7 +7,7 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
-    TreeContextWrapper
+    ContextWrapper
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
     TreeNameDefinition, NameWrapper, MergedFilter
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
@@ -405,7 +405,7 @@ class StubOnlyModuleContext(ModuleContext):
             yield f
 
 
-class StubContextWithCompiled(TreeContextWrapper):
+class StubContextWithCompiled(ContextWrapper):
     def __init__(self, stub_context, compiled_context):
         super(StubContextWithCompiled, self).__init__(stub_context)
         self._compiled_context = compiled_context

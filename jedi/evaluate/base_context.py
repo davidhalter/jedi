@@ -123,15 +123,19 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     )
 
 
-class TreeContextWrapper(object):
+class ContextWrapper(object):
     def __init__(self, wrapped_context):
         self._wrapped_context = wrapped_context
-        assert wrapped_context.tree_node
 
     @safe_property
     def name(self):
         from jedi.evaluate.filters import ContextName
-        return ContextName(self, self._wrapped_context.name.tree_name)
+        wrapped_name = self._wrapped_context.name
+        if wrapped_name.tree_name is not None:
+            return ContextName(self, wrapped_name.tree_name)
+        else:
+            from jedi.evaluate.compiled import CompiledContextName
+            return CompiledContextName(self, wrapped_name.string_name)
 
     def __getattr__(self, name):
         return getattr(self._wrapped_context, name)

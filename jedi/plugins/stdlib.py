@@ -21,7 +21,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import \
     AbstractInstanceContext, CompiledInstance, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
-    NO_CONTEXTS, ContextSet, TreeContextWrapper
+    NO_CONTEXTS, ContextSet, ContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
 from jedi.evaluate.context import iterable
