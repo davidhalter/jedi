@@ -275,9 +275,6 @@ class StubParserTreeFilter(ParserTreeFilter):
                     result_names += non_stub_filter.get(key_name)
         return result_names
 
-    def _check_flows(self, names):
-        return names
-
     def _get_non_stub_names(self, string_name):
         return [
             name
