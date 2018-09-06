@@ -24,6 +24,7 @@ from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
+from jedi.evaluate.context.klass import py__mro__
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.syntax_tree import is_string
@@ -229,7 +230,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
     for o in objects:
         cls = o.py__class__()
         try:
-            mro_func = cls.py__mro__
+            mro_func = py__mro__(cls)
         except AttributeError:
             # This is temporary. Everything should have a class attribute in
             # Python?! Maybe we'll leave it here, because some numpy objects or

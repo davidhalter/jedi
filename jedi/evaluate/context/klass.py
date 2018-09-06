@@ -21,7 +21,6 @@ py__call__(arguments: Array)           On callable objects, returns types.
 py__bool__()                           Returns True/False/None; None means that
                                        there's no certainty.
 py__bases__()                          Returns a list of base classes.
-py__mro__()                            Returns a list of classes (the mro).
 py__iter__()                           Returns a generator of a set of types.
 py__class__()                          Returns the class of an instance.
 py__simple_getitem__(index: int/str)   Returns a a set of types of the index.
@@ -58,6 +57,51 @@ def apply_py__get__(context, base_context):
     else:
         for descriptor_context in method(base_context):
             yield descriptor_context
+
+
+@evaluator_method_cache(default=())
+def py__mro__(context):
+    try:
+        method = context.py__mro__
+    except AttributeError:
+        pass
+    else:
+        # Currently only used for compiled objects.
+        return method()
+
+    def add(cls):
+        if cls not in mro:
+            mro.append(cls)
+
+    mro = [context]
+    # TODO Do a proper mro resolution. Currently we are just listing
+    # classes. However, it's a complicated algorithm.
+    for lazy_cls in context.py__bases__():
+        # TODO there's multiple different mro paths possible if this yields
+        # multiple possibilities. Could be changed to be more correct.
+        for cls in lazy_cls.infer():
+            # TODO detect for TypeError: duplicate base class str,
+            # e.g.  `class X(str, str): pass`
+            try:
+                mro_method = py__mro__(cls)
+            except AttributeError:
+                # TODO add a TypeError like:
+                """
+                >>> class Y(lambda: test): pass
+                Traceback (most recent call last):
+                  File "<stdin>", line 1, in <module>
+                TypeError: function() argument 1 must be code, not str
+                >>> class Y(1): pass
+                Traceback (most recent call last):
+                  File "<stdin>", line 1, in <module>
+                TypeError: int() takes at most 2 arguments (3 given)
+                """
+                debug.warning('Super class of %s is not a class: %s', context, cls)
+            else:
+                add(cls)
+                for cls_new in mro_method():
+                    add(cls_new)
+    return tuple(mro)
 
 
 class ClassName(TreeNameDefinition):
@@ -123,42 +167,6 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     api_type = u'class'
 
     @evaluator_method_cache(default=())
-    def py__mro__(self):
-        def add(cls):
-            if cls not in mro:
-                mro.append(cls)
-
-        mro = [self]
-        # TODO Do a proper mro resolution. Currently we are just listing
-        # classes. However, it's a complicated algorithm.
-        for lazy_cls in self.py__bases__():
-            # TODO there's multiple different mro paths possible if this yields
-            # multiple possibilities. Could be changed to be more correct.
-            for cls in lazy_cls.infer():
-                # TODO detect for TypeError: duplicate base class str,
-                # e.g.  `class X(str, str): pass`
-                try:
-                    mro_method = cls.py__mro__
-                except AttributeError:
-                    # TODO add a TypeError like:
-                    """
-                    >>> class Y(lambda: test): pass
-                    Traceback (most recent call last):
-                      File "<stdin>", line 1, in <module>
-                    TypeError: function() argument 1 must be code, not str
-                    >>> class Y(1): pass
-                    Traceback (most recent call last):
-                      File "<stdin>", line 1, in <module>
-                    TypeError: int() takes at most 2 arguments (3 given)
-                    """
-                    debug.warning('Super class of %s is not a class: %s', self, cls)
-                else:
-                    add(cls)
-                    for cls_new in mro_method():
-                        add(cls_new)
-        return tuple(mro)
-
-    @evaluator_method_cache(default=())
     def py__bases__(self):
         arglist = self.tree_node.get_super_arglist()
         if arglist:
@@ -185,7 +193,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
                 origin_scope=origin_scope
             )
         else:
-            for cls in self.py__mro__():
+            for cls in py__mro__(self):
                 if isinstance(cls, compiled.CompiledObject):
                     for filter in cls.get_filters(is_instance=is_instance):
                         yield filter
@@ -226,9 +234,8 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate.context.typing import TypingClassMixin, AnnotatedClass
-        for cls in self.py__mro__():
+        for cls in py__mro__(self):
             if isinstance(cls, TypingClassMixin):
-                #print('ha', self,  list(self.py__mro__()))
                 # TODO get the right classes.
                 return ContextSet.from_iterable(
                     AnnotatedClass(

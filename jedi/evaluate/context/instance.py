@@ -12,7 +12,8 @@ from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments, \
     ValuesArguments
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction, OverloadedFunctionContext
-from jedi.evaluate.context.klass import ClassContext, apply_py__get__, ClassFilter
+from jedi.evaluate.context.klass import ClassContext, apply_py__get__, \
+    py__mro__, ClassFilter
 from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
@@ -113,7 +114,7 @@ class AbstractInstanceContext(Context):
     def get_filters(self, search_global=None, until_position=None,
                     origin_scope=None, include_self_names=True):
         if include_self_names:
-            for cls in self.class_context.py__mro__():
+            for cls in py__mro__(self.class_context):
                 if not isinstance(cls, compiled.CompiledObject) \
                         or cls.tree_node is not None:
                     # In this case we're excluding compiled objects that are
@@ -121,7 +122,7 @@ class AbstractInstanceContext(Context):
                     # compiled objects to search for self variables.
                     yield SelfAttributeFilter(self.evaluator, self, cls, origin_scope)
 
-        for cls in self.class_context.py__mro__():
+        for cls in py__mro__(self.class_context):
             if isinstance(cls, compiled.CompiledObject):
                 yield CompiledInstanceClassFilter(self.evaluator, self, cls)
             else:

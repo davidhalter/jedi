@@ -185,9 +185,6 @@ class TypingContext(_BaseTypingContext):
 
 
 class TypingClassMixin(object):
-    def py__mro__(self):
-        return [self, builtin_from_name(self.evaluator, u'object')]
-
     def py__bases__(self,):
         return [LazyKnownContext(builtin_from_name(self.evaluator, u'object'))]
 
