@@ -83,7 +83,7 @@ def py__mro__(context):
             # TODO detect for TypeError: duplicate base class str,
             # e.g.  `class X(str, str): pass`
             try:
-                mro_method = py__mro__(cls)
+                cls.py__bases__
             except AttributeError:
                 # TODO add a TypeError like:
                 """
@@ -99,7 +99,7 @@ def py__mro__(context):
                 debug.warning('Super class of %s is not a class: %s', context, cls)
             else:
                 add(cls)
-                for cls_new in mro_method():
+                for cls_new in py__mro__(context):
                     add(cls_new)
     return tuple(mro)
 

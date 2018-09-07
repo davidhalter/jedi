@@ -24,6 +24,7 @@ from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
+from jedi.plugins import typeshed
 from jedi.evaluate.context.klass import py__mro__
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext
@@ -197,11 +198,27 @@ def builtins_super(types, objects, context):
     return NO_CONTEXTS
 
 
+class ReversedObject(ContextWrapper):
+    def __init__(self, reversed_obj, iter_list):
+        super(ReversedObject, self).__init__(reversed_obj)
+        self._iter_list = iter_list
+
+    def py__iter__(self):
+        return self._iter_list
+
+    def py__next__(self):
+        return ContextSet.from_sets(
+            lazy_context.infer() for lazy_context in self._iter_list
+        )
+
+
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)
 def builtins_reversed(sequences, obj, arguments):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
+    if not isinstance(obj, typeshed.StubContextWithCompiled):
+        return obj.py__call__(arguments)
     key, lazy_context = next(arguments.unpack())
     cn = None
     if isinstance(lazy_context, LazyTreeContext):
@@ -209,18 +226,18 @@ def builtins_reversed(sequences, obj, arguments):
         cn = ContextualizedNode(lazy_context._context, lazy_context.data)
     ordered = list(sequences.iterate(cn))
 
-    rev = list(reversed(ordered))
     # Repack iterator values and then run it the normal way. This is
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    seq = iterable.FakeSequence(obj.evaluator, u'list', rev)
-    arguments = ValuesArguments([ContextSet(seq)])
-    return ContextSet(CompiledInstance(
-        obj.evaluator,
-        obj.evaluator.builtins_module,
-        obj,
-        arguments
+    return ContextSet(ReversedObject(
+        CompiledInstance(
+            obj.evaluator,
+            obj.evaluator.builtins_module,
+            obj.compiled_context,
+            arguments
+        ),
+        list(reversed(ordered)),
     ))
 
 
@@ -230,7 +247,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
     for o in objects:
         cls = o.py__class__()
         try:
-            mro_func = py__mro__(cls)
+            cls.py__bases__
         except AttributeError:
             # This is temporary. Everything should have a class attribute in
             # Python?! Maybe we'll leave it here, because some numpy objects or
@@ -238,7 +255,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
             bool_results = set([True, False])
             break
 
-        mro = mro_func()
+        mro = py__mro__(cls)
 
         for cls_or_tup in types:
             if cls_or_tup.is_class():

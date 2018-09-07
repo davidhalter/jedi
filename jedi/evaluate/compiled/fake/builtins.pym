@@ -235,21 +235,6 @@ class enumerate():
         return next(self.__iter__())
 
 
-class reversed():
-    def __init__(self, sequence):
-        self.__sequence = sequence
-
-    def __iter__(self):
-        for i in self.__sequence:
-            yield i
-
-    def __next__(self):
-        return next(self.__iter__())
-
-    def next(self):
-        return next(self.__iter__())
-
-
 def sorted(iterable, cmp=None, key=None, reverse=False):
     return iterable
 

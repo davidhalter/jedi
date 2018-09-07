@@ -405,10 +405,10 @@ class StubOnlyModuleContext(ModuleContext):
 class StubContextWithCompiled(ContextWrapper):
     def __init__(self, stub_context, compiled_context):
         super(StubContextWithCompiled, self).__init__(stub_context)
-        self._compiled_context = compiled_context
+        self.compiled_context = compiled_context
 
     def py__doc__(self, include_call_signature=False):
-        doc = self._compiled_context.py__doc__()
+        doc = self.compiled_context.py__doc__()
         if include_call_signature:
             call_sig = get_call_signature_for_any(self._wrapped_context.tree_node)
             if call_sig is not None:
