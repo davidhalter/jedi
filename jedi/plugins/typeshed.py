@@ -9,7 +9,7 @@ from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     ContextWrapper
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
-    TreeNameDefinition, NameWrapper, MergedFilter
+    TreeNameDefinition, NameWrapper
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
     ClassContext
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
@@ -255,24 +255,15 @@ class StubParserTreeFilter(ParserTreeFilter):
         used_stub_names = set()
         result_names = []
         for key_name, names in self._used_names.items():
-            result_names += self._convert_names(self._filter(names))
-            used_stub_names.add(key_name)
+            found_names = self._convert_names(self._filter(names))
+            result_names += found_names
+            if found_names:
+                used_stub_names.add(key_name)
 
-        non_stub_filters = []
-        for f in self._non_stub_filters:
-            # TODO this is really ugly. accessing some random _used_names and
-            # _filters. Please change.
-            if isinstance(f, MergedFilter):
-                non_stub_filters += f._filters
-            else:
-                non_stub_filters.append(f)
-
-        for non_stub_filter in non_stub_filters:
-            if not hasattr(non_stub_filter, '_used_names'):
-                continue
-            for key_name in non_stub_filter._used_names:
-                if key_name not in used_stub_names:
-                    result_names += non_stub_filter.get(key_name)
+        for non_stub_filter in self._non_stub_filters:
+            for name in non_stub_filter.values():
+                if name.string_name not in used_stub_names:
+                    result_names.append(name)
         return result_names
 
     def _get_non_stub_names(self, string_name):
