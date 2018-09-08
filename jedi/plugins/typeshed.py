@@ -256,8 +256,8 @@ class StubParserTreeFilter(ParserTreeFilter):
         result_names = []
         for key_name, names in self._used_names.items():
             found_names = self._convert_names(self._filter(names))
-            result_names += found_names
             if found_names:
+                result_names += found_names
                 used_stub_names.add(key_name)
 
         for non_stub_filter in self._non_stub_filters:
