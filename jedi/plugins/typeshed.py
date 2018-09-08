@@ -190,7 +190,12 @@ class NameWithStubMixin(object):
         for actual_context in actual_contexts:
             for stub_context in stub_contexts:
                 if isinstance(actual_context, CompiledObject):
-                    yield StubContextWithCompiled(stub_context, actual_context)
+                    if isinstance(stub_context, ClassContext):
+                        yield CompiledStubClassContext(stub_context, actual_context)
+                    elif isinstance(stub_context, FunctionContext):
+                        yield CompiledStubFunctionContext(stub_context, actual_context)
+                    else:
+                        yield stub_context
                 elif isinstance(stub_context, FunctionContext) \
                         and isinstance(actual_context, FunctionContext):
                     yield StubFunctionContext(
@@ -393,9 +398,9 @@ class StubOnlyModuleContext(ModuleContext):
             yield f
 
 
-class StubContextWithCompiled(ContextWrapper):
+class _StubContextWithCompiled(ContextWrapper):
     def __init__(self, stub_context, compiled_context):
-        super(StubContextWithCompiled, self).__init__(stub_context)
+        super(_StubContextWithCompiled, self).__init__(stub_context)
         self.compiled_context = compiled_context
 
     def py__doc__(self, include_call_signature=False):
@@ -405,6 +410,32 @@ class StubContextWithCompiled(ContextWrapper):
             if call_sig is not None:
                 doc = call_sig + '\n\n' + doc
         return doc
+
+
+class CompiledStubClassContext(_StubContextWithCompiled):
+    def get_filters(self, search_global=False, until_position=None,
+                    origin_scope=None, **kwargs):
+        filters = self._wrapped_context.get_filters(
+            search_global, until_position, origin_scope, **kwargs
+        )
+        next(filters)  # Ignore the first filter and replace it with our own
+
+        # Here we remap the names from stubs to the actual module. This is
+        # important if type inferences is needed in that module.
+        yield StubParserTreeFilter(
+            [next(self.compiled_context.get_filters(search_global=search_global, **kwargs))],
+            self.evaluator,
+            context=self,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            search_global=search_global,
+        )
+        for f in filters:
+            yield f
+
+
+class CompiledStubFunctionContext(_StubContextWithCompiled):
+    pass
 
 
 class TypingModuleWrapper(StubOnlyModuleContext):
