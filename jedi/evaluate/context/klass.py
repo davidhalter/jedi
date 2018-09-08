@@ -99,7 +99,7 @@ def py__mro__(context):
                 debug.warning('Super class of %s is not a class: %s', context, cls)
             else:
                 add(cls)
-                for cls_new in py__mro__(context):
+                for cls_new in py__mro__(cls):
                     add(cls_new)
     return tuple(mro)
 
