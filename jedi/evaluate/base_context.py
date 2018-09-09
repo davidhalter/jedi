@@ -124,6 +124,8 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
 
 
 class ContextWrapper(object):
+    py__getattribute__ = Context.py__getattribute__
+
     def __init__(self, wrapped_context):
         self._wrapped_context = wrapped_context
 

@@ -189,7 +189,7 @@ class NameWithStubMixin(object):
         # This basically merges stub contexts with actual contexts.
         for actual_context in actual_contexts:
             for stub_context in stub_contexts:
-                if isinstance(actual_context, CompiledObject):
+                if False and isinstance(actual_context, CompiledObject):
                     if isinstance(stub_context, ClassContext):
                         yield CompiledStubClassContext(stub_context, actual_context)
                     elif isinstance(stub_context, FunctionContext):
@@ -432,6 +432,15 @@ class CompiledStubClassContext(_StubContextWithCompiled):
         )
         for f in filters:
             yield f
+
+    def get_class_filter(self, original_class, origin_scope, is_instance):
+        return StubParserTreeFilter(
+            [next(self.compiled_context.get_filters(search_global=False))],
+            self.evaluator,
+            context=self,
+            origin_scope=origin_scope,
+            search_global=False,
+        )
 
 
 class CompiledStubFunctionContext(_StubContextWithCompiled):

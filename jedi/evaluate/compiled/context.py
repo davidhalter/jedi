@@ -321,7 +321,7 @@ class CompiledObjectFilter(AbstractFilter):
     def __init__(self, evaluator, compiled_object, is_instance=False):
         self._evaluator = evaluator
         self._compiled_object = compiled_object
-        self._is_instance = is_instance
+        self.is_instance = is_instance
 
     def get(self, name):
         return self._get(
@@ -345,7 +345,7 @@ class CompiledObjectFilter(AbstractFilter):
         if is_descriptor or not has_attribute:
             return [self._get_cached_name(name, is_empty=True)]
 
-        if self._is_instance and name not in dir_callback():
+        if self.is_instance and name not in dir_callback():
             return []
         return [self._get_cached_name(name)]
 
@@ -368,7 +368,7 @@ class CompiledObjectFilter(AbstractFilter):
             )
 
         # ``dir`` doesn't include the type names.
-        if not self._is_instance and needs_type_completions:
+        if not self.is_instance and needs_type_completions:
             for filter in builtin_from_name(self._evaluator, u'type').get_filters():
                 names += filter.values()
         return names

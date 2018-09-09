@@ -203,6 +203,15 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
                         origin_scope=origin_scope,
                         is_instance=is_instance
                     )
+        if not is_instance and self:
+            # Return completions of the meta class.
+            from jedi.evaluate.compiled import builtin_from_name
+            type_ = builtin_from_name(self.evaluator, u'type')
+            yield ClassFilter(
+                self.evaluator, self, node_context=type_,
+                origin_scope=origin_scope,
+                is_instance=is_instance
+            )
 
     def is_class(self):
         return True
