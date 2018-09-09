@@ -289,6 +289,20 @@ def test_parent_on_completion(Script):
     assert parent.type == 'class'
 
 
+def test_parent_on_comprehension():
+    ns = jedi.names('''\
+    def spam():
+        return [i for i in range(5)]
+    ''', all_scopes=True)
+
+    assert [name.name for name in ns] == ['spam', 'i']
+
+    assert ns[0].parent().name == ''
+    assert ns[0].parent().type == 'module'
+    assert ns[1].parent().name == 'spam'
+    assert ns[1].parent().type == 'function'
+
+
 def test_type(Script):
     for c in Script('a = [str()]; a[0].').completions():
         if c.name == '__class__':
