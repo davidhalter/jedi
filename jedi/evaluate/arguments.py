@@ -61,7 +61,6 @@ def repack_with_argument_clinic(string, keep_arguments_param=False):
                     clinic_args
                 ))
             except ParamIssue:
-                print('xxxx')
                 return NO_CONTEXTS
             else:
                 return func(context, *args, **kwargs)

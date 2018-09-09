@@ -18,7 +18,7 @@ from jedi.evaluate.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
-from jedi.evaluate.context.instance import \
+from jedi.evaluate.context.instance import TreeInstance, \
     AbstractInstanceContext, CompiledInstance, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper
@@ -145,14 +145,9 @@ def builtins_next(iterators, defaults, evaluator):
     else:
         name = '__next__'
 
-    context_set = defaults
-    for iterator in iterators:
-        context_set |= ContextSet.from_sets(
-            n.infer()
-            for filter in iterator.get_filters(include_self_names=True)
-            for n in filter.get(name)
-        ).execute_evaluated()
-    return context_set
+    # TODO theoretically we have to check here if something is an iterator.
+    # That is probably done by checking if it's not a class.
+    return defaults | iterators.py__getattribute__(name).execute_evaluated()
 
 
 @argument_clinic('object, name[, default], /')
@@ -195,14 +190,21 @@ def builtins_super(types, objects, context):
     return NO_CONTEXTS
 
 
-class ReversedObject(ContextWrapper):
+from jedi.evaluate.filters import AbstractObjectOverwrite, publish_method
+class ReversedObject(AbstractObjectOverwrite, ContextWrapper):
     def __init__(self, reversed_obj, iter_list):
         super(ReversedObject, self).__init__(reversed_obj)
         self._iter_list = iter_list
 
+    def get_object(self):
+        return self._wrapped_context
+
+    @publish_method('__iter__')
     def py__iter__(self):
         return self._iter_list
 
+    @publish_method('next', python_version_match=2)
+    @publish_method('__next__', python_version_match=3)
     def py__next__(self):
         return ContextSet.from_sets(
             lazy_context.infer() for lazy_context in self._iter_list
@@ -214,8 +216,6 @@ def builtins_reversed(sequences, obj, arguments):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
-    if not isinstance(obj, typeshed.StubContextWithCompiled):
-        return obj.py__call__(arguments)
     key, lazy_context = next(arguments.unpack())
     cn = None
     if isinstance(lazy_context, LazyTreeContext):
@@ -227,15 +227,8 @@ def builtins_reversed(sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    return ContextSet(ReversedObject(
-        CompiledInstance(
-            obj.evaluator,
-            obj.evaluator.builtins_module,
-            obj.compiled_context,
-            arguments
-        ),
-        list(reversed(ordered)),
-    ))
+    instance = TreeInstance(obj.evaluator, obj.parent_context, obj, ValuesArguments([]))
+    return ContextSet(ReversedObject(instance, list(reversed(ordered))))
 
 
 @argument_clinic('obj, type, /', want_arguments=True, want_evaluator=True)

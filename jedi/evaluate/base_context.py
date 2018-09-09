@@ -16,7 +16,29 @@ from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
 from jedi.evaluate.utils import safe_property
 
 
-class Context(BaseContext):
+class HelperContextMixin:
+    def execute_evaluated(self, *value_list):
+        return execute_evaluated(self, *value_list)
+
+    @Python3Method
+    def py__getattribute__(self, name_or_str, name_context=None, position=None,
+                           search_global=False, is_goto=False,
+                           analysis_errors=True):
+        """
+        :param position: Position of the last statement -> tuple of line, column
+        """
+        if name_context is None:
+            name_context = self
+        from jedi.evaluate import finder
+        f = finder.NameFinder(self.evaluator, self, name_context, name_or_str,
+                              position, analysis_errors=analysis_errors)
+        filters = f.get_filters(search_global)
+        if is_goto:
+            return f.filter_name(filters)
+        return f.find(filters, attribute_lookup=not search_global)
+
+
+class Context(HelperContextMixin, BaseContext):
     """
     Should be defined, otherwise the API returns empty types.
     """
@@ -54,23 +76,6 @@ class Context(BaseContext):
 
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
-
-    @Python3Method
-    def py__getattribute__(self, name_or_str, name_context=None, position=None,
-                           search_global=False, is_goto=False,
-                           analysis_errors=True):
-        """
-        :param position: Position of the last statement -> tuple of line, column
-        """
-        if name_context is None:
-            name_context = self
-        from jedi.evaluate import finder
-        f = finder.NameFinder(self.evaluator, self, name_context, name_or_str,
-                              position, analysis_errors=analysis_errors)
-        filters = f.get_filters(search_global)
-        if is_goto:
-            return f.filter_name(filters)
-        return f.find(filters, attribute_lookup=not search_global)
 
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate import analysis
@@ -123,7 +128,7 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     )
 
 
-class ContextWrapper(object):
+class ContextWrapper(HelperContextMixin, object):
     py__getattribute__ = Context.py__getattribute__
 
     def __init__(self, wrapped_context):
