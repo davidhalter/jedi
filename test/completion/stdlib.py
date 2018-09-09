@@ -25,7 +25,7 @@ next(reversed(yielder()))
 #?
 next(reversed())
 
-#? str()
+#? str() bytes()
 next(open(''))
 
 #? int()
