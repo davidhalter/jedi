@@ -31,6 +31,10 @@ def try_iter_content(types, depth=0):
                 try_iter_content(lazy_context.infer(), depth + 1)
 
 
+class ParamIssue(Exception):
+    pass
+
+
 def repack_with_argument_clinic(string, keep_arguments_param=False):
     """
     Transforms a function or method with arguments to the signature that is
@@ -56,7 +60,8 @@ def repack_with_argument_clinic(string, keep_arguments_param=False):
                     arguments,
                     clinic_args
                 ))
-            except ValueError:
+            except ParamIssue:
+                print('xxxx')
                 return NO_CONTEXTS
             else:
                 return func(context, *args, **kwargs)
@@ -85,11 +90,11 @@ def _iterate_argument_clinic(evaluator, arguments, parameters):
         key, argument = next(iterator, (None, None))
         if key is not None:
             debug.warning('Keyword arguments in argument clinic are currently not supported.')
-            raise ValueError
+            raise ParamIssue
         if argument is None and not optional:
             debug.warning('TypeError: %s expected at least %s arguments, got %s',
                           name, len(parameters), i)
-            raise ValueError
+            raise ParamIssue
 
         context_set = NO_CONTEXTS if argument is None else argument.infer()
 
@@ -98,7 +103,7 @@ def _iterate_argument_clinic(evaluator, arguments, parameters):
             # that's ok, maybe something is too hard to resolve, however,
             # we will not proceed with the evaluation of that function.
             debug.warning('argument_clinic "%s" not resolvable.', name)
-            raise ValueError
+            raise ParamIssue
         yield context_set
 
 
