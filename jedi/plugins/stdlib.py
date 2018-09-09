@@ -15,7 +15,7 @@ from jedi._compatibility import force_unicode
 from jedi.plugins.base import BasePlugin
 from jedi import debug
 from jedi.evaluate.arguments import ValuesArguments, \
-    repack_with_argument_clinic, AbstractArguments, TreeArguments
+    repack_with_argument_clinic, AbstractArguments
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import \
@@ -145,17 +145,14 @@ def builtins_next(iterators, defaults, evaluator):
     else:
         name = '__next__'
 
-    context_set = NO_CONTEXTS
+    context_set = defaults
     for iterator in iterators:
-        if isinstance(iterator, AbstractInstanceContext):
-            context_set = ContextSet.from_sets(
-                n.infer()
-                for filter in iterator.get_filters(include_self_names=True)
-                for n in filter.get(name)
-            ).execute_evaluated()
-    if context_set:
-        return context_set
-    return defaults
+        context_set |= ContextSet.from_sets(
+            n.infer()
+            for filter in iterator.get_filters(include_self_names=True)
+            for n in filter.get(name)
+        ).execute_evaluated()
+    return context_set
 
 
 @argument_clinic('object, name[, default], /')
