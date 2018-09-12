@@ -333,11 +333,10 @@ def signature_matches(function_context, arguments):
                 function_context.parent_context,
                 param_node.annotation
             )
-            return has_same_class(
-                argument.infer().py__class__(),
-                _type_vars_to_classes(annotation_result),
+            return any(
+                argument.infer().py__class__().is_sub_class_of(c)
+                for c in _type_vars_to_classes(annotation_result)
             )
-
     return True
 
 

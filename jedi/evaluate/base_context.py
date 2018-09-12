@@ -14,9 +14,32 @@ from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
 from jedi.common import BaseContextSet, BaseContext
 from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
 from jedi.evaluate.utils import safe_property
+from jedi.evaluate.cache import evaluator_as_method_param_cache
+
+
+def _is_same_class(class1, class2):
+    if class1 == class2:
+        return True
+
+    try:
+        comp_func = class1.is_same_class
+    except AttributeError:
+        try:
+            comp_func = class2.is_same_class
+        except AttributeError:
+            return False
+        else:
+            return comp_func(class1)
+    else:
+        return comp_func(class2)
 
 
 class HelperContextMixin:
+    @classmethod
+    @evaluator_as_method_param_cache()
+    def create_cached(cls, *args, **kwargs):
+        return cls(*args, **kwargs)
+
     def execute_evaluated(self, *value_list):
         return execute_evaluated(self, *value_list)
 
@@ -36,6 +59,13 @@ class HelperContextMixin:
         if is_goto:
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
+
+    def is_sub_class_of(self, class_context):
+        from jedi.evaluate.context.klass import py__mro__
+        for cls in py__mro__(self):
+            if _is_same_class(cls, class_context):
+                return True
+        return False
 
 
 class Context(HelperContextMixin, BaseContext):
@@ -273,6 +303,12 @@ class ContextSet(BaseContextSet):
 
     def get_item(self, *args, **kwargs):
         return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
+
+    def is_sub_class_of(self, class_context):
+        for c in self._set:
+            if c.is_sub_class_of(class_context):
+                return True
+        return False
 
 
 NO_CONTEXTS = ContextSet()

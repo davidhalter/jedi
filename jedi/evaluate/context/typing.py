@@ -41,9 +41,9 @@ class TypingName(AbstractTreeName):
 
 
 class _BaseTypingContext(Context):
-    def __init__(self, name):
+    def __init__(self, evaluator, name):
         super(_BaseTypingContext, self).__init__(
-            name.parent_context.evaluator,
+            evaluator,
             parent_context=name.parent_context,
         )
         self._name = name
@@ -72,6 +72,9 @@ class _BaseTypingContext(Context):
 
 
 class TypingModuleName(NameWrapper):
+    def __init__(self, *args, **kwargs):
+        assert not isinstance(args[0], TypingModuleName)
+        return super().__init__(*args, **kwargs)
     def infer(self):
         return ContextSet.from_iterable(self._remap())
 
@@ -83,28 +86,28 @@ class TypingModuleName(NameWrapper):
         except KeyError:
             pass
         else:
-            yield TypeAlias(evaluator, self.tree_name, actual)
+            yield TypeAlias.create_cached(evaluator, self.tree_name, actual)
             return
 
         if name in _PROXY_CLASS_TYPES:
-            yield TypingClassContext(self)
+            yield TypingClassContext(evaluator, self)
         elif name in _PROXY_TYPES:
-            yield TypingContext(self)
+            yield TypingContext.create_cached(evaluator, self)
         elif name == 'runtime':
             # We don't want anything here, not sure what this function is
             # supposed to do, since it just appears in the stubs and shouldn't
             # have any effects there (because it's never executed).
             return
         elif name == 'TypeVar':
-            yield TypeVarClass(self)
+            yield TypeVarClass.create_cached(evaluator, self)
         elif name == 'Any':
-            yield Any(self)
+            yield Any.create_cached(evaluator, self)
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
             yield builtin_from_name(evaluator, u'True')
         elif name == 'overload':
-            yield OverloadFunction(self)
+            yield OverloadFunction.create_cached(evaluator, self)
         elif name == 'cast':
             # TODO implement cast
             for c in self._wrapped_name.infer():  # Fuck my life Python 2
@@ -128,8 +131,8 @@ class TypingModuleFilterWrapper(FilterWrapper):
 
 
 class _WithIndexBase(_BaseTypingContext):
-    def __init__(self, name, index_context, context_of_index):
-        super(_WithIndexBase, self).__init__(name)
+    def __init__(self, evaluator, name, index_context, context_of_index):
+        super(_WithIndexBase, self).__init__(evaluator, name)
         self._index_context = index_context
         self._context_of_index = context_of_index
 
@@ -176,7 +179,8 @@ class TypingContext(_BaseTypingContext):
 
     def py__getitem__(self, index_context_set, contextualized_node):
         return ContextSet.from_iterable(
-            self.index_class(
+            self.index_class.create_cached(
+                self.evaluator,
                 self._name,
                 index_context,
                 context_of_index=contextualized_node.context)
@@ -322,17 +326,6 @@ class Any(_BaseTypingContext):
         return NO_CONTEXTS
 
 
-class GenericClass(object):
-    def __init__(self, class_context, ):
-        self._class_context = class_context
-
-    def __getattr__(self, name):
-        return getattr(self._class_context, name)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._class_context)
-
-
 class TypeVarClass(_BaseTypingContext):
     def py__call__(self, arguments):
         unpacked = arguments.unpack()
@@ -344,7 +337,7 @@ class TypeVarClass(_BaseTypingContext):
             debug.warning('Found a variable without a name %s', arguments)
             return NO_CONTEXTS
 
-        return ContextSet(TypeVar(self._name, var_name, unpacked))
+        return ContextSet(TypeVar.create_cached(self.evaluator, self._name, var_name, unpacked))
 
     def _find_string_name(self, lazy_context):
         if lazy_context is None:
@@ -363,8 +356,8 @@ class TypeVarClass(_BaseTypingContext):
 
 
 class TypeVar(_BaseTypingContext):
-    def __init__(self, class_name, var_name, unpacked_args):
-        super(TypeVar, self).__init__(class_name)
+    def __init__(self, evaluator, class_name, var_name, unpacked_args):
+        super(TypeVar, self).__init__(evaluator, class_name)
         self.var_name = var_name
 
         self._constraints_lazy_contexts = []
@@ -541,6 +534,9 @@ class AnnotatedClass(_AbstractAnnotatedClass):
     def get_given_types(self):
         return list(_iter_over_arguments(self._index_context, self._context_of_index))
 
+    def is_same_class(self, other):
+        return self == other
+
 
 class AnnotatedSubClass(_AbstractAnnotatedClass):
     def __init__(self, evaluator, parent_context, tree_node, given_types):
@@ -561,7 +557,7 @@ class LazyAnnotatedBaseClass(object):
         for base in self._lazy_base_class.infer():
             if isinstance(base, _AbstractAnnotatedClass):
                 # Here we have to recalculate the given types.
-                yield AnnotatedSubClass(
+                yield AnnotatedSubClass.create_cached(
                     base.evaluator,
                     base.parent_context,
                     base.tree_node,

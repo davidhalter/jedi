@@ -287,8 +287,6 @@ class StubParserTreeFilter(ParserTreeFilter):
             # for all API accesses. Otherwise the user will be directed to the
             # non-stub positions (see NameWithStub).
             n = TreeNameDefinition(self.context, name)
-            if isinstance(self.context, TypingModuleWrapper):
-                n = TypingModuleName(n)
             if len(non_stub_names):
                 for non_stub_name in non_stub_names:
                     if isinstance(non_stub_name, CompiledName):
