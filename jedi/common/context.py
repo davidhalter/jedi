@@ -13,17 +13,24 @@ class BaseContext(object):
 
 class BaseContextSet(object):
     def __init__(self, *args):
-        self._set = set(args)
+        for arg in args:
+            assert not isinstance(arg, BaseContextSet)
+        self._set = frozenset(args)
 
     @classmethod
     def from_iterable(cls, iterable):
         return cls.from_set(set(iterable))
 
     @classmethod
-    def from_set(cls, set_):
-        self = cls()
-        self._set = set_
+    def _from_frozen_set(cls, frozenset_):
+        self = cls.__new__(cls)
+        self._set = frozenset_
         return self
+
+    # TODO remove this function
+    @classmethod
+    def from_set(cls, set_):
+        return cls(*set_)
 
     @classmethod
     def from_sets(cls, sets):
@@ -35,14 +42,14 @@ class BaseContextSet(object):
             if isinstance(set_, BaseContextSet):
                 aggregated |= set_._set
             else:
-                aggregated |= set_
-        return cls.from_set(aggregated)
+                aggregated |= frozenset(set_)
+        return cls._from_frozen_set(aggregated)
 
     def __or__(self, other):
-        return self.from_set(self._set | other._set)
+        return self._from_frozen_set(self._set | other._set)
 
     def __and__(self, other):
-        return self.from_set(self._set & other._set)
+        return self._from_frozen_set(self._set & other._set)
 
     def __iter__(self):
         for element in self._set:
@@ -67,3 +74,9 @@ class BaseContextSet(object):
                 for context in self._set
             )
         return mapper
+
+    def __eq__(self, other):
+        return self._set == other._set
+
+    def __hash__(self):
+        return hash(self._set)
