@@ -307,11 +307,11 @@ class OverloadedFunctionContext(ContextWrapper):
         for f in self._overloaded_functions:
             signature = parser_utils.get_call_signature(f.tree_node)
             if signature_matches(f, arguments):
-                debug.dbg("Overloading - signature %s@%s matches",
+                debug.dbg("Overloading match: %s@%s",
                           signature, f.tree_node.start_pos[0], color='BLUE')
                 context_set |= f.py__call__(arguments=arguments)
             else:
-                debug.dbg("Overloading - signature %s@%s doesn't match with (%s)",
+                debug.dbg("Overloading no match: %s@%s (%s)",
                           signature, f.tree_node.start_pos[0], arguments, color='BLUE')
         return context_set
 
