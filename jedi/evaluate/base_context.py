@@ -17,23 +17,6 @@ from jedi.evaluate.utils import safe_property
 from jedi.evaluate.cache import evaluator_as_method_param_cache
 
 
-def _is_same_class(class1, class2):
-    if class1 == class2:
-        return True
-
-    try:
-        comp_func = class1.is_same_class
-    except AttributeError:
-        try:
-            comp_func = class2.is_same_class
-        except AttributeError:
-            return False
-        else:
-            return comp_func(class1)
-    else:
-        return comp_func(class2)
-
-
 class HelperContextMixin:
     @classmethod
     @evaluator_as_method_param_cache()
@@ -63,9 +46,12 @@ class HelperContextMixin:
     def is_sub_class_of(self, class_context):
         from jedi.evaluate.context.klass import py__mro__
         for cls in py__mro__(self):
-            if _is_same_class(cls, class_context):
+            if cls.is_same_class(class_context):
                 return True
         return False
+
+    def is_same_class(self, class2):
+        return self == class2
 
 
 class Context(HelperContextMixin, BaseContext):
@@ -303,12 +289,6 @@ class ContextSet(BaseContextSet):
 
     def get_item(self, *args, **kwargs):
         return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
-
-    def is_sub_class_of(self, class_context):
-        for c in self._set:
-            if c.is_sub_class_of(class_context):
-                return True
-        return False
 
 
 NO_CONTEXTS = ContextSet()

@@ -329,22 +329,16 @@ def signature_matches(function_context, arguments):
             return False
 
         if param_node.annotation is not None:
-            annotation_result = function_context.evaluator.eval_element(
+            annotation_contexts = function_context.evaluator.eval_element(
                 function_context.parent_context,
                 param_node.annotation
             )
-            return any(
-                argument.infer().py__class__().is_sub_class_of(c)
-                for c in _type_vars_to_classes(annotation_result)
-            )
+            argument_contexts = argument.infer().py__class__()
+            if not any(c1.is_sub_class_of(c2)
+                       for c1 in argument_contexts
+                       for c2 in annotation_contexts):
+                return False
     return True
-
-
-def _type_vars_to_classes(context_set):
-    return ContextSet.from_sets(
-        context.get_classes() if isinstance(context, TypeVar) else set([context])
-        for context in context_set
-    )
 
 
 def has_same_class(context_set1, context_set2):

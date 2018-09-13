@@ -243,6 +243,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate.context.typing import TypingClassMixin, AnnotatedClass
+        #from pprint import pprint
         for cls in py__mro__(self):
             if isinstance(cls, TypingClassMixin):
                 # TODO get the right classes.
