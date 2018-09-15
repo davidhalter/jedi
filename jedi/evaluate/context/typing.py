@@ -366,7 +366,7 @@ class TypeVarClass(_BaseTypingContext):
 class TypeVar(_BaseTypingContext):
     def __init__(self, evaluator, parent_context, tree_name, var_name, unpacked_args):
         super(TypeVar, self).__init__(evaluator, parent_context, tree_name)
-        self.var_name = var_name
+        self._var_name = var_name
 
         self._constraints_lazy_contexts = []
         self._bound_lazy_context = None
@@ -384,6 +384,9 @@ class TypeVar(_BaseTypingContext):
                     self._contra_variant_lazy_context = lazy_context
                 else:
                     debug.warning('Invalid TypeVar param name %s', key)
+
+    def py__name__(self):
+        return self._var_name
 
     def get_filters(self, *args, **kwargs):
         return iter([])
@@ -408,7 +411,7 @@ class TypeVar(_BaseTypingContext):
         return self._get_classes().execute_annotation()
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.var_name)
+        return '<%s: %s>' % (self.__class__.__name__, self.py__name__())
 
 
 class OverloadFunction(_BaseTypingContext):
@@ -425,7 +428,6 @@ class BoundTypeVarName(AbstractNameDefinition):
     def __init__(self, type_var, context_set):
         self._type_var = type_var
         self.parent_context = type_var.parent_context
-        self.var_name = self._type_var.var_name
         self._context_set = context_set
 
     def infer(self):
@@ -439,8 +441,11 @@ class BoundTypeVarName(AbstractNameDefinition):
                     yield context
         return ContextSet.from_iterable(iter_())
 
+    def py__name__(self):
+        return self._type_var.py__name__()
+
     def __repr__(self):
-        return '<%s %s -> %s>' % (self.__class__.__name__, self.var_name, self._context_set)
+        return '<%s %s -> %s>' % (self.__class__.__name__, self.py__name__(), self._context_set)
 
 
 class TypeVarFilter(object):
@@ -460,7 +465,7 @@ class TypeVarFilter(object):
 
     def get(self, name):
         for i, type_var in enumerate(self._type_vars):
-            if type_var.var_name == name:
+            if type_var.py__name__() == name:
                 try:
                     return [BoundTypeVarName(type_var, self._given_types[i])]
                 except IndexError:
@@ -601,7 +606,7 @@ class LazyAnnotatedBaseClass(object):
             new = ContextSet()
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar):
-                    names = filter.get(type_var.var_name)
+                    names = filter.get(type_var.py__name__())
                     new |= ContextSet.from_sets(
                         name.infer() for name in names
                     )
