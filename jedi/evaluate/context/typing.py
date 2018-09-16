@@ -6,7 +6,8 @@ contexts.
 from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
-from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, iterator_to_context_set
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
+    iterator_to_context_set, HelperContextMixin
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
@@ -62,7 +63,7 @@ class _BaseTypingContext(Context):
 
     @property
     def name(self):
-        return ContextName(self, self.tree_name)
+        return ContextName(self, self._tree_name)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
@@ -225,7 +226,7 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
         yield ContextSet.from_iterable(resolve_forward_references(context_set))
 
 
-class TypeAlias(object):
+class TypeAlias(HelperContextMixin):
     def __init__(self, evaluator, parent_context, origin_tree_name, actual):
         self.evaluator = evaluator
         self.parent_context = parent_context

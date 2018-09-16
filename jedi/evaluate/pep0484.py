@@ -452,8 +452,6 @@ def find_annotation_variables(context, node):
             for subscript_node in _unpack_subscriptlist(trailer.children[1]):
                 type_var_set = context.eval_node(subscript_node)
                 for type_var in type_var_set:
-                    from jedi.evaluate.context.typing import TypeVar
-
                     if isinstance(type_var, TypeVar) and type_var not in found:
                         found.append(type_var)
     return found

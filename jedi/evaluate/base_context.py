@@ -18,6 +18,8 @@ from jedi.evaluate.cache import evaluator_as_method_param_cache
 
 
 class HelperContextMixin:
+    tree_node = None
+
     @classmethod
     @evaluator_as_method_param_cache()
     def create_cached(cls, *args, **kwargs):
@@ -63,9 +65,7 @@ class Context(HelperContextMixin, BaseContext):
     """
     Should be defined, otherwise the API returns empty types.
     """
-
     predefined_names = {}
-    tree_node = None
     """
     To be defined by subclasses.
     """
