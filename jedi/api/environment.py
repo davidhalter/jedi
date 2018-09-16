@@ -318,10 +318,10 @@ def _get_executables_from_windows_registry(version):
 
     # TODO: support Python Anaconda.
     sub_keys = [
-      r'SOFTWARE\Python\PythonCore\{version}\InstallPath',
-      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}\InstallPath',
-      r'SOFTWARE\Python\PythonCore\{version}-32\InstallPath',
-      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}-32\InstallPath'
+        r'SOFTWARE\Python\PythonCore\{version}\InstallPath',
+        r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}\InstallPath',
+        r'SOFTWARE\Python\PythonCore\{version}-32\InstallPath',
+        r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}-32\InstallPath'
     ]
     for root_key in [winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE]:
         for sub_key in sub_keys:
