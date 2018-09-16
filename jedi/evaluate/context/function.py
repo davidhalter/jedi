@@ -341,16 +341,6 @@ def signature_matches(function_context, arguments):
     return True
 
 
-def has_same_class(context_set1, context_set2):
-    for c1 in context_set1:
-        for c2 in context_set2:
-            if c1.name.string_name == c2.name.string_name:
-                # TODO This is wrong, it doesn't account for a lot of things.
-                return True
-
-    return bool(context_set1 & context_set2)
-
-
 def _find_overload_functions(context, tree_node):
     def _is_overload_decorated(funcdef):
         if funcdef.parent.type == 'decorated':

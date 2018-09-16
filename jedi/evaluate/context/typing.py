@@ -3,6 +3,7 @@ We need to somehow work with the typing objects. Since the typing objects are
 pretty bare we need to add all the Jedi customizations to make them work as
 contexts.
 """
+from jedi._compatibility import unicode
 from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
@@ -359,9 +360,15 @@ class TypeVarClass(_BaseTypingContext):
             debug.warning('Found multiple contexts for a type variable: %s', context_set)
 
         name_context = next(iter(context_set))
-        if isinstance(name_context, CompiledObject):
-            return name_context.get_safe_value(default=None)
-        return None
+        try:
+            method = name_context.get_safe_value
+        except AttributeError:
+            return None
+        else:
+            safe_value = method(default=None)
+            if isinstance(safe_value, (str, unicode)):
+                return safe_value
+            return None
 
 
 class TypeVar(_BaseTypingContext):
