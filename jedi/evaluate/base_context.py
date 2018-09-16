@@ -26,6 +26,11 @@ class HelperContextMixin:
     def execute_evaluated(self, *value_list):
         return execute_evaluated(self, *value_list)
 
+    def merge_types_of_iterate(self):
+        return ContextSet.from_sets(
+            lazy_context.infer() for lazy_context in self.iterate()
+        )
+
     @Python3Method
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            search_global=False, is_goto=False,

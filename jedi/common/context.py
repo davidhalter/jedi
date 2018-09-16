@@ -43,7 +43,7 @@ class BaseContextSet(object):
                 aggregated |= set_._set
             else:
                 aggregated |= frozenset(set_)
-        return cls._from_frozen_set(aggregated)
+        return cls._from_frozen_set(frozenset(aggregated))
 
     def __or__(self, other):
         return self._from_frozen_set(self._set | other._set)

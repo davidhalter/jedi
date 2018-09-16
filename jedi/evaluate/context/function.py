@@ -169,7 +169,7 @@ class FunctionExecutionContext(TreeContext):
             returns = get_yield_exprs(self.evaluator, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
-            context_set = pep0484.infer_return_types(self.function_context)
+            context_set = pep0484.infer_return_types(self)
             if context_set:
                 # If there are annotations, prefer them over anything else.
                 # This will make it faster.

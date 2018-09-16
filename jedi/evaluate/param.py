@@ -25,11 +25,12 @@ class ExecutedParam(object):
         self._lazy_context = lazy_context
         self.string_name = param_node.name.value
 
-    def infer(self):
-        pep0484_hints = pep0484.infer_param(self._execution_context, self._param_node)
-        doc_params = docstrings.infer_param(self._execution_context, self._param_node)
-        if pep0484_hints or doc_params:
-            return pep0484_hints | doc_params
+    def infer(self, use_hints=True):
+        if use_hints:
+            pep0484_hints = pep0484.infer_param(self._execution_context, self._param_node)
+            doc_params = docstrings.infer_param(self._execution_context, self._param_node)
+            if pep0484_hints or doc_params:
+                return pep0484_hints | doc_params
 
         return self._lazy_context.infer()
 
