@@ -31,7 +31,15 @@ setup(name='jedi',
       packages=find_packages(exclude=['test', 'test.*']),
       python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
       install_requires=install_requires,
-      extras_require={'dev': ['docopt']},
+      extras_require={
+          'testing': [
+              'pytest>=2.3.5',
+              # docopt for sith doctests
+              'docopt',
+              # coloroma for colored debug output
+              'colorama',
+          ],
+      },
       package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
       platforms=['any'],
       classifiers=[
