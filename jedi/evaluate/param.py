@@ -5,7 +5,6 @@ from jedi.evaluate import analysis
 from jedi.evaluate.lazy_context import LazyKnownContext, \
     LazyTreeContext, LazyUnknownContext
 from jedi.evaluate import docstrings
-from jedi.evaluate import pep0484
 from jedi.evaluate.context import iterable
 
 
@@ -27,6 +26,7 @@ class ExecutedParam(object):
 
     def infer(self, use_hints=True):
         if use_hints:
+            from jedi.evaluate import pep0484
             pep0484_hints = pep0484.infer_param(self._execution_context, self._param_node)
             doc_params = docstrings.infer_param(self._execution_context, self._param_node)
             if pep0484_hints or doc_params:

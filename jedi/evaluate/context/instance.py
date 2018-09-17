@@ -358,6 +358,13 @@ class BoundMethod(AbstractFunction):
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
 
+    def get_matching_functions(self, arguments):
+        for func in self._function.get_matching_functions(arguments):
+            if func is self:
+                yield self
+            else:
+                yield BoundMethod(self.instance, self.class_context, func)
+
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._function)
 

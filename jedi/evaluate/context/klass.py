@@ -45,6 +45,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
     ContextName
+from jedi.evaluate.arguments import unpack_arglist
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     TreeContext
 
@@ -165,6 +166,21 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     important for descriptors (if the descriptor methods are evaluated or not).
     """
     api_type = u'class'
+
+    @evaluator_method_cache()
+    def find_annotation_variables(self):
+        found = []
+        arglist = self.tree_node.get_super_arglist()
+        if arglist is None:
+            return []
+
+        for stars, node in unpack_arglist(arglist):
+            if stars:
+                continue  # These are not relevant for this search.
+
+            from jedi.evaluate.pep0484 import find_unknown_type_vars
+            found += find_unknown_type_vars(self.parent_context, node)
+        return found
 
     @evaluator_method_cache(default=())
     def py__bases__(self):

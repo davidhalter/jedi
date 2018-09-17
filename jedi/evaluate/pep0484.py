@@ -29,8 +29,7 @@ from parso.python import tree
 from jedi._compatibility import unicode, force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
-from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet, ContextWrapper
-from jedi.evaluate.filters import DictFilter
+from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
 from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.context.typing import TypeVar, AnnotatedClass, AnnotatedSubClass
@@ -214,12 +213,28 @@ def infer_return_types(function_execution_context):
             function_execution_context.function_context.get_default_param_context(),
             match.group(1).strip()
         )
+        if annotation is None:
+            return NO_CONTEXTS
 
     context = function_execution_context.function_context.get_default_param_context()
-    return _define_type_vars(
+    unknown_type_vars = list(find_unknown_type_vars(context, annotation))
+    if not unknown_type_vars:
+        return context.eval_node(annotation)
+
+    return define_type_vars_for_execution(
         context.eval_node(annotation),
-        _infer_type_vars(function_execution_context, all_annotations),
+        function_execution_context,
+        unknown_type_vars,
     ).execute_annotation()
+
+
+def define_type_vars_for_execution(to_define_contexts, execution_context,
+                                   unknown_type_vars):
+    all_annotations = py__annotations__(execution_context.tree_node)
+    return _define_type_vars(
+        to_define_contexts,
+        _infer_type_vars(execution_context, all_annotations),
+    )
 
 
 def _infer_type_vars(execution_context, annotation_dict):
@@ -233,32 +248,19 @@ def _infer_type_vars(execution_context, annotation_dict):
     3. Return the union of all type vars that have been found.
     """
     context = execution_context.function_context.get_default_param_context()
-    try:
-        return_annotation = annotation_dict['return']
-    except KeyError:
-        return {}
 
-    unknown_type_vars = list(find_annotation_variables(context, return_annotation))
-    if not unknown_type_vars:
-        return {}
-
-    executed_params = execution_context.get_executed_params()
     annotation_variable_results = {}
-    # The annotation_dict is ordered.
-    for i, (annotation_name, annotation_node) in enumerate(annotation_dict.items()):
-        if annotation_name == 'return':
+    for executed_param in execution_context.get_executed_params():
+        try:
+            annotation_node = annotation_dict[executed_param.string_name]
+        except KeyError:
             continue
 
-        annotation_variables = find_annotation_variables(context, annotation_node)
+        annotation_variables = find_unknown_type_vars(context, annotation_node)
         if annotation_variables:
-            try:
-                param = executed_params[i]
-            except IndexError:
-                continue
-
             # Infer unknown type var
             annotation_context_set = context.eval_node(annotation_node)
-            actual_context_set = param.infer(use_hints=False)
+            actual_context_set = executed_param.infer(use_hints=False)
             for ann in annotation_context_set:
                 _merge_type_var_dicts(
                     annotation_variable_results,
@@ -444,16 +446,21 @@ def _find_type_from_comment_hint(context, node, varlist, name):
     return _evaluate_annotation_string(context, match.group(1).strip(), index)
 
 
-def find_annotation_variables(context, node):
-    found = []
-    if node.type == 'atom_expr':
-        trailer = node.children[-1]
-        if trailer.type == 'trailer' and trailer.children[0] == '[':
-            for subscript_node in _unpack_subscriptlist(trailer.children[1]):
-                type_var_set = context.eval_node(subscript_node)
-                for type_var in type_var_set:
-                    if isinstance(type_var, TypeVar) and type_var not in found:
-                        found.append(type_var)
+def find_unknown_type_vars(context, node):
+    def check_node(node):
+        if node.type == 'atom_expr':
+            trailer = node.children[-1]
+            if trailer.type == 'trailer' and trailer.children[0] == '[':
+                for subscript_node in _unpack_subscriptlist(trailer.children[1]):
+                    check_node(subscript_node)
+        else:
+            type_var_set = context.eval_node(node)
+            for type_var in type_var_set:
+                if isinstance(type_var, TypeVar):
+                    found.add(type_var)
+
+    found = set()
+    check_node(node)
     return found
 
 

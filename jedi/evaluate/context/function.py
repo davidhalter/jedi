@@ -16,7 +16,6 @@ from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
     ContextSet, TreeContext, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
-from jedi.evaluate.context.typing import TypeVar
 from jedi.evaluate.context import iterable
 from jedi.evaluate.context import asynchronous
 from jedi import parser_utils
@@ -126,6 +125,9 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
 
     def get_default_param_context(self):
         return self.parent_context
+
+    def get_matching_functions(self, arguments):
+        yield self
 
 
 class MethodContext(FunctionContext):
@@ -302,18 +304,22 @@ class OverloadedFunctionContext(ContextWrapper):
         self._overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):
-        context_set = ContextSet()
         debug.dbg("Execute overloaded function %s", self._wrapped_context, color='BLUE')
+        return ContextSet.from_sets(
+            matching_function.py__call__(arguments=arguments)
+            for matching_function in self.get_matching_functions(arguments)
+        )
+
+    def get_matching_functions(self, arguments):
         for f in self._overloaded_functions:
             signature = parser_utils.get_call_signature(f.tree_node)
             if signature_matches(f, arguments):
                 debug.dbg("Overloading match: %s@%s",
                           signature, f.tree_node.start_pos[0], color='BLUE')
-                context_set |= f.py__call__(arguments=arguments)
+                yield f
             else:
                 debug.dbg("Overloading no match: %s@%s (%s)",
                           signature, f.tree_node.start_pos[0], arguments, color='BLUE')
-        return context_set
 
 
 def signature_matches(function_context, arguments):
@@ -369,11 +375,17 @@ def _find_overload_functions(context, tree_node):
             until_position=tree_node.start_pos
         )
         names = filter.get(tree_node.name.value)
+        assert isinstance(names, list)
+        if not names:
+            break
 
+        found = False
         for name in names:
             funcdef = name.tree_name.parent
             if funcdef.type == 'funcdef' and _is_overload_decorated(funcdef):
+                tree_node = funcdef
+                found = True
                 yield funcdef
 
-        # TODO this is probably not good enough? Why are we always breaking?
-        break  # By default break
+        if not found:
+            break

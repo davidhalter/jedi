@@ -11,7 +11,7 @@ from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
     iterator_to_context_set, HelperContextMixin
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext
 from jedi.evaluate.context.iterable import SequenceLiteralContext
-from jedi.evaluate.arguments import repack_with_argument_clinic, unpack_arglist
+from jedi.evaluate.arguments import repack_with_argument_clinic
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition, ContextName
@@ -498,36 +498,6 @@ class _AbstractAnnotatedClass(ClassContext):
             # The type vars can only be looked up if it's a global search and
             # not a direct lookup on the class.
             yield self.get_type_var_filter()
-
-    @evaluator_method_cache()
-    def find_annotation_variables(self):
-        found = []
-        arglist = self.tree_node.get_super_arglist()
-        if arglist is None:
-            return []
-
-        for stars, node in unpack_arglist(arglist):
-            if stars:
-                continue  # These are not relevant for this search.
-
-            if node.type == 'atom_expr':
-                trailer = node.children[-1]
-                if trailer.type == 'trailer' and trailer.children[0] == '[':
-                    for subscript_node in self._unpack_subscriptlist(trailer.children[1]):
-                        type_var_set = self.parent_context.eval_node(subscript_node)
-                        for type_var in type_var_set:
-                            if isinstance(type_var, TypeVar) and type_var not in found:
-                                found.append(type_var)
-        return found
-
-    def _unpack_subscriptlist(self, subscriptlist):
-        if subscriptlist.type == 'subscriptlist':
-            for subscript in subscriptlist.children[::2]:
-                if subscript.type != 'subscript':
-                    yield subscript
-        else:
-            if subscriptlist.type != 'subscript':
-                yield subscriptlist
 
     def is_same_class(self, other):
         if not isinstance(other, _AbstractAnnotatedClass):

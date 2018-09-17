@@ -32,13 +32,12 @@ from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
 from jedi.evaluate.helpers import get_int_or_none, is_string, \
     predefine_names, evaluate_call_of_leaf, reraise_getitem_errors, \
     SimpleGetItemNotFound
-from jedi.evaluate.utils import safe_property
-from jedi.evaluate.utils import to_list
+from jedi.evaluate.utils import safe_property, to_list
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.filters import ParserTreeFilter, BuiltinOverwrite, \
     publish_method
-from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, \
     TreeContext, ContextualizedNode, iterate_contexts
 from jedi.parser_utils import get_comp_fors
 
@@ -188,9 +187,37 @@ class Sequence(BuiltinOverwrite, IterableMixin):
 
     @memoize_method
     def get_object(self):
-        compiled_obj = compiled.builtin_from_name(self.evaluator, self.array_type)
-        only_obj, = execute_evaluated(compiled_obj, self)
-        return only_obj
+        klass = compiled.builtin_from_name(self.evaluator, self.array_type)
+        return self._annotate_class(klass)
+
+    def _annotate_class(self, klass):
+        from jedi.evaluate.pep0484 import define_type_vars_for_execution
+
+        instance, = klass.execute_evaluated(self)
+
+        for init_function in self._get_init_functions(instance):
+            # Just take the first result, it should always be one, because we
+            # control the typeshed code.
+            execution_context = init_function.get_function_execution()
+            return define_type_vars_for_execution(
+                ContextSet(klass),
+                execution_context,
+                klass.find_annotation_variables()
+            )
+        return instance
+        assert "Should never land here, probably an issue with typeshed changes"
+
+    def _get_init_functions(self, instance):
+        from jedi.evaluate.context.function import OverloadedFunctionContext
+        from jedi.evaluate import arguments
+        for init in instance.py__getattribute__('__init__'):
+            try:
+                method = init.get_matching_functions
+            except AttributeError:
+                continue
+            else:
+                for x in method(arguments.ValuesArguments([ContextSet(self)])):
+                    yield x
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
