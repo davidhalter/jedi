@@ -309,7 +309,7 @@ class Tuple(_ContainerBase):
                 for i in range(self._index_context.py__len__()):
                     yield LazyKnownContexts(self._get_getitem_contexts(i).execute_annotation())
 
-    def py__getitem__(self):
+    def py__getitem__(self, index_context_set, contextualized_node):
         if self._is_homogenous():
             return self._get_getitem_contexts(0).execute_annotation()
 

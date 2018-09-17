@@ -250,11 +250,13 @@ def _getitem(context, index_contexts, contextualized_node):
             index = index_context
             if isinstance(index_context, Slice):
                 index = index.obj
-            if isinstance(index, CompiledObject):
-                try:
-                    index = index.get_safe_value()
-                except ValueError:
-                    pass
+
+            try:
+                method = index.get_safe_value
+            except AttributeError:
+                pass
+            else:
+                index = method(default=None)
 
             if type(index) in (float, int, str, unicode, slice, bytes):
                 try:

@@ -187,8 +187,8 @@ def predefine_names(context, flow_scope, dct):
 
 
 def is_compiled(context):
-    from jedi.evaluate.compiled import CompiledObject
-    return isinstance(context, CompiledObject)
+    from jedi.evaluate.compiled import CompiledObject, CompiledValue
+    return isinstance(context, (CompiledObject, CompiledValue))
 
 
 def is_string(context):

@@ -19,8 +19,10 @@ class CompiledValue(ContextWrapper):
         super(CompiledValue, self).__init__(instance)
         self._compiled_obj = compiled_obj
 
-    def get_safe_value(self, *args, **kwargs):
-        return self._compiled_obj.get_safe_value(*args, **kwargs)
+    def __getattribute__(self, name):
+        if name in ('get_safe_value', 'execute_operation'):
+            return getattr(self._compiled_obj, name)
+        return super(CompiledValue, self).__getattribute__(name)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._compiled_obj)
