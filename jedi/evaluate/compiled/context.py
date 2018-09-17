@@ -14,7 +14,6 @@ from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.helpers import reraise_getitem_errors, execute_evaluated
-from . import fake
 
 
 class CheckAttribute(object):
@@ -47,11 +46,9 @@ class CheckAttribute(object):
 
 
 class CompiledObject(Context):
-    def __init__(self, evaluator, access_handle, parent_context=None, faked_class=None):
+    def __init__(self, evaluator, access_handle, parent_context=None):
         super(CompiledObject, self).__init__(evaluator, parent_context)
         self.access_handle = access_handle
-        # This attribute will not be set for most classes, except for fakes.
-        self.tree_node = faked_class
 
     @CheckAttribute()
     def py__call__(self, arguments):
@@ -448,44 +445,30 @@ def _parse_function_doc(doc):
 
 
 def create_from_name(evaluator, compiled_object, name):
-    faked = None
-    try:
-        faked = fake.get_faked_with_parent_context(compiled_object, name)
-    except fake.FakeDoesNotExist:
-        pass
-
     access = compiled_object.access_handle.getattr(name, default=None)
     parent_context = compiled_object
     if parent_context.is_class():
         parent_context = parent_context.parent_context
     return create_cached_compiled_object(
-        evaluator, access, parent_context=parent_context, faked=faked
+        evaluator, access, parent_context=parent_context
     )
 
 
 def _normalize_create_args(func):
     """The cache doesn't care about keyword vs. normal args."""
-    def wrapper(evaluator, obj, parent_context=None, faked=None):
-        return func(evaluator, obj, parent_context, faked)
+    def wrapper(evaluator, obj, parent_context=None):
+        return func(evaluator, obj, parent_context)
     return wrapper
 
 
 def create_from_access_path(evaluator, access_path):
     parent_context = None
     for name, access in access_path.accesses:
-        try:
-            if parent_context is None:
-                faked = fake.get_faked_module(evaluator, access_path.accesses[0][0])
-            else:
-                faked = fake.get_faked_with_parent_context(parent_context, name)
-        except fake.FakeDoesNotExist:
-            faked = None
-
-        parent_context = create_cached_compiled_object(evaluator, access, parent_context, faked)
+        parent_context = create_cached_compiled_object(evaluator, access, parent_context)
     return parent_context
 
 
 @_normalize_create_args
 @evaluator_function_cache()
-def create_cached_compiled_object(evaluator, access_handle, parent_context, faked):
-    return CompiledObject(evaluator, access_handle, parent_context, faked)
+def create_cached_compiled_object(evaluator, access_handle, parent_context):
+    return CompiledObject(evaluator, access_handle, parent_context)

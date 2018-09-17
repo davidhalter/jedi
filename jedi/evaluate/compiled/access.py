@@ -364,7 +364,6 @@ class DirectObjectAccess(object):
                     yield builtins
                 else:
                     try:
-                        # TODO use sys.modules, __module__ can be faked.
                         yield sys.modules[imp_plz]
                     except KeyError:
                         # __module__ can be something arbitrary that doesn't exist.
