@@ -20,7 +20,8 @@ class CompiledValue(ContextWrapper):
         self._compiled_obj = compiled_obj
 
     def __getattribute__(self, name):
-        if name in ('get_safe_value', 'execute_operation', 'access_handle'):
+        if name in ('get_safe_value', 'execute_operation', 'access_handle',
+                    'negate'):
             return getattr(self._compiled_obj, name)
         return super(CompiledValue, self).__getattribute__(name)
 
@@ -33,7 +34,7 @@ def create_simple_object(evaluator, obj):
     Only allows creations of objects that are easily picklable across Python
     versions.
     """
-    assert type(obj) in (int, float, str, bytes, unicode, slice, complex)
+    assert type(obj) in (int, float, str, bytes, unicode, slice, complex, bool), obj
     compiled_obj = create_from_access_path(
         evaluator,
         evaluator.compiled_subprocess.create_simple_object(obj)

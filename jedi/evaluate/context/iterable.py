@@ -295,9 +295,13 @@ class SequenceLiteralContext(Sequence):
             compiled_obj_index = compiled.create_simple_object(self.evaluator, index)
             for key, value in self.get_tree_entries():
                 for k in self._defining_context.eval_node(key):
-                    if isinstance(k, compiled.CompiledObject) \
-                            and k.execute_operation(compiled_obj_index, u'==').get_safe_value():
-                        return self._defining_context.eval_node(value)
+                    try:
+                        method = k.execute_operation
+                    except AttributeError:
+                        pass
+                    else:
+                        if method(compiled_obj_index, u'==').get_safe_value():
+                            return self._defining_context.eval_node(value)
             raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
 
         if isinstance(index, slice):
