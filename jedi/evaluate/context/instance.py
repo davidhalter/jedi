@@ -19,8 +19,10 @@ from jedi.parser_utils import get_parent_scope
 
 
 class InstanceExecutedParam(object):
-    def __init__(self, instance):
+    def __init__(self, instance, tree_param):
         self._instance = instance
+        self._tree_param = tree_param
+        self.string_name = self._tree_param.name.value
 
     def infer(self):
         return ContextSet(self._instance)
@@ -32,8 +34,11 @@ class AnonymousInstanceArguments(AnonymousArguments):
 
     def get_executed_params(self, execution_context):
         from jedi.evaluate.dynamic import search_params
-        self_param = InstanceExecutedParam(self._instance)
         tree_params = execution_context.tree_node.get_params()
+        if not tree_params:
+            return []
+
+        self_param = InstanceExecutedParam(self._instance, tree_params[0])
         if len(tree_params) == 1:
             # If the only param is self, we don't need to try to find
             # executions of this function, we have all the params already.
