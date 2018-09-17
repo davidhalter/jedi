@@ -20,7 +20,7 @@ class CompiledValue(ContextWrapper):
         self._compiled_obj = compiled_obj
 
     def __getattribute__(self, name):
-        if name in ('get_safe_value', 'execute_operation'):
+        if name in ('get_safe_value', 'execute_operation', 'access_handle'):
             return getattr(self._compiled_obj, name)
         return super(CompiledValue, self).__getattribute__(name)
 
