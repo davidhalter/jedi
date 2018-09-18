@@ -168,7 +168,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     api_type = u'class'
 
     @evaluator_method_cache()
-    def find_annotation_variables(self):
+    def list_type_vars(self):
         found = []
         arglist = self.tree_node.get_super_arglist()
         if arglist is None:

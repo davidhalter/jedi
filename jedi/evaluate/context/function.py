@@ -339,7 +339,7 @@ def signature_matches(function_context, arguments):
                 return False  # TODO allow this
 
             annotation_contexts = function_context.evaluator.eval_element(
-                function_context.parent_context,
+                function_context.get_default_param_context(),
                 param_node.annotation
             )
             argument_contexts = argument.infer().py__class__()

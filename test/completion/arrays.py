@@ -210,7 +210,7 @@ dic2 = {'asdf': 3, 'b': 'str'}
 #? int()
 dic2['asdf']
 # TODO for now get doesn't work properly when used with a literal.
-#? None
+#? None int() str()
 dic2.get('asdf')
 
 # string literal

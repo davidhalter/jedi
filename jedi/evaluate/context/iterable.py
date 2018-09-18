@@ -188,26 +188,25 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     @memoize_method
     def get_object(self):
         klass = compiled.builtin_from_name(self.evaluator, self.array_type)
-        return self._annotate_class(klass)
+        annotated_instance, = self._annotate_class(klass).execute_evaluated()
+        return annotated_instance
 
     def _annotate_class(self, klass):
         from jedi.evaluate.pep0484 import define_type_vars_for_execution
 
-        instance, = klass.execute_evaluated(self)
+        instance, = klass.execute(self)
 
-        for init_function in self._get_init_functions(instance):
+        for execution_context in self._get_init_executions(instance):
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
-            execution_context = init_function.get_function_execution()
             return define_type_vars_for_execution(
                 ContextSet(klass),
                 execution_context,
-                klass.find_annotation_variables()
+                klass.list_type_vars()
             )
-        return instance
         assert "Should never land here, probably an issue with typeshed changes"
 
-    def _get_init_functions(self, instance):
+    def _get_init_executions(self, instance):
         from jedi.evaluate import arguments
         from jedi.evaluate.context.instance import InstanceArguments
         for init in instance.py__getattribute__('__init__'):
@@ -216,12 +215,10 @@ class Sequence(BuiltinOverwrite, IterableMixin):
             except AttributeError:
                 continue
             else:
-                arguments = InstanceArguments(
-                    instance,
-                    arguments.ValuesArguments([ContextSet(self)])
-                )
-                for x in method(arguments):
-                    yield x
+                base_args = arguments.ValuesArguments([ContextSet(self)])
+                arguments = InstanceArguments(instance, base_args)
+                for func in method(arguments):
+                    yield func.get_function_execution(base_args)
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
@@ -438,6 +435,15 @@ class DictLiteralContext(SequenceLiteralContext):
         ]
 
         return ContextSet(FakeSequence(self.evaluator, u'list', lazy_contexts))
+
+    def _dict_keys(self):
+        return ContextSet.from_sets(
+            self._defining_context.eval_node(k)
+            for k, v in self.get_tree_entries()
+        )
+
+    def get_mapping_item_contexts(self):
+        return self._dict_keys(), self._dict_values()
 
 
 class _FakeArray(SequenceLiteralContext):

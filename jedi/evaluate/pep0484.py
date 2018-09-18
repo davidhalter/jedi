@@ -30,8 +30,9 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
 from jedi.evaluate.lazy_context import LazyTreeContext
-from jedi.evaluate.context import ModuleContext
-from jedi.evaluate.context.typing import TypeVar, AnnotatedClass, AnnotatedSubClass
+from jedi.evaluate.context import ModuleContext, ClassContext
+from jedi.evaluate.context.typing import TypeVar, AnnotatedClass, \
+    AnnotatedSubClass
 from jedi.evaluate.helpers import is_string, execute_evaluated
 from jedi import debug
 from jedi import parser_utils
@@ -218,7 +219,7 @@ def infer_return_types(function_execution_context):
     context = function_execution_context.function_context.get_default_param_context()
     unknown_type_vars = list(find_unknown_type_vars(context, annotation))
     if not unknown_type_vars:
-        return context.eval_node(annotation)
+        return context.eval_node(annotation).execute_annotation()
 
     return define_type_vars_for_execution(
         context.eval_node(annotation),
@@ -232,11 +233,11 @@ def define_type_vars_for_execution(to_define_contexts, execution_context,
     all_annotations = py__annotations__(execution_context.tree_node)
     return _define_type_vars(
         to_define_contexts,
-        _infer_type_vars(execution_context, all_annotations),
+        _infer_type_vars_for_execution(execution_context, all_annotations),
     )
 
 
-def _infer_type_vars(execution_context, annotation_dict):
+def _infer_type_vars_for_execution(execution_context, annotation_dict):
     """
     Some functions use type vars that are not defined by the class, but rather
     only defined in the function. See for example `iter`. In those cases we
@@ -263,49 +264,58 @@ def _infer_type_vars(execution_context, annotation_dict):
             for ann in annotation_context_set:
                 _merge_type_var_dicts(
                     annotation_variable_results,
-                    _unpack_type_vars(ann, actual_context_set),
+                    _infer_type_vars(ann, actual_context_set),
                 )
 
     return annotation_variable_results
 
 
 def _define_type_vars(annotation_contexts, type_var_dict):
-    def remap_type_vars(type_var_contexts):
-        return ContextSet.from_sets(
-            type_var_dict.get(type_var, ContextSet(type_var))
-            for type_var in type_var_contexts
-        )
+    def remap_type_vars(cls):
+        for type_var in cls.list_type_vars():
+            yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
 
     if not type_var_dict:
         return annotation_contexts
 
     context_set = ContextSet()
     for annotation_context in annotation_contexts:
-        if isinstance(annotation_context, AnnotatedClass):
+        if isinstance(annotation_context, ClassContext):
             context_set |= ContextSet.from_iterable([
                 AnnotatedSubClass(
                     annotation_context.evaluator,
                     annotation_context.parent_context,
                     annotation_context.tree_node,
-                    tuple(remap_type_vars(tcs)
-                          for tcs in annotation_context.get_given_types())
+                    given_types=tuple(remap_type_vars(annotation_context))
                 )
             ])
     return context_set
 
 
 def _merge_type_var_dicts(base_dict, new_dict):
-    for type_var, contexts in new_dict.items():
+    for type_var_name, contexts in new_dict.items():
         try:
-            base_dict[type_var] = contexts
+            base_dict[type_var_name] |= contexts
         except KeyError:
-            base_dict[type_var] |= contexts
+            base_dict[type_var_name] = contexts
 
 
-def _unpack_type_vars(annotation_context, context_set):
+def _infer_type_vars(annotation_context, context_set):
+    """
+    This function tries to find information about undefined type vars and
+    returns a dict from type var name to context set.
+
+    This is for example important to understand what `iter([1])` returns.
+    According to typeshed, `iter` returns an `Iterator[_T]`:
+
+        def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
+
+    This functions would generate `int` for `_T` in this case, because it
+    unpacks the `Iterable`.
+    """
     type_var_dict = {}
     if isinstance(annotation_context, TypeVar):
-        return {annotation_context: context_set.py__class__()}
+        return {annotation_context.py__name__(): context_set.py__class__()}
     elif isinstance(annotation_context, AnnotatedClass):
         name = annotation_context.py__name__()
         if name == 'Iterable':
@@ -314,11 +324,37 @@ def _unpack_type_vars(annotation_context, context_set):
                 for nested_annotation_context in given[0]:
                     _merge_type_var_dicts(
                         type_var_dict,
-                        _unpack_type_vars(
+                        _infer_type_vars(
                             nested_annotation_context,
                             context_set.merge_types_of_iterate()
                         )
                     )
+        elif name == 'Mapping':
+            given = annotation_context.get_given_types()
+            if len(given) == 2:
+                for context in context_set:
+                    try:
+                        method = context.get_mapping_item_contexts
+                    except AttributeError:
+                        continue
+                    key_contexts, value_contexts = method()
+
+                    for nested_annotation_context in given[0]:
+                        _merge_type_var_dicts(
+                            type_var_dict,
+                            _infer_type_vars(
+                                nested_annotation_context,
+                                key_contexts,
+                            )
+                        )
+                    for nested_annotation_context in given[1]:
+                        _merge_type_var_dicts(
+                            type_var_dict,
+                            _infer_type_vars(
+                                nested_annotation_context,
+                                value_contexts,
+                            )
+                        )
     return type_var_dict
 
 

@@ -488,7 +488,7 @@ class TypeVarFilter(object):
 
 class _AbstractAnnotatedClass(ClassContext):
     def get_type_var_filter(self):
-        return TypeVarFilter(self.get_given_types(), self.find_annotation_variables())
+        return TypeVarFilter(self.get_given_types(), self.list_type_vars())
 
     def get_filters(self, search_global=False, *args, **kwargs):
         for f in super(_AbstractAnnotatedClass, self).get_filters(search_global, *args, **kwargs):
@@ -530,7 +530,7 @@ class _AbstractAnnotatedClass(ClassContext):
         return '<%s: %s%s>' % (
             self.__class__.__name__,
             self.name.string_name,
-            self.get_given_types(),
+            list(self.get_given_types()),
         )
 
     @to_list
