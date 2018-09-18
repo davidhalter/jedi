@@ -179,7 +179,10 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
                 continue  # These are not relevant for this search.
 
             from jedi.evaluate.pep0484 import find_unknown_type_vars
-            found += find_unknown_type_vars(self.parent_context, node)
+            for type_var in find_unknown_type_vars(self.parent_context, node):
+                if type_var not in found:
+                    # The order matters and it's therefore a list.
+                    found.append(type_var)
         return found
 
     @evaluator_method_cache(default=())

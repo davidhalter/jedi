@@ -506,9 +506,9 @@ class _AbstractAnnotatedClass(ClassContext):
         if self.tree_node != other.tree_node:
             # TODO not sure if this is nice.
             return False
-
         given_params1 = self.get_given_types()
         given_params2 = other.get_given_types()
+
         if len(given_params1) != len(given_params2):
             # If the amount of type vars doesn't match, the class doesn't
             # match.

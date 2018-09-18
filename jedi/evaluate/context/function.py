@@ -328,13 +328,16 @@ def signature_matches(function_context, arguments):
         key, argument = next(unpacked_arguments, (None, None))
         if argument is None:
             # This signature has an parameter more than arguments were given.
-            return False
+            return bool(param_node.star_count)
         if key is not None:
             # TODO this is obviously wrong, we cannot just ignore keyword
             # arguments, but it's easier for now.
             return False
 
         if param_node.annotation is not None:
+            if param_node.star_count == 2:
+                return False  # TODO allow this
+
             annotation_contexts = function_context.evaluator.eval_element(
                 function_context.parent_context,
                 param_node.annotation

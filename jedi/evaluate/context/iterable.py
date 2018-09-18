@@ -208,15 +208,19 @@ class Sequence(BuiltinOverwrite, IterableMixin):
         assert "Should never land here, probably an issue with typeshed changes"
 
     def _get_init_functions(self, instance):
-        from jedi.evaluate.context.function import OverloadedFunctionContext
         from jedi.evaluate import arguments
+        from jedi.evaluate.context.instance import InstanceArguments
         for init in instance.py__getattribute__('__init__'):
             try:
                 method = init.get_matching_functions
             except AttributeError:
                 continue
             else:
-                for x in method(arguments.ValuesArguments([ContextSet(self)])):
+                arguments = InstanceArguments(
+                    instance,
+                    arguments.ValuesArguments([ContextSet(self)])
+                )
+                for x in method(arguments):
                     yield x
 
     def py__bool__(self):

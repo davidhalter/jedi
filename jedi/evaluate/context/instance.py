@@ -487,31 +487,31 @@ class SelfAttributeFilter(ClassFilter):
 
 
 class InstanceArguments(AbstractArguments):
-    def __init__(self, instance, var_args):
+    def __init__(self, instance, arguments):
         self.instance = instance
-        self._var_args = var_args
+        self._arguments = arguments
 
     @property
     def argument_node(self):
-        return self._var_args.argument_node
+        return self._arguments.argument_node
 
     @property
     def trailer(self):
-        return self._var_args.trailer
+        return self._arguments.trailer
 
     def unpack(self, func=None):
         yield None, LazyKnownContext(self.instance)
-        for values in self._var_args.unpack(func):
+        for values in self._arguments.unpack(func):
             yield values
 
     def get_calling_nodes(self):
-        return self._var_args.get_calling_nodes()
+        return self._arguments.get_calling_nodes()
 
     def get_executed_params(self, execution_context):
-        if isinstance(self._var_args, AnonymousInstanceArguments):
-            return self._var_args.get_executed_params(execution_context)
+        if isinstance(self._arguments, AnonymousInstanceArguments):
+            return self._arguments.get_executed_params(execution_context)
 
         return super(InstanceArguments, self).get_executed_params(execution_context)
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._var_args)
+        return '<%s: %s>' % (self.__class__.__name__, self._arguments)

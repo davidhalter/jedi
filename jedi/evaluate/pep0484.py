@@ -21,7 +21,6 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
 
 import os
 import re
-from collections import OrderedDict
 
 from parso import ParserSyntaxError, parse, split_lines
 from parso.python import tree
@@ -178,7 +177,7 @@ def infer_param(execution_context, param):
 
 
 def py__annotations__(funcdef):
-    dct = OrderedDict()
+    dct = {}
     for function_param in funcdef.get_params():
         param_annotation = function_param.annotation
         if param_annotation is not None:
@@ -456,10 +455,10 @@ def find_unknown_type_vars(context, node):
         else:
             type_var_set = context.eval_node(node)
             for type_var in type_var_set:
-                if isinstance(type_var, TypeVar):
-                    found.add(type_var)
+                if isinstance(type_var, TypeVar) and type_var not in found:
+                    found.append(type_var)
 
-    found = set()
+    found = []  # We're not using a set, because the order matters.
     check_node(node)
     return found
 
