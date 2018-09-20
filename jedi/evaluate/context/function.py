@@ -106,7 +106,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
         if overloaded_funcs:
             return OverloadedFunctionContext(
                 function,
-                ContextSet.from_iterable(create(f) for f in overloaded_funcs)
+                [create(f) for f in overloaded_funcs]
             )
         return function
 
@@ -273,12 +273,16 @@ class FunctionExecutionContext(TreeContext):
                                              origin_scope=origin_scope)
 
     @evaluator_method_cache()
-    def get_executed_params(self):
-        return self.var_args.get_executed_params(self)
+    def get_executed_params_and_issues(self):
+        return self.var_args.get_executed_params_and_issues(self)
 
     def matches_signature(self):
+        executed_params, issues = self.get_executed_params_and_issues()
+        if issues:
+            return False
+
         matches = all(executed_param.matches_signature()
-                      for executed_param in self.get_executed_params())
+                      for executed_param in executed_params)
         if debug.enable_notice:
             signature = parser_utils.get_call_signature(self.tree_node)
             if matches:

@@ -86,9 +86,10 @@ def add(node_context, error_name, node, message=None, typ=Error, payload=None):
     # TODO this path is probably not right
     module_context = node_context.get_root_context()
     module_path = module_context.py__file__()
-    instance = typ(error_name, module_path, node.start_pos, message)
-    debug.warning(str(instance), format=False)
-    node_context.evaluator.analysis.append(instance)
+    issue_instance = typ(error_name, module_path, node.start_pos, message)
+    debug.warning(str(issue_instance), format=False)
+    node_context.evaluator.analysis.append(issue_instance)
+    return issue_instance
 
 
 def _check_for_setattr(instance):

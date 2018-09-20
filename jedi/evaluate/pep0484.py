@@ -250,7 +250,8 @@ def _infer_type_vars_for_execution(execution_context, annotation_dict):
     context = execution_context.function_context.get_default_param_context()
 
     annotation_variable_results = {}
-    for executed_param in execution_context.get_executed_params():
+    executed_params, _ = execution_context.get_executed_params_and_issues()
+    for executed_param in executed_params:
         try:
             annotation_node = annotation_dict[executed_param.string_name]
         except KeyError:

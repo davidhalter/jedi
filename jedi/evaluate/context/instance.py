@@ -32,11 +32,11 @@ class AnonymousInstanceArguments(AnonymousArguments):
     def __init__(self, instance):
         self._instance = instance
 
-    def get_executed_params(self, execution_context):
+    def get_executed_params_and_issues(self, execution_context):
         from jedi.evaluate.dynamic import search_params
         tree_params = execution_context.tree_node.get_params()
         if not tree_params:
-            return []
+            return [], []
 
         self_param = InstanceExecutedParam(self._instance, tree_params[0])
         if len(tree_params) == 1:
@@ -49,7 +49,7 @@ class AnonymousInstanceArguments(AnonymousArguments):
             execution_context.tree_node
         ))
         executed_params[0] = self_param
-        return executed_params
+        return [], executed_params
 
 
 class AbstractInstanceContext(Context):
@@ -273,7 +273,6 @@ class TreeInstance(AbstractInstanceContext):
             if not execution.matches_signature():
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
-                print('no m', bound)
                 continue
             print(bound)
             context_set = define_type_vars_for_execution(
@@ -541,11 +540,11 @@ class InstanceArguments(AbstractArguments):
     def get_calling_nodes(self):
         return self._arguments.get_calling_nodes()
 
-    def get_executed_params(self, execution_context):
+    def get_executed_params_and_issues(self, execution_context):
         if isinstance(self._arguments, AnonymousInstanceArguments):
-            return self._arguments.get_executed_params(execution_context)
+            return self._arguments.get_executed_params_and_issues(execution_context)
 
-        return super(InstanceArguments, self).get_executed_params(execution_context)
+        return super(InstanceArguments, self).get_executed_params_and_issues(execution_context)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._arguments)
