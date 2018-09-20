@@ -112,7 +112,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
 
     def py__call__(self, arguments, need_param_match=False):
         function_execution = self.get_function_execution(arguments)
-        if need_param_match and function_execution.matches_signature():
+        if need_param_match and not function_execution.matches_signature():
             return NO_CONTEXTS
         return function_execution.infer()
 

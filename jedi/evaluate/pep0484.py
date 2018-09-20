@@ -256,14 +256,18 @@ def _infer_type_vars_for_execution(execution_context, annotation_dict):
             annotation_node = annotation_dict[executed_param.string_name]
         except KeyError:
             continue
-        if executed_param._param_node.star_count:  # TODO remove this.
-            continue
 
         annotation_variables = find_unknown_type_vars(context, annotation_node)
         if annotation_variables:
             # Infer unknown type var
             annotation_context_set = context.eval_node(annotation_node)
+            star_count = executed_param._param_node.star_count
             actual_context_set = executed_param.infer(use_hints=False)
+            if star_count == 1:
+                actual_context_set = actual_context_set.merge_types_of_iterate()
+            elif star_count == 2:
+                # TODO _dict_values is not public.
+                actual_context_set = actual_context_set.try_merge('_dict_values')
             for ann in annotation_context_set:
                 _merge_type_var_dicts(
                     annotation_variable_results,

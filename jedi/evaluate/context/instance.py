@@ -274,7 +274,6 @@ class TreeInstance(AbstractInstanceContext):
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
                 continue
-            print(bound)
             context_set = define_type_vars_for_execution(
                 ContextSet(self.class_context),
                 execution,

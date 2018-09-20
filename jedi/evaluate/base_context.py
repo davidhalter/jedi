@@ -300,6 +300,17 @@ class ContextSet(BaseContextSet):
     def get_item(self, *args, **kwargs):
         return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
 
+    def try_merge(self, function_name):
+        context_set = self.__class__()
+        for c in self._set:
+            try:
+                method = getattr(c, function_name)
+            except AttributeError:
+                pass
+            else:
+                context_set |= method()
+        return context_set
+
 
 NO_CONTEXTS = ContextSet()
 
