@@ -110,8 +110,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
             )
         return function
 
-    def py__call__(self, arguments):
+    def py__call__(self, arguments, need_param_match=False):
         function_execution = self.get_function_execution(arguments)
+        if need_param_match and function_execution.matches_signature():
+            return NO_CONTEXTS
         return function_execution.infer()
 
     def get_function_execution(self, arguments=None):
@@ -274,6 +276,19 @@ class FunctionExecutionContext(TreeContext):
     def get_executed_params(self):
         return self.var_args.get_executed_params(self)
 
+    def matches_signature(self):
+        matches = all(executed_param.matches_signature()
+                      for executed_param in self.get_executed_params())
+        if debug.enable_notice:
+            signature = parser_utils.get_call_signature(self.tree_node)
+            if matches:
+                debug.dbg("Overloading match: %s@%s",
+                          signature, self.tree_node.start_pos[0], color='BLUE')
+            else:
+                debug.dbg("Overloading no match: %s@%s (%s)",
+                          signature, self.tree_node.start_pos[0], self.var_args, color='BLUE')
+        return matches
+
     def infer(self):
         """
         Created to be used by inheritance.
@@ -301,17 +316,17 @@ class FunctionExecutionContext(TreeContext):
 class OverloadedFunctionContext(ContextWrapper):
     def __init__(self, function, overloaded_functions):
         super(OverloadedFunctionContext, self).__init__(function)
-        self._overloaded_functions = overloaded_functions
+        self.overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):
         debug.dbg("Execute overloaded function %s", self._wrapped_context, color='BLUE')
         return ContextSet.from_sets(
-            matching_function.py__call__(arguments=arguments)
-            for matching_function in self.get_matching_functions(arguments)
+            f.py__call__(arguments=arguments, need_param_match=True)
+            for f in self.overloaded_functions
         )
 
     def get_matching_functions(self, arguments):
-        for f in self._overloaded_functions:
+        for f in self.overloaded_functions:
             signature = parser_utils.get_call_signature(f.tree_node)
             if signature_matches(f, arguments):
                 debug.dbg("Overloading match: %s@%s",
@@ -324,15 +339,18 @@ class OverloadedFunctionContext(ContextWrapper):
 
 def signature_matches(function_context, arguments):
     unpacked_arguments = arguments.unpack()
+    key_args = {}
     for param_node in function_context.tree_node.get_params():
-        key, argument = next(unpacked_arguments, (None, None))
+        while True:
+            key, argument = next(unpacked_arguments, (None, None))
+            if key is None or argument is None:
+                break
+            key_args[key] = argument
         if argument is None:
-            # This signature has an parameter more than arguments were given.
-            return bool(param_node.star_count)
-        if key is not None:
-            # TODO this is obviously wrong, we cannot just ignore keyword
-            # arguments, but it's easier for now.
-            return False
+            argument = key_args.pop(param_node.name.value, None)
+            if argument is None:
+                # This signature has an parameter more than arguments were given.
+                return bool(param_node.star_count == 1)
 
         if param_node.annotation is not None:
             if param_node.star_count == 2:

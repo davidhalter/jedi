@@ -58,7 +58,7 @@ def _evaluate_annotation_string(context, string, index=None):
             lambda context: context.array_type == u'tuple'  # noqa
                             and len(list(context.py__iter__())) >= index
         ).py__simple_getitem__(index)
-    return context_set.execute_annotation()
+    return context_set
 
 
 def _fix_forward_reference(context, node):
@@ -174,7 +174,7 @@ def infer_param(execution_context, param):
         )
     # Annotations are like default params and resolve in the same way.
     context = execution_context.function_context.get_default_param_context()
-    return _evaluate_for_annotation(context, annotation).execute_annotation()
+    return _evaluate_for_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):
@@ -212,7 +212,7 @@ def infer_return_types(function_execution_context):
         return _evaluate_annotation_string(
             function_execution_context.function_context.get_default_param_context(),
             match.group(1).strip()
-        )
+        ).execute_annotation()
         if annotation is None:
             return NO_CONTEXTS
 
@@ -254,6 +254,8 @@ def _infer_type_vars_for_execution(execution_context, annotation_dict):
         try:
             annotation_node = annotation_dict[executed_param.string_name]
         except KeyError:
+            continue
+        if executed_param._param_node.star_count:  # TODO remove this.
             continue
 
         annotation_variables = find_unknown_type_vars(context, annotation_node)
@@ -478,7 +480,9 @@ def _find_type_from_comment_hint(context, node, varlist, name):
     match = re.match(r"^#\s*type:\s*([^#]*)", comment)
     if match is None:
         return []
-    return _evaluate_annotation_string(context, match.group(1).strip(), index)
+    return _evaluate_annotation_string(
+        context, match.group(1).strip(), index
+    ).execute_annotation()
 
 
 def find_unknown_type_vars(context, node):

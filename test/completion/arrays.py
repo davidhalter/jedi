@@ -209,7 +209,6 @@ g
 dic2 = {'asdf': 3, 'b': 'str'}
 #? int()
 dic2['asdf']
-# TODO for now get doesn't work properly when used with a literal.
 #? None int() str()
 dic2.get('asdf')
 
@@ -268,8 +267,12 @@ for x in {1: 3.0, '': 1j}:
 dict().values().__iter__
 
 d = dict(a=3, b='')
-#? int() str()
+# Indexing is not supported
+#?
 d.values()[0]
+x, = d.values()
+#? int() str()
+x
 #? int()
 d['a']
 #? int() None

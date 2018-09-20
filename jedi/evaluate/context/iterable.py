@@ -188,37 +188,8 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     @memoize_method
     def get_object(self):
         klass = compiled.builtin_from_name(self.evaluator, self.array_type)
-        annotated_instance, = self._annotate_class(klass).execute_evaluated()
-        return annotated_instance
-
-    def _annotate_class(self, klass):
-        from jedi.evaluate.pep0484 import define_type_vars_for_execution
-
-        instance, = klass.execute(self)
-
-        for execution_context in self._get_init_executions(instance):
-            # Just take the first result, it should always be one, because we
-            # control the typeshed code.
-            return define_type_vars_for_execution(
-                ContextSet(klass),
-                execution_context,
-                klass.list_type_vars()
-            )
-        assert "Should never land here, probably an issue with typeshed changes"
-
-    def _get_init_executions(self, instance):
-        from jedi.evaluate import arguments
-        from jedi.evaluate.context.instance import InstanceArguments
-        for init in instance.py__getattribute__('__init__'):
-            try:
-                method = init.get_matching_functions
-            except AttributeError:
-                continue
-            else:
-                base_args = arguments.ValuesArguments([ContextSet(self)])
-                arguments = InstanceArguments(instance, base_args)
-                for func in method(arguments):
-                    yield func.get_function_execution(base_args)
+        instance, = klass.execute_evaluated(self)
+        return instance
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.

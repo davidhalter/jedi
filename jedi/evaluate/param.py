@@ -24,15 +24,31 @@ class ExecutedParam(object):
         self._lazy_context = lazy_context
         self.string_name = param_node.name.value
 
+    def infer_annotations(self):
+        from jedi.evaluate import pep0484
+        return pep0484.infer_param(self._execution_context, self._param_node)
+
     def infer(self, use_hints=True):
         if use_hints:
-            from jedi.evaluate import pep0484
-            pep0484_hints = pep0484.infer_param(self._execution_context, self._param_node)
             doc_params = docstrings.infer_param(self._execution_context, self._param_node)
-            if pep0484_hints or doc_params:
-                return pep0484_hints | doc_params
+            ann = self.infer_annotations().execute_annotation()
+            if ann or doc_params:
+                return ann | doc_params
 
         return self._lazy_context.infer()
+
+    def matches_signature(self):
+        argument_contexts = self.infer(use_hints=False).py__class__()
+        if self._param_node.star_count:
+            return True
+        annotations = self.infer_annotations()
+        if not annotations:
+            # If we cannot infer annotations - or there aren't any - pretend
+            # that the signature matches.
+            return True
+        return any(c1.is_sub_class_of(c2)
+                   for c1 in argument_contexts
+                   for c2 in annotations)
 
     @property
     def var_args(self):

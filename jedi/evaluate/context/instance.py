@@ -68,6 +68,9 @@ class AbstractInstanceContext(Context):
     def is_class(self):
         return False
 
+    def get_annotated_class_object(self):
+        return self.class_context  # This is the default.
+
     @property
     def py__call__(self):
         names = self.get_function_slot_names(u'__call__')
@@ -118,8 +121,9 @@ class AbstractInstanceContext(Context):
 
     def get_filters(self, search_global=None, until_position=None,
                     origin_scope=None, include_self_names=True):
+        class_context = self.get_annotated_class_object()
         if include_self_names:
-            for cls in py__mro__(self.class_context):
+            for cls in py__mro__(class_context):
                 if not isinstance(cls, compiled.CompiledObject) \
                         or cls.tree_node is not None:
                     # In this case we're excluding compiled objects that are
@@ -127,7 +131,7 @@ class AbstractInstanceContext(Context):
                     # compiled objects to search for self variables.
                     yield SelfAttributeFilter(self.evaluator, self, cls, origin_scope)
 
-        for cls in py__mro__(self.class_context):
+        for cls in py__mro__(class_context):
             if isinstance(cls, compiled.CompiledObject):
                 yield CompiledInstanceClassFilter(self.evaluator, self, cls)
             else:
@@ -170,18 +174,16 @@ class AbstractInstanceContext(Context):
     def name(self):
         pass
 
-    def _create_init_execution(self, class_context, bound_method):
-        return bound_method.get_function_execution(self.var_args)
-
     def create_init_executions(self):
         for name in self.get_function_slot_names(u'__init__'):
+            # TODO is this correct? I think we need to check for functions.
             if isinstance(name, LazyInstanceClassName):
                 function = FunctionContext.from_context(
                     self.parent_context,
                     name.tree_name.parent
                 )
                 bound_method = BoundMethod(self, name.class_context, function)
-                yield self._create_init_execution(name.class_context, bound_method)
+                yield bound_method.get_function_execution(self.var_args)
 
     @evaluator_method_cache()
     def create_instance_context(self, class_context, node):
@@ -199,7 +201,7 @@ class AbstractInstanceContext(Context):
                 )
                 bound_method = BoundMethod(self, class_context, func)
                 if scope.name.value == '__init__' and parent_context == class_context:
-                    return self._create_init_execution(class_context, bound_method)
+                    return bound_method.get_function_execution(self.var_args)
                 else:
                     return bound_method.get_function_execution()
             elif scope.type == 'classdef':
@@ -258,6 +260,38 @@ class TreeInstance(AbstractInstanceContext):
     @property
     def name(self):
         return filters.ContextName(self, self.class_context.name.tree_name)
+
+    @evaluator_method_cache()
+    def get_annotated_class_object(self):
+        from jedi.evaluate.pep0484 import define_type_vars_for_execution
+
+        for func in self._get_annotation_init_functions():
+            # Just take the first result, it should always be one, because we
+            # control the typeshed code.
+            bound = BoundMethod(self, self.class_context, func)
+            execution = bound.get_function_execution(self.var_args)
+            if not execution.matches_signature():
+                # First check if the signature even matches, if not we don't
+                # need to infer anything.
+                print('no m', bound)
+                continue
+            print(bound)
+            context_set = define_type_vars_for_execution(
+                ContextSet(self.class_context),
+                execution,
+                self.class_context.list_type_vars()
+            )
+            if context_set:
+                return next(iter(context_set))
+        return self.class_context
+
+    def _get_annotation_init_functions(self):
+        for init in self.class_context.py__getattribute__('__init__'):
+            if isinstance(init, OverloadedFunctionContext):
+                for func in init.overloaded_functions:
+                    yield func
+            elif isinstance(init, FunctionContext):
+                yield init
 
 
 class AnonymousInstance(TreeInstance):
