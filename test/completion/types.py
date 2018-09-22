@@ -137,5 +137,15 @@ set_t2.c
 # -----------------
 # python >= 3.5
 
+d = {'a': 3}
+
 #? dict()
 {**d}
+
+#? str()
+{**d, "b": "b"}["b"]
+
+# Should resolve to int() but jedi is not smart enough yet
+# Here to make sure it doesn't result in crash though
+#? str()
+{**d, "b": "b"}["a"]
