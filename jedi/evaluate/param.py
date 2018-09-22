@@ -69,7 +69,7 @@ def get_executed_params_and_issues(execution_context, var_args):
                 _add_argument_issue(
                     default_param_context,
                     'type-error-too-many-arguments',
-                    lazy_context,
+                    argument,
                     message=m
                 )
             )

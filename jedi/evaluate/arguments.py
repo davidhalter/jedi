@@ -159,7 +159,7 @@ class AnonymousArguments(AbstractArguments):
             execution_context.evaluator,
             execution_context,
             execution_context.tree_node
-        )
+        ), []
 
     def __repr__(self):
         return '%s()' % self.__class__.__name__

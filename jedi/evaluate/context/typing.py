@@ -406,7 +406,7 @@ class TypeVar(_BaseTypingContext):
             return ContextSet.from_sets(
                 l.infer() for l in self._constraints_lazy_contexts
             )
-        debug.warning('Tried to infer the TypeVar %r without a given type', self._var_name)
+        debug.warning('Tried to infer the TypeVar %s without a given type', self._var_name)
         return NO_CONTEXTS
 
     @property

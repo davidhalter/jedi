@@ -221,23 +221,34 @@ def infer_return_types(function_execution_context):
     if not unknown_type_vars:
         return context.eval_node(annotation).execute_annotation()
 
-    return define_type_vars_for_execution(
-        context.eval_node(annotation),
-        function_execution_context,
-        unknown_type_vars,
+    annotations_contexts = context.eval_node(annotation)
+    type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
+
+    def remap_type_vars(context, type_var_dict):
+        """
+        The TypeVars in the resulting classes have sometimes different names
+        and we need to check for that, e.g. a signature can be:
+
+        def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
+
+        However, the iterator is defined as Iterator[_T_co], which means it has
+        a different type var name.
+        """
+        if isinstance(context, ClassContext):
+            return {
+                to.py__name__(): type_var_dict.get(from_.py__name__(), NO_CONTEXTS)
+                for from_, to in zip(unknown_type_vars, context.list_type_vars())
+            }
+        return type_var_dict
+    return ContextSet.from_iterable(
+        define_type_vars(
+            annotation_context,
+            remap_type_vars(annotation_context, type_var_dict),
+        ) for annotation_context in annotations_contexts
     ).execute_annotation()
 
 
-def define_type_vars_for_execution(to_define_contexts, execution_context,
-                                   unknown_type_vars):
-    all_annotations = py__annotations__(execution_context.tree_node)
-    return _define_type_vars(
-        to_define_contexts,
-        _infer_type_vars_for_execution(execution_context, all_annotations),
-    )
-
-
-def _infer_type_vars_for_execution(execution_context, annotation_dict):
+def infer_type_vars_for_execution(execution_context, annotation_dict):
     """
     Some functions use type vars that are not defined by the class, but rather
     only defined in the function. See for example `iter`. In those cases we
@@ -277,26 +288,19 @@ def _infer_type_vars_for_execution(execution_context, annotation_dict):
     return annotation_variable_results
 
 
-def _define_type_vars(annotation_contexts, type_var_dict):
+def define_type_vars(annotation_context, type_var_dict):
     def remap_type_vars(cls):
         for type_var in cls.list_type_vars():
             yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
 
-    if not type_var_dict:
-        return annotation_contexts
-
-    context_set = ContextSet()
-    for annotation_context in annotation_contexts:
-        if isinstance(annotation_context, ClassContext):
-            context_set |= ContextSet.from_iterable([
-                AnnotatedSubClass(
-                    annotation_context.evaluator,
-                    annotation_context.parent_context,
-                    annotation_context.tree_node,
-                    given_types=tuple(remap_type_vars(annotation_context))
-                )
-            ])
-    return context_set
+    if type_var_dict and isinstance(annotation_context, ClassContext):
+        return AnnotatedSubClass(
+            annotation_context.evaluator,
+            annotation_context.parent_context,
+            annotation_context.tree_node,
+            given_types=tuple(remap_type_vars(annotation_context))
+        )
+    return annotation_context
 
 
 def _merge_type_var_dicts(base_dict, new_dict):

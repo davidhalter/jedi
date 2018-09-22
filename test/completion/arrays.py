@@ -273,9 +273,9 @@ d.values()[0]
 x, = d.values()
 #? int() str()
 x
-#? int()
+#? int() str()
 d['a']
-#? int() None
+#? int() str() None
 d.get('a')
 
 # -----------------

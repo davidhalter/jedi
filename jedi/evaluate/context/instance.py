@@ -27,6 +27,9 @@ class InstanceExecutedParam(object):
     def infer(self):
         return ContextSet(self._instance)
 
+    def matches_signature(self):
+        return True
+
 
 class AnonymousInstanceArguments(AnonymousArguments):
     def __init__(self, instance):
@@ -42,14 +45,14 @@ class AnonymousInstanceArguments(AnonymousArguments):
         if len(tree_params) == 1:
             # If the only param is self, we don't need to try to find
             # executions of this function, we have all the params already.
-            return [self_param]
+            return [self_param], []
         executed_params = list(search_params(
             execution_context.evaluator,
             execution_context,
             execution_context.tree_node
         ))
         executed_params[0] = self_param
-        return [], executed_params
+        return executed_params, []
 
 
 class AbstractInstanceContext(Context):
@@ -263,7 +266,7 @@ class TreeInstance(AbstractInstanceContext):
 
     @evaluator_method_cache()
     def get_annotated_class_object(self):
-        from jedi.evaluate.pep0484 import define_type_vars_for_execution
+        from jedi.evaluate import pep0484
 
         for func in self._get_annotation_init_functions():
             # Just take the first result, it should always be one, because we
@@ -274,13 +277,12 @@ class TreeInstance(AbstractInstanceContext):
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
                 continue
-            context_set = define_type_vars_for_execution(
-                ContextSet(self.class_context),
-                execution,
-                self.class_context.list_type_vars()
+
+            all_annotations = pep0484.py__annotations__(execution.tree_node)
+            return pep0484.define_type_vars(
+                self.class_context,
+                pep0484.infer_type_vars_for_execution(execution, all_annotations),
             )
-            if context_set:
-                return next(iter(context_set))
         return self.class_context
 
     def _get_annotation_init_functions(self):
