@@ -409,6 +409,10 @@ class TypeVar(_BaseTypingContext):
         debug.warning('Tried to infer the TypeVar %s without a given type', self._var_name)
         return NO_CONTEXTS
 
+    def is_same_class(self, other):
+        # Everything can match an undefined type var.
+        return True
+
     @property
     def constraints(self):
         return ContextSet.from_sets(
@@ -517,7 +521,8 @@ class _AbstractAnnotatedClass(ClassContext):
         # Now compare generics
         return all(
             any(
-                cls1.is_same_class(cls2)
+                # TODO why is this ordering the correct one?
+                cls2.is_same_class(cls1)
                 for cls1 in class_set1
                 for cls2 in class_set2
             ) for class_set1, class_set2 in zip(given_params1, given_params2)

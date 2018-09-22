@@ -279,10 +279,12 @@ class TreeInstance(AbstractInstanceContext):
                 continue
 
             all_annotations = pep0484.py__annotations__(execution.tree_node)
-            return pep0484.define_type_vars(
+            defined = pep0484.define_type_vars(
                 self.class_context,
                 pep0484.infer_type_vars_for_execution(execution, all_annotations),
             )
+            debug.dbg('Inferred instance context as %s', defined, color='BLUE')
+            return defined
         return self.class_context
 
     def _get_annotation_init_functions(self):
