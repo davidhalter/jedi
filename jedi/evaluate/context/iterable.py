@@ -351,13 +351,19 @@ class SequenceLiteralContext(Sequence):
             kv = []
             iterator = iter(array_node.children)
             for key in iterator:
-                op = next(iterator, None)
-                if op is None or op == ',':
-                    kv.append(key)  # A set.
-                else:
-                    assert op == ':'  # A dict.
-                    kv.append((key, next(iterator)))
+                if key == "**":
+                    # dict with pep 448 double-star unpacking
+                    # for now ignoring the values imported by **
+                    next(iterator)
                     next(iterator, None)  # Possible comma.
+                else:
+                    op = next(iterator, None)
+                    if op is None or op == ',':
+                        kv.append(key)  # A set.
+                    else:
+                        assert op == ':'  # A dict.
+                        kv.append((key, next(iterator)))
+                        next(iterator, None)  # Possible comma.
             return kv
         else:
             return [array_node]
