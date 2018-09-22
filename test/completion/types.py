@@ -131,3 +131,11 @@ set_t2 = set()
 
 #? ['clear', 'copy']
 set_t2.c
+
+# -----------------
+# pep 448 unpacking generalizations
+# -----------------
+# python >= 3.5
+
+#? dict()
+{**d}
