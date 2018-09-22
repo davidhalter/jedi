@@ -147,5 +147,30 @@ d = {'a': 3}
 
 # Should resolve to int() but jedi is not smart enough yet
 # Here to make sure it doesn't result in crash though
-#? str()
-{**d, "b": "b"}["a"]
+#? 
+{**d}["a"]
+
+s = {1, 2, 3}
+
+#? set()
+{*s}
+
+#? set()
+{*s, 4, *s}
+
+s = {1, 2, 3}
+# Should resolve to int() but jedi is not smart enough yet
+# Here to make sure it doesn't result in crash though
+#? 
+{*s}.pop()
+
+#? int()
+{*s, 4}.pop()
+
+# Should resolve to int() but jedi is not smart enough yet
+# Here to make sure it doesn't result in crash though
+#? 
+[*s][0]
+
+#? int()
+[*s, 4][0]
