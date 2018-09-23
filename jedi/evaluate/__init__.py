@@ -134,7 +134,9 @@ class Evaluator(object):
             self,
         )
 
-    def import_module(self, import_names, parent_module_context, sys_path):
+    def import_module(self, import_names, parent_module_context=None, sys_path=None):
+        if sys_path is None:
+            sys_path = self.get_sys_path()
         try:
             return self.module_cache.get(import_names)
         except KeyError:
@@ -150,12 +152,14 @@ class Evaluator(object):
         module_name = 'builtins'
         if self.environment.version_info.major == 2:
             module_name = '__builtin__'
-        builtins_module, = self.import_module(
-            (module_name,),
-            parent_module_context=None,
-            sys_path=()
-        )
+        builtins_module, = self.import_module((module_name,), sys_path=())
         return builtins_module
+
+    @property
+    @evaluator_function_cache()
+    def typing_module(self):
+        typing_module, = self.import_module(('typing',))
+        return typing_module
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()

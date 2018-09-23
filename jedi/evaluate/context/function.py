@@ -267,6 +267,12 @@ class FunctionExecutionContext(TreeContext):
                             for result in self._get_yield_lazy_context(yield_in_same_for_stmt):
                                 yield result
 
+    def merge_yield_contexts(self, is_async=False):
+        return ContextSet.from_sets(
+            lazy_context.infer()
+            for lazy_context in self.get_yield_lazy_contexts()
+        )
+
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield self.function_execution_filter(self.evaluator, self,
                                              until_position=until_position,
@@ -300,12 +306,24 @@ class FunctionExecutionContext(TreeContext):
         evaluator = self.evaluator
         is_coroutine = self.tree_node.parent.type == 'async_stmt'
         is_generator = bool(get_yield_exprs(evaluator, self.tree_node))
+        from jedi.evaluate.context.typing import AnnotatedSubClass
 
         if is_coroutine:
             if is_generator:
                 if evaluator.environment.version_info < (3, 6):
                     return NO_CONTEXTS
-                return ContextSet(asynchronous.AsyncGenerator(evaluator, self))
+                async_generator_classes = evaluator.typing_module \
+                    .py__getattribute__('AsyncGenerator')
+                yield_contexts = self.merge_yield_contexts(is_async=True)
+                return ContextSet.from_iterable(
+                    AnnotatedSubClass(
+                        evaluator,
+                        parent_context=c.parent_context,
+                        tree_node=c.tree_node,
+                        # The contravariant doesn't seem to be defined.
+                        given_types=(yield_contexts.py__class__(), NO_CONTEXTS)
+                    ) for c in async_generator_classes
+                )
             else:
                 if evaluator.environment.version_info < (3, 5):
                     return NO_CONTEXTS

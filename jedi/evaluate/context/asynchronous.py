@@ -28,11 +28,3 @@ class CoroutineWrapper(AsyncBase):
 
     def py__stop_iteration_returns(self):
         return self.func_execution_context.get_return_values()
-
-
-class AsyncGenerator(AsyncBase):
-    """Handling of `yield` functions."""
-    special_object_identifier = u'ASYNC_GENERATOR'
-
-    def py__aiter__(self):
-        return self.func_execution_context.get_yield_lazy_contexts(is_async=True)

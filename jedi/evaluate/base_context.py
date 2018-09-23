@@ -31,9 +31,10 @@ class HelperContextMixin:
     def execute_evaluated(self, *value_list):
         return execute_evaluated(self, *value_list)
 
-    def merge_types_of_iterate(self):
+    def merge_types_of_iterate(self, contextualized_node=None, is_async=False):
         return ContextSet.from_sets(
-            lazy_context.infer() for lazy_context in self.iterate()
+            lazy_context.infer()
+            for lazy_context in self.iterate(contextualized_node, is_async)
         )
 
     @Python3Method
@@ -81,6 +82,16 @@ class Context(HelperContextMixin, BaseContext):
 
     def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
+        if is_async:
+            from jedi.evaluate.lazy_context import LazyKnownContexts
+            return iter([
+                LazyKnownContexts(
+                    self.py__getattribute__('__aiter__').execute_evaluated()
+                        .py__getattribute__('__anext__').execute_evaluated()
+                        .py__getattribute__('__await__').execute_evaluated()
+                        .py__stop_iteration_returns()
+                )  # noqa
+            ])
         try:
             if is_async:
                 iter_method = self.py__aiter__
@@ -139,6 +150,10 @@ class Context(HelperContextMixin, BaseContext):
             else:
                 return clean_scope_docstring(self.tree_node)
         return None
+
+    def py__stop_iteration_returns(self):
+        debug.warning("Not possible to return the stop iterations of %s", self)
+        return NO_CONTEXTS
 
 
 def iterate_contexts(contexts, contextualized_node=None, is_async=False):

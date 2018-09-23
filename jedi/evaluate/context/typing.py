@@ -8,7 +8,7 @@ from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name, CompiledObject
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
-    iterator_to_context_set, HelperContextMixin
+    iterator_to_context_set, HelperContextMixin, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic
@@ -528,6 +528,10 @@ class _AbstractAnnotatedClass(ClassContext):
             ) for class_set1, class_set2 in zip(given_params1, given_params2)
         )
 
+    def py__call__(self, arguments):
+        instance, = super(_AbstractAnnotatedClass, self).py__call__(arguments)
+        return ContextSet(InstanceWrapper(instance))
+
     def get_given_types(self):
         raise NotImplementedError
 
@@ -599,3 +603,15 @@ class LazyAnnotatedBaseClass(object):
                     # case just add it to the context set.
                     new |= ContextSet(type_var)
             yield new
+
+
+class InstanceWrapper(ContextWrapper):
+    def py__stop_iteration_returns(self):
+        cls = self._wrapped_context.class_context
+        if cls.py__name__() == 'Generator':
+            given_types = cls.get_given_types()
+            try:
+                return given_types[2].execute_annotation()
+            except IndexError:
+                pass
+        return self._wrapped_context.py__stop_iteration_returns()
