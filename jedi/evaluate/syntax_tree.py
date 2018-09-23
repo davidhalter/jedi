@@ -264,7 +264,8 @@ def eval_atom(context, atom):
             array_node_c = array_node.children
         except AttributeError:
             array_node_c = []
-        if c[0] == '{' and (array_node == '}' or ':' in array_node_c):
+        if c[0] == '{' and (array_node == '}' or ':' in array_node_c or
+                            '**' in array_node_c):
             context = iterable.DictLiteralContext(context.evaluator, context, atom)
         else:
             context = iterable.SequenceLiteralContext(context.evaluator, context, atom)

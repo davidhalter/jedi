@@ -358,21 +358,39 @@ class SequenceLiteralContext(Sequence):
             return []  # Direct closing bracket, doesn't contain items.
 
         if array_node.type == 'testlist_comp':
-            return array_node.children[::2]
+            # filter out (for now) pep 448 single-star unpacking
+            return [value for value in array_node.children[::2]
+                    if value.type != "star_expr"]
         elif array_node.type == 'dictorsetmaker':
             kv = []
             iterator = iter(array_node.children)
             for key in iterator:
-                op = next(iterator, None)
-                if op is None or op == ',':
-                    kv.append(key)  # A set.
-                else:
-                    assert op == ':'  # A dict.
-                    kv.append((key, next(iterator)))
+                if key == "**":
+                    # dict with pep 448 double-star unpacking
+                    # for now ignoring the values imported by **
+                    next(iterator)
                     next(iterator, None)  # Possible comma.
+                else:
+                    op = next(iterator, None)
+                    if op is None or op == ',':
+                        if key.type == "star_expr":
+                            # pep 448 single-star unpacking
+                            # for now ignoring values imported by *
+                            pass
+                        else:
+                            kv.append(key)  # A set.
+                    else:
+                        assert op == ':'  # A dict.
+                        kv.append((key, next(iterator)))
+                        next(iterator, None)  # Possible comma.
             return kv
         else:
-            return [array_node]
+            if array_node.type == "star_expr":
+                # pep 448 single-star unpacking
+                # for now ignoring values imported by *
+                return []
+            else:
+                return [array_node]
 
     def exact_key_items(self):
         """

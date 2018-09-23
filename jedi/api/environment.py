@@ -17,7 +17,7 @@ import parso
 
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
-_SUPPORTED_PYTHONS = ['3.6', '3.5', '3.4', '3.3', '2.7']
+_SUPPORTED_PYTHONS = ['3.7', '3.6', '3.5', '3.4', '3.3', '2.7']
 _SAFE_PATHS = ['/usr/bin', '/usr/local/bin']
 _CURRENT_VERSION = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
 
@@ -147,13 +147,18 @@ class InterpreterEnvironment(_BaseEnvironment):
 
 
 def _get_virtual_env_from_var():
+    """Get virtualenv environment from VIRTUAL_ENV environment variable.
+
+    It uses `safe=False` with ``create_environment``, because the environment
+    variable is considered to be safe / controlled by the user solely.
+    """
     var = os.environ.get('VIRTUAL_ENV')
     if var is not None:
         if var == sys.prefix:
             return SameEnvironment()
 
         try:
-            return create_environment(var)
+            return create_environment(var, safe=False)
         except InvalidPythonEnvironment:
             pass
 
@@ -318,10 +323,10 @@ def _get_executables_from_windows_registry(version):
 
     # TODO: support Python Anaconda.
     sub_keys = [
-      r'SOFTWARE\Python\PythonCore\{version}\InstallPath',
-      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}\InstallPath',
-      r'SOFTWARE\Python\PythonCore\{version}-32\InstallPath',
-      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}-32\InstallPath'
+        r'SOFTWARE\Python\PythonCore\{version}\InstallPath',
+        r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}\InstallPath',
+        r'SOFTWARE\Python\PythonCore\{version}-32\InstallPath',
+        r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}-32\InstallPath'
     ]
     for root_key in [winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE]:
         for sub_key in sub_keys:
