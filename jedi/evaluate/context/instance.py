@@ -68,8 +68,8 @@ class AbstractInstanceContext(Context):
         self.class_context = class_context
         self.var_args = var_args
 
-    def is_class(self):
-        return False
+    def is_instance(self):
+        return True
 
     def get_annotated_class_object(self):
         return self.class_context  # This is the default.
@@ -114,7 +114,7 @@ class AbstractInstanceContext(Context):
         # `method` is the new parent of the array, don't know if that's good.
         names = self.get_function_slot_names(u'__get__')
         if names:
-            if isinstance(obj, AbstractInstanceContext):
+            if obj.is_instance():
                 return self.execute_function_slots(names, obj, obj.class_context)
             else:
                 none_obj = compiled.builtin_from_name(self.evaluator, u'None')
@@ -156,7 +156,7 @@ class AbstractInstanceContext(Context):
             return
 
         for generator in self.execute_function_slots(iter_slot_names):
-            if isinstance(generator, AbstractInstanceContext):
+            if generator.is_instance():
                 # `__next__` logic.
                 if self.evaluator.environment.version_info.major == 2:
                     name = u'next'

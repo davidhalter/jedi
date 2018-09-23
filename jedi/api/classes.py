@@ -326,8 +326,8 @@ class BaseDefinition(object):
                 param_names = list(context.get_param_names())
                 if isinstance(context, instance.BoundMethod):
                     param_names = param_names[1:]
-            elif isinstance(context, (instance.AbstractInstanceContext, ClassContext)):
-                if isinstance(context, ClassContext):
+            elif context.is_class() or context.is_instance():
+                if context.is_class():
                     search = u'__init__'
                 else:
                     search = u'__call__'

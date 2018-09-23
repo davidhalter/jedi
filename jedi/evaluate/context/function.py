@@ -75,6 +75,9 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
+    def is_function(self):
+        return True
+
     @classmethod
     def from_context(cls, context, tree_node):
         def create(tree_node):
@@ -92,12 +95,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
                     tree_node=tree_node
                 )
 
-        from jedi.evaluate.context import AbstractInstanceContext
-
         overloaded_funcs = list(_find_overload_functions(context, tree_node))
 
         parent_context = context
-        while parent_context.is_class() or isinstance(parent_context, AbstractInstanceContext):
+        while parent_context.is_class() or parent_context.is_instance():
             parent_context = parent_context.parent_context
 
         function = create(tree_node)

@@ -19,7 +19,6 @@ from parso.python import tree
 from parso.tree import search_ancestor
 from jedi import debug
 from jedi import settings
-from jedi.evaluate.context import AbstractInstanceContext
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate import flow_analysis
@@ -178,13 +177,13 @@ class NameFinder(object):
         contexts = ContextSet.from_sets(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, contexts)
-        if not names and isinstance(self._context, AbstractInstanceContext):
+        if not names and self._context.is_instance():
             # handling __getattr__ / __getattribute__
             return self._check_getattr(self._context)
 
         # Add isinstance and other if/assert knowledge.
         if not contexts and isinstance(self._name, tree.Name) and \
-                not isinstance(self._name_context, AbstractInstanceContext):
+                not self._name_context.is_instance():
             flow_scope = self._name
             base_node = self._name_context.tree_node
             if base_node.type == 'comp_for':
