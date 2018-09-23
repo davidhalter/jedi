@@ -17,7 +17,6 @@ from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
 from jedi.evaluate.context import iterable
-from jedi.evaluate.context import asynchronous
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
 
@@ -312,22 +311,35 @@ class FunctionExecutionContext(TreeContext):
             if is_generator:
                 if evaluator.environment.version_info < (3, 6):
                     return NO_CONTEXTS
-                async_generator_classes = evaluator.typing_module \
+                async_generator_class, = evaluator.typing_module \
                     .py__getattribute__('AsyncGenerator')
+
+                c = async_generator_class.stub_context
                 yield_contexts = self.merge_yield_contexts(is_async=True)
-                return ContextSet.from_iterable(
+                return ContextSet(
                     AnnotatedSubClass(
                         evaluator,
                         parent_context=c.parent_context,
                         tree_node=c.tree_node,
                         # The contravariant doesn't seem to be defined.
                         given_types=(yield_contexts.py__class__(), NO_CONTEXTS)
-                    ) for c in async_generator_classes
-                )
+                    )
+                ).execute_annotation()
             else:
                 if evaluator.environment.version_info < (3, 5):
                     return NO_CONTEXTS
-                return ContextSet(asynchronous.Coroutine(evaluator, self))
+                async_class, = evaluator.typing_module .py__getattribute__('Coroutine')
+                return_contexts = self.get_return_values()
+                c = async_class.stub_context
+                return ContextSet(
+                    AnnotatedSubClass(
+                        evaluator,
+                        parent_context=c.parent_context,
+                        tree_node=c.tree_node,
+                        # Only the first generic is relevant.
+                        given_types=(return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
+                    )
+                ).execute_annotation()
         else:
             if is_generator:
                 return ContextSet(iterable.Generator(evaluator, self))

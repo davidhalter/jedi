@@ -159,7 +159,7 @@ class Evaluator(object):
     @evaluator_function_cache()
     def typing_module(self):
         typing_module, = self.import_module(('typing',))
-        return typing_module
+        return typing_module.stub_context
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()

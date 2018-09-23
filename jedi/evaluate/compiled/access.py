@@ -474,9 +474,6 @@ class _SPECIAL_OBJECTS(object):
     MODULE_CLASS = types.ModuleType
     GENERATOR_OBJECT = _a_generator(1.0)
     BUILTINS = builtins
-    COROUTINE = _coroutine
-    COROUTINE_WRAPPER = _coroutine_wrapper
-    ASYNC_GENERATOR = _async_generator
 
 
 def get_special_object(evaluator, identifier):
