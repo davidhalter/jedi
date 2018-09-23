@@ -434,16 +434,8 @@ class AbstractObjectOverwrite(use_metaclass(_OverwriteMeta, object)):
 
 
 class BuiltinOverwrite(Context, AbstractObjectOverwrite):
-    special_object_identifier = None
-
     def __init__(self, evaluator):
         super(BuiltinOverwrite, self).__init__(evaluator, evaluator.builtins_module)
-
-    @memoize_method
-    def get_object(self):
-        from jedi.evaluate import compiled
-        assert self.special_object_identifier
-        return compiled.get_special_object(self.evaluator, self.special_object_identifier)
 
     def py__class__(self):
         return self.get_object().py__class__()

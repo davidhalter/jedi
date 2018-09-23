@@ -49,7 +49,13 @@ class IterableMixin(object):
 
 class GeneratorBase(BuiltinOverwrite, IterableMixin):
     array_type = None
-    special_object_identifier = u'GENERATOR_OBJECT'
+
+    @memoize_method
+    def get_object(self):
+        generator, = self.evaluator.typing_module \
+            .py__getattribute__('Generator') \
+            .execute_annotation()
+        return generator
 
     @publish_method('send')
     @publish_method('next', python_version_match=2)

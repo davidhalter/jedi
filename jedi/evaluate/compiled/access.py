@@ -43,12 +43,6 @@ WrapperDescriptorType = type(set.__iter__)
 object_class_dict = type.__dict__["__dict__"].__get__(object)
 ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
 
-def _a_generator(foo):
-    """Used to have an object to return for generators."""
-    yield 42
-    yield foo
-
-
 _sentinel = object()
 
 # Maps Python syntax to the operator module.
@@ -446,33 +440,10 @@ def _is_class_instance(obj):
         return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
 
 
-if py_version >= 35:
-    exec(compile(dedent("""
-        async def _coroutine(): pass
-        _coroutine = _coroutine()
-        CoroutineType = type(_coroutine)
-        _coroutine.close()  # Prevent ResourceWarning
-    """), 'blub', 'exec'))
-    _coroutine_wrapper = _coroutine.__await__()
-else:
-    _coroutine = None
-    _coroutine_wrapper = None
-
-if py_version >= 36:
-    exec(compile(dedent("""
-        async def _async_generator():
-            yield
-        _async_generator = _async_generator()
-        AsyncGeneratorType = type(_async_generator)
-    """), 'blub', 'exec'))
-else:
-    _async_generator = None
-
 class _SPECIAL_OBJECTS(object):
     FUNCTION_CLASS = types.FunctionType
     BOUND_METHOD_CLASS = type(DirectObjectAccess(None, None).py__bool__)
     MODULE_CLASS = types.ModuleType
-    GENERATOR_OBJECT = _a_generator(1.0)
     BUILTINS = builtins
 
 
