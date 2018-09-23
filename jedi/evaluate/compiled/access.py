@@ -444,7 +444,6 @@ class _SPECIAL_OBJECTS(object):
     FUNCTION_CLASS = types.FunctionType
     BOUND_METHOD_CLASS = type(DirectObjectAccess(None, None).py__bool__)
     MODULE_CLASS = types.ModuleType
-    BUILTINS = builtins
 
 
 def get_special_object(evaluator, identifier):
