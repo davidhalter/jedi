@@ -6,7 +6,7 @@ contexts.
 from jedi._compatibility import unicode
 from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.compiled import builtin_from_name, CompiledObject
+from jedi.evaluate.compiled import builtin_from_name
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
     iterator_to_context_set, HelperContextMixin, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext
@@ -17,7 +17,7 @@ from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
 from jedi.evaluate.imports import Importer
-from jedi.evaluate.context import ClassContext
+from jedi.evaluate.context.klass import py__mro__, ClassContext
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -607,11 +607,13 @@ class LazyAnnotatedBaseClass(object):
 
 class InstanceWrapper(ContextWrapper):
     def py__stop_iteration_returns(self):
-        cls = self._wrapped_context.class_context
-        if cls.py__name__() == 'Generator':
-            given_types = cls.get_given_types()
-            try:
-                return given_types[2].execute_annotation()
-            except IndexError:
-                pass
+        for cls in py__mro__(self._wrapped_context.class_context):
+            if cls.py__name__() == 'Generator':
+                given_types = cls.get_given_types()
+                try:
+                    return given_types[2].execute_annotation()
+                except IndexError:
+                    pass
+            elif cls.py__name__() == 'Iterator':
+                return ContextSet([builtin_from_name(self.evaluator, u'None')])
         return self._wrapped_context.py__stop_iteration_returns()

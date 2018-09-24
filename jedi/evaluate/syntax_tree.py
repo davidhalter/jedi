@@ -100,7 +100,7 @@ def eval_node(context, element):
             await_context_set = context_set.py__getattribute__(u"__await__")
             if not await_context_set:
                 debug.warning('Tried to run py__await__ on context %s', context)
-            return _py__stop_iteration_returns(await_context_set.execute_evaluated())
+            return await_context_set.execute_evaluated().py__stop_iteration_returns()
         return context_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
@@ -136,8 +136,9 @@ def eval_node(context, element):
         if len(element.children) and element.children[1].type == 'yield_arg':
             # Implies that it's a yield from.
             element = element.children[1].children[1]
-            generators = context.eval_node(element)
-            return _py__stop_iteration_returns(generators)
+            generators = context.eval_node(element) \
+                .py__getattribute__('__iter__').execute_evaluated()
+            return generators.py__stop_iteration_returns()
 
         # Generator.send() is not implemented.
         return NO_CONTEXTS

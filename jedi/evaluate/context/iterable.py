@@ -57,11 +57,18 @@ class GeneratorBase(BuiltinOverwrite, IterableMixin):
             .execute_annotation()
         return generator
 
+    @publish_method('__iter__')
+    def py__iter__(self):
+        return ContextSet([self])
+
     @publish_method('send')
     @publish_method('next', python_version_match=2)
     @publish_method('__next__', python_version_match=3)
     def py__next__(self):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
+
+    def py__stop_iteration_returns(self):
+        return ContextSet([compiled.builtin_from_name(self.evaluator, u'None')])
 
     @property
     def name(self):
