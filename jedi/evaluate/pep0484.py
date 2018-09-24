@@ -38,7 +38,7 @@ from jedi import debug
 from jedi import parser_utils
 
 
-def _evaluate_for_annotation(context, annotation, index=None):
+def evaluate_for_annotation(context, annotation, index=None):
     """
     Evaluates a string-node, looking for an annotation
     If index is not None, the annotation is expected to be a tuple
@@ -174,7 +174,7 @@ def infer_param(execution_context, param):
         )
     # Annotations are like default params and resolve in the same way.
     context = execution_context.function_context.get_default_param_context()
-    return _evaluate_for_annotation(context, annotation)
+    return evaluate_for_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):

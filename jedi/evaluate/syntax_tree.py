@@ -17,7 +17,6 @@ from jedi.evaluate import helpers
 from jedi.evaluate import analysis
 from jedi.evaluate import imports
 from jedi.evaluate import arguments
-from jedi.evaluate.pep0484 import _evaluate_for_annotation
 from jedi.evaluate.context import ClassContext, FunctionContext
 from jedi.evaluate.context import iterable
 from jedi.evaluate.context import TreeInstance, CompiledInstance
@@ -131,7 +130,8 @@ def eval_node(context, element):
     elif typ == 'eval_input':
         return eval_node(context, element.children[0])
     elif typ == 'annassign':
-        return pep0484._evaluate_for_annotation(context, element.children[1])
+        return pep0484.evaluate_for_annotation(context, element.children[1]) \
+            .execute_annotation()
     elif typ == 'yield_expr':
         if len(element.children) and element.children[1].type == 'yield_arg':
             # Implies that it's a yield from.
@@ -535,7 +535,9 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
 
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign" and correct_scope:
-                context_set |= _evaluate_for_annotation(context, expr_stmt.children[1].children[1])
+                context_set |= pep0484.evaluate_for_annotation(
+                    context, expr_stmt.children[1].children[1]
+                ).execute_annotation()
 
     if context_set:
         return context_set
