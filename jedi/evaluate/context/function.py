@@ -312,10 +312,9 @@ class FunctionExecutionContext(TreeContext):
             if is_generator:
                 if evaluator.environment.version_info < (3, 6):
                     return NO_CONTEXTS
-                async_generator_class, = evaluator.typing_module \
+                async_generator_classes = evaluator.typing_module \
                     .py__getattribute__('AsyncGenerator')
 
-                c = async_generator_class.stub_context
                 yield_contexts = self.merge_yield_contexts(is_async=True)
                 return ContextSet(
                     AnnotatedSubClass(
@@ -324,14 +323,13 @@ class FunctionExecutionContext(TreeContext):
                         tree_node=c.tree_node,
                         # The contravariant doesn't seem to be defined.
                         given_types=(yield_contexts.py__class__(), NO_CONTEXTS)
-                    )
+                    ) for c in async_generator_classes
                 ).execute_annotation()
             else:
                 if evaluator.environment.version_info < (3, 5):
                     return NO_CONTEXTS
-                async_class, = evaluator.typing_module .py__getattribute__('Coroutine')
+                async_classes = evaluator.typing_module .py__getattribute__('Coroutine')
                 return_contexts = self.get_return_values()
-                c = async_class.stub_context
                 return ContextSet(
                     AnnotatedSubClass(
                         evaluator,
@@ -339,7 +337,7 @@ class FunctionExecutionContext(TreeContext):
                         tree_node=c.tree_node,
                         # Only the first generic is relevant.
                         given_types=(return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
-                    )
+                    ) for c in async_classes
                 ).execute_annotation()
         else:
             if is_generator:
