@@ -65,12 +65,17 @@ class StdlibPlugin(BasePlugin):
                     module_name = ''
 
                 if isinstance(context, BoundMethod):
-                    if module_name == 'builtins' and context.py__name__() == '__get__':
-                        if context.class_context.py__name__() == 'property':
-                            return builtins_property(
-                                context,
-                                arguments=arguments
-                            )
+                    if module_name == 'builtins':
+                        if context.py__name__() == '__get__':
+                            if context.class_context.py__name__() == 'property':
+                                return builtins_property(
+                                    context,
+                                    arguments=arguments
+                                )
+                        elif context.py__name__() in ('deleter', 'getter', 'setter'):
+                            if context.class_context.py__name__() == 'property':
+                                return ContextSet([context.instance])
+
                     return callback(context, arguments=arguments)
 
                 # for now we just support builtin functions.
