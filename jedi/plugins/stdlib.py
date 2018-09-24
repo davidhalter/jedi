@@ -15,19 +15,18 @@ from jedi._compatibility import force_unicode
 from jedi.plugins.base import BasePlugin
 from jedi import debug
 from jedi.evaluate.arguments import ValuesArguments, \
-    repack_with_argument_clinic, AbstractArguments
+    repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
 from jedi.evaluate.context.instance import TreeInstance, \
-    AbstractInstanceContext, CompiledInstance, BoundMethod, InstanceArguments
+    AbstractInstanceContext, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
-from jedi.plugins import typeshed
 from jedi.evaluate.context.klass import py__mro__
 from jedi.evaluate.context import iterable
-from jedi.evaluate.lazy_context import LazyTreeContext
+from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext
 from jedi.evaluate.syntax_tree import is_string
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on
@@ -280,6 +279,69 @@ def builtins_isinstance(objects, types, arguments, evaluator):
     )
 
 
+class StaticMethodObject(AbstractObjectOverwrite, ContextWrapper):
+    def get_object(self):
+        return self._wrapped_context
+
+    @publish_method('__get__')
+    def _py__get__(self):
+        return ContextSet([self._wrapped_context])
+
+
+@argument_clinic('sequence, /')
+def builtins_staticmethod(functions):
+    return ContextSet(StaticMethodObject(f) for f in functions)
+
+
+class ClassMethodObject(AbstractObjectOverwrite, ContextWrapper):
+    def __init__(self, class_method_obj, function):
+        super(ClassMethodObject, self).__init__(class_method_obj)
+        self._function = function
+
+    def get_object(self):
+        return self._wrapped_context
+
+    def py__get__(self, obj):
+        actual, = self._wrapped_context.py__getattribute__('__get__')
+        klass = obj
+        if not obj.is_class():
+            klass = obj.py__class__()
+        return ContextSet([ClassMethodGet(actual, klass, self._function)])
+
+
+class ClassMethodGet(AbstractObjectOverwrite, ContextWrapper):
+    def __init__(self, get_method, klass, function):
+        super(ClassMethodGet, self).__init__(get_method)
+        self._class = klass
+        self._function = function
+
+    def get_object(self):
+        return self._wrapped_context
+
+    def py__call__(self, arguments):
+        return self._function.execute(ClassMethodArguments(self._class, arguments))
+
+
+class ClassMethodArguments(TreeArgumentsWrapper):
+    def __init__(self, klass, arguments):
+        super(ClassMethodArguments, self).__init__(arguments)
+        self._class = klass
+
+    def unpack(self, func=None):
+        yield None, LazyKnownContext(self._class)
+        for values in self._wrapped_arguments.unpack(func):
+            yield values
+
+
+@argument_clinic('sequence, /', want_obj=True, want_arguments=True)
+def builtins_classmethod(functions, obj, arguments):
+    return ContextSet(
+        ClassMethodObject(class_method_object, function)
+        for class_method_object in obj.py__call__(arguments=arguments)
+        for function in functions
+    )
+
+
 def collections_namedtuple(obj, arguments):
     """
     Implementation of the namedtuple function.
@@ -434,6 +496,8 @@ _implemented = {
         'isinstance': builtins_isinstance,
         'next': builtins_next,
         'iter': builtins_iter,
+        'staticmethod': builtins_staticmethod,
+        'classmethod': builtins_classmethod,
     },
     'copy': {
         'copy': _return_first_param,

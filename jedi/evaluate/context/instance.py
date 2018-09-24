@@ -9,7 +9,7 @@ from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments, \
-    ValuesArguments
+    ValuesArguments, TreeArgumentsWrapper
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, AbstractFunction, OverloadedFunctionContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, \
@@ -522,32 +522,18 @@ class SelfAttributeFilter(ClassFilter):
         return names
 
 
-class InstanceArguments(AbstractArguments):
+class InstanceArguments(TreeArgumentsWrapper):
     def __init__(self, instance, arguments):
+        super(InstanceArguments, self).__init__(arguments)
         self.instance = instance
-        self._arguments = arguments
-
-    @property
-    def argument_node(self):
-        return self._arguments.argument_node
-
-    @property
-    def trailer(self):
-        return self._arguments.trailer
 
     def unpack(self, func=None):
         yield None, LazyKnownContext(self.instance)
-        for values in self._arguments.unpack(func):
+        for values in self._wrapped_arguments.unpack(func):
             yield values
 
-    def get_calling_nodes(self):
-        return self._arguments.get_calling_nodes()
-
     def get_executed_params_and_issues(self, execution_context):
-        if isinstance(self._arguments, AnonymousInstanceArguments):
-            return self._arguments.get_executed_params_and_issues(execution_context)
+        if isinstance(self._wrapped_arguments, AnonymousInstanceArguments):
+            return self._wrapped_arguments.get_executed_params_and_issues(execution_context)
 
         return super(InstanceArguments, self).get_executed_params_and_issues(execution_context)
-
-    def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._arguments)

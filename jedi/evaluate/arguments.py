@@ -128,11 +128,7 @@ def _parse_argument_clinic(string):
             allow_kwargs = True
 
 
-class AbstractArguments(object):
-    context = None
-    argument_node = None
-    trailer = None
-
+class _AbstractArgumentsMixin(object):
     def eval_all(self, funcdef=None):
         """
         Evaluates all arguments as a support for static analysis
@@ -142,14 +138,20 @@ class AbstractArguments(object):
             types = lazy_context.infer()
             try_iter_content(types)
 
-    def get_calling_nodes(self):
-        return []
-
     def unpack(self, funcdef=None):
         raise NotImplementedError
 
     def get_executed_params_and_issues(self, execution_context):
         return get_executed_params_and_issues(execution_context, self)
+
+    def get_calling_nodes(self):
+        return []
+
+
+class AbstractArguments(_AbstractArgumentsMixin):
+    context = None
+    argument_node = None
+    trailer = None
 
 
 class AnonymousArguments(AbstractArguments):
@@ -300,6 +302,28 @@ class ValuesArguments(AbstractArguments):
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._values_list)
+
+
+class TreeArgumentsWrapper(_AbstractArgumentsMixin):
+    def __init__(self, arguments):
+        self._wrapped_arguments = arguments
+
+    @property
+    def argument_node(self):
+        return self._wrapped_arguments.argument_node
+
+    @property
+    def trailer(self):
+        return self._wrapped_arguments.trailer
+
+    def unpack(self, func=None):
+        raise NotImplementedError
+
+    def get_calling_nodes(self):
+        return self._wrapped_arguments.get_calling_nodes()
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._wrapped_arguments)
 
 
 def _iterate_star_args(context, array, input_node, funcdef=None):
