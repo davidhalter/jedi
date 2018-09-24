@@ -146,6 +146,12 @@ def builtins_next(iterators, defaults, evaluator):
     return defaults | iterators.py__getattribute__(name).execute_evaluated()
 
 
+@argument_clinic('iterator[, default], /')
+def builtins_iter(iterators_or_callables, defaults):
+    # TODO implement this if it's a callable.
+    return iterators_or_callables.py__getattribute__('__iter__').execute_evaluated()
+
+
 @argument_clinic('object, name[, default], /')
 def builtins_getattr(objects, names, defaults=None):
     # follow the first param
@@ -422,6 +428,7 @@ _implemented = {
         'reversed': builtins_reversed,
         'isinstance': builtins_isinstance,
         'next': builtins_next,
+        'iter': builtins_iter,
     },
     'copy': {
         'copy': _return_first_param,
