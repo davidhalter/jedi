@@ -224,7 +224,7 @@ def builtins_reversed(sequences, obj, arguments):
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
     instance = TreeInstance(obj.evaluator, obj.parent_context, obj, ValuesArguments([]))
-    return ContextSet(ReversedObject(instance, list(reversed(ordered))))
+    return ContextSet([ReversedObject(instance, list(reversed(ordered)))])
 
 
 @argument_clinic('obj, type, /', want_arguments=True, want_evaluator=True)
@@ -263,7 +263,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
                               'not %s.' % cls_or_tup
                     analysis.add(lazy_context._context, 'type-error-isinstance', node, message)
 
-    return ContextSet.from_iterable(
+    return ContextSet(
         compiled.builtin_from_name(evaluator, force_unicode(str(b)))
         for b in bool_results
     )
@@ -328,7 +328,7 @@ def collections_namedtuple(obj, arguments):
         code_lines=parso.split_lines(code, keepends=True),
     )
 
-    return ContextSet(ClassContext(evaluator, parent_context, generated_class))
+    return ContextSet([ClassContext(evaluator, parent_context, generated_class)])
 
 
 class PartialObject(object):
@@ -367,7 +367,7 @@ class MergedPartialArguments(AbstractArguments):
 
 
 def functools_partial(obj, arguments):
-    return ContextSet.from_iterable(
+    return ContextSet(
         PartialObject(instance, arguments)
         for instance in obj.py__call__(arguments)
     )
@@ -395,7 +395,7 @@ class ItemGetterCallable(object):
 
     @repack_with_argument_clinic('item, /')
     def py__call__(self, item_context_set):
-        context_set = ContextSet()
+        context_set = NO_CONTEXTS
         for args_context in self._args_context_set:
             lazy_contexts = list(args_context.py__iter__())
             if len(lazy_contexts) == 1:
@@ -411,7 +411,7 @@ class ItemGetterCallable(object):
 def _operator_itemgetter(args_context_set, obj, arguments):
     # final = obj.py__call__(arguments)
     # TODO use this as a context wrapper
-    return ContextSet(ItemGetterCallable(obj.evaluator, args_context_set))
+    return ContextSet([ItemGetterCallable(obj.evaluator, args_context_set)])
 
 
 _implemented = {

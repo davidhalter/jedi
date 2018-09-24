@@ -69,7 +69,7 @@ class AbstractTreeName(AbstractNameDefinition):
 
 class ContextNameMixin(object):
     def infer(self):
-        return ContextSet(self._context)
+        return ContextSet([self._context])
 
     def get_root_context(self):
         if self.parent_context is None:
@@ -384,9 +384,9 @@ class SpecialMethodFilter(DictFilter):
                 else:
                     continue
                 break
-            return ContextSet(
+            return ContextSet([
                 _BuiltinMappedMethod(self.parent_context, self._callable, builtin_func)
-            )
+            ])
 
     def __init__(self, context, dct, builtin_context):
         super(SpecialMethodFilter, self).__init__(dct)

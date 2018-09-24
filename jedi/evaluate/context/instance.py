@@ -25,7 +25,7 @@ class InstanceExecutedParam(object):
         self.string_name = self._tree_param.name.value
 
     def infer(self):
-        return ContextSet(self._instance)
+        return ContextSet([self._instance])
 
     def matches_signature(self):
         return True
@@ -120,7 +120,7 @@ class AbstractInstanceContext(Context):
                 none_obj = compiled.builtin_from_name(self.evaluator, u'None')
                 return self.execute_function_slots(names, none_obj, obj)
         else:
-            return ContextSet(self)
+            return ContextSet([self])
 
     def get_filters(self, search_global=None, until_position=None,
                     origin_scope=None, include_self_names=True):

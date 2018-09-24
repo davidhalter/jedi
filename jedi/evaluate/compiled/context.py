@@ -9,7 +9,7 @@ from jedi._compatibility import force_unicode, Parameter
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
     ContextNameMixin
-from jedi.evaluate.base_context import Context, ContextSet
+from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
@@ -61,11 +61,11 @@ class CompiledObject(Context):
             ).py__call__(arguments=arguments)
         if self.access_handle.is_class():
             from jedi.evaluate.context import CompiledInstance
-            return ContextSet(
+            return ContextSet([
                 CompiledInstance(self.evaluator, self.parent_context, self, arguments)
-            )
+            ])
         else:
-            return ContextSet.from_iterable(self._execute_function(arguments))
+            return ContextSet(self._execute_function(arguments))
 
     @CheckAttribute()
     def py__class__(self):
@@ -157,13 +157,13 @@ class CompiledObject(Context):
         with reraise_getitem_errors(IndexError, KeyError, TypeError):
             access = self.access_handle.py__simple_getitem__(index)
         if access is None:
-            return ContextSet()
+            return NO_CONTEXTS
 
-        return ContextSet(create_from_access_path(self.evaluator, access))
+        return ContextSet([create_from_access_path(self.evaluator, access)])
 
     @CheckAttribute()
     def py__getitem__(self, index_context_set, contextualized_node):
-        return ContextSet.from_iterable(
+        return ContextSet(
             create_from_access_path(self.evaluator, access)
             for access in self.access_handle.py__getitem__all_values()
         )
@@ -243,9 +243,9 @@ class CompiledName(AbstractNameDefinition):
 
     @underscore_memoization
     def infer(self):
-        return ContextSet(create_from_name(
+        return ContextSet([create_from_name(
             self._evaluator, self.parent_context, self.string_name
-        ))
+        )])
 
 
 class SignatureParamName(AbstractNameDefinition):
@@ -268,9 +268,9 @@ class SignatureParamName(AbstractNameDefinition):
     def infer(self):
         p = self._signature_param
         evaluator = self.parent_context.evaluator
-        contexts = ContextSet()
+        contexts = NO_CONTEXTS
         if p.has_default:
-            contexts = ContextSet(create_from_access_path(evaluator, p.default))
+            contexts = ContextSet([create_from_access_path(evaluator, p.default)])
         if p.has_annotation:
             annotation = create_from_access_path(evaluator, p.annotation)
             contexts |= execute_evaluated(annotation)
@@ -288,7 +288,7 @@ class UnresolvableParamName(AbstractNameDefinition):
         return Parameter.POSITIONAL_ONLY
 
     def infer(self):
-        return ContextSet()
+        return NO_CONTEXTS
 
 
 class CompiledContextName(ContextNameMixin, AbstractNameDefinition):
@@ -309,7 +309,7 @@ class EmptyCompiledName(AbstractNameDefinition):
         self.string_name = name
 
     def infer(self):
-        return ContextSet()
+        return NO_CONTEXTS
 
 
 class CompiledObjectFilter(AbstractFilter):

@@ -272,7 +272,7 @@ def infer_param(execution_context, param):
     from jedi.evaluate.context import FunctionExecutionContext
 
     def eval_docstring(docstring):
-        return ContextSet.from_iterable(
+        return ContextSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _evaluate_for_statement_string(module_context, param_str)

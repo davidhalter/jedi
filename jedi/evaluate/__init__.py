@@ -220,14 +220,14 @@ class Evaluator(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][if_name.value] = ContextSet(definition)
+                                    new_name_dicts[i][if_name.value] = ContextSet([definition])
 
                                 name_dicts += new_name_dicts
                         else:
                             for name_dict in name_dicts:
                                 name_dict[if_name.value] = definitions
             if len(name_dicts) > 1:
-                result = ContextSet()
+                result = NO_CONTEXTS
                 for name_dict in name_dicts:
                     with helpers.predefine_names(context, if_stmt, name_dict):
                         result |= eval_node(context, element)

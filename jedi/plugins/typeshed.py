@@ -164,7 +164,7 @@ class TypeshedPlugin(BasePlugin):
                             code_lines=[],
                         )
                         modules = _merge_modules(context_set, stub_module_context)
-                        return ContextSet.from_iterable(modules)
+                        return ContextSet(modules)
             # If no stub is found, just return the default.
             return context_set
         return wrapper

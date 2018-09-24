@@ -12,29 +12,16 @@ class BaseContext(object):
 
 
 class BaseContextSet(object):
-    def __init__(self, *args):
-        if len(args) == 1 and hasattr(args[0], '__iter__'):
-            # TODO replace with this everywhere.
-            self._set = frozenset(args[0])
-            return
-        for arg in args:
-            assert not isinstance(arg, BaseContextSet)
-        self._set = frozenset(args)
-
-    @classmethod
-    def from_iterable(cls, iterable):
-        return cls.from_set(set(iterable))
+    def __init__(self, iterable):
+        self._set = frozenset(iterable)
+        for context in iterable:
+            assert not isinstance(context, BaseContextSet)
 
     @classmethod
     def _from_frozen_set(cls, frozenset_):
         self = cls.__new__(cls)
         self._set = frozenset_
         return self
-
-    # TODO remove this function
-    @classmethod
-    def from_set(cls, set_):
-        return cls(*set_)
 
     @classmethod
     def from_sets(cls, sets):
@@ -69,7 +56,7 @@ class BaseContextSet(object):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))
 
     def filter(self, filter_func):
-        return self.from_iterable(filter(filter_func, self._set))
+        return self.__class__(filter(filter_func, self._set))
 
     def __getattr__(self, name):
         def mapper(*args, **kwargs):

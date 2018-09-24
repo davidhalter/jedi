@@ -81,7 +81,7 @@ def _iterate_argument_clinic(evaluator, arguments, parameters):
                     break
 
                 lazy_contexts.append(argument)
-            yield ContextSet(iterable.FakeSequence(evaluator, u'tuple', lazy_contexts))
+            yield ContextSet([iterable.FakeSequence(evaluator, u'tuple', lazy_contexts)])
             lazy_contexts
             continue
         elif stars == 2:

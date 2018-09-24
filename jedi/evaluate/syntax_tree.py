@@ -51,7 +51,7 @@ def _limit_context_infers(func):
 
 
 def _py__stop_iteration_returns(generators):
-    results = ContextSet()
+    results = NO_CONTEXTS
     for generator in generators:
         try:
             method = generator.py__stop_iteration_returns
@@ -71,7 +71,7 @@ def eval_node(context, element):
     if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword'):
         return eval_atom(context, element)
     elif typ == 'lambdef':
-        return ContextSet(FunctionContext.from_context(context, element))
+        return ContextSet([FunctionContext.from_context(context, element)])
     elif typ == 'expr_stmt':
         return eval_expr_stmt(context, element)
     elif typ in ('power', 'atom_expr'):
@@ -100,12 +100,11 @@ def eval_node(context, element):
             await_context_set = context_set.py__getattribute__(u"__await__")
             if not await_context_set:
                 debug.warning('Tried to run py__await__ on context %s', context)
-            context_set = ContextSet()
             return _py__stop_iteration_returns(await_context_set.execute_evaluated())
         return context_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
-        return ContextSet(iterable.SequenceLiteralContext(evaluator, context, element))
+        return ContextSet([iterable.SequenceLiteralContext(evaluator, context, element)])
     elif typ in ('not_test', 'factor'):
         context_set = context.eval_node(element.children[-1])
         for operator in element.children[:-1]:
@@ -122,7 +121,7 @@ def eval_node(context, element):
         if element.value not in ('.', '...'):
             origin = element.parent
             raise AssertionError("unhandled operator %s in %s " % (repr(element.value), origin))
-        return ContextSet(compiled.builtin_from_name(evaluator, u'Ellipsis'))
+        return ContextSet([compiled.builtin_from_name(evaluator, u'Ellipsis')])
     elif typ == 'dotted_name':
         context_set = eval_atom(context, element.children[0])
         for next_name in element.children[2::2]:
@@ -158,7 +157,7 @@ def eval_trailer(context, base_contexts, trailer):
         foo = set(base_contexts)
         # special case: PEP0484 typing module, see
         # https://github.com/davidhalter/jedi/issues/663
-        result = ContextSet()
+        result = NO_CONTEXTS
         for typ in list(foo):
             continue
             if isinstance(typ, (ClassContext, TreeInstance)):
@@ -213,7 +212,7 @@ def eval_atom(context, atom):
     elif atom.type == 'keyword':
         # For False/True/None
         if atom.value in ('False', 'True', 'None'):
-            return ContextSet(compiled.builtin_from_name(context.evaluator, atom.value))
+            return ContextSet([compiled.builtin_from_name(context.evaluator, atom.value)])
         elif atom.value == 'print':
             # print e.g. could be evaluated like this in Python 2.7
             return NO_CONTEXTS
@@ -225,7 +224,7 @@ def eval_atom(context, atom):
 
     elif isinstance(atom, tree.Literal):
         string = context.evaluator.compiled_subprocess.safe_literal_eval(atom.value)
-        return ContextSet(compiled.create_simple_object(context.evaluator, string))
+        return ContextSet([compiled.create_simple_object(context.evaluator, string)])
     elif atom.type == 'strings':
         # Will be multiple string.
         context_set = eval_atom(context, atom.children[0])
@@ -254,9 +253,9 @@ def eval_atom(context, atom):
                     pass
 
             if comp_for.type == 'comp_for':
-                return ContextSet(iterable.comprehension_from_atom(
+                return ContextSet([iterable.comprehension_from_atom(
                     context.evaluator, context, atom
-                ))
+                )])
 
         # It's a dict/list/tuple literal.
         array_node = c[1]
@@ -269,7 +268,7 @@ def eval_atom(context, atom):
             context = iterable.DictLiteralContext(context.evaluator, context, atom)
         else:
             context = iterable.SequenceLiteralContext(context.evaluator, context, atom)
-        return ContextSet(context)
+        return ContextSet([context])
 
 
 @_limit_context_infers
@@ -397,7 +396,7 @@ def _literals_to_types(evaluator, result):
             cls = compiled.builtin_from_name(evaluator, typ.name.string_name)
             new_result |= helpers.execute_evaluated(cls)
         else:
-            new_result |= ContextSet(typ)
+            new_result |= ContextSet([typ])
     return new_result
 
 
@@ -459,26 +458,26 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
     if str_operator == '*':
         # for iterables, ignore * operations
         if isinstance(left, iterable.Sequence) or is_string(left):
-            return ContextSet(left)
+            return ContextSet([left])
         elif isinstance(right, iterable.Sequence) or is_string(right):
-            return ContextSet(right)
+            return ContextSet([right])
     elif str_operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
-            return ContextSet(left.execute_operation(right, str_operator))
+            return ContextSet([left.execute_operation(right, str_operator)])
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
-            return ContextSet(iterable.MergedArray(evaluator, (left, right)))
+            return ContextSet([iterable.MergedArray(evaluator, (left, right))])
     elif str_operator == '-':
         if l_is_num and r_is_num:
-            return ContextSet(left.execute_operation(right, str_operator))
+            return ContextSet([left.execute_operation(right, str_operator)])
     elif str_operator == '%':
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
-        return ContextSet(left)
+        return ContextSet([left])
     elif str_operator in COMPARISON_OPERATORS:
         if is_compiled(left) and is_compiled(right):
             # Possible, because the return is not an option. Just compare.
             try:
-                return ContextSet(left.execute_operation(right, str_operator))
+                return ContextSet([left.execute_operation(right, str_operator)])
             except TypeError:
                 # Could be True or False.
                 pass
@@ -486,9 +485,9 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
             if str_operator in ('is', '!=', '==', 'is not'):
                 operation = COMPARISON_OPERATORS[str_operator]
                 bool_ = operation(left, right)
-                return ContextSet(_bool_to_context(evaluator, bool_))
+                return ContextSet([_bool_to_context(evaluator, bool_)])
 
-        return ContextSet(_bool_to_context(evaluator, True), _bool_to_context(evaluator, False))
+        return ContextSet([_bool_to_context(evaluator, True), _bool_to_context(evaluator, False)])
     elif str_operator == 'in':
         return NO_CONTEXTS
 
@@ -504,7 +503,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
         analysis.add(context, 'type-error-operation', operator,
                      message % (left, right))
 
-    result = ContextSet(left, right)
+    result = ContextSet([left, right])
     debug.dbg('Used operator %s resulting in %s', result)
     return result
 
@@ -525,7 +524,7 @@ def _remove_statements(evaluator, context, stmt, name):
 
 
 def tree_name_to_contexts(evaluator, context, tree_name):
-    context_set = ContextSet()
+    context_set = NO_CONTEXTS
     module_node = context.get_root_context().tree_node
     if module_node is not None:
         names = module_node.get_used_names().get(tree_name.value, [])
@@ -611,7 +610,7 @@ def _apply_decorators(context, node):
         )
     else:
         decoratee_context = FunctionContext.from_context(context, node)
-    initial = values = ContextSet(decoratee_context)
+    initial = values = ContextSet([decoratee_context])
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values)
         dec_values = context.eval_node(dec.children[1])
@@ -651,7 +650,7 @@ def check_tuple_assignments(evaluator, contextualized_name, context_set):
                 # would allow this loop to run for a very long time if the
                 # index number is high. Therefore break if the loop is
                 # finished.
-                return ContextSet()
+                return NO_CONTEXTS
         context_set = lazy_context.infer()
     return context_set
 
@@ -662,7 +661,7 @@ def eval_subscript_list(evaluator, context, index):
     """
     if index == ':':
         # Like array[:]
-        return ContextSet(iterable.Slice(context, None, None, None))
+        return ContextSet([iterable.Slice(context, None, None, None)])
 
     elif index.type == 'subscript' and not index.children[0] == '.':
         # subscript basically implies a slice operation, except for Python 2's
@@ -680,9 +679,9 @@ def eval_subscript_list(evaluator, context, index):
                 result.append(el)
         result += [None] * (3 - len(result))
 
-        return ContextSet(iterable.Slice(context, *result))
+        return ContextSet([iterable.Slice(context, *result)])
     elif index.type == 'subscriptlist':
-        return ContextSet(iterable.SequenceLiteralContext(evaluator, context, index))
+        return ContextSet([iterable.SequenceLiteralContext(evaluator, context, index)])
 
     # No slices
     return context.eval_node(index)

@@ -155,7 +155,7 @@ class Script(object):
             string_names=names,
             code_lines=self._code_lines,
         )
-        self._evaluator.module_cache.add(names, ContextSet(module))
+        self._evaluator.module_cache.add(names, ContextSet([module]))
         return module
 
     def __repr__(self):

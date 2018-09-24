@@ -82,9 +82,9 @@ class MixedName(compiled.CompiledName):
         access_handle = self.parent_context.access_handle
         # TODO use logic from compiled.CompiledObjectFilter
         access_handle = access_handle.getattr(self.string_name, default=None)
-        return ContextSet(
+        return ContextSet([
             _create(self._evaluator, access_handle, parent_context=self.parent_context)
-        )
+        ])
 
     @property
     def api_type(self):
@@ -213,7 +213,7 @@ def _create(evaluator, access_handle, parent_context, *args):
             code_lines=code_lines,
         )
         if name is not None:
-            evaluator.module_cache.add(string_names, ContextSet(module_context))
+            evaluator.module_cache.add(string_names, ContextSet([module_context]))
 
     tree_context = module_context.create_context(
         tree_node,

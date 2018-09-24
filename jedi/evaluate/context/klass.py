@@ -197,7 +197,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
 
     def py__call__(self, arguments):
         from jedi.evaluate.context import TreeInstance
-        return ContextSet(TreeInstance(self.evaluator, self.parent_context, self, arguments))
+        return ContextSet([TreeInstance(self.evaluator, self.parent_context, self, arguments)])
 
     def py__class__(self):
         return compiled.builtin_from_name(self.evaluator, u'type')
@@ -263,8 +263,8 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate.context.typing import AnnotatedClass
         if not index_context_set:
-            return ContextSet(self)
-        return ContextSet.from_iterable(
+            return ContextSet([self])
+        return ContextSet(
             AnnotatedClass(
                 self.evaluator,
                 self.parent_context,

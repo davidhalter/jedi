@@ -237,5 +237,5 @@ def execute_evaluated(context, *value_list):
     # TODO move this out of here to the evaluator.
     from jedi.evaluate.arguments import ValuesArguments
     from jedi.evaluate.base_context import ContextSet
-    arguments = ValuesArguments([ContextSet(value) for value in value_list])
+    arguments = ValuesArguments([ContextSet([value]) for value in value_list])
     return context.evaluator.execute(context, arguments)

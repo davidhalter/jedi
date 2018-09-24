@@ -26,7 +26,7 @@ from jedi.evaluate.arguments import TreeArguments
 from jedi.evaluate import helpers
 from jedi.evaluate.context import iterable
 from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
-from jedi.evaluate.base_context import ContextSet
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.parser_utils import is_scope, get_parent_scope
 
 
@@ -60,7 +60,7 @@ class NameFinder(object):
                 node=self._name,
             )
             if check is flow_analysis.UNREACHABLE:
-                return ContextSet()
+                return NO_CONTEXTS
             return self._found_predefined_types
 
         types = self._names_to_types(names, attribute_lookup)
@@ -266,7 +266,7 @@ def _check_isinstance_type(context, element, search_name):
     except AssertionError:
         return None
 
-    context_set = ContextSet()
+    context_set = NO_CONTEXTS
     for cls_or_tup in lazy_context_cls.infer():
         if isinstance(cls_or_tup, iterable.Sequence) and cls_or_tup.array_type == 'tuple':
             for lazy_context in cls_or_tup.py__iter__():

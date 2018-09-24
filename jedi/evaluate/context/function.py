@@ -34,7 +34,7 @@ class LambdaName(AbstractNameDefinition):
         return self._lambda_context.tree_node.start_pos
 
     def infer(self):
-        return ContextSet(self._lambda_context)
+        return ContextSet([self._lambda_context])
 
 
 class AbstractFunction(TreeContext):
@@ -195,7 +195,7 @@ class FunctionExecutionContext(TreeContext):
                         children = r.children
                     except AttributeError:
                         ctx = compiled.builtin_from_name(self.evaluator, u'None')
-                        context_set |= ContextSet(ctx)
+                        context_set |= ContextSet([ctx])
                     else:
                         context_set |= self.eval_node(children[1])
             if check is flow_analysis.REACHABLE:
@@ -341,7 +341,7 @@ class FunctionExecutionContext(TreeContext):
                 ).execute_annotation()
         else:
             if is_generator:
-                return ContextSet(iterable.Generator(evaluator, self))
+                return ContextSet([iterable.Generator(evaluator, self)])
             else:
                 return self.get_return_values()
 

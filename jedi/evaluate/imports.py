@@ -93,7 +93,7 @@ def infer_import(context, tree_name, is_goto=False):
             for t in types
         )
         if not is_goto:
-            types = ContextSet.from_set(types)
+            types = ContextSet(types)
 
         if not types:
             path = import_path + [from_import_name]
@@ -450,7 +450,7 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
         safe_module_name=True,
     )
 
-    return ContextSet(module)
+    return ContextSet([module])
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
@@ -528,7 +528,7 @@ def get_modules_containing_name(evaluator, modules, name):
                     sys_path=e_sys_path,
                     import_names=import_names,
                 )
-                evaluator.module_cache.add(import_names, ContextSet(module))
+                evaluator.module_cache.add(import_names, ContextSet([module]))
                 return module
 
     # skip non python modules

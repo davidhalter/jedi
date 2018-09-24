@@ -264,7 +264,7 @@ def _getitem(context, index_contexts, contextualized_node):
     # The actual getitem call.
     simple_getitem = getattr(context, 'py__simple_getitem__', None)
 
-    result = ContextSet()
+    result = NO_CONTEXTS
     unused_contexts = set()
     for index_context in index_contexts:
         if simple_getitem is not None:
@@ -293,7 +293,7 @@ def _getitem(context, index_contexts, contextualized_node):
     # all results.
     if unused_contexts or not index_contexts:
         result |= context.py__getitem__(
-            ContextSet.from_set(unused_contexts),
+            ContextSet(unused_contexts),
             contextualized_node
         )
     debug.dbg('py__getitem__ result: %s', result)
@@ -302,7 +302,7 @@ def _getitem(context, index_contexts, contextualized_node):
 
 class ContextSet(BaseContextSet):
     def py__class__(self):
-        return ContextSet.from_iterable(c.py__class__() for c in self._set)
+        return ContextSet(c.py__class__() for c in self._set)
 
     def iterate(self, contextualized_node=None, is_async=False):
         from jedi.evaluate.lazy_context import get_merged_lazy_context
@@ -322,7 +322,7 @@ class ContextSet(BaseContextSet):
         return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
 
     def try_merge(self, function_name):
-        context_set = self.__class__()
+        context_set = self.__class__([])
         for c in self._set:
             try:
                 method = getattr(c, function_name)
@@ -333,11 +333,11 @@ class ContextSet(BaseContextSet):
         return context_set
 
 
-NO_CONTEXTS = ContextSet()
+NO_CONTEXTS = ContextSet([])
 
 
 def iterator_to_context_set(func):
     def wrapper(*args, **kwargs):
-        return ContextSet.from_iterable(func(*args, **kwargs))
+        return ContextSet(func(*args, **kwargs))
 
     return wrapper

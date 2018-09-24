@@ -44,7 +44,7 @@ from jedi.parser_utils import get_comp_fors
 
 class IterableMixin(object):
     def py__stop_iteration_returns(self):
-        return ContextSet(compiled.builtin_from_name(self.evaluator, u'None'))
+        return ContextSet([compiled.builtin_from_name(self.evaluator, u'None')])
 
 
 class GeneratorBase(BuiltinOverwrite, IterableMixin):
@@ -210,7 +210,7 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     def py__getitem__(self, index_context_set, contextualized_node):
         if self.array_type == 'dict':
             return self._dict_values()
-        return iterate_contexts(ContextSet(self))
+        return iterate_contexts(ContextSet([self]))
 
 
 class ListComprehension(ComprehensionMixin, Sequence):
@@ -218,7 +218,7 @@ class ListComprehension(ComprehensionMixin, Sequence):
 
     def py__simple_getitem__(self, index):
         if isinstance(index, slice):
-            return ContextSet(self)
+            return ContextSet([self])
 
         all_types = list(self.py__iter__())
         with reraise_getitem_errors(IndexError, TypeError):
@@ -254,7 +254,7 @@ class DictComprehension(ComprehensionMixin, Sequence):
     @publish_method('values')
     def _imitate_values(self):
         lazy_context = LazyKnownContexts(self._dict_values())
-        return ContextSet(FakeSequence(self.evaluator, u'list', [lazy_context]))
+        return ContextSet([FakeSequence(self.evaluator, u'list', [lazy_context])])
 
     @publish_method('items')
     def _imitate_items(self):
@@ -270,7 +270,7 @@ class DictComprehension(ComprehensionMixin, Sequence):
             for key, value in self._iterate()
         ]
 
-        return ContextSet(FakeSequence(self.evaluator, u'list', lazy_contexts))
+        return ContextSet([FakeSequence(self.evaluator, u'list', lazy_contexts)])
 
 
 class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
@@ -310,7 +310,7 @@ class SequenceLiteralContext(Sequence):
             raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
 
         if isinstance(index, slice):
-            return ContextSet(self)
+            return ContextSet([self])
         else:
             with reraise_getitem_errors(TypeError, KeyError, IndexError):
                 node = self.get_tree_entries()[index]
@@ -323,7 +323,7 @@ class SequenceLiteralContext(Sequence):
         """
         if self.array_type == u'dict':
             # Get keys.
-            types = ContextSet()
+            types = NO_CONTEXTS
             for k, _ in self.get_tree_entries():
                 types |= self._defining_context.eval_node(k)
             # We don't know which dict index comes first, therefore always
@@ -417,7 +417,7 @@ class DictLiteralContext(SequenceLiteralContext):
     @publish_method('values')
     def _imitate_values(self):
         lazy_context = LazyKnownContexts(self._dict_values())
-        return ContextSet(FakeSequence(self.evaluator, u'list', [lazy_context]))
+        return ContextSet([FakeSequence(self.evaluator, u'list', [lazy_context])])
 
     @publish_method('items')
     def _imitate_items(self):
@@ -429,7 +429,7 @@ class DictLiteralContext(SequenceLiteralContext):
             )) for key_node, value_node in self.get_tree_entries()
         ]
 
-        return ContextSet(FakeSequence(self.evaluator, u'list', lazy_contexts))
+        return ContextSet([FakeSequence(self.evaluator, u'list', lazy_contexts)])
 
     def _dict_keys(self):
         return ContextSet.from_sets(
@@ -503,10 +503,10 @@ class FakeDict(_FakeArray):
 
     @publish_method('values')
     def _values(self):
-        return ContextSet(FakeSequence(
+        return ContextSet([FakeSequence(
             self.evaluator, u'tuple',
             [LazyKnownContexts(self._dict_values())]
-        ))
+        )])
 
     def _dict_values(self):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self._dct.values())
@@ -601,7 +601,7 @@ def _check_array_additions(context, sequence):
     module_context = context.get_root_context()
     if not settings.dynamic_array_additions or isinstance(module_context, compiled.CompiledObject):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
-        return ContextSet()
+        return NO_CONTEXTS
 
     def find_additions(context, arglist, add_name):
         params = list(arguments.TreeArguments(context.evaluator, context, arglist).unpack())
@@ -673,7 +673,7 @@ def get_dynamic_array_instance(instance, arguments):
     """Used for set() and list() instances."""
     ai = _ArrayInstance(instance, arguments)
     from jedi.evaluate import arguments
-    return arguments.ValuesArguments([ContextSet(ai)])
+    return arguments.ValuesArguments([ContextSet([ai])])
 
 
 class _ArrayInstance(object):

@@ -240,7 +240,7 @@ def infer_return_types(function_execution_context):
                 for from_, to in zip(unknown_type_vars, context.list_type_vars())
             }
         return type_var_dict
-    return ContextSet.from_iterable(
+    return ContextSet(
         define_type_vars(
             annotation_context,
             remap_type_vars(annotation_context, type_var_dict),

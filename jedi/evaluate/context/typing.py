@@ -39,7 +39,7 @@ class TypingName(AbstractTreeName):
         self._context = context
 
     def infer(self):
-        return ContextSet(self._context)
+        return ContextSet([self._context])
 
 
 class _BaseTypingContext(Context):
@@ -72,7 +72,7 @@ class _BaseTypingContext(Context):
 
 class TypingModuleName(NameWrapper):
     def infer(self):
-        return ContextSet.from_iterable(self._remap())
+        return ContextSet(self._remap())
 
     def _remap(self):
         name = self.string_name
@@ -157,22 +157,22 @@ class TypingContextWithIndex(_WithIndexBase):
             # Optional is basically just saying it's either None or the actual
             # type.
             return self._execute_annotations_for_all_indexes() \
-                | ContextSet(builtin_from_name(self.evaluator, u'None'))
+                | ContextSet([builtin_from_name(self.evaluator, u'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_context
-            return ContextSet(self._index_context)
+            return ContextSet([self._index_context])
         elif string_name == 'ClassVar':
             # For now don't do anything here, ClassVars are always used.
             return self._index_context.execute_annotation()
 
         cls = globals()[string_name]
-        return ContextSet(cls(
+        return ContextSet([cls(
             self.evaluator,
             self.parent_context,
             self._tree_name,
             self._index_context,
             self._context_of_index
-        ))
+        )])
 
 
 class TypingContext(_BaseTypingContext):
@@ -180,7 +180,7 @@ class TypingContext(_BaseTypingContext):
     py__simple_getitem__ = None
 
     def py__getitem__(self, index_context_set, contextualized_node):
-        return ContextSet.from_iterable(
+        return ContextSet(
             self.index_class.create_cached(
                 self.evaluator,
                 self.parent_context,
@@ -210,7 +210,7 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
             for lazy_context in maybe_tuple_context.py__iter__():
                 yield lazy_context.infer()
         else:
-            yield ContextSet(maybe_tuple_context)
+            yield ContextSet([maybe_tuple_context])
 
     def resolve_forward_references(context_set):
         for context in context_set:
@@ -224,7 +224,7 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
                 yield context
 
     for context_set in iterate():
-        yield ContextSet.from_iterable(resolve_forward_references(context_set))
+        yield ContextSet(resolve_forward_references(context_set))
 
 
 class TypeAlias(HelperContextMixin):
@@ -341,13 +341,13 @@ class TypeVarClass(_BaseTypingContext):
             debug.warning('Found a variable without a name %s', arguments)
             return NO_CONTEXTS
 
-        return ContextSet(TypeVar.create_cached(
+        return ContextSet([TypeVar.create_cached(
             self.evaluator,
             self.parent_context,
             self._tree_name,
             var_name,
             unpacked
-        ))
+        )])
 
     def _find_string_name(self, lazy_context):
         if lazy_context is None:
@@ -451,7 +451,7 @@ class BoundTypeVarName(AbstractNameDefinition):
                         yield constraint
                 else:
                     yield context
-        return ContextSet.from_iterable(iter_())
+        return ContextSet(iter_())
 
     def py__name__(self):
         return self._type_var.py__name__()
@@ -530,7 +530,7 @@ class _AbstractAnnotatedClass(ClassContext):
 
     def py__call__(self, arguments):
         instance, = super(_AbstractAnnotatedClass, self).py__call__(arguments)
-        return ContextSet(InstanceWrapper(instance))
+        return ContextSet([InstanceWrapper(instance)])
 
     def get_given_types(self):
         raise NotImplementedError
@@ -590,7 +590,7 @@ class LazyAnnotatedBaseClass(object):
     def _remap_type_vars(self, base):
         filter = self._class_context.get_type_var_filter()
         for type_var_set in base.get_given_types():
-            new = ContextSet()
+            new = NO_CONTEXTS
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar):
                     names = filter.get(type_var.py__name__())
@@ -601,7 +601,7 @@ class LazyAnnotatedBaseClass(object):
                     # Mostly will be type vars, except if in some cases
                     # a concrete type will already be there. In that
                     # case just add it to the context set.
-                    new |= ContextSet(type_var)
+                    new |= ContextSet([type_var])
             yield new
 
 
