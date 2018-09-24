@@ -13,6 +13,10 @@ class BaseContext(object):
 
 class BaseContextSet(object):
     def __init__(self, *args):
+        if len(args) == 1 and hasattr(args[0], '__iter__'):
+            # TODO replace with this everywhere.
+            self._set = frozenset(args[0])
+            return
         for arg in args:
             assert not isinstance(arg, BaseContextSet)
         self._set = frozenset(args)
