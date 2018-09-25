@@ -18,11 +18,12 @@ def _add_argument_issue(parent_context, error_name, lazy_context, message):
 
 class ExecutedParam(object):
     """Fake a param and give it values."""
-    def __init__(self, execution_context, param_node, lazy_context):
+    def __init__(self, execution_context, param_node, lazy_context, is_default=False):
         self._execution_context = execution_context
         self._param_node = param_node
         self._lazy_context = lazy_context
         self.string_name = param_node.name.value
+        self._is_default = is_default
 
     def infer_annotations(self):
         from jedi.evaluate import pep0484
@@ -38,6 +39,8 @@ class ExecutedParam(object):
         return self._lazy_context.infer()
 
     def matches_signature(self):
+        if self._is_default:
+            return True
         argument_contexts = self.infer(use_hints=False).py__class__()
         if self._param_node.star_count:
             return True
@@ -99,6 +102,7 @@ def get_executed_params_and_issues(execution_context, var_args):
         # args / kwargs will just be empty arrays / dicts, respectively.
         # Wrong value count is just ignored. If you try to test cases that are
         # not allowed in Python, Jedi will maybe not show any completions.
+        is_default = False
         key, argument = next(var_arg_iterator, (None, None))
         while key is not None:
             keys_only = True
@@ -165,10 +169,14 @@ def get_executed_params_and_issues(execution_context, var_args):
                             )
                 else:
                     result_arg = LazyTreeContext(default_param_context, param.default)
+                    is_default = True
             else:
                 result_arg = argument
 
-        result_params.append(ExecutedParam(execution_context, param, result_arg))
+        result_params.append(ExecutedParam(
+            execution_context, param, result_arg,
+            is_default=is_default
+        ))
         if not isinstance(result_arg, LazyUnknownContext):
             keys_used[param.name.value] = result_params[-1]
 

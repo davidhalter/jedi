@@ -72,7 +72,7 @@ if os.path.isfile():
 
 with open('foo') as f:
     for line in f.readlines():
-        #? str()
+        #? str() bytes()
         line
 # -----------------
 # enumerate
