@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from jedi import debug
 from jedi.evaluate.utils import PushBackIterator
 from jedi.evaluate import analysis
 from jedi.evaluate.lazy_context import LazyKnownContext, \
@@ -49,9 +50,12 @@ class ExecutedParam(object):
             # If we cannot infer annotations - or there aren't any - pretend
             # that the signature matches.
             return True
-        return any(c1.is_sub_class_of(c2)
-                   for c1 in argument_contexts
-                   for c2 in annotations)
+        matches = any(c1.is_sub_class_of(c2)
+                      for c1 in argument_contexts
+                      for c2 in annotations)
+        debug.dbg("signature compare %s: %s <=> %s",
+                  matches, argument_contexts, annotations, color='BLUE')
+        return matches
 
     @property
     def var_args(self):

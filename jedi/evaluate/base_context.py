@@ -62,6 +62,9 @@ class HelperContextMixin:
         return False
 
     def is_same_class(self, class2):
+        # Class matching should prefer comparisons that are not this function.
+        if type(class2).is_same_class != HelperContextMixin.is_same_class:
+            return class2.is_same_class(self)
         return self == class2
 
 

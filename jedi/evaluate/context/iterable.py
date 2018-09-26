@@ -191,6 +191,11 @@ class ComprehensionMixin(object):
         return "<%s of %s>" % (type(self).__name__, self._atom)
 
 
+class _DictMixin(object):
+    def _get_generics(self):
+        return tuple(c_set.py__class__() for c_set in self.get_mapping_item_contexts())
+
+
 class Sequence(BuiltinOverwrite, IterableMixin):
     api_type = u'instance'
 
@@ -198,11 +203,17 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     def name(self):
         return compiled.CompiledContextName(self, self.array_type)
 
+    def _get_generics(self):
+        return (self.merge_types_of_iterate().py__class__(),)
+
     @memoize_method
     def get_object(self):
+        from jedi.evaluate.context.typing import AnnotatedSubClass
         klass = compiled.builtin_from_name(self.evaluator, self.array_type)
-        instance, = klass.execute_evaluated(self)
-        return instance
+        return AnnotatedSubClass(
+            self.evaluator, klass.parent_context, klass.tree_node,
+            self._get_generics()
+        ).execute_annotation()
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
@@ -237,7 +248,7 @@ class SetComprehension(ComprehensionMixin, Sequence):
     array_type = u'set'
 
 
-class DictComprehension(ComprehensionMixin, Sequence):
+class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
     array_type = u'dict'
 
     def _get_comp_for(self):
@@ -413,7 +424,7 @@ class SequenceLiteralContext(Sequence):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
-class DictLiteralContext(SequenceLiteralContext):
+class DictLiteralContext(_DictMixin, SequenceLiteralContext):
     array_type = u'dict'
 
     def __init__(self, evaluator, defining_context, atom):
@@ -479,7 +490,7 @@ class FakeSequence(_FakeArray):
         return "<%s of %s>" % (type(self).__name__, self._lazy_context_list)
 
 
-class FakeDict(_FakeArray):
+class FakeDict(_DictMixin, _FakeArray):
     def __init__(self, evaluator, dct):
         super(FakeDict, self).__init__(evaluator, dct, u'dict')
         self._dct = dct

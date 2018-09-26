@@ -292,8 +292,8 @@ class FunctionExecutionContext(TreeContext):
         if debug.enable_notice:
             signature = parser_utils.get_call_signature(self.tree_node)
             if matches:
-                debug.dbg("Overloading match: %s@%s",
-                          signature, self.tree_node.start_pos[0], color='BLUE')
+                debug.dbg("Overloading match: %s@%s (%s)",
+                          signature, self.tree_node.start_pos[0], self.var_args, color='BLUE')
             else:
                 debug.dbg("Overloading no match: %s@%s (%s)",
                           signature, self.tree_node.start_pos[0], self.var_args, color='BLUE')
