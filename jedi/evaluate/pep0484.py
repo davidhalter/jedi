@@ -218,10 +218,12 @@ def infer_return_types(function_execution_context):
 
     context = function_execution_context.function_context.get_default_param_context()
     unknown_type_vars = list(find_unknown_type_vars(context, annotation))
+    # TODO this function should return the annotation context.
+    annotation = _fix_forward_reference(context, annotation)
+    annotation_contexts = context.eval_node(annotation)
     if not unknown_type_vars:
-        return context.eval_node(annotation).execute_annotation()
+        return annotation_contexts.execute_annotation()
 
-    annotations_contexts = context.eval_node(annotation)
     type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
 
     def remap_type_vars(context, type_var_dict):
@@ -244,7 +246,7 @@ def infer_return_types(function_execution_context):
         define_type_vars(
             annotation_context,
             remap_type_vars(annotation_context, type_var_dict),
-        ) for annotation_context in annotations_contexts
+        ) for annotation_context in annotation_contexts
     ).execute_annotation()
 
 
