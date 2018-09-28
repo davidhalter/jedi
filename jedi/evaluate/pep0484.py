@@ -290,21 +290,6 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
     return annotation_variable_results
 
 
-def define_type_vars(annotation_context, type_var_dict):
-    def remap_type_vars(cls):
-        for type_var in cls.list_type_vars():
-            yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
-
-    if type_var_dict and isinstance(annotation_context, ClassContext):
-        return AnnotatedSubClass(
-            annotation_context.evaluator,
-            annotation_context.parent_context,
-            annotation_context.tree_node,
-            given_types=tuple(remap_type_vars(annotation_context))
-        )
-    return annotation_context
-
-
 def _merge_type_var_dicts(base_dict, new_dict):
     for type_var_name, contexts in new_dict.items():
         try:

@@ -7,7 +7,6 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import use_metaclass, Parameter
-from jedi.cache import memoize_method
 from jedi.evaluate import flow_analysis
 from jedi.evaluate.base_context import ContextSet, Context
 from jedi.parser_utils import get_parent_scope

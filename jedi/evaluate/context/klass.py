@@ -47,7 +47,7 @@ from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
     ContextName
 from jedi.evaluate.arguments import unpack_arglist
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
-    TreeContext
+    TreeContext, NO_CONTEXTS
 
 
 def apply_py__get__(context, base_context):
@@ -274,3 +274,19 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
             )
             for index_context in index_context_set
         )
+
+    def define_generics(self, type_var_dict):
+        from jedi.evaluate.context.typing import AnnotatedSubClass
+
+        def remap_type_vars():
+            for type_var in self.list_type_vars():
+                yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
+
+        if type_var_dict:
+            return AnnotatedSubClass(
+                self.evaluator,
+                self.parent_context,
+                self.tree_node,
+                given_types=tuple(remap_type_vars())
+            )
+        return self

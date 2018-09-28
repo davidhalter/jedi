@@ -529,6 +529,12 @@ class FakeDict(_DictMixin, _FakeArray):
     def _dict_values(self):
         return ContextSet.from_sets(lazy_context.infer() for lazy_context in self._dct.values())
 
+    def _dict_keys(self):
+        return ContextSet.from_sets(lazy_context.infer() for lazy_context in self.py__iter__())
+
+    def get_mapping_item_contexts(self):
+        return self._dict_keys(), self._dict_values()
+
     def exact_key_items(self):
         return self._dct.items()
 
