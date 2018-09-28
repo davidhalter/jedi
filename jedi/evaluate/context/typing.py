@@ -490,12 +490,12 @@ class TypeVarFilter(object):
         return []
 
 
-class _AbstractAnnotatedClass(ClassContext):
+class AbstractAnnotatedClass(ClassContext):
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_given_types(), self.list_type_vars())
 
     def get_filters(self, search_global=False, *args, **kwargs):
-        for f in super(_AbstractAnnotatedClass, self).get_filters(search_global, *args, **kwargs):
+        for f in super(AbstractAnnotatedClass, self).get_filters(search_global, *args, **kwargs):
             yield f
 
         if search_global:
@@ -504,7 +504,7 @@ class _AbstractAnnotatedClass(ClassContext):
             yield self.get_type_var_filter()
 
     def is_same_class(self, other):
-        if not isinstance(other, _AbstractAnnotatedClass):
+        if not isinstance(other, AbstractAnnotatedClass):
             return False
 
         if self.tree_node != other.tree_node:
@@ -529,11 +529,46 @@ class _AbstractAnnotatedClass(ClassContext):
         )
 
     def py__call__(self, arguments):
-        instance, = super(_AbstractAnnotatedClass, self).py__call__(arguments)
+        instance, = super(AbstractAnnotatedClass, self).py__call__(arguments)
         return ContextSet([InstanceWrapper(instance)])
 
     def get_given_types(self):
         raise NotImplementedError
+
+    def define_generics(self, type_var_dict):
+        changed = False
+        new_generics = []
+        for generic_set in self.get_given_types():
+            contexts = NO_CONTEXTS
+            for generic in generic_set:
+                if isinstance(generic, AbstractAnnotatedClass):
+                    new_generic = generic.define_generics(type_var_dict)
+                    contexts |= ContextSet([new_generic])
+                    if new_generic != generic:
+                        changed = True
+                else:
+                    if isinstance(generic, TypeVar):
+                        try:
+                            contexts |= type_var_dict[generic.py__name__()]
+                            changed = True
+                        except KeyError:
+                            contexts |= ContextSet([generic])
+                    else:
+                        contexts |= ContextSet([generic])
+            new_generics.append(contexts)
+
+        if not changed:
+            # There might not be any type vars that change. In that case just
+            # return itself, because it does not make sense to potentially lose
+            # cached results.
+            return self
+
+        return AnnotatedSubClass(
+            self.evaluator,
+            self.parent_context,
+            self.tree_node,
+            given_types=tuple(new_generics)
+        )
 
     def __repr__(self):
         return '<%s: %s%s>' % (
@@ -544,11 +579,11 @@ class _AbstractAnnotatedClass(ClassContext):
 
     @to_list
     def py__bases__(self):
-        for base in super(_AbstractAnnotatedClass, self).py__bases__():
+        for base in super(AbstractAnnotatedClass, self).py__bases__():
             yield LazyAnnotatedBaseClass(self, base)
 
 
-class AnnotatedClass(_AbstractAnnotatedClass):
+class AnnotatedClass(AbstractAnnotatedClass):
     def __init__(self, evaluator, parent_context, tree_node, index_context, context_of_index):
         super(AnnotatedClass, self).__init__(evaluator, parent_context, tree_node)
         self._index_context = index_context
@@ -559,7 +594,7 @@ class AnnotatedClass(_AbstractAnnotatedClass):
         return list(_iter_over_arguments(self._index_context, self._context_of_index))
 
 
-class AnnotatedSubClass(_AbstractAnnotatedClass):
+class AnnotatedSubClass(AbstractAnnotatedClass):
     def __init__(self, evaluator, parent_context, tree_node, given_types):
         super(AnnotatedSubClass, self).__init__(evaluator, parent_context, tree_node)
         self._given_types = given_types
@@ -576,7 +611,7 @@ class LazyAnnotatedBaseClass(object):
     @iterator_to_context_set
     def infer(self):
         for base in self._lazy_base_class.infer():
-            if isinstance(base, _AbstractAnnotatedClass):
+            if isinstance(base, AbstractAnnotatedClass):
                 # Here we have to recalculate the given types.
                 yield AnnotatedSubClass.create_cached(
                     base.evaluator,

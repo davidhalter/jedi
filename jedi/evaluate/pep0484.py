@@ -32,7 +32,7 @@ from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
 from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate.context import ModuleContext, ClassContext
 from jedi.evaluate.context.typing import TypeVar, AnnotatedClass, \
-    AnnotatedSubClass
+    AnnotatedSubClass, AbstractAnnotatedClass
 from jedi.evaluate.helpers import is_string, execute_evaluated
 from jedi import debug
 from jedi import parser_utils
@@ -242,11 +242,11 @@ def infer_return_types(function_execution_context):
                 for from_, to in zip(unknown_type_vars, context.list_type_vars())
             }
         return type_var_dict
+
     return ContextSet(
-        define_type_vars(
-            annotation_context,
-            remap_type_vars(annotation_context, type_var_dict),
-        ) for annotation_context in annotation_contexts
+        ann.define_generics(type_var_dict)
+        if isinstance(ann, AbstractAnnotatedClass) else ann
+        for ann in annotation_contexts
     ).execute_annotation()
 
 
