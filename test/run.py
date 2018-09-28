@@ -412,7 +412,6 @@ if __name__ == '__main__':
     dir_ = os.path.dirname(os.path.realpath(__file__))
     completion_test_dir = os.path.join(dir_, '../test/completion')
     completion_test_dir = os.path.abspath(completion_test_dir)
-    summary = []
     tests_fail = 0
 
     # execute tests
@@ -424,7 +423,7 @@ if __name__ == '__main__':
     def file_change(current, tests, fails):
         if current is not None:
             current = os.path.basename(current)
-        print('%s \t\t %s tests and %s fails.' % (current, tests, fails))
+        print('{:25} {} tests and {} fails.'.format(current, tests, fails))
 
     def report(case, actual, desired):
         if actual == desired:
@@ -470,8 +469,6 @@ if __name__ == '__main__':
 
     print('\nSummary: (%s fails of %s tests) in %.3fs'
           % (tests_fail, len(cases), time.time() - t_start))
-    for s in summary:
-        print(s)
 
     exit_code = 1 if tests_fail else 0
     sys.exit(exit_code)
