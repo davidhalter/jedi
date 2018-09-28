@@ -103,6 +103,8 @@ for a in re.finditer('a', 'a'):
 
 #? str() bytes()
 re.sub('a', 'a')
+#? str() bytes()
+re.sub('a', 'a', 'f')
 
 # -----------------
 # ref
@@ -114,7 +116,7 @@ weakref.proxy(1)
 
 #? weakref.ref()
 weakref.ref(1)
-#? int()
+#? int() None
 weakref.ref(1)()
 
 # -----------------
