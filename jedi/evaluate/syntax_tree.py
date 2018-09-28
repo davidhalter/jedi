@@ -153,21 +153,7 @@ def eval_trailer(context, base_contexts, trailer):
 
     if trailer_op == '[':
         trailer_op, node, _ = trailer.children
-
-        # TODO It's kind of stupid to cast this from a context set to a set.
-        foo = set(base_contexts)
-        # special case: PEP0484 typing module, see
-        # https://github.com/davidhalter/jedi/issues/663
-        result = NO_CONTEXTS
-        for typ in list(foo):
-            continue
-            if isinstance(typ, (ClassContext, TreeInstance)):
-                typing_module_types = pep0484.py__simple_getitem__(context, typ, node)
-                if typing_module_types is not None:
-                    foo.remove(typ)
-                    result |= typing_module_types
-
-        return result | base_contexts.get_item(
+        return base_contexts.get_item(
             eval_subscript_list(context.evaluator, context, node),
             ContextualizedNode(context, trailer)
         )

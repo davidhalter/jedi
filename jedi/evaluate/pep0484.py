@@ -19,21 +19,17 @@ x support for type hint comments for functions, `# type: (int, str) -> int`.
     See comment from Guido https://github.com/davidhalter/jedi/issues/662
 """
 
-import os
 import re
 
-from parso import ParserSyntaxError, parse, split_lines
-from parso.python import tree
+from parso import ParserSyntaxError, parse
 
-from jedi._compatibility import unicode, force_unicode
+from jedi._compatibility import force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate import compiled
-from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
-from jedi.evaluate.lazy_context import LazyTreeContext
-from jedi.evaluate.context import ModuleContext, ClassContext
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
+from jedi.evaluate.context import ClassContext
 from jedi.evaluate.context.typing import TypeVar, AnnotatedClass, \
-    AnnotatedSubClass, AbstractAnnotatedClass
-from jedi.evaluate.helpers import is_string, execute_evaluated
+    AbstractAnnotatedClass
+from jedi.evaluate.helpers import is_string
 from jedi import debug
 from jedi import parser_utils
 
@@ -354,91 +350,6 @@ def _infer_type_vars(annotation_context, context_set):
                             )
                         )
     return type_var_dict
-
-
-_typing_module = None
-_typing_module_code_lines = None
-
-
-class TypingModuleContext(ModuleContext):
-    """
-    TODO this is currently used for recursion checks. We should just completely
-    refactor the typing module integration.
-    """
-    pass
-
-
-def _get_typing_replacement_module(grammar):
-    """
-    The idea is to return our jedi replacement for the PEP-0484 typing module
-    as discussed at https://github.com/davidhalter/jedi/issues/663
-    """
-    global _typing_module, _typing_module_code_lines
-    if _typing_module is None:
-        typing_path = \
-            os.path.abspath(os.path.join(__file__, "../jedi_typing.py"))
-        with open(typing_path) as f:
-            code = unicode(f.read())
-        _typing_module = grammar.parse(code)
-        _typing_module_code_lines = split_lines(code, keepends=True)
-    return _typing_module, _typing_module_code_lines
-
-
-def py__simple_getitem__(context, typ, node):
-    if not typ.get_root_context().name.string_name == "typing":
-        return None
-    # we assume that any class using [] in a module called
-    # "typing" with a name for which we have a replacement
-    # should be replaced by that class. This is not 100%
-    # airtight but I don't have a better idea to check that it's
-    # actually the PEP-0484 typing module and not some other
-    if node.type == "subscriptlist":
-        nodes = node.children[::2]  # skip the commas
-    else:
-        nodes = [node]
-    del node
-
-    nodes = [_fix_forward_reference(context, node) for node in nodes]
-    type_name = typ.name.string_name
-
-    # hacked in Union and Optional, since it's hard to do nicely in parsed code
-    if type_name in ("Union", '_Union'):
-        # In Python 3.6 it's still called typing.Union but it's an instance
-        # called _Union.
-        return ContextSet.from_sets(context.eval_node(node) for node in nodes)
-    if type_name in ("Optional", '_Optional'):
-        # Here we have the same issue like in Union. Therefore we also need to
-        # check for the instance typing._Optional (Python 3.6).
-        return context.eval_node(nodes[0])
-
-    module_node, code_lines = _get_typing_replacement_module(context.evaluator.latest_grammar)
-    typing = TypingModuleContext(
-        context.evaluator,
-        module_node=module_node,
-        path=None,
-        code_lines=code_lines,
-    )
-    factories = typing.py__getattribute__("factory")
-    assert len(factories) == 1
-    factory = list(factories)[0]
-    assert factory
-    function_body_nodes = factory.tree_node.children[4].children
-    valid_classnames = set(child.name.value
-                           for child in function_body_nodes
-                           if isinstance(child, tree.Class))
-    if type_name not in valid_classnames:
-        return None
-    compiled_classname = compiled.create_simple_object(context.evaluator, type_name)
-
-    from jedi.evaluate.context.iterable import FakeSequence
-    args = FakeSequence(
-        context.evaluator,
-        u'tuple',
-        [LazyTreeContext(context, n) for n in nodes]
-    )
-
-    result = execute_evaluated(factory, compiled_classname, args)
-    return result
 
 
 def find_type_from_comment_hint_for(context, node, name):
