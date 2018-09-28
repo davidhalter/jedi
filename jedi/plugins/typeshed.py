@@ -14,7 +14,6 @@ from jedi.evaluate.context import ModuleContext, FunctionContext, \
     ClassContext
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
-from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.compiled.context import CompiledName
 from jedi.evaluate.utils import to_list
 
@@ -189,14 +188,7 @@ class NameWithStubMixin(object):
         # This basically merges stub contexts with actual contexts.
         for actual_context in actual_contexts:
             for stub_context in stub_contexts:
-                if False and isinstance(actual_context, CompiledObject):
-                    if isinstance(stub_context, ClassContext):
-                        yield CompiledStubClassContext(stub_context, actual_context)
-                    elif isinstance(stub_context, FunctionContext):
-                        yield CompiledStubFunctionContext(stub_context, actual_context)
-                    else:
-                        yield stub_context
-                elif isinstance(stub_context, FunctionContext) \
+                if isinstance(stub_context, FunctionContext) \
                         and isinstance(actual_context, FunctionContext):
                     yield StubFunctionContext(
                         actual_context.evaluator,
@@ -230,6 +222,7 @@ class NameWithStub(NameWithStubMixin, TreeNameDefinition):
 
 
 class CompiledNameWithStub(NameWithStubMixin, NameWrapper):
+    # TODO do we actually need this class?
     def __init__(self, compiled_name, stub_name):
         super(CompiledNameWithStub, self).__init__(stub_name)
         self._compiled_name = compiled_name
@@ -410,41 +403,6 @@ class _StubContextWithCompiled(ContextWrapper):
             if call_sig is not None:
                 doc = call_sig + '\n\n' + doc
         return doc
-
-
-class CompiledStubClassContext(_StubContextWithCompiled):
-    def get_filters(self, search_global=False, until_position=None,
-                    origin_scope=None, **kwargs):
-        filters = self._wrapped_context.get_filters(
-            search_global, until_position, origin_scope, **kwargs
-        )
-        next(filters)  # Ignore the first filter and replace it with our own
-
-        # Here we remap the names from stubs to the actual module. This is
-        # important if type inferences is needed in that module.
-        yield StubParserTreeFilter(
-            [next(self.compiled_context.get_filters(search_global=search_global, **kwargs))],
-            self.evaluator,
-            context=self,
-            until_position=until_position,
-            origin_scope=origin_scope,
-            search_global=search_global,
-        )
-        for f in filters:
-            yield f
-
-    def get_class_filter(self, original_class, origin_scope, is_instance):
-        return StubParserTreeFilter(
-            [next(self.compiled_context.get_filters(search_global=False))],
-            self.evaluator,
-            context=self,
-            origin_scope=origin_scope,
-            search_global=False,
-        )
-
-
-class CompiledStubFunctionContext(_StubContextWithCompiled):
-    pass
 
 
 class TypingModuleWrapper(StubOnlyModuleContext):
