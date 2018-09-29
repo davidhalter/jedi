@@ -2,7 +2,7 @@ import os
 
 from jedi.plugins import typeshed
 from jedi.evaluate.context import TreeInstance, BoundMethod, \
-    CompiledInstance, ClassContext
+    ClassContext
 from parso.utils import PythonVersionInfo
 from jedi.evaluate.filters import TreeNameDefinition
 
@@ -90,19 +90,19 @@ def test_method(Script):
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
-    assert isinstance(context, CompiledInstance)
+    assert isinstance(context, TreeInstance)
     assert context.class_context.py__name__() == 'str'
 
 
 def test_sys_exc_info(Script):
     code = 'import sys; sys.exc_info()'
-    def_, none = Script(code + '[1]').goto_definitions()
+    none, def_ = Script(code + '[1]').goto_definitions()
     # It's an optional.
     assert def_.name == 'BaseException'
     assert def_.type == 'instance'
     assert none.name == 'NoneType'
 
-    def_, none = Script(code + '[0]').goto_definitions()
+    none, def_ = Script(code + '[0]').goto_definitions()
     assert def_.name == 'BaseException'
     assert def_.type == 'class'
 
