@@ -3,6 +3,7 @@
 from setuptools import setup, find_packages
 
 import ast
+import sys
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
@@ -15,6 +16,11 @@ version = tree.body[1].value.s
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 with open('requirements.txt') as f:
     install_requires = f.read().splitlines()
+    if sys.platform == "win32":
+        install_requires.extend([
+            "docopt",
+            "pyreadline"
+        ])
 
 setup(name='jedi',
       version=version,
