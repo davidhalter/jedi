@@ -9,7 +9,7 @@ import filecmp
 from collections import namedtuple
 
 from jedi._compatibility import highest_pickle_protocol, which
-from jedi.cache import memoize_method, time_cache
+from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import CompiledSubprocess, \
     EvaluatorSameProcess, EvaluatorSubprocess
 
@@ -192,9 +192,30 @@ def get_default_environment():
     return SameEnvironment()
 
 
-@time_cache(seconds=10 * 60)  # 10 Minutes
+_cached_default_environment = None
+
+
 def get_cached_default_environment():
-    return get_default_environment()
+    """
+    Get the (cached) default environment.
+
+    Caching is done based on the VIRTUAL_ENV environment variable only.
+
+    You can use :func:`.clear_cache` to clear the cache.
+    """
+    global _cached_default_environment
+
+    cache_key = os.environ.get('VIRTUAL_ENV')
+    if (not _cached_default_environment
+            or _cached_default_environment[0] != cache_key):
+        _cached_default_environment = (cache_key, get_default_environment())
+    return _cached_default_environment[1]
+
+
+def clear_cache():
+    global _cached_default_environment
+
+    _cached_default_environment = None
 
 
 def find_virtualenvs(paths=None, **kwargs):
