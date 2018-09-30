@@ -1,6 +1,8 @@
 """
 To use Jedi completion in Python interpreter, add the following in your shell
-setup (e.g., ``.bashrc``)::
+setup (e.g., ``.bashrc``). This works only on Linux/Mac, because readline is
+not available on Windows. If you still want Jedi autocompletion in your REPL,
+just use IPython instead::
 
     export PYTHONSTARTUP="$(python -m jedi repl)"
 
