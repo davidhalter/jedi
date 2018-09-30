@@ -69,6 +69,7 @@ from parso import python_bytes_to_unicode
 
 from jedi import debug
 from jedi import parser_utils
+from jedi.api.environment import SameEnvironment
 from jedi.evaluate.utils import unite
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
@@ -88,7 +89,7 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
 class Evaluator(object):
     def __init__(self, project, environment=None, script_path=None):
         if environment is None:
-            environment = project.get_environment()
+            environment = SameEnvironment()
         self.environment = environment
         self.script_path = script_path
         self.compiled_subprocess = environment.get_evaluator_subprocess(self)
