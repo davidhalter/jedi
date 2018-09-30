@@ -189,8 +189,16 @@ def get_default_environment():
     return SameEnvironment()
 
 
-@time_cache(seconds=10 * 60)  # 10 Minutes
 def get_cached_default_environment():
+    environment = _get_cached_default_environment()
+    if environment.path != os.environ.get('VIRTUAL_ENV'):
+        _get_cached_default_environment.clear_cache()
+        return _get_cached_default_environment()
+    return environment
+
+
+@time_cache(seconds=10 * 60)  # 10 Minutes
+def _get_cached_default_environment():
     return get_default_environment()
 
 

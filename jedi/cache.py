@@ -126,6 +126,7 @@ def time_cache(seconds):
 
         wrapper.clear_cache = lambda: cache.clear()
         return wrapper
+
     return decorator
 
 
