@@ -3,11 +3,14 @@
 Changelog
 ---------
 
-0.13.0 ()
+0.13.0 (2018-01-02)
 +++++++++++++++++++
 
+- A small release. Some bug fixes.
 - Remove Python 3.3 support. Python 3.3 support has been dropped by the Python
   foundation.
+- Default environments are now using the same Python version as the Python
+  process. In 0.12.x, we used to load the latest Python version on the system.
 - Added ``include_builtins`` as a parameter to usages.
 - ``goto_assignments`` has a new ``follow_builtin_imports`` parameter that
   changes the previous behavior slightly.
