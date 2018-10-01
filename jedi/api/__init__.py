@@ -177,6 +177,19 @@ class Script(object):
             self._pos, self.call_signatures
         )
         completions = completion.completions()
+
+        import_completions_count = len([
+            c for c in completions
+            if not c._name.tree_name
+            or c._name.tree_name.get_definition().type in ('import_name', 'import_from')
+        ])
+        if import_completions_count > 10:
+            # For now disable completions if there's a lot of imports that
+            # might potentially be resolved. This is the case for tensorflow
+            # and has been fixed for it. This is obviously temporary until we
+            # have a better solution.
+            self._evaluator.infer_enabled = True
+
         debug.speed('completions end')
         return completions
 

@@ -32,8 +32,12 @@ def get_string_context_set(evaluator):
     return builtin_from_name(evaluator, u'str').execute_evaluated()
 
 
-def load_module(evaluator, **kwargs):
-    access_path = evaluator.compiled_subprocess.load_module(**kwargs)
+def load_module(evaluator, dotted_name, **kwargs):
+    # Temporary, some tensorflow builtins cannot be loaded, so it's tried again
+    # and again and it's really slow.
+    if dotted_name.startswith('tensorflow.'):
+        return None
+    access_path = evaluator.compiled_subprocess.load_module(dotted_name=dotted_name, **kwargs)
     if access_path is None:
         return None
     return create_from_access_path(evaluator, access_path)

@@ -21,7 +21,6 @@ from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
 from jedi import debug
 from jedi import settings
-from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -279,7 +278,7 @@ class Importer(object):
         return sys_path_mod
 
     def follow(self):
-        if not self.import_path:
+        if not self.import_path or not self._evaluator.infer_enabled:
             return NO_CONTEXTS
 
         return self._do_import(self.import_path, self.sys_path_with_modifications())
