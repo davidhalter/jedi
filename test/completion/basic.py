@@ -154,6 +154,9 @@ def global_define():
 #? int()
 global_var_in_func
 
+#? ['global_var_in_func']
+global_var_in_f
+
 
 def funct1():
     # From issue #610
@@ -174,6 +177,7 @@ def init_global_var_predefined():
 
 #? int() None
 global_var_predefined
+
 
 # -----------------
 # within docstrs
