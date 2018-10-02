@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.13.1 (2018-10-02)
++++++++++++++++++++
+
+- Bugfixes, because tensorflow completions were still slow.
+
 0.13.0 (2018-10-02)
 +++++++++++++++++++
 
