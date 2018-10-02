@@ -7,7 +7,7 @@ import jedi
 from jedi._compatibility import py_version
 from jedi.api.environment import get_default_environment, find_virtualenvs, \
     InvalidPythonEnvironment, find_system_environments, \
-    get_system_environment, create_environment
+    get_system_environment, create_environment, get_cached_default_environment
 
 
 def test_sys_path():
@@ -129,3 +129,10 @@ def test_get_default_environment_from_env_does_not_use_safe(tmpdir, monkeypatch)
     monkeypatch.setenv('VIRTUAL_ENV', fake_python)
     env = get_default_environment()
     assert env.path == 'fake'
+
+
+def test_changing_venv(venv_path, monkeypatch):
+    monkeypatch.setitem(os.environ, 'VIRTUAL_ENV', venv_path)
+    get_cached_default_environment()
+    monkeypatch.setitem(os.environ, 'VIRTUAL_ENV', sys.executable)
+    assert get_cached_default_environment().executable == sys.executable

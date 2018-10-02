@@ -118,6 +118,9 @@ class Evaluator(object):
         self.is_analysis = False
         self.project = project
         self.access_cache = {}
+        # This setting is only temporary to limit the work we have to do with
+        # tensorflow and others.
+        self.infer_enabled = True
 
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
@@ -170,6 +173,9 @@ class Evaluator(object):
         return self.project._get_sys_path(self, environment=self.environment)
 
     def eval_element(self, context, element):
+        if not self.infer_enabled:
+            return NO_CONTEXTS
+
         if isinstance(context, CompForContext):
             return eval_node(context, element)
 
