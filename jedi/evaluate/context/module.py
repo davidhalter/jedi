@@ -52,6 +52,10 @@ class ModuleContext(TreeContext):
         self._string_names = string_names
         self.code_lines = code_lines
 
+    def iter_star_filters(self, search_global=False):
+        for star_module in self.star_imports():
+            yield next(star_module.get_filters(search_global))
+
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
@@ -64,8 +68,8 @@ class ModuleContext(TreeContext):
         )
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
-        for star_module in self.star_imports():
-            yield next(star_module.get_filters(search_global))
+        for star_filter in self.iter_star_filters():
+            yield star_filter
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need

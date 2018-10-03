@@ -9,7 +9,7 @@ from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     ContextWrapper
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
-    TreeNameDefinition, NameWrapper
+    NameWrapper, AbstractFilter
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
     ClassContext
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
@@ -211,14 +211,14 @@ class NameWithStubMixin(object):
                 yield actual_context
 
 
-class NameWithStub(NameWithStubMixin, TreeNameDefinition):
-    def __init__(self, parent_context, tree_name, stub_name):
-        super(NameWithStub, self).__init__(parent_context, tree_name)
+class NameWithStub(NameWithStubMixin, NameWrapper):
+    def __init__(self, non_stub_name, stub_name):
+        super(NameWithStub, self).__init__(non_stub_name)
         self._stub_name = stub_name
 
     def _get_actual_contexts(self):
         # This is intentionally a subclass of NameWithStubMixin.
-        return super(NameWithStubMixin, self).infer()
+        return self._wrapped_name.infer()
 
 
 class CompiledNameWithStub(NameWithStubMixin, NameWrapper):
@@ -233,74 +233,13 @@ class CompiledNameWithStub(NameWithStubMixin, NameWrapper):
         return self._compiled_name.infer()
 
 
-class StubParserTreeFilter(ParserTreeFilter):
-    name_class = NameWithStub
-
-    def __init__(self, non_stub_filters, *args, **kwargs):
+class StubOnlyFilter(ParserTreeFilter):
+    def __init__(self, *args, **kwargs):
         self._search_global = kwargs.pop('search_global')  # Python 2 :/
-        super(StubParserTreeFilter, self).__init__(*args, **kwargs)
-        self._non_stub_filters = non_stub_filters
-
-    def get(self, name):
-        try:
-            names = self._used_names[name]
-        except KeyError:
-            return self._get_non_stub_names(name)
-
-        return self._convert_names(self._filter(names))
-
-    def values(self):
-        used_stub_names = set()
-        result_names = []
-        for key_name, names in self._used_names.items():
-            found_names = self._convert_names(self._filter(names))
-            if found_names:
-                result_names += found_names
-                used_stub_names.add(key_name)
-
-        for non_stub_filter in self._non_stub_filters:
-            for name in non_stub_filter.values():
-                if name.string_name not in used_stub_names:
-                    result_names.append(name)
-        return result_names
-
-    def _get_non_stub_names(self, string_name):
-        return [
-            name
-            for non_stub_filter in self._non_stub_filters
-            for name in non_stub_filter.get(string_name)
-        ]
-
-    @to_list
-    def _convert_names(self, names):
-        for name in names:
-            non_stub_names = self._get_non_stub_names(name.value)
-            # Try to match the names of stubs with non-stubs. If there's no
-            # match, just use the stub name. The user will be directed there
-            # for all API accesses. Otherwise the user will be directed to the
-            # non-stub positions (see NameWithStub).
-            n = TreeNameDefinition(self.context, name)
-            if isinstance(self.context, TypingModuleWrapper):
-                n = TypingModuleName(n)
-            if len(non_stub_names):
-                for non_stub_name in non_stub_names:
-                    if isinstance(non_stub_name, CompiledName):
-                        yield CompiledNameWithStub(
-                            non_stub_name,
-                            n
-                        )
-                    else:
-                        assert isinstance(non_stub_name, AbstractTreeName), non_stub_name
-                        yield self.name_class(
-                            non_stub_name.parent_context,
-                            non_stub_name.tree_name,
-                            stub_name=n,
-                        )
-            else:
-                yield n
+        super(StubOnlyFilter, self).__init__(*args, **kwargs)
 
     def _is_name_reachable(self, name):
-        if not super(StubParserTreeFilter, self)._is_name_reachable(name):
+        if not super(StubOnlyFilter, self)._is_name_reachable(name):
             return False
 
         if not self._search_global:
@@ -311,6 +250,73 @@ class StubParserTreeFilter(ParserTreeFilter):
                 if name.parent.type not in ('import_as_name', 'dotted_as_name'):
                     return False
         return True
+
+
+class StubFilter(AbstractFilter):
+    """
+    Merging names from stubs and non-stubs.
+    """
+    def __init__(self, non_stub_filters, stub_filters):
+        self._non_stub_filters = non_stub_filters
+        self._stub_filters = stub_filters
+
+    def get(self, name):
+        non_stub_names = self._get_names_from_filter(self._non_stub_filters)
+        stub_names = self._get_names_from_filter(self._stub_filters)
+        if stub_names and non_stub_names:
+            # This is the case where we need to merge, because the names are
+            # contained in both filters.
+            return self._merge_names(non_stub_names, stub_names)
+        return stub_names or non_stub_names
+
+    def values(self):
+        used_stub_names = set()
+        result_names = []
+        for key_name, names in self._used_names.items():
+            found_names = self._convert_names(self._filter(names))
+            if found_names:
+                result_names += found_names
+                used_stub_names.add(key_name)
+
+        name_dict = {}
+        for non_stub_filter in self._non_stub_filters:
+            for name in non_stub_filter.values():
+                name_dict.setdefault(name.string_name, []).append(name)
+
+        # Try to match the names of stubs with non-stubs. If there's no
+        # match, just use the stub name. The user will be directed there
+        # for all API accesses. Otherwise the user will be directed to the
+        # non-stub positions (see NameWithStub).
+        for stub_filter in self._stub_filters:
+            for stub_name in stub_filter.values():
+                merged_names = self._merge_names(
+                    names=name_dict.get(stub_name.string_name),
+                    stub_names=[stub_name]
+                )
+                for merged_name in merged_names:
+                    yield merged_name
+
+    def _get_names_from_filters(self, filters, string_name):
+        return [
+            name
+            for filter in filters
+            for name in filter.get(string_name)
+        ]
+
+    @to_list
+    def _merge_names(self, names, stub_names):
+        for name in names:
+            if isinstance(self._non_stub_filters[0].context, TypingModuleWrapper):
+                name = TypingModuleName(name)
+            for stub_name in stub_names:
+                if isinstance(stub_name, CompiledName):
+                    yield CompiledNameWithStub(
+                        name,
+                        stub_name,
+                    )
+                else:
+                    assert isinstance(stub_name, AbstractTreeName), stub_name
+                    yield NameWithStub(name, stub_name)
 
 
 class _MixedStubContextMixin(object):
@@ -328,7 +334,7 @@ class _StubContextFilterMixin(_MixedStubContextMixin):
         filters = super(_StubContextFilterMixin, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
-        yield StubParserTreeFilter(
+        yield StubFilter(
             # Take the first filter, which is here to filter module contents
             # and wrap it.
             [next(filters)],
@@ -377,9 +383,18 @@ class StubOnlyModuleContext(ModuleContext):
         )
         next(filters)  # Ignore the first filter and replace it with our own
 
+        stub_filters = [StubOnlyFilter(
+            self.evaluator,
+            context=self,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            search_global=search_global,
+        )]
+        stub_filters += self.
+
         # Here we remap the names from stubs to the actual module. This is
         # important if type inferences is needed in that module.
-        yield StubParserTreeFilter(
+        yield StubFilter(
             list(self._get_first_non_stub_filters()),
             self.evaluator,
             context=self,
