@@ -63,6 +63,7 @@ def apply_py__get__(context, base_context):
 @evaluator_method_cache(default=())
 def py__mro__(context):
     try:
+        # TODO is this really needed?
         method = context.py__mro__
     except AttributeError:
         pass

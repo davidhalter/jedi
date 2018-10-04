@@ -14,7 +14,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import instance
-from jedi.evaluate.context import ClassContext, FunctionExecutionContext
+from jedi.evaluate.context import FunctionExecutionContext
 from jedi.plugins.typeshed import StubOnlyModuleContext
 from jedi.api.keywords import KeywordName
 
@@ -339,7 +339,7 @@ class BaseDefinition(object):
                 # there's no better solution.
                 inferred = names[0].infer()
                 param_names = get_param_names(next(iter(inferred)))
-                if isinstance(context, ClassContext):
+                if context.is_class():
                     param_names = param_names[1:]
                 return param_names
             elif isinstance(context, compiled.CompiledObject):

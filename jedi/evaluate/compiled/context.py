@@ -373,6 +373,9 @@ class CompiledObjectFilter(AbstractFilter):
     def _create_name(self, name):
         return self.name_class(self._evaluator, self._compiled_object, name)
 
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, self._compiled_object)
+
 
 docstr_defaults = {
     'floating point number': u'float',

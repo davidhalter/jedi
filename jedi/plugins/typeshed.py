@@ -9,7 +9,7 @@ from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     ContextWrapper
 from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
-    NameWrapper, AbstractFilter
+    NameWrapper, AbstractFilter, TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
     ClassContext
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
@@ -196,7 +196,7 @@ class NameWithStubMixin(object):
                         actual_context.parent_context,
                         actual_context.tree_node,
                     )
-                elif isinstance(stub_context, ClassContext) \
+                elif isinstance(stub_context, StubOnlyClass) \
                         and isinstance(actual_context, ClassContext):
                     yield StubClassContext(
                         actual_context.evaluator,
@@ -211,9 +211,18 @@ class NameWithStubMixin(object):
                 yield actual_context
 
 
-class NameWithStub(NameWithStubMixin, NameWrapper):
+class StubOnlyName(TreeNameDefinition):
+    def infer(self):
+        inferred = super(StubOnlyName, self).infer()
+        return [
+            StubOnlyClass(c) if isinstance(c, ClassContext) else c
+            for c in inferred
+        ]
+
+
+class StubName(NameWithStubMixin, NameWrapper):
     def __init__(self, non_stub_name, stub_name):
-        super(NameWithStub, self).__init__(non_stub_name)
+        super(StubName, self).__init__(non_stub_name)
         self._stub_name = stub_name
 
     def _get_actual_contexts(self):
@@ -234,6 +243,8 @@ class CompiledNameWithStub(NameWithStubMixin, NameWrapper):
 
 
 class StubOnlyFilter(ParserTreeFilter):
+    name_class = StubOnlyName
+
     def __init__(self, *args, **kwargs):
         self._search_global = kwargs.pop('search_global')  # Python 2 :/
         super(StubOnlyFilter, self).__init__(*args, **kwargs)
@@ -261,23 +272,11 @@ class StubFilter(AbstractFilter):
         self._stub_filters = stub_filters
 
     def get(self, name):
-        non_stub_names = self._get_names_from_filter(self._non_stub_filters)
-        stub_names = self._get_names_from_filter(self._stub_filters)
-        if stub_names and non_stub_names:
-            # This is the case where we need to merge, because the names are
-            # contained in both filters.
-            return self._merge_names(non_stub_names, stub_names)
-        return stub_names or non_stub_names
+        non_stub_names = self._get_names_from_filters(self._non_stub_filters, name)
+        stub_names = self._get_names_from_filters(self._stub_filters, name)
+        return self._merge_names(non_stub_names, stub_names)
 
     def values(self):
-        used_stub_names = set()
-        result_names = []
-        for key_name, names in self._used_names.items():
-            found_names = self._convert_names(self._filter(names))
-            if found_names:
-                result_names += found_names
-                used_stub_names.add(key_name)
-
         name_dict = {}
         for non_stub_filter in self._non_stub_filters:
             for name in non_stub_filter.values():
@@ -286,7 +285,7 @@ class StubFilter(AbstractFilter):
         # Try to match the names of stubs with non-stubs. If there's no
         # match, just use the stub name. The user will be directed there
         # for all API accesses. Otherwise the user will be directed to the
-        # non-stub positions (see NameWithStub).
+        # non-stub positions (see StubName).
         for stub_filter in self._stub_filters:
             for stub_name in stub_filter.values():
                 merged_names = self._merge_names(
@@ -305,18 +304,25 @@ class StubFilter(AbstractFilter):
 
     @to_list
     def _merge_names(self, names, stub_names):
+        if not stub_names:
+            return names
+        if not names:
+            if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
+                return [TypingModuleName(n) for n in stub_names]
+            return stub_names
+
+        result = []
+        # The names are contained in both filters.
         for name in names:
-            if isinstance(self._non_stub_filters[0].context, TypingModuleWrapper):
-                name = TypingModuleName(name)
             for stub_name in stub_names:
-                if isinstance(stub_name, CompiledName):
-                    yield CompiledNameWithStub(
-                        name,
-                        stub_name,
-                    )
+                if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
+                    stub_name = TypingModuleName(stub_name)
+
+                if isinstance(name, CompiledName):
+                    result.append(CompiledNameWithStub(name, stub_name))
                 else:
-                    assert isinstance(stub_name, AbstractTreeName), stub_name
-                    yield NameWithStub(name, stub_name)
+                    result.append(StubName(name, stub_name))
+        return result
 
 
 class _MixedStubContextMixin(object):
@@ -334,15 +340,13 @@ class _StubContextFilterMixin(_MixedStubContextMixin):
         filters = super(_StubContextFilterMixin, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
-        yield StubFilter(
+        yield self.stub_context.get_stub_only_filter(
             # Take the first filter, which is here to filter module contents
             # and wrap it.
             [next(filters)],
-            self.evaluator,
-            context=self.stub_context,
+            search_global=search_global,
             until_position=until_position,
             origin_scope=origin_scope,
-            search_global=search_global,
         )
         for f in filters:
             yield f
@@ -355,7 +359,7 @@ class StubModuleContext(_StubContextFilterMixin, ModuleContext):
 class StubClassContext(_StubContextFilterMixin, ClassContext):
     def __getattribute__(self, name):
         if name in ('py__getitem__', 'py__simple_getitem__', 'py__bases__',
-                    'execute_annotation'):
+                    'execute_annotation', 'get_stub_only_filter'):
             # getitem is always done in the stub class.
             return getattr(self.stub_context, name)
         return super(StubClassContext, self).__getattribute__(name)
@@ -367,7 +371,24 @@ class StubFunctionContext(_MixedStubContextMixin, FunctionContext):
         return super().get_function_execution(arguments, tree_node=self.stub_context.tree_node)
 
 
-class StubOnlyModuleContext(ModuleContext):
+class _StubOnlyContext(object):
+    def _get_stub_only_filters(self, **filter_kwargs):
+        return [StubOnlyFilter(
+            self.evaluator,
+            context=self,
+            **filter_kwargs
+        )]
+
+    def get_stub_only_filter(self, non_stub_filters, **filter_kwargs):
+        # Here we remap the names from stubs to the actual module. This is
+        # important if type inferences is needed in that module.
+        return StubFilter(
+            non_stub_filters,
+            self._get_stub_only_filters(**filter_kwargs),
+        )
+
+
+class StubOnlyModuleContext(_StubOnlyContext, ModuleContext):
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubOnlyModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
@@ -376,6 +397,13 @@ class StubOnlyModuleContext(ModuleContext):
         for context in self.non_stub_context_set:
             yield next(context.get_filters(search_global=False))
 
+    def _get_stub_only_filters(self, search_global, **filter_kwargs):
+        stub_filters = super(StubOnlyModuleContext, self)._get_stub_only_filters(
+            search_global=search_global, **filter_kwargs
+        )
+        stub_filters += self.iter_star_filters(search_global=search_global)
+        return stub_filters
+
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
         filters = super(StubOnlyModuleContext, self).get_filters(
@@ -383,27 +411,17 @@ class StubOnlyModuleContext(ModuleContext):
         )
         next(filters)  # Ignore the first filter and replace it with our own
 
-        stub_filters = [StubOnlyFilter(
-            self.evaluator,
-            context=self,
-            until_position=until_position,
-            origin_scope=origin_scope,
-            search_global=search_global,
-        )]
-        stub_filters += self.
-
-        # Here we remap the names from stubs to the actual module. This is
-        # important if type inferences is needed in that module.
-        yield StubFilter(
+        yield self.get_stub_only_filter(
             list(self._get_first_non_stub_filters()),
-            self.evaluator,
-            context=self,
+            search_global=search_global,
             until_position=until_position,
             origin_scope=origin_scope,
-            search_global=search_global,
         )
         for f in filters:
             yield f
+
+class StubOnlyClass(_StubOnlyContext, ContextWrapper):
+    pass
 
 
 class _StubContextWithCompiled(ContextWrapper):

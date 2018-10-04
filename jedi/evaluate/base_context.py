@@ -18,8 +18,6 @@ from jedi.evaluate.cache import evaluator_as_method_param_cache
 
 
 class HelperContextMixin:
-    tree_node = None
-
     @classmethod
     @evaluator_as_method_param_cache()
     def create_cached(cls, *args, **kwargs):
@@ -62,6 +60,8 @@ class HelperContextMixin:
         return False
 
     def is_same_class(self, class2):
+        if isinstance(class2, ContextWrapper):
+            class2 = class2._wrapped_context
         # Class matching should prefer comparisons that are not this function.
         if type(class2).is_same_class != HelperContextMixin.is_same_class:
             return class2.is_same_class(self)
@@ -76,6 +76,7 @@ class Context(HelperContextMixin, BaseContext):
     """
     To be defined by subclasses.
     """
+    tree_node = None
 
     @property
     def api_type(self):

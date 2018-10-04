@@ -26,7 +26,6 @@ from parso import ParserSyntaxError, parse
 from jedi._compatibility import force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
-from jedi.evaluate.context import ClassContext
 from jedi.evaluate.context.typing import TypeVar, AnnotatedClass, \
     AbstractAnnotatedClass
 from jedi.evaluate.helpers import is_string
@@ -232,12 +231,15 @@ def infer_return_types(function_execution_context):
         However, the iterator is defined as Iterator[_T_co], which means it has
         a different type var name.
         """
-        if isinstance(context, ClassContext):
+        try:
+            func = context.list_type_vars
+        except AttributeError:
+            return type_var_dict
+        else:
             return {
                 to.py__name__(): type_var_dict.get(from_.py__name__(), NO_CONTEXTS)
-                for from_, to in zip(unknown_type_vars, context.list_type_vars())
+                for from_, to in zip(unknown_type_vars, func())
             }
-        return type_var_dict
 
     return ContextSet(
         ann.define_generics(type_var_dict)
