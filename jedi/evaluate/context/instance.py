@@ -304,6 +304,9 @@ class AnonymousInstance(TreeInstance):
             var_args=AnonymousInstanceArguments(self),
         )
 
+    def get_annotated_class_object(self):
+        return self.class_context  # This is the default.
+
 
 class CompiledInstanceName(compiled.CompiledName):
 
