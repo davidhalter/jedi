@@ -259,7 +259,7 @@ g = operator.itemgetter(1, 2)
 x1, x2 = g([1, 1.0, ''])
 #? float()
 x1
-#? float()
+#? str()
 x2
 
 x1, x2 = g([1, ''])

@@ -26,7 +26,8 @@ from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
 from jedi.evaluate.context.klass import py__mro__
 from jedi.evaluate.context import iterable
-from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext
+from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
+    LazyKnownContexts
 from jedi.evaluate.syntax_tree import is_string
 
 # Now this is all part of fake tuples in Jedi. However super doesn't work on
@@ -475,8 +476,14 @@ class ItemGetterCallable(object):
                 # TODO we need to add the contextualized context.
                 context_set |= item_context_set.get_item(lazy_contexts[0].infer(), None)
             else:
-                return NO_CONTEXTS
-                raise NotImplementedError
+                context_set |= ContextSet([iterable.FakeSequence(
+                    self.evaluator,
+                    'list',
+                    [
+                        LazyKnownContexts(item_context_set.get_item(lazy_context.infer(), None))
+                        for lazy_context in lazy_contexts
+                    ],
+                )])
         return context_set
 
 
