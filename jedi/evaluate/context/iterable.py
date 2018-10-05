@@ -266,6 +266,9 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
                         return values
         raise SimpleGetItemNotFound()
 
+    def _dict_keys(self):
+        return ContextSet.from_sets(keys for keys, values in self._iterate())
+
     def _dict_values(self):
         return ContextSet.from_sets(values for keys, values in self._iterate())
 
@@ -289,6 +292,9 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
         ]
 
         return ContextSet([FakeSequence(self.evaluator, u'list', lazy_contexts)])
+
+    def get_mapping_item_contexts(self):
+        return self._dict_keys(), self._dict_values()
 
 
 class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
