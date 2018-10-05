@@ -7,8 +7,8 @@ from jedi.evaluate.cache import evaluator_function_cache
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
-    ContextWrapper
-from jedi.evaluate.filters import AbstractTreeName, ParserTreeFilter, \
+    ContextWrapper, NO_CONTEXTS
+from jedi.evaluate.filters import ParserTreeFilter, \
     NameWrapper, AbstractFilter, TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
     ClassContext
@@ -120,6 +120,12 @@ class TypeshedPlugin(BasePlugin):
 
     def import_module(self, callback):
         def wrapper(evaluator, import_names, parent_module_context, sys_path):
+            if import_names == ('_sqlite3',):
+                # TODO Maybe find a better solution for this?
+                # The problem is IMO how star imports are priorized and that
+                # there's no clear ordering.
+                return NO_CONTEXTS
+
             # This is a huge exception, we follow a nested import
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
@@ -419,6 +425,7 @@ class StubOnlyModuleContext(_StubOnlyContext, ModuleContext):
         )
         for f in filters:
             yield f
+
 
 class StubOnlyClass(_StubOnlyContext, ContextWrapper):
     pass
