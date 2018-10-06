@@ -571,9 +571,10 @@ class AbstractAnnotatedClass(ClassContext):
         )
 
     def __repr__(self):
-        return '<%s: %s%s>' % (
+        return '<%s: %s@%s%s>' % (
             self.__class__.__name__,
             self.name.string_name,
+            self.name.tree_name.start_pos,
             list(self.get_given_types()),
         )
 

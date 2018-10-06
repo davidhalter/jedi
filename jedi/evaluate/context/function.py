@@ -328,7 +328,7 @@ class FunctionExecutionContext(TreeContext):
             else:
                 if evaluator.environment.version_info < (3, 5):
                     return NO_CONTEXTS
-                async_classes = evaluator.typing_module .py__getattribute__('Coroutine')
+                async_classes = evaluator.typing_module.py__getattribute__('Coroutine')
                 return_contexts = self.get_return_values()
                 return ContextSet(
                     AnnotatedSubClass(

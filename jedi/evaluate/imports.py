@@ -408,7 +408,6 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
 
     module_name = '.'.join(import_names)
     if parent_module_context is None:
-        debug.dbg('global search_module %s', import_names[-1])
         # Override the sys.path. It works only good that way.
         # Injecting the path directly into `find_module` did not work.
         code, module_path, is_pkg = evaluator.compiled_subprocess.get_module_info(
@@ -427,7 +426,6 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
             raise JediImportError(import_names)
         else:
             paths = method()
-            debug.dbg('search_module %s in paths %s', module_name, paths)
             for path in paths:
                 # At the moment we are only using one path. So this is
                 # not important to be correct.
@@ -450,6 +448,10 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
         safe_module_name=True,
     )
 
+    if parent_module_context is None:
+        debug.dbg('global search_module %s: %s', import_names[-1], module)
+    else:
+        debug.dbg('search_module %s in paths %s: %s', module_name, paths, module)
     return ContextSet([module])
 
 
