@@ -201,6 +201,13 @@ class ClassMixin(object):
     def py__mro__(self):
         return py__mro__(self)
 
+    def _create_class_filter(self, cls, origin_scope, is_instance):
+        return ClassFilter(
+            self.evaluator, self, node_context=cls,
+            origin_scope=origin_scope,
+            is_instance=is_instance
+        )
+
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, is_instance=False):
         if search_global:
@@ -216,11 +223,7 @@ class ClassMixin(object):
                     for filter in cls.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield ClassFilter(
-                        self.evaluator, self, node_context=cls,
-                        origin_scope=origin_scope,
-                        is_instance=is_instance
-                    )
+                    yield self._create_class_filter(cls, origin_scope, is_instance)
         if not is_instance and self:
             # Return completions of the meta class.
             from jedi.evaluate.compiled import builtin_from_name

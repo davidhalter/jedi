@@ -496,8 +496,29 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_given_types(), self.list_type_vars())
 
+    def _create_class_filter(self, cls, origin_scope, is_instance):
+        filter_ = super(AbstractAnnotatedClass, self)._create_class_filter(
+            cls, origin_scope, is_instance
+        )
+        try:
+            stub_context = cls.stub_context
+        except AttributeError:
+            return filter_
+        else:
+            return stub_context.get_stub_only_filter(
+                # Take the first filter, which is here to filter module contents
+                # and wrap it.
+                [filter_],
+                search_global=False,
+                origin_scope=origin_scope,
+            )
+
     def get_filters(self, search_global=False, *args, **kwargs):
-        for f in super(AbstractAnnotatedClass, self).get_filters(search_global, *args, **kwargs):
+        filters = super(AbstractAnnotatedClass, self).get_filters(
+            search_global,
+            *args, **kwargs
+        )
+        for f in filters:
             yield f
 
         if search_global:
