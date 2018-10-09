@@ -205,11 +205,10 @@ class NameWithStubMixin(object):
                     )
                 elif isinstance(stub_context, StubOnlyClass) \
                         and isinstance(actual_context, ClassContext):
-                    yield StubClassContext(
+                    yield StubClassContext.create_cached(
                         actual_context.evaluator,
+                        actual_context,
                         stub_context,
-                        actual_context.parent_context,
-                        actual_context.tree_node,
                     )
                 else:
                     yield stub_context
@@ -348,7 +347,7 @@ class _MixedStubContextMixin(object):
         self.stub_context = stub_context
 
 
-class _StubContextFilterMixin(_MixedStubContextMixin):
+class _StubContextFilterMixin(object):
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
         filters = super(_StubContextFilterMixin, self).get_filters(
@@ -366,11 +365,15 @@ class _StubContextFilterMixin(_MixedStubContextMixin):
             yield f
 
 
-class StubModuleContext(_StubContextFilterMixin, ModuleContext):
+class StubModuleContext(_MixedStubContextMixin, _StubContextFilterMixin, ModuleContext):
     pass
 
 
-class StubClassContext(_StubContextFilterMixin, ClassContext):
+class StubClassContext(_StubContextFilterMixin, ClassMixin, ContextWrapper):
+    def __init__(self, cls, stub_context):
+        super(StubClassContext, self).__init__(cls)
+        self.stub_context = stub_context
+
     def __getattribute__(self, name):
         if name in ('py__getitem__', 'py__simple_getitem__', 'py__bases__',
                     'execute_annotation', 'get_stub_only_filter'):
