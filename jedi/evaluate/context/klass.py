@@ -42,7 +42,7 @@ from jedi._compatibility import use_metaclass
 from jedi.parser_utils import get_parent_scope
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
-from jedi.evaluate.lazy_context import LazyKnownContext
+from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
     ContextName
 from jedi.evaluate.arguments import unpack_arglist
@@ -68,8 +68,9 @@ def py__mro__(context):
     except AttributeError:
         pass
     else:
-        # Currently only used for compiled objects.
-        return method()
+        if not isinstance(context, ClassMixin):
+            # Currently only used for compiled objects.
+            return method()
 
     def add(cls):
         if cls not in mro:
@@ -161,7 +162,77 @@ class ClassFilter(ParserTreeFilter):
         return [name for name in names if self._access_possible(name)]
 
 
-class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
+class ClassMixin(object):
+    def is_class(self):
+        return True
+
+    def py__call__(self, arguments):
+        from jedi.evaluate.context import TreeInstance
+        return ContextSet([TreeInstance(self.evaluator, self.parent_context, self, arguments)])
+
+    def py__class__(self):
+        return compiled.builtin_from_name(self.evaluator, u'type')
+
+    @property
+    def name(self):
+        return ContextName(self, self.tree_node.name)
+
+    def py__name__(self):
+        return self.name.string_name
+
+    def get_function_slot_names(self, name):
+        for filter in self.get_filters(search_global=False):
+            names = filter.get(name)
+            if names:
+                return names
+        return []
+
+    def get_param_names(self):
+        for name in self.get_function_slot_names(u'__init__'):
+            for context_ in name.infer():
+                try:
+                    method = context_.get_param_names
+                except AttributeError:
+                    pass
+                else:
+                    return list(method())[1:]
+        return []
+
+    def py__mro__(self):
+        return py__mro__(self)
+
+    def get_filters(self, search_global=False, until_position=None,
+                    origin_scope=None, is_instance=False):
+        if search_global:
+            yield ParserTreeFilter(
+                self.evaluator,
+                context=self,
+                until_position=until_position,
+                origin_scope=origin_scope
+            )
+        else:
+            for cls in py__mro__(self):
+                if isinstance(cls, compiled.CompiledObject):
+                    for filter in cls.get_filters(is_instance=is_instance):
+                        yield filter
+                else:
+                    yield ClassFilter(
+                        self.evaluator, self, node_context=cls,
+                        origin_scope=origin_scope,
+                        is_instance=is_instance
+                    )
+        if not is_instance and self:
+            # Return completions of the meta class.
+            from jedi.evaluate.compiled import builtin_from_name
+            type_ = builtin_from_name(self.evaluator, u'type')
+            yield ClassFilter(
+                self.evaluator, self, node_context=type_,
+                origin_scope=origin_scope,
+                is_instance=is_instance
+            )
+
+
+class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -194,72 +265,9 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
             args = arguments.TreeArguments(self.evaluator, self.parent_context, arglist)
             return [value for key, value in args.unpack() if key is None]
         else:
-            return [LazyKnownContext(compiled.builtin_from_name(self.evaluator, u'object'))]
-
-    def py__call__(self, arguments):
-        from jedi.evaluate.context import TreeInstance
-        return ContextSet([TreeInstance(self.evaluator, self.parent_context, self, arguments)])
-
-    def py__class__(self):
-        return compiled.builtin_from_name(self.evaluator, u'type')
-
-    def get_filters(self, search_global=False, until_position=None,
-                    origin_scope=None, is_instance=False):
-        if search_global:
-            yield ParserTreeFilter(
-                self.evaluator,
-                context=self,
-                until_position=until_position,
-                origin_scope=origin_scope
-            )
-        else:
-            for cls in py__mro__(self):
-                if isinstance(cls, compiled.CompiledObject):
-                    for filter in cls.get_filters(is_instance=is_instance):
-                        yield filter
-                else:
-                    yield ClassFilter(
-                        self.evaluator, self, node_context=cls,
-                        origin_scope=origin_scope,
-                        is_instance=is_instance
-                    )
-        if not is_instance and self:
-            # Return completions of the meta class.
-            from jedi.evaluate.compiled import builtin_from_name
-            type_ = builtin_from_name(self.evaluator, u'type')
-            yield ClassFilter(
-                self.evaluator, self, node_context=type_,
-                origin_scope=origin_scope,
-                is_instance=is_instance
-            )
-
-    def is_class(self):
-        return True
-
-    def get_function_slot_names(self, name):
-        for filter in self.get_filters(search_global=False):
-            names = filter.get(name)
-            if names:
-                return names
-        return []
-
-    def get_param_names(self):
-        for name in self.get_function_slot_names(u'__init__'):
-            for context_ in name.infer():
-                try:
-                    method = context_.get_param_names
-                except AttributeError:
-                    pass
-                else:
-                    return list(method())[1:]
-        return []
-
-    @property
-    def name(self):
-        return ContextName(self, self.tree_node.name)
-
-    def py__name__(self):
-        return self.name.string_name
+            return [LazyKnownContexts(
+                self.evaluator.builtins_module.py__getattribute__('object')
+            )]
 
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate.context.typing import AnnotatedClass
@@ -267,9 +275,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
             return ContextSet([self])
         return ContextSet(
             AnnotatedClass(
-                self.evaluator,
-                self.parent_context,
-                self.tree_node,
+                self,
                 index_context,
                 context_of_index=contextualized_node.context,
             )
@@ -285,9 +291,7 @@ class ClassContext(use_metaclass(CachedMetaClass, TreeContext)):
 
         if type_var_dict:
             return AnnotatedSubClass(
-                self.evaluator,
-                self.parent_context,
-                self.tree_node,
+                self,
                 given_types=tuple(remap_type_vars())
             )
         return self

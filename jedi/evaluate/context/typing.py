@@ -9,7 +9,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
     iterator_to_context_set, HelperContextMixin, ContextWrapper
-from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext
+from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic
 from jedi.evaluate.utils import to_list
@@ -17,7 +17,7 @@ from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
 from jedi.evaluate.imports import Importer
-from jedi.evaluate.context.klass import py__mro__, ClassContext
+from jedi.evaluate.context.klass import py__mro__, ClassMixin
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -192,8 +192,10 @@ class TypingContext(_BaseTypingContext):
 
 
 class TypingClassMixin(object):
-    def py__bases__(self,):
-        return [LazyKnownContext(builtin_from_name(self.evaluator, u'object'))]
+    def py__bases__(self):
+        return [LazyKnownContexts(
+            self.evaluator.builtins_module.py__getattribute__('object')
+        )]
 
 
 class TypingClassContextWithIndex(TypingClassMixin, TypingContextWithIndex):
@@ -490,7 +492,7 @@ class TypeVarFilter(object):
         return []
 
 
-class AbstractAnnotatedClass(ClassContext):
+class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_given_types(), self.list_type_vars())
 
@@ -564,29 +566,26 @@ class AbstractAnnotatedClass(ClassContext):
             return self
 
         return AnnotatedSubClass(
-            self.evaluator,
-            self.parent_context,
-            self.tree_node,
+            self._wrapped_context,
             given_types=tuple(new_generics)
         )
 
     def __repr__(self):
-        return '<%s: %s@%s%s>' % (
+        return '<%s: %s%s>' % (
             self.__class__.__name__,
-            self.name.string_name,
-            self.name.tree_name.start_pos,
+            self._wrapped_context,
             list(self.get_given_types()),
         )
 
     @to_list
     def py__bases__(self):
-        for base in super(AbstractAnnotatedClass, self).py__bases__():
+        for base in self._wrapped_context.py__bases__():
             yield LazyAnnotatedBaseClass(self, base)
 
 
 class AnnotatedClass(AbstractAnnotatedClass):
-    def __init__(self, evaluator, parent_context, tree_node, index_context, context_of_index):
-        super(AnnotatedClass, self).__init__(evaluator, parent_context, tree_node)
+    def __init__(self, class_context, index_context, context_of_index):
+        super(AnnotatedClass, self).__init__(class_context)
         self._index_context = index_context
         self._context_of_index = context_of_index
 
@@ -596,8 +595,8 @@ class AnnotatedClass(AbstractAnnotatedClass):
 
 
 class AnnotatedSubClass(AbstractAnnotatedClass):
-    def __init__(self, evaluator, parent_context, tree_node, given_types):
-        super(AnnotatedSubClass, self).__init__(evaluator, parent_context, tree_node)
+    def __init__(self, class_context, given_types):
+        super(AnnotatedSubClass, self).__init__(class_context)
         self._given_types = given_types
 
     def get_given_types(self):
@@ -616,8 +615,7 @@ class LazyAnnotatedBaseClass(object):
                 # Here we have to recalculate the given types.
                 yield AnnotatedSubClass.create_cached(
                     base.evaluator,
-                    base.parent_context,
-                    base.tree_node,
+                    base._wrapped_context,
                     tuple(self._remap_type_vars(base)),
                 )
             else:

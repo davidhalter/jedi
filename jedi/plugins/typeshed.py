@@ -12,6 +12,7 @@ from jedi.evaluate.filters import ParserTreeFilter, \
     NameWrapper, AbstractFilter, TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
     ClassContext
+from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
 from jedi.evaluate.compiled.context import CompiledName
@@ -221,7 +222,7 @@ class StubOnlyName(TreeNameDefinition):
     def infer(self):
         inferred = super(StubOnlyName, self).infer()
         return [
-            StubOnlyClass(c) if isinstance(c, ClassContext) else c
+            StubOnlyClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
             for c in inferred
         ]
 
@@ -330,6 +331,13 @@ class StubFilter(AbstractFilter):
                     result.append(StubName(name, stub_name))
         return result
 
+    def __repr__(self):
+        return '%s(%s, %s)' % (
+            self.__class__.__name__,
+            self._non_stub_filters,
+            self._stub_filters,
+        )
+
 
 class _MixedStubContextMixin(object):
     """
@@ -427,7 +435,7 @@ class StubOnlyModuleContext(_StubOnlyContext, ModuleContext):
             yield f
 
 
-class StubOnlyClass(_StubOnlyContext, ContextWrapper):
+class StubOnlyClass(_StubOnlyContext, ClassMixin, ContextWrapper):
     pass
 
 

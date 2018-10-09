@@ -64,7 +64,7 @@ def _py__stop_iteration_returns(generators):
 @debug.increase_indent
 @_limit_context_infers
 def eval_node(context, element):
-    debug.dbg('eval_node %s@%s', element, element.start_pos)
+    debug.dbg('eval_node %s@%s in %s', element, element.start_pos, context)
     evaluator = context.evaluator
     typ = element.type
     if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword'):

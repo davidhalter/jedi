@@ -210,10 +210,8 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     def get_object(self):
         from jedi.evaluate.context.typing import AnnotatedSubClass
         klass = compiled.builtin_from_name(self.evaluator, self.array_type)
-        return AnnotatedSubClass(
-            self.evaluator, klass.parent_context, klass.tree_node,
-            self._get_generics()
-        ).execute_annotation()
+        # TODO is this execute annotation wrong? it returns a context set?!
+        return AnnotatedSubClass(klass, self._get_generics()).execute_annotation()
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.

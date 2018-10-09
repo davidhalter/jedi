@@ -29,6 +29,9 @@ class HelperContextMixin:
     def execute_evaluated(self, *value_list):
         return execute_evaluated(self, *value_list)
 
+    def execute_annotation(self):
+        return self.execute_evaluated()
+
     def merge_types_of_iterate(self, contextualized_node=None, is_async=False):
         return ContextSet.from_sets(
             lazy_context.infer()
@@ -52,6 +55,9 @@ class HelperContextMixin:
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
 
+    def eval_node(self, node):
+        return self.evaluator.eval_element(self, node)
+
     def is_sub_class_of(self, class_context):
         from jedi.evaluate.context.klass import py__mro__
         for cls in py__mro__(self):
@@ -60,8 +66,6 @@ class HelperContextMixin:
         return False
 
     def is_same_class(self, class2):
-        if isinstance(class2, ContextWrapper):
-            class2 = class2._wrapped_context
         # Class matching should prefer comparisons that are not this function.
         if type(class2).is_same_class != HelperContextMixin.is_same_class:
             return class2.is_same_class(self)
@@ -113,9 +117,6 @@ class Context(HelperContextMixin, BaseContext):
         else:
             return iter_method()
 
-    def eval_node(self, node):
-        return self.evaluator.eval_element(self, node)
-
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate import analysis
         # TODO this context is probably not right.
@@ -126,9 +127,6 @@ class Context(HelperContextMixin, BaseContext):
             message="TypeError: '%s' object is not subscriptable" % self
         )
         return NO_CONTEXTS
-
-    def execute_annotation(self):
-        return execute_evaluated(self)
 
     def create_context(self, node, node_is_context=False, node_is_object=False):
         return self.evaluator.create_context(self, node, node_is_context, node_is_object)
@@ -192,6 +190,11 @@ class ContextWrapper(HelperContextMixin, object):
         else:
             from jedi.evaluate.compiled import CompiledContextName
             return CompiledContextName(self, wrapped_name.string_name)
+
+    @classmethod
+    @evaluator_as_method_param_cache()
+    def create_cached(cls, evaluator, *args, **kwargs):
+        return cls(*args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(self._wrapped_context, name)
