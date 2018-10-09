@@ -58,35 +58,8 @@ class HelperContextMixin:
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
 
-    def is_sub_class_of(self, class_context):
-        from jedi.evaluate.context.klass import py__mro__
-        for cls in py__mro__(self):
-            if cls.is_same_class(class_context):
-                return True
-        return False
-
-    def is_same_class(self, class2):
-        # Class matching should prefer comparisons that are not this function.
-        if type(class2).is_same_class != HelperContextMixin.is_same_class:
-            return class2.is_same_class(self)
-        return self == class2
-
-
-class Context(HelperContextMixin, BaseContext):
-    """
-    Should be defined, otherwise the API returns empty types.
-    """
-    predefined_names = {}
-    """
-    To be defined by subclasses.
-    """
-    tree_node = None
-
-    @property
-    def api_type(self):
-        # By default just lower name of the class. Can and should be
-        # overwritten.
-        return self.__class__.__name__.lower()
+    def create_context(self, node, node_is_context=False, node_is_object=False):
+        return self.evaluator.create_context(self, node, node_is_context, node_is_object)
 
     def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
@@ -117,6 +90,36 @@ class Context(HelperContextMixin, BaseContext):
         else:
             return iter_method()
 
+    def is_sub_class_of(self, class_context):
+        from jedi.evaluate.context.klass import py__mro__
+        for cls in py__mro__(self):
+            if cls.is_same_class(class_context):
+                return True
+        return False
+
+    def is_same_class(self, class2):
+        # Class matching should prefer comparisons that are not this function.
+        if type(class2).is_same_class != HelperContextMixin.is_same_class:
+            return class2.is_same_class(self)
+        return self == class2
+
+
+class Context(HelperContextMixin, BaseContext):
+    """
+    Should be defined, otherwise the API returns empty types.
+    """
+    predefined_names = {}
+    """
+    To be defined by subclasses.
+    """
+    tree_node = None
+
+    @property
+    def api_type(self):
+        # By default just lower name of the class. Can and should be
+        # overwritten.
+        return self.__class__.__name__.lower()
+
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate import analysis
         # TODO this context is probably not right.
@@ -127,9 +130,6 @@ class Context(HelperContextMixin, BaseContext):
             message="TypeError: '%s' object is not subscriptable" % self
         )
         return NO_CONTEXTS
-
-    def create_context(self, node, node_is_context=False, node_is_object=False):
-        return self.evaluator.create_context(self, node, node_is_context, node_is_object)
 
     def is_class(self):
         return False
