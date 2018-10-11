@@ -267,6 +267,11 @@ class DictComprehension(ComprehensionMixin, Sequence):
 
         return ContextSet(FakeSequence(self.evaluator, u'list', lazy_contexts))
 
+    def exact_key_items(self):
+        # NOTE: A smarter thing can probably done here to achieve better
+        # completions, but at least like this jedi doesn't crash
+        return []
+
 
 class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
     pass
