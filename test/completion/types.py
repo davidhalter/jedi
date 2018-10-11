@@ -138,17 +138,29 @@ set_t2.c
 # python >= 3.5
 
 d = {'a': 3}
+dc = {v: 3 for v in ['a']}
 
 #? dict()
 {**d}
 
+#? dict()
+{**dc}
+
 #? str()
 {**d, "b": "b"}["b"]
+
+#? str()
+{**dc, "b": "b"}["b"]
 
 # Should resolve to int() but jedi is not smart enough yet
 # Here to make sure it doesn't result in crash though
 #? 
 {**d}["a"]
+
+# Should resolve to int() but jedi is not smart enough yet
+# Here to make sure it doesn't result in crash though
+#? 
+{**dc}["a"]
 
 s = {1, 2, 3}
 
