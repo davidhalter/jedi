@@ -37,7 +37,7 @@ class LambdaName(AbstractNameDefinition):
         return ContextSet([self._lambda_context])
 
 
-class AbstractFunction(TreeContext):
+class FunctionMixin(object):
     api_type = u'function'
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
@@ -65,13 +65,16 @@ class AbstractFunction(TreeContext):
         return ContextName(self, self.tree_node.name)
 
     def get_function_execution(self, arguments=None):
-        raise NotImplementedError
+        if arguments is None:
+            arguments = AnonymousArguments()
+
+        return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
 
     def py__name__(self):
         return self.name.string_name
 
 
-class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
+class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -116,12 +119,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
             return NO_CONTEXTS
         return function_execution.infer()
 
-    def get_function_execution(self, arguments=None):
-        if arguments is None:
-            arguments = AnonymousArguments()
-
-        return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
-
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, u'FUNCTION_CLASS')
 
@@ -135,10 +132,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, AbstractFunction)):
 class MethodContext(FunctionContext):
     def __init__(self, evaluator, class_context, *args, **kwargs):
         super(MethodContext, self).__init__(evaluator, *args, **kwargs)
-        self.class_context = class_context
+        self._class_context = class_context
 
     def get_default_param_context(self):
-        return self.class_context
+        return self._class_context
 
 
 class FunctionExecutionContext(TreeContext):

@@ -185,8 +185,15 @@ class NameFinder(object):
         if not contexts and isinstance(self._name, tree.Name) and \
                 not self._name_context.is_instance():
             flow_scope = self._name
-            base_node = self._name_context.tree_node
-            if base_node.type == 'comp_for':
+            base_nodes = [self._name_context.tree_node]
+            try:
+                stub_node = self._name_context.stub_context.tree_node
+            except AttributeError:
+                pass
+            else:
+                base_nodes.append(stub_node)
+
+            if any(b.type == 'comp_for' for b in base_nodes):
                 return contexts
             while True:
                 flow_scope = get_parent_scope(flow_scope, include_flows=True)
@@ -194,7 +201,7 @@ class NameFinder(object):
                                             self._name, self._position)
                 if n is not None:
                     return n
-                if flow_scope == base_node:
+                if flow_scope in base_nodes:
                     break
         return contexts
 

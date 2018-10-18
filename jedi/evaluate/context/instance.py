@@ -5,13 +5,13 @@ from jedi import settings
 from jedi.evaluate import compiled
 from jedi.evaluate import filters
 from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
-    iterator_to_context_set
+    iterator_to_context_set, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments, \
     ValuesArguments, TreeArgumentsWrapper
 from jedi.evaluate.context.function import FunctionExecutionContext, \
-    FunctionContext, AbstractFunction, OverloadedFunctionContext
+    FunctionContext, FunctionMixin, OverloadedFunctionContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, \
     py__mro__, ClassFilter
 from jedi.evaluate.context import iterable
@@ -355,16 +355,11 @@ class CompiledInstanceClassFilter(filters.AbstractFilter):
         ]
 
 
-class BoundMethod(AbstractFunction):
+class BoundMethod(FunctionMixin, ContextWrapper):
     def __init__(self, instance, klass, function):
-        super(BoundMethod, self).__init__(
-            function.evaluator,
-            function.parent_context,
-            function.tree_node,
-        )
+        super(BoundMethod, self).__init__(function)
         self.instance = instance
         self.class_context = klass
-        self._function = function
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, u'BOUND_METHOD_CLASS')
@@ -378,33 +373,30 @@ class BoundMethod(AbstractFunction):
     def get_function_execution(self, arguments=None):
         arguments = self._get_arguments(arguments)
 
-        if isinstance(self._function, compiled.CompiledObject):
+        if isinstance(self._wrapped_context, compiled.CompiledObject):
             # This is kind of weird, because it's coming from a compiled object
             # and we're not sure if we want that in the future.
             return FunctionExecutionContext(
                 self.evaluator, self.parent_context, self, arguments
             )
 
-        return self._function.get_function_execution(arguments)
-
-    def get_default_param_context(self):
-        return self.class_context
+        return super(BoundMethod, self).get_function_execution(arguments)
 
     def py__call__(self, arguments):
-        if isinstance(self._function, OverloadedFunctionContext):
-            return self._function.py__call__(self._get_arguments(arguments))
+        if isinstance(self._wrapped_context, OverloadedFunctionContext):
+            return self._wrapped_context.py__call__(self._get_arguments(arguments))
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
 
     def get_matching_functions(self, arguments):
-        for func in self._function.get_matching_functions(arguments):
+        for func in self._wrapped_context.get_matching_functions(arguments):
             if func is self:
                 yield self
             else:
                 yield BoundMethod(self.instance, self.class_context, func)
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._function)
+        return '<%s: %s>' % (self.__class__.__name__, self._wrapped_context)
 
 
 class CompiledBoundMethod(compiled.CompiledObject):
