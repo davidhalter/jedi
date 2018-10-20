@@ -143,12 +143,12 @@ a3[0]
 a = [for a in
 def break(): pass
 
-#? 
+#? str()
 a[0]
 
 a = [a for a in [1,2]
 def break(): pass
-#?
+#? str()
 a[0]
 
 #? []

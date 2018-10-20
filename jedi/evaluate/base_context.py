@@ -140,6 +140,9 @@ class Context(HelperContextMixin, BaseContext):
     def is_function(self):
         return False
 
+    def is_module(self):
+        return False
+
     def py__bool__(self):
         """
         Since Wrapper is a super class for classes, functions and modules,

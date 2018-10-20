@@ -132,10 +132,10 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)
 class MethodContext(FunctionContext):
     def __init__(self, evaluator, class_context, *args, **kwargs):
         super(MethodContext, self).__init__(evaluator, *args, **kwargs)
-        self._class_context = class_context
+        self.class_context = class_context
 
     def get_default_param_context(self):
-        return self._class_context
+        return self.class_context
 
 
 class FunctionExecutionContext(TreeContext):

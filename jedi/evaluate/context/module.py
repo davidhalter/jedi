@@ -52,6 +52,9 @@ class ModuleContext(TreeContext):
         self._string_names = string_names
         self.code_lines = code_lines
 
+    def is_module(self):
+        return True
+
     def iter_star_filters(self, search_global=False):
         for star_module in self.star_imports():
             yield next(star_module.get_filters(search_global))

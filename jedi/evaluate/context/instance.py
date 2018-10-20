@@ -11,7 +11,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments, \
     ValuesArguments, TreeArgumentsWrapper
 from jedi.evaluate.context.function import FunctionExecutionContext, \
-    FunctionContext, FunctionMixin, OverloadedFunctionContext
+    FunctionContext, FunctionMixin, OverloadedFunctionContext, MethodContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, \
     py__mro__, ClassFilter
 from jedi.evaluate.context import iterable
@@ -271,7 +271,10 @@ class TreeInstance(AbstractInstanceContext):
         for func in self._get_annotation_init_functions():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
-            bound = BoundMethod(self, self.class_context, func)
+            c = self.class_context
+            if isinstance(func, MethodContext):
+                c = func.class_context
+            bound = BoundMethod(self, c, func)
             execution = bound.get_function_execution(self.var_args)
             if not execution.matches_signature():
                 # First check if the signature even matches, if not we don't
@@ -381,6 +384,11 @@ class BoundMethod(FunctionMixin, ContextWrapper):
             )
 
         return super(BoundMethod, self).get_function_execution(arguments)
+
+    def get_default_param_context(self):
+        if isinstance(self._wrapped_context, MethodContext):
+            return self.class_context
+        return self._wrapped_context.get_default_param_context()
 
     def py__call__(self, arguments):
         if isinstance(self._wrapped_context, OverloadedFunctionContext):
