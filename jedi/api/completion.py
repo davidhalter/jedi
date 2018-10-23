@@ -288,5 +288,6 @@ class Completion:
         next(filters)
         for filter in filters:
             for name in filter.values():
+                # TODO we should probably check here for properties
                 if (name.api_type == 'function') == is_function:
                     yield name
