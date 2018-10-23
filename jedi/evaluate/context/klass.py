@@ -224,15 +224,16 @@ class ClassMixin(object):
                         yield filter
                 else:
                     yield self._create_class_filter(cls, origin_scope, is_instance)
-        if not is_instance and self:
-            # Return completions of the meta class.
+        if not is_instance:
             from jedi.evaluate.compiled import builtin_from_name
             type_ = builtin_from_name(self.evaluator, u'type')
-            yield ClassFilter(
-                self.evaluator, self, node_context=type_,
-                origin_scope=origin_scope,
-                is_instance=is_instance
-            )
+            if type_ != self:
+                # Return completions of the meta class.
+                yield ClassFilter(
+                    self.evaluator, self, node_context=type_,
+                    origin_scope=origin_scope,
+                    is_instance=is_instance
+                )
 
 
 class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
