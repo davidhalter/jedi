@@ -64,6 +64,12 @@ class FunctionMixin(object):
             return LambdaName(self)
         return ContextName(self, self.tree_node.name)
 
+    def py__call__(self, arguments, need_param_match=False):
+        function_execution = self.get_function_execution(arguments)
+        if need_param_match and not function_execution.matches_signature():
+            return NO_CONTEXTS
+        return function_execution.infer()
+
     def get_function_execution(self, arguments=None):
         if arguments is None:
             arguments = AnonymousArguments()
@@ -112,12 +118,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)
                 [create(f) for f in overloaded_funcs]
             )
         return function
-
-    def py__call__(self, arguments, need_param_match=False):
-        function_execution = self.get_function_execution(arguments)
-        if need_param_match and not function_execution.matches_signature():
-            return NO_CONTEXTS
-        return function_execution.infer()
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, u'FUNCTION_CLASS')
