@@ -59,7 +59,7 @@ class BaseDefinition(object):
         self._evaluator = evaluator
         self._name = name
         """
-        An instance of :class:`parso.reprsentation.Name` subclass.
+        An instance of :class:`parso.python.tree.Name` subclass.
         """
         self.is_keyword = isinstance(self._name, KeywordName)
 
