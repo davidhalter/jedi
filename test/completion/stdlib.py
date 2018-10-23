@@ -34,6 +34,8 @@ next(open(''))
 # Compiled classes should have the meta class attributes.
 #? ['__itemsize__']
 tuple.__itemsize__
+#? []
+tuple().__itemsize__
 
 # -----------------
 # type() calls with one parameter
