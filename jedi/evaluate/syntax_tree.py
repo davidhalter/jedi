@@ -611,7 +611,12 @@ def _apply_decorators(context, node):
             dec_values = eval_trailer(context, dec_values, trailer)
 
         if not len(dec_values):
-            debug.warning('decorator not found: %s on %s', dec, node)
+            code = dec.get_code(include_prefix=False)
+            # For the short future, we don't want to hear about the runtime
+            # decorator in typing that was intentionally omitted. This is not
+            # "correct", but helps with debugging.
+            if code != '@runtime\n':
+                debug.warning('decorator not found: %s on %s', dec, node)
             return initial
 
         values = dec_values.execute(arguments.ValuesArguments([values]))
