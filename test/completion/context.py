@@ -16,7 +16,13 @@ class Y(X):
     #? ['func']
     def f
 
+    #? ['__doc__']
+    __doc__
     #? []
+    def __doc__
+    # This might or might not be what we want, currently properties are also
+    # used like this.
+    #? ['__class__']
     def __class__
 
     #? ['__repr__']
