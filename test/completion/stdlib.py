@@ -167,10 +167,6 @@ import sqlite3
 con = sqlite3.connect()
 #? sqlite3.Cursor()
 c = con.cursor()
-#? sqlite3.Row()
-row = c.fetchall()[0]
-#? str()
-row.keys()[0]
 
 def huhu(db):
     """
