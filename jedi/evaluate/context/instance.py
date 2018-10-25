@@ -264,8 +264,10 @@ class TreeInstance(AbstractInstanceContext):
     def name(self):
         return filters.ContextName(self, self.class_context.name.tree_name)
 
-    @evaluator_method_cache()
-    def get_annotated_class_object(self):
+    # This can recurse, if the initialization of the class includes a reference
+    # to itself.
+    @evaluator_method_cache(default=None)
+    def _get_annotated_class_object(self):
         from jedi.evaluate import pep0484
 
         for func in self._get_annotation_init_functions():
@@ -287,7 +289,9 @@ class TreeInstance(AbstractInstanceContext):
             )
             debug.dbg('Inferred instance context as %s', defined, color='BLUE')
             return defined
-        return self.class_context
+
+    def get_annotated_class_object(self):
+        return self._get_annotated_class_object() or self.class_context
 
     def _get_annotation_init_functions(self):
         for init in self.class_context.py__getattribute__('__init__'):
