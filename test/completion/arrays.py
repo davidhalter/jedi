@@ -448,7 +448,7 @@ tuple({1})[0]
 a, *b, c = [1, 'b', list, dict]
 #? int()
 a
-#? str()
+#?
 b
 #? list
 c
@@ -457,12 +457,14 @@ c
 a, *b, *c = [1, 'd', list]
 #? int()
 a
-#? str()
+#?
 b
-#? list
+#?
 c
 
 lc = [x for a, *x in [(1, '', 1.0)]]
 
 #?
 lc[0][0]
+#?
+lc[0][1]

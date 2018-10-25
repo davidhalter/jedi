@@ -247,18 +247,30 @@ class ContextualizedName(ContextualizedNode):
             x, (y, z) = 2, ''
 
         would result in ``[(1, xyz_node), (0, yz_node)]``.
+
+        When searching for b in the case ``a, *b, c = [...]`` it will return::
+
+            [(slice(1, -1), abc_node)]
         """
         indexes = []
+        is_star_expr = False
         node = self.node.parent
         compare = self.node
         while node is not None:
             if node.type in ('testlist', 'testlist_comp', 'testlist_star_expr', 'exprlist'):
                 for i, child in enumerate(node.children):
                     if child == compare:
-                        indexes.insert(0, (int(i / 2), node))
+                        index = int(i / 2)
+                        if is_star_expr:
+                            from_end = int((len(node.children) - i) / 2)
+                            index = slice(index, -from_end)
+                        indexes.insert(0, (index, node))
                         break
                 else:
                     raise LookupError("Couldn't find the assignment.")
+                is_star_expr = False
+            elif node.type == 'star_expr':
+                is_star_expr = True
             elif isinstance(node, (ExprStmt, CompFor)):
                 break
 

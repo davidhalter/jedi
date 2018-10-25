@@ -636,6 +636,9 @@ def check_tuple_assignments(evaluator, contextualized_name, context_set):
     for index, node in contextualized_name.assignment_indexes():
         cn = ContextualizedNode(contextualized_name.context, node)
         iterated = context_set.iterate(cn)
+        if isinstance(index, slice):
+            # For no star unpacking is not possible.
+            return NO_CONTEXTS
         for _ in range(index + 1):
             try:
                 lazy_context = next(iterated)
