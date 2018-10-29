@@ -225,15 +225,6 @@ class AbstractInstanceContext(Context):
 class CompiledInstance(AbstractInstanceContext):
     def __init__(self, evaluator, parent_context, class_context, var_args):
         self._original_var_args = var_args
-
-        # I don't think that dynamic append lookups should happen here. That
-        # sounds more like something that should go to py__iter__.
-        if class_context.py__name__() in ['list', 'set'] \
-                and parent_context.get_root_context() == evaluator.builtins_module:
-            # compare the module path with the builtin name.
-            if settings.dynamic_array_additions:
-                var_args = iterable.get_dynamic_array_instance(self, var_args)
-
         super(CompiledInstance, self).__init__(evaluator, parent_context, class_context, var_args)
 
     @property
@@ -256,6 +247,14 @@ class CompiledInstance(AbstractInstanceContext):
 
 class TreeInstance(AbstractInstanceContext):
     def __init__(self, evaluator, parent_context, class_context, var_args):
+        # I don't think that dynamic append lookups should happen here. That
+        # sounds more like something that should go to py__iter__.
+        if class_context.py__name__() in ['list', 'set'] \
+                and parent_context.get_root_context() == evaluator.builtins_module:
+            # compare the module path with the builtin name.
+            if settings.dynamic_array_additions:
+                var_args = iterable.get_dynamic_array_instance(self, var_args)
+
         super(TreeInstance, self).__init__(evaluator, parent_context,
                                            class_context, var_args)
         self.tree_node = class_context.tree_node

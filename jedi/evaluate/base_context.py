@@ -280,7 +280,6 @@ class ContextualizedName(ContextualizedNode):
 
 
 def _getitem(context, index_contexts, contextualized_node):
-    from jedi.evaluate.compiled import CompiledObject
     from jedi.evaluate.context.iterable import Slice
 
     # The actual getitem call.

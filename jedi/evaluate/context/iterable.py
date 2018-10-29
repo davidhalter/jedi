@@ -38,7 +38,7 @@ from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.filters import ParserTreeFilter, BuiltinOverwrite, \
     publish_method
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, \
-    TreeContext, ContextualizedNode, iterate_contexts
+    TreeContext, ContextualizedNode, iterate_contexts, HelperContextMixin
 from jedi.parser_utils import get_comp_fors
 
 
@@ -637,8 +637,8 @@ def _check_array_additions(context, sequence):
         if add_name in ['insert']:
             params = params[1:]
         if add_name in ['append', 'add', 'insert']:
-            for key, whatever in params:
-                result.add(whatever)
+            for key, lazy_context in params:
+                result.add(lazy_context)
         elif add_name in ['extend', 'update']:
             for key, lazy_context in params:
                 result |= set(lazy_context.infer().iterate())
@@ -704,7 +704,7 @@ def get_dynamic_array_instance(instance, arguments):
     return arguments.ValuesArguments([ContextSet([ai])])
 
 
-class _ArrayInstance(object):
+class _ArrayInstance(HelperContextMixin):
     """
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
@@ -713,6 +713,10 @@ class _ArrayInstance(object):
     def __init__(self, instance, var_args):
         self.instance = instance
         self.var_args = var_args
+
+    def py__class__(self):
+        tuple_, = self.instance.evaluator.builtins_module.py__getattribute__('tuple')
+        return tuple_
 
     def py__iter__(self):
         var_args = self.var_args

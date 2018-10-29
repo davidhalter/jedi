@@ -55,9 +55,10 @@ list(arr)[10]
 arr = [1.0]
 arr.extend([1,2,3])
 arr.extend([])
-arr.extend("")  # should ignore
+arr.extend("")
+arr.extend(list)  # should ignore
 
-#? float() int()
+#? float() int() str()
 arr[100]
 
 a = set(arr)
@@ -94,7 +95,7 @@ arr2[0]
 lst = [1]
 lst.append(1.0)
 s = set(lst)
-s.add("")
+s.add("ahh")
 lst = list(s)
 lst.append({})
 
