@@ -97,9 +97,22 @@ class ModuleContext(TreeContext):
         return dict((n, _ModuleAttributeName(self, n)) for n in names)
 
     @property
+    def _string_name(self):
+        """ This is used for the goto functions. """
+        # TODO It's ugly that we even use this, the name is usually well known
+        # ahead so just pass it when create a ModuleContext.
+        if self._path is None:
+            return ''  # no path -> empty name
+        else:
+            sep = (re.escape(os.path.sep),) * 2
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.pyi?|\.so)?$' % sep, self._path)
+            # Remove PEP 3149 names
+            return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+
+    @property
     @evaluator_method_cache()
     def name(self):
-        return ModuleName(self, self.py__name__())
+        return ModuleName(self, self._string_name)
 
     def _get_init_directory(self):
         """
@@ -208,7 +221,7 @@ class ModuleContext(TreeContext):
 
     def __repr__(self):
         return "<%s: %s@%s-%s is_stub=%s>" % (
-            self.__class__.__name__, self.py__name__(),
+            self.__class__.__name__, self._string_name,
             self.tree_node.start_pos[0], self.tree_node.end_pos[0],
             self._path is not None and self._path.endswith('.pyi')
         )
