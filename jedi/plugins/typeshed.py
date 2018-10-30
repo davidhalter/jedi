@@ -219,9 +219,16 @@ class NameWithStubMixin(object):
                 yield actual_context
 
 
+class VersionInfo(ContextWrapper):
+    pass
+
+
 class StubOnlyName(TreeNameDefinition):
     def infer(self):
         inferred = super(StubOnlyName, self).infer()
+        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
+            return [VersionInfo(c) for c in inferred]
+
         return [
             StubOnlyClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
             for c in inferred

@@ -434,6 +434,26 @@ def _bool_to_context(evaluator, bool_):
     return compiled.builtin_from_name(evaluator, force_unicode(str(bool_)))
 
 
+def _get_tuple_ints(context):
+    if not isinstance(context, iterable.SequenceLiteralContext):
+        return None
+    numbers = []
+    for lazy_context in context.py__iter__():
+        result = lazy_context.infer()
+        try:
+            number, = result  # Must be exactly one element
+        except ValueError:
+            return None
+
+        if not isinstance(number, compiled.CompiledValue):
+            return None
+        value = number.get_safe_value()
+        if not isinstance(value, int):
+            return None
+        numbers.append(value)
+    return numbers
+
+
 def _eval_comparison_part(evaluator, context, left, operator, right):
     l_is_num = is_number(left)
     r_is_num = is_number(right)
@@ -473,6 +493,16 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
                 operation = COMPARISON_OPERATORS[str_operator]
                 bool_ = operation(left, right)
                 return ContextSet([_bool_to_context(evaluator, bool_)])
+
+            from jedi.plugins.typeshed import VersionInfo
+            if isinstance(left, VersionInfo):
+                version_info = _get_tuple_ints(right)
+                if version_info is not None:
+                    bool_result = compiled.access.COMPARISON_OPERATORS[operator](
+                        evaluator.environment.version_info,
+                        tuple(version_info)
+                    )
+                    return ContextSet([_bool_to_context(evaluator, bool_result)])
 
         return ContextSet([_bool_to_context(evaluator, True), _bool_to_context(evaluator, False)])
     elif str_operator == 'in':
