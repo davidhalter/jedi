@@ -133,6 +133,8 @@ class ExecutionRecursionDetector(object):
         self._execution_count += 1
 
         if self._funcdef_execution_counts.setdefault(funcdef, 0) >= per_function_execution_limit:
+            if module.py__name__() in ('builtins', 'typing'):
+                return False
             debug.warning(
                 'Per function execution limit (%s) reached: %s',
                 per_function_execution_limit,
