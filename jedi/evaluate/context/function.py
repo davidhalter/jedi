@@ -53,6 +53,13 @@ class FunctionMixin(object):
             for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
                 yield filter
 
+    def py__get__(self, instance, class_context):
+        from jedi.evaluate.context.instance import BoundMethod
+        if instance is None:
+            # Calling the Foo.bar results in the original bar function.
+            return ContextSet([self])
+        return ContextSet([BoundMethod(instance, class_context, self)])
+
     def get_param_names(self):
         function_execution = self.get_function_execution()
         return [ParamName(function_execution, param.name)
@@ -335,7 +342,7 @@ class FunctionExecutionContext(TreeContext):
                 return self.get_return_values()
 
 
-class OverloadedFunctionContext(ContextWrapper):
+class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
     def __init__(self, function, overloaded_functions):
         super(OverloadedFunctionContext, self).__init__(function)
         self.overloaded_functions = overloaded_functions

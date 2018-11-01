@@ -284,8 +284,7 @@ class StaticMethodObject(AbstractObjectOverwrite, ContextWrapper):
     def get_object(self):
         return self._wrapped_context
 
-    @publish_method('__get__')
-    def _py__get__(self):
+    def py__get__(self, instance, klass):
         return ContextSet([self._wrapped_context])
 
 
@@ -302,12 +301,11 @@ class ClassMethodObject(AbstractObjectOverwrite, ContextWrapper):
     def get_object(self):
         return self._wrapped_context
 
-    def py__get__(self, obj):
-        actual, = self._wrapped_context.py__getattribute__('__get__')
-        klass = obj
-        if not obj.is_class():
-            klass = obj.py__class__()
-        return ContextSet([ClassMethodGet(actual, klass, self._function)])
+    def py__get__(self, obj, class_context):
+        return ContextSet([
+            ClassMethodGet(__get__, class_context, self._function)
+            for __get__ in self._wrapped_context.py__getattribute__('__get__')
+        ])
 
 
 class ClassMethodGet(AbstractObjectOverwrite, ContextWrapper):

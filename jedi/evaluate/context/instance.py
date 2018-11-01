@@ -8,7 +8,7 @@ from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
     iterator_to_context_set, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.arguments import AbstractArguments, AnonymousArguments, \
+from jedi.evaluate.arguments import AnonymousArguments, \
     ValuesArguments, TreeArgumentsWrapper
 from jedi.evaluate.context.function import FunctionExecutionContext, \
     FunctionContext, FunctionMixin, OverloadedFunctionContext, MethodContext
@@ -109,16 +109,17 @@ class AbstractInstanceContext(Context):
             for name in names
         )
 
-    def py__get__(self, obj):
+    def py__get__(self, obj, class_context):
+        """
+        obj may be None.
+        """
         # Arguments in __get__ descriptors are obj, class.
         # `method` is the new parent of the array, don't know if that's good.
         names = self.get_function_slot_names(u'__get__')
         if names:
-            if obj.is_instance():
-                return self.execute_function_slots(names, obj, obj.class_context)
-            else:
-                none_obj = compiled.builtin_from_name(self.evaluator, u'None')
-                return self.execute_function_slots(names, none_obj, obj)
+            if obj is None:
+                obj = compiled.builtin_from_name(self.evaluator, u'None')
+            return self.execute_function_slots(names, obj, class_context)
         else:
             return ContextSet([self])
 
@@ -273,8 +274,10 @@ class TreeInstance(AbstractInstanceContext):
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
             c = self.class_context
-            if isinstance(func, MethodContext):
+            try:
                 c = func.class_context
+            except AttributeError:
+                pass
             bound = BoundMethod(self, c, func)
             execution = bound.get_function_execution(self.var_args)
             if not execution.matches_signature():
@@ -442,14 +445,8 @@ class LazyInstanceClassName(object):
     @iterator_to_context_set
     def infer(self):
         for result_context in self._class_member_name.infer():
-            if isinstance(result_context, (FunctionContext, OverloadedFunctionContext)):
-                # Classes are never used to resolve anything within the
-                # functions. Only other functions and modules will resolve
-                # those things.
-                yield BoundMethod(self._instance, self.class_context, result_context)
-            else:
-                for c in apply_py__get__(result_context, self._instance):
-                    yield c
+            for c in apply_py__get__(result_context, self._instance, self.class_context):
+                yield c
 
     def __getattr__(self, name):
         return getattr(self._class_member_name, name)

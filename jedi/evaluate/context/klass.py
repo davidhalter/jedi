@@ -50,13 +50,13 @@ from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     TreeContext, NO_CONTEXTS
 
 
-def apply_py__get__(context, base_context):
+def apply_py__get__(context, instance, class_context):
     try:
         method = context.py__get__
     except AttributeError:
         yield context
     else:
-        for descriptor_context in method(base_context):
+        for descriptor_context in method(instance, class_context):
             yield descriptor_context
 
 
@@ -122,7 +122,9 @@ class ClassName(TreeNameDefinition):
 
         for result_context in inferred:
             if self._apply_decorators:
-                for c in apply_py__get__(result_context, self.parent_context):
+                for c in apply_py__get__(result_context,
+                                         instance=None,
+                                         class_context=self.parent_context):
                     yield c
             else:
                 yield result_context

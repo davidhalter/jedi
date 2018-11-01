@@ -404,7 +404,7 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
             import_names=import_names,
             sys_path=sys_path,
         )
-        return ContextSet(module)
+        return ContextSet([module])
 
     module_name = '.'.join(import_names)
     if parent_module_context is None:
