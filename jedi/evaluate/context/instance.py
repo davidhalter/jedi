@@ -385,6 +385,7 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         if isinstance(self._wrapped_context, compiled.CompiledObject):
             # This is kind of weird, because it's coming from a compiled object
             # and we're not sure if we want that in the future.
+            # TODO remove?!
             return FunctionExecutionContext(
                 self.evaluator, self.parent_context, self, arguments
             )
@@ -399,6 +400,16 @@ class BoundMethod(FunctionMixin, ContextWrapper):
     def py__call__(self, arguments):
         if isinstance(self._wrapped_context, OverloadedFunctionContext):
             return self._wrapped_context.py__call__(self._get_arguments(arguments))
+
+        # This might not be the most beautiful way, but prefer stub_contexts
+        # and execute those if possible.
+        try:
+            stub_context = self._wrapped_context.stub_context
+        except AttributeError:
+            pass
+        else:
+            return stub_context.py__call__(arguments)
+
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
 
