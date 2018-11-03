@@ -62,6 +62,12 @@ class _BaseTypingContext(Context):
 
         yield EmptyFilter()
 
+    def py__class__(self):
+        # TODO this is obviously not correct, but at least gives us a class if
+        # we have none. Some of these objects don't really have a base class in
+        # typeshed.
+        return builtin_from_name(self.evaluator, u'object')
+
     @property
     def name(self):
         return ContextName(self, self._tree_name)

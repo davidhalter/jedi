@@ -459,10 +459,9 @@ def _random_choice(sequences):
     )
 
 
-class ItemGetterCallable(object):
-    def __init__(self, evaluator, args_context_set):
-        # TODO this context is totally incomplete and will raise exceptions.
-        self.evaluator = evaluator
+class ItemGetterCallable(ContextWrapper):
+    def __init__(self, instance, args_context_set):
+        super(ItemGetterCallable, self).__init__(instance)
         self._args_context_set = args_context_set
 
     @repack_with_argument_clinic('item, /')
@@ -475,7 +474,7 @@ class ItemGetterCallable(object):
                 context_set |= item_context_set.get_item(lazy_contexts[0].infer(), None)
             else:
                 context_set |= ContextSet([iterable.FakeSequence(
-                    self.evaluator,
+                    self._wrapped_context.evaluator,
                     'list',
                     [
                         LazyKnownContexts(item_context_set.get_item(lazy_context.infer(), None))
@@ -487,9 +486,10 @@ class ItemGetterCallable(object):
 
 @argument_clinic('*args, /', want_obj=True, want_arguments=True)
 def _operator_itemgetter(args_context_set, obj, arguments):
-    # final = obj.py__call__(arguments)
-    # TODO use this as a context wrapper
-    return ContextSet([ItemGetterCallable(obj.evaluator, args_context_set)])
+    return ContextSet([
+        ItemGetterCallable(instance, args_context_set)
+        for instance in obj.py__call__(arguments)
+    ])
 
 
 _implemented = {
