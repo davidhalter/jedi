@@ -71,6 +71,11 @@ if os.path.isfile():
     #? ['abspath']
     fails = os.path.abspath
 
+# The type vars and other underscored things from typeshed should not be
+# findable.
+#?
+os._T
+
 
 with open('foo') as f:
     for line in f.readlines():

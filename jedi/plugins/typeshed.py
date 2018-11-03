@@ -276,6 +276,9 @@ class StubOnlyFilter(ParserTreeFilter):
             if definition.type in ('import_from', 'import_name'):
                 if name.parent.type not in ('import_as_name', 'dotted_as_name'):
                     return False
+            n = name.value
+            if n.startswith('_') and not (n.startswith('__') and n.endswith('__')):
+                return False
         return True
 
 
