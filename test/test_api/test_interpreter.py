@@ -4,7 +4,7 @@ Tests of ``jedi.api.Interpreter``.
 import pytest
 
 import jedi
-from jedi._compatibility import is_py3, py_version, is_py35
+from jedi._compatibility import is_py3, py_version
 from jedi.evaluate.compiled import mixed
 
 

@@ -1,7 +1,6 @@
 from textwrap import dedent
 
 from jedi.evaluate import compiled
-from jedi.evaluate.context import instance
 from jedi.evaluate.helpers import execute_evaluated
 
 
@@ -10,12 +9,11 @@ def test_simple(evaluator):
     upper, = obj.py__getattribute__(u'upper')
     objs = list(execute_evaluated(upper))
     assert len(objs) == 1
-    assert isinstance(objs[0], instance.CompiledInstance)
+    assert objs[0].name.string_name == 'str'
 
 
-def test_fake_loading(evaluator):
-    builtin = compiled.get_special_object(evaluator, u'BUILTINS')
-    string, = builtin.py__getattribute__(u'str')
+def test_builtin_loading(evaluator):
+    string, = evaluator.builtins_module.py__getattribute__(u'str')
     from_name = compiled.context.create_from_name(evaluator, string, u'__init__')
     assert from_name.tree_node
 
