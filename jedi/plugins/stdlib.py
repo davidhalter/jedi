@@ -362,7 +362,7 @@ def collections_namedtuple(obj, arguments):
     # TODO this is buggy, doesn't need to be a string
     name = list(_follow_param(evaluator, arguments, 0))[0].get_safe_value()
     _fields = list(_follow_param(evaluator, arguments, 1))[0]
-    if isinstance(_fields, compiled.CompiledObject):
+    if isinstance(_fields, compiled.CompiledValue):
         fields = _fields.get_safe_value().replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
         fields = [
