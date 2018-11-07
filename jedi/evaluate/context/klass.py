@@ -301,3 +301,9 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
                 given_types=tuple(remap_type_vars())
             )
         return self
+
+    def get_signatures(self):
+        init_funcs = self.py__getattribute__('__init__')
+        return [
+            s for f in init_funcs for s in f.get_signatures()
+        ]

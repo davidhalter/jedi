@@ -420,6 +420,9 @@ class BoundMethod(FunctionMixin, ContextWrapper):
             else:
                 yield BoundMethod(self.instance, self.class_context, func)
 
+    def get_signatures(self):
+        return [sig.bind() for sig in self._wrapped_context.get_signatures()]
+
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_context)
 

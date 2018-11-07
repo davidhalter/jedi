@@ -9,6 +9,7 @@ from jedi.evaluate import docstrings
 from jedi.evaluate import pep0484
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import helpers
+from jedi.evaluate.signature import TreeSignature
 from jedi.evaluate.arguments import AnonymousArguments
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
     ContextName, AbstractNameDefinition, ParamName
@@ -134,6 +135,9 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)
 
     def get_matching_functions(self, arguments):
         yield self
+
+    def get_signatures(self):
+        return [TreeSignature(self)]
 
 
 class MethodContext(FunctionContext):
@@ -364,6 +368,9 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
             else:
                 debug.dbg("Overloading no match: %s@%s (%s)",
                           signature, f.tree_node.start_pos[0], arguments, color='BLUE')
+
+    def get_signatures(self):
+        return [TreeSignature(f) for f in self.overloaded_functions]
 
 
 def signature_matches(function_context, arguments):

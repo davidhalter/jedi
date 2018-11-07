@@ -131,6 +131,9 @@ class Context(HelperContextMixin, BaseContext):
         )
         return NO_CONTEXTS
 
+    def get_signatures(self):
+        return []
+
     def is_class(self):
         return False
 

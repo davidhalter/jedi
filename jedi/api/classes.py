@@ -600,11 +600,12 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, executable_name, bracket_start_pos, index, key_name_str):
-        super(CallSignature, self).__init__(evaluator, executable_name)
+    def __init__(self, evaluator, signature, bracket_start_pos, index, key_name_str):
+        super(CallSignature, self).__init__(evaluator, signature.name)
         self._index = index
         self._key_name_str = key_name_str
         self._bracket_start_pos = bracket_start_pos
+        self._signature = signature
 
     @property
     def index(self):
