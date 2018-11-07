@@ -182,22 +182,10 @@ class ClassMixin(object):
     def py__name__(self):
         return self.name.string_name
 
-    def get_function_slot_names(self, name):
-        for filter in self.get_filters(search_global=False):
-            names = filter.get(name)
-            if names:
-                return names
-        return []
-
     def get_param_names(self):
-        for name in self.get_function_slot_names(u'__init__'):
-            for context_ in name.infer():
-                try:
-                    method = context_.get_param_names
-                except AttributeError:
-                    pass
-                else:
-                    return list(method())[1:]
+        for context_ in self.py__getattribute__(u'__init__'):
+            if context_.is_function():
+                return list(context_.get_param_names())[1:]
         return []
 
     def py__mro__(self):
