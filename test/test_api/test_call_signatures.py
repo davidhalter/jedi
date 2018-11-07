@@ -25,7 +25,7 @@ def assert_signature(Script, source, expected_name, expected_index=0, line=None,
 
 
 def test_valid_call(Script):
-    assert_signature(Script, 'str()', 'str', column=4)
+    assert_signature(Script, 'bool()', 'bool', column=5)
 
 
 class TestCallSignatures(TestCase):
@@ -40,12 +40,12 @@ class TestCallSignatures(TestCase):
         run = self._run_simple
 
         # simple
-        s1 = "sorted(a, str("
+        s1 = "sorted(a, bool("
         run(s1, 'sorted', 0, 7)
         run(s1, 'sorted', 1, 9)
         run(s1, 'sorted', 1, 10)
         run(s1, 'sorted', 1, 11)
-        run(s1, 'str', 0, 14)
+        run(s1, 'bool', 0, 15)
 
         s2 = "abs(), "
         run(s2, 'abs', 0, 4)
@@ -59,26 +59,26 @@ class TestCallSignatures(TestCase):
     def test_more_complicated(self):
         run = self._run_simple
 
-        s4 = 'abs(zip(), , set,'
+        s4 = 'abs(bool(), , set,'
         run(s4, None, column=3)
         run(s4, 'abs', 0, 4)
-        run(s4, 'zip', 0, 8)
-        run(s4, 'abs', 0, 9)
-        run(s4, 'abs', None, 10)
+        run(s4, 'bool', 0, 9)
+        run(s4, 'abs', 0, 10)
+        run(s4, 'abs', None, 11)
 
         s5 = "sorted(1,\nif 2:\n def a():"
         run(s5, 'sorted', 0, 7)
         run(s5, 'sorted', 1, 9)
 
-        s6 = "str().center("
-        run(s6, 'center', 0)
-        run(s6, 'str', 0, 4)
+        s6 = "bool().__eq__("
+        run(s6, '__eq__', 0)
+        run(s6, 'bool', 0, 5)
 
         s7 = "str().upper().center("
-        s8 = "str(int[zip("
+        s8 = "bool(int[abs("
         run(s7, 'center', 0)
-        run(s8, 'zip', 0)
-        run(s8, 'str', 0, 8)
+        run(s8, 'abs', 0)
+        run(s8, 'bool', 0, 10)
 
         run("import time; abc = time; abc.sleep(", 'sleep', 0)
 
@@ -151,22 +151,22 @@ def test_decorator_in_class(Script):
 
 
 def test_additional_brackets(Script):
-    assert_signature(Script, 'str((', 'str', 0)
+    assert_signature(Script, 'abs((', 'abs', 0)
 
 
 def test_unterminated_strings(Script):
-    assert_signature(Script, 'str(";', 'str', 0)
+    assert_signature(Script, 'abs(";', 'abs', 0)
 
 
 def test_whitespace_before_bracket(Script):
-    assert_signature(Script, 'str (', 'str', 0)
-    assert_signature(Script, 'str (";', 'str', 0)
-    assert_signature(Script, 'str\n(', None)
+    assert_signature(Script, 'abs (', 'abs', 0)
+    assert_signature(Script, 'abs (";', 'abs', 0)
+    assert_signature(Script, 'abs\n(', None)
 
 
 def test_brackets_in_string_literals(Script):
-    assert_signature(Script, 'str (" (', 'str', 0)
-    assert_signature(Script, 'str (" )', 'str', 0)
+    assert_signature(Script, 'abs (" (', 'abs', 0)
+    assert_signature(Script, 'abs (" )', 'abs', 0)
 
 
 def test_function_definitions_should_break(Script):
@@ -174,8 +174,8 @@ def test_function_definitions_should_break(Script):
     Function definitions (and other tokens that cannot exist within call
     signatures) should break and not be able to return a call signature.
     """
-    assert_signature(Script, 'str(\ndef x', 'str', 0)
-    assert not Script('str(\ndef x(): pass').call_signatures()
+    assert_signature(Script, 'abs(\ndef x', 'abs', 0)
+    assert not Script('abs(\ndef x(): pass').call_signatures()
 
 
 def test_flow_call(Script):
@@ -390,7 +390,7 @@ def test_bracket_start(Script):
         assert len(signatures) == 1
         return signatures[0].bracket_start
 
-    assert bracket_start('str(') == (1, 3)
+    assert bracket_start('abs(') == (1, 3)
 
 
 def test_different_caller(Script):
@@ -399,11 +399,11 @@ def test_different_caller(Script):
     index and then get the call signature of it.
     """
 
-    assert_signature(Script, '[str][0](', 'str', 0)
-    assert_signature(Script, '[str][0]()', 'str', 0, column=len('[str][0]('))
+    assert_signature(Script, '[abs][0](', 'abs', 0)
+    assert_signature(Script, '[abs][0]()', 'abs', 0, column=len('[abs][0]('))
 
-    assert_signature(Script, '(str)(', 'str', 0)
-    assert_signature(Script, '(str)()', 'str', 0, column=len('(str)('))
+    assert_signature(Script, '(abs)(', 'abs', 0)
+    assert_signature(Script, '(abs)()', 'abs', 0, column=len('(abs)('))
 
 
 def test_in_function(Script):
