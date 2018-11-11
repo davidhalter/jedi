@@ -14,6 +14,7 @@ from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.helpers import reraise_getitem_errors, execute_evaluated
+from jedi.evaluate.signature import BuiltinSignature
 
 
 class CheckAttribute(object):
@@ -115,6 +116,9 @@ class CompiledObject(Context):
         else:
             for signature_param in signature_params:
                 yield SignatureParamName(self, signature_param)
+
+    def get_signatures(self):
+        return [BuiltinSignature(self)]
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.access_handle.get_repr())
