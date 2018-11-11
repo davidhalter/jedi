@@ -13,7 +13,6 @@ from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
-from jedi.evaluate.context import instance
 from jedi.evaluate.context import FunctionExecutionContext
 from jedi.plugins.typeshed import StubOnlyModuleContext
 from jedi.api.keywords import KeywordName
@@ -320,33 +319,6 @@ class BaseDefinition(object):
         Raises an ``AttributeError``if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
-        def get_param_names(signature):
-            param_names = []
-            if context.api_type == 'function':
-                param_names = list(context.get_param_names())
-                if isinstance(context, instance.BoundMethod):
-                    param_names = param_names[1:]
-                return param_names
-            elif context.is_class() or context.is_instance():
-                if context.is_class():
-                    search = u'__init__'
-                else:
-                    search = u'__call__'
-                names = context.get_function_slot_names(search)
-                if not names:
-                    return []
-
-                # Just take the first one here, not optimal, but currently
-                # there's no better solution.
-                inferred = names[0].infer()
-                param_names = get_param_names(next(iter(inferred)))
-                if context.is_class():
-                    param_names = param_names[1:]
-                return param_names
-            elif isinstance(context, compiled.CompiledObject):
-                return list(context.get_param_names())
-            return param_names
-
         # Only return the first one. There might be multiple one, especially
         # with overloading.
         for context in self._name.infer():
