@@ -220,7 +220,7 @@ class AbstractInstanceContext(Context):
 
     def get_signatures(self):
         init_funcs = self.py__getattribute__('__call__')
-        return [sig.bind() for sig in init_funcs.get_signatures()]
+        return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
     def __repr__(self):
         return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_context,
@@ -427,7 +427,7 @@ class BoundMethod(FunctionMixin, ContextWrapper):
                 yield BoundMethod(self.instance, self.class_context, func)
 
     def get_signatures(self):
-        return [sig.bind() for sig in self._wrapped_context.get_signatures()]
+        return [sig.bind(self) for sig in self._wrapped_context.get_signatures()]
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_context)

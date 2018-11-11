@@ -2,7 +2,8 @@ from abc import abstractproperty
 
 
 class AbstractSignature(object):
-    def __init__(self, is_bound=False):
+    def __init__(self, context, is_bound=False):
+        self._context = context
         self.is_bound = is_bound
 
     @abstractproperty
@@ -19,43 +20,43 @@ class AbstractSignature(object):
         raise NotImplementedError
 
     def get_param_names(self):
-        param_names = self.function_context.get_param_names()
+        param_names = self._function_context.get_param_names()
         if self.is_bound:
             return param_names[1:]
         return param_names
 
 
 class TreeSignature(AbstractSignature):
-    def __init__(self, function_context, is_bound=False):
-        super(TreeSignature, self).__init__(is_bound)
-        self.function_context = function_context
+    def __init__(self, context, function_context=None, is_bound=False):
+        super(TreeSignature, self).__init__(context, is_bound)
+        self._function_context = function_context or context
 
     @property
     def name(self):
-        name = self.function_context.name
+        name = self._function_context.name
         if name.string_name == '__init__':
             try:
-                class_context = self.function_context.class_context
+                class_context = self._function_context.class_context
             except AttributeError:
                 pass
             else:
                 return class_context.name
         return name
 
-    def bind(self):
-        return TreeSignature(self.function_context, is_bound=True)
+    def bind(self, context):
+        return TreeSignature(context, self._function_context, is_bound=True)
 
     def annotation(self):
-        return self.function_context.tree_node.annotation
+        return self._function_context.tree_node.annotation
 
     def to_string(self, normalize=False):
-        return self.function_context.tree_node
+        return self._function_context.tree_node
 
 
 class BuiltinSignature(AbstractSignature):
-    def __init__(self, compiled_obj, is_bound=False):
-        super(BuiltinSignature, self).__init__(is_bound=is_bound)
-        self.function_context = compiled_obj
+    @property
+    def _function_context(self):
+        return self._context
 
     def bind(self):
         raise NotImplementedError('pls implement, need test case')

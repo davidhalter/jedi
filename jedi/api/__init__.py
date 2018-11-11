@@ -345,7 +345,7 @@ class Script(object):
         )
         debug.speed('func_call followed')
 
-        return [classes.CallSignature(definition, signature,
+        return [classes.CallSignature(signature._context, signature,
                                       call_signature_details.bracket_leaf.start_pos,
                                       call_signature_details.call_index,
                                       call_signature_details.keyword_name_str)
