@@ -8,7 +8,7 @@ class AbstractSignature(object):
 
     @abstractproperty
     def name(self):
-        raise NotImplementedError
+        return self._context.name
 
     def annotation(self):
         return None
@@ -30,18 +30,6 @@ class TreeSignature(AbstractSignature):
     def __init__(self, context, function_context=None, is_bound=False):
         super(TreeSignature, self).__init__(context, is_bound)
         self._function_context = function_context or context
-
-    @property
-    def name(self):
-        name = self._function_context.name
-        if name.string_name == '__init__':
-            try:
-                class_context = self._function_context.class_context
-            except AttributeError:
-                pass
-            else:
-                return class_context.name
-        return name
 
     def bind(self, context):
         return TreeSignature(context, self._function_context, is_bound=True)
