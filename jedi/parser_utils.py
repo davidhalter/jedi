@@ -1,3 +1,4 @@
+import re
 import textwrap
 from inspect import cleandoc
 
@@ -158,6 +159,7 @@ def get_call_signature(funcdef, width=72, call_string=None):
         p = '(' + ''.join(param.get_code() for param in funcdef.get_params()).strip() + ')'
     else:
         p = funcdef.children[2].get_code()
+    p = re.sub(r'\s+', ' ', p)
     if funcdef.annotation:
         rtype = " ->" + funcdef.annotation.get_code()
     else:
@@ -183,6 +185,8 @@ def get_doc_with_call_signature(scope_node):
     doc = clean_scope_docstring(scope_node)
     if call_signature is None:
         return doc
+    if not doc:
+        return call_signature
     return '%s\n\n%s' % (call_signature, doc)
 
 
