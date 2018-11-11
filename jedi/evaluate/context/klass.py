@@ -292,6 +292,4 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
 
     def get_signatures(self):
         init_funcs = self.py__getattribute__('__init__')
-        return [
-            s for f in init_funcs for s in f.get_signatures()
-        ]
+        return [sig.bind() for sig in init_funcs.get_signatures()]

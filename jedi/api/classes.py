@@ -320,12 +320,13 @@ class BaseDefinition(object):
         Raises an ``AttributeError``if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
-        def get_param_names(context):
+        def get_param_names(signature):
             param_names = []
             if context.api_type == 'function':
                 param_names = list(context.get_param_names())
                 if isinstance(context, instance.BoundMethod):
                     param_names = param_names[1:]
+                return param_names
             elif context.is_class() or context.is_instance():
                 if context.is_class():
                     search = u'__init__'
@@ -346,12 +347,13 @@ class BaseDefinition(object):
                 return list(context.get_param_names())
             return param_names
 
-        followed = list(self._name.infer())
-        if not followed or not hasattr(followed[0], 'py__call__'):
-            raise AttributeError('There are no params defined on this.')
-        context = followed[0]  # only check the first one.
+        # Only return the first one. There might be multiple one, especially
+        # with overloading.
+        for context in self._name.infer():
+            for signature in context.get_signatures():
+                return [Definition(self._evaluator, n) for n in signature.get_param_names()]
 
-        return [Definition(self._evaluator, n) for n in get_param_names(context)]
+        raise AttributeError('There are no params defined on this.')
 
     def parent(self):
         context = self._name.parent_context
@@ -600,8 +602,8 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, signature, bracket_start_pos, index, key_name_str):
-        super(CallSignature, self).__init__(evaluator, signature.name)
+    def __init__(self, definition, signature, bracket_start_pos, index, key_name_str):
+        super(CallSignature, self).__init__(definition.evaluator, definition.name)
         self._index = index
         self._key_name_str = key_name_str
         self._bracket_start_pos = bracket_start_pos
@@ -633,6 +635,10 @@ class CallSignature(Definition):
                         return i
             return None
         return self._index
+
+    @property
+    def params(self):
+        return [Definition(self._evaluator, n) for n in self._signature.get_param_names()]
 
     @property
     def bracket_start(self):

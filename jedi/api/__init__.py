@@ -345,12 +345,12 @@ class Script(object):
         )
         debug.speed('func_call followed')
 
-        return [classes.CallSignature(self._evaluator, signature,
+        return [classes.CallSignature(definition, signature,
                                       call_signature_details.bracket_leaf.start_pos,
                                       call_signature_details.call_index,
                                       call_signature_details.keyword_name_str)
-                for d in definitions
-                for signature in d.get_signatures()]
+                for definition in definitions
+                for signature in definition.get_signatures()]
 
     def _analysis(self):
         self._evaluator.is_analysis = True

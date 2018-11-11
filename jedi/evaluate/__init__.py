@@ -323,12 +323,8 @@ class Evaluator(object):
                         context_set = eval_trailer(context, context_set, trailer)
                 param_names = []
                 for context in context_set:
-                    try:
-                        get_param_names = context.get_param_names
-                    except AttributeError:
-                        pass
-                    else:
-                        for param_name in get_param_names():
+                    for signature in context.get_signatures():
+                        for param_name in signature.get_param_names():
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names

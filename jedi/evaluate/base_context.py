@@ -356,6 +356,9 @@ class ContextSet(BaseContextSet):
                 context_set |= method()
         return context_set
 
+    def get_signatures(self):
+        return [sig for c in self._set for sig in c.get_signatures()]
+
 
 NO_CONTEXTS = ContextSet([])
 

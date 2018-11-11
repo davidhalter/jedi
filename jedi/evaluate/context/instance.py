@@ -218,6 +218,10 @@ class AbstractInstanceContext(Context):
                 raise NotImplementedError
         return class_context
 
+    def get_signatures(self):
+        init_funcs = self.py__getattribute__('__call__')
+        return [sig.bind() for sig in init_funcs.get_signatures()]
+
     def __repr__(self):
         return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_context,
                                    self.var_args)
@@ -296,12 +300,14 @@ class TreeInstance(AbstractInstanceContext):
         return self._get_annotated_class_object() or self.class_context
 
     def _get_annotation_init_functions(self):
-        for init in self.class_context.py__getattribute__('__init__'):
-            if isinstance(init, OverloadedFunctionContext):
-                for func in init.overloaded_functions:
-                    yield func
-            elif isinstance(init, FunctionContext):
-                yield init
+        filter = next(self.class_context.get_filters())
+        for init_name in filter.get('__init__'):
+            for init in init_name.infer():
+                if isinstance(init, OverloadedFunctionContext):
+                    for func in init.overloaded_functions:
+                        yield func
+                elif isinstance(init, FunctionContext):
+                    yield init
 
 
 class AnonymousInstance(TreeInstance):

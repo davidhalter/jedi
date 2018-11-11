@@ -424,20 +424,28 @@ def test_lambda_params(Script):
     assert [p.name for p in sig.params] == ['x']
 
 
+CLASS_CODE = dedent('''\
+class X():
+    def __init__(self, foo, bar):
+        self.foo = foo
+''')
+
+
 def test_class_creation(Script):
-    code = dedent('''\
-    class X():
-        def __init__(self, foo, bar):
-            self.foo = foo
-    ''')
-    sig, = Script(code + 'X(').call_signatures()
+
+    sig, = Script(CLASS_CODE + 'X(').call_signatures()
     assert sig.index == 0
     assert sig.name == 'X'
     assert [p.name for p in sig.params] == ['foo', 'bar']
 
-    sig, = Script(code + 'X.__init__(').call_signatures()
+
+def test_call_init_on_class(Script):
+    sig, = Script(CLASS_CODE + 'X.__init__(').call_signatures()
     assert [p.name for p in sig.params] == ['self', 'foo', 'bar']
-    sig, = Script(code + 'X().__init__(').call_signatures()
+
+
+def test_call_init_on_instance(Script):
+    sig, = Script(CLASS_CODE + 'X().__init__(').call_signatures()
     assert [p.name for p in sig.params] == ['foo', 'bar']
 
 
