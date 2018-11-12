@@ -80,15 +80,15 @@ from jedi import debug
 from jedi._compatibility import py_version
 from jedi.evaluate.base_context import NO_CONTEXTS
 
-if True:
-    _logf = open(r'E:\jedi.log', 'w')
+# if True:
+#     _logf = open(r'E:\jedi.log', 'w')
 
-    def _log_to_file(color, str_out):
-        print(color, str_out, file = _logf)
+#     def _log_to_file(color, str_out):
+#         print(color, str_out, file = _logf)
 
-    debug.debug_function = _log_to_file
-    debug.enable_warning = True
-    debug.enable_notice = True
+#     debug.debug_function = _log_to_file
+#     debug.enable_warning = True
+#     debug.enable_notice = True
 
 #: Name of the environment variable containing one or more paths where
 #: Jedi extensions may be located.
