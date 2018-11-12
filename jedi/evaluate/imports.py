@@ -31,6 +31,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 
+from jedi import extensions
 
 class ModuleCache(object):
     def __init__(self):
@@ -286,12 +287,27 @@ class Importer(object):
     def _do_import(self, import_path, sys_path):
         """
         This method is very similar to importlib's `_gcd_import`.
+        
+        Uses :meth:`_do_import_` to find the given module.
+        If this fails, the available extension import functions are called.
+
+        :returns: The found modules :class:`ContextSet` in case of success or
+            :data:`NO_CONTEXTS` otherwise.
+
+        .. seealso::
+            :meth:`extensions.do_import`
         """
         import_parts = [
             force_unicode(i.value if isinstance(i, tree.Name) else i)
             for i in import_path
         ]
+        result = self._do_import_(import_parts, import_path, sys_path)
+        if result == NO_CONTEXTS:
+            result = extensions.do_import(self, import_parts, import_path, sys_path)
+        return result
 
+    def _do_import_(self, import_parts, import_path, sys_path):
+        # FIXME: extract the flask handling as an extension
         # Handle "magic" Flask extension imports:
         # ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
         if len(import_path) > 2 and import_parts[:2] == ['flask', 'ext']:

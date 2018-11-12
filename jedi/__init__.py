@@ -45,3 +45,4 @@ from jedi.api.environment import find_virtualenvs, find_system_environments, \
     get_default_environment, InvalidPythonEnvironment, create_environment, \
     get_system_environment
 from jedi.api.exceptions import InternalError
+from jedi import extensions
