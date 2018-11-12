@@ -146,7 +146,7 @@ def _find_extensions():
     # check for environment variable
     p = os.getenv(_ENV_NAME)
     if (not p is None) and os.path.exists(p):
-        extension_paths = p.split(os.path.sep) + extension_paths
+        extension_paths = p.split(os.pathsep) + extension_paths
     debug.dbg("sys.path=%s", sys.path)
     debug.dbg("sys.argv=%s", sys.argv)
     debug.dbg("os.cwd=%s", os.getcwd())
@@ -157,6 +157,9 @@ def _find_extensions():
         for item in os.listdir(p):
             if not item.startswith(_EXT_PREFIX):
                 continue
+            # insert the path as current (first) one for allowing imports of
+            # siblings
+            sys.path.insert(0, p)
             fname, _ = os.path.splitext(item)
             try:
                 mod = _load_extension(fname, os.path.join(p, item))
@@ -172,6 +175,11 @@ def _find_extensions():
                     fname, p,
                     format = True
                 )
+            # at least remove it
+            try:
+                del sys.path[ sys.path.index(p) ]
+            except IndexError:
+                pass
 
 def do_import(importer, import_parts, import_path, sys_path):
     """
