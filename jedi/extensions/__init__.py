@@ -145,8 +145,10 @@ def _find_extensions():
     extension_paths = [os.path.dirname(__file__),]
     # check for environment variable
     p = os.getenv(_ENV_NAME)
-    if (not p is None) and os.path.exists(p):
+    if not p is None:
         extension_paths = p.split(os.pathsep) + extension_paths
+    extension_paths = filter(os.path.exists, extension_paths)
+    
     debug.dbg("sys.path=%s", sys.path)
     debug.dbg("sys.argv=%s", sys.argv)
     debug.dbg("os.cwd=%s", os.getcwd())
