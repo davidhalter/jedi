@@ -84,7 +84,7 @@ from jedi.evaluate.base_context import NO_CONTEXTS
 #     _logf = open(r'E:\jedi.log', 'w')
 
 #     def _log_to_file(color, str_out):
-#         print(color, str_out, file = _logf)
+#         _logf.write("%s %s\n" % (color, str_out))
 
 #     debug.debug_function = _log_to_file
 #     debug.enable_warning = True
@@ -102,8 +102,8 @@ _IMPORTER_PREFIX = 'jedi_importer_'
 
 def _load_extension_pre_py34(name, path):
     import imp
-    res = imp.find_module(name, path)
-    return imp.load_module(*res)
+    res = imp.find_module(name, [os.path.dirname(path), ])
+    return imp.load_module(name, *res)
 
 def _load_extension_py34(name, path):
     from importlib import util
