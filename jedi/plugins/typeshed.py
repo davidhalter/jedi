@@ -216,7 +216,7 @@ class NameWithStubMixin(object):
                     # TODO needed?
                     yield stub_context
                 elif isinstance(actual_context, CompiledObject):
-                    if actual_context.is_class():
+                    if stub_context.is_class():
                         yield CompiledStubClass.create_cached(
                             stub_context.evaluator, stub_context, actual_context)
                     else:
