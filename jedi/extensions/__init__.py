@@ -80,7 +80,7 @@ from jedi import debug
 from jedi._compatibility import py_version
 from jedi.evaluate.base_context import NO_CONTEXTS
 
-if True:
+if False:
     _logf = open(r'E:\jedi.log', 'a')
     _logf.write('=' * 80)
     _logf.write('\n\n')
