@@ -8,10 +8,11 @@ def test_extension_finder(Script):
     old_ext = extensions._import_extensions
 
     # set environment to point to the test extension paths
-    this_dir = os.path.dirname(__file__)
+    _d = os.path.dirname
+    test_dir = os.path.join(_d(_d(__file__)), 'extensions')
     paths = [
-        os.path.join(this_dir, 'extpath1'),
-        os.path.join(this_dir, 'extpath2')
+        os.path.join(test_dir, 'extpath1'),
+        os.path.join(test_dir, 'extpath2')
     ]
     
     # clear the current extensions
@@ -26,6 +27,9 @@ def test_extension_finder(Script):
     expected = {'jedi_importer_test1a', 'jedi_importer_test1b', 'jedi_importer_test2a'}
     installed = expected.intersection(fu.__name__ for fu in extensions._import_extensions)
     assert installed == expected, "Not all importers have been installed!"
+
+    completions = Script('from not_there_lib import ').completions()
+    assert len(completions) == 0, "This module shouldn't exists (and the importer still have raised an exception)."
 
     completions = Script('from mylib import ').completions()
     assert set(c.name for c in completions) == {'testmod', 'othermod'}, "Not all modules have been resolved!"

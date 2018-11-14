@@ -74,22 +74,11 @@ Import extension example
         return NO_CONTEXTS
 
 """
-
-import os, sys
+import os
+import sys
 from jedi import debug
 from jedi._compatibility import py_version
 from jedi.evaluate.base_context import NO_CONTEXTS
-
-if False:
-    _logf = open(r'E:\jedi.log', 'a')
-    _logf.write('=' * 80)
-    _logf.write('\n\n')
-    def _log_to_file(color, str_out):
-        _logf.write("%s %s\n" % (color, str_out))
-
-    debug.debug_function = _log_to_file
-    debug.enable_warning = True
-    debug.enable_notice = True
 
 #: Name of the environment variable containing one or more paths where
 #: Jedi extensions may be located.
@@ -100,6 +89,17 @@ _EXT_PREFIX = 'jedi_ext_'
 
 #: Prefix for importer functions.
 _IMPORTER_PREFIX = 'jedi_importer_'
+
+# if False:
+#     _logf = open(r'E:\jedi.log', 'a')
+#     _logf.write('=' * 80)
+#     _logf.write('\n\n')
+#     def _log_to_file(color, str_out):
+#         _logf.write("%s %s\n" % (color, str_out))
+
+#     debug.debug_function = _log_to_file
+#     debug.enable_warning = True
+#     debug.enable_notice = True
 
 def _load_extension_pre_py35(name, path):
     import imp
@@ -164,7 +164,7 @@ def _find_in_path(p):
         # at least remove it
         try:
             del sys.path[ sys.path.index(p) ]
-        except IndexError:
+        except ValueError:
             pass
 
 def _find_extensions(paths = None):
@@ -184,10 +184,10 @@ def _find_extensions(paths = None):
     else:
         extension_paths = paths
 
-    debug.dbg("sys.path=%s", sys.path)
-    debug.dbg("sys.argv=%s", sys.argv)
-    debug.dbg("os.cwd=%s", os.getcwd())
-    debug.dbg("Searching for extension modules in %s.", extension_paths, format = True)
+    # debug.dbg("sys.path=%s", sys.path)
+    # debug.dbg("sys.argv=%s", sys.argv)
+    # debug.dbg("os.cwd=%s", os.getcwd())
+    # debug.dbg("Searching for extension modules in %s.", extension_paths, format = True)
 
     extension_paths = list(filter(os.path.exists, extension_paths))
 
