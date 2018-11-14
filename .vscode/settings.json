@@ -1,0 +1,19 @@
+{
+    "editor.rulers": [
+        80,
+        100
+    ],
+    "python.pythonPath": "env\\Scripts\\python.exe",
+    "python.linting.ignorePatterns": [
+        ".vscode/*.py",
+        "**/site-packages/**/*.py"
+    ],
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "env/**": true
+    },
+}

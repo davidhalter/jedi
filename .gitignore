@@ -13,3 +13,5 @@ jedi.egg-info/
 record.json
 /.cache/
 /.pytest_cache
+/env
+/parso

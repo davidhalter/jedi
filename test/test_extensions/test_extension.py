@@ -6,7 +6,6 @@ from jedi._compatibility import find_module
 def test_extension_finder(Script):
     # save globals for restoring them later
     old_ext = extensions._import_extensions
-    old_env = os.getenv(extensions._ENV_NAME)
 
     # set environment to point to the test extension paths
     this_dir = os.path.dirname(__file__)
@@ -14,13 +13,12 @@ def test_extension_finder(Script):
         os.path.join(this_dir, 'extpath1'),
         os.path.join(this_dir, 'extpath2')
     ]
-    os.environ[extensions._ENV_NAME] = os.pathsep.join(paths)
     
     # clear the current extensions
     extensions._import_extensions = []
 
     # and load the test extensions
-    extensions._find_extensions()
+    extensions._find_extensions(paths)
 
     # at least all test extensions have to be found
     assert len(extensions._import_extensions) >= 3
@@ -37,7 +35,3 @@ def test_extension_finder(Script):
 
     # reset the globals to their further values
     extensions._import_extensions = old_ext
-    if old_env is None:
-        del os.environ[extensions._ENV_NAME]
-    else:
-        os.environ[extensions._ENV_NAME] = old_env

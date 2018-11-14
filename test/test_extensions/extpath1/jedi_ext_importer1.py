@@ -19,11 +19,12 @@ def jedi_importer_test1a(importer, import_parts, import_path, sys_path):
             importer._evaluator, implicit_ns_info, None, sys_path,
             # module_name = module_name,
             import_names = import_parts,
-            safe_module_name=True,
+            safe_module_name = True,
         )
 
         if not module is None:
             return ContextSet(module)
+
     return NO_CONTEXTS
 
 def jedi_importer_test1b(*a):
