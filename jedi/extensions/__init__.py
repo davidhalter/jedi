@@ -151,10 +151,9 @@ def _find_in_path(p):
             mod = _load_extension(fname, os.path.join(p, item))
             _install_extension(fname, mod)
         except Exception as e:
-            import traceback
             debug.warning(
                 "Failed to install extension module %s from %s: %s",
-                fname, p, traceback.format_exc()
+                fname, p, e
             )
         else:
             debug.dbg(
