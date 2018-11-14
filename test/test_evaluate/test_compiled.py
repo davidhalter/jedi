@@ -14,8 +14,9 @@ def test_simple(evaluator):
 
 def test_builtin_loading(evaluator):
     string, = evaluator.builtins_module.py__getattribute__(u'str')
-    from_name = compiled.context.create_from_name(evaluator, string, u'__init__')
+    from_name, = string.py__getattribute__('__init__')
     assert from_name.tree_node
+    assert from_name.py__doc__()
 
 
 def test_fake_docstr(evaluator):
@@ -41,7 +42,7 @@ def test_doc(evaluator):
     """
     str_ = compiled.create_simple_object(evaluator, u'')
     # Equals `''.__getnewargs__`
-    obj = compiled.create_from_name(evaluator, str_, u'__getnewargs__')
+    obj, = str_.py__getattribute__('__getnewargs__')
     assert obj.py__doc__() == ''
 
 

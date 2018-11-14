@@ -16,7 +16,7 @@ from jedi.evaluate.context.function import FunctionMixin
 from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
-from jedi.evaluate.compiled.context import CompiledName
+from jedi.evaluate.compiled.context import CompiledName, CompiledObject
 from jedi.evaluate.utils import to_list
 
 
@@ -212,6 +212,16 @@ class NameWithStubMixin(object):
                         actual_context,
                         stub_context,
                     )
+                elif isinstance(stub_context, VersionInfo):
+                    # TODO needed?
+                    yield stub_context
+                elif isinstance(actual_context, CompiledObject):
+                    if actual_context.is_class():
+                        yield CompiledStubClass.create_cached(
+                            stub_context.evaluator, stub_context, actual_context)
+                    else:
+                        yield _StubContextWithCompiled.create_cached(
+                            stub_context.evaluator, stub_context, actual_context)
                 else:
                     yield stub_context
 
@@ -467,11 +477,7 @@ class StubOnlyClass(_StubOnlyContext, ClassMixin, ContextWrapper):
     pass
 
 
-class _StubContextWithCompiled(ContextWrapper):
-    def __init__(self, stub_context, compiled_context):
-        super(_StubContextWithCompiled, self).__init__(stub_context)
-        self.compiled_context = compiled_context
-
+class _StubContextMixin(object):
     def py__doc__(self, include_call_signature=False):
         doc = self.compiled_context.py__doc__()
         if include_call_signature:
@@ -479,6 +485,16 @@ class _StubContextWithCompiled(ContextWrapper):
             if call_sig is not None:
                 doc = call_sig + '\n\n' + doc
         return doc
+
+
+class _StubContextWithCompiled(_StubContextMixin, ContextWrapper):
+    def __init__(self, stub_context, compiled_context):
+        super(_StubContextWithCompiled, self).__init__(stub_context)
+        self.compiled_context = compiled_context
+
+
+class CompiledStubClass(_StubContextWithCompiled, ClassMixin):
+    pass
 
 
 class TypingModuleWrapper(StubOnlyModuleContext):
