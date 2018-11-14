@@ -80,7 +80,7 @@ from jedi import debug
 from jedi._compatibility import py_version
 from jedi.evaluate.base_context import NO_CONTEXTS
 
-if False:
+if True:
     _logf = open(r'E:\jedi.log', 'a')
     _logf.write('=' * 80)
     _logf.write('\n\n')
@@ -101,19 +101,19 @@ _EXT_PREFIX = 'jedi_ext_'
 #: Prefix for importer functions.
 _IMPORTER_PREFIX = 'jedi_importer_'
 
-def _load_extension_pre_py34(name, path):
+def _load_extension_pre_py35(name, path):
     import imp
     res = imp.find_module(name, [os.path.dirname(path), ])
     return imp.load_module(name, *res)
 
-def _load_extension_py34(name, path):
+def _load_extension_py35(name, path):
     from importlib import util
     spec = util.spec_from_file_location(name, path)
-    module = spec.loader.create_module(spec)
+    module = util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
-_load_extension = _load_extension_py34 if py_version >= 34 else _load_extension_pre_py34
+_load_extension = _load_extension_py35 if py_version >= 35 else _load_extension_pre_py35
 _load_extension.__doc__ = """
 Tries to load an extension module.
 
@@ -151,9 +151,10 @@ def _find_in_path(p):
             mod = _load_extension(fname, os.path.join(p, item))
             _install_extension(fname, mod)
         except Exception as e:
+            import traceback
             debug.warning(
                 "Failed to install extension module %s from %s: %s",
-                fname, p, e, format = True
+                fname, p, traceback.format_exc()
             )
         else:
             debug.dbg(
