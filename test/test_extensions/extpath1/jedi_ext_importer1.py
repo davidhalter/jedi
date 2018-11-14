@@ -3,13 +3,13 @@
 import os
 import types
 
-from jedi._compatibility import ImplicitNSInfo
+from jedi._compatibility import ImplicitNSInfo, cast_path
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.evaluate import imports
 
 # create the path to the sibling virtual_root path
 root = os.path.dirname(os.path.dirname(__file__))
-virtual_mod_path = os.path.join(root, 'virtual_root')
+virtual_mod_path = cast_path(os.path.join(root, 'virtual_root'))
 
 def jedi_importer_test1a(importer, import_parts, import_path, sys_path):
     module_name = '.'.join(import_parts)
