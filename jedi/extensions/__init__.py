@@ -80,15 +80,16 @@ from jedi import debug
 from jedi._compatibility import py_version
 from jedi.evaluate.base_context import NO_CONTEXTS
 
-# if True:
-#     _logf = open(r'E:\jedi.log', 'w')
+if False:
+    _logf = open(r'E:\jedi.log', 'a')
+    _logf.write('=' * 80)
+    _logf.write('\n\n')
+    def _log_to_file(color, str_out):
+        _logf.write("%s %s\n" % (color, str_out))
 
-#     def _log_to_file(color, str_out):
-#         _logf.write("%s %s\n" % (color, str_out))
-
-#     debug.debug_function = _log_to_file
-#     debug.enable_warning = True
-#     debug.enable_notice = True
+    debug.debug_function = _log_to_file
+    debug.enable_warning = True
+    debug.enable_notice = True
 
 #: Name of the environment variable containing one or more paths where
 #: Jedi extensions may be located.
@@ -138,50 +139,61 @@ def _install_extension(name, mod):
         if n.startswith(_IMPORTER_PREFIX) and callable(v):
             _import_extensions.append(v)
 
-def _find_extensions():
+def _find_in_path(p):
+    for item in os.listdir(p):
+        if not item.startswith(_EXT_PREFIX):
+            continue
+        # insert the path as current (first) one for allowing imports of
+        # siblings
+        sys.path.insert(0, p)
+        fname, _ = os.path.splitext(item)
+        try:
+            mod = _load_extension(fname, os.path.join(p, item))
+            _install_extension(fname, mod)
+        except Exception as e:
+            debug.warning(
+                "Failed to install extension module %s from %s: %s",
+                fname, p, e, format = True
+            )
+        else:
+            debug.dbg(
+                "Installed extension module '%s' from '%s'.",
+                fname, p,
+                format = True
+            )
+        # at least remove it
+        try:
+            del sys.path[ sys.path.index(p) ]
+        except IndexError:
+            pass
+
+def _find_extensions(paths = None):
     """
     Called to find all available jedi extensions.
+
+    :param paths: Optional sequence of paths to search for extension modules.
+        If omitted (or ``None``) this extension package directory and the
+        paths from environment (see :data:`_ENV_NAME`) are used.
     """
-    extension_paths = [os.path.dirname(__file__),]
-    # check for environment variable
-    p = os.getenv(_ENV_NAME)
-    if not p is None:
-        extension_paths = p.split(os.pathsep) + extension_paths
-    extension_paths = filter(os.path.exists, extension_paths)
-    
+    if paths is None:
+        extension_paths = [os.path.dirname(__file__),]
+        # check for environment variable
+        p = os.getenv(_ENV_NAME)
+        if not p is None:
+            extension_paths = p.split(os.pathsep) + extension_paths
+    else:
+        extension_paths = paths
+
     debug.dbg("sys.path=%s", sys.path)
     debug.dbg("sys.argv=%s", sys.argv)
     debug.dbg("os.cwd=%s", os.getcwd())
     debug.dbg("Searching for extension modules in %s.", extension_paths, format = True)
 
+    extension_paths = list(filter(os.path.exists, extension_paths))
+
     # load and install all extensions
     for p in extension_paths:
-        for item in os.listdir(p):
-            if not item.startswith(_EXT_PREFIX):
-                continue
-            # insert the path as current (first) one for allowing imports of
-            # siblings
-            sys.path.insert(0, p)
-            fname, _ = os.path.splitext(item)
-            try:
-                mod = _load_extension(fname, os.path.join(p, item))
-                _install_extension(fname, mod)
-            except Exception as e:
-                debug.warning(
-                    "Failed to install extension module %s from %s: %s",
-                    fname, p, e, format = True
-                )
-            else:
-                debug.dbg(
-                    "Installed extension module '%s' from '%s'.",
-                    fname, p,
-                    format = True
-                )
-            # at least remove it
-            try:
-                del sys.path[ sys.path.index(p) ]
-            except IndexError:
-                pass
+        _find_in_path(p)
 
 def do_import(importer, import_parts, import_path, sys_path):
     """
