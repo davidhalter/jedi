@@ -109,7 +109,7 @@ def _load_extension_pre_py34(name, path):
 def _load_extension_py34(name, path):
     from importlib import util
     spec = util.spec_from_file_location(name, path)
-    module = util.module_from_spec(spec)
+    module = spec.loader.create_module(spec)
     spec.loader.exec_module(module)
     return module
 
