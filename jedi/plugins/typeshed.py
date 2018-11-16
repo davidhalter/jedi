@@ -219,9 +219,11 @@ class NameWithStubMixin(object):
                     if stub_context.is_class():
                         yield CompiledStubClass.create_cached(
                             stub_context.evaluator, stub_context, actual_context)
-                    else:
-                        yield _StubContextWithCompiled.create_cached(
+                    elif stub_context.is_function():
+                        yield CompiledStubFunction.create_cached(
                             stub_context.evaluator, stub_context, actual_context)
+                    else:
+                        yield stub_context
                 else:
                     yield stub_context
 
@@ -403,8 +405,7 @@ class StubClassContext(_StubContextFilterMixin, ClassMixin, ContextWrapper):
 
     def __getattribute__(self, name):
         if name in ('py__getitem__', 'py__simple_getitem__', 'py__bases__',
-                    'execute_annotation', 'get_stub_only_filter',
-                    'list_type_vars', 'define_generics'):
+                    'execute_annotation', 'list_type_vars', 'define_generics'):
             # getitem is always done in the stub class.
             return getattr(self.stub_context, name)
         return super(StubClassContext, self).__getattribute__(name)
@@ -487,13 +488,13 @@ class _StubContextMixin(object):
         return doc
 
 
-class _StubContextWithCompiled(_StubContextMixin, ContextWrapper):
+class CompiledStubFunction(_StubContextMixin, ContextWrapper):
     def __init__(self, stub_context, compiled_context):
-        super(_StubContextWithCompiled, self).__init__(stub_context)
+        super(CompiledStubFunction, self).__init__(stub_context)
         self.compiled_context = compiled_context
 
 
-class CompiledStubClass(_StubContextWithCompiled, ClassMixin):
+class CompiledStubClass(CompiledStubFunction, ClassMixin):
     pass
 
 
