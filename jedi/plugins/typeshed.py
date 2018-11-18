@@ -297,10 +297,11 @@ class StubFilter(AbstractFilter):
     """
     Merging names from stubs and non-stubs.
     """
-    def __init__(self, parent_context, non_stub_filters, stub_filters):
+    def __init__(self, parent_context, non_stub_filters, stub_filters, add_non_stubs):
         self._parent_context = parent_context
         self._non_stub_filters = non_stub_filters
         self._stub_filters = stub_filters
+        self._add_non_stubs = add_non_stubs
 
     def get(self, name):
         non_stub_names = self._get_names_from_filters(self._non_stub_filters, name)
@@ -336,7 +337,9 @@ class StubFilter(AbstractFilter):
     @to_list
     def _merge_names(self, names, stub_names):
         if not stub_names:
-            return names
+            if self._add_non_stubs:
+                return names
+            return []
         if not names:
             if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
                 return [TypingModuleName(n) for n in stub_names]
@@ -424,6 +427,8 @@ class StubFunctionContext(FunctionMixin, ContextWrapper):
 
 
 class _StubOnlyContextMixin(object):
+    _add_non_stubs_in_filter = False
+
     def _get_stub_only_filters(self, **filter_kwargs):
         return [StubOnlyFilter(
             self.evaluator,
@@ -438,6 +443,7 @@ class _StubOnlyContextMixin(object):
             parent_context,
             non_stub_filters,
             self._get_stub_only_filters(**filter_kwargs),
+            add_non_stubs=self._add_non_stubs_in_filter,
         )
 
     def _get_base_filters(self, filters, search_global=False,
@@ -449,7 +455,6 @@ class _StubOnlyContextMixin(object):
             search_global=search_global,
             until_position=until_position,
             origin_scope=origin_scope,
-            # add_non_stubs=False   # TODO add something like this
         )
 
         for f in filters:
@@ -457,6 +462,8 @@ class _StubOnlyContextMixin(object):
 
 
 class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
+    _add_non_stubs_in_filter = True
+
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubOnlyModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set

@@ -16,7 +16,7 @@ class AbstractSignature(object):
     def to_string(self):
         raise NotImplementedError
 
-    def bind(self):
+    def bind(self, context):
         raise NotImplementedError
 
     def get_param_names(self):
@@ -46,5 +46,5 @@ class BuiltinSignature(AbstractSignature):
     def _function_context(self):
         return self.context
 
-    def bind(self):
-        raise NotImplementedError('pls implement, need test case')
+    def bind(self, context):
+        raise NotImplementedError('pls implement, need test case, %s' % context)
