@@ -376,7 +376,7 @@ class _MixedStubContextMixin(object):
 class _StubContextFilterMixin(object):
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
-        filters = super(_StubContextFilterMixin, self).get_filters(
+        filters = self._wrapped_context.get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
         yield self.stub_context.get_stub_only_filter(
@@ -393,7 +393,10 @@ class _StubContextFilterMixin(object):
 
 
 class StubModuleContext(_MixedStubContextMixin, _StubContextFilterMixin, ModuleContext):
-    pass
+    @property
+    def _wrapped_context(self):
+        # TODO this is stupid.
+        return super(_StubContextFilterMixin, self)
 
 
 class StubClassContext(_StubContextFilterMixin, ClassMixin, ContextWrapper):
