@@ -303,11 +303,9 @@ class TreeInstance(AbstractInstanceContext):
         filter = next(self.class_context.get_filters())
         for init_name in filter.get('__init__'):
             for init in init_name.infer():
-                if isinstance(init, OverloadedFunctionContext):
-                    for func in init.overloaded_functions:
-                        yield func
-                elif isinstance(init, FunctionContext):
-                    yield init
+                if init.is_function():
+                    for signature in init.get_signatures():
+                        yield signature.context
 
 
 class AnonymousInstance(TreeInstance):

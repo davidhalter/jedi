@@ -3,12 +3,12 @@ from abc import abstractproperty
 
 class AbstractSignature(object):
     def __init__(self, context, is_bound=False):
-        self._context = context
+        self.context = context
         self.is_bound = is_bound
 
     @abstractproperty
     def name(self):
-        return self._context.name
+        return self.context.name
 
     def annotation(self):
         return None
@@ -44,7 +44,7 @@ class TreeSignature(AbstractSignature):
 class BuiltinSignature(AbstractSignature):
     @property
     def _function_context(self):
-        return self._context
+        return self.context
 
     def bind(self):
         raise NotImplementedError('pls implement, need test case')

@@ -4,7 +4,7 @@ from parso.python import tree
 
 from jedi._compatibility import zip_longest
 from jedi import debug
-from jedi.evaluate.utils import to_list, PushBackIterator
+from jedi.evaluate.utils import PushBackIterator
 from jedi.evaluate import analysis
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext, get_merged_lazy_context

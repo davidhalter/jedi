@@ -5,7 +5,7 @@ from jedi._compatibility import FileNotFoundError
 from jedi.plugins.base import BasePlugin
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.cache import memoize_method
-from jedi.parser_utils import get_call_signature_for_any
+from jedi.parser_utils import get_call_signature_for_any, get_cached_code_lines
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     ContextWrapper, NO_CONTEXTS
 from jedi.evaluate.filters import ParserTreeFilter, \
@@ -163,12 +163,11 @@ class TypeshedPlugin(BasePlugin):
                             module_cls = TypingModuleWrapper
                         else:
                             module_cls = StubOnlyModuleContext
-                        # TODO use code_lines
                         stub_module_context = module_cls(
                             context_set, evaluator, stub_module_node,
                             path=path,
                             string_names=import_names,
-                            code_lines=[],
+                            code_lines=get_cached_code_lines(evaluator.grammar, path),
                         )
                         modules = _merge_modules(context_set, stub_module_context)
                         return ContextSet(modules)
@@ -421,7 +420,7 @@ class StubFunctionContext(FunctionMixin, ContextWrapper):
         return self.stub_context.get_function_execution(arguments)
 
 
-class _StubOnlyContext(object):
+class _StubOnlyContextMixin(object):
     def _get_stub_only_filters(self, **filter_kwargs):
         return [StubOnlyFilter(
             self.evaluator,
@@ -438,8 +437,23 @@ class _StubOnlyContext(object):
             self._get_stub_only_filters(**filter_kwargs),
         )
 
+    def _get_base_filters(self, filters, search_global=False,
+                          until_position=None, origin_scope=None):
+        next(filters)  # Ignore the first filter and replace it with our own
+        yield self.get_stub_only_filter(
+            parent_context=self,
+            non_stub_filters=list(self._get_first_non_stub_filters()),
+            search_global=search_global,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            # add_non_stubs=False   # TODO add something like this
+        )
 
-class StubOnlyModuleContext(_StubOnlyContext, ModuleContext):
+        for f in filters:
+            yield f
+
+
+class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubOnlyModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
@@ -460,27 +474,21 @@ class StubOnlyModuleContext(_StubOnlyContext, ModuleContext):
         filters = super(StubOnlyModuleContext, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
-        next(filters)  # Ignore the first filter and replace it with our own
-
-        yield self.get_stub_only_filter(
-            parent_context=self,
-            non_stub_filters=list(self._get_first_non_stub_filters()),
-            search_global=search_global,
-            until_position=until_position,
-            origin_scope=origin_scope,
-            # add_non_stubs=False   # TODO add something like this
-        )
-        for f in filters:
+        for f in self._get_base_filters(filters, search_global, until_position, origin_scope):
             yield f
 
 
-class StubOnlyClass(_StubOnlyContext, ClassMixin, ContextWrapper):
+class StubOnlyClass(_StubOnlyContextMixin, ClassMixin, ContextWrapper):
     pass
 
 
-class _StubContextMixin(object):
+class _CompiledStubContext(ContextWrapper):
+    def __init__(self, stub_context, compiled_context):
+        super(_CompiledStubContext, self).__init__(stub_context)
+        self._compiled_context = compiled_context
+
     def py__doc__(self, include_call_signature=False):
-        doc = self.compiled_context.py__doc__()
+        doc = self._compiled_context.py__doc__()
         if include_call_signature:
             call_sig = get_call_signature_for_any(self._wrapped_context.tree_node)
             if call_sig is not None:
@@ -488,14 +496,21 @@ class _StubContextMixin(object):
         return doc
 
 
-class CompiledStubFunction(_StubContextMixin, ContextWrapper):
-    def __init__(self, stub_context, compiled_context):
-        super(CompiledStubFunction, self).__init__(stub_context)
-        self.compiled_context = compiled_context
-
-
-class CompiledStubClass(CompiledStubFunction, ClassMixin):
+class CompiledStubFunction(_CompiledStubContext):
     pass
+
+
+class CompiledStubClass(_StubOnlyContextMixin, _CompiledStubContext, ClassMixin):
+    def _get_first_non_stub_filters(self):
+        yield next(self._compiled_context.get_filters(search_global=False))
+
+    def get_filters(self, search_global=False, until_position=None,
+                    origin_scope=None, **kwargs):
+        filters = self._wrapped_context.get_filters(
+            search_global, until_position, origin_scope, **kwargs
+        )
+        for f in self._get_base_filters(filters, search_global, until_position, origin_scope):
+            yield f
 
 
 class TypingModuleWrapper(StubOnlyModuleContext):
