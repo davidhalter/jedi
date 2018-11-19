@@ -410,7 +410,8 @@ class StubClassContext(_StubContextFilterMixin, ClassMixin, ContextWrapper):
 
     def __getattribute__(self, name):
         if name in ('py__getitem__', 'py__simple_getitem__', 'py__bases__',
-                    'execute_annotation', 'list_type_vars', 'define_generics'):
+                    'execute_annotation', 'list_type_vars', 'define_generics',
+                    'get_signatures'):
             # getitem is always done in the stub class.
             return getattr(self.stub_context, name)
         return super(StubClassContext, self).__getattribute__(name)
@@ -424,6 +425,12 @@ class StubFunctionContext(FunctionMixin, ContextWrapper):
 
     def get_function_execution(self, arguments=None):
         return self.stub_context.get_function_execution(arguments)
+
+    def __getattribute__(self, name):
+        if name == 'get_signatures':
+            # getitem is always done in the stub class.
+            return getattr(self.stub_context, name)
+        return super(StubFunctionContext, self).__getattribute__(name)
 
 
 class _StubOnlyContextMixin(object):
