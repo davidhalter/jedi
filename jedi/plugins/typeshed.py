@@ -11,14 +11,14 @@ from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
 from jedi.evaluate.filters import ParserTreeFilter, \
     NameWrapper, AbstractFilter, TreeNameDefinition
 from jedi.evaluate.context import ModuleContext, FunctionContext, \
-    ClassContext
+    MethodContext, ClassContext
 from jedi.evaluate.context.function import FunctionMixin
 from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
 from jedi.evaluate.compiled.context import CompiledName, CompiledObject
-from jedi.evaluate.utils import to_list
-
+from jedi.evaluate.signature import TreeSignature
+from jedi.evaluate.utils import to_list, safe_property
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
@@ -197,7 +197,12 @@ class NameWithStubMixin(object):
             for stub_context in stub_contexts:
                 if isinstance(stub_context, FunctionContext) \
                         and isinstance(actual_context, FunctionContext):
-                    yield StubFunctionContext.create_cached(
+                    if isinstance(actual_context, MethodContext):
+                        assert isinstance(stub_context, MethodContext)
+                        cls = StubMethodContext
+                    else:
+                        cls = StubFunctionContext
+                    yield cls.create_cached(
                         actual_context.evaluator,
                         self.parent_context,
                         actual_context,
@@ -403,18 +408,22 @@ class StubModuleContext(_MixedStubContextMixin, _StubContextFilterMixin, ModuleC
 
 
 class StubClassContext(_StubContextFilterMixin, ClassMixin, ContextWrapper):
-    def __init__(self, parent_context, cls, stub_context):
-        super(StubClassContext, self).__init__(cls)
+    def __init__(self, parent_context, actual_context, stub_context):
+        super(StubClassContext, self).__init__(actual_context)
         self.parent_context = parent_context
         self.stub_context = stub_context
 
     def __getattribute__(self, name):
         if name in ('py__getitem__', 'py__simple_getitem__', 'py__bases__',
-                    'execute_annotation', 'list_type_vars', 'define_generics',
-                    'get_signatures'):
+                    'execute_annotation', 'list_type_vars', 'get_signatures'):
             # getitem is always done in the stub class.
             return getattr(self.stub_context, name)
         return super(StubClassContext, self).__getattribute__(name)
+
+    def define_generics(self, type_var_dict):
+        if not type_var_dict:
+            return self
+        return self.stub_context.define_generics(type_var_dict)
 
 
 class StubFunctionContext(FunctionMixin, ContextWrapper):
@@ -426,11 +435,22 @@ class StubFunctionContext(FunctionMixin, ContextWrapper):
     def get_function_execution(self, arguments=None):
         return self.stub_context.get_function_execution(arguments)
 
-    def __getattribute__(self, name):
-        if name == 'get_signatures':
-            # getitem is always done in the stub class.
-            return getattr(self.stub_context, name)
-        return super(StubFunctionContext, self).__getattribute__(name)
+    def get_signatures(self):
+        return self.stub_context.get_signatures()
+
+
+class StubMethodContext(StubFunctionContext):
+    """
+    Both of the stub context and the actual context are a stub method.
+    """
+    @safe_property
+    def class_context(self):
+        return StubClassContext.create_cached(
+            self.evaluator,
+            self.parent_context,
+            actual_context=self._wrapped_context.class_context,
+            stub_context=self.stub_context.class_context
+        )
 
 
 class _StubOnlyContextMixin(object):
