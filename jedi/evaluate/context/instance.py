@@ -295,6 +295,7 @@ class TreeInstance(AbstractInstanceContext):
             )
             debug.dbg('Inferred instance context as %s', defined, color='BLUE')
             return defined
+        return None
 
     def get_annotated_class_object(self):
         return self._get_annotated_class_object() or self.class_context
@@ -395,11 +396,6 @@ class BoundMethod(FunctionMixin, ContextWrapper):
             )
 
         return super(BoundMethod, self).get_function_execution(arguments)
-
-    def get_default_param_context(self):
-        if isinstance(self._wrapped_context, MethodContext):
-            return self.class_context
-        return self._wrapped_context.get_default_param_context()
 
     def py__call__(self, arguments):
         if isinstance(self._wrapped_context, OverloadedFunctionContext):
