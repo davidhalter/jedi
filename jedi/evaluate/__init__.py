@@ -389,7 +389,6 @@ class Evaluator(object):
                 if isinstance(parent_context, AnonymousInstance):
                     func = BoundMethod(
                         instance=parent_context,
-                        klass=parent_context.class_context,
                         function=func
                     )
                 if is_nested and not node_is_object:

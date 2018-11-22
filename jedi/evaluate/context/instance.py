@@ -186,7 +186,7 @@ class AbstractInstanceContext(Context):
                     self.parent_context,
                     name.tree_name.parent
                 )
-                bound_method = BoundMethod(self, name.class_context, function)
+                bound_method = BoundMethod(self, function)
                 yield bound_method.get_function_execution(self.var_args)
 
     @evaluator_method_cache()
@@ -203,7 +203,7 @@ class AbstractInstanceContext(Context):
                     parent_context,
                     scope,
                 )
-                bound_method = BoundMethod(self, class_context, func)
+                bound_method = BoundMethod(self, func)
                 if scope.name.value == '__init__' and parent_context == class_context:
                     return bound_method.get_function_execution(self.var_args)
                 else:
@@ -277,12 +277,7 @@ class TreeInstance(AbstractInstanceContext):
         for func in self._get_annotation_init_functions():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
-            c = self.class_context
-            try:
-                c = func.class_context
-            except AttributeError:
-                pass
-            bound = BoundMethod(self, c, func)
+            bound = BoundMethod(self, func)
             execution = bound.get_function_execution(self.var_args)
             if not execution.matches_signature():
                 # First check if the signature even matches, if not we don't
@@ -337,14 +332,10 @@ class CompiledInstanceName(compiled.CompiledName):
     @iterator_to_context_set
     def infer(self):
         for result_context in self._class_member_name.infer():
-            is_function = result_context.api_type == 'function'
-            if result_context.tree_node is not None and is_function:
-                yield BoundMethod(self._instance, self._class, result_context)
+            if result_context.api_type == 'function':
+                yield CompiledBoundMethod(result_context)
             else:
-                if is_function:
-                    yield CompiledBoundMethod(result_context)
-                else:
-                    yield result_context
+                yield result_context
 
 
 class CompiledInstanceClassFilter(filters.AbstractFilter):
@@ -370,10 +361,9 @@ class CompiledInstanceClassFilter(filters.AbstractFilter):
 
 
 class BoundMethod(FunctionMixin, ContextWrapper):
-    def __init__(self, instance, klass, function):
+    def __init__(self, instance, function):
         super(BoundMethod, self).__init__(function)
         self.instance = instance
-        self.class_context = klass
 
     def py__class__(self):
         return compiled.get_special_object(self.evaluator, u'BOUND_METHOD_CLASS')
@@ -418,7 +408,7 @@ class BoundMethod(FunctionMixin, ContextWrapper):
             if func is self:
                 yield self
             else:
-                yield BoundMethod(self.instance, self.class_context, func)
+                yield BoundMethod(self.instance, func)
 
     def get_signatures(self):
         return [sig.bind(self) for sig in self._wrapped_context.get_signatures()]

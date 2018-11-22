@@ -59,7 +59,7 @@ class FunctionMixin(object):
         if instance is None:
             # Calling the Foo.bar results in the original bar function.
             return ContextSet([self])
-        return ContextSet([BoundMethod(instance, class_context, self)])
+        return ContextSet([BoundMethod(instance, self)])
 
     def get_param_names(self):
         function_execution = self.get_function_execution()
