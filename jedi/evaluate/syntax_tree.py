@@ -19,7 +19,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import arguments
 from jedi.evaluate.context import ClassContext, FunctionContext
 from jedi.evaluate.context import iterable
-from jedi.evaluate.context import TreeInstance, CompiledInstance
+from jedi.evaluate.context import TreeInstance
 from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
@@ -510,7 +510,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
-        return isinstance(obj, CompiledInstance) and \
+        return isinstance(obj, TreeInstance) and \
             obj.name.string_name in ('int', 'float')
 
     # Static analysis, one is a number, the other one is not.

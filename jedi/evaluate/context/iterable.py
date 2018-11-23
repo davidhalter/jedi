@@ -58,7 +58,7 @@ class GeneratorBase(BuiltinOverwrite, IterableMixin):
         return generator
 
     @publish_method('__iter__')
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         return ContextSet([self])
 
     @publish_method('send')
@@ -81,7 +81,7 @@ class Generator(GeneratorBase):
         super(Generator, self).__init__(evaluator)
         self._func_execution_context = func_execution_context
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         return self._func_execution_context.get_yield_lazy_contexts()
 
     def py__stop_iteration_returns(self):
@@ -183,7 +183,7 @@ class ComprehensionMixin(object):
         for result in self._nested(comp_fors):
             yield result
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         for set_ in self._iterate():
             yield LazyKnownContexts(set_)
 
@@ -252,7 +252,7 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
     def _get_comp_for(self):
         return self._get_comprehension().children[3]
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         for keys, values in self._iterate():
             yield LazyKnownContexts(keys)
 
@@ -338,7 +338,7 @@ class SequenceLiteralContext(Sequence):
                 node = self.get_tree_entries()[index]
             return self._defining_context.eval_node(node)
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         """
         While values returns the possible values for any array field, this
         function returns the value for a certain index.
@@ -484,7 +484,7 @@ class FakeSequence(_FakeArray):
             lazy_context = self._lazy_context_list[index]
         return lazy_context.infer()
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         return self._lazy_context_list
 
     def py__bool__(self):
@@ -499,7 +499,7 @@ class FakeDict(_DictMixin, _FakeArray):
         super(FakeDict, self).__init__(evaluator, dct, u'dict')
         self._dct = dct
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         for key in self._dct:
             yield LazyKnownContext(compiled.create_simple_object(self.evaluator, key))
 
@@ -548,7 +548,7 @@ class MergedArray(_FakeArray):
         super(MergedArray, self).__init__(evaluator, arrays, arrays[-1].array_type)
         self._arrays = arrays
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         for array in self._arrays:
             for lazy_context in array.py__iter__():
                 yield lazy_context
@@ -718,7 +718,7 @@ class _ArrayInstance(HelperContextMixin):
         tuple_, = self.instance.evaluator.builtins_module.py__getattribute__('tuple')
         return tuple_
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         var_args = self.var_args
         try:
             _, lazy_context = next(var_args.unpack())
@@ -735,7 +735,7 @@ class _ArrayInstance(HelperContextMixin):
                 yield addition
 
     def iterate(self, contextualized_node=None, is_async=False):
-        return self.py__iter__()
+        return self.py__iter__(contextualized_node)
 
 
 class Slice(object):

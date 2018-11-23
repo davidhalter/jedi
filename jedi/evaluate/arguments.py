@@ -327,14 +327,16 @@ class TreeArgumentsWrapper(_AbstractArgumentsMixin):
 
 
 def _iterate_star_args(context, array, input_node, funcdef=None):
-    try:
-        iter_ = array.py__iter__
-    except AttributeError:
+    if not array.py__getattribute__('__iter__'):
         if funcdef is not None:
             # TODO this funcdef should not be needed.
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
                 % (funcdef.name.value, array)
             analysis.add(context, 'type-error-star', input_node, message=m)
+    try:
+        iter_ = array.py__iter__
+    except AttributeError:
+        pass
     else:
         for lazy_context in iter_():
             yield lazy_context

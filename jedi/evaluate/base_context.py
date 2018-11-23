@@ -65,6 +65,8 @@ class HelperContextMixin:
         debug.dbg('iterate %s', self)
         if is_async:
             from jedi.evaluate.lazy_context import LazyKnownContexts
+            # TODO if no __aiter__ contexts are there, error should be:
+            # TypeError: 'async for' requires an object with __aiter__ method, got int
             return iter([
                 LazyKnownContexts(
                     self.py__getattribute__('__aiter__').execute_evaluated()
@@ -73,22 +75,7 @@ class HelperContextMixin:
                         .py__stop_iteration_returns()
                 )  # noqa
             ])
-        try:
-            if is_async:
-                iter_method = self.py__aiter__
-            else:
-                iter_method = self.py__iter__
-        except AttributeError:
-            if contextualized_node is not None:
-                from jedi.evaluate import analysis
-                analysis.add(
-                    contextualized_node.context,
-                    'type-error-not-iterable',
-                    contextualized_node.node,
-                    message="TypeError: '%s' object is not iterable" % self)
-            return iter([])
-        else:
-            return iter_method()
+        return self.py__iter__(contextualized_node)
 
     def is_sub_class_of(self, class_context):
         from jedi.evaluate.context.klass import py__mro__
@@ -130,6 +117,16 @@ class Context(HelperContextMixin, BaseContext):
             message="TypeError: '%s' object is not subscriptable" % self
         )
         return NO_CONTEXTS
+
+    def py__iter__(self, contextualized_node=None):
+        if contextualized_node is not None:
+            from jedi.evaluate import analysis
+            analysis.add(
+                contextualized_node.context,
+                'type-error-not-iterable',
+                contextualized_node.node,
+                message="TypeError: '%s' object is not iterable" % self)
+        return iter([])
 
     def get_signatures(self):
         return []

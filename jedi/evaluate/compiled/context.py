@@ -34,15 +34,7 @@ class CheckAttribute(object):
             return self
 
         # This might raise an AttributeError. That's wanted.
-        if self.check_name == '__iter__':
-            # Python iterators are a bit strange, because there's no need for
-            # the __iter__ function as long as __getitem__ is defined (it will
-            # just start with __getitem__(0). This is especially true for
-            # Python 2 strings, where `str.__iter__` is not even defined.
-            if not instance.access_handle.has_iter():
-                raise AttributeError
-        else:
-            instance.access_handle.getattr(self.check_name)
+        instance.access_handle.getattr(self.check_name)
         return partial(self.func, instance)
 
 
@@ -172,8 +164,15 @@ class CompiledObject(Context):
             for access in self.access_handle.py__getitem__all_values()
         )
 
-    @CheckAttribute()
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
+        # Python iterators are a bit strange, because there's no need for
+        # the __iter__ function as long as __getitem__ is defined (it will
+        # just start with __getitem__(0). This is especially true for
+        # Python 2 strings, where `str.__iter__` is not even defined.
+        if not self.access_handle.has_iter():
+            for x in super(CompiledObject, self).py__iter__(contextualized_node):
+                yield x
+
         for access in self.access_handle.py__iter__list():
             yield LazyKnownContext(create_from_access_path(self.evaluator, access))
 

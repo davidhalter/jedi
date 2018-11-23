@@ -103,12 +103,14 @@ def _check_for_setattr(instance):
 
     node = module.tree_node
     try:
-        stmts = node.get_used_names()['setattr']
+        stmt_names = node.get_used_names()['setattr']
     except KeyError:
         return False
 
-    return any(node.start_pos < stmt.start_pos < node.end_pos
-               for stmt in stmts)
+    return any(node.start_pos < n.start_pos < node.end_pos
+               # Check if it's a function called setattr.
+               and not (n.parent.type == 'funcdef' and n.parent.name == n)
+               for n in stmt_names)
 
 
 def add_attribute_error(name_context, lookup_context, name):

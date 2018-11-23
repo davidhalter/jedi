@@ -215,7 +215,7 @@ class TypingClassContext(TypingClassMixin, TypingContext):
 def _iter_over_arguments(maybe_tuple_context, defining_context):
     def iterate():
         if isinstance(maybe_tuple_context, SequenceLiteralContext):
-            for lazy_context in maybe_tuple_context.py__iter__():
+            for lazy_context in maybe_tuple_context.py__iter__(contextualized_node=None):
                 yield lazy_context.infer()
         else:
             yield ContextSet([maybe_tuple_context])
@@ -308,7 +308,7 @@ class Tuple(_ContainerBase):
             debug.dbg('The getitem type on Tuple was %s' % index)
             return NO_CONTEXTS
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         if self._is_homogenous():
             while True:
                 yield LazyKnownContexts(self._get_getitem_contexts(0).execute_annotation())

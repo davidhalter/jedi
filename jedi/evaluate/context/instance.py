@@ -150,7 +150,7 @@ class AbstractInstanceContext(Context):
         args = ValuesArguments([index_context_set])
         return ContextSet.from_sets(name.infer().execute(args) for name in names)
 
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         iter_slot_names = self.get_function_slot_names(u'__iter__')
         if not iter_slot_names:
             debug.warning('No __iter__ on %s.' % self)

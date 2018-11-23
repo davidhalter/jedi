@@ -115,5 +115,5 @@ import_tree.b
 # This is something that raised an error, because it was using a complex
 # mixture of Jedi fakes and compiled objects.
 import _sre
-#! 15 attribute-error
+##! 15 attribute-error  # Doesn't seem to be a problem anymore.
 _sre.compile().not_existing

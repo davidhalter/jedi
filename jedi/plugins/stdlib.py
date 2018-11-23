@@ -207,7 +207,7 @@ class ReversedObject(AbstractObjectOverwrite, ContextWrapper):
         return self._wrapped_context
 
     @publish_method('__iter__')
-    def py__iter__(self):
+    def py__iter__(self, contextualized_node=None):
         return self._iter_list
 
     @publish_method('next', python_version_match=2)
