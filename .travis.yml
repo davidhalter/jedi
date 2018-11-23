@@ -28,14 +28,6 @@ matrix:
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.
     #- python: pypy
-before_install:
-    - ./travis_install.sh
-    # Need to add the path to the Python versions in the end. This might add
-    # something twice, but it doesn't really matter, because they are appended.
-    - export PATH=$PATH:/opt/python/3.5/bin
-    # 3.6 was not installed manually, but already is on the system. However
-    # it's not on path (unless 3.6 is selected).
-    - export PATH=$PATH:/opt/python/3.6/bin
 install:
     - pip install --quiet tox-travis
 script:
