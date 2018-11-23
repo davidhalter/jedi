@@ -1,5 +1,6 @@
+dist: xenial
 language: python
-sudo: true
+sudo: false
 python:
   - 2.7
   - 3.4
@@ -12,12 +13,6 @@ env:
   - JEDI_TEST_ENVIRONMENT=34
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=37
-
-addons:
-  apt:
-    packages:
-     # Required to properly create a virtual environment with system Python 3.4.
-     - python3.4-venv
 
 matrix:
   allow_failures:
