@@ -223,9 +223,6 @@ class CompiledObject(Context):
     def negate(self):
         return create_from_access_path(self.evaluator, self.access_handle.negate())
 
-    def is_super_class(self, exception):
-        return self.access_handle.is_super_class(exception)
-
 
 class CompiledName(AbstractNameDefinition):
     def __init__(self, evaluator, parent_context, name):

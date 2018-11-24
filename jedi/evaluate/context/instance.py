@@ -153,8 +153,7 @@ class AbstractInstanceContext(Context):
     def py__iter__(self, contextualized_node=None):
         iter_slot_names = self.get_function_slot_names(u'__iter__')
         if not iter_slot_names:
-            debug.warning('No __iter__ on %s.' % self)
-            return
+            return super(AbstractInstanceContext, self).py__iter__(contextualized_node)
 
         for generator in self.execute_function_slots(iter_slot_names):
             if generator.is_instance():

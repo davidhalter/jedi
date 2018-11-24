@@ -5,7 +5,6 @@ from parso.python import tree
 
 from jedi._compatibility import force_unicode
 from jedi import debug
-from jedi.evaluate.compiled import CompiledObject
 from jedi.evaluate.helpers import is_string
 
 
@@ -145,10 +144,14 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
     Returns True if the exception was catched.
     """
     def check_match(cls, exception):
-        try:
-            return isinstance(cls, CompiledObject) and cls.is_super_class(exception)
-        except TypeError:
+        if not cls.is_class():
             return False
+
+        for python_cls in exception.mro():
+            if cls.py__name__() == python_cls.__name__ \
+                    and cls.parent_context == cls.evaluator.builtins_module:
+                return True
+        return False
 
     def check_try_for_except(obj, exception):
         # Only nodes in try

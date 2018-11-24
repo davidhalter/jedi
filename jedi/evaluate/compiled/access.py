@@ -414,9 +414,6 @@ class DirectObjectAccess(object):
     def negate(self):
         return self._create_access_path(-self._obj)
 
-    def is_super_class(self, exception):
-        return issubclass(exception, self._obj)
-
     def get_dir_infos(self):
         """
         Used to return a couple of infos that are needed when accessing the sub
