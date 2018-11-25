@@ -187,6 +187,11 @@ class SubModuleName(ImportName):
     _level = 1
 
 
+class OsPathName(ImportName):
+    def infer(self):
+        return self.parent_context.evaluator.import_module(('os', 'path'))
+
+
 class Importer(object):
     def __init__(self, evaluator, import_path, module_context, level=0):
         """
@@ -227,13 +232,7 @@ class Importer(object):
                     # Jedi cannot be sure about the entry point, we just calculate an
                     # absolute path here.
                     if dir_name:
-                        # TODO those sys.modules modifications are getting
-                        # really stupid. this is the 3rd time that we're using
-                        # this. We should probably refactor.
-                        if path.endswith(os.path.sep + 'os.py'):
-                            import_path.insert(0, 'os')
-                        else:
-                            import_path.insert(0, dir_name)
+                        import_path.insert(0, dir_name)
                     else:
                         _add_error(
                             module_context, import_path[-1],
@@ -300,12 +299,6 @@ class Importer(object):
                 return NO_CONTEXTS
         return context_set
 
-    def _generate_name(self, name, in_module=None):
-        # Create a pseudo import to be able to follow them.
-        if in_module is None:
-            return ImportName(self.module_context, name)
-        return SubModuleName(in_module, name)
-
     def _get_module_names(self, search_path=None, in_module=None):
         """
         Get the names of all modules in the search_path. This means file names
@@ -316,13 +309,18 @@ class Importer(object):
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
-            names += [self._generate_name(name) for name in sub.get_builtin_module_names()]
+            names += [ImportName(self.module_context, name)
+                      for name in sub.get_builtin_module_names()]
 
         if search_path is None:
             search_path = self.sys_path_with_modifications()
 
         for name in sub.list_module_names(search_path):
-            names.append(self._generate_name(name, in_module=in_module))
+            if in_module is None:
+                n = ImportName(self.module_context, name)
+            else:
+                n = SubModuleName(in_module, name)
+            names.append(n)
         return names
 
     def completion_names(self, evaluator, only_modules=False):
@@ -341,7 +339,7 @@ class Importer(object):
                     modname = mod.string_name
                     if modname.startswith('flask_'):
                         extname = modname[len('flask_'):]
-                        names.append(self._generate_name(extname))
+                        names.append(ImportName(self.module_context, extname))
                 # Now the old style: ``flaskext.foo``
                 for dir in self.sys_path_with_modifications():
                     flaskext = os.path.join(dir, 'flaskext')
@@ -369,8 +367,7 @@ class Importer(object):
                     if ('os',) == self.str_import_path and not self.level:
                         # os.path is a hardcoded exception, because it's a
                         # ``sys.modules`` modification.
-                        names.append(self._generate_name('path', context))
-
+                        names.append(OsPathName(context, 'path'))
                     continue
 
                 for filter in context.get_filters(search_global=False):

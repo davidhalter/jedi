@@ -17,7 +17,6 @@ from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
 from jedi.evaluate.compiled.context import CompiledName, CompiledObject
-from jedi.evaluate.signature import TreeSignature
 from jedi.evaluate.utils import to_list, safe_property
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -128,12 +127,14 @@ class TypeshedPlugin(BasePlugin):
                 # there's no clear ordering.
                 return NO_CONTEXTS
 
-            # This is a huge exception, we follow a nested import
-            # ``os.path``, because it's a very important one in Python
-            # that is being achieved by messing with ``sys.modules`` in
-            # ``os``.
             if import_names == ('os', 'path'):
-                context_set = parent_module_context.py__getattribute__('path')
+                # This is a huge exception, we follow a nested import
+                # ``os.path``, because it's a very important one in Python
+                # that is being achieved by messing with ``sys.modules`` in
+                # ``os``.
+                if parent_module_context is None:
+                    parent_module_context, = evaluator.import_module(('os',))
+                return parent_module_context.py__getattribute__('path')
             else:
                 context_set = callback(
                     evaluator,
