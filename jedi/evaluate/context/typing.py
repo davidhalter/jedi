@@ -180,6 +180,11 @@ class TypingContextWithIndex(_WithIndexBase):
             self._context_of_index
         )])
 
+    def gather_annotation_classes(self):
+        return ContextSet.from_sets(
+            _iter_over_arguments(self._index_context, self._context_of_index)
+        )
+
 
 class TypingContext(_BaseTypingContext):
     index_class = TypingContextWithIndex

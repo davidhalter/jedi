@@ -32,6 +32,9 @@ class HelperContextMixin:
     def execute_annotation(self):
         return self.execute_evaluated()
 
+    def gather_annotation_classes(self):
+        return ContextSet([self])
+
     def merge_types_of_iterate(self, contextualized_node=None, is_async=False):
         return ContextSet.from_sets(
             lazy_context.infer()
@@ -352,6 +355,9 @@ class ContextSet(BaseContextSet):
             else:
                 context_set |= method()
         return context_set
+
+    def gather_annotation_classes(self):
+        return ContextSet.from_sets([c.gather_annotation_classes() for c in self._set])
 
     def get_signatures(self):
         return [sig for c in self._set for sig in c.get_signatures()]
