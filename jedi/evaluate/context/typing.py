@@ -145,11 +145,6 @@ class _WithIndexBase(_BaseTypingContext):
             self._index_context,
         )
 
-    def _execute_annotations_for_all_indexes(self):
-        return ContextSet.from_sets(
-            _iter_over_arguments(self._index_context, self._context_of_index)
-        ).execute_annotation()
-
 
 class TypingContextWithIndex(_WithIndexBase):
     def execute_annotation(self):
@@ -158,11 +153,11 @@ class TypingContextWithIndex(_WithIndexBase):
         if string_name == 'Union':
             # This is kind of a special case, because we have Unions (in Jedi
             # ContextSets).
-            return self._execute_annotations_for_all_indexes()
+            return self.gather_annotation_classes().execute_annotation()
         elif string_name == 'Optional':
             # Optional is basically just saying it's either None or the actual
             # type.
-            return self._execute_annotations_for_all_indexes() \
+            return self.gather_annotation_classes().execute_annotation() \
                 | ContextSet([builtin_from_name(self.evaluator, u'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_context
@@ -326,7 +321,9 @@ class Tuple(_ContainerBase):
         if self._is_homogenous():
             return self._get_getitem_contexts(0).execute_annotation()
 
-        return self._execute_annotations_for_all_indexes()
+        return ContextSet.from_sets(
+            _iter_over_arguments(self._index_context, self._context_of_index)
+        ).execute_annotation()
 
 
 class Generic(_ContainerBase):
