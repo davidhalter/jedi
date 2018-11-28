@@ -548,15 +548,14 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         for name in names:
             expr_stmt = name.parent
 
-            correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
-
-            if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign" and correct_scope:
-                context_set |= pep0484.evaluate_for_annotation(
-                    context, expr_stmt.children[1].children[1]
-                ).execute_annotation()
-
-    if context_set:
-        return context_set
+            if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
+                correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
+                if correct_scope:
+                    context_set |= pep0484.evaluate_for_annotation(
+                        context, expr_stmt.children[1].children[1]
+                    ).execute_annotation()
+        if context_set:
+            return context_set
 
     types = []
     node = tree_name.get_definition(import_name_always=True)
