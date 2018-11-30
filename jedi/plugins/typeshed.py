@@ -16,7 +16,7 @@ from jedi.evaluate.context.function import FunctionMixin
 from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
-from jedi.evaluate.compiled.context import CompiledName, CompiledObject
+from jedi.evaluate.compiled.context import CompiledObject
 from jedi.evaluate.utils import to_list, safe_property
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -177,16 +177,21 @@ class TypeshedPlugin(BasePlugin):
         return wrapper
 
 
-class NameWithStubMixin(object):
+class StubName(NameWrapper):
     """
     This name is only here to mix stub names with non-stub names. The idea is
     that the user can goto the actual name, but end up on the definition of the
     stub when inferring types.
     """
+    def __init__(self, parent_context, non_stub_name, stub_name):
+        super(StubName, self).__init__(non_stub_name)
+        self.parent_context = parent_context
+        self._stub_name = stub_name
+
     @memoize_method
     @iterator_to_context_set
     def infer(self):
-        actual_contexts = self._get_actual_contexts()
+        actual_contexts = self._wrapped_name.infer()
         stub_contexts = self._stub_name.infer()
 
         if not actual_contexts:
@@ -250,29 +255,6 @@ class StubOnlyName(TreeNameDefinition):
             StubOnlyClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
             for c in inferred
         ]
-
-
-class StubName(NameWithStubMixin, NameWrapper):
-    def __init__(self, parent_context, non_stub_name, stub_name):
-        super(StubName, self).__init__(non_stub_name)
-        self.parent_context = parent_context
-        self._stub_name = stub_name
-
-    def _get_actual_contexts(self):
-        # This is intentionally a subclass of NameWithStubMixin.
-        return self._wrapped_name.infer()
-
-
-class CompiledNameWithStub(NameWithStubMixin, NameWrapper):
-    # TODO do we actually need this class?
-    def __init__(self, compiled_name, stub_name):
-        super(CompiledNameWithStub, self).__init__(stub_name)
-        self._compiled_name = compiled_name
-        self._stub_name = stub_name
-
-    def _get_actual_contexts(self):
-        # This is intentionally a subclass of NameWithStubMixin.
-        return self._compiled_name.infer()
 
 
 class StubOnlyFilter(ParserTreeFilter):
@@ -358,11 +340,7 @@ class StubFilter(AbstractFilter):
                 if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
                     stub_name = TypingModuleName(stub_name)
 
-                if isinstance(name, CompiledName):
-                    # TODO remove this?
-                    result.append(CompiledNameWithStub(name, stub_name))
-                else:
-                    result.append(StubName(self._parent_context, name, stub_name))
+                result.append(StubName(self._parent_context, name, stub_name))
         return result
 
     def __repr__(self):

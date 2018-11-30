@@ -543,6 +543,7 @@ def _remove_statements(evaluator, context, stmt, name):
 def tree_name_to_contexts(evaluator, context, tree_name):
     context_set = NO_CONTEXTS
     module_node = context.get_root_context().tree_node
+    # First check for annotations, like: `foo: int = 3`
     if module_node is not None:
         names = module_node.get_used_names().get(tree_name.value, [])
         for name in names:

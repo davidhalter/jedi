@@ -216,6 +216,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
+    # TODO remove evaluator as an argument, it's not used.
     def __init__(self, evaluator, context, node_context=None, until_position=None,
                  origin_scope=None):
         """
