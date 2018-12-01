@@ -81,8 +81,7 @@ class HelperContextMixin:
         return self.py__iter__(contextualized_node)
 
     def is_sub_class_of(self, class_context):
-        from jedi.evaluate.context.klass import py__mro__
-        for cls in py__mro__(self):
+        for cls in self.py__mro__():
             if cls.is_same_class(class_context):
                 return True
         return False

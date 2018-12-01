@@ -102,7 +102,7 @@ def py__mro__(context):
                 debug.warning('Super class of %s is not a class: %s', context, cls)
             else:
                 add(cls)
-                for cls_new in py__mro__(cls):
+                for cls_new in cls.py__mro__():
                     add(cls_new)
     return tuple(mro)
 
@@ -208,7 +208,7 @@ class ClassMixin(object):
                 origin_scope=origin_scope
             )
         else:
-            for cls in py__mro__(self):
+            for cls in self.py__mro__():
                 if isinstance(cls, compiled.CompiledObject):
                     for filter in cls.get_filters(is_instance=is_instance):
                         yield filter

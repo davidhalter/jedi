@@ -17,7 +17,7 @@ from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
 from jedi.evaluate.imports import Importer
-from jedi.evaluate.context.klass import py__mro__, ClassMixin
+from jedi.evaluate.context.klass import ClassMixin
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -197,7 +197,7 @@ class TypingContext(_BaseTypingContext):
         )
 
 
-class TypingClassMixin(object):
+class TypingClassMixin(ClassMixin):
     def py__bases__(self):
         return [LazyKnownContexts(
             self.evaluator.builtins_module.py__getattribute__('object')
@@ -671,7 +671,7 @@ class LazyAnnotatedBaseClass(object):
 
 class InstanceWrapper(ContextWrapper):
     def py__stop_iteration_returns(self):
-        for cls in py__mro__(self._wrapped_context.class_context):
+        for cls in self._wrapped_context.class_context.py__mro__():
             if cls.py__name__() == 'Generator':
                 given_types = cls.get_given_types()
                 try:

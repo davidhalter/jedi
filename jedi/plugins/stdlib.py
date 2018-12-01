@@ -24,7 +24,6 @@ from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
-from jedi.evaluate.context.klass import py__mro__
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
@@ -252,7 +251,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
             bool_results = set([True, False])
             break
 
-        mro = py__mro__(cls)
+        mro = list(cls.py__mro__())
 
         for cls_or_tup in types:
             if cls_or_tup.is_class():

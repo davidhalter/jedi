@@ -11,9 +11,9 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AnonymousArguments, \
     ValuesArguments, TreeArgumentsWrapper
 from jedi.evaluate.context.function import FunctionExecutionContext, \
-    FunctionContext, FunctionMixin, OverloadedFunctionContext, MethodContext
+    FunctionContext, FunctionMixin, OverloadedFunctionContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, \
-    py__mro__, ClassFilter
+    ClassFilter
 from jedi.evaluate.context import iterable
 from jedi.parser_utils import get_parent_scope
 
@@ -127,7 +127,7 @@ class AbstractInstanceContext(Context):
                     origin_scope=None, include_self_names=True):
         class_context = self.get_annotated_class_object()
         if include_self_names:
-            for cls in py__mro__(class_context):
+            for cls in class_context.py__mro__():
                 if not isinstance(cls, compiled.CompiledObject) \
                         or cls.tree_node is not None:
                     # In this case we're excluding compiled objects that are
@@ -135,7 +135,7 @@ class AbstractInstanceContext(Context):
                     # compiled objects to search for self variables.
                     yield SelfAttributeFilter(self.evaluator, self, cls, origin_scope)
 
-        for cls in py__mro__(class_context):
+        for cls in class_context.py__mro__():
             if isinstance(cls, compiled.CompiledObject):
                 yield CompiledInstanceClassFilter(self.evaluator, self, cls)
             else:
