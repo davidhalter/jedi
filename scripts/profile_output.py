@@ -18,9 +18,24 @@ Options:
 
 import time
 import profile
+import pstats
 
 from docopt import docopt
 import jedi
+
+
+# Monkeypatch the time formatting function of profiling to make it easier to
+# understand small time differences.
+def f8(x):
+    ret = "%7.3f " % x
+    if ret == '  0.000 ':
+        return "%6dµs" % (x * 10000000)
+    if ret.startswith('  0.00'):
+        return "%8.4f" % x
+    return ret
+
+
+pstats.f8 = f8
 
 
 def run(code, index, infer=False):
