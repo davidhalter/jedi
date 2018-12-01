@@ -60,53 +60,6 @@ def apply_py__get__(context, instance, class_context):
             yield descriptor_context
 
 
-@evaluator_method_cache(default=())
-def py__mro__(context):
-    try:
-        # TODO is this really needed?
-        method = context.py__mro__
-    except AttributeError:
-        pass
-    else:
-        if not isinstance(context, ClassMixin):
-            # Currently only used for compiled objects.
-            return method()
-
-    def add(cls):
-        if cls not in mro:
-            mro.append(cls)
-
-    mro = [context]
-    # TODO Do a proper mro resolution. Currently we are just listing
-    # classes. However, it's a complicated algorithm.
-    for lazy_cls in context.py__bases__():
-        # TODO there's multiple different mro paths possible if this yields
-        # multiple possibilities. Could be changed to be more correct.
-        for cls in lazy_cls.infer():
-            # TODO detect for TypeError: duplicate base class str,
-            # e.g.  `class X(str, str): pass`
-            try:
-                cls.py__bases__
-            except AttributeError:
-                # TODO add a TypeError like:
-                """
-                >>> class Y(lambda: test): pass
-                Traceback (most recent call last):
-                  File "<stdin>", line 1, in <module>
-                TypeError: function() argument 1 must be code, not str
-                >>> class Y(1): pass
-                Traceback (most recent call last):
-                  File "<stdin>", line 1, in <module>
-                TypeError: int() takes at most 2 arguments (3 given)
-                """
-                debug.warning('Super class of %s is not a class: %s', context, cls)
-            else:
-                add(cls)
-                for cls_new in cls.py__mro__():
-                    add(cls_new)
-    return tuple(mro)
-
-
 class ClassName(TreeNameDefinition):
     def __init__(self, parent_context, tree_name, name_context, apply_decorators):
         super(ClassName, self).__init__(parent_context, tree_name)
@@ -188,8 +141,51 @@ class ClassMixin(object):
                 return list(context_.get_param_names())[1:]
         return []
 
-    def py__mro__(self):
-        return py__mro__(self)
+    @evaluator_method_cache(default=())
+    def py__mro__(context):
+        try:
+            # TODO is this really needed?
+            method = context.py__mro__
+        except AttributeError:
+            pass
+        else:
+            if not isinstance(context, ClassMixin):
+                # Currently only used for compiled objects.
+                return method()
+
+        def add(cls):
+            if cls not in mro:
+                mro.append(cls)
+
+        mro = [context]
+        # TODO Do a proper mro resolution. Currently we are just listing
+        # classes. However, it's a complicated algorithm.
+        for lazy_cls in context.py__bases__():
+            # TODO there's multiple different mro paths possible if this yields
+            # multiple possibilities. Could be changed to be more correct.
+            for cls in lazy_cls.infer():
+                # TODO detect for TypeError: duplicate base class str,
+                # e.g.  `class X(str, str): pass`
+                try:
+                    cls.py__bases__
+                except AttributeError:
+                    # TODO add a TypeError like:
+                    """
+                    >>> class Y(lambda: test): pass
+                    Traceback (most recent call last):
+                      File "<stdin>", line 1, in <module>
+                    TypeError: function() argument 1 must be code, not str
+                    >>> class Y(1): pass
+                    Traceback (most recent call last):
+                      File "<stdin>", line 1, in <module>
+                    TypeError: int() takes at most 2 arguments (3 given)
+                    """
+                    debug.warning('Super class of %s is not a class: %s', context, cls)
+                else:
+                    add(cls)
+                    for cls_new in cls.py__mro__():
+                        add(cls_new)
+        return tuple(mro)
 
     def _create_class_filter(self, cls, origin_scope, is_instance):
         return ClassFilter(
