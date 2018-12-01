@@ -4,7 +4,7 @@ Profile a piece of Python code with ``profile``. Tries a completion on a
 certain piece of code.
 
 Usage:
-  profile.py [<code>] [-n <number>] [-d] [-o] [-s <sort>] [-i]
+  profile.py [<code>] [-n <number>] [-d] [-o] [-s <sort>] [-i] [--precision]
   profile.py -h | --help
 
 Options:
@@ -14,6 +14,7 @@ Options:
   -o --omit     Omit profiler, just do a normal run.
   -i --infer    Infer types instead of completions.
   -s <sort>     Sort the profile results, e.g. cum, name [default: time].
+  --precision   Makes profile time formatting more precise (nanoseconds)
 """
 
 import time
@@ -29,13 +30,10 @@ import jedi
 def f8(x):
     ret = "%7.3f " % x
     if ret == '  0.000 ':
-        return "%6dµs" % (x * 10000000)
+        return "%6dµs" % (x * 1e6)
     if ret.startswith('  0.00'):
         return "%8.4f" % x
     return ret
-
-
-pstats.f8 = f8
 
 
 def run(code, index, infer=False):
@@ -56,6 +54,9 @@ def main(args):
 
     for i in range(n):
         run(code, i, infer=infer)
+
+    if args['--precision']:
+        pstats.f8 = f8
 
     jedi.set_debug_function(notices=args['--debug'])
     if args['--omit']:
