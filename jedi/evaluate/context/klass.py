@@ -40,7 +40,8 @@ py__doc__(include_call_signature:      Returns the docstring for a context.
 from jedi import debug
 from jedi._compatibility import use_metaclass
 from jedi.parser_utils import get_parent_scope
-from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
+from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass, \
+    evaluator_method_generator_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
@@ -141,26 +142,13 @@ class ClassMixin(object):
                 return list(context_.get_param_names())[1:]
         return []
 
-    @evaluator_method_cache(default=())
-    def py__mro__(context):
-        try:
-            # TODO is this really needed?
-            method = context.py__mro__
-        except AttributeError:
-            pass
-        else:
-            if not isinstance(context, ClassMixin):
-                # Currently only used for compiled objects.
-                return method()
-
-        def add(cls):
-            if cls not in mro:
-                mro.append(cls)
-
-        mro = [context]
+    @evaluator_method_generator_cache()
+    def py__mro__(self):
+        mro = [self]
+        yield self
         # TODO Do a proper mro resolution. Currently we are just listing
         # classes. However, it's a complicated algorithm.
-        for lazy_cls in context.py__bases__():
+        for lazy_cls in self.py__bases__():
             # TODO there's multiple different mro paths possible if this yields
             # multiple possibilities. Could be changed to be more correct.
             for cls in lazy_cls.infer():
@@ -180,12 +168,14 @@ class ClassMixin(object):
                       File "<stdin>", line 1, in <module>
                     TypeError: int() takes at most 2 arguments (3 given)
                     """
-                    debug.warning('Super class of %s is not a class: %s', context, cls)
+                    debug.warning('Super class of %s is not a class: %s', self, cls)
                 else:
-                    add(cls)
-                    for cls_new in cls.py__mro__():
-                        add(cls_new)
-        return tuple(mro)
+                    if cls not in mro:
+                        mro.append(cls)
+                        yield cls
+                        for cls_new in cls.py__mro__():
+                            mro.append(cls_new)
+                            yield cls_new
 
     def _create_class_filter(self, cls, origin_scope, is_instance):
         return ClassFilter(
