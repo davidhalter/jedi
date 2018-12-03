@@ -197,24 +197,21 @@ class TypingContext(_BaseTypingContext):
         )
 
 
-class TypingClassMixin(ClassMixin):
-    @property
-    def name(self):
-        # In this case the tree_node is already a name and not a real class.
-        # (see typeshed definitions).
-        return ContextName(self, self.tree_node)
-
+class _TypingClassMixin(object):
     def py__bases__(self):
         return [LazyKnownContexts(
             self.evaluator.builtins_module.py__getattribute__('object')
         )]
 
+    def py__mro__(self):
+        return [self]
 
-class TypingClassContextWithIndex(TypingClassMixin, TypingContextWithIndex):
+
+class TypingClassContextWithIndex(_TypingClassMixin, TypingContextWithIndex, ClassMixin):
     pass
 
 
-class TypingClassContext(TypingClassMixin, TypingContext):
+class TypingClassContext(_TypingClassMixin, TypingContext, ClassMixin):
     index_class = TypingClassContextWithIndex
 
 
