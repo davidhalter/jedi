@@ -203,9 +203,6 @@ class _TypingClassMixin(object):
             self.evaluator.builtins_module.py__getattribute__('object')
         )]
 
-    def py__mro__(self):
-        return [self]
-
 
 class TypingClassContextWithIndex(_TypingClassMixin, TypingContextWithIndex, ClassMixin):
     pass
