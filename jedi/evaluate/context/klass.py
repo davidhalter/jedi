@@ -155,7 +155,7 @@ class ClassMixin(object):
                 # TODO detect for TypeError: duplicate base class str,
                 # e.g.  `class X(str, str): pass`
                 try:
-                    cls.py__bases__
+                    mro_method = cls.py__mro__
                 except AttributeError:
                     # TODO add a TypeError like:
                     """
@@ -170,10 +170,8 @@ class ClassMixin(object):
                     """
                     debug.warning('Super class of %s is not a class: %s', self, cls)
                 else:
-                    if cls not in mro:
-                        mro.append(cls)
-                        yield cls
-                        for cls_new in cls.py__mro__():
+                    for cls_new in mro_method():
+                        if cls_new not in mro:
                             mro.append(cls_new)
                             yield cls_new
 
@@ -245,6 +243,9 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
             args = arguments.TreeArguments(self.evaluator, self.parent_context, arglist)
             return [value for key, value in args.unpack() if key is None]
         else:
+            if self.py__name__() == 'object' \
+                    and self.parent_context == self.evaluator.builtins_module:
+                return []
             return [LazyKnownContexts(
                 self.evaluator.builtins_module.py__getattribute__('object')
             )]
