@@ -16,7 +16,7 @@ from jedi.evaluate.context.function import FunctionMixin
 from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
-from jedi.evaluate.compiled.context import CompiledObject
+from jedi.evaluate.compiled.context import CompiledObject, CompiledName
 from jedi.evaluate.utils import to_list, safe_property
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -241,6 +241,38 @@ class StubName(NameWrapper):
                 yield actual_context
 
 
+class CompiledStubName(NameWrapper):
+    def __init__(self, parent_context, compiled_name, stub_name):
+        super(CompiledStubName, self).__init__(stub_name)
+        self.parent_context = parent_context
+        self._compiled_name = compiled_name
+
+    @memoize_method
+    @iterator_to_context_set
+    def infer(self):
+        # Here we probably don't have to care about contexts that are not
+        # available. It would be a
+        compiled_contexts = self._compiled_name.infer()
+        stub_contexts = self._wrapped_name.infer()
+
+        if not compiled_contexts:
+            for c in stub_contexts:
+                yield c
+
+        for actual_context in compiled_contexts:
+            for stub_context in stub_contexts:
+                if stub_context.is_class():
+                    yield CompiledStubClass.create_cached(
+                        stub_context.evaluator, stub_context, actual_context)
+                elif stub_context.is_function():
+                    yield CompiledStubFunction.create_cached(
+                        stub_context.evaluator, stub_context, actual_context)
+                else:
+                    yield stub_context
+            if not stub_contexts:
+                yield actual_context
+
+
 class VersionInfo(ContextWrapper):
     pass
 
@@ -340,7 +372,10 @@ class StubFilter(AbstractFilter):
                 if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
                     stub_name = TypingModuleName(stub_name)
 
-                result.append(StubName(self._parent_context, name, stub_name))
+                if isinstance(name, CompiledName):
+                    result.append(CompiledStubName(self._parent_context, name, stub_name))
+                else:
+                    result.append(StubName(self._parent_context, name, stub_name))
         return result
 
     def __repr__(self):
