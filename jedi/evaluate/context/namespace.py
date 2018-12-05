@@ -31,7 +31,7 @@ class ImplicitNamespaceContext(Context):
         super(ImplicitNamespaceContext, self).__init__(evaluator, parent_context=None)
         self.evaluator = evaluator
         self._fullname = fullname
-        self.paths = paths
+        self._paths = paths
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield DictFilter(self._sub_modules_dict())
@@ -51,7 +51,7 @@ class ImplicitNamespaceContext(Context):
         return self._fullname
 
     def py__path__(self):
-        return [self.paths]
+        return self._paths
 
     def py__name__(self):
         return self._fullname
@@ -60,7 +60,7 @@ class ImplicitNamespaceContext(Context):
     def _sub_modules_dict(self):
         names = {}
 
-        file_names = chain.from_iterable(os.listdir(path) for path in self.paths)
+        file_names = chain.from_iterable(os.listdir(path) for path in self._paths)
         mods = [
             file_name.rpartition('.')[0] if '.' in file_name else file_name
             for file_name in file_names

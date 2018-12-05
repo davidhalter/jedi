@@ -95,12 +95,12 @@ def _check_for_setattr(instance):
     """
     Check if there's any setattr method inside an instance. If so, return True.
     """
-    from jedi.evaluate.context import ModuleContext
     module = instance.get_root_context()
-    if not isinstance(module, ModuleContext):
+    node = module.tree_node
+    if node is None:
+        # If it's a compiled module or doesn't have a tree_node
         return False
 
-    node = module.tree_node
     try:
         stmt_names = node.get_used_names()['setattr']
     except KeyError:

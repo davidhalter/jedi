@@ -1,6 +1,5 @@
 from jedi.evaluate import imports
 from jedi.evaluate.filters import TreeNameDefinition
-from jedi.evaluate.context import ModuleContext
 
 
 def _resolve_names(definition_names, avoid_names=()):
@@ -39,7 +38,7 @@ def usages(module_context, tree_name):
     search_name = tree_name.value
     found_names = _find_names(module_context, tree_name)
     modules = set(d.get_root_context() for d in found_names.values())
-    modules = set(m for m in modules if isinstance(m, ModuleContext))
+    modules = set(m for m in modules if m.is_module())
 
     non_matching_usage_maps = {}
     for m in imports.get_modules_containing_name(module_context.evaluator, modules, search_name):

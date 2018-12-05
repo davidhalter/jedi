@@ -328,8 +328,6 @@ class Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
-        from jedi.evaluate.context import ModuleContext
-        from jedi.evaluate.context.namespace import ImplicitNamespaceContext
         names = []
         if self.import_path:
             # flask
@@ -351,15 +349,13 @@ class Importer(object):
                 if context.api_type != 'module':  # not a module
                     continue
                 # namespace packages
-                if isinstance(context, ModuleContext) \
-                        and context.py__file__().endswith('__init__.py'):
-                    paths = context.py__path__()
-                    names += self._get_module_names(paths, in_module=context)
-
-                # implicit namespace packages
-                elif isinstance(context, ImplicitNamespaceContext):
-                    paths = context.paths
-                    names += self._get_module_names(paths, in_module=context)
+                try:
+                    path_method = context.py__path__
+                except AttributeError:
+                    pass
+                else:
+                    # For implicit namespace packages and module names.
+                    names += self._get_module_names(path_method(), in_module=context)
 
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to

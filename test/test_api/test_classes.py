@@ -65,27 +65,31 @@ def test_basedefinition_type(Script, environment):
                                    'generator', 'statement', 'import', 'param')
 
 
-def test_basedefinition_type_import(Script):
-    def get_types(source, **kwargs):
-        return {t.type for t in Script(source, **kwargs).completions()}
+@pytest.mark.parametrize(
+    ('src', 'expected_result', 'column'), [
+        # import one level
+        ('import t', 'module', None),
+        ('import ', 'module', None),
+        ('import datetime; datetime', 'module', None),
 
-    # import one level
-    assert get_types('import t') == {'module'}
-    assert get_types('import ') == {'module'}
-    assert get_types('import datetime; datetime') == {'module'}
+        # from
+        ('from datetime import timedelta', 'class', None),
+        ('from datetime import timedelta; timedelta', 'class', None),
+        ('from json import tool', 'module', None),
+        ('from json import tool; tool', 'module', None),
 
-    # from
-    assert get_types('from datetime import timedelta') == {'class'}
-    assert get_types('from datetime import timedelta; timedelta') == {'class'}
-    assert get_types('from json import tool') == {'module'}
-    assert get_types('from json import tool; tool') == {'module'}
+        # import two levels
+        ('import json.tool; json', 'module', None),
+        ('import json.tool; json.tool', 'module', None),
+        ('import json.tool; json.tool.main', 'function', None),
+        ('import json.tool', 'module', None),
+        ('import json.tool', 'module', 9),
+    ]
 
-    # import two levels
-    assert get_types('import json.tool; json') == {'module'}
-    assert get_types('import json.tool; json.tool') == {'module'}
-    assert get_types('import json.tool; json.tool.main') == {'function'}
-    assert get_types('import json.tool') == {'module'}
-    assert get_types('import json.tool', column=9) == {'module'}
+)
+def test_basedefinition_type_import(Script, src, expected_result, column):
+    types = {t.type for t in Script(src, column=column).completions()}
+    assert types == {expected_result}
 
 
 def test_function_call_signature_in_doc(Script):
