@@ -14,6 +14,7 @@ from jedi.evaluate.context import ModuleContext, FunctionContext, \
     MethodContext, ClassContext
 from jedi.evaluate.context.function import FunctionMixin
 from jedi.evaluate.context.klass import ClassMixin
+from jedi.evaluate.context.module import ModuleMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName
@@ -87,14 +88,7 @@ def _merge_modules(context_set, stub_context):
 
     for context in context_set:
         if isinstance(context, ModuleContext):
-            yield StubModuleContext(
-                context.evaluator,
-                stub_context,
-                context.tree_node,
-                path=context._path,
-                string_names=context._string_names,
-                code_lines=context.code_lines
-            )
+            yield StubModuleContext.create_cached(context.evaluator, context, stub_context)
         else:
             # TODO do we want this? This includes compiled?!
             yield stub_context
@@ -386,15 +380,6 @@ class StubFilter(AbstractFilter):
         )
 
 
-class _MixedStubContextMixin(object):
-    """
-    Mixes the actual contexts with the stub module contexts.
-    """
-    def __init__(self, evaluator, stub_context, *args, **kwargs):
-        super(_MixedStubContextMixin, self).__init__(evaluator, *args, **kwargs)
-        self.stub_context = stub_context
-
-
 class _StubContextFilterMixin(object):
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
@@ -414,11 +399,10 @@ class _StubContextFilterMixin(object):
             yield f
 
 
-class StubModuleContext(_MixedStubContextMixin, _StubContextFilterMixin, ModuleContext):
-    @property
-    def _wrapped_context(self):
-        # TODO this is stupid.
-        return super(_StubContextFilterMixin, self)
+class StubModuleContext(_StubContextFilterMixin, ModuleMixin, ContextWrapper):
+    def __init__(self, context, stub_context):
+        super(StubModuleContext, self).__init__(context)
+        self.stub_context = stub_context
 
 
 class StubClassContext(_StubContextFilterMixin, ClassMixin, ContextWrapper):

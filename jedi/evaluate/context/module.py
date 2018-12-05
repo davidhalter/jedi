@@ -38,27 +38,7 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
-class ModuleContext(TreeContext):
-    api_type = u'module'
-    parent_context = None
-
-    def __init__(self, evaluator, module_node, path, string_names, code_lines):
-        super(ModuleContext, self).__init__(
-            evaluator,
-            parent_context=None,
-            tree_node=module_node
-        )
-        self._path = path
-        self._string_names = string_names
-        self.code_lines = code_lines
-
-    def is_module(self):
-        return True
-
-    def iter_star_filters(self, search_global=False):
-        for star_module in self.star_imports():
-            yield next(star_module.get_filters(search_global))
-
+class ModuleMixin(object):
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
@@ -73,6 +53,67 @@ class ModuleContext(TreeContext):
         yield DictFilter(self._module_attributes_dict())
         for star_filter in self.iter_star_filters():
             yield star_filter
+
+    def py__class__(self):
+        return compiled.get_special_object(self.evaluator, u'MODULE_CLASS')
+
+    def is_module(self):
+        return True
+
+    @property
+    @evaluator_method_cache()
+    def name(self):
+        return ModuleName(self, self._string_name)
+
+    @property
+    def _string_name(self):
+        """ This is used for the goto functions. """
+        # TODO It's ugly that we even use this, the name is usually well known
+        # ahead so just pass it when create a ModuleContext.
+        if self._path is None:
+            return ''  # no path -> empty name
+        else:
+            sep = (re.escape(os.path.sep),) * 2
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.pyi?|\.so)?$' % sep, self._path)
+            # Remove PEP 3149 names
+            return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+
+    @evaluator_method_cache()
+    def _sub_modules_dict(self):
+        """
+        Lists modules in the directory of this module (if this module is a
+        package).
+        """
+        names = {}
+        try:
+            method = self.py__path__
+        except AttributeError:
+            pass
+        else:
+            for path in method():
+                mods = iter_modules([path])
+                for module_loader, name, is_pkg in mods:
+                    # It's obviously a relative import to the current module.
+                    names[name] = SubModuleName(self, name)
+
+        # TODO add something like this in the future, its cleaner than the
+        #   import hacks.
+        # ``os.path`` is a hardcoded exception, because it's a
+        # ``sys.modules`` modification.
+        # if str(self.name) == 'os':
+        #     names.append(Name('path', parent_context=self))
+
+        return names
+
+    @evaluator_method_cache()
+    def _module_attributes_dict(self):
+        names = ['__file__', '__package__', '__doc__', '__name__']
+        # All the additional module attributes are strings.
+        return dict((n, _ModuleAttributeName(self, n)) for n in names)
+
+    def iter_star_filters(self, search_global=False):
+        for star_module in self.star_imports():
+            yield next(star_module.get_filters(search_global))
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
@@ -90,29 +131,21 @@ class ModuleContext(TreeContext):
                 modules += new
         return modules
 
-    @evaluator_method_cache()
-    def _module_attributes_dict(self):
-        names = ['__file__', '__package__', '__doc__', '__name__']
-        # All the additional module attributes are strings.
-        return dict((n, _ModuleAttributeName(self, n)) for n in names)
 
-    @property
-    def _string_name(self):
-        """ This is used for the goto functions. """
-        # TODO It's ugly that we even use this, the name is usually well known
-        # ahead so just pass it when create a ModuleContext.
-        if self._path is None:
-            return ''  # no path -> empty name
-        else:
-            sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.pyi?|\.so)?$' % sep, self._path)
-            # Remove PEP 3149 names
-            return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+class ModuleContext(ModuleMixin, TreeContext):
+    api_type = u'module'
+    parent_context = None
 
-    @property
-    @evaluator_method_cache()
-    def name(self):
-        return ModuleName(self, self._string_name)
+    def __init__(self, evaluator, module_node, path, string_names, code_lines):
+        super(ModuleContext, self).__init__(
+            evaluator,
+            parent_context=None,
+            tree_node=module_node
+        )
+        self._path = path
+        self._string_names = string_names
+        self.code_lines = code_lines
+        #print(self._path)
 
     def _get_init_directory(self):
         """
@@ -188,36 +221,6 @@ class ModuleContext(TreeContext):
             raise AttributeError('Only packages have __path__ attributes.')
         else:
             return self._py__path__
-
-    @evaluator_method_cache()
-    def _sub_modules_dict(self):
-        """
-        Lists modules in the directory of this module (if this module is a
-        package).
-        """
-        names = {}
-        try:
-            method = self.py__path__
-        except AttributeError:
-            pass
-        else:
-            for path in method():
-                mods = iter_modules([path])
-                for module_loader, name, is_pkg in mods:
-                    # It's obviously a relative import to the current module.
-                    names[name] = SubModuleName(self, name)
-
-        # TODO add something like this in the future, its cleaner than the
-        #   import hacks.
-        # ``os.path`` is a hardcoded exception, because it's a
-        # ``sys.modules`` modification.
-        # if str(self.name) == 'os':
-        #     names.append(Name('path', parent_context=self))
-
-        return names
-
-    def py__class__(self):
-        return compiled.get_special_object(self.evaluator, u'MODULE_CLASS')
 
     def __repr__(self):
         return "<%s: %s@%s-%s is_stub=%s>" % (
