@@ -327,7 +327,8 @@ class FunctionExecutionContext(TreeContext):
                 # The contravariant doesn't seem to be defined.
                 generics = (yield_contexts.py__class__(), NO_CONTEXTS)
                 return ContextSet(
-                    AnnotatedSubClass(c.stub_context, generics) for c in async_generator_classes
+                    # In Python 3.6 AsyncGenerator is still a class.
+                    AnnotatedSubClass(getattr(c, 'stub_context', c), generics) for c in async_generator_classes
                 ).execute_annotation()
             else:
                 if evaluator.environment.version_info < (3, 5):
@@ -337,7 +338,7 @@ class FunctionExecutionContext(TreeContext):
                 # Only the first generic is relevant.
                 generics = (return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
                 return ContextSet(
-                    AnnotatedSubClass(c.stub_context, generics) for c in async_classes
+                    AnnotatedSubClass(getattr(c, 'stub_context', c), generics) for c in async_classes
                 ).execute_annotation()
         else:
             if is_generator:

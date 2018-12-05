@@ -18,13 +18,13 @@ b; continue
 b; continu
 
 #? []
-c + brea
+c + pass
 
 #? []
-a + break
+a + pass
 
-#? ['break']
-b; break
+#? ['pass']
+b; pass
 
 # -----------------
 # Keywords should not appear everywhere.
