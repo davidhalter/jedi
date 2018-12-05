@@ -16,6 +16,7 @@ Completion output
 ~~~~~~~~~~~~~~~~~
 
 .. autodata:: case_insensitive_completion
+.. autodata:: fuzzy_completion
 .. autodata:: add_bracket_after_function
 .. autodata:: no_completion_duplicates
 
@@ -60,6 +61,11 @@ import platform
 case_insensitive_completion = True
 """
 The completion is by default case insensitive.
+"""
+
+fuzzy_completion = False
+"""
+The completion is non-fuzzy by default.
 """
 
 add_bracket_after_function = False

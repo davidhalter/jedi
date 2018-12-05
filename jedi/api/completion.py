@@ -1,3 +1,5 @@
+import re
+
 from parso.python.token import PythonTokenTypes
 from parso.python import tree
 from parso.tree import search_ancestor, Leaf
@@ -33,7 +35,13 @@ def filter_names(evaluator, completion_names, stack, like_name):
         if settings.case_insensitive_completion:
             string = string.lower()
 
-        if string.startswith(like_name):
+        if settings.fuzzy_completion:
+            pattern = '.*'.join(like_name) + '.*'
+            match = re.match(pattern, string)
+        else:
+            match = string.startswith(like_name)
+
+        if match:
             new = classes.Completion(
                 evaluator,
                 name,
