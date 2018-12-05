@@ -92,7 +92,7 @@ class TypingModuleName(NameWrapper):
             return
 
         if name in _PROXY_CLASS_TYPES:
-            yield TypingClassContext(evaluator, self.parent_context, self.tree_name)
+            yield TypingClassContext.create_cached(evaluator, self.parent_context, self.tree_name)
         elif name in _PROXY_TYPES:
             yield TypingContext.create_cached(evaluator, self.parent_context, self.tree_name)
         elif name == 'runtime':
