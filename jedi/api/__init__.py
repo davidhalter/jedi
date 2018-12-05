@@ -143,6 +143,9 @@ class Script(object):
         cache.clear_time_caches()
         debug.reset_time()
 
+    # Cache the module, this is mostly useful for testing, since this shouldn't
+    # be called multiple times.
+    @cache.memoize_method
     def _get_module(self):
         names = ('__main__',)
         if self.path is not None:
