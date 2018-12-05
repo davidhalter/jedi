@@ -75,7 +75,7 @@ def _get_typeshed_directories(version_info):
 
 @evaluator_function_cache()
 def _load_stub(evaluator, path):
-    return evaluator.parse(path=path, cache=True)
+    return evaluator.parse(path=path, cache=True, use_latest_grammar=True)
 
 
 def _merge_modules(context_set, stub_context):
@@ -162,7 +162,9 @@ class TypeshedPlugin(BasePlugin):
                             context_set, evaluator, stub_module_node,
                             path=path,
                             string_names=import_names,
-                            code_lines=get_cached_code_lines(evaluator.grammar, path),
+                            # The code was loaded with latest_grammar, so use
+                            # that.
+                            code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
                         )
                         modules = _merge_modules(context_set, stub_module_context)
                         return ContextSet(modules)
