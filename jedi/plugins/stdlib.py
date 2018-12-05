@@ -29,10 +29,54 @@ from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
 from jedi.evaluate.syntax_tree import is_string
 
-# Now this is all part of fake tuples in Jedi. However super doesn't work on
-# __init__ and __new__ doesn't work at all. So adding this to nametuples is
-# just the easiest way.
-_NAMEDTUPLE_INIT = """
+
+# Copied from Python 3.6's stdlib.
+_NAMEDTUPLE_CLASS_TEMPLATE = """\
+from builtins import property as _property, tuple as _tuple
+from operator import itemgetter as _itemgetter
+from collections import OrderedDict
+
+class {typename}(tuple):
+    '{typename}({arg_list})'
+
+    __slots__ = ()
+
+    _fields = {field_names!r}
+
+    def __new__(_cls, {arg_list}):
+        'Create new instance of {typename}({arg_list})'
+        return _tuple.__new__(_cls, ({arg_list}))
+
+    @classmethod
+    def _make(cls, iterable, new=tuple.__new__, len=len):
+        'Make a new {typename} object from a sequence or iterable'
+        result = new(cls, iterable)
+        if len(result) != {num_fields:d}:
+            raise TypeError('Expected {num_fields:d} arguments, got %d' % len(result))
+        return result
+
+    def _replace(_self, **kwds):
+        'Return a new {typename} object replacing specified fields with new values'
+        result = _self._make(map(kwds.pop, {field_names!r}, _self))
+        if kwds:
+            raise ValueError('Got unexpected field names: %r' % list(kwds))
+        return result
+
+    def __repr__(self):
+        'Return a nicely formatted representation string'
+        return self.__class__.__name__ + '({repr_fmt})' % self
+
+    def _asdict(self):
+        'Return a new OrderedDict which maps field names to their values.'
+        return OrderedDict(zip(self._fields, self))
+
+    def __getnewargs__(self):
+        'Return self as a plain tuple.  Used by copy and pickle.'
+        return tuple(self)
+
+    # These methods were added by Jedi.
+    # __new__ doesn't really work with Jedi. So adding this to nametuples seems
+    # like the easiest way.
     def __init__(_cls, {arg_list}):
         'A helper function for namedtuple.'
         self.__iterable = ({arg_list})
@@ -44,7 +88,12 @@ _NAMEDTUPLE_INIT = """
     def __getitem__(self, y):
         return self.__iterable[y]
 
+{field_defs}
 """
+
+_NAMEDTUPLE_FIELD_TEMPLATE = '''\
+    {name} = _property(_itemgetter({index:d}), doc='Alias for field number {index:d}')
+'''
 
 
 class StdlibPlugin(BasePlugin):
@@ -349,12 +398,6 @@ def collections_namedtuple(obj, arguments):
 
     """
     evaluator = obj.evaluator
-    collections_context = obj.parent_context
-    _class_template_set = collections_context.py__getattribute__(u'_class_template')
-    if not _class_template_set:
-        # Namedtuples are not supported on Python 2.6, early 2.7, because the
-        # _class_template variable is not defined, there.
-        return NO_CONTEXTS
 
     # Process arguments
     # TODO here we only use one of the types, we should use all.
@@ -372,20 +415,14 @@ def collections_namedtuple(obj, arguments):
     else:
         return NO_CONTEXTS
 
-    def get_var(name):
-        x, = collections_context.py__getattribute__(name)
-        return x.get_safe_value()
-
-    base = next(iter(_class_template_set)).get_safe_value()
-    base += _NAMEDTUPLE_INIT
     # Build source code
-    code = base.format(
+    code = _NAMEDTUPLE_CLASS_TEMPLATE.format(
         typename=name,
         field_names=tuple(fields),
         num_fields=len(fields),
         arg_list=repr(tuple(fields)).replace("u'", "").replace("'", "")[1:-1],
-        repr_fmt=', '.join(get_var(u'_repr_template').format(name=name) for name in fields),
-        field_defs='\n'.join(get_var(u'_field_template').format(index=index, name=name)
+        repr_fmt='',
+        field_defs='\n'.join(_NAMEDTUPLE_FIELD_TEMPLATE.format(index=index, name=name)
                              for index, name in enumerate(fields))
     )
 
