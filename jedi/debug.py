@@ -51,6 +51,7 @@ except ImportError:
         YELLOW = ''
         MAGENTA = ''
         RESET = ''
+        BLUE = ''
 
 NOTICE = object()
 WARNING = object()
