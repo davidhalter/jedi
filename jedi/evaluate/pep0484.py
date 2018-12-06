@@ -396,7 +396,7 @@ def _find_type_from_comment_hint(context, node, varlist, name):
 
 def find_unknown_type_vars(context, node):
     def check_node(node):
-        if node.type == 'atom_expr':
+        if node.type in ('atom_expr', 'power'):
             trailer = node.children[-1]
             if trailer.type == 'trailer' and trailer.children[0] == '[':
                 for subscript_node in _unpack_subscriptlist(trailer.children[1]):
