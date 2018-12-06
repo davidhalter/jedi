@@ -267,9 +267,6 @@ for x in {1: 3.0, '': 1j}:
 dict().values().__iter__
 
 d = dict(a=3, b='')
-# Indexing is not supported
-#?
-d.values()[0]
 x, = d.values()
 #? int() str()
 x
