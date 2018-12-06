@@ -155,23 +155,25 @@ class AbstractInstanceContext(Context):
         if not iter_slot_names:
             return super(AbstractInstanceContext, self).py__iter__(contextualized_node)
 
-        for generator in self.execute_function_slots(iter_slot_names):
-            if generator.is_instance():
-                # `__next__` logic.
-                if self.evaluator.environment.version_info.major == 2:
-                    name = u'next'
+        def iterate():
+            for generator in self.execute_function_slots(iter_slot_names):
+                if generator.is_instance():
+                    # `__next__` logic.
+                    if self.evaluator.environment.version_info.major == 2:
+                        name = u'next'
+                    else:
+                        name = u'__next__'
+                    next_slot_names = generator.get_function_slot_names(name)
+                    if next_slot_names:
+                        yield LazyKnownContexts(
+                            generator.execute_function_slots(next_slot_names)
+                        )
+                    else:
+                        debug.warning('Instance has no __next__ function in %s.', generator)
                 else:
-                    name = u'__next__'
-                iter_slot_names = generator.get_function_slot_names(name)
-                if iter_slot_names:
-                    yield LazyKnownContexts(
-                        generator.execute_function_slots(iter_slot_names)
-                    )
-                else:
-                    debug.warning('Instance has no __next__ function in %s.', generator)
-            else:
-                for lazy_context in generator.py__iter__():
-                    yield lazy_context
+                    for lazy_context in generator.py__iter__():
+                        yield lazy_context
+        return iterate()
 
     @abstractproperty
     def name(self):
