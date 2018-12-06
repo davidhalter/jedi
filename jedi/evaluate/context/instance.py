@@ -419,7 +419,7 @@ class BoundMethod(FunctionMixin, ContextWrapper):
 class CompiledBoundMethod(compiled.CompiledObject):
     def __init__(self, func):
         super(CompiledBoundMethod, self).__init__(
-            func.evaluator, func.access_handle, func.parent_context, func.tree_node)
+            func.evaluator, func.access_handle, func.parent_context)
 
     def get_param_names(self):
         return list(super(CompiledBoundMethod, self).get_param_names())[1:]
