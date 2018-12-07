@@ -161,7 +161,7 @@ def a(): return ''
 #? str()
 (a)()
 #? str()
-(a)().replace()
+(a)().title()
 #? int()
 (tuple).index()
 #? int()

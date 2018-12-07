@@ -88,13 +88,17 @@ class TestCallSignatures(TestCase):
             "func(alpha='101',"
         self._run_simple(s, 'func', 0, column=13, line=2)
 
-    def test_flows(self):
-        # jedi-vim #9
-        self._run_simple("with open(", 'open', 0)
-
+    def test_for(self):
         # jedi-vim #11
         self._run_simple("for sorted(", 'sorted', 0)
         self._run_simple("for s in sorted(", 'sorted', 0)
+
+
+def test_with(Script):
+    # jedi-vim #9
+    sigs = Script("with open(").call_signatures()
+    assert sigs
+    assert all(sig.name == 'open' for sig in sigs)
 
 
 def test_call_signatures_empty_parentheses_pre_space(Script):
@@ -212,7 +216,7 @@ def test_call_signature_on_module(Script):
     assert Script(s).call_signatures() == []
 
 
-def test_complex(Script):
+def test_complex(Script, environment):
     s = """
             def abc(a,b):
                 pass
@@ -235,10 +239,14 @@ def test_complex(Script):
     assert sig1.index == sig2.index == 0
     func1, = sig1._name.infer()
     func2, = sig2._name.infer()
-    assert get_call_signature(func1.tree_node) \
-        == 'compile(pattern: AnyStr, flags: _FlagsType = ...) -> Pattern[AnyStr]'
-    assert get_call_signature(func2.tree_node) \
-        == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = ...) ->\nPattern[AnyStr]'
+
+    if environment.version_info.major == 3:
+        # Do these checks just for Python 3, I'm too lazy to deal with this
+        # legacy stuff. ~ dave.
+        assert get_call_signature(func1.tree_node) \
+            == 'compile(pattern: AnyStr, flags: _FlagsType = ...) -> Pattern[AnyStr]'
+        assert get_call_signature(func2.tree_node) \
+            == 'compile(pattern: Pattern[AnyStr], flags: _FlagsType = ...) ->\nPattern[AnyStr]'
 
     # jedi-vim #70
     s = """def foo("""
@@ -255,19 +263,24 @@ def _params(Script, source, line=None, column=None):
     return signatures[0].params
 
 
-def test_param_name(Script):
-    if not is_py3:
-        p = _params(Script, '''int(''')
-        # int is defined as: `int(x[, base])`
-        assert p[0].name == 'x'
-        # `int` docstring has been redefined:
-        # http://bugs.python.org/issue14783
-        # TODO have multiple call signatures for int (like in the docstr)
-        #assert p[1].name == 'base'
+def test_int_params(Script):
+    sig1, sig2 = Script('int(').call_signatures()
+    # int is defined as: `int(x[, base])`
+    assert len(sig1.params) == 2
+    assert sig1.params[0].name == 'x'
+    assert sig1.params[1].name == 'base'
+    assert len(sig2.params) == 1
+    assert sig2.params[0].name == 'x'
 
-    p = _params(Script, '''open(something,''')
-    assert p[0].name in ['file', 'name']
-    assert p[1].name == 'mode'
+
+def test_param_name(Script):
+    sigs = Script('open(something,').call_signatures()
+    for sig in sigs:
+        # All of the signatures (in Python the function is overloaded),
+        # contain the same param names.
+        assert sig.params[0].name in ['file', 'name']
+        assert sig.params[1].name == 'mode'
+        assert sig.params[2].name == 'buffering'
 
 
 def test_builtins(Script):

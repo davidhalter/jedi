@@ -111,7 +111,7 @@ def test_sys_getwindowsversion(Script, environment):
     # everywhere.
     def_, = Script('import sys; sys.getwindowsversion().major').goto_definitions()
     if environment.version_info.major == 2:
-        assert def_.name == 'Any'
+        assert def_.name == 'ellipsis'
     else:
         assert def_.name == 'int'
 

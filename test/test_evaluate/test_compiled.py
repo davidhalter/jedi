@@ -4,12 +4,16 @@ from jedi.evaluate import compiled
 from jedi.evaluate.helpers import execute_evaluated
 
 
-def test_simple(evaluator):
+def test_simple(evaluator, environment):
     obj = compiled.create_simple_object(evaluator, u'_str_')
     upper, = obj.py__getattribute__(u'upper')
     objs = list(execute_evaluated(upper))
     assert len(objs) == 1
-    assert objs[0].name.string_name == 'str'
+    if environment.version_info.major == 2:
+        expected = 'unicode'
+    else:
+        expected = 'str'
+    assert objs[0].name.string_name == expected
 
 
 def test_builtin_loading(evaluator):

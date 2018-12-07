@@ -129,13 +129,14 @@ class TypeshedPlugin(BasePlugin):
                 if parent_module_context is None:
                     parent_module_context, = evaluator.import_module(('os',))
                 return parent_module_context.py__getattribute__('path')
-            else:
-                context_set = callback(
-                    evaluator,
-                    import_names,
-                    parent_module_context,
-                    sys_path
-                )
+
+            context_set = callback(
+                evaluator,
+                import_names,
+                parent_module_context,
+                sys_path
+            )
+
             import_name = import_names[-1]
             map_ = None
             if len(import_names) == 1:

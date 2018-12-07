@@ -17,7 +17,7 @@ from jedi.evaluate.utils import safe_property
 from jedi.evaluate.cache import evaluator_as_method_param_cache
 
 
-class HelperContextMixin:
+class HelperContextMixin(object):
     @classmethod
     @evaluator_as_method_param_cache()
     def create_cached(cls, *args, **kwargs):
