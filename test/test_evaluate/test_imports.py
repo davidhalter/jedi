@@ -87,10 +87,10 @@ def test_import_not_in_sys_path(Script):
     ("from flask.ext.", "bar"),
     ("from flask.ext.", "baz"),
     ("from flask.ext.", "moo"),
-    pytest.mark.xfail(("import flask.ext.foo; flask.ext.foo.", "Foo")),
-    pytest.mark.xfail(("import flask.ext.bar; flask.ext.bar.", "Foo")),
-    pytest.mark.xfail(("import flask.ext.baz; flask.ext.baz.", "Foo")),
-    pytest.mark.xfail(("import flask.ext.moo; flask.ext.moo.", "Foo")),
+    pytest.param("import flask.ext.foo; flask.ext.foo.", "Foo", marks=pytest.mark.xfail),
+    pytest.param("import flask.ext.bar; flask.ext.bar.", "Foo", marks=pytest.mark.xfail),
+    pytest.param("import flask.ext.baz; flask.ext.baz.", "Foo", marks=pytest.mark.xfail),
+    pytest.param("import flask.ext.moo; flask.ext.moo.", "Foo", marks=pytest.mark.xfail),
 ])
 def test_flask_ext(Script, code, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
