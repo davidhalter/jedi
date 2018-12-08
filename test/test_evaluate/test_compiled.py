@@ -1,5 +1,7 @@
 from textwrap import dedent
 
+import pytest
+
 from jedi.evaluate import compiled
 from jedi.evaluate.helpers import execute_evaluated
 
@@ -85,5 +87,8 @@ def test_time_docstring(Script):
     assert comp.docstring() == expected
 
 
-def test_dict_values(Script):
+def test_dict_values(Script, environment):
+    if environment.version_info.major == 2:
+        # It looks like typeshed for Python 2 returns Any.
+        pytest.skip()
     assert Script('import sys\nsys.modules["alshdb;lasdhf"]').goto_definitions()
