@@ -40,7 +40,7 @@ def we_can_has_sequence(p, q, r, s, t, u):
     t[1]
     #? ["append"]
     u.a
-    #?
+    #? float() list()
     u[1.0]
     #? float()
     u[1]

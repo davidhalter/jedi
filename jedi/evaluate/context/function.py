@@ -72,10 +72,8 @@ class FunctionMixin(object):
             return LambdaName(self)
         return ContextName(self, self.tree_node.name)
 
-    def py__call__(self, arguments, need_param_match=False):
+    def py__call__(self, arguments):
         function_execution = self.get_function_execution(arguments)
-        if need_param_match and not function_execution.matches_signature():
-            return NO_CONTEXTS
         return function_execution.infer()
 
     def get_function_execution(self, arguments=None):
@@ -354,10 +352,23 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
 
     def py__call__(self, arguments):
         debug.dbg("Execute overloaded function %s", self._wrapped_context, color='BLUE')
-        return ContextSet.from_sets(
-            f.py__call__(arguments=arguments, need_param_match=True)
-            for f in self.overloaded_functions
-        )
+        function_executions = []
+        context_set = NO_CONTEXTS
+        matched = False
+        for f in self.overloaded_functions:
+            function_execution = f.get_function_execution(arguments)
+            function_executions.append(function_execution)
+            if function_execution.matches_signature():
+                matched = True
+                return function_execution.infer()
+
+        if matched:
+            return context_set
+
+        if self.evaluator.is_analysis:
+            # In this case we want precision.
+            return NO_CONTEXTS
+        return ContextSet.from_sets(fe.infer() for fe in function_executions)
 
     def get_matching_functions(self, arguments):
         for f in self.overloaded_functions:
