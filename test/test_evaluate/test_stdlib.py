@@ -7,14 +7,6 @@ from textwrap import dedent
 import pytest
 
 
-# The namedtuple is different for different Python2.7 versions. Some versions
-# are missing the attribute `_class_template`.
-@pytest.fixture(autouse=True)
-def skipping(environment):
-    if environment.version_info.major < 3:
-        pytest.skip()
-
-
 @pytest.mark.parametrize(['letter', 'expected'], [
     ('n', ['name']),
     ('s', ['smart']),

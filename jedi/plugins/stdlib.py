@@ -32,7 +32,8 @@ from jedi.evaluate.syntax_tree import is_string
 
 # Copied from Python 3.6's stdlib.
 _NAMEDTUPLE_CLASS_TEMPLATE = """\
-from builtins import property as _property, tuple as _tuple
+_property = property
+_tuple = tuple
 from operator import itemgetter as _itemgetter
 from collections import OrderedDict
 
