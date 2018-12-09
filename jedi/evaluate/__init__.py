@@ -178,6 +178,8 @@ class Evaluator(object):
         if isinstance(context, CompForContext):
             return eval_node(context, element)
 
+        #import traceback, sys; traceback.print_stack(file=sys.stdout)
+        #print(element, id(context), context)
         if_stmt = element
         while if_stmt is not None:
             if_stmt = if_stmt.parent

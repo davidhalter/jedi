@@ -33,13 +33,27 @@ from jedi import debug
 from jedi import parser_utils
 
 
-def evaluate_for_annotation(context, annotation, index=None):
+def eval_annotation(context, annotation):
     """
-    Evaluates a string-node, looking for an annotation
-    If index is not None, the annotation is expected to be a tuple
-    and we're interested in that index
+    Evaluates an annotation node. This means that it evaluates the part of
+    `int` here:
+
+        foo: int = 3
+
+    Also checks for forward references (strings)
     """
-    return context.eval_node(_fix_forward_reference(context, annotation))
+    context_set = context.eval_node(annotation)
+    if len(context_set) != 1:
+        debug.warning("Eval'ed typing index %s should lead to 1 object, "
+                      " not %s" % (annotation, context_set))
+        return context_set
+
+    evaled_context = list(context_set)[0]
+    if is_string(evaled_context):
+        result = _get_forward_reference_node(context, evaled_context.get_safe_value())
+        if result is not None:
+            return context.eval_node(result)
+    return context_set
 
 
 def _evaluate_annotation_string(context, string, index=None):
@@ -54,22 +68,6 @@ def _evaluate_annotation_string(context, string, index=None):
                             and len(list(context.py__iter__())) >= index
         ).py__simple_getitem__(index)
     return context_set
-
-
-def _fix_forward_reference(context, node):
-    evaled_nodes = context.eval_node(node)
-    if len(evaled_nodes) != 1:
-        debug.warning("Eval'ed typing index %s should lead to 1 object, "
-                      " not %s" % (node, evaled_nodes))
-        return node
-
-    evaled_context = list(evaled_nodes)[0]
-    if is_string(evaled_context):
-        result = _get_forward_reference_node(context, evaled_context.get_safe_value())
-        if result is not None:
-            return result
-
-    return node
 
 
 def _get_forward_reference_node(context, string):
@@ -169,7 +167,7 @@ def infer_param(execution_context, param):
         )
     # Annotations are like default params and resolve in the same way.
     context = execution_context.function_context.get_default_param_context()
-    return evaluate_for_annotation(context, annotation)
+    return eval_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):
@@ -213,9 +211,7 @@ def infer_return_types(function_execution_context):
 
     context = function_execution_context.function_context.get_default_param_context()
     unknown_type_vars = list(find_unknown_type_vars(context, annotation))
-    # TODO this function should return the annotation context.
-    annotation = _fix_forward_reference(context, annotation)
-    annotation_contexts = context.eval_node(annotation)
+    annotation_contexts = eval_annotation(context, annotation)
     if not unknown_type_vars:
         return annotation_contexts.execute_annotation()
 

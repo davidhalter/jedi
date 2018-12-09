@@ -130,7 +130,7 @@ def eval_node(context, element):
     elif typ == 'eval_input':
         return eval_node(context, element.children[0])
     elif typ == 'annassign':
-        return pep0484.evaluate_for_annotation(context, element.children[1]) \
+        return pep0484.eval_annotation(context, element.children[1]) \
             .execute_annotation()
     elif typ == 'yield_expr':
         if len(element.children) and element.children[1].type == 'yield_arg':
@@ -552,7 +552,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
                 correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
                 if correct_scope:
-                    context_set |= pep0484.evaluate_for_annotation(
+                    context_set |= pep0484.eval_annotation(
                         context, expr_stmt.children[1].children[1]
                     ).execute_annotation()
         if context_set:
