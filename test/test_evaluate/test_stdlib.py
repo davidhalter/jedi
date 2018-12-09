@@ -78,3 +78,26 @@ def test_namedtuple_goto_definitions(Script):
 
     assert d1.get_line_code() == "class Foo(tuple):\n"
     assert d1.module_path is None
+
+
+def test_re_sub(Script, environment):
+    """
+    This whole test was taken out of completion/stdlib.py, because of the
+    version differences.
+    """
+    def run(code):
+        defs = Script(code).goto_definitions()
+        return {d.name for d in defs}
+
+    names = run("import re; re.sub('a', 'a', 'f')")
+    if environment.version_info.major == 2:
+        assert names == {'str', 'unicode'}
+    else:
+        assert names == {'str', 'bytes'}
+
+    # This param is missing because of overloading.
+    names = run("import re; re.sub('a', 'a')")
+    if environment.version_info.major == 2:
+        assert names == {'str', 'unicode'}
+    else:
+        assert names == {'str', 'bytes'}

@@ -108,11 +108,6 @@ for a in re.finditer('a', 'a'):
     #? int()
     a.start()
 
-#?
-re.sub('a', 'a')
-#? str() bytes()
-re.sub('a', 'a', 'f')
-
 # -----------------
 # ref
 # -----------------
