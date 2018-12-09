@@ -172,7 +172,7 @@ class ModuleContext(ModuleMixin, TreeContext):
 
         return os.path.abspath(self._path)
 
-    def _is_package(self):
+    def is_package(self):
         return self._get_init_directory() is not None
 
     def py__package__(self):
@@ -218,7 +218,7 @@ class ModuleContext(ModuleMixin, TreeContext):
         is a list of paths (strings).
         Raises an AttributeError if the module is not a package.
         """
-        if self._is_package():
+        if self.is_package():
             return self._py__path__
         else:
             raise AttributeError('Only packages have __path__ attributes.')

@@ -142,6 +142,10 @@ class TypeshedPlugin(BasePlugin):
             if len(import_names) == 1:
                 map_ = self._cache_stub_file_map(evaluator.grammar.version_info)
             elif isinstance(parent_module_context, StubModuleContext):
+                if not parent_module_context.stub_context.is_package():
+                    # Only if it's a package (= a folder) something can be
+                    # imported.
+                    return context_set
                 path = parent_module_context.stub_context.py__path__()
                 map_ = _merge_create_stub_map(path)
 
