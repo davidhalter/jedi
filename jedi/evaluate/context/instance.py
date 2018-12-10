@@ -506,12 +506,8 @@ class SelfAttributeFilter(ClassFilter):
 
     def _filter(self, names):
         names = self._filter_self_names(names)
-        if isinstance(self._parser_scope, compiled.CompiledObject) and False:
-            # This would be for builtin skeletons, which are not yet supported.
-            return list(names)
-        else:
-            start, end = self._parser_scope.start_pos, self._parser_scope.end_pos
-            return [n for n in names if start < n.start_pos < end]
+        start, end = self._parser_scope.start_pos, self._parser_scope.end_pos
+        return [n for n in names if start < n.start_pos < end]
 
     def _filter_self_names(self, names):
         for name in names:
