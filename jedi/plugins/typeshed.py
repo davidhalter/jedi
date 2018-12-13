@@ -192,54 +192,35 @@ class StubName(NameWrapper):
     @memoize_method
     @iterator_to_context_set
     def infer(self):
-        actual_contexts = self._wrapped_name.infer()
         stub_contexts = self._stub_name.infer()
-
-        if not actual_contexts:
-            for c in stub_contexts:
+        if not stub_contexts:
+            for c in self._wrapped_name.infer():
                 yield c
+            return
 
-        # This basically merges stub contexts with actual contexts.
-        for actual_context in actual_contexts:
+        typ = self._wrapped_name.tree_name.parent.type
+        if typ in ('classdef', 'funcdef'):
+            actual_context, = self._wrapped_name.infer()
             for stub_context in stub_contexts:
-                if isinstance(stub_context, FunctionContext) \
-                        and isinstance(actual_context, FunctionContext):
-                    if isinstance(actual_context, MethodContext):
-                        assert isinstance(stub_context, MethodContext)
-                        cls = StubMethodContext
-                    else:
-                        cls = StubFunctionContext
-                    yield cls.create_cached(
-                        actual_context.evaluator,
-                        self.parent_context,
-                        actual_context,
-                        stub_context,
-                    )
-                elif isinstance(stub_context, StubOnlyClass) \
-                        and isinstance(actual_context, ClassContext):
-                    yield StubClassContext.create_cached(
-                        actual_context.evaluator,
-                        self.parent_context,
-                        actual_context,
-                        stub_context,
-                    )
-                elif isinstance(stub_context, VersionInfo):
-                    # TODO needed?
-                    yield stub_context
-                elif isinstance(actual_context, CompiledObject):
-                    if stub_context.is_class():
-                        yield CompiledStubClass.create_cached(
-                            stub_context.evaluator, stub_context, actual_context)
-                    elif stub_context.is_function():
-                        yield CompiledStubFunction.create_cached(
-                            stub_context.evaluator, stub_context, actual_context)
-                    else:
-                        yield stub_context
+                if isinstance(stub_context, MethodContext):
+                    assert isinstance(actual_context, MethodContext)
+                    cls = StubMethodContext
+                elif isinstance(stub_context, FunctionContext):
+                    cls = StubFunctionContext
+                elif isinstance(stub_context, StubOnlyClass):
+                    cls = StubClassContext
                 else:
                     yield stub_context
-
-            if not stub_contexts:
-                yield actual_context
+                    continue
+                yield cls.create_cached(
+                    actual_context.evaluator,
+                    self.parent_context,
+                    actual_context,
+                    stub_context,
+                )
+        else:
+            for c in stub_contexts:
+                yield c
 
 
 class CompiledStubName(NameWrapper):
@@ -262,7 +243,11 @@ class CompiledStubName(NameWrapper):
 
         for actual_context in compiled_contexts:
             for stub_context in stub_contexts:
-                if stub_context.is_class():
+                if isinstance(stub_context, _CompiledStubContext):
+                    # It's already a stub context, e.g. bytes in Python 2
+                    # behaves this way.
+                    yield stub_context
+                elif stub_context.is_class():
                     yield CompiledStubClass.create_cached(
                         stub_context.evaluator, stub_context, actual_context)
                 elif stub_context.is_function():
