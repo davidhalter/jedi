@@ -232,8 +232,6 @@ class CompiledStubName(NameWrapper):
     @memoize_method
     @iterator_to_context_set
     def infer(self):
-        # Here we probably don't have to care about contexts that are not
-        # available. It would be a
         compiled_contexts = self._compiled_name.infer()
         stub_contexts = self._wrapped_name.infer()
 
@@ -248,6 +246,8 @@ class CompiledStubName(NameWrapper):
                     # behaves this way.
                     yield stub_context
                 elif stub_context.is_class():
+                    assert not isinstance(stub_context, CompiledStubClass), \
+                        "%s and %s" % (self._wrapped_name, self._compiled_name)
                     yield CompiledStubClass.create_cached(
                         stub_context.evaluator, stub_context, actual_context)
                 elif stub_context.is_function():
