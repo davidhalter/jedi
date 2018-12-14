@@ -23,6 +23,7 @@ from jedi.evaluate.context import TreeInstance
 from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
+from jedi.evaluate.cache import evaluator_method_cache
 
 
 def _limit_context_infers(func):
@@ -616,6 +617,9 @@ def tree_name_to_contexts(evaluator, context, tree_name):
     return types
 
 
+# We don't want to have functions/classes that are created by the same
+# tree_node.
+@evaluator_method_cache()
 def _apply_decorators(context, node):
     """
     Returns the function, that should to be executed in the end.
