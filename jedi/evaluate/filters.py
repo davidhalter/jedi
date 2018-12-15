@@ -521,8 +521,8 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     Finally, it yields the builtin filter, if `include_builtin` is
     true (default).
 
-    >>> filters[3].values()                              #doctest: +ELLIPSIS
-    [<CompiledName: ...>, ...]
+    >>> list(filters[3].values())                        #doctest: +ELLIPSIS
+    [CompiledStubName(...>, ...]
     """
     from jedi.evaluate.context.function import FunctionExecutionContext
     while context is not None:
