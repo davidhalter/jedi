@@ -1,7 +1,7 @@
 import os
 
 from jedi.plugins import typeshed
-from jedi.evaluate.context import TreeInstance, BoundMethod
+from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext
 from parso.utils import PythonVersionInfo
 from jedi.evaluate.filters import TreeNameDefinition
 
@@ -38,11 +38,18 @@ def test_get_stub_files():
     assert map_['functools'] == os.path.join(TYPESHED_PYTHON3, 'functools.pyi')
 
 
-def test_function(Script):
+def test_function(Script, environment):
+    if environment.version_info.major == 2:
+        # In Python 2, the definitions are a bit weird in typeshed. Therefore
+        # it's for now a FunctionContext.
+        expected = FunctionContext
+    else:
+        expected = typeshed.StubFunctionContext
+
     code = 'import threading; threading.current_thread'
     def_, = Script(code).goto_definitions()
     context = def_._name._context
-    assert isinstance(context, typeshed.StubFunctionContext), context
+    assert isinstance(context, expected), context
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
