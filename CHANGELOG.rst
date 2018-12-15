@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.13.2 (2018-12-15)
++++++++++++++++++++
+
+- Fixed a bug that led to Jedi spawning a lot of subprocesses.
+
 0.13.1 (2018-10-02)
 +++++++++++++++++++
 
