@@ -33,7 +33,7 @@ setup(name='jedi',
       install_requires=install_requires,
       extras_require={
           'testing': [
-              'pytest>=2.3.5',
+              'pytest>=3.1.0',
               # docopt for sith doctests
               'docopt',
               # coloroma for colored debug output
