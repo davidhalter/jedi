@@ -294,6 +294,11 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
     def get_mapping_item_contexts(self):
         return self._dict_keys(), self._dict_values()
 
+    def exact_key_items(self):
+        # NOTE: A smarter thing can probably done here to achieve better
+        # completions, but at least like this jedi doesn't crash
+        return []
+
 
 class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
     pass

@@ -85,4 +85,4 @@ def test_get_call_signature(code, call_signature):
         node = node.children[0]
     assert parser_utils.get_call_signature(node) == call_signature
 
-    assert parser_utils.get_doc_with_call_signature(node) == (call_signature + '\n\n')
+    assert parser_utils.get_doc_with_call_signature(node) == call_signature

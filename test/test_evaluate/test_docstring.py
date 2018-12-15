@@ -142,6 +142,16 @@ def test_docstring_keyword(Script):
     assert 'assert' in completions[0].docstring()
 
 
+def test_docstring_params_formatting(Script):
+    defs = Script("""
+    def func(param1,
+             param2,
+             param3):
+        pass
+    func""").goto_definitions()
+    assert defs[0].docstring() == 'func(param1, param2, param3)'
+
+
 # ---- Numpy Style Tests ---
 
 @pytest.mark.skipif(numpydoc_unavailable,
