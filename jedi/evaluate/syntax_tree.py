@@ -10,6 +10,7 @@ from jedi import debug
 from jedi import parser_utils
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
     ContextualizedName, iterator_to_context_set, iterate_contexts
+from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate import compiled
 from jedi.evaluate import pep0484
 from jedi.evaluate import recursion
@@ -440,18 +441,15 @@ def _get_tuple_ints(context):
         return None
     numbers = []
     for lazy_context in context.py__iter__():
-        result = lazy_context.infer()
+        if not isinstance(lazy_context, LazyTreeContext):
+            return None
+        node = lazy_context.data
+        if node.type != 'number':
+            return None
         try:
-            number, = result  # Must be exactly one element
+            numbers.append(int(node.value))
         except ValueError:
             return None
-
-        if not isinstance(number, compiled.CompiledValue):
-            return None
-        value = number.get_safe_value()
-        if not isinstance(value, int):
-            return None
-        numbers.append(value)
     return numbers
 
 
