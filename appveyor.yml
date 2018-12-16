@@ -12,6 +12,9 @@ environment:
   - TOXENV: py27
     PYTHON_PATH: C:\Python27
     JEDI_TEST_ENVIRONMENT: 36
+  - TOXENV: py27
+    PYTHON_PATH: C:\Python27
+    JEDI_TEST_ENVIRONMENT: 37
 
   - TOXENV: py34
     PYTHON_PATH: C:\Python34
@@ -25,6 +28,9 @@ environment:
   - TOXENV: py34
     PYTHON_PATH: C:\Python34
     JEDI_TEST_ENVIRONMENT: 36
+  - TOXENV: py34
+    PYTHON_PATH: C:\Python34
+    JEDI_TEST_ENVIRONMENT: 37
 
   - TOXENV: py35
     PYTHON_PATH: C:\Python35
@@ -38,6 +44,9 @@ environment:
   - TOXENV: py35
     PYTHON_PATH: C:\Python35
     JEDI_TEST_ENVIRONMENT: 36
+  - TOXENV: py35
+    PYTHON_PATH: C:\Python35
+    JEDI_TEST_ENVIRONMENT: 37
 
   - TOXENV: py36
     PYTHON_PATH: C:\Python36
@@ -51,6 +60,24 @@ environment:
   - TOXENV: py36
     PYTHON_PATH: C:\Python36
     JEDI_TEST_ENVIRONMENT: 36
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python36
+    JEDI_TEST_ENVIRONMENT: 37
+
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 27
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 34
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 35
+  - TOXENV: py36
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 36
+    PYTHON_PATH: C:\Python37
+    JEDI_TEST_ENVIRONMENT: 37
 install:
   - set PATH=%PYTHON_PATH%;%PYTHON_PATH%\Scripts;%PATH%
   - pip install tox
