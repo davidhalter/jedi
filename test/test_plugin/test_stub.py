@@ -15,19 +15,23 @@ def test_get_typeshed_directories():
             for d in typeshed._get_typeshed_directories(version_info)
         }
 
+    def transform(set_):
+        return {x.replace('/', os.path.sep) for x in set_}
+
     dirs = get_dirs(PythonVersionInfo(2, 7))
-    assert dirs == {'stdlib/2and3', 'stdlib/2', 'third_party/2and3', 'third_party/2'}
+    assert dirs == transform({'stdlib/2and3', 'stdlib/2', 'third_party/2and3', 'third_party/2'})
 
     dirs = get_dirs(PythonVersionInfo(3, 4))
-    assert dirs == {'stdlib/2and3', 'stdlib/3', 'third_party/2and3', 'third_party/3'}
+    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'third_party/2and3', 'third_party/3'})
 
     dirs = get_dirs(PythonVersionInfo(3, 5))
-    assert dirs == {'stdlib/2and3', 'stdlib/3', 'stdlib/3.5',
-                    'third_party/2and3', 'third_party/3', 'third_party/3.5'}
+    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'stdlib/3.5',
+                              'third_party/2and3', 'third_party/3', 'third_party/3.5'})
 
     dirs = get_dirs(PythonVersionInfo(3, 6))
-    assert dirs == {'stdlib/2and3', 'stdlib/3', 'stdlib/3.5', 'stdlib/3.6',
-                    'third_party/2and3', 'third_party/3', 'third_party/3.5', 'third_party/3.6'}
+    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'stdlib/3.5',
+                              'stdlib/3.6', 'third_party/2and3',
+                              'third_party/3', 'third_party/3.5', 'third_party/3.6'})
 
 
 def test_get_stub_files():
