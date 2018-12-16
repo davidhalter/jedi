@@ -17,8 +17,9 @@ from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context.module import ModuleMixin
 from jedi.evaluate.context.typing import TypingModuleFilterWrapper, \
     TypingModuleName
-from jedi.evaluate.compiled.context import CompiledObject, CompiledName
+from jedi.evaluate.compiled.context import CompiledName
 from jedi.evaluate.utils import to_list, safe_property
+from jedi.evaluate.imports import JediImportError
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
@@ -130,12 +131,19 @@ class TypeshedPlugin(BasePlugin):
                     parent_module_context, = evaluator.import_module(('os',))
                 return parent_module_context.py__getattribute__('path')
 
-            context_set = callback(
-                evaluator,
-                import_names,
-                parent_module_context,
-                sys_path
-            )
+            try:
+                context_set = callback(
+                    evaluator,
+                    import_names,
+                    parent_module_context,
+                    sys_path
+                )
+            except JediImportError:
+                if import_names == ('typing',):
+                    # TODO this is also quite ugly, please refactor.
+                    context_set = NO_CONTEXTS
+                else:
+                    raise
 
             import_name = import_names[-1]
             map_ = None

@@ -161,7 +161,12 @@ class Evaluator(object):
     @evaluator_function_cache()
     def typing_module(self):
         typing_module, = self.import_module((u'typing',))
-        return typing_module.stub_context
+        try:
+            return typing_module.stub_context
+        except AttributeError:
+            # Python 2 and 3.4: In some cases there is no non-stub module,
+            # because the module was not installed with `pip install typing`.
+            return typing_module
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
