@@ -161,6 +161,8 @@ class ModuleContext(ModuleMixin, TreeContext):
         return None
 
     def py__name__(self):
+        if self._string_names is None:
+            return None
         return '.'.join(self._string_names)
 
     def py__file__(self):
