@@ -1,5 +1,4 @@
 language: python
-sudo: true
 python:
   - 2.7
   - 3.4
@@ -14,37 +13,27 @@ env:
   - JEDI_TEST_ENVIRONMENT=36
   - JEDI_TEST_ENVIRONMENT=37
 
-addons:
-  apt:
-    packages:
-     # Required to properly create a virtual environment with system Python 3.4.
-     - python3.4-venv
-
 matrix:
   allow_failures:
     - python: pypy
     - env: TOXENV=sith
+
   include:
     - python: 3.6
       env:
         - TOXENV=cov
         - JEDI_TEST_ENVIRONMENT=36
+
     - python: 3.6
       env: TOXENV=sith
+
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.
     #- python: pypy
+
     - python: "nightly"
       env:
         - JEDI_TEST_ENVIRONMENT=36
-before_install:
-    - ./travis_install.sh
-    # Need to add the path to the Python versions in the end. This might add
-    # something twice, but it doesn't really matter, because they are appended.
-    - export PATH=$PATH:/opt/python/3.5/bin
-    # 3.6 was not installed manually, but already is on the system. However
-    # it's not on path (unless 3.6 is selected).
-    - export PATH=$PATH:/opt/python/3.6/bin
 install:
     - pip install --quiet tox-travis
 script:
