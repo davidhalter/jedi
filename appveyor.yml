@@ -80,6 +80,7 @@ environment:
     PYTHON_PATH: C:\Python37
     JEDI_TEST_ENVIRONMENT: 37
 install:
+  - git submodule update --init --recursive
   - set PATH=%PYTHON_PATH%;%PYTHON_PATH%\Scripts;%PATH%
   - pip install tox
 build_script:
