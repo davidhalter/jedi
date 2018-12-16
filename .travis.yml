@@ -35,6 +35,8 @@ matrix:
     # to run it.
     #- python: pypy
     - python: "nightly"
+      env:
+        - JEDI_TEST_ENVIRONMENT=36
 before_install:
     - ./travis_install.sh
     # Need to add the path to the Python versions in the end. This might add
