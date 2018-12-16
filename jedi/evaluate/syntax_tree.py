@@ -520,7 +520,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
                      message % (left, right))
 
     result = ContextSet([left, right])
-    debug.dbg('Used operator %s resulting in %s', result)
+    debug.dbg('Used operator %s resulting in %s', operator, result)
     return result
 
 

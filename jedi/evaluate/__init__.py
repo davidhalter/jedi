@@ -151,16 +151,16 @@ class Evaluator(object):
     @property
     @evaluator_function_cache()
     def builtins_module(self):
-        module_name = 'builtins'
+        module_name = u'builtins'
         if self.environment.version_info.major == 2:
-            module_name = '__builtin__'
+            module_name = u'__builtin__'
         builtins_module, = self.import_module((module_name,), sys_path=())
         return builtins_module
 
     @property
     @evaluator_function_cache()
     def typing_module(self):
-        typing_module, = self.import_module(('typing',))
+        typing_module, = self.import_module((u'typing',))
         return typing_module.stub_context
 
     def reset_recursion_limitations(self):
