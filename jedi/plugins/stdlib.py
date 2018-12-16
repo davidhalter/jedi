@@ -403,13 +403,13 @@ def collections_namedtuple(obj, arguments):
     # Process arguments
     # TODO here we only use one of the types, we should use all.
     # TODO this is buggy, doesn't need to be a string
-    name = list(_follow_param(evaluator, arguments, 0))[0].get_safe_value()
+    name = force_unicode(list(_follow_param(evaluator, arguments, 0))[0].get_safe_value())
     _fields = list(_follow_param(evaluator, arguments, 1))[0]
     if isinstance(_fields, compiled.CompiledValue):
-        fields = _fields.get_safe_value().replace(',', ' ').split()
+        fields = force_unicode(_fields.get_safe_value()).replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
         fields = [
-            v.get_safe_value()
+            force_unicode(v.get_safe_value())
             for lazy_context in _fields.py__iter__()
             for v in lazy_context.infer() if is_string(v)
         ]

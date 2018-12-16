@@ -3,7 +3,7 @@ We need to somehow work with the typing objects. Since the typing objects are
 pretty bare we need to add all the Jedi customizations to make them work as
 contexts.
 """
-from jedi._compatibility import unicode
+from jedi._compatibility import unicode, force_unicode
 from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name
@@ -376,6 +376,9 @@ class TypeVarClass(_BaseTypingContext):
             return None
         else:
             safe_value = method(default=None)
+            if self.evaluator.environment.version_info.major == 2:
+                if isinstance(safe_value, bytes):
+                    return force_unicode(safe_value)
             if isinstance(safe_value, (str, unicode)):
                 return safe_value
             return None
