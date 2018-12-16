@@ -522,7 +522,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     true (default).
 
     >>> list(filters[3].values())                        #doctest: +ELLIPSIS
-    [CompiledStubName(...>, ...]
+    [...]
     """
     from jedi.evaluate.context.function import FunctionExecutionContext
     while context is not None:
