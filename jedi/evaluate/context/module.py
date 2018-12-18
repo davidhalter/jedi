@@ -145,7 +145,6 @@ class ModuleContext(ModuleMixin, TreeContext):
         self._path = path
         self._string_names = string_names
         self.code_lines = code_lines
-        #print(self._path)
 
     def _get_init_directory(self):
         """

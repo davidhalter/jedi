@@ -3,6 +3,8 @@ from glob import glob
 import sys
 import shutil
 
+import pytest
+
 from jedi.evaluate import sys_path
 from jedi.api.environment import create_environment
 
@@ -59,3 +61,19 @@ def test_venv_and_pths(venv_path):
 
     # Ensure that none of venv dirs leaked to the interpreter.
     assert not set(sys.path).intersection(ETALON)
+
+
+@pytest.mark.parametrize(('sys_path_', 'path', 'expected'), [
+    (['/foo'], '/foo/bar.py', ('bar',)),
+    (['/foo'], '/foo/bar/baz.py', ('bar', 'baz')),
+    (['/foo'], '/foo/bar/__init__.py', ('bar',)),
+    (['/foo'], '/foo/bar/baz/__init__.py', ('bar', 'baz')),
+
+    (['/foo'], '/foo/bar.so', ('bar',)),
+    (['/foo'], '/foo/bar/__init__.so', ('bar',)),
+
+    (['/foo'], '/x/bar.py', None),
+    (['/foo'], '/foo/bar.xyz', None),
+])
+def test_calculate_dotted_path_from_sys_path(path, sys_path_, expected):
+    assert sys_path.calculate_dotted_path_from_sys_path(sys_path_, path) == expected
