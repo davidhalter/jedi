@@ -157,11 +157,15 @@ class CompiledObject(Context):
 
         return ContextSet([create_from_access_path(self.evaluator, access)])
 
-    @CheckAttribute()
     def py__getitem__(self, index_context_set, contextualized_node):
+        all_access_paths = self.access_handle.py__getitem__all_values()
+        if all_access_paths is None:
+            # This means basically that no __getitem__ has been defined on this
+            # object.
+            return super(CompiledObject, self).py__getitem__(index_context_set, contextualized_node)
         return ContextSet(
             create_from_access_path(self.evaluator, access)
-            for access in self.access_handle.py__getitem__all_values()
+            for access in all_access_paths
         )
 
     def py__iter__(self, contextualized_node=None):
@@ -173,7 +177,12 @@ class CompiledObject(Context):
             for x in super(CompiledObject, self).py__iter__(contextualized_node):
                 yield x
 
-        for access in self.access_handle.py__iter__list():
+        access_path_list = self.access_handle.py__iter__list()
+        if access_path_list is None:
+            # There is no __iter__ method on this object.
+            return
+
+        for access in access_path_list:
             yield LazyKnownContext(create_from_access_path(self.evaluator, access))
 
     def py__name__(self):

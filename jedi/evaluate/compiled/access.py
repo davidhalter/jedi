@@ -233,6 +233,9 @@ class DirectObjectAccess(object):
         return self._create_access_path(self._obj[index])
 
     def py__iter__list(self):
+        if not hasattr(self._obj, '__getitem__'):
+            return None
+
         if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return []

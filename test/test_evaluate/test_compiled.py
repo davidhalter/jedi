@@ -92,3 +92,10 @@ def test_dict_values(Script, environment):
         # It looks like typeshed for Python 2 returns Any.
         pytest.skip()
     assert Script('import sys\nsys.modules["alshdb;lasdhf"]').goto_definitions()
+
+
+def test_getitem_on_none(Script):
+    script = Script('None[1j]')
+    assert not script.goto_definitions()
+    issue, = script._evaluator.analysis
+    assert issue.name == 'type-error-not-subscriptable'
