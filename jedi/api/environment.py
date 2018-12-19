@@ -184,7 +184,10 @@ def get_default_environment():
     if virtual_env is not None:
         return virtual_env
 
-    # If no VirtualEnv is found, use the environment we're already
+    for environment in find_system_environments():
+        return environment
+
+    # If no Python Environment is found, use the environment we're already
     # using.
     return SameEnvironment()
 
