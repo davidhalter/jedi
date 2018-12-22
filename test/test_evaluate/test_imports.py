@@ -9,6 +9,7 @@ import pytest
 
 from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
+from jedi.evaluate import imports
 from ..helpers import cwd_at
 
 
@@ -251,3 +252,21 @@ def test_compiled_import_none(monkeypatch, Script):
     """
     monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
     assert not Script('import sys').goto_definitions()
+
+
+@pytest.mark.parametrize(
+    ('path', 'goal'), [
+        ('test_evaluate/test_docstring.py', ('ok', 'lala', 'test_imports')),
+        ('test_evaluate/__init__.py', ('ok', 'lala', 'x', 'test_imports')),
+    ]
+)
+def test_get_modules_containing_name(evaluator, path, goal):
+    module = imports._load_module(evaluator, path, import_names=('ok', 'lala', 'x'))
+    assert module
+    input_module, found_module = imports.get_modules_containing_name(
+        evaluator,
+        [module],
+        'string_that_only_exists_here'
+    )
+    assert input_module is module
+    assert found_module.string_names == goal

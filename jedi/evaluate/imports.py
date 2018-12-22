@@ -497,18 +497,14 @@ def get_modules_containing_name(evaluator, modules, name):
     """
     Search a name in the directories of modules.
     """
-    def check_directories(paths):
-        for p in paths:
-            if p is not None:
-                # We need abspath, because the seetings paths might not already
-                # have been converted to absolute paths.
-                d = os.path.dirname(os.path.abspath(p))
-                for file_name in os.listdir(d):
-                    path = os.path.join(d, file_name)
-                    if file_name.endswith('.py'):
-                        yield path
+    def check_directory(path):
+        d = os.path.dirname(os.path.abspath(path))
+        for file_name in os.listdir(d):
+            path = os.path.join(d, file_name)
+            if file_name.endswith('.py'):
+                yield path
 
-    def check_fs(path):
+    def check_fs(path, base_names):
         try:
             f = open(path, 'rb')
         except FileNotFoundError:
@@ -517,7 +513,15 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
-                import_names = sys_path.calculate_dotted_path_from_sys_path(e_sys_path, path)
+                module_name = os.path.basename(path)
+                if module_name.endswith('.py'):
+                    module_name = module_name[:-3]
+
+                if base_names:
+                    import_names = base_names + (module_name,)
+                else:
+                    import_names = sys_path.calculate_dotted_path_from_sys_path(e_sys_path, path)
+
                 module = _load_module(
                     evaluator, path, code,
                     sys_path=e_sys_path,
@@ -528,26 +532,32 @@ def get_modules_containing_name(evaluator, modules, name):
 
     # skip non python modules
     used_mod_paths = set()
+    path_with_names_to_be_checked = []
     for m in modules:
         try:
             path = m.py__file__()
         except AttributeError:
             pass
         else:
-            used_mod_paths.add(path)
+            if path is not None:
+                if path not in used_mod_paths:
+                    used_mod_paths.add(path)
+                    string_names = m.string_names
+                    if not m.is_package() and string_names is not None:
+                        string_names = string_names[:-1]
+                    path_with_names_to_be_checked.append((path, string_names))
         yield m
 
     if not settings.dynamic_params_for_other_modules:
         return
 
-    additional = set(os.path.abspath(p) for p in settings.additional_dynamic_modules)
-    # Check the directories of used modules.
-    paths = (additional | set(check_directories(used_mod_paths))) \
-            - used_mod_paths
+    for p in settings.additional_dynamic_modules:
+        p = os.path.abspath(p)
+        if p not in used_mod_paths:
+            path_with_names_to_be_checked.append((p, None))
 
-    # Sort here to make issues less random.
-    for p in sorted(paths):
-        # make testing easier, sort it - same results on every interpreter
-        m = check_fs(p)
-        if m is not None and not isinstance(m, compiled.CompiledObject):
-            yield m
+    for p, base_names in path_with_names_to_be_checked:
+        for file_path in check_directory(p):
+            m = check_fs(file_path, base_names)
+            if m is not None and not isinstance(m, compiled.CompiledObject):
+                yield m

@@ -143,7 +143,7 @@ class ModuleContext(ModuleMixin, TreeContext):
             tree_node=module_node
         )
         self._path = path
-        self._string_names = string_names
+        self.string_names = string_names
         self.code_lines = code_lines
 
     def _get_init_directory(self):
@@ -160,9 +160,9 @@ class ModuleContext(ModuleMixin, TreeContext):
         return None
 
     def py__name__(self):
-        if self._string_names is None:
+        if self.string_names is None:
             return None
-        return '.'.join(self._string_names)
+        return '.'.join(self.string_names)
 
     def py__file__(self):
         """
