@@ -114,7 +114,7 @@ def _parse_argument_clinic(string):
         # at the end of the arguments. This is therefore not a proper argument
         # clinic implementation. `range()` for exmple allows an optional start
         # value at the beginning.
-        match = re.match('(?:(?:(\[),? ?|, ?|)(\**\w+)|, ?/)\]*', string)
+        match = re.match(r'(?:(?:(\[),? ?|, ?|)(\**\w+)|, ?/)\]*', string)
         string = string[len(match.group(0)):]
         if not match.group(2):  # A slash -> allow named arguments
             allow_kwargs = True
