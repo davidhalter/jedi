@@ -12,6 +12,8 @@ from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from ..helpers import cwd_at
 
+THIS_DIR = os.path.dirname(__file__)
+
 
 @pytest.mark.skipif('sys.version_info < (3,3)')
 def test_find_module_py33():
@@ -256,8 +258,8 @@ def test_compiled_import_none(monkeypatch, Script):
 
 @pytest.mark.parametrize(
     ('path', 'goal'), [
-        ('test_evaluate/test_docstring.py', ('ok', 'lala', 'test_imports')),
-        ('test_evaluate/__init__.py', ('ok', 'lala', 'x', 'test_imports')),
+        (os.path.join(THIS_DIR, 'test_docstring.py'), ('ok', 'lala', 'test_imports')),
+        (os.path.join(THIS_DIR, '__init__.py'), ('ok', 'lala', 'x', 'test_imports')),
     ]
 )
 def test_get_modules_containing_name(evaluator, path, goal):

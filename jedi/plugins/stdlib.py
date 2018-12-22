@@ -276,7 +276,7 @@ def builtins_reversed(sequences, obj, arguments):
     cn = None
     if isinstance(lazy_context, LazyTreeContext):
         # TODO access private
-        cn = ContextualizedNode(lazy_context._context, lazy_context.data)
+        cn = ContextualizedNode(lazy_context.context, lazy_context.data)
     ordered = list(sequences.iterate(cn))
 
     # Repack iterator values and then run it the normal way. This is
@@ -321,7 +321,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
                     message = 'TypeError: isinstance() arg 2 must be a ' \
                               'class, type, or tuple of classes and types, ' \
                               'not %s.' % cls_or_tup
-                    analysis.add(lazy_context._context, 'type-error-isinstance', node, message)
+                    analysis.add(lazy_context.context, 'type-error-isinstance', node, message)
 
     return ContextSet(
         compiled.builtin_from_name(evaluator, force_unicode(str(b)))

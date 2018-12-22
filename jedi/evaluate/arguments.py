@@ -309,6 +309,10 @@ class TreeArgumentsWrapper(_AbstractArgumentsMixin):
         self._wrapped_arguments = arguments
 
     @property
+    def context(self):
+        return self._wrapped_arguments.context
+
+    @property
     def argument_node(self):
         return self._wrapped_arguments.argument_node
 
