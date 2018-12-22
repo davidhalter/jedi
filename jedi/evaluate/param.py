@@ -9,12 +9,12 @@ from jedi.evaluate import docstrings
 from jedi.evaluate.context import iterable
 
 
-def _add_argument_issue(parent_context, error_name, lazy_context, message):
+def _add_argument_issue(error_name, lazy_context, message):
     if isinstance(lazy_context, LazyTreeContext):
         node = lazy_context.data
         if node.parent.type == 'argument':
             node = node.parent
-        return analysis.add(parent_context, error_name, node, message)
+        return analysis.add(lazy_context.context, error_name, node, message)
 
 
 class ExecutedParam(object):
@@ -65,16 +65,15 @@ class ExecutedParam(object):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
-def get_executed_params_and_issues(execution_context, var_args):
+def get_executed_params_and_issues(execution_context, arguments):
     def too_many_args(argument):
         m = _error_argument_count(funcdef, len(unpacked_va))
         # Just report an error for the first param that is not needed (like
         # cPython).
-        if var_args.get_calling_nodes():
+        if arguments.get_calling_nodes():
             # There might not be a valid calling node so check for that first.
             issues.append(
                 _add_argument_issue(
-                    default_param_context,
                     'type-error-too-many-arguments',
                     argument,
                     message=m
@@ -94,7 +93,7 @@ def get_executed_params_and_issues(execution_context, var_args):
 
     for param in funcdef.get_params():
         param_dict[param.name.value] = param
-    unpacked_va = list(var_args.unpack(funcdef))
+    unpacked_va = list(arguments.unpack(funcdef))
     var_arg_iterator = PushBackIterator(iter(unpacked_va))
 
     non_matching_keys = defaultdict(lambda: [])
@@ -119,10 +118,11 @@ def get_executed_params_and_issues(execution_context, var_args):
                     had_multiple_value_error = True
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
                          % (funcdef.name, key))
-                    for node in var_args.get_calling_nodes():
+                    for contextualized_node in arguments.get_calling_nodes():
                         issues.append(
-                            analysis.add(default_param_context, 'type-error-multiple-values',
-                                         node, message=m)
+                            analysis.add(contextualized_node.context,
+                                         'type-error-multiple-values',
+                                         contextualized_node.node, message=m)
                         )
                 else:
                     keys_used[key] = ExecutedParam(execution_context, key_param, argument)
@@ -161,13 +161,13 @@ def get_executed_params_and_issues(execution_context, var_args):
                 if param.default is None:
                     result_arg = LazyUnknownContext()
                     if not keys_only:
-                        for node in var_args.get_calling_nodes():
+                        for contextualized_node in arguments.get_calling_nodes():
                             m = _error_argument_count(funcdef, len(unpacked_va))
                             issues.append(
                                 analysis.add(
-                                    default_param_context,
+                                    contextualized_node.context,
                                     'type-error-too-few-arguments',
-                                    node,
+                                    contextualized_node.node,
                                     message=m,
                                 )
                             )
@@ -194,11 +194,12 @@ def get_executed_params_and_issues(execution_context, var_args):
             if not (non_matching_keys or had_multiple_value_error or
                     param.star_count or param.default):
                 # add a warning only if there's not another one.
-                for node in var_args.get_calling_nodes():
+                for contextualized_node in arguments.get_calling_nodes():
                     m = _error_argument_count(funcdef, len(unpacked_va))
                     issues.append(
-                        analysis.add(default_param_context, 'type-error-too-few-arguments',
-                                     node, message=m)
+                        analysis.add(contextualized_node.context,
+                                     'type-error-too-few-arguments',
+                                     contextualized_node.node, message=m)
                     )
 
     for key, lazy_context in non_matching_keys.items():
@@ -206,7 +207,6 @@ def get_executed_params_and_issues(execution_context, var_args):
             % (funcdef.name, key)
         issues.append(
             _add_argument_issue(
-                default_param_context,
                 'type-error-keyword-argument',
                 lazy_context,
                 message=m

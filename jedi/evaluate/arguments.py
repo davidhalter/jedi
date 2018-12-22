@@ -9,7 +9,7 @@ from jedi.evaluate import analysis
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext, get_merged_lazy_context
 from jedi.evaluate.filters import ParamName
-from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet
+from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet, ContextualizedNode
 from jedi.evaluate.context import iterable
 from jedi.evaluate.param import get_executed_params_and_issues, ExecutedParam
 
@@ -239,7 +239,7 @@ class TreeArguments(AbstractArguments):
                 else:
                     yield None, LazyTreeContext(self.context, el)
 
-        # Reordering var_args is necessary, because star args sometimes appear
+        # Reordering arguments is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
         for named_arg in named_args:
             yield named_arg
@@ -286,9 +286,9 @@ class TreeArguments(AbstractArguments):
                 break
 
         if arguments.argument_node is not None:
-            return [arguments.argument_node]
+            return [ContextualizedNode(arguments.context, arguments.argument_node)]
         if arguments.trailer is not None:
-            return [arguments.trailer]
+            return [ContextualizedNode(arguments.context, arguments.trailer)]
         return []
 
 

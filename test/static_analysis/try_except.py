@@ -87,3 +87,21 @@ else:
     str.upper
     #! 4 attribute-error
     str.undefined
+
+# -----------------
+# arguments
+# -----------------
+
+def i_see(r):
+    return r
+
+def lala():
+    # This weird structure checks if the error is actually resolved in the
+    # right place.
+    a = TypeError
+    try:
+        i_see()
+    except a:
+        pass
+    #! 5 type-error-too-few-arguments
+    i_see()
