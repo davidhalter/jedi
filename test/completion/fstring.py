@@ -32,3 +32,7 @@ f'xyz'.uppe
 
 #? 3 []
 f'f'
+
+# Github #1248
+#? int()
+{"foo": 1}[f"foo"]

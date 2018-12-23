@@ -69,7 +69,7 @@ def eval_node(context, element):
     debug.dbg('eval_node %s@%s in %s', element, element.start_pos, context)
     evaluator = context.evaluator
     typ = element.type
-    if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword'):
+    if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword', 'fstring'):
         return eval_atom(context, element)
     elif typ == 'lambdef':
         return ContextSet([FunctionContext.from_context(context, element)])
@@ -221,6 +221,8 @@ def eval_atom(context, atom):
             right = eval_atom(context, string)
             context_set = _eval_comparison(context.evaluator, context, context_set, u'+', right)
         return context_set
+    elif atom.type == 'fstring':
+        return compiled.get_string_context_set(context.evaluator)
     else:
         c = atom.children
         # Parentheses without commas are not tuples.
