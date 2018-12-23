@@ -16,7 +16,7 @@ import warnings
 import parso
 from parso.python import tree
 
-from jedi._compatibility import force_unicode, is_py3
+from jedi._compatibility import force_unicode, cast_path, is_py3
 from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
@@ -157,7 +157,7 @@ class Script(object):
                 names = import_names
 
         module = ModuleContext(
-            self._evaluator, self._module_node, self.path,
+            self._evaluator, self._module_node, cast_path(self.path),
             string_names=names,
             code_lines=self._code_lines,
         )
