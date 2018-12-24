@@ -24,7 +24,7 @@ from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.gradual.typeshed import VersionInfo
+from jedi.evaluate.gradual.stub_context import VersionInfo
 from jedi.evaluate.gradual import annotation
 
 
