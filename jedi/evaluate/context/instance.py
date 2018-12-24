@@ -273,7 +273,8 @@ class TreeInstance(AbstractInstanceContext):
     # to itself.
     @evaluator_method_cache(default=None)
     def _get_annotated_class_object(self):
-        from jedi.evaluate import pep0484
+        from jedi.evaluate.gradual.annotation import py__annotations__, \
+            infer_type_vars_for_execution
 
         for func in self._get_annotation_init_functions():
             # Just take the first result, it should always be one, because we
@@ -285,9 +286,9 @@ class TreeInstance(AbstractInstanceContext):
                 # need to infer anything.
                 continue
 
-            all_annotations = pep0484.py__annotations__(execution.tree_node)
+            all_annotations = py__annotations__(execution.tree_node)
             defined = self.class_context.define_generics(
-                pep0484.infer_type_vars_for_execution(execution, all_annotations),
+                infer_type_vars_for_execution(execution, all_annotations),
             )
             debug.dbg('Inferred instance context as %s', defined, color='BLUE')
             return defined

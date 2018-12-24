@@ -27,8 +27,8 @@ class ExecutedParam(object):
         self._is_default = is_default
 
     def infer_annotations(self):
-        from jedi.evaluate import pep0484
-        return pep0484.infer_param(self._execution_context, self._param_node)
+        from jedi.evaluate.gradual.annotation import infer_param
+        return infer_param(self._execution_context, self._param_node)
 
     def infer(self, use_hints=True):
         if use_hints:

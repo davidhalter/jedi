@@ -6,7 +6,6 @@ from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass
 from jedi.evaluate import compiled
 from jedi.evaluate import recursion
 from jedi.evaluate import docstrings
-from jedi.evaluate import pep0484
 from jedi.evaluate import flow_analysis
 from jedi.evaluate import helpers
 from jedi.evaluate.signature import TreeSignature
@@ -20,6 +19,7 @@ from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
 from jedi.evaluate.context import iterable
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
+from jedi.evaluate.gradual.annotation import infer_return_types
 
 
 class LambdaName(AbstractNameDefinition):
@@ -179,7 +179,7 @@ class FunctionExecutionContext(TreeContext):
             returns = get_yield_exprs(self.evaluator, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
-            context_set = pep0484.infer_return_types(self)
+            context_set = infer_return_types(self)
             if context_set:
                 # If there are annotations, prefer them over anything else.
                 # This will make it faster.

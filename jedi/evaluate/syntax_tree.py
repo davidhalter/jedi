@@ -12,7 +12,6 @@ from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, ContextualizedNo
     ContextualizedName, iterator_to_context_set, iterate_contexts
 from jedi.evaluate.lazy_context import LazyTreeContext
 from jedi.evaluate import compiled
-from jedi.evaluate import pep0484
 from jedi.evaluate import recursion
 from jedi.evaluate import helpers
 from jedi.evaluate import analysis
@@ -26,6 +25,7 @@ from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.gradual.typeshed import VersionInfo
+from jedi.evaluate.gradual import annotation
 
 
 def _limit_context_infers(func):
@@ -133,7 +133,7 @@ def eval_node(context, element):
     elif typ == 'eval_input':
         return eval_node(context, element.children[0])
     elif typ == 'annassign':
-        return pep0484.eval_annotation(context, element.children[1]) \
+        return annotation.eval_annotation(context, element.children[1]) \
             .execute_annotation()
     elif typ == 'yield_expr':
         if len(element.children) and element.children[1].type == 'yield_arg':
@@ -417,9 +417,9 @@ def _is_annotation_name(name):
         return False
 
     if ancestor.type in ('param', 'funcdef'):
-        annotation = ancestor.annotation
-        if annotation is not None:
-            return annotation.start_pos <= name.start_pos < annotation.end_pos
+        ann = ancestor.annotation
+        if ann is not None:
+            return ann.start_pos <= name.start_pos < ann.end_pos
     elif ancestor.type == 'expr_stmt':
         c = ancestor.children
         if len(c) > 1 and c[1].type == 'annassign':
@@ -534,7 +534,7 @@ def _remove_statements(evaluator, context, stmt, name):
     evaluated.
     """
     pep0484_contexts = \
-        pep0484.find_type_from_comment_hint_assign(context, stmt, name)
+        annotation.find_type_from_comment_hint_assign(context, stmt, name)
     if pep0484_contexts:
         return pep0484_contexts
 
@@ -553,7 +553,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
                 correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
                 if correct_scope:
-                    context_set |= pep0484.eval_annotation(
+                    context_set |= annotation.eval_annotation(
                         context, expr_stmt.children[1].children[1]
                     ).execute_annotation()
         if context_set:
@@ -576,11 +576,11 @@ def tree_name_to_contexts(evaluator, context, tree_name):
 
     typ = node.type
     if typ == 'for_stmt':
-        types = pep0484.find_type_from_comment_hint_for(context, node, tree_name)
+        types = annotation.find_type_from_comment_hint_for(context, node, tree_name)
         if types:
             return types
     if typ == 'with_stmt':
-        types = pep0484.find_type_from_comment_hint_with(context, node, tree_name)
+        types = annotation.find_type_from_comment_hint_with(context, node, tree_name)
         if types:
             return types
 

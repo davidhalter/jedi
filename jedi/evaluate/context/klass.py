@@ -228,7 +228,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
             if stars:
                 continue  # These are not relevant for this search.
 
-            from jedi.evaluate.pep0484 import find_unknown_type_vars
+            from jedi.evaluate.gradual.annotation import find_unknown_type_vars
             for type_var in find_unknown_type_vars(self.parent_context, node):
                 if type_var not in found:
                     # The order matters and it's therefore a list.

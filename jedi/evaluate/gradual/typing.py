@@ -224,7 +224,7 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
     def resolve_forward_references(context_set):
         for context in context_set:
             if is_string(context):
-                from jedi.evaluate.pep0484 import _get_forward_reference_node
+                from jedi.evaluate.gradual.annotation import _get_forward_reference_node
                 node = _get_forward_reference_node(defining_context, context.get_safe_value())
                 if node is not None:
                     for c in defining_context.eval_node(node):
