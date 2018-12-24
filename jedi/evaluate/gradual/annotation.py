@@ -3,20 +3,6 @@ PEP 0484 ( https://www.python.org/dev/peps/pep-0484/ ) describes type hints
 through function annotations. There is a strong suggestion in this document
 that only the type of type hinting defined in PEP0484 should be allowed
 as annotations in future python versions.
-
-The (initial / probably incomplete) implementation todo list for pep-0484:
-v Function parameter annotations with builtin/custom type classes
-v Function returntype annotations with builtin/custom type classes
-v Function parameter annotations with strings (forward reference)
-v Function return type annotations with strings (forward reference)
-v Local variable type hints
-v Assigned types: `Url = str\ndef get(url:Url) -> str:`
-v Type hints in `with` statements
-x Stub files support
-x support `@no_type_check` and `@no_type_check_decorator`
-x support for typing.cast() operator
-x support for type hint comments for functions, `# type: (int, str) -> int`.
-    See comment from Guido https://github.com/davidhalter/jedi/issues/662
 """
 
 import re
