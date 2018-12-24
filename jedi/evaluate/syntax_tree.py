@@ -84,7 +84,7 @@ def eval_node(context, element):
             had_await = True
             first_child = children.pop(0)
 
-        context_set = eval_atom(context, first_child)
+        context_set = context.eval_node(first_child)
         for trailer in children:
             if trailer == '**':  # has a power operation.
                 right = context.eval_node(children[1])
