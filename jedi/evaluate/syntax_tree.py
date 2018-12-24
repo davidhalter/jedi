@@ -85,9 +85,9 @@ def eval_node(context, element):
             first_child = children.pop(0)
 
         context_set = context.eval_node(first_child)
-        for trailer in children:
+        for (i, trailer) in enumerate(children):
             if trailer == '**':  # has a power operation.
-                right = context.eval_node(children[1])
+                right = context.eval_node(children[i + 1])
                 context_set = _eval_comparison(
                     evaluator,
                     context,
