@@ -3,7 +3,7 @@ import pytest
 from jedi import settings
 from jedi.evaluate.filters import ContextName
 from jedi.evaluate.compiled import CompiledContextName
-from jedi.plugins.typeshed import StubOnlyModuleContext
+from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
 
 
 @pytest.fixture()

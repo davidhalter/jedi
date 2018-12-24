@@ -1,6 +1,6 @@
 import os
 
-from jedi.plugins import typeshed
+from jedi.evaluate.gradual import typeshed
 from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext
 from parso.utils import PythonVersionInfo
 from jedi.evaluate.filters import TreeNameDefinition

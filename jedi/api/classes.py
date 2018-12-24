@@ -14,7 +14,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import FunctionExecutionContext
-from jedi.plugins.typeshed import StubOnlyModuleContext
+from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
 from jedi.api.keywords import KeywordName
 
 

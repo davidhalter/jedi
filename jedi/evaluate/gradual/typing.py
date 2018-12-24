@@ -2,6 +2,8 @@
 We need to somehow work with the typing objects. Since the typing objects are
 pretty bare we need to add all the Jedi customizations to make them work as
 contexts.
+
+This file deals with all the typing.py cases.
 """
 from jedi._compatibility import unicode, force_unicode
 from jedi import debug
@@ -16,7 +18,6 @@ from jedi.evaluate.utils import to_list
 from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
     AbstractTreeName, AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
-from jedi.evaluate.imports import Importer
 from jedi.evaluate.context.klass import ClassMixin
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
@@ -261,6 +262,8 @@ class TypeAlias(HelperContextMixin):
         if self.evaluator.environment.version_info.major == 2 and module_name == 'builtins':
             module_name = '__builtin__'
 
+        # TODO use evaluator.import_module?
+        from jedi.evaluate.imports import Importer
         module, = Importer(
             self.evaluator, [module_name], self.evaluator.builtins_module
         ).follow()

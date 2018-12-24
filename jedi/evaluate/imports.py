@@ -30,6 +30,7 @@ from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import AbstractNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
+from jedi.evaluate.gradual.typeshed import import_module_decorator
 
 
 class ModuleCache(object):
@@ -387,6 +388,7 @@ class JediImportError(Exception):
         self.import_names = import_names
 
 
+@import_module_decorator
 def import_module(evaluator, import_names, parent_module_context, sys_path):
     """
     This method is very similar to importlib's `_gcd_import`.

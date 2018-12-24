@@ -208,7 +208,7 @@ class Sequence(BuiltinOverwrite, IterableMixin):
 
     @memoize_method
     def get_object(self):
-        from jedi.evaluate.context.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import AnnotatedSubClass
         klass = compiled.builtin_from_name(self.evaluator, self.array_type)
         # TODO is this execute annotation wrong? it returns a context set?!
         return AnnotatedSubClass(klass, self._get_generics()).execute_annotation()

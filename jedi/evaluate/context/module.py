@@ -9,7 +9,6 @@ from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
-from jedi.evaluate.imports import SubModuleName, infer_import
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -84,6 +83,8 @@ class ModuleMixin(object):
         Lists modules in the directory of this module (if this module is a
         package).
         """
+        from jedi.evaluate.imports import SubModuleName
+
         names = {}
         try:
             method = self.py__path__
@@ -120,6 +121,8 @@ class ModuleMixin(object):
     # to push the star imports into Evaluator.module_cache, if we reenable this.
     @evaluator_method_cache([])
     def star_imports(self):
+        from jedi.evaluate.imports import infer_import
+
         modules = []
         for i in self.tree_node.iter_imports():
             if i.is_star_import():

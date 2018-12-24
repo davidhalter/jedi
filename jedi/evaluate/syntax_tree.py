@@ -25,6 +25,7 @@ from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
 from jedi.evaluate.cache import evaluator_method_cache
+from jedi.evaluate.gradual.typeshed import VersionInfo
 
 
 def _limit_context_infers(func):
@@ -495,7 +496,6 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
                 bool_ = operation(left, right)
                 return ContextSet([_bool_to_context(evaluator, bool_)])
 
-            from jedi.plugins.typeshed import VersionInfo
             if isinstance(left, VersionInfo):
                 version_info = _get_tuple_ints(right)
                 if version_info is not None:

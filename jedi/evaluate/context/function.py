@@ -312,7 +312,7 @@ class FunctionExecutionContext(TreeContext):
         evaluator = self.evaluator
         is_coroutine = self.tree_node.parent.type == 'async_stmt'
         is_generator = bool(get_yield_exprs(evaluator, self.tree_node))
-        from jedi.evaluate.context.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import AnnotatedSubClass
 
         if is_coroutine:
             if is_generator:

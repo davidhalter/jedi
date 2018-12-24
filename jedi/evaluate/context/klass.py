@@ -251,7 +251,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
             )]
 
     def py__getitem__(self, index_context_set, contextualized_node):
-        from jedi.evaluate.context.typing import AnnotatedClass
+        from jedi.evaluate.gradual.typing import AnnotatedClass
         if not index_context_set:
             return ContextSet([self])
         return ContextSet(
@@ -264,7 +264,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
         )
 
     def define_generics(self, type_var_dict):
-        from jedi.evaluate.context.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import AnnotatedSubClass
 
         def remap_type_vars():
             for type_var in self.list_type_vars():

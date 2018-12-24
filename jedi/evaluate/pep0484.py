@@ -26,7 +26,7 @@ from parso import ParserSyntaxError, parse
 from jedi._compatibility import force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
-from jedi.evaluate.context.typing import TypeVar, AnnotatedClass, \
+from jedi.evaluate.gradual.typing import TypeVar, AnnotatedClass, \
     AbstractAnnotatedClass
 from jedi.evaluate.helpers import is_string
 from jedi import debug
