@@ -231,6 +231,7 @@ def find_virtualenvs(paths=None, **kwargs):
             _used_paths.add(virtual_env.path)
 
         for directory in paths:
+            directory = os.path.expanduser(directory)
             if not os.path.isdir(directory):
                 continue
 
@@ -298,6 +299,7 @@ def create_environment(path, safe=True):
     :raises: :exc:`.InvalidPythonEnvironment`
     :returns: :class:`Environment`
     """
+    path = os.path.expanduser(path)
     if os.path.isfile(path):
         _assert_safe(path, safe)
         return Environment(path)
