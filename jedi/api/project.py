@@ -1,7 +1,7 @@
 import os
 import json
 
-from jedi._compatibility import FileNotFoundError, NotADirectoryError
+from jedi._compatibility import FileNotFoundError, NotADirectoryError, PermissionError
 from jedi.api.environment import SameEnvironment, \
     get_cached_default_environment
 from jedi.api.exceptions import WrongVersion
@@ -151,7 +151,7 @@ def _is_django_path(directory):
     try:
         with open(os.path.join(directory, 'manage.py'), 'rb') as f:
             return b"DJANGO_SETTINGS_MODULE" in f.read()
-    except (FileNotFoundError, NotADirectoryError):
+    except (FileNotFoundError, NotADirectoryError, PermissionError):
         return False
 
     return False
@@ -167,7 +167,7 @@ def get_default_project(path=None):
     for dir in traverse_parents(check, include_current=True):
         try:
             return Project.load(dir)
-        except (FileNotFoundError, NotADirectoryError):
+        except (FileNotFoundError, NotADirectoryError, PermissionError):
             pass
 
         if first_no_init_file is None:
