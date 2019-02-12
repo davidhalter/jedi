@@ -286,7 +286,10 @@ def get_system_environment(version):
 
     if os.name == 'nt':
         for exe in _get_executables_from_windows_registry(version):
-            return Environment(exe)
+            try:
+                return Environment(exe)
+            except InvalidPythonEnvironment:
+                pass
     raise InvalidPythonEnvironment("Cannot find executable python%s." % version)
 
 
