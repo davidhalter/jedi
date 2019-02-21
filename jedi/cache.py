@@ -123,6 +123,8 @@ def time_cache(seconds):
             result = func(*args, **kwargs)
             cache[key] = time.time(), result
             return result
+
+        wrapper.clear_cache = lambda: cache.clear()
         return wrapper
 
     return decorator
