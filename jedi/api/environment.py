@@ -184,9 +184,39 @@ def get_default_environment():
     if virtual_env is not None:
         return virtual_env
 
-    # If no VirtualEnv is found, use the environment we're already
+    env = SameEnvironment()
+    if not os.path.basename(env.executable).lower().startswith('python'):
+        # This tries to counter issues with embedding. In some cases (e.g.
+        # VIM's Python Mac/Windows, sys.executable is /foo/bar/vim. This
+        # happens, because for Mac a function called `_NSGetExecutablePath` is
+        # used and for Windows `GetModuleFileNameW`. These are both platform
+        # specific functions. For all other systems sys.executable should be
+        # alright. However here we try to generalize:
+        #
+        # 1. Check if the executable looks like python (heuristic)
+        # 2. In case it's not try to find the executable
+        # 3. In case we don't find it use an interpreter environment.
+        #
+        # The last option will always work, but leads to potential crashes of
+        # Jedi - which is ok, because it happens very rarely and even less,
+        # because the code below should work for most cases.
+        if os.name == 'nt':
+            # The first case would be a virtualenv and the second a normal
+            # Python installation.
+            checks = (r'Scripts\python.exe', 'python.exe')
+        else:
+            # For unix it looks like Python is always in a bin folder.
+            checks = ('bin/python',)
+        for check in checks:
+            guess = os.path.join(sys.exec_prefix, check)
+            if os.path.isfile(guess):
+                # Bingo - We think we have our Python.
+                return Environment(guess)
+        # It looks like there is no reasonable Python to be found.
+        return InterpreterEnvironment()
+    # If no virtualenv is found, use the environment we're already
     # using.
-    return SameEnvironment()
+    return env
 
 
 def get_cached_default_environment():

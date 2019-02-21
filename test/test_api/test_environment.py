@@ -131,6 +131,15 @@ def test_get_default_environment_from_env_does_not_use_safe(tmpdir, monkeypatch)
     assert env.path == 'fake'
 
 
+def test_get_default_environment_when_embedded(monkeypatch):
+    # When using Python embedded, sometimes the executable is not a Python
+    # executable.
+    executable_name = 'RANDOM_EXE'
+    monkeypatch.setattr(sys, 'executable', executable_name)
+    env = get_default_environment()
+    assert env.executable != executable_name
+
+
 def test_changing_venv(venv_path, monkeypatch):
     monkeypatch.setitem(os.environ, 'VIRTUAL_ENV', venv_path)
     get_cached_default_environment()
