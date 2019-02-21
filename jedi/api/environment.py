@@ -210,7 +210,10 @@ def _try_get_same_env():
             checks = (r'Scripts\python.exe', 'python.exe')
         else:
             # For unix it looks like Python is always in a bin folder.
-            checks = ('bin/python',)
+            checks = (
+                'bin/python%s.%s' % (sys.version_info[0], sys.version[1]),
+                'bin/python',
+            )
         for check in checks:
             guess = os.path.join(sys.exec_prefix, check)
             if os.path.isfile(guess):
