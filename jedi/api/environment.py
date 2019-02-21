@@ -153,9 +153,9 @@ def _get_virtual_env_from_var():
     variable is considered to be safe / controlled by the user solely.
     """
     var = os.environ.get('VIRTUAL_ENV')
-    if var is not None:
+    if var:
         if var == sys.prefix:
-            return SameEnvironment()
+            return _try_get_same_env()
 
         try:
             return create_environment(var, safe=False)
@@ -184,6 +184,10 @@ def get_default_environment():
     if virtual_env is not None:
         return virtual_env
 
+    return _try_get_same_env()
+
+
+def _try_get_same_env():
     env = SameEnvironment()
     if not os.path.basename(env.executable).lower().startswith('python'):
         # This tries to counter issues with embedding. In some cases (e.g.
