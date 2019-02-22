@@ -212,6 +212,7 @@ def _try_get_same_env():
             # For unix it looks like Python is always in a bin folder.
             checks = (
                 'bin/python%s.%s' % (sys.version_info[0], sys.version[1]),
+                'bin/python%s' % (sys.version_info[0]),
                 'bin/python',
             )
         for check in checks:
