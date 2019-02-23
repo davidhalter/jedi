@@ -43,9 +43,9 @@ script:
           wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/16.04/x86_64/$download_name.tar.bz2
           sudo tar xjf $download_name.tar.bz2 --directory / opt/python
           ln -s "/opt/python/${test_env_version}/bin/python" /home/travis/bin/$python_bin
-        elif [ "${python_path#/opt/pyenv/shims" != "$python_path" ]; then
+        elif [ "${python_path#/opt/pyenv/shims}" != "$python_path" ]; then
           # Activate pyenv version (required with JEDI_TEST_ENVIRONMENT=35).
-          pyenv local "$TRAVIS_PYTHON_VERSION:$test_env_version"
+          pyenv local "${TRAVIS_PYTHON_VERSION}:${test_env_version}"
         fi
         $python_bin --version
       fi
