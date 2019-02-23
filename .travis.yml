@@ -26,7 +26,7 @@ matrix:
   include:
     - python: 3.6
       env:
-        - TOXENV=cov
+        - TOXENV=py36-coverage
         - JEDI_TEST_ENVIRONMENT=36
     - python: 3.6
       env: TOXENV=sith
@@ -48,8 +48,8 @@ script:
     - tox
 after_script:
     - |
-      if [ $TOXENV == "cov" ]; then
-        pip install --quiet codecov coveralls
+      if [ "${TOXENV%-cov}" != "$TOXENV" ]; then
+        pip install --quiet coveralls
         coverage xml
         coverage report -m
         coveralls
