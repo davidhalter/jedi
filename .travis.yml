@@ -46,7 +46,8 @@ script:
           ln -s "/opt/python/${test_env_version}/bin/python" /home/travis/bin/$python_bin
         elif [ "${python_path#/opt/pyenv/shims}" != "$python_path" ]; then
           # Activate pyenv version (required with JEDI_TEST_ENVIRONMENT=36).
-          pyenv local "system:${test_env_version}"
+          pyenv_bin="$(pyenv whence --path "$python_bin" | head -n1)"
+          ln -s "$pyenv_bin" /home/travis/bin/$python_bin
         fi
         $python_bin --version
         python_ver=$($python_bin -c 'import sys; print("%d%d" % sys.version_info[0:2])')
