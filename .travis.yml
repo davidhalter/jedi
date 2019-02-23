@@ -32,7 +32,8 @@ install:
     - pip install --quiet tox-travis
 script:
     - |
-      set -x
+      # Setup/install Python for $JEDI_TEST_ENVIRONMENT.
+      set -ex
       test_env_version=${JEDI_TEST_ENVIRONMENT:0:1}.${JEDI_TEST_ENVIRONMENT:1:1}
       if [ "$TRAVIS_PYTHON_VERSION" != "$test_env_version" ]; then
         python_bin=python$test_env_version
@@ -44,12 +45,18 @@ script:
           sudo tar xjf $download_name.tar.bz2 --directory / opt/python
           ln -s "/opt/python/${test_env_version}/bin/python" /home/travis/bin/$python_bin
         elif [ "${python_path#/opt/pyenv/shims}" != "$python_path" ]; then
-          # Activate pyenv version (required with JEDI_TEST_ENVIRONMENT=35).
-          pyenv local "${TRAVIS_PYTHON_VERSION}:${test_env_version}"
+          # Activate pyenv version (required with JEDI_TEST_ENVIRONMENT=36).
+          pyenv local "system:${test_env_version}"
         fi
         $python_bin --version
+        python_ver=$($python_bin -c 'import sys; print("%d%d" % sys.version_info[0:2])')
+        if [ "$JEDI_TEST_ENVIRONMENT" != "$python_ver" ]; then
+          echo "Unexpected Python version for $JEDI_TEST_ENVIRONMENT: $python_ver"
+          set +ex
+          exit 2
+        fi
       fi
-      set +x
+      set +ex
     - tox
 after_script:
     - |
