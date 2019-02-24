@@ -443,7 +443,7 @@ class SelfAttributeFilter(ClassFilter):
         for name in names:
             trailer = name.parent
             if trailer.type == 'trailer' \
-                    and len(trailer.children) == 2 \
+                    and len(trailer.parent.children) == 2 \
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name):
                     yield name

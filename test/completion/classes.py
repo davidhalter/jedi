@@ -36,6 +36,7 @@ class TestClass(object):
         self2.var_inst = first_param
         self2.second = second_param
         self2.first = first_param
+        self2.first.var_on_argument = 5
         a = 3
 
     def var_func(self):
