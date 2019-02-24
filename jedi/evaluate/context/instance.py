@@ -446,6 +446,7 @@ class SelfAttributeFilter(ClassFilter):
                     and len(trailer.parent.children) == 2 \
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name):
+                    # TODO filter non-self assignments.
                     yield name
 
     def _convert_names(self, names):
