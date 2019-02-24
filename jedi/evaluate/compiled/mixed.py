@@ -104,7 +104,7 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
 
 @evaluator_function_cache()
 def _load_module(evaluator, path):
-    module_node = evaluator.grammar.parse(
+    module_node = evaluator.parse(
         path=path,
         cache=True,
         diff_cache=settings.fast_parser,
