@@ -21,6 +21,7 @@ from jedi.evaluate.pep0484 import _evaluate_for_annotation
 from jedi.evaluate.context import ClassContext, FunctionContext
 from jedi.evaluate.context import iterable
 from jedi.evaluate.context import TreeInstance, CompiledInstance
+from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.finder import NameFinder
 from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
@@ -526,8 +527,11 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             # which means the function itself.
             filters = [next(filters)]
             return finder.find(filters, attribute_lookup=False)
+        elif node.type == 'param':
+            raise NotImplementedError
         elif node.type not in ('import_from', 'import_name'):
-            raise ValueError("Should not happen. type: %s", node.type)
+            context = evaluator.create_context(context, tree_name)
+            return eval_atom(context, tree_name)
 
     typ = node.type
     if typ == 'for_stmt':

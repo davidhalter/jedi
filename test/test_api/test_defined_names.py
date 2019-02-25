@@ -96,3 +96,8 @@ def test_names_twice(environment):
 
     defs = names(source=source, environment=environment)
     assert defs[0].defined_names() == []
+
+
+def test_simple_name(environment):
+    defs = names('foo', references=True, environment=environment)
+    assert not defs[0]._name.infer()
