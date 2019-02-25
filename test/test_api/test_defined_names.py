@@ -101,3 +101,20 @@ def test_names_twice(environment):
 def test_simple_name(environment):
     defs = names('foo', references=True, environment=environment)
     assert not defs[0]._name.infer()
+
+
+def test_no_error(environment):
+    code = dedent("""
+        def foo(a, b):
+            if a == 10:
+                if b is None:
+                    print("foo")
+                a = 20
+        """)
+    func_name, = names(code)
+    print(func_name.defined_names())
+    a, b, a20 = func_name.defined_names()
+    assert a.name == 'a'
+    assert b.name == 'b'
+    assert a20.name == 'a'
+    assert a20.goto_assignments() == [a20]

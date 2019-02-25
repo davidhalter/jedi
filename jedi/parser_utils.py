@@ -243,6 +243,9 @@ def get_parent_scope(node, include_flows=False):
     Returns the underlying scope.
     """
     scope = node.parent
+    if scope.type in ('funcdef', 'classdef') and scope.name == node:
+        scope = scope.parent
+
     while scope is not None:
         if include_flows and isinstance(scope, tree.Flow):
             return scope
