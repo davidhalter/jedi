@@ -247,11 +247,16 @@ def get_parent_scope(node, include_flows=False):
     Returns the underlying scope.
     """
     scope = node.parent
-    while scope is not None:
-        if include_flows and isinstance(scope, tree.Flow):
+    if scope is None:
+        return None  # It's a module already.
+    if scope.type in ('funcdef', 'classdef') and scope.name == node:
+        scope = scope.parent
+    if scope.parent is None:  # The module scope.
+        return scope
+
+    while True:
+        if include_flows and isinstance(scope, tree.Flow) or is_scope(scope):
             return scope
-        if is_scope(scope):
-            break
         scope = scope.parent
     return scope
 

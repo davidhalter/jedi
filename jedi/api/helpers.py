@@ -130,7 +130,10 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
         return p.stack
-    raise SystemError("This really shouldn't happen. There's a bug in Jedi.")
+    raise SystemError(
+        "This really shouldn't happen. There's a bug in Jedi:\n%s"
+        % list(tokenize_without_endmarker(code))
+    )
 
 
 def evaluate_goto_definition(evaluator, context, leaf):

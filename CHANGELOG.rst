@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.13.3 (2019-02-24)
++++++++++++++++++++
+
+- Fixed an issue with embedded Pytho, see https://github.com/davidhalter/jedi-vim/issues/870
+
 0.13.2 (2018-12-15)
 +++++++++++++++++++
 

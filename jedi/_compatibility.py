@@ -348,6 +348,11 @@ try:
 except NameError:
     NotADirectoryError = IOError
 
+try:
+    PermissionError = PermissionError
+except NameError:
+    PermissionError = IOError
+
 
 def no_unicode_pprint(dct):
     """

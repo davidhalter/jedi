@@ -572,7 +572,8 @@ def tree_name_to_contexts(evaluator, context, tree_name):
             filters = [next(filters)]
             return finder.find(filters, attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
-            raise ValueError("Should not happen. type: %s", node.type)
+            context = evaluator.create_context(context, tree_name)
+            return eval_atom(context, tree_name)
 
     typ = node.type
     if typ == 'for_stmt':
@@ -612,6 +613,8 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         # the static analysis report.
         exceptions = context.eval_node(tree_name.get_previous_sibling().get_previous_sibling())
         types = exceptions.execute_evaluated()
+    elif node.type == 'param':
+        types = NO_CONTEXTS
     else:
         raise ValueError("Should not happen. type: %s" % typ)
     return types

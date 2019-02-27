@@ -172,7 +172,7 @@ def get_module_names(module, all_scopes):
         # parent_scope. There's None as a parent, because nodes in the module
         # node have the parent module and not suite as all the others.
         # Therefore it's important to catch that case.
-        names = [n for n in names if get_parent_scope(n).parent in (module, None)]
+        names = [n for n in names if get_parent_scope(n) == module]
     return names
 
 
