@@ -99,7 +99,7 @@ def test_function_call_signature_in_doc(Script):
 
 
 def test_param_docstring():
-    param = jedi.names("def test(parameter): pass")[1]
+    param = jedi.names("def test(parameter): pass", all_scopes=True)[1]
     assert param.name == 'parameter'
     assert param.docstring() == ''
 
