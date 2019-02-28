@@ -357,9 +357,11 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
             path = os.path.join(base_dir, f_name)
 
             if is_py3:
-                source = open(path, encoding='utf-8').read()
+                with open(path, encoding='utf-8') as f:
+                    source = f.read()
             else:
-                source = unicode(open(path).read(), 'UTF-8')
+                with open(path) as f:
+                    source = unicode(f.read(), 'UTF-8')
 
             for case in collect_file_tests(path, StringIO(source),
                                            lines_to_execute):
