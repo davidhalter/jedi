@@ -254,11 +254,13 @@ def test_compiled_import_none(monkeypatch, Script):
     assert not Script('import sys').goto_definitions()
 
 
-def test_relative_imports_with_multiple_similar_directories(Script):
+@pytest.mark.parametrize(
+    'path', ('api/whatever/test_this.py', 'api/whatever/file'))
+def test_relative_imports_with_multiple_similar_directories(Script, path):
     dir = get_example_dir('issue1209')
     script = Script(
         "from .",
-        path=os.path.join(dir, 'api/whatever/test_this.py')
+        path=os.path.join(dir, path)
     )
     # TODO pass this project to the script as a param once that's possible.
     script._evaluator.project = Project(dir)

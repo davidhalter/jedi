@@ -210,9 +210,9 @@ def transform_path_to_dotted(sys_path, module_path):
         if module_path.endswith(suffix):
             module_path = module_path[:-len(suffix)]
             break
-    else:
-        # There should always be a suffix in a valid Python file on the path.
-        return None
+    # Once the suffix was removed we are using the files as we know them. This
+    # means that if someone uses an ending like .vim for a Python file, .vim
+    # will be part of the returned dotted part.
 
     for p in sys_path:
         if module_path.startswith(p):
