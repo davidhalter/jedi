@@ -32,7 +32,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import usages
 from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
-from jedi.evaluate.sys_path import dotted_path_in_sys_path
+from jedi.evaluate.sys_path import transform_path_to_dotted
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
@@ -107,7 +107,6 @@ class Script(object):
         self._evaluator = Evaluator(
             project, environment=environment, script_path=self.path
         )
-        self._project = project
         debug.speed('init')
         self._module_node, source = self._evaluator.parse_and_get_code(
             code=source,
@@ -145,7 +144,7 @@ class Script(object):
     def _get_module(self):
         name = '__main__'
         if self.path is not None:
-            import_names = dotted_path_in_sys_path(self._evaluator.get_sys_path(), self.path)
+            import_names = transform_path_to_dotted(self._evaluator.get_sys_path(), self.path)
             if import_names is not None:
                 name = '.'.join(import_names)
 

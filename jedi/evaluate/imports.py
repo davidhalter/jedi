@@ -559,7 +559,7 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
-                import_names = sys_path.dotted_path_in_sys_path(e_sys_path, path)
+                import_names = sys_path.transform_path_to_dotted(e_sys_path, path)
                 module = _load_module(
                     evaluator, path, code,
                     sys_path=e_sys_path,

@@ -3,6 +3,8 @@ from glob import glob
 import sys
 import shutil
 
+import pytest
+
 from jedi.evaluate import sys_path
 from jedi.api.environment import create_environment
 
@@ -59,3 +61,29 @@ def test_venv_and_pths(venv_path):
 
     # Ensure that none of venv dirs leaked to the interpreter.
     assert not set(sys.path).intersection(ETALON)
+
+
+_s = ['/a', '/b', '/c/d/']
+
+
+@pytest.mark.parametrize(
+    'sys_path_, module_path, result', [
+        (_s, '/a/b', None),
+        (_s, '/a/b/c', None),
+        (_s, '/a/b.py', ['b']),
+        (_s, '/a/b/c.py', ['b', 'c']),
+        (_s, '/x/b.py', None),
+        (_s, '/c/d/x.py', ['x']),
+        (_s, '/c/d/x.py', ['x']),
+        (_s, '/c/d/x/y.py', ['x', 'y']),
+        # If dots are in there they also resolve. These are obviously illegal
+        # in Python, but Jedi can handle them. Give the user a bit more freedom
+        # that he will have to correct eventually.
+        (_s, '/a/b.c.py', ['b.c']),
+        (_s, '/a/b.d/foo.bar.py', ['b.d', 'foo.bar']),
+
+        (_s, '/a/.py', None),
+        (_s, '/a/c/.py', None),
+    ])
+def test_calculate_dotted_from_path(sys_path_, module_path, result):
+    assert sys_path.transform_path_to_dotted(sys_path_, module_path) == result

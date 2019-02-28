@@ -196,30 +196,35 @@ def _get_buildout_script_paths(search_path):
             continue
 
 
-def dotted_path_in_sys_path(sys_path, module_path):
+def transform_path_to_dotted(sys_path, module_path):
     """
-    Returns the dotted path inside a sys.path as a list of names.
+    Returns the dotted path inside a sys.path as a list of names. e.g.
+
+    >>> calculate_dotted_from_path(["/foo"], '/foo/bar/baz.py')
+    ['bar', 'baz']
+
+    Returns None if the path doesn't really resolve to anything.
     """
     # First remove the suffix.
     for suffix in all_suffixes():
         if module_path.endswith(suffix):
             module_path = module_path[:-len(suffix)]
-        break
+            break
     else:
         # There should always be a suffix in a valid Python file on the path.
         return None
 
-    if module_path.startswith(os.path.sep):
-        # The paths in sys.path most of the times don't end with a slash.
-        module_path = module_path[1:]
-
     for p in sys_path:
         if module_path.startswith(p):
             rest = module_path[len(p):]
+            if rest.startswith(os.path.sep):
+                # Remove a slash in cases it's still there.
+                rest = rest[1:]
+
             if rest:
                 split = rest.split(os.path.sep)
                 for string in split:
-                    if not string or '.' in string:
+                    if not string:
                         return None
                 return split
 
