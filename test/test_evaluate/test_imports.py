@@ -9,7 +9,8 @@ import pytest
 
 from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
-from ..helpers import cwd_at
+from jedi.api.project import Project
+from ..helpers import cwd_at, get_example_dir
 
 
 @pytest.mark.skipif('sys.version_info < (3,3)')
@@ -251,3 +252,16 @@ def test_compiled_import_none(monkeypatch, Script):
     """
     monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
     assert not Script('import sys').goto_definitions()
+
+
+def test_relative_imports_with_multiple_similar_directories(Script):
+    dir = get_example_dir('issue1209')
+    script = Script(
+        "from .",
+        path=os.path.join(dir, 'api/whatever/test_this.py')
+    )
+    # TODO pass this project to the script as a param once that's possible.
+    script._evaluator.project = Project(dir)
+    name, import_ = script.completions()
+    assert import_.name == 'import'
+    assert name.name == 'api_test1'
