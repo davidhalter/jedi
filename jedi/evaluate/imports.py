@@ -522,7 +522,7 @@ def get_modules_containing_name(evaluator, modules, name):
                 if base_names:
                     import_names = base_names + (module_name,)
                 else:
-                    import_names = sys_path.calculate_dotted_path_from_sys_path(e_sys_path, path)
+                    import_names = sys_path.transform_path_to_dotted(e_sys_path, path)
 
                 module = _load_module(
                     evaluator, path, code,

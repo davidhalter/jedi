@@ -10,7 +10,8 @@ import pytest
 from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
-from ..helpers import cwd_at
+from jedi.api.project import Project
+from ..helpers import cwd_at, get_example_dir
 
 THIS_DIR = os.path.dirname(__file__)
 
@@ -272,3 +273,18 @@ def test_get_modules_containing_name(evaluator, path, goal):
     )
     assert input_module is module
     assert found_module.string_names == goal
+
+
+@pytest.mark.parametrize(
+    'path', ('api/whatever/test_this.py', 'api/whatever/file'))
+def test_relative_imports_with_multiple_similar_directories(Script, path):
+    dir = get_example_dir('issue1209')
+    script = Script(
+        "from .",
+        path=os.path.join(dir, path)
+    )
+    # TODO pass this project to the script as a param once that's possible.
+    script._evaluator.project = Project(dir)
+    name, import_ = script.completions()
+    assert import_.name == 'import'
+    assert name.name == 'api_test1'

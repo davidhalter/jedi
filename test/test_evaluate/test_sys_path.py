@@ -63,17 +63,34 @@ def test_venv_and_pths(venv_path):
     assert not set(sys.path).intersection(ETALON)
 
 
-@pytest.mark.parametrize(('sys_path_', 'path', 'expected'), [
-    (['/foo'], '/foo/bar.py', ('bar',)),
-    (['/foo'], '/foo/bar/baz.py', ('bar', 'baz')),
-    (['/foo'], '/foo/bar/__init__.py', ('bar',)),
-    (['/foo'], '/foo/bar/baz/__init__.py', ('bar', 'baz')),
+_s = ['/a', '/b', '/c/d/']
 
-    (['/foo'], '/foo/bar.so', ('bar',)),
-    (['/foo'], '/foo/bar/__init__.so', ('bar',)),
 
-    (['/foo'], '/x/bar.py', None),
-    (['/foo'], '/foo/bar.xyz', None),
-])
-def test_calculate_dotted_path_from_sys_path(path, sys_path_, expected):
-    assert sys_path.calculate_dotted_path_from_sys_path(sys_path_, path) == expected
+@pytest.mark.parametrize(
+    'sys_path_, module_path, result', [
+        (_s, '/a/b', ('b',)),
+        (_s, '/a/b/c', ('b', 'c')),
+        (_s, '/a/b.py', ('b',)),
+        (_s, '/a/b/c.py', ('b', 'c')),
+        (_s, '/x/b.py', None),
+        (_s, '/c/d/x.py', ('x',)),
+        (_s, '/c/d/x.py', ('x',)),
+        (_s, '/c/d/x/y.py', ('x', 'y')),
+        # If dots are in there they also resolve. These are obviously illegal
+        # in Python, but Jedi can handle them. Give the user a bit more freedom
+        # that he will have to correct eventually.
+        (_s, '/a/b.c.py', ('b.c',)),
+        (_s, '/a/b.d/foo.bar.py', ('b.d', 'foo.bar')),
+
+        (_s, '/a/.py', None),
+        (_s, '/a/c/.py', None),
+
+        (['/foo'], '/foo/bar/__init__.py', ('bar',)),
+        (['/foo'], '/foo/bar/baz/__init__.py', ('bar', 'baz')),
+        (['/foo'], '/foo/bar.so', ('bar',)),
+        (['/foo'], '/foo/bar/__init__.so', ('bar',)),
+        (['/foo'], '/x/bar.py', None),
+        (['/foo'], '/foo/bar.xyz', ('bar.xyz',)),
+    ])
+def test_calculate_dotted_from_path(sys_path_, module_path, result):
+    assert sys_path.transform_path_to_dotted(sys_path_, module_path) == result

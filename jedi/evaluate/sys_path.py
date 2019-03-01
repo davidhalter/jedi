@@ -197,38 +197,40 @@ def _get_buildout_script_paths(search_path):
             continue
 
 
-def calculate_dotted_path_from_sys_path(sys_path, module_path):
+def transform_path_to_dotted(sys_path, module_path):
     """
-    Returns the dotted path inside a sys.path as a list of names.
+    Returns the dotted path inside a sys.path as a list of names. e.g.
 
-    This function is supposed to be a backup plan in case there's no idea where
-    a file is lying.
+    >>> transform_path_to_dotted(["/foo"], '/foo/bar/baz.py')
+    ('bar', 'baz')
+
+    Returns None if the path doesn't really resolve to anything.
     """
     # First remove the suffix.
     for suffix in all_suffixes():
         if module_path.endswith(suffix):
             module_path = module_path[:-len(suffix)]
             break
-    else:
-        # There should always be a suffix in a valid Python file on the path.
-        return None
+    # Once the suffix was removed we are using the files as we know them. This
+    # means that if someone uses an ending like .vim for a Python file, .vim
+    # will be part of the returned dotted part.
 
-    if module_path.endswith('__init__'):
+    if module_path.endswith(os.path.sep + '__init__'):
+        # -1 to remove the separator
         module_path = module_path[:-len('__init__') - 1]
-
-    if module_path.endswith(os.path.sep):
-        # The paths in sys.path may end with a slash.
-        module_path = module_path[:-1]
 
     for p in sys_path:
         if module_path.startswith(p):
             rest = module_path[len(p):]
+            # On Windows a path can also use a slash.
             if rest.startswith(os.path.sep) or rest.startswith('/'):
+                # Remove a slash in cases it's still there.
                 rest = rest[1:]
+
             if rest:
                 split = rest.split(os.path.sep)
                 for string in split:
-                    if not string or '.' in string:
+                    if not string:
                         return None
                 return tuple(split)
     return None
