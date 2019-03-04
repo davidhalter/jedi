@@ -221,9 +221,23 @@ class Importer(object):
             base = module_context.py__package__().split('.')
             if base == [''] or base == ['__main__']:
                 base = []
-            if level > len(base):
+            # We need to care for two cases, the second is if it's a valid
+            # Python 
+            if level <= len(base):
+                # Here we basically rewrite the level to 0.
+                base = tuple(base)
+                if level > 1:
+                    base = base[:-level + 1]
+                import_path = base + tuple(import_path)
+            else:
                 path = module_context.py__file__()
-                if path is not None:
+                if path is None:
+                    # If no path is defined in the module we have no ideas where we
+                    # are in the file system. Therefore we cannot know what to do.
+                    # In this case we just let the path there and ignore that it's
+                    # a relative path. Not sure if that's a good idea.
+                    pass
+                else:
                     import_path = list(import_path)
                     p = path
                     for i in range(level):
@@ -240,17 +254,6 @@ class Importer(object):
                             message='Attempted relative import beyond top-level package.'
                         )
                         import_path = []
-                # If no path is defined in the module we have no ideas where we
-                # are in the file system. Therefore we cannot know what to do.
-                # In this case we just let the path there and ignore that it's
-                # a relative path. Not sure if that's a good idea.
-            else:
-                # Here we basically rewrite the level to 0.
-                base = tuple(base)
-                if level > 1:
-                    base = base[:-level + 1]
-
-                import_path = base + tuple(import_path)
         self.import_path = import_path
 
     @property
