@@ -280,18 +280,14 @@ def test_get_modules_containing_name(evaluator, path, goal):
 @pytest.mark.parametrize('empty_sys_path', (False, True))
 def test_relative_imports_with_multiple_similar_directories(Script, path, empty_sys_path):
     dir = get_example_dir('issue1209')
+    script = Script(
+        "from .",
+        path=os.path.join(dir, path),
+    )
+    # TODO pass this project to the script as a param once that's possible.
     if empty_sys_path:
-        script = Script(
-            "from .",
-            path=os.path.join(dir, path),
-        )
         script._evaluator.project = Project(dir, smart_sys_path=False)
     else:
-        script = Script(
-            "from .",
-            path=os.path.join(dir, path),
-        )
-        # TODO pass this project to the script as a param once that's possible.
         script._evaluator.project = Project(dir)
     name, import_ = script.completions()
     assert import_.name == 'import'

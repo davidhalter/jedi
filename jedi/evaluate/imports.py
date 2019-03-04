@@ -221,8 +221,15 @@ class Importer(object):
             base = module_context.py__package__().split('.')
             if base == [''] or base == ['__main__']:
                 base = []
-            # We need to care for two cases, the second is if it's a valid
-            # Python 
+            # We need to care for two cases, the first one is if it's a valid
+            # Python import. This import has a properly defined module name
+            # chain like `foo.bar.baz` and an import in baz is made for
+            # `..lala.` It can then resolve to `foo.bar.lala`.
+            # The else here is a heuristic for all other cases, if for example
+            # in `foo` you search for `...bar`, it's obviously out of scope.
+            # However since Jedi tries to just do it's best, we help the user
+            # here, because he might have specified something wrong in his
+            # project.
             if level <= len(base):
                 # Here we basically rewrite the level to 0.
                 base = tuple(base)
