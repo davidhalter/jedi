@@ -281,7 +281,7 @@ def test_get_modules_containing_name(evaluator, path, goal):
 def test_relative_imports_with_multiple_similar_directories(Script, path, empty_sys_path):
     dir = get_example_dir('issue1209')
     script = Script(
-        "from .",
+        "from . ",
         path=os.path.join(dir, path),
     )
     # TODO pass this project to the script as a param once that's possible.
@@ -292,3 +292,19 @@ def test_relative_imports_with_multiple_similar_directories(Script, path, empty_
     name, import_ = script.completions()
     assert import_.name == 'import'
     assert name.name == 'api_test1'
+
+
+@cwd_at('test/examples/issue1209/api/whatever/')
+def test_relative_imports_without_path(Script):
+    script = Script("from . ")
+    name, import_ = script.completions()
+    assert import_.name == 'import'
+    assert name.name == 'api_test1'
+
+    script = Script("from .. ")
+    name, import_ = script.completions()
+    assert import_.name == 'whatever'
+    assert name.name == 'import'
+
+    script = Script("from ... ")
+    assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']

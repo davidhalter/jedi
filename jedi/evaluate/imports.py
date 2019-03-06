@@ -238,29 +238,34 @@ class Importer(object):
                 import_path = base + tuple(import_path)
             else:
                 path = module_context.py__file__()
+                import_path = list(import_path)
                 if path is None:
-                    # If no path is defined in the module we have no ideas where we
-                    # are in the file system. Therefore we cannot know what to do.
-                    # In this case we just let the path there and ignore that it's
-                    # a relative path. Not sure if that's a good idea.
-                    pass
+                    # If no path is defined, our best case is that the current
+                    # file is edited by a user on the current working
+                    # directory. We need to add an initial path, because it
+                    # will get removed as the name of the current file.
+                    directory = os.getcwd()
                 else:
-                    import_path = list(import_path)
-                    p = path
-                    for i in range(level):
-                        p = os.path.dirname(p)
-                    dir_name = os.path.basename(p)
-                    # This is not the proper way to do relative imports. However, since
-                    # Jedi cannot be sure about the entry point, we just calculate an
-                    # absolute path here.
+                    directory = os.path.dirname(path)
+                level_import_paths = []
+
+                for i in range(level - 1):
+                    directory = os.path.dirname(directory)
+                while directory != os.path.dirname(directory):
+                    if directory == self._evaluator.project._path:
+                        break
+                    dir_name = os.path.basename(directory)
                     if dir_name:
-                        import_path.insert(0, dir_name)
+                        level_import_paths.insert(0, dir_name)
+                        directory = os.path.dirname(directory)
                     else:
                         _add_error(
                             module_context, import_path[-1],
                             message='Attempted relative import beyond top-level package.'
                         )
-                        import_path = []
+                        self.import_path = []
+                        return
+                import_path = level_import_paths + import_path
         self.import_path = import_path
 
     @property
