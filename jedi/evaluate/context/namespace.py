@@ -70,3 +70,6 @@ class ImplicitNamespaceContext(Context):
         for name in mods:
             names[name] = imports.SubModuleName(self, name)
         return names
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._fullname)
