@@ -280,18 +280,36 @@ def test_get_modules_containing_name(evaluator, path, goal):
 @pytest.mark.parametrize('empty_sys_path', (False, True))
 def test_relative_imports_with_multiple_similar_directories(Script, path, empty_sys_path):
     dir = get_example_dir('issue1209')
+    if empty_sys_path:
+        project = Project(dir, sys_path=(), smart_sys_path=False)
+    else:
+        project = Project(dir)
     script = Script(
         "from . ",
         path=os.path.join(dir, path),
+        _project=project,
     )
-    # TODO pass this project to the script as a param once that's possible.
-    if empty_sys_path:
-        script._evaluator.project = Project(dir, smart_sys_path=False)
-    else:
-        script._evaluator.project = Project(dir)
     name, import_ = script.completions()
     assert import_.name == 'import'
     assert name.name == 'api_test1'
+
+
+def test_relative_imports_x(Script):
+    dir = get_example_dir('issue1209')
+    project = Project(dir, sys_path=[], smart_sys_path=False)
+    script = Script(
+        "from ...",
+        path=os.path.join(dir, 'api/whatever/test_this.py'),
+        _project=project,
+    )
+    assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']
+
+    script = Script(
+        "from " + '.' * 100,
+        path=os.path.join(dir, 'api/whatever/test_this.py'),
+        _project=project,
+    )
+    assert [c.name for c in script.completions()] == ['import']
 
 
 @cwd_at('test/examples/issue1209/api/whatever/')
@@ -322,12 +340,12 @@ def test_relative_import_out_of_file_system(Script):
 
 @pytest.mark.parametrize(
     'level, directory, project_path, result', [
-        (1, '/a/b/c', '/a', (['b', 'c'], None)),
-        (2, '/a/b/c', '/a', (['b'], None)),
-        (3, '/a/b/c', '/a', ([], None)),
+        (1, '/a/b/c', '/a', (['b', 'c'], '/a')),
+        (2, '/a/b/c', '/a', (['b'], '/a')),
+        (3, '/a/b/c', '/a', ([], '/a')),
         (4, '/a/b/c', '/a', (None, '/')),
         (5, '/a/b/c', '/a', (None, None)),
-        (1, '/', '/', ([], None)),
+        (1, '/', '/', ([], '/')),
         (2, '/', '/', (None, None)),
     ]
 )

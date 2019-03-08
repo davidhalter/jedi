@@ -82,7 +82,8 @@ class Script(object):
     :type sys_path: Environment
     """
     def __init__(self, source=None, line=None, column=None, path=None,
-                 encoding='utf-8', sys_path=None, environment=None):
+                 encoding='utf-8', sys_path=None, environment=None,
+                 _project=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
@@ -98,10 +99,12 @@ class Script(object):
         if sys_path is not None and not is_py3:
             sys_path = list(map(force_unicode, sys_path))
 
-        # Load the Python grammar of the current interpreter.
-        project = get_default_project(
-            os.path.dirname(self.path)if path else os.getcwd()
-        )
+        project = _project
+        if project is None:
+            # Load the Python grammar of the current interpreter.
+            project = get_default_project(
+                os.path.dirname(self.path)if path else os.getcwd()
+            )
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path

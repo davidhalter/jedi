@@ -211,7 +211,7 @@ def _level_to_base_import_path(project_path, directory, level):
     # import path for it.
     while True:
         if d == project_path:
-            return level_import_paths, None
+            return level_import_paths, d
         dir_name = os.path.basename(d)
         if dir_name:
             level_import_paths.insert(0, dir_name)
@@ -280,18 +280,19 @@ class Importer(object):
                 base_import_path, base_directory = _level_to_base_import_path(
                     self._evaluator.project._path, directory, level,
                 )
+                if base_directory is None:
+                    # Everything is lost, the relative import does point
+                    # somewhere out of the filesystem.
+                    self._inference_possible = False
+                else:
+                    self._fixed_sys_path = [base_directory]
+
                 if base_import_path is None:
                     if import_path:
                         _add_error(
                             module_context, import_path[0],
                             message='Attempted relative import beyond top-level package.'
                         )
-                    if base_directory is None:
-                        # Everything is lost, the relative import does point
-                        # somewhere out of the filesystem.
-                        self._inference_possible = False
-                    else:
-                        self._fixed_sys_path = [base_directory]
                 else:
                     import_path = base_import_path + import_path
         self.import_path = import_path
@@ -375,6 +376,9 @@ class Importer(object):
         :param only_modules: Indicates wheter it's possible to import a
             definition that is not defined in a module.
         """
+        if not self._inference_possible:
+            return []
+
         names = []
         if self.import_path:
             # flask
@@ -416,15 +420,11 @@ class Importer(object):
                 for filter in context.get_filters(search_global=False):
                     names += filter.values()
         else:
-            # Empty import path=completion after import
             if self.level:
-                if self.file_path is not None:
-                    path = self.file_path
-                    for i in range(self.level):
-                        path = os.path.dirname(path)
-                    raise 1
-                    names += self._get_module_names([path])
+                # We only get here if the level cannot be properly calculated.
+                names += self._get_module_names(self._fixed_sys_path)
             else:
+                # This is just the list of global imports.
                 names += self._get_module_names()
         return names
 
