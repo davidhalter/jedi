@@ -285,7 +285,7 @@ class Importer(object):
                     # somewhere out of the filesystem.
                     self._inference_possible = False
                 else:
-                    self._fixed_sys_path = [base_directory]
+                    self._fixed_sys_path = [force_unicode(base_directory)]
 
                 if base_import_path is None:
                     if import_path:
