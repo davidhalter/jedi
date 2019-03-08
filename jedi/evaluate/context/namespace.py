@@ -51,7 +51,7 @@ class ImplicitNamespaceContext(Context):
         return self._fullname
 
     def py__path__(self):
-        return [self.paths]
+        return self.paths
 
     def py__name__(self):
         return self._fullname

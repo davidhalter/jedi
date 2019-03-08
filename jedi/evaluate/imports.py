@@ -203,7 +203,7 @@ class Importer(object):
 
         :param import_path: List of namespaces (strings or Names).
         """
-        debug.speed('import %s' % (import_path,))
+        debug.speed('import %s %s' % (import_path, module_context))
         self._evaluator = evaluator
         self.level = level
         self.module_context = module_context
@@ -346,13 +346,9 @@ class Importer(object):
                 paths = method()
                 debug.dbg('search_module %s in paths %s', module_name, paths)
                 for path in paths:
-                    # At the moment we are only using one path. So this is
-                    # not important to be correct.
-                    if not isinstance(path, list):
-                        path = [path]
                     code, module_path, is_pkg = self._evaluator.compiled_subprocess.get_module_info(
                         string=import_parts[-1],
-                        path=path,
+                        path=[force_unicode(path)],
                         full_name=module_name,
                         is_global_search=False,
                     )
