@@ -234,7 +234,7 @@ class Importer(object):
 
         :param import_path: List of namespaces (strings or Names).
         """
-        debug.speed('import %s' % (import_path,))
+        debug.speed('import %s %s' % (import_path, module_context))
         self._evaluator = evaluator
         self.level = level
         self.module_context = module_context
