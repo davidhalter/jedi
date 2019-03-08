@@ -133,13 +133,13 @@ def test_cache_works_with_sys_path_param(Script, tmpdir):
 def test_import_completion_docstring(Script):
     import abc
     s = Script('"""test"""\nimport ab')
-    completions = s.completions()
-    assert len(completions) == 1
-    assert completions[0].docstring(fast=False) == abc.__doc__
+    abc_completions = [c for c in s.completions() if c.name == 'abc']
+    assert len(abc_completions) == 1
+    assert abc_completions[0].docstring(fast=False) == abc.__doc__
 
     # However for performance reasons not all modules are loaded and the
     # docstring is empty in this case.
-    assert completions[0].docstring() == ''
+    assert abc_completions[0].docstring() == ''
 
 
 def test_goto_definition_on_import(Script):

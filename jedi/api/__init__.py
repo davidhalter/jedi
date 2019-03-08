@@ -78,7 +78,7 @@ class Script(object):
     :param sys_path: ``sys.path`` to use during analysis of the script
     :type sys_path: list
     :param environment: TODO
-    :type sys_path: Environment
+    :type environment: Environment
     """
     def __init__(self, source=None, line=None, column=None, path=None,
                  encoding='utf-8', sys_path=None, environment=None):
