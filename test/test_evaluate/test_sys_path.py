@@ -68,8 +68,8 @@ _s = ['/a', '/b', '/c/d/']
 
 @pytest.mark.parametrize(
     'sys_path_, module_path, result', [
-        (_s, '/a/b', None),
-        (_s, '/a/b/c', None),
+        (_s, '/a/b', ['b']),
+        (_s, '/a/b/c', ['b', 'c']),
         (_s, '/a/b.py', ['b']),
         (_s, '/a/b/c.py', ['b', 'c']),
         (_s, '/x/b.py', None),
