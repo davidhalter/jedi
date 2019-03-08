@@ -308,3 +308,28 @@ def test_relative_imports_without_path(Script):
 
     script = Script("from ... ")
     assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']
+
+
+def test_relative_import_out_of_file_system(Script):
+    script = Script("from " + '.' * 100)
+    import_, = script.completions()
+    assert import_.name == 'import'
+
+    script = Script("from " + '.' * 100 + 'abc import ABCMeta')
+    assert not script.goto_definitions()
+    assert not script.completions()
+
+
+@pytest.mark.parametrize(
+    'level, directory, project_path, result', [
+        (1, '/a/b/c', '/a', (['b', 'c'], None)),
+        (2, '/a/b/c', '/a', (['b'], None)),
+        (3, '/a/b/c', '/a', ([], None)),
+        (4, '/a/b/c', '/a', (None, '/')),
+        (5, '/a/b/c', '/a', (None, None)),
+        (1, '/', '/', ([], None)),
+        (2, '/', '/', (None, None)),
+    ]
+)
+def test_level_to_import_path(level, directory, project_path, result):
+    assert imports._level_to_base_import_path(project_path, directory, level) == result
