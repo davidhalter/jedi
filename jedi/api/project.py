@@ -67,7 +67,7 @@ class Project(object):
         """
         def py2_comp(path, environment=None, sys_path=None,
                      smart_sys_path=True, _django=False):
-            self._path = path
+            self._path = os.path.abspath(path)
             if isinstance(environment, SameEnvironment):
                 self._environment = environment
 

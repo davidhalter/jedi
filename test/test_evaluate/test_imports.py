@@ -314,17 +314,14 @@ def test_relative_imports_x(Script):
 
 @cwd_at('test/examples/issue1209/api/whatever/')
 def test_relative_imports_without_path(Script):
-    script = Script("from . ")
-    name, import_ = script.completions()
-    assert import_.name == 'import'
-    assert name.name == 'api_test1'
+    project = Project('.', sys_path=[], smart_sys_path=False)
+    script = Script("from . ", _project=project)
+    assert [c.name for c in script.completions()] == ['api_test1', 'import']
 
-    script = Script("from .. ")
-    name, import_ = script.completions()
-    assert import_.name == 'whatever'
-    assert name.name == 'import'
+    script = Script("from .. ", _project=project)
+    assert [c.name for c in script.completions()] == ['import', 'whatever']
 
-    script = Script("from ... ")
+    script = Script("from ... ", _project=project)
     assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']
 
 
@@ -347,6 +344,9 @@ def test_relative_import_out_of_file_system(Script):
         (5, '/a/b/c', '/a', (None, None)),
         (1, '/', '/', ([], '/')),
         (2, '/', '/', (None, None)),
+        (1, '/a/b', '/a/b/c', (None, '/a/b')),
+        (2, '/a/b', '/a/b/c', (None, '/a')),
+        (3, '/a/b', '/a/b/c', (None, '/')),
     ]
 )
 def test_level_to_import_path(level, directory, project_path, result):

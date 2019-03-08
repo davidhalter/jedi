@@ -217,7 +217,7 @@ def _level_to_base_import_path(project_path, directory, level):
             level_import_paths.insert(0, dir_name)
             d = os.path.dirname(d)
         else:
-            return None, d
+            return None, directory
 
 
 class Importer(object):
