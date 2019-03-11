@@ -301,6 +301,18 @@ class BaseDefinition(object):
 
         return '.'.join(path if path[0] else path[1:])
 
+    def is_stub(self):
+        return all(c.is_stub() for c in self._name.infer())
+
+    def goto_stubs(self):
+        if self.is_stub():
+            return [self]
+
+        return [
+            Definition(self._evaluator, d.stub_context.name)
+            for d in self._name.infer() if d.stub_context is not None
+        ]
+
     def goto_assignments(self):
         if self._name.tree_name is None:
             return self

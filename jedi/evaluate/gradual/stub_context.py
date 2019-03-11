@@ -87,6 +87,9 @@ class StubMethodContext(StubFunctionContext):
 class _StubOnlyContextMixin(object):
     _add_non_stubs_in_filter = False
 
+    def is_stub(self):
+        return True
+
     def _get_stub_only_filters(self, **filter_kwargs):
         return [StubOnlyFilter(
             self.evaluator,
@@ -154,6 +157,9 @@ class _CompiledStubContext(ContextWrapper):
     def __init__(self, stub_context, compiled_context):
         super(_CompiledStubContext, self).__init__(stub_context)
         self._compiled_context = compiled_context
+
+    def is_stub(self):
+        return True
 
     def py__doc__(self, include_call_signature=False):
         doc = self._compiled_context.py__doc__()

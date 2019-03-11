@@ -102,6 +102,10 @@ class Context(HelperContextMixin, BaseContext):
     To be defined by subclasses.
     """
     tree_node = None
+    stub_context = None
+
+    def is_stub(self):
+        return False
 
     @property
     def api_type(self):

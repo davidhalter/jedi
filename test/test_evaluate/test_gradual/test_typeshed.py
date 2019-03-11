@@ -152,12 +152,34 @@ def test_type_var(Script):
     assert def_.description == 'TypeVar = object()'
 
 
-@pytest.mark.parametrize('code', ('import math', 'from math import cos'))
-def test_math_is_stub(Script, code):
+@pytest.mark.parametrize(
+    'code, full_name', (
+        ('import math', 'math'),
+        ('from math import cos', 'math.cos')
+    )
+)
+def test_math_is_stub(Script, code, full_name):
     s = Script(code)
     cos, = s.goto_definitions()
     wanted = os.path.join('typeshed', 'stdlib', '2and3', 'math.pyi')
     assert cos.module_path.endswith(wanted)
+    assert cos.is_stub() is True
+    assert cos.goto_stubs() == [cos]
+    assert cos.full_name == full_name
 
     cos, = s.goto_assignments()
     assert cos.module_path.endswith(wanted)
+    assert cos.goto_stubs() == [cos]
+    assert cos.is_stub() is True
+    assert cos.full_name == full_name
+
+
+def test_goto_stubs(Script):
+    s = Script('import os; os')
+    os_module, = s.goto_definitions()
+    assert os_module.full_name == 'os'
+    assert os_module.is_stub() is False
+    stub, = os_module.goto_stubs()
+    assert stub.is_stub() is True
+
+    os_module, = s.goto_assignments()
