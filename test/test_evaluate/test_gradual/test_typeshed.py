@@ -183,3 +183,29 @@ def test_goto_stubs(Script):
     assert stub.is_stub() is True
 
     os_module, = s.goto_assignments()
+
+
+@pytest.mark.parametrize(
+    'code', [
+        'import os; os.walk'
+        'from collections import Counter; Counter'
+    ])
+def test_goto_stubs_on_itself(Script):
+    """
+    If goto_stubs is used on an identifier in e.g. the stdlib, we should goto
+    the stub of it.
+    """
+    s = Script()
+    os_module, = s.goto_definitions()
+    stub = os_module.goto_stubs()
+
+    script_on_source = Script(
+        path=os_module.module_path,
+        line=os_module.line,
+        column=os_module.column
+    )
+    definition, = script_on_source.goto_assignments()
+    same_stub, = definition.goto_stubs()
+    assert stub.module_path == same_stub.module_path
+    assert stub.line == same_stub.line
+    assert stub.column == same_stub.column
