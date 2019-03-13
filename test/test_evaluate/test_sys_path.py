@@ -86,4 +86,7 @@ _s = ['/a', '/b', '/c/d/']
         (_s, '/a/c/.py', None),
     ])
 def test_calculate_dotted_from_path(sys_path_, module_path, result):
+    # tranform_path_to_dotted expects normalized absolute paths.
+    sys_path_ = [os.path.abspath(path) for path in sys_path_]
+    module_path = os.path.abspath(module_path)
     assert sys_path.transform_path_to_dotted(sys_path_, module_path) == result
