@@ -356,3 +356,9 @@ def test_name_not_findable():
     setattr(X, 'NOT_FINDABLE', X.hidden)
 
     assert jedi.Interpreter("X.NOT_FINDA", [locals()]).completions()
+
+
+def test_sys_path_docstring():  # Was an issue in #1298
+    import jedi
+    s = jedi.Interpreter("from sys import path\npath", line=2, column=4, namespaces=[locals()])
+    s.completions()[0].docstring()

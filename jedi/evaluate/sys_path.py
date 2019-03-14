@@ -99,7 +99,7 @@ def check_sys_path_modifications(module_context):
     def get_sys_path_powers(names):
         for name in names:
             power = name.parent.parent
-            if power.type in ('power', 'atom_expr'):
+            if power is not None and power.type in ('power', 'atom_expr'):
                 c = power.children
                 if c[0].type == 'name' and c[0].value == 'sys' \
                         and c[1].type == 'trailer':
