@@ -190,7 +190,7 @@ def test_goto_stubs(Script):
         'import os; os.walk'
         'from collections import Counter; Counter'
     ])
-def test_goto_stubs_on_itself(Script):
+def test_goto_stubs_on_itself(Script, code):
     """
     If goto_stubs is used on an identifier in e.g. the stdlib, we should goto
     the stub of it.

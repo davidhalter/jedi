@@ -513,19 +513,16 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
         filter_ = super(AbstractAnnotatedClass, self)._create_class_filter(
             cls, origin_scope, is_instance
         )
-        try:
-            stub_context = cls.stub_context
-        except AttributeError:
+        if cls.stub_context is None:
             return filter_
-        else:
-            return stub_context.get_stub_only_filter(
-                # Take the first filter, which is here to filter module contents
-                # and wrap it.
-                self.parent_context,
-                [filter_],
-                search_global=False,
-                origin_scope=origin_scope,
-            )
+        return cls.stub_context.get_stub_only_filter(
+            # Take the first filter, which is here to filter module contents
+            # and wrap it.
+            self.parent_context,
+            [filter_],
+            search_global=False,
+            origin_scope=origin_scope,
+        )
 
     def get_filters(self, search_global=False, *args, **kwargs):
         filters = super(AbstractAnnotatedClass, self).get_filters(

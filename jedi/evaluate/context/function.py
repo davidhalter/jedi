@@ -336,7 +336,10 @@ class FunctionExecutionContext(TreeContext):
                 # Only the first generic is relevant.
                 generics = (return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
                 return ContextSet(
-                    AnnotatedSubClass(getattr(c, 'stub_context', c), generics) for c in async_classes
+                    AnnotatedSubClass(
+                        c if c.stub_context is None else c.stub_context,
+                        generics
+                    ) for c in async_classes
                 ).execute_annotation()
         else:
             if is_generator:

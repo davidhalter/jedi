@@ -395,11 +395,8 @@ class BoundMethod(FunctionMixin, ContextWrapper):
 
         # This might not be the most beautiful way, but prefer stub_contexts
         # and execute those if possible.
-        try:
-            stub_context = self._wrapped_context.stub_context
-        except AttributeError:
-            pass
-        else:
+        stub_context = self._wrapped_context.stub_context
+        if stub_context is not None:
             return stub_context.py__call__(arguments)
 
         function_execution = self.get_function_execution(arguments)
