@@ -247,7 +247,7 @@ class Importer(object):
         self._fixed_sys_path = None
         self._inference_possible = True
         if level:
-            base = module_context.py__package__().split('.')
+            base = module_context.py__package__()
             if base == [''] or base == ['__main__']:
                 base = []
             # We need to care for two cases, the first one is if it's a valid

@@ -181,9 +181,9 @@ class ModuleContext(ModuleMixin, TreeContext):
 
     def py__package__(self):
         if self._get_init_directory() is None:
-            return re.sub(r'\.?[^.]+$', '', self.py__name__())
+            return re.sub(r'\.?[^.]+$', '', self.py__name__()).split('.')
         else:
-            return self.py__name__()
+            return self.string_names
 
     def _py__path__(self):
         search_path = self.evaluator.get_sys_path()

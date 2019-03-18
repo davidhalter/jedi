@@ -39,7 +39,7 @@ class ImplicitNamespaceContext(Context):
     @property
     @evaluator_method_cache()
     def name(self):
-        string_name = self.py__package__().rpartition('.')[-1]
+        string_name = self.py__package__()[-1]
         return ImplicitNSName(self, string_name)
 
     def py__file__(self):
@@ -48,7 +48,7 @@ class ImplicitNamespaceContext(Context):
     def py__package__(self):
         """Return the fullname
         """
-        return self._fullname
+        return self._fullname.split('.')
 
     def py__path__(self):
         return self._paths

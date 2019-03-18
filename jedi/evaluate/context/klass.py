@@ -28,7 +28,7 @@ py__simple_getitem__(index: int/str)   Returns a a set of types of the index.
 py__getitem__(indexes: ContextSet)     Returns a a set of types of the index.
 py__file__()                           Only on modules. Returns None if does
                                        not exist.
-py__package__()                        Only on modules. For the import system.
+py__package__() -> List[str]           Only on modules. For the import system.
 py__path__()                           Only on modules. For the import system.
 py__get__(call_object)                 Only on instances. Simulates
                                        descriptors.
