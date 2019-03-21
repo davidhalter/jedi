@@ -249,6 +249,7 @@ class Importer(object):
         if level:
             base = module_context.py__package__()
             if base == [''] or base == ['__main__']:
+                raise NotImplementedError(module_context.py__package__())
                 base = []
             # We need to care for two cases, the first one is if it's a valid
             # Python import. This import has a properly defined module name
@@ -487,6 +488,7 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
         evaluator, module_path, code, sys_path,
         import_names=import_names,
         safe_module_name=True,
+        is_package=is_pkg,
     )
 
     if parent_module_context is None:
@@ -497,7 +499,7 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
 
 
 def _load_module(evaluator, path=None, code=None, sys_path=None,
-                 import_names=None, safe_module_name=False):
+                 import_names=None, safe_module_name=False, is_package=False):
     if import_names is None:
         dotted_name = None
     else:
@@ -530,6 +532,7 @@ def _load_module(evaluator, path=None, code=None, sys_path=None,
                 path=path,
                 string_names=import_names,
                 code_lines=get_cached_code_lines(evaluator.grammar, path),
+                is_package=is_package,
             )
         else:
             assert dotted_name is not None
@@ -561,19 +564,23 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
-                module_name = os.path.basename(path)
-                if module_name.endswith('.py'):
-                    module_name = module_name[:-3]
-
                 if base_names:
+                    module_name = os.path.basename(path)
+                    module_name = sys_path.remove_python_path_suffix(module_name)
+                    is_package = module_name == '__init__'
+                    if is_package:
+                        raise NotImplementedError(
+                            "This is probably not possible yet, please add a failing test first")
+                        module_name = os.path.basename(os.path.dirname(path))
                     import_names = base_names + (module_name,)
                 else:
-                    import_names = sys_path.transform_path_to_dotted(e_sys_path, path)
+                    import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
 
                 module = _load_module(
                     evaluator, path, code,
                     sys_path=e_sys_path,
                     import_names=import_names,
+                    is_package=is_package,
                 )
                 evaluator.module_cache.add(import_names, ContextSet([module]))
                 return module
@@ -590,10 +597,7 @@ def get_modules_containing_name(evaluator, modules, name):
             if path is not None:
                 if path not in used_mod_paths:
                     used_mod_paths.add(path)
-                    string_names = m.string_names
-                    if not m.is_package() and string_names is not None:
-                        string_names = string_names[:-1]
-                    path_with_names_to_be_checked.append((path, string_names))
+                    path_with_names_to_be_checked.append((path, m.py__package__()))
         yield m
 
     if not settings.dynamic_params_for_other_modules:

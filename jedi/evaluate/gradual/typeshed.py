@@ -140,7 +140,7 @@ def import_module_decorator(func):
         if len(import_names) == 1:
             map_ = _cache_stub_file_map(evaluator.grammar.version_info)
         elif isinstance(parent_module_context, StubModuleContext):
-            if not parent_module_context.stub_context.is_package():
+            if not parent_module_context.stub_context.is_package:
                 # Only if it's a package (= a folder) something can be
                 # imported.
                 return context_set
@@ -161,6 +161,7 @@ def import_module_decorator(func):
                         module_cls = TypingModuleWrapper
                     else:
                         module_cls = StubOnlyModuleContext
+                    file_name = os.path.basename(path)
                     stub_module_context = module_cls(
                         context_set, evaluator, stub_module_node,
                         path=path,
@@ -168,6 +169,7 @@ def import_module_decorator(func):
                         # The code was loaded with latest_grammar, so use
                         # that.
                         code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
+                        is_package=file_name == '__init__.pyi',
                     )
                     modules = _merge_modules(context_set, stub_module_context)
                     return ContextSet(modules)

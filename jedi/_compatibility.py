@@ -81,32 +81,30 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
     if loader is None:
         raise ImportError("Couldn't find a loader for {}".format(string))
 
-    try:
-        is_package = loader.is_package(string)
-        if is_package:
-            if hasattr(loader, 'path'):
-                module_path = os.path.dirname(loader.path)
-            else:
-                # At least zipimporter does not have path attribute
-                module_path = os.path.dirname(loader.get_filename(string))
-            if hasattr(loader, 'archive'):
-                module_file = DummyFile(loader, string)
-            else:
-                module_file = None
+    is_package = loader.is_package(string)
+    if is_package:
+        if hasattr(loader, 'path'):
+            module_path = os.path.dirname(loader.path)
         else:
+            # At least zipimporter does not have path attribute
+            module_path = os.path.dirname(loader.get_filename(string))
+        if hasattr(loader, 'archive'):
+            module_file = DummyFile(loader, string)
+        else:
+            module_file = None
+    else:
+        try:
             module_path = loader.get_filename(string)
             module_file = DummyFile(loader, string)
-    except AttributeError:
-        # ExtensionLoader has not attribute get_filename, instead it has a
-        # path attribute that we can use to retrieve the module path
-        try:
-            module_path = loader.path
-            module_file = DummyFile(loader, string)
         except AttributeError:
-            module_path = string
-            module_file = None
-        finally:
-            is_package = False
+            # ExtensionLoader has not attribute get_filename, instead it has a
+            # path attribute that we can use to retrieve the module path
+            try:
+                module_path = loader.path
+                module_file = DummyFile(loader, string)
+            except AttributeError:
+                module_path = string
+                module_file = None
 
     if hasattr(loader, 'archive'):
         module_path = loader.archive

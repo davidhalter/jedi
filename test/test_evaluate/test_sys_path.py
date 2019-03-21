@@ -67,30 +67,31 @@ _s = ['/a', '/b', '/c/d/']
 
 
 @pytest.mark.parametrize(
-    'sys_path_, module_path, result', [
-        (_s, '/a/b', ('b',)),
-        (_s, '/a/b/c', ('b', 'c')),
-        (_s, '/a/b.py', ('b',)),
-        (_s, '/a/b/c.py', ('b', 'c')),
-        (_s, '/x/b.py', None),
-        (_s, '/c/d/x.py', ('x',)),
-        (_s, '/c/d/x.py', ('x',)),
-        (_s, '/c/d/x/y.py', ('x', 'y')),
+    'sys_path_, module_path, expected, is_package', [
+        (_s, '/a/b', ('b',), False),
+        (_s, '/a/b/c', ('b', 'c'), False),
+        (_s, '/a/b.py', ('b',), False),
+        (_s, '/a/b/c.py', ('b', 'c'), False),
+        (_s, '/x/b.py', None, False),
+        (_s, '/c/d/x.py', ('x',), False),
+        (_s, '/c/d/x.py', ('x',), False),
+        (_s, '/c/d/x/y.py', ('x', 'y'), False),
         # If dots are in there they also resolve. These are obviously illegal
         # in Python, but Jedi can handle them. Give the user a bit more freedom
         # that he will have to correct eventually.
-        (_s, '/a/b.c.py', ('b.c',)),
-        (_s, '/a/b.d/foo.bar.py', ('b.d', 'foo.bar')),
+        (_s, '/a/b.c.py', ('b.c',), False),
+        (_s, '/a/b.d/foo.bar.py', ('b.d', 'foo.bar'), False),
 
-        (_s, '/a/.py', None),
-        (_s, '/a/c/.py', None),
+        (_s, '/a/.py', None, False),
+        (_s, '/a/c/.py', None, False),
 
-        (['/foo'], '/foo/bar/__init__.py', ('bar',)),
-        (['/foo'], '/foo/bar/baz/__init__.py', ('bar', 'baz')),
-        (['/foo'], '/foo/bar.so', ('bar',)),
-        (['/foo'], '/foo/bar/__init__.so', ('bar',)),
-        (['/foo'], '/x/bar.py', None),
-        (['/foo'], '/foo/bar.xyz', ('bar.xyz',)),
+        (['/foo'], '/foo/bar/__init__.py', ('bar',), True),
+        (['/foo'], '/foo/bar/baz/__init__.py', ('bar', 'baz'), True),
+        (['/foo'], '/foo/bar.so', ('bar',), False),
+        (['/foo'], '/foo/bar/__init__.so', ('bar',), True),
+        (['/foo'], '/x/bar.py', None, False),
+        (['/foo'], '/foo/bar.xyz', ('bar.xyz',), False),
     ])
-def test_calculate_dotted_from_path(sys_path_, module_path, result):
-    assert sys_path.transform_path_to_dotted(sys_path_, module_path) == result
+def test_calculate_dotted_from_path(sys_path_, module_path, expected, is_package):
+    assert sys_path.transform_path_to_dotted(sys_path_, module_path) \
+        == (expected, is_package)

@@ -197,25 +197,33 @@ def _get_buildout_script_paths(search_path):
             continue
 
 
+def remove_python_path_suffix(path):
+    for suffix in all_suffixes():
+        if path.endswith(suffix):
+            path = path[:-len(suffix)]
+            break
+    return path
+
+
 def transform_path_to_dotted(sys_path, module_path):
     """
     Returns the dotted path inside a sys.path as a list of names. e.g.
 
     >>> transform_path_to_dotted(["/foo"], '/foo/bar/baz.py')
-    ('bar', 'baz')
+    ('bar', 'baz'), False
 
-    Returns None if the path doesn't really resolve to anything.
+    Returns (None, False) if the path doesn't really resolve to anything.
+    The second return part is if it is a package.
     """
     # First remove the suffix.
-    for suffix in all_suffixes():
-        if module_path.endswith(suffix):
-            module_path = module_path[:-len(suffix)]
-            break
+    module_path = remove_python_path_suffix(module_path)
+
     # Once the suffix was removed we are using the files as we know them. This
     # means that if someone uses an ending like .vim for a Python file, .vim
     # will be part of the returned dotted part.
 
-    if module_path.endswith(os.path.sep + '__init__'):
+    is_package = module_path.endswith(os.path.sep + '__init__')
+    if is_package:
         # -1 to remove the separator
         module_path = module_path[:-len('__init__') - 1]
 
@@ -231,6 +239,6 @@ def transform_path_to_dotted(sys_path, module_path):
                 split = rest.split(os.path.sep)
                 for string in split:
                     if not string:
-                        return None
-                return tuple(split)
-    return None
+                        return None, False
+                return tuple(split), is_package
+    return None, False

@@ -36,9 +36,11 @@ def test_find_module_not_package():
     assert is_package is False
 
 
+pkg_zip_path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
+
+
 def test_find_module_package_zipped(Script, evaluator, environment):
-    path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
-    sys_path = environment.get_sys_path() + [path]
+    sys_path = environment.get_sys_path() + [pkg_zip_path]
     script = Script('import pkg; pkg.mod', sys_path=sys_path)
     assert len(script.completions()) == 1
 
@@ -50,6 +52,16 @@ def test_find_module_package_zipped(Script, evaluator, environment):
     assert code is not None
     assert path.endswith('pkg.zip')
     assert is_package is True
+
+
+def test_correct_zip_package_behavior(Script, evaluator, environment):
+    sys_path = environment.get_sys_path() + [pkg_zip_path]
+    pkg, = Script('import pkg', sys_path=sys_path).goto_definitions()
+    context, = pkg._name.infer()
+    assert context.py__file__() == pkg_zip_path
+    assert context.is_package is True
+    assert context.py__package__() == ('pkg',)
+    assert context.py__path__() == [pkg_zip_path]
 
 
 def test_find_module_not_package_zipped(Script, evaluator, environment):

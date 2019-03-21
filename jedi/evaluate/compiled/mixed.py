@@ -211,6 +211,7 @@ def _create(evaluator, access_handle, parent_context, *args):
             path=path,
             string_names=string_names,
             code_lines=code_lines,
+            is_package=hasattr(compiled_object, 'py__path__'),
         )
         if name is not None:
             evaluator.module_cache.add(string_names, ContextSet([module_context]))

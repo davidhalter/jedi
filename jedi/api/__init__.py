@@ -150,15 +150,21 @@ class Script(object):
     @cache.memoize_method
     def _get_module(self):
         names = ('__main__',)
+        is_package = False
         if self.path is not None:
-            import_names = transform_path_to_dotted(self._evaluator.get_sys_path(), self.path)
+            import_names, is_p = transform_path_to_dotted(
+                self._evaluator.get_sys_path(),
+                self.path
+            )
             if import_names is not None:
                 names = import_names
+                is_package = is_p
 
         module = ModuleContext(
             self._evaluator, self._module_node, cast_path(self.path),
             string_names=names,
             code_lines=self._code_lines,
+            is_package=is_package,
         )
         self._evaluator.module_cache.add(names, ContextSet([module]))
         return module

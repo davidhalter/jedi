@@ -139,7 +139,7 @@ class ModuleContext(ModuleMixin, TreeContext):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node, path, string_names, code_lines):
+    def __init__(self, evaluator, module_node, path, string_names, code_lines, is_package=False):
         super(ModuleContext, self).__init__(
             evaluator,
             parent_context=None,
@@ -148,19 +148,7 @@ class ModuleContext(ModuleMixin, TreeContext):
         self._path = path
         self.string_names = string_names
         self.code_lines = code_lines
-
-    def _get_init_directory(self):
-        """
-        :return: The path to the directory of a package. None in case it's not
-                 a package.
-        """
-        for suffix in all_suffixes() + ['.pyi']:
-            ending = '__init__' + suffix
-            py__file__ = self.py__file__()
-            if py__file__ is not None and py__file__.endswith(ending):
-                # Remove the ending, including the separator.
-                return self.py__file__()[:-len(ending) - 1]
-        return None
+        self.is_package = is_package
 
     def py__name__(self):
         if self.string_names is None:
@@ -176,39 +164,36 @@ class ModuleContext(ModuleMixin, TreeContext):
 
         return os.path.abspath(self._path)
 
-    def is_package(self):
-        return self._get_init_directory() is not None
-
     def py__package__(self):
-        if self._get_init_directory() is None:
-            return re.sub(r'\.?[^.]+$', '', self.py__name__()).split('.')
-        else:
+        if self.is_package:
             return self.string_names
+        return self.string_names[:-1]
 
     def _py__path__(self):
-        search_path = self.evaluator.get_sys_path()
-        init_path = self.py__file__()
-        if os.path.basename(init_path) in ('__init__.py', '__init__.pyi'):
-            with open(init_path, 'rb') as f:
-                content = python_bytes_to_unicode(f.read(), errors='replace')
-                # these are strings that need to be used for namespace packages,
-                # the first one is ``pkgutil``, the second ``pkg_resources``.
-                options = ('declare_namespace(__name__)', 'extend_path(__path__')
-                if options[0] in content or options[1] in content:
-                    # It is a namespace, now try to find the rest of the
-                    # modules on sys_path or whatever the search_path is.
-                    paths = set()
-                    for s in search_path:
-                        other = os.path.join(s, self.name.string_name)
-                        if os.path.isdir(other):
-                            paths.add(other)
-                    if paths:
-                        return list(paths)
-                    # TODO I'm not sure if this is how nested namespace
-                    # packages work. The tests are not really good enough to
-                    # show that.
-        # Default to this.
-        return [self._get_init_directory()]
+        # A namespace package is typically auto generated and ~10 lines long.
+        first_few_lines = ''.join(self.code_lines[:50])
+        # these are strings that need to be used for namespace packages,
+        # the first one is ``pkgutil``, the second ``pkg_resources``.
+        options = ('declare_namespace(__name__)', 'extend_path(__path__')
+        if options[0] in first_few_lines or options[1] in first_few_lines:
+            # It is a namespace, now try to find the rest of the
+            # modules on sys_path or whatever the search_path is.
+            paths = set()
+            for s in self.evaluator.get_sys_path():
+                other = os.path.join(s, self.name.string_name)
+                if os.path.isdir(other):
+                    paths.add(other)
+            if paths:
+                return list(paths)
+            # Nested namespace packages will not be supported. Nobody ever
+            # asked for it and in Python 3 they are there without using all the
+            # crap above.
+
+        # Default to the of this file.
+        file = self.py__file__()
+        if file is None:
+            return None
+        return os.path.dirname(file)
 
     @property
     def py__path__(self):
@@ -222,7 +207,7 @@ class ModuleContext(ModuleMixin, TreeContext):
         is a list of paths (strings).
         Raises an AttributeError if the module is not a package.
         """
-        if self.is_package():
+        if self.is_package:
             return self._py__path__
         else:
             raise AttributeError('Only packages have __path__ attributes.')
