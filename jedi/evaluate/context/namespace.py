@@ -1,10 +1,7 @@
-import os
-from itertools import chain
-
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate import imports
 from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, ContextNameMixin
 from jedi.evaluate.base_context import Context
+from jedi.evaluate.context.module import SubModuleDictMixin
 
 
 class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
@@ -17,7 +14,7 @@ class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
         self.string_name = string_name
 
 
-class ImplicitNamespaceContext(Context):
+class ImplicitNamespaceContext(Context, SubModuleDictMixin):
     """
     Provides support for implicit namespace packages
     """
@@ -55,21 +52,6 @@ class ImplicitNamespaceContext(Context):
 
     def py__name__(self):
         return self._fullname
-
-    @evaluator_method_cache()
-    def _sub_modules_dict(self):
-        names = {}
-
-        file_names = chain.from_iterable(os.listdir(path) for path in self._paths)
-        mods = [
-            file_name.rpartition('.')[0] if '.' in file_name else file_name
-            for file_name in file_names
-            if file_name != '__pycache__'
-        ]
-
-        for name in mods:
-            names[name] = imports.SubModuleName(self, name)
-        return names
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._fullname)

@@ -37,7 +37,37 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
-class ModuleMixin(object):
+class SubModuleDictMixin(object):
+    @evaluator_method_cache()
+    def _sub_modules_dict(self):
+        """
+        Lists modules in the directory of this module (if this module is a
+        package).
+        """
+        from jedi.evaluate.imports import SubModuleName
+
+        names = {}
+        try:
+            method = self.py__path__
+        except AttributeError:
+            pass
+        else:
+            for path in method():
+                mods = iter_modules([path])
+                for module_loader, name, is_pkg in mods:
+                    # It's obviously a relative import to the current module.
+                    names[name] = SubModuleName(self, name)
+
+        # TODO add something like this in the future, its cleaner than the
+        #   import hacks.
+        # ``os.path`` is a hardcoded exception, because it's a
+        # ``sys.modules`` modification.
+        # if str(self.name) == 'os':
+        #     names.append(Name('path', parent_context=self))
+
+        return names
+
+class ModuleMixin(SubModuleDictMixin):
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
@@ -76,35 +106,6 @@ class ModuleMixin(object):
             r = re.search(r'([^%s]*?)(%s__init__)?(\.pyi?|\.so)?$' % sep, self._path)
             # Remove PEP 3149 names
             return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
-
-    @evaluator_method_cache()
-    def _sub_modules_dict(self):
-        """
-        Lists modules in the directory of this module (if this module is a
-        package).
-        """
-        from jedi.evaluate.imports import SubModuleName
-
-        names = {}
-        try:
-            method = self.py__path__
-        except AttributeError:
-            pass
-        else:
-            for path in method():
-                mods = iter_modules([path])
-                for module_loader, name, is_pkg in mods:
-                    # It's obviously a relative import to the current module.
-                    names[name] = SubModuleName(self, name)
-
-        # TODO add something like this in the future, its cleaner than the
-        #   import hacks.
-        # ``os.path`` is a hardcoded exception, because it's a
-        # ``sys.modules`` modification.
-        # if str(self.name) == 'os':
-        #     names.append(Name('path', parent_context=self))
-
-        return names
 
     @evaluator_method_cache()
     def _module_attributes_dict(self):
