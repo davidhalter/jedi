@@ -427,15 +427,15 @@ class Evaluator(object):
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
 
     def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
-                           use_latest_grammar=False, **kwargs):
+                           use_latest_grammar=False, file_io=None, **kwargs):
         if self.allow_different_encoding:
             if code is None:
-                with open(path, 'rb') as f:
-                    code = f.read()
+                assert file_io is not None
+                code = file_io.read()
             code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
 
         grammar = self.latest_grammar if use_latest_grammar else self.grammar
-        return grammar.parse(code=code, path=path, **kwargs), code
+        return grammar.parse(code=code, path=path, file_io=file_io, **kwargs), code
 
     def parse(self, *args, **kwargs):
         return self.parse_and_get_code(*args, **kwargs)[0]

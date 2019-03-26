@@ -1,6 +1,7 @@
 import os
 import re
 
+from parso.file_io import FileIO
 from jedi._compatibility import FileNotFoundError
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate.cache import evaluator_function_cache
@@ -64,7 +65,7 @@ def _get_typeshed_directories(version_info):
 
 @evaluator_function_cache()
 def _load_stub(evaluator, path):
-    return evaluator.parse(path=path, cache=True, use_latest_grammar=True)
+    return evaluator.parse(file_io=FileIO(path), cache=True, use_latest_grammar=True)
 
 
 def _merge_modules(context_set, stub_context):

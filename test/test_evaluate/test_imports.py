@@ -6,6 +6,7 @@ Tests".
 import os
 
 import pytest
+from parso.file_io import FileIO
 
 from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
@@ -19,20 +20,20 @@ THIS_DIR = os.path.dirname(__file__)
 @pytest.mark.skipif('sys.version_info < (3,3)')
 def test_find_module_py33():
     """Needs to work like the old find_module."""
-    assert find_module_py33('_io') == (None, '_io', False)
+    assert find_module_py33('_io') == (None, False)
+    with pytest.raises(ImportError):
+        assert find_module_py33('_DOESNTEXIST_') == (None, None)
 
 
 def test_find_module_package():
-    file, path, is_package = find_module('json')
-    assert file is None
-    assert path.endswith('json')
+    file_io, is_package = find_module('json')
+    assert file_io.path.endswith(os.path.join('json', '__init__.py'))
     assert is_package is True
 
 
 def test_find_module_not_package():
-    file, path, is_package = find_module('io')
-    assert file is not None
-    assert path.endswith('io.py')
+    file_io, is_package = find_module('io')
+    assert file_io.path.endswith('io.py')
     assert is_package is False
 
 
@@ -44,13 +45,14 @@ def test_find_module_package_zipped(Script, evaluator, environment):
     script = Script('import pkg; pkg.mod', sys_path=sys_path)
     assert len(script.completions()) == 1
 
-    code, path, is_package = evaluator.compiled_subprocess.get_module_info(
+    file_io, is_package = evaluator.compiled_subprocess.get_module_info(
         sys_path=sys_path,
         string=u'pkg',
         full_name=u'pkg'
     )
-    assert code is not None
-    assert path.endswith('pkg.zip')
+    assert file_io is not None
+    assert file_io.path.endswith(os.path.join('pkg.zip', 'pkg', '__init__.py'))
+    assert file_io._zip_path.endswith('pkg.zip')
     assert is_package is True
 
 
@@ -58,10 +60,10 @@ def test_correct_zip_package_behavior(Script, evaluator, environment):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
     pkg, = Script('import pkg', sys_path=sys_path).goto_definitions()
     context, = pkg._name.infer()
-    assert context.py__file__() == pkg_zip_path
+    assert context.py__file__() == os.path.join(pkg_zip_path, 'pkg', '__init__.py')
     assert context.is_package is True
     assert context.py__package__() == ('pkg',)
-    assert context.py__path__() == [pkg_zip_path]
+    assert context.py__path__() == [os.path.join(pkg_zip_path, 'pkg')]
 
 
 def test_find_module_not_package_zipped(Script, evaluator, environment):
@@ -70,13 +72,12 @@ def test_find_module_not_package_zipped(Script, evaluator, environment):
     script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
     assert len(script.completions()) == 1
 
-    code, path, is_package = evaluator.compiled_subprocess.get_module_info(
+    file_io, is_package = evaluator.compiled_subprocess.get_module_info(
         sys_path=sys_path,
         string=u'not_pkg',
         full_name=u'not_pkg'
     )
-    assert code is not None
-    assert path.endswith('not_pkg.zip')
+    assert file_io.path.endswith(os.path.join('not_pkg.zip', 'not_pkg.py'))
     assert is_package is False
 
 
@@ -270,13 +271,18 @@ def test_compiled_import_none(monkeypatch, Script):
 
 
 @pytest.mark.parametrize(
-    ('path', 'goal'), [
-        (os.path.join(THIS_DIR, 'test_docstring.py'), ('ok', 'lala', 'test_imports')),
-        (os.path.join(THIS_DIR, '__init__.py'), ('ok', 'lala', 'x', 'test_imports')),
+    ('path', 'is_package', 'goal'), [
+        (os.path.join(THIS_DIR, 'test_docstring.py'), False, ('ok', 'lala', 'test_imports')),
+        (os.path.join(THIS_DIR, '__init__.py'), True, ('ok', 'lala', 'x', 'test_imports')),
     ]
 )
-def test_get_modules_containing_name(evaluator, path, goal):
-    module = imports._load_module(evaluator, path, import_names=('ok', 'lala', 'x'))
+def test_get_modules_containing_name(evaluator, path, goal, is_package):
+    module = imports._load_python_module(
+        evaluator,
+        FileIO(path),
+        import_names=('ok', 'lala', 'x'),
+        is_package=is_package,
+    )
     assert module
     input_module, found_module = imports.get_modules_containing_name(
         evaluator,

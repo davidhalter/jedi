@@ -191,9 +191,8 @@ class ModuleContext(ModuleMixin, TreeContext):
 
         # Default to the of this file.
         file = self.py__file__()
-        if file is None:
-            return None
-        return os.path.dirname(file)
+        assert file is not None  # Shouldn't be a package in the first place.
+        return [os.path.dirname(file)]
 
     @property
     def py__path__(self):

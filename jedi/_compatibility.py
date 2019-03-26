@@ -14,6 +14,9 @@ try:
     import importlib
 except ImportError:
     pass
+from zipimport import zipimporter
+
+from parso.file_io import KnownContentFileIO
 
 is_py3 = sys.version_info[0] >= 3
 is_py35 = is_py3 and sys.version_info[1] >= 5
@@ -55,7 +58,7 @@ def find_module_py34(string, path=None, full_name=None, is_global_search=True):
                 # This is a namespace package.
                 full_name = string if not path else full_name
                 implicit_ns_info = ImplicitNSInfo(full_name, spec.submodule_search_locations._path)
-                return None, implicit_ns_info, False
+                return implicit_ns_info, True
             break
 
     return find_module_py33(string, path, loader)
@@ -81,13 +84,9 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
     if loader is None:
         raise ImportError("Couldn't find a loader for {}".format(string))
 
+    return _from_loader(loader, string)
     is_package = loader.is_package(string)
     if is_package:
-        if hasattr(loader, 'path'):
-            module_path = os.path.dirname(loader.path)
-        else:
-            # At least zipimporter does not have path attribute
-            module_path = os.path.dirname(loader.get_filename(string))
         if hasattr(loader, 'archive'):
             module_file = DummyFile(loader, string)
         else:
@@ -97,29 +96,61 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
             module_path = loader.get_filename(string)
             module_file = DummyFile(loader, string)
         except AttributeError:
-            # ExtensionLoader has not attribute get_filename, instead it has a
-            # path attribute that we can use to retrieve the module path
             try:
-                module_path = loader.path
                 module_file = DummyFile(loader, string)
             except AttributeError:
                 module_path = string
                 module_file = None
 
-    if hasattr(loader, 'archive'):
-        module_path = loader.archive
-
     return module_file, module_path, is_package
 
 
-def find_module_pre_py34(string, path=None, full_name=None, is_global_search=True):
+class ZipFileIO(KnownContentFileIO):
+    """For .zip and .egg archives"""
+    def __init__(self, path, code, zip_path):
+        super(ZipFileIO, self).__init__(path, code)
+        self._zip_path = zip_path
+
+    def get_last_modified(self):
+        return os.path.getmtime(self._zip_path)
+
+
+def _from_loader(loader, string):
+    is_package = loader.is_package(string)
+    #if isinstance(loader, ExtensionLoader):
+        # ExtensionLoader has not attribute get_filename, instead it has a
+        # path attribute that we can use to retrieve the module path
+    #    module_path = loader.path
+    #else:
+    try:
+        get_filename = loader.get_filename
+    except AttributeError:
+        return None, is_package
+    else:
+        module_path = get_filename(string)
+
+    code = loader.get_source(string)
+    if isinstance(loader, zipimporter):
+        return ZipFileIO(module_path, code, loader.archive), is_package
+
+    # Unfortunately we are reading unicode here already, not bytes.
+    # It seems however hard to get bytes, because the zip importer
+    # logic just unpacks the zip file and returns a file descriptor
+    # that we cannot as easily access. Therefore we just read it as
+    # a string.
+    return KnownContentFileIO(module_path, code), is_package
+
+
+def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True):
     # This import is here, because in other places it will raise a
     # DeprecationWarning.
     import imp
     try:
         module_file, module_path, description = imp.find_module(string, path)
         module_type = description[2]
-        return module_file, module_path, module_type is imp.PKG_DIRECTORY
+        with module_file:
+            code = module_file.read()
+        return KnownContentFileIO(module_path, code), module_type is imp.PKG_DIRECTORY
     except ImportError:
         pass
 
@@ -128,26 +159,12 @@ def find_module_pre_py34(string, path=None, full_name=None, is_global_search=Tru
     for item in path:
         loader = pkgutil.get_importer(item)
         if loader:
-            try:
-                loader = loader.find_module(string)
-                if loader:
-                    is_package = loader.is_package(string)
-                    is_archive = hasattr(loader, 'archive')
-                    module_path = loader.get_filename(string)
-                    if is_package:
-                        module_path = os.path.dirname(module_path)
-                    if is_archive:
-                        module_path = loader.archive
-                    file = None
-                    if not is_package or is_archive:
-                        file = DummyFile(loader, string)
-                    return file, module_path, is_package
-            except ImportError:
-                pass
+            loader = loader.find_module(string)
+            return _from_loader(loader, string)
     raise ImportError("No module named {}".format(string))
 
 
-find_module = find_module_py34 if is_py3 else find_module_pre_py34
+find_module = find_module_py34 if is_py3 else find_module_pre_py3
 find_module.__doc__ = """
 Provides information about a module.
 
