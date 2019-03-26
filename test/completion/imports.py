@@ -119,6 +119,12 @@ def broken_import():
     #? import_tree.mod1
     from import_tree.mod1
 
+    #? 20 import_tree.mod1
+    import import_tree.mod1.
+
+    #! ['module json']
+    from json
+
 
 def test_import_priorities():
     """

@@ -290,17 +290,26 @@ class Evaluator(object):
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
 
-        error_node = tree.search_ancestor(name, 'error_node')
-        if error_node is not None:
-            first_name = error_node.get_first_leaf().value
-            if first_name == 'from':
-                level, names = helpers.parse_dotted_names(
-                    error_node.children,
-                    is_import_from=True
-                )
-                return imports.Importer(self, names, context.get_root_context(), level).follow()
+        result = self.follow_error_node_imports_if_possible(context, name)
+        if result is not None:
+            return result
 
         return helpers.evaluate_call_of_leaf(context, name)
+
+    def follow_error_node_imports_if_possible(self, context, name):
+        error_node = tree.search_ancestor(name, 'error_node')
+        if error_node is not None:
+            # Make it possible to infer stuff like `import foo.` or
+            # `from foo.bar`.
+            first_name = error_node.get_first_leaf().value
+            if first_name in ('from', 'import'):
+                is_import_from = first_name == 'from'
+                level, names = helpers.parse_dotted_names(
+                    error_node.children,
+                    is_import_from=is_import_from
+                )
+                return imports.Importer(self, names, context.get_root_context(), level).follow()
+        return None
 
     def goto(self, context, name):
         definition = name.get_definition(import_name_always=True)
@@ -319,6 +328,10 @@ class Evaluator(object):
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names
+
+        contexts = self.follow_error_node_imports_if_possible(context, name)
+        if contexts is not None:
+            return [context.name for context in contexts]
 
         par = name.parent
         node_type = par.type
