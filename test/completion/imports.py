@@ -114,6 +114,12 @@ def as_imports():
     bar.a
 
 
+def broken_import():
+    import import_tree.mod1
+    #? import_tree.mod1
+    from import_tree.mod1
+
+
 def test_import_priorities():
     """
     It's possible to overwrite import paths in an ``__init__.py`` file, by

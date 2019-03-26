@@ -290,6 +290,16 @@ class Evaluator(object):
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
 
+        error_node = tree.search_ancestor(name, 'error_node')
+        if error_node is not None:
+            first_name = error_node.get_first_leaf().value
+            if first_name == 'from':
+                level, names = helpers.parse_dotted_names(
+                    error_node.children,
+                    is_import_from=True
+                )
+                return imports.Importer(self, names, context.get_root_context(), level).follow()
+
         return helpers.evaluate_call_of_leaf(context, name)
 
     def goto(self, context, name):

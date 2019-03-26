@@ -67,6 +67,7 @@ class SubModuleDictMixin(object):
 
         return names
 
+
 class ModuleMixin(SubModuleDictMixin):
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield MergedFilter(

@@ -9,7 +9,7 @@ from jedi.api import classes
 from jedi.api import helpers
 from jedi.evaluate import imports
 from jedi.api import keywords
-from jedi.evaluate.helpers import evaluate_call_of_leaf
+from jedi.evaluate.helpers import evaluate_call_of_leaf, parse_dotted_names
 from jedi.evaluate.filters import get_global_filters
 from jedi.parser_utils import get_statement_of_position
 
@@ -185,7 +185,7 @@ class Completion:
                 # Also true for defining names as a class or function.
                 return list(self._get_class_context_completions(is_function=True))
             elif "import_stmt" in nonterminals:
-                level, names = self._parse_dotted_names(nodes, "import_from" in nonterminals)
+                level, names = parse_dotted_names(nodes, "import_from" in nonterminals)
 
                 only_modules = not ("import_from" in nonterminals and 'import' in nodes)
                 completion_names += self._get_importer_names(
@@ -239,26 +239,6 @@ class Completion:
                     search_global=False, origin_scope=user_context.tree_node):
                 completion_names += filter.values()
         return completion_names
-
-    def _parse_dotted_names(self, nodes, is_import_from):
-        level = 0
-        names = []
-        for node in nodes[1:]:
-            if node in ('.', '...'):
-                if not names:
-                    level += len(node.value)
-            elif node.type == 'dotted_name':
-                names += node.children[::2]
-            elif node.type == 'name':
-                names.append(node)
-            elif node == ',':
-                if not is_import_from:
-                    names = []
-            else:
-                # Here if the keyword `import` comes along it stops checking
-                # for names.
-                break
-        return level, names
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]

@@ -239,3 +239,24 @@ def execute_evaluated(context, *value_list):
     from jedi.evaluate.base_context import ContextSet
     arguments = ValuesArguments([ContextSet([value]) for value in value_list])
     return context.evaluator.execute(context, arguments)
+
+
+def parse_dotted_names(nodes, is_import_from):
+    level = 0
+    names = []
+    for node in nodes[1:]:
+        if node in ('.', '...'):
+            if not names:
+                level += len(node.value)
+        elif node.type == 'dotted_name':
+            names += node.children[::2]
+        elif node.type == 'name':
+            names.append(node)
+        elif node == ',':
+            if not is_import_from:
+                names = []
+        else:
+            # Here if the keyword `import` comes along it stops checking
+            # for names.
+            break
+    return level, names
