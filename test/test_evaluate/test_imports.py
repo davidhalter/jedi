@@ -59,25 +59,25 @@ def test_find_module_package_zipped(Script, evaluator, environment):
 @pytest.mark.parametrize(
     'code, file, package, path', [
         ('import pkg', '__init__.py', 'pkg', 'pkg'),
-        #('import pkg', '__init__.py', 'pkg', 'pkg'),
+        ('import pkg', '__init__.py', 'pkg', 'pkg'),
 
         ('from pkg import module', 'module.py', 'pkg', None),
-        #('from pkg.module', 'module.py', 'pkg', None),
+        ('from pkg.module', 'module.py', 'pkg', None),
 
         ('from pkg import nested', os.path.join('nested', '__init__.py'),
          'pkg.nested', os.path.join('pkg', 'nested')),
-        #('from pkg.nested', os.path.join('nested', '__init__.py'),
-        # 'pkg.nested', os.path.join('pkg', 'nested')),
+        ('from pkg.nested', os.path.join('nested', '__init__.py'),
+         'pkg.nested', os.path.join('pkg', 'nested')),
 
         ('from pkg.nested import nested_module',
          os.path.join('nested', 'nested_module.py'), 'pkg.nested', None),
-        #('from pkg.nested.nested_module',
-        # os.path.join('nested', 'nested_module.py'), 'pkg.nested', None),
+        ('from pkg.nested.nested_module',
+         os.path.join('nested', 'nested_module.py'), 'pkg.nested', None),
 
         ('from pkg.namespace import namespace_module',
          os.path.join('namespace', 'namespace_module.py'), 'pkg.namespace', None),
-        #('from pkg.namespace.namespace_module',
-        # os.path.join('namespace', 'namespace_module.py'), 'pkg.namespace', None),
+        ('from pkg.namespace.namespace_module',
+         os.path.join('namespace', 'namespace_module.py'), 'pkg.namespace', None),
     ]
 
 )
