@@ -56,14 +56,27 @@ def test_find_module_package_zipped(Script, evaluator, environment):
     assert is_package is True
 
 
-def test_correct_zip_package_behavior(Script, evaluator, environment):
+@pytest.mark.parametrize(
+    'code, file, package, path', [
+        ('import pkg', '__init__.py', 'pkg', 'pkg'),
+        ('from pkg import module', 'module.py', 'pkg', None),
+        ('from pkg import nested', os.path.join('nested', '__init__.py'),
+         'pkg.nested', os.path.join('pkg', 'nested')),
+        ('from pkg.nested import nested_module',
+         os.path.join('nested', 'nested_module.py'), 'pkg.nested', None),
+    ]
+
+)
+def test_correct_zip_package_behavior(Script, evaluator, environment, code,
+                                      file, package, path):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
-    pkg, = Script('import pkg', sys_path=sys_path).goto_definitions()
+    pkg, = Script(code, sys_path=sys_path).goto_definitions()
     context, = pkg._name.infer()
-    assert context.py__file__() == os.path.join(pkg_zip_path, 'pkg', '__init__.py')
-    assert context.is_package is True
-    assert context.py__package__() == ('pkg',)
-    assert context.py__path__() == [os.path.join(pkg_zip_path, 'pkg')]
+    assert context.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
+    assert '.'.join(context.py__package__()) == package
+    assert context.is_package is (path is not None)
+    if path is not None:
+        assert context.py__path__() == [os.path.join(pkg_zip_path, path)]
 
 
 def test_find_module_not_package_zipped(Script, evaluator, environment):
@@ -312,7 +325,7 @@ def test_relative_imports_with_multiple_similar_directories(Script, path, empty_
     assert name.name == 'api_test1'
 
 
-def test_relative_imports_x(Script):
+def test_relative_imports_with_outside_paths(Script):
     dir = get_example_dir('issue1209')
     project = Project(dir, sys_path=[], smart_sys_path=False)
     script = Script(
