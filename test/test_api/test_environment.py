@@ -7,7 +7,8 @@ import jedi
 from jedi._compatibility import py_version
 from jedi.api.environment import get_default_environment, find_virtualenvs, \
     InvalidPythonEnvironment, find_system_environments, \
-    get_system_environment, create_environment, get_cached_default_environment
+    get_system_environment, create_environment, InterpreterEnvironment, \
+    get_cached_default_environment
 
 
 def test_sys_path():
@@ -71,7 +72,9 @@ def test_stdout_in_subprocess(evaluator, Script):
     Script('1').goto_definitions()
 
 
-def test_killed_subprocess(evaluator, Script):
+def test_killed_subprocess(evaluator, Script, environment):
+    if isinstance(environment, InterpreterEnvironment):
+        pytest.skip("We cannot kill our own process")
     # Just kill the subprocess.
     evaluator.compiled_subprocess._compiled_subprocess._process.kill()
     # Since the process was terminated (and nobody knows about it) the first

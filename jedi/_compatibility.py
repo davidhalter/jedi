@@ -85,6 +85,7 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
         raise ImportError("Couldn't find a loader for {}".format(string))
 
     return _from_loader(loader, string)
+    issss
     is_package = loader.is_package(string)
     if is_package:
         if hasattr(loader, 'archive'):
@@ -117,11 +118,6 @@ class ZipFileIO(KnownContentFileIO):
 
 def _from_loader(loader, string):
     is_package = loader.is_package(string)
-    #if isinstance(loader, ExtensionLoader):
-        # ExtensionLoader has not attribute get_filename, instead it has a
-        # path attribute that we can use to retrieve the module path
-    #    module_path = loader.path
-    #else:
     try:
         get_filename = loader.get_filename
     except AttributeError:
@@ -129,16 +125,38 @@ def _from_loader(loader, string):
     else:
         module_path = get_filename(string)
 
-    code = loader.get_source(string)
+    # To avoid unicode and read bytes, "overwrite" loader.get_source if
+    # possible.
+    f = loader.get_source.__func__
+    if is_py3 and f is not importlib.machinery.SourceFileLoader.get_source:
+        # Unfortunately we are reading unicode here, not bytes.
+        # It seems hard to get bytes, because the zip importer
+        # logic just unpacks the zip file and returns a file descriptor
+        # that we cannot as easily access. Therefore we just read it as
+        # a string in the cases where get_source was overwritten.
+        code = loader.get_source(string)
+    else:
+        code = _get_source(loader, string)
+
+    if code is None:
+        return None, is_package
     if isinstance(loader, zipimporter):
         return ZipFileIO(module_path, code, loader.archive), is_package
 
-    # Unfortunately we are reading unicode here already, not bytes.
-    # It seems however hard to get bytes, because the zip importer
-    # logic just unpacks the zip file and returns a file descriptor
-    # that we cannot as easily access. Therefore we just read it as
-    # a string.
     return KnownContentFileIO(module_path, code), is_package
+
+
+def _get_source(loader, fullname):
+    """
+    This method is here as a replacement for SourceLoader.get_source. That
+    method returns unicode, but we prefer bytes.
+    """
+    path = loader.get_filename(fullname)
+    try:
+        return loader.get_data(path)
+    except OSError as exc:
+        raise ImportError('source not available through get_data()',
+                          name=fullname) from exc
 
 
 def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True):
