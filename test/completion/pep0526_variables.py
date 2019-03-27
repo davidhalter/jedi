@@ -20,3 +20,34 @@ direct
 with_typing_module: typing.List[float] = NOT_DEFINED
 #? float()
 with_typing_module[0]
+
+somelist = [1, 2, 3, "A", "A"]
+element : int
+for element in somelist:
+    #? int()
+    element
+
+test_string: str = NOT_DEFINED
+#? str()
+test_string
+
+
+char: str
+for char in NOT_DEFINED:
+    #? str()
+    char
+
+
+class Foo():
+    bar: int
+    baz: typing.ClassVar[str]
+
+
+#? int()
+Foo.bar
+#? int()
+Foo().bar
+#? str()
+Foo.baz
+#? str()
+Foo().baz

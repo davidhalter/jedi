@@ -7,7 +7,7 @@ Jedi Development
 
 .. note:: This documentation is for Jedi developers who want to improve Jedi
     itself, but have no idea how Jedi works. If you want to use Jedi for 
-    your IDE, look at the `plugin api <plugin-api.html>`_.
+    your IDE, look at the `plugin api <api.html>`_.
 
 
 Introduction
@@ -54,31 +54,15 @@ because that's where all the magic happens. I need to introduce the :ref:`parser
 
 .. _parser:
 
-Parser (parser/__init__.py)
+Parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.parser
+Jedi used to have it's internal parser, however this is now a separate project
+and is called `parso <http://parso.readthedocs.io>`_.
 
-Parser Tree (parser/tree.py)
-++++++++++++++++++++++++++++++++++++++++++++++++
-
-.. automodule:: jedi.parser.tree
-
-Class inheritance diagram:
-
-.. inheritance-diagram::
-   Module
-   Class
-   Function
-   Lambda
-   Flow
-   ForStmt
-   Import
-   ExprStmt
-   Param
-   Name
-   CompFor
-   :parts: 1
+The parser creates a syntax tree that |jedi| analyses and tries to understand.
+The grammar that this parsers uses is very similar to the official Python
+`grammar files <https://docs.python.org/3/reference/grammar.html>`_.
 
 .. _evaluate:
 
@@ -87,16 +71,16 @@ Evaluation of python code (evaluate/__init__.py)
 
 .. automodule:: jedi.evaluate
 
-Evaluation Representation (evaluate/representation.py)
+Evaluation Contexts (evaluate/base_context.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: jedi.evaluate.representation
+.. automodule:: jedi.evaluate.base_context
 
 .. inheritance-diagram::
-   jedi.evaluate.instance.TreeInstance
-   jedi.evaluate.representation.ClassContext
-   jedi.evaluate.representation.FunctionContext
-   jedi.evaluate.representation.FunctionExecutionContext
+   jedi.evaluate.context.instance.TreeInstance
+   jedi.evaluate.context.klass.ClassContext
+   jedi.evaluate.context.function.FunctionContext
+   jedi.evaluate.context.function.FunctionExecutionContext
    :parts: 1
 
 
@@ -110,11 +94,11 @@ Name resolution (evaluate/finder.py)
 
 .. _dev-api:
 
-API (api.py and api_classes.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+API (api/__init__.py and api/classes.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The API has been designed to be as easy to use as possible. The API
-documentation can be found `here <plugin-api.html>`_. The API itself contains
+documentation can be found `here <api.html>`_. The API itself contains
 little code that needs to be mentioned here. Generally I'm trying to be
 conservative with the API.  I'd rather not add new API features if they are not
 necessary, because it's much harder to deprecate stuff than to add it later.
@@ -129,7 +113,6 @@ Core Extensions is a summary of the following topics:
 
 - :ref:`Iterables & Dynamic Arrays <iterables>`
 - :ref:`Dynamic Parameters <dynamic>`
-- :ref:`Diff Parser <diff-parser>`
 - :ref:`Docstrings <docstrings>`
 - :ref:`Refactoring <refactoring>`
 
@@ -139,13 +122,13 @@ without some features.
 
 .. _iterables:
 
-Iterables & Dynamic Arrays (evaluate/iterable.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Iterables & Dynamic Arrays (evaluate/context/iterable.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To understand Python on a deeper level, |jedi| needs to understand some of the
 dynamic features of Python like lists that are filled after creation:
 
-.. automodule:: jedi.evaluate.iterable
+.. automodule:: jedi.evaluate.context.iterable
 
 
 .. _dynamic:
@@ -155,13 +138,6 @@ Parameter completion (evaluate/dynamic.py)
 
 .. automodule:: jedi.evaluate.dynamic
 
-
-.. _diff-parser:
-
-Diff Parser (parser/diff.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. automodule:: jedi.parser.python.diff
 
 .. _docstrings:
 

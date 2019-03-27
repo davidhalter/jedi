@@ -8,26 +8,26 @@ from ..helpers import cwd_at
 import pytest
 
 
-def test_completions():
-    s = jedi.Script('import _ctypes; _ctypes.')
+def test_completions(Script):
+    s = Script('import _ctypes; _ctypes.')
     assert len(s.completions()) >= 15
 
 
-def test_call_signatures_extension():
+def test_call_signatures_extension(Script):
     if os.name == 'nt':
         func = 'LoadLibrary'
         params = 1
     else:
         func = 'dlopen'
         params = 2
-    s = jedi.Script('import _ctypes; _ctypes.%s(' % (func,))
+    s = Script('import _ctypes; _ctypes.%s(' % (func,))
     sigs = s.call_signatures()
     assert len(sigs) == 1
     assert len(sigs[0].params) == params
 
 
-def test_call_signatures_stdlib():
-    s = jedi.Script('import math; math.cos(')
+def test_call_signatures_stdlib(Script):
+    s = Script('import math; math.cos(')
     sigs = s.call_signatures()
     assert len(sigs) == 1
     assert len(sigs[0].params) == 1
@@ -36,7 +36,7 @@ def test_call_signatures_stdlib():
 # Check only on linux 64 bit platform and Python3.4.
 @pytest.mark.skipif('sys.platform != "linux" or sys.maxsize <= 2**32 or sys.version_info[:2] != (3, 4)')
 @cwd_at('test/test_evaluate')
-def test_init_extension_module():
+def test_init_extension_module(Script):
     """
     ``__init__`` extension modules are also packages and Jedi should understand
     that.

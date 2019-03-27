@@ -1,4 +1,5 @@
 from jedi.parser_utils import get_flow_branch_keyword, is_scope, get_parent_scope
+from jedi.evaluate.recursion import execution_allowed
 
 
 class Status(object):
@@ -59,7 +60,8 @@ def reachability_check(context, context_scope, node, origin_scope=None):
                     if not branch_matches and origin_keyword == 'else' \
                             and node_keyword == 'except':
                         return UNREACHABLE
-                break
+                if branch_matches:
+                    break
 
         # Direct parents get resolved, we filter scopes that are separate
         # branches.  This makes sense for autocompletion and static analysis.
@@ -104,9 +106,13 @@ def _break_check(context, context_scope, flow_scope, node):
 
 
 def _check_if(context, node):
-    types = context.eval_node(node)
-    values = set(x.py__bool__() for x in types)
-    if len(values) == 1:
-        return Status.lookup_table[values.pop()]
-    else:
-        return UNSURE
+    with execution_allowed(context.evaluator, node) as allowed:
+        if not allowed:
+            return UNSURE
+
+        types = context.eval_node(node)
+        values = set(x.py__bool__() for x in types)
+        if len(values) == 1:
+            return Status.lookup_table[values.pop()]
+        else:
+            return UNSURE

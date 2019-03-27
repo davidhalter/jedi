@@ -1,14 +1,16 @@
+import re
 import textwrap
 from inspect import cleandoc
 
-from jedi._compatibility import literal_eval, is_py3
 from parso.python import tree
+from parso.cache import parser_cache
 
-_EXECUTE_NODES = set([
-    'funcdef', 'classdef', 'import_from', 'import_name', 'test', 'or_test',
-    'and_test', 'not_test', 'comparison', 'expr', 'xor_expr', 'and_expr',
-    'shift_expr', 'arith_expr', 'atom_expr', 'term', 'factor', 'power', 'atom'
-])
+from jedi._compatibility import literal_eval, force_unicode
+
+_EXECUTE_NODES = {'funcdef', 'classdef', 'import_from', 'import_name', 'test',
+                  'or_test', 'and_test', 'not_test', 'comparison', 'expr',
+                  'xor_expr', 'and_expr', 'shift_expr', 'arith_expr',
+                  'atom_expr', 'term', 'factor', 'power', 'atom'}
 
 _FLOW_KEYWORDS = (
     'try', 'except', 'finally', 'else', 'if', 'elif', 'with', 'for', 'while'
@@ -87,10 +89,12 @@ def get_flow_branch_keyword(flow_node, node):
             keyword = first_leaf
     return 0
 
+
 def get_statement_of_position(node, pos):
     for c in node.children:
         if c.start_pos <= pos <= c.end_pos:
-            if c.type not in ('decorated', 'simple_stmt', 'suite') \
+            if c.type not in ('decorated', 'simple_stmt', 'suite',
+                              'async_stmt', 'async_funcdef') \
                     and not isinstance(c, (tree.Flow, tree.ClassOrFunc)):
                 return c
             else:
@@ -112,10 +116,7 @@ def clean_scope_docstring(scope_node):
         cleaned = cleandoc(safe_literal_eval(node.value))
         # Since we want the docstr output to be always unicode, just
         # force it.
-        if is_py3 or isinstance(cleaned, unicode):
-            return cleaned
-        else:
-            return unicode(cleaned, 'UTF-8', 'replace')
+        return force_unicode(cleaned)
     return ''
 
 
@@ -158,27 +159,38 @@ def get_call_signature(funcdef, width=72, call_string=None):
         p = '(' + ''.join(param.get_code() for param in funcdef.get_params()).strip() + ')'
     else:
         p = funcdef.children[2].get_code()
-    code = call_string + p
+    p = re.sub(r'\s+', ' ', p)
+    if funcdef.annotation:
+        rtype = " ->" + funcdef.annotation.get_code()
+    else:
+        rtype = ""
+    code = call_string + p + rtype
 
     return '\n'.join(textwrap.wrap(code, width))
+
+
+def get_call_signature_for_any(any_node):
+    call_signature = None
+    if any_node.type == 'classdef':
+        for funcdef in any_node.iter_funcdefs():
+            if funcdef.name.value == '__init__':
+                call_signature = \
+                    get_call_signature(funcdef, call_string=any_node.name.value)
+    elif any_node.type in ('funcdef', 'lambdef'):
+        call_signature = get_call_signature(any_node)
+    return call_signature
 
 
 def get_doc_with_call_signature(scope_node):
     """
     Return a document string including call signature.
     """
-    call_signature = None
-    if scope_node.type == 'classdef':
-        for funcdef in scope_node.iter_funcdefs():
-            if funcdef.name.value == '__init__':
-                call_signature = \
-                    get_call_signature(funcdef, call_string=scope_node.name.value)
-    elif scope_node.type in ('funcdef', 'lambdef'):
-        call_signature = get_call_signature(scope_node)
-
+    call_signature = get_call_signature_for_any(scope_node)
     doc = clean_scope_docstring(scope_node)
     if call_signature is None:
         return doc
+    if not doc:
+        return call_signature
     return '%s\n\n%s' % (call_signature, doc)
 
 
@@ -205,6 +217,9 @@ def get_following_comment_same_line(node):
             whitespace = node.children[5].get_first_leaf().prefix
         elif node.type == 'with_stmt':
             whitespace = node.children[3].get_first_leaf().prefix
+        elif node.type == 'funcdef':
+            # actually on the next line
+            whitespace = node.children[4].get_first_leaf().get_next_leaf().prefix
         else:
             whitespace = node.get_last_leaf().get_next_leaf().prefix
     except AttributeError:
@@ -232,10 +247,23 @@ def get_parent_scope(node, include_flows=False):
     Returns the underlying scope.
     """
     scope = node.parent
-    while scope is not None:
-        if include_flows and isinstance(scope, tree.Flow):
+    if scope is None:
+        return None  # It's a module already.
+    if scope.type in ('funcdef', 'classdef') and scope.name == node:
+        scope = scope.parent
+    if scope.parent is None:  # The module scope.
+        return scope
+
+    while True:
+        if include_flows and isinstance(scope, tree.Flow) or is_scope(scope):
             return scope
-        if is_scope(scope):
-            break
         scope = scope.parent
     return scope
+
+
+def get_cached_code_lines(grammar, path):
+    """
+    Basically access the cached code lines in parso. This is not the nicest way
+    to do this, but we avoid splitting all the lines again.
+    """
+    return parser_cache[grammar._hashed][path].lines

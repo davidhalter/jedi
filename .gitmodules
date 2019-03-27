@@ -1,0 +1,3 @@
+[submodule "jedi/third_party/typeshed"]
+	path = jedi/third_party/typeshed
+	url = https://github.com/davidhalter/typeshed.git

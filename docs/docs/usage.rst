@@ -56,10 +56,6 @@ Atom:
 
 - autocomplete-python-jedi_
 
-SourceLair:
-
-- SourceLair_
-
 GNOME Builder:
 
 - `GNOME Builder`_ `supports it natively
@@ -103,7 +99,7 @@ Using a custom ``$HOME/.pythonrc.py``
 .. autofunction:: jedi.utils.setup_readline
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
-.. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _youcompleteme: https://valloric.github.io/YouCompleteMe/
 .. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
 .. _elpy: https://github.com/jorgenschaefer/elpy
@@ -113,10 +109,9 @@ Using a custom ``$HOME/.pythonrc.py``
 .. _SynJedi: http://uvviewsoft.com/synjedi/
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
-.. _kate: http://kate-editor.org/
+.. _kate: https://kate-editor.org/
 .. _autocomplete-python-jedi: https://atom.io/packages/autocomplete-python-jedi
-.. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder/
 .. _gedi: https://github.com/isamert/gedi
-.. _Eric IDE: http://eric-ide.python-projects.org
+.. _Eric IDE: https://eric-ide.python-projects.org
 .. _Python Extension: https://marketplace.visualstudio.com/items?itemName=donjayamanne.python

@@ -2,16 +2,28 @@
 Jedi - an awesome autocompletion/static analysis library for Python
 ###################################################################
 
-.. image:: https://secure.travis-ci.org/davidhalter/jedi.png?branch=master
-    :target: http://travis-ci.org/davidhalter/jedi
-    :alt: Travis-CI build status
+.. image:: https://img.shields.io/pypi/v/jedi.svg?style=flat
+    :target: https://pypi.python.org/pypi/jedi
+    :alt: PyPI version
 
-.. image:: https://coveralls.io/repos/davidhalter/jedi/badge.png?branch=master
+.. image:: https://img.shields.io/pypi/pyversions/jedi.svg
+    :target: https://pypi.python.org/pypi/jedi
+    :alt: Supported Python versions
+
+.. image:: https://travis-ci.org/davidhalter/jedi.svg?branch=master
+    :target: https://travis-ci.org/davidhalter/jedi
+    :alt: Linux Tests
+
+.. image:: https://ci.appveyor.com/api/projects/status/mgva3bbawyma1new/branch/master?svg=true
+    :target: https://ci.appveyor.com/project/davidhalter/jedi/branch/master
+    :alt: Windows Tests
+
+.. image:: https://coveralls.io/repos/davidhalter/jedi/badge.svg?branch=master
     :target: https://coveralls.io/r/davidhalter/jedi
-    :alt: Coverage Status
+    :alt: Coverage status
 
 
-*If you have specific questions, please add an issue or ask on* `stackoverflow
+*If you have specific questions, please add an issue or ask on* `Stack Overflow
 <https://stackoverflow.com/questions/tagged/python-jedi>`_ *with the label* ``python-jedi``.
 
 
@@ -25,7 +37,7 @@ related names and to list all names in a Python file and infer them. Jedi
 understands docstrings and you can use Jedi autocompletion in your REPL as
 well.
 
-Jedi uses a very simple API to connect with IDE's. There's a reference
+Jedi uses a very simple API to connect with IDEs. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
 which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
 It's really easy.
@@ -39,13 +51,12 @@ Jedi can currently be used with the following editors/projects:
 - Kate_ version 4.13+ supports it natively, you have to enable it, though. [`proof
   <https://projects.kde.org/projects/kde/applications/kate/repository/show?rev=KDE%2F4.13>`_]
 - Atom_ (autocomplete-python-jedi_)
-- SourceLair_
 - `GNOME Builder`_ (with support for GObject Introspection)
-- `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=donjayamanne.python>`_)
+- `Visual Studio Code`_ (via `Python Extension <https://marketplace.visualstudio.com/items?itemName=ms-python.python>`_)
 - Gedit (gedi_)
 - wdb_ - Web Debugger
 - `Eric IDE`_ (Available as a plugin)
-- `Ipython 6.0.0+ <http://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
+- `IPython 6.0.0+ <https://ipython.readthedocs.io/en/stable/whatsnew/version6.html>`_
 
 and many more!
 
@@ -72,7 +83,11 @@ Get the latest version from `github <https://github.com/davidhalter/jedi>`_
 Docs are available at `https://jedi.readthedocs.org/en/latest/
 <https://jedi.readthedocs.org/en/latest/>`_. Pull requests with documentation
 enhancements and/or fixes are awesome and most welcome. Jedi uses `semantic
-versioning <http://semver.org/>`_.
+versioning <https://semver.org/>`_.
+
+If you want to stay up-to-date (News / RFCs), please subscribe to this `github
+thread <https://github.com/davidhalter/jedi/issues/1063>`_.:
+
 
 
 Installation
@@ -96,8 +111,10 @@ understands, see: `Features
 <https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
 caveats can be found on the same page.
 
-You can run Jedi on cPython 2.6, 2.7, 3.3, 3.4 or 3.5 but it should also
-understand/parse code older than those versions.
+You can run Jedi on CPython 2.7 or 3.4+ but it should also
+understand/parse code older than those versions. Additionally you should be able
+to use `Virtualenvs <https://jedi.readthedocs.org/en/latest/docs/api.html#environments>`_
+very well.
 
 Tips on how to use Jedi efficiently can be found `here
 <https://jedi.readthedocs.org/en/latest/docs/features.html#recipes>`_.
@@ -105,7 +122,7 @@ Tips on how to use Jedi efficiently can be found `here
 API
 ---
 
-You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_.
+You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/api.html>`_.
 
 
 Autocompletion / Goto / Pydoc
@@ -123,7 +140,7 @@ The returned objects are very powerful and really all you might need.
 Autocompletion in your REPL (IPython, etc.)
 -------------------------------------------
 
-Starting with Ipython `6.0.0` Jedi is a dependency of IPython. Autocompletion
+Starting with IPython `6.0.0` Jedi is a dependency of IPython. Autocompletion
 in IPython is therefore possible without additional configuration.
 
 It's possible to have Jedi autocompletion in REPL modes - `example video <https://vimeo.com/122332037>`_.
@@ -178,7 +195,7 @@ Tests are also run automatically on `Travis CI
 <https://travis-ci.org/davidhalter/jedi/>`_.
 
 For more detailed information visit the `testing documentation
-<https://jedi.readthedocs.org/en/latest/docs/testing.html>`_
+<https://jedi.readthedocs.org/en/latest/docs/testing.html>`_.
 
 
 Acknowledgements
@@ -193,7 +210,7 @@ Acknowledgements
 
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
-.. _youcompleteme: http://valloric.github.io/YouCompleteMe/
+.. _youcompleteme: https://valloric.github.io/YouCompleteMe/
 .. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
 .. _completor.vim: https://github.com/maralla/completor.vim
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
@@ -205,11 +222,10 @@ Acknowledgements
 .. _anaconda: https://github.com/DamnWidget/anaconda
 .. _wdb: https://github.com/Kozea/wdb
 .. _TextMate: https://github.com/lawrenceakka/python-jedi.tmbundle
-.. _Kate: http://kate-editor.org
+.. _Kate: https://kate-editor.org
 .. _Atom: https://atom.io/
 .. _autocomplete-python-jedi: https://atom.io/packages/autocomplete-python-jedi
-.. _SourceLair: https://www.sourcelair.com
 .. _GNOME Builder: https://wiki.gnome.org/Apps/Builder
 .. _Visual Studio Code: https://code.visualstudio.com/
 .. _gedi: https://github.com/isamert/gedi
-.. _Eric IDE: http://eric-ide.python-projects.org
+.. _Eric IDE: https://eric-ide.python-projects.org

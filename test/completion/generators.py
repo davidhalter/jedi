@@ -209,10 +209,18 @@ def x():
 next(x())
 
 # -----------------
+# statements
+# -----------------
+def x():
+    foo = yield
+    #?
+    foo
+
+# -----------------
 # yield from
 # -----------------
 
-# python >= 3.3
+# python >= 3.4
 
 def yield_from():
     yield from iter([1])
@@ -223,9 +231,42 @@ next(yield_from())
 def yield_from_multiple():
     yield from iter([1])
     yield str()
+    return 2.0
 
 x, y = yield_from_multiple()
 #? int()
 x
 #? str()
 y
+
+def test_nested():
+    x = yield from yield_from_multiple()
+    #? float()
+    x
+    yield x
+
+x, y, z = test_nested()
+#? int()
+x
+#? str()
+y
+# For whatever reason this is currently empty
+#? float()
+z
+
+
+def test_in_brackets():
+    x = 1 + (yield from yield_from_multiple())
+    #? float()
+    x
+
+    generator = (1 for 1 in [1])
+    x = yield from generator
+    #? None
+    x
+    x = yield from 1
+    #?
+    x
+    x = yield from [1]
+    #? None
+    x

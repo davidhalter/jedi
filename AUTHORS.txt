@@ -1,4 +1,4 @@
-Main Authors
+﻿Main Authors
 ============
 
 David Halter (@davidhalter) <davidhalter88@gmail.com>
@@ -46,5 +46,10 @@ Simon Ruggier (@sruggier)
 Élie Gouzien (@ElieGouzien)
 Robin Roth (@robinro)
 Malte Plath (@langsamer)
+Anton Zub (@zabulazza)
+Maksim Novikov (@m-novikov) <mnovikov.work@gmail.com>
+Tobias Rzepka (@TobiasRzepka)
+micbou (@micbou)
+Dima Gerasimov (@karlicoss) <karlicoss@gmail.com>
 
 Note: (@user) means a github user name.

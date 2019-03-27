@@ -3,8 +3,6 @@ Test the typing library, with docstrings. This is needed since annotations
 are not supported in python 2.7 else then annotating by comment (and this is
 still TODO at 2016-01-23)
 """
-# There's no Python 2.6 typing module.
-# python >= 2.7
 import typing
 class B:
     pass
@@ -42,6 +40,8 @@ def we_can_has_sequence(p, q, r, s, t, u):
     t[1]
     #? ["append"]
     u.a
+    #? float() list()
+    u[1.0]
     #? float()
     u[1]
 
@@ -116,13 +116,9 @@ def tuple(p, q, r):
     i, s, f = q
     #? int()
     i
-    ##? str()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    #?
+    #? str()
     s
-    ##? float()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    #?
+    #? float()
     f
 
 class Key:
@@ -131,11 +127,12 @@ class Key:
 class Value:
     pass
 
-def mapping(p, q, d, r, s, t):
+def mapping(p, q, d, dd, r, s, t):
     """
     :type p: typing.Mapping[Key, Value]
     :type q: typing.MutableMapping[Key, Value]
     :type d: typing.Dict[Key, Value]
+    :type dd: typing.DefaultDict[Key, Value]
     :type r: typing.KeysView[Key]
     :type s: typing.ValuesView[Value]
     :type t: typing.ItemsView[Key, Value]
@@ -146,6 +143,8 @@ def mapping(p, q, d, r, s, t):
     q.setd
     #? ["setdefault"]
     d.setd
+    #? ["setdefault"]
+    dd.setd
     #? Value()
     p[1]
     for key in p:
@@ -168,6 +167,21 @@ def mapping(p, q, d, r, s, t):
         #? Value()
         value
     for key, value in p.items():
+        #? Key()
+        key
+        #? Value()
+        value
+    for key, value in q.items():
+        #? Key()
+        key
+        #? Value()
+        value
+    for key, value in d.items():
+        #? Key()
+        key
+        #? Value()
+        value
+    for key, value in dd.items():
         #? Key()
         key
         #? Value()
@@ -210,7 +224,7 @@ def optional(p):
     as being of that type. Jedi doesn't do anything with the extra into that
     it can be None as well
     """
-    #? int()
+    #? int() None
     p
 
 class ForwardReference:
@@ -256,7 +270,37 @@ def testnewtype(y):
     y
     #? ["upper"]
     y.u
-# python >= 3.2
+# python >= 3.4
+
+class TestDefaultDict(typing.DefaultDict[str, int]):
+    def setdud(self):
+        pass
+
+def testdict(x):
+    """
+    :type x: TestDefaultDict
+    """
+    #? ["setdud", "setdefault"]
+    x.setd
+    for key in x.keys():
+        #? str()
+        key
+    for value in x.values():
+        #? int()
+        value
+
+x = TestDefaultDict()
+#? ["setdud", "setdefault"]
+x.setd
+for key in x.keys():
+    #? str()
+    key
+for value in x.values():
+    #? int()
+    value
+# python >= 3.4
+
+
 """
 docstrings have some auto-import, annotations can use all of Python's
 import logic
@@ -275,3 +319,49 @@ from typing import Union as U
 def union4(x: U[int, str]):
     #? int() str()
     x
+
+
+TYPE_VAR = typing.TypeVar('TYPE_VAR')
+# TODO there should at least be some results.
+#? []
+TYPE_VAR.
+#! ["TYPE_VAR = typing.TypeVar('TYPE_VAR')"]
+TYPE_VAR
+
+
+class WithTypeVar(typing.Generic[TYPE_VAR]):
+    def lala(self) -> TYPE_VAR:
+        ...
+
+
+def maaan(p: WithTypeVar[int]):
+    #? int()
+    p.lala()
+
+
+if typing.TYPE_CHECKING:
+    with_type_checking = 1
+else:
+    without_type_checking = 1.0
+#? int()
+with_type_checking
+#?
+without_type_checking
+
+def foo(a: typing.List, b: typing.Dict, c: typing.MutableMapping) -> typing.Type[int]:
+    #? ['append']
+    a.appen
+    #? list()
+    a
+    #?
+    a[0]
+    #? ['setdefault']
+    b.setd
+    #? ['setdefault']
+    c.setd
+    #? typing.MutableMapping()
+    c
+    #?
+    c['asdf']
+#? int
+foo()

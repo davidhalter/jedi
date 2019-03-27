@@ -1,31 +1,28 @@
-import pkgutil
-import imp
 import re
 import os
 
 from parso import python_bytes_to_unicode
 
-from jedi._compatibility import use_metaclass
-from jedi.evaluate.cache import CachedMetaClass, evaluator_method_cache
+from jedi.evaluate.cache import evaluator_method_cache
+from jedi._compatibility import iter_modules, all_suffixes
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
-    AbstractNameDefinition, ParserTreeFilter, DictFilter
+    AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
-from jedi.evaluate.imports import SubModuleName, infer_import
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
     """
     For module attributes like __file__, __str__ and so on.
     """
-    api_type = 'instance'
+    api_type = u'instance'
 
     def __init__(self, parent_module, string_name):
         self.parent_context = parent_module
         self.string_name = string_name
 
     def infer(self):
-        return compiled.create(self.parent_context.evaluator, str).execute_evaluated()
+        return compiled.get_string_context_set(self.parent_context.evaluator)
 
 
 class ModuleName(ContextNameMixin, AbstractNameDefinition):
@@ -40,33 +37,92 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
-class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
-    api_type = 'module'
-    parent_context = None
-
-    def __init__(self, evaluator, module_node, path):
-        super(ModuleContext, self).__init__(evaluator, parent_context=None)
-        self.tree_node = module_node
-        self._path = path
-
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield ParserTreeFilter(
-            self.evaluator,
-            context=self,
-            until_position=until_position,
-            origin_scope=origin_scope
+class ModuleMixin(object):
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
+        yield MergedFilter(
+            ParserTreeFilter(
+                self.evaluator,
+                context=self,
+                until_position=until_position,
+                origin_scope=origin_scope
+            ),
+            GlobalNameFilter(self, self.tree_node),
         )
-        yield GlobalNameFilter(self, self.tree_node)
         yield DictFilter(self._sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
+        for star_filter in self.iter_star_filters():
+            yield star_filter
+
+    def py__class__(self):
+        return compiled.get_special_object(self.evaluator, u'MODULE_CLASS')
+
+    def is_module(self):
+        return True
+
+    @property
+    @evaluator_method_cache()
+    def name(self):
+        return ModuleName(self, self._string_name)
+
+    @property
+    def _string_name(self):
+        """ This is used for the goto functions. """
+        # TODO It's ugly that we even use this, the name is usually well known
+        # ahead so just pass it when create a ModuleContext.
+        if self._path is None:
+            return ''  # no path -> empty name
+        else:
+            sep = (re.escape(os.path.sep),) * 2
+            r = re.search(r'([^%s]*?)(%s__init__)?(\.pyi?|\.so)?$' % sep, self._path)
+            # Remove PEP 3149 names
+            return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+
+    @evaluator_method_cache()
+    def _sub_modules_dict(self):
+        """
+        Lists modules in the directory of this module (if this module is a
+        package).
+        """
+        from jedi.evaluate.imports import SubModuleName
+
+        names = {}
+        try:
+            method = self.py__path__
+        except AttributeError:
+            pass
+        else:
+            for path in method():
+                mods = iter_modules([path])
+                for module_loader, name, is_pkg in mods:
+                    # It's obviously a relative import to the current module.
+                    names[name] = SubModuleName(self, name)
+
+        # TODO add something like this in the future, its cleaner than the
+        #   import hacks.
+        # ``os.path`` is a hardcoded exception, because it's a
+        # ``sys.modules`` modification.
+        # if str(self.name) == 'os':
+        #     names.append(Name('path', parent_context=self))
+
+        return names
+
+    @evaluator_method_cache()
+    def _module_attributes_dict(self):
+        names = ['__file__', '__package__', '__doc__', '__name__']
+        # All the additional module attributes are strings.
+        return dict((n, _ModuleAttributeName(self, n)) for n in names)
+
+    def iter_star_filters(self, search_global=False):
         for star_module in self.star_imports():
             yield next(star_module.get_filters(search_global))
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
-    # to push the star imports into Evaluator.modules, if we reenable this.
+    # to push the star imports into Evaluator.module_cache, if we reenable this.
     @evaluator_method_cache([])
     def star_imports(self):
+        from jedi.evaluate.imports import infer_import
+
         modules = []
         for i in self.tree_node.iter_imports():
             if i.is_star_import():
@@ -78,34 +134,27 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
                 modules += new
         return modules
 
-    @evaluator_method_cache()
-    def _module_attributes_dict(self):
-        names = ['__file__', '__package__', '__doc__', '__name__']
-        # All the additional module attributes are strings.
-        return dict((n, _ModuleAttributeName(self, n)) for n in names)
 
-    @property
-    def _string_name(self):
-        """ This is used for the goto functions. """
-        if self._path is None:
-            return ''  # no path -> empty name
-        else:
-            sep = (re.escape(os.path.sep),) * 2
-            r = re.search(r'([^%s]*?)(%s__init__)?(\.py|\.so)?$' % sep, self._path)
-            # Remove PEP 3149 names
-            return re.sub('\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
+class ModuleContext(ModuleMixin, TreeContext):
+    api_type = u'module'
+    parent_context = None
 
-    @property
-    @evaluator_method_cache()
-    def name(self):
-        return ModuleName(self, self._string_name)
+    def __init__(self, evaluator, module_node, path, string_names, code_lines):
+        super(ModuleContext, self).__init__(
+            evaluator,
+            parent_context=None,
+            tree_node=module_node
+        )
+        self._path = path
+        self.string_names = string_names
+        self.code_lines = code_lines
 
     def _get_init_directory(self):
         """
         :return: The path to the directory of a package. None in case it's not
                  a package.
         """
-        for suffix, _, _ in imp.get_suffixes():
+        for suffix in all_suffixes() + ['.pyi']:
             ending = '__init__' + suffix
             py__file__ = self.py__file__()
             if py__file__ is not None and py__file__.endswith(ending):
@@ -114,11 +163,9 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         return None
 
     def py__name__(self):
-        for name, module in self.evaluator.modules.items():
-            if module == self and name != '':
-                return name
-
-        return '__main__'
+        if self.string_names is None:
+            return None
+        return '.'.join(self.string_names)
 
     def py__file__(self):
         """
@@ -129,16 +176,19 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
 
         return os.path.abspath(self._path)
 
+    def is_package(self):
+        return self._get_init_directory() is not None
+
     def py__package__(self):
         if self._get_init_directory() is None:
-            return re.sub(r'\.?[^\.]+$', '', self.py__name__())
+            return re.sub(r'\.?[^.]+$', '', self.py__name__())
         else:
             return self.py__name__()
 
     def _py__path__(self):
-        search_path = self.evaluator.project.sys_path
+        search_path = self.evaluator.get_sys_path()
         init_path = self.py__file__()
-        if os.path.basename(init_path) == '__init__.py':
+        if os.path.basename(init_path) in ('__init__.py', '__init__.pyi'):
             with open(init_path, 'rb') as f:
                 content = python_bytes_to_unicode(f.read(), errors='replace')
                 # these are strings that need to be used for namespace packages,
@@ -172,42 +222,14 @@ class ModuleContext(use_metaclass(CachedMetaClass, TreeContext)):
         is a list of paths (strings).
         Raises an AttributeError if the module is not a package.
         """
-        path = self._get_init_directory()
-
-        if path is None:
-            raise AttributeError('Only packages have __path__ attributes.')
-        else:
+        if self.is_package():
             return self._py__path__
-
-    @evaluator_method_cache()
-    def _sub_modules_dict(self):
-        """
-        Lists modules in the directory of this module (if this module is a
-        package).
-        """
-        path = self._path
-        names = {}
-        if path is not None and path.endswith(os.path.sep + '__init__.py'):
-            mods = pkgutil.iter_modules([os.path.dirname(path)])
-            for module_loader, name, is_pkg in mods:
-                # It's obviously a relative import to the current module.
-                names[name] = SubModuleName(self, name)
-
-        # TODO add something like this in the future, its cleaner than the
-        #   import hacks.
-        # ``os.path`` is a hardcoded exception, because it's a
-        # ``sys.modules`` modification.
-        # if str(self.name) == 'os':
-        #     names.append(Name('path', parent_context=self))
-
-        return names
-
-    def py__class__(self):
-        return compiled.get_special_object(self.evaluator, 'MODULE_CLASS')
+        else:
+            raise AttributeError('Only packages have __path__ attributes.')
 
     def __repr__(self):
-        return "<%s: %s@%s-%s>" % (
+        return "<%s: %s@%s-%s is_stub=%s>" % (
             self.__class__.__name__, self._string_name,
-            self.tree_node.start_pos[0], self.tree_node.end_pos[0])
-
-
+            self.tree_node.start_pos[0], self.tree_node.end_pos[0],
+            self._path is not None and self._path.endswith('.pyi')
+        )

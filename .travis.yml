@@ -1,32 +1,58 @@
 language: python
-sudo: false
+sudo: true
 python:
-  - 2.6
   - 2.7
-  - 3.3
   - 3.4
   - 3.5
   - 3.6
-  - pypy
-  - "3.7-dev"
+
+env:
+  - JEDI_TEST_ENVIRONMENT=27
+  - JEDI_TEST_ENVIRONMENT=34
+  - JEDI_TEST_ENVIRONMENT=35
+  - JEDI_TEST_ENVIRONMENT=36
+
+addons:
+  apt:
+    packages:
+     # Required to properly create a virtual environment with system Python 3.4.
+     - python3.4-venv
 
 matrix:
   allow_failures:
     - python: pypy
-    - env: TOXENV=cov
     - env: TOXENV=sith
-    - python: 3.7-dev
   include:
-    - python: 3.5
-      env: TOXENV=cov
-    - python: 3.5
+    - python: 3.6
+      env:
+        - TOXENV=cov
+        - JEDI_TEST_ENVIRONMENT=36
+    - python: 3.6
       env: TOXENV=sith
+    # For now ignore pypy, there are so many issues that we don't really need
+    # to run it.
+    #- python: pypy
+    - python: "nightly"
+      env:
+        - JEDI_TEST_ENVIRONMENT=36
+before_install:
+    - ./travis_install.sh
+    # Need to add the path to the Python versions in the end. This might add
+    # something twice, but it doesn't really matter, because they are appended.
+    - export PATH=$PATH:/opt/python/3.5/bin
+    # 3.6 was not installed manually, but already is on the system. However
+    # it's not on path (unless 3.6 is selected).
+    - export PATH=$PATH:/opt/python/3.6/bin
 install:
     - pip install --quiet tox-travis
 script:
     - tox
 after_script:
-    - if [ $TOXENV == "cov" ]; then
-      pip install --quiet coveralls;
-      coveralls;
+    - |
+      if [ $TOXENV == "cov" ]; then
+        pip install --quiet codecov coveralls
+        coverage xml
+        coverage report -m
+        coveralls
+        bash <(curl -s https://codecov.io/bash) -X gcov -X coveragepy -X search -X fix -X xcode -f coverage.xml
       fi

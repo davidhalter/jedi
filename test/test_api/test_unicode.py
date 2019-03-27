@@ -2,11 +2,10 @@
 """
 All character set and unicode related tests.
 """
-from jedi import Script
 from jedi._compatibility import u, unicode
 
 
-def test_unicode_script():
+def test_unicode_script(Script):
     """ normally no unicode objects are being used. (<=2.7) """
     s = unicode("import datetime; datetime.timedelta")
     completions = Script(s).completions()
@@ -24,7 +23,7 @@ def test_unicode_script():
     assert type(completions[0].description) is unicode
 
 
-def test_unicode_attribute():
+def test_unicode_attribute(Script):
     """ github jedi-vim issue #94 """
     s1 = u('#-*- coding: utf-8 -*-\nclass Person():\n'
            '    name = "e"\n\nPerson().name.')
@@ -36,7 +35,7 @@ def test_unicode_attribute():
     assert 'strip' in [c.name for c in completions2]
 
 
-def test_multibyte_script():
+def test_multibyte_script(Script):
     """ `jedi.Script` must accept multi-byte string source. """
     try:
         code = u("import datetime; datetime.d")
@@ -48,7 +47,7 @@ def test_multibyte_script():
         assert len(Script(s, 1, len(code)).completions())
 
 
-def test_goto_definition_at_zero():
+def test_goto_definition_at_zero(Script):
     """At zero usually sometimes raises unicode issues."""
     assert Script("a", 1, 1).goto_definitions() == []
     s = Script("str", 1, 1).goto_definitions()
@@ -57,10 +56,25 @@ def test_goto_definition_at_zero():
     assert Script("", 1, 0).goto_definitions() == []
 
 
-def test_complete_at_zero():
+def test_complete_at_zero(Script):
     s = Script("str", 1, 3).completions()
     assert len(s) == 1
     assert list(s)[0].name == 'str'
 
     s = Script("", 1, 0).completions()
     assert len(s) > 0
+
+
+def test_wrong_encoding(Script, tmpdir):
+    x = tmpdir.join('x.py')
+    # Use both latin-1 and utf-8 (a really broken file).
+    x.write_binary(u'foobar = 1\nä'.encode('latin-1') + u'ä'.encode('utf-8'))
+
+    c, = Script('import x; x.foo', sys_path=[tmpdir.strpath]).completions()
+    assert c.name == 'foobar'
+
+
+def test_encoding_parameter(Script):
+    name = u('hö')
+    s = Script(name.encode('latin-1'), encoding='latin-1')
+    assert s._module_node.get_code() == name

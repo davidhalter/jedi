@@ -1,9 +1,11 @@
 """
 Module for statical analysis.
 """
-from jedi import debug
 from parso.python import tree
-from jedi.evaluate.compiled import CompiledObject
+
+from jedi._compatibility import force_unicode
+from jedi import debug
+from jedi.evaluate.helpers import is_string
 
 
 CODES = {
@@ -83,40 +85,44 @@ def add(node_context, error_name, node, message=None, typ=Error, payload=None):
     # TODO this path is probably not right
     module_context = node_context.get_root_context()
     module_path = module_context.py__file__()
-    instance = typ(error_name, module_path, node.start_pos, message)
-    debug.warning(str(instance), format=False)
-    node_context.evaluator.analysis.append(instance)
+    issue_instance = typ(error_name, module_path, node.start_pos, message)
+    debug.warning(str(issue_instance), format=False)
+    node_context.evaluator.analysis.append(issue_instance)
+    return issue_instance
 
 
 def _check_for_setattr(instance):
     """
     Check if there's any setattr method inside an instance. If so, return True.
     """
-    from jedi.evaluate.context import ModuleContext
     module = instance.get_root_context()
-    if not isinstance(module, ModuleContext):
+    node = module.tree_node
+    if node is None:
+        # If it's a compiled module or doesn't have a tree_node
         return False
 
-    node = module.tree_node
     try:
-        stmts = node.get_used_names()['setattr']
+        stmt_names = node.get_used_names()['setattr']
     except KeyError:
         return False
 
-    return any(node.start_pos < stmt.start_pos < node.end_pos
-               for stmt in stmts)
+    return any(node.start_pos < n.start_pos < node.end_pos
+               # Check if it's a function called setattr.
+               and not (n.parent.type == 'funcdef' and n.parent.name == n)
+               for n in stmt_names)
 
 
 def add_attribute_error(name_context, lookup_context, name):
     message = ('AttributeError: %s has no attribute %s.' % (lookup_context, name))
-    from jedi.evaluate.context.instance import AbstractInstanceContext, CompiledInstanceName
+    from jedi.evaluate.context.instance import CompiledInstanceName
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
     typ = Error
-    if isinstance(lookup_context, AbstractInstanceContext):
-        slot_names = lookup_context.get_function_slot_names('__getattr__') + \
-            lookup_context.get_function_slot_names('__getattribute__')
+    if lookup_context.is_instance():
+        slot_names = lookup_context.get_function_slot_names(u'__getattr__') + \
+            lookup_context.get_function_slot_names(u'__getattribute__')
         for n in slot_names:
+            # TODO do we even get here?
             if isinstance(name, CompiledInstanceName) and \
                     n.parent_context.obj == object:
                 typ = Warning
@@ -138,10 +144,14 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
     Returns True if the exception was catched.
     """
     def check_match(cls, exception):
-        try:
-            return isinstance(cls, CompiledObject) and issubclass(exception, cls.obj)
-        except TypeError:
+        if not cls.is_class():
             return False
+
+        for python_cls in exception.mro():
+            if cls.py__name__() == python_cls.__name__ \
+                    and cls.parent_context == cls.evaluator.builtins_module:
+                return True
+        return False
 
     def check_try_for_except(obj, exception):
         # Only nodes in try
@@ -160,7 +170,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
                 except_classes = node_context.eval_node(node)
                 for cls in except_classes:
                     from jedi.evaluate.context import iterable
-                    if isinstance(cls, iterable.AbstractIterable) and \
+                    if isinstance(cls, iterable.Sequence) and \
                             cls.array_type == 'tuple':
                         # multiple exceptions
                         for lazy_context in cls.py__iter__():
@@ -189,8 +199,8 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             # Check name
             key, lazy_context = args[1]
             names = list(lazy_context.infer())
-            assert len(names) == 1 and isinstance(names[0], CompiledObject)
-            assert names[0].obj == payload[1].value
+            assert len(names) == 1 and is_string(names[0])
+            assert force_unicode(names[0].get_safe_value()) == payload[1].value
 
             # Check objects
             key, lazy_context = args[0]

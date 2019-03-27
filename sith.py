@@ -127,8 +127,6 @@ class TestCase(object):
                 print("{path}: Line {line} column {column}".format(**self.__dict__))
                 self.show_location(self.line, self.column)
                 self.show_operation()
-        except jedi.NotFoundError:
-            pass
         except Exception:
             self.traceback = traceback.format_exc()
             if record is not None:

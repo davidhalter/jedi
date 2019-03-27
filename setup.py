@@ -3,7 +3,6 @@
 from setuptools import setup, find_packages
 
 import ast
-import sys
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
@@ -11,10 +10,7 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 # Get the version from within jedi. It's defined in exactly one place now.
 with open('jedi/__init__.py') as f:
     tree = ast.parse(f.read())
-if sys.version_info > (3, 7):
-    version = tree.body[0].value.s
-else:
-    version = tree.body[1].value.s
+version = tree.body[int(not hasattr(tree, 'docstring'))].value.s
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 with open('requirements.txt') as f:
@@ -32,9 +28,18 @@ setup(name='jedi',
       license='MIT',
       keywords='python completion refactoring vim',
       long_description=readme,
-      packages=find_packages(exclude=['test']),
+      packages=find_packages(exclude=['test', 'test.*']),
+      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
       install_requires=install_requires,
-      extras_require={'dev': ['docopt']},
+      extras_require={
+          'testing': [
+              'pytest>=3.1.0',
+              # docopt for sith doctests
+              'docopt',
+              # coloroma for colored debug output
+              'colorama',
+          ],
+      },
       package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
       platforms=['any'],
       classifiers=[
@@ -44,10 +49,8 @@ setup(name='jedi',
           'License :: OSI Approved :: MIT License',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.3',
           'Programming Language :: Python :: 3.4',
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',

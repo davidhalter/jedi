@@ -1,19 +1,15 @@
 [run]
 omit =
     jedi/_compatibility.py
-    jedi/evaluate/site.py
+    jedi/evaluate/compiled/subprocess/__main__.py
+    jedi/__main__.py
+    # Is statically analyzed and not actually executed.
+    jedi/evaluate/jedi_typing.py
+    # For now this is not being used.
+    jedi/refactoring.py
 
 [report]
 # Regexes for lines to exclude from consideration
 exclude_lines =
     # Don't complain about missing debug-only code:
     def __repr__
-    if self\.debug
-
-    # Don't complain if tests don't hit defensive assertion code:
-    raise AssertionError
-    raise NotImplementedError
-
-    # Don't complain if non-runnable code isn't run:
-    if 0:
-    if __name__ == .__main__.:

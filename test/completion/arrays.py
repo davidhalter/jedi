@@ -29,6 +29,9 @@ b = [6,7]
 
 #? int()
 b[8-7]
+# Something unreasonable:
+#? int()
+b['']
 
 # -----------------
 # Slices
@@ -42,6 +45,8 @@ b[int():]
 #? list()
 b[:]
 
+#? int()
+b[:, 1]
 
 class _StrangeSlice():
     def __getitem__(self, sliced):
@@ -156,7 +161,7 @@ def a(): return ''
 #? str()
 (a)()
 #? str()
-(a)().replace()
+(a)().title()
 #? int()
 (tuple).index()
 #? int()
@@ -204,6 +209,8 @@ g
 dic2 = {'asdf': 3, 'b': 'str'}
 #? int()
 dic2['asdf']
+#? None int() str()
+dic2.get('asdf')
 
 # string literal
 #? int()
@@ -255,6 +262,18 @@ dic['']
 for x in {1: 3.0, '': 1j}:
     #? int() str()
     x
+
+#? ['__iter__']
+dict().values().__iter__
+
+d = dict(a=3, b='')
+x, = d.values()
+#? int() str()
+x
+#? int() str()
+d['a']
+#? int() str() None
+d.get('a')
 
 # -----------------
 # with variable as index
@@ -388,6 +407,18 @@ for x in [1] + ['']:
     x
 
 # -----------------
+# Potential Recursion Issues
+# -----------------
+class X():
+    def y(self):
+        self.a = [1]
+
+    def x(self):
+        self.a = list(self.a)
+        #? int()
+        self.a[0]
+
+# -----------------
 # For loops with attribute assignment.
 # -----------------
 def test_func():
@@ -403,12 +434,10 @@ def test_func():
     x
 
 
-# python >= 2.7
-# Set literals are not valid in 2.6.
 #? int()
 tuple({1})[0]
 
-# python >= 3.3
+# python >= 3.4
 # -----------------
 # PEP 3132 Extended Iterable Unpacking (star unpacking)
 # -----------------
@@ -416,7 +445,7 @@ tuple({1})[0]
 a, *b, c = [1, 'b', list, dict]
 #? int()
 a
-#? str()
+#?
 b
 #? list
 c
@@ -425,12 +454,14 @@ c
 a, *b, *c = [1, 'd', list]
 #? int()
 a
-#? str()
+#?
 b
-#? list
+#?
 c
 
 lc = [x for a, *x in [(1, '', 1.0)]]
 
 #?
 lc[0][0]
+#?
+lc[0][1]

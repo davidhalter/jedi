@@ -31,6 +31,12 @@ else:
     #! 6 type-error-operation
     z = x + y
 
+
+# TODO enable this one.
+#x = 3
+#if x != 1:
+#    x.upper()
+
 # -----------------
 # With a function
 # -----------------

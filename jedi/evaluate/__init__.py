@@ -17,7 +17,8 @@ said, the typical entry point for static analysis is calling
 ``eval_expr_stmt``. There's separate logic for autocompletion in the API, the
 evaluator is all about evaluating an expression.
 
-TODO this paragraph is not what jedi does anymore.
+TODO this paragraph is not what jedi does anymore, it's similar, but not the
+same.
 
 Now you need to understand what follows after ``eval_expr_stmt``. Let's
 make an example::
@@ -61,11 +62,11 @@ I need to mention now that lazy evaluation is really good because it
 only *evaluates* what needs to be *evaluated*. All the statements and modules
 that are not used are just being ignored.
 """
-
-import sys
+from functools import partial
 
 from parso.python import tree
 import parso
+from parso import python_bytes_to_unicode
 
 from jedi import debug
 from jedi import parser_utils
@@ -73,7 +74,6 @@ from jedi.evaluate.utils import unite
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate import compiled
 from jedi.evaluate import helpers
 from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
@@ -85,36 +85,106 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 
 
+def _execute(context, arguments):
+    try:
+        func = context.py__call__
+    except AttributeError:
+        debug.warning("no execution possible %s", context)
+        return NO_CONTEXTS
+    else:
+        context_set = func(arguments=arguments)
+        debug.dbg('execute result: %s in %s', context_set, context)
+        return context_set
+
+
 class Evaluator(object):
-    def __init__(self, grammar, project):
-        self.grammar = grammar
+    def __init__(self, project, environment=None, script_path=None):
+        if environment is None:
+            environment = project.get_environment()
+        self.environment = environment
+        self.script_path = script_path
+        self.compiled_subprocess = environment.get_evaluator_subprocess(self)
+        self.grammar = environment.get_grammar()
+
         self.latest_grammar = parso.load_grammar(version='3.6')
         self.memoize_cache = {}  # for memoize decorators
-        # To memorize modules -> equals `sys.modules`.
-        self.modules = {}  # like `sys.modules`.
+        self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
         self.inferred_element_counts = {}
         self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`
         self.analysis = []
         self.dynamic_params_depth = 0
         self.is_analysis = False
-        self.python_version = sys.version_info[:2]
         self.project = project
-        project.add_evaluator(self)
+        self.access_cache = {}
+        # This setting is only temporary to limit the work we have to do with
+        # tensorflow and others.
+        self.infer_enabled = True
 
         self.reset_recursion_limitations()
+        self.allow_different_encoding = True
 
-        # Constants
-        self.BUILTINS = compiled.get_special_object(self, 'BUILTINS')
+        # Plugin API
+        from jedi.plugins import plugin_manager
+        plugin_callbacks = plugin_manager.get_callbacks(self)
+        self.execute = plugin_callbacks.decorate('execute', callback=_execute)
+        self._import_module = partial(
+            plugin_callbacks.decorate(
+                'import_module',
+                callback=imports.import_module
+            ),
+            self,
+        )
+
+    def import_module(self, import_names, parent_module_context=None, sys_path=None):
+        if sys_path is None:
+            sys_path = self.get_sys_path()
+        try:
+            return self.module_cache.get(import_names)
+        except KeyError:
+            pass
+
+        context_set = self._import_module(import_names, parent_module_context, sys_path)
+        self.module_cache.add(import_names, context_set)
+        return context_set
+
+    @property
+    @evaluator_function_cache()
+    def builtins_module(self):
+        module_name = u'builtins'
+        if self.environment.version_info.major == 2:
+            module_name = u'__builtin__'
+        builtins_module, = self.import_module((module_name,), sys_path=())
+        return builtins_module
+
+    @property
+    @evaluator_function_cache()
+    def typing_module(self):
+        typing_module, = self.import_module((u'typing',))
+        try:
+            return typing_module.stub_context
+        except AttributeError:
+            # Python 2 and 3.4: In some cases there is no non-stub module,
+            # because the module was not installed with `pip install typing`.
+            return typing_module
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
+    def get_sys_path(self):
+        """Convenience function"""
+        return self.project._get_sys_path(self, environment=self.environment)
+
     def eval_element(self, context, element):
+        if not self.infer_enabled:
+            return NO_CONTEXTS
+
         if isinstance(context, CompForContext):
             return eval_node(context, element)
 
+        #import traceback, sys; traceback.print_stack(file=sys.stdout)
+        #print(element, id(context), context)
         if_stmt = element
         while if_stmt is not None:
             if_stmt = if_stmt.parent
@@ -124,7 +194,11 @@ class Evaluator(object):
                 if_stmt = None
                 break
         predefined_if_name_dict = context.predefined_names.get(if_stmt)
-        if predefined_if_name_dict is None and if_stmt and if_stmt.type == 'if_stmt':
+        # TODO there's a lot of issues with this one. We actually should do
+        # this in a different way. Caching should only be active in certain
+        # cases and this all sucks.
+        if predefined_if_name_dict is None and if_stmt \
+                and if_stmt.type == 'if_stmt' and self.is_analysis:
             if_stmt_test = if_stmt.children[1]
             name_dicts = [{}]
             # If we already did a check, we don't want to do it again -> If
@@ -158,14 +232,14 @@ class Evaluator(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][if_name.value] = ContextSet(definition)
+                                    new_name_dicts[i][if_name.value] = ContextSet([definition])
 
                                 name_dicts += new_name_dicts
                         else:
                             for name_dict in name_dicts:
                                 name_dict[if_name.value] = definitions
             if len(name_dicts) > 1:
-                result = ContextSet()
+                result = NO_CONTEXTS
                 for name_dict in name_dicts:
                     with helpers.predefine_names(context, if_stmt, name_dict):
                         result |= eval_node(context, element)
@@ -201,7 +275,7 @@ class Evaluator(object):
             if type_ == 'classdef':
                 return [ClassContext(self, context, name.parent)]
             elif type_ == 'funcdef':
-                return [FunctionContext(self, context, name.parent)]
+                return [FunctionContext.from_context(context, name.parent)]
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
@@ -256,12 +330,8 @@ class Evaluator(object):
                         context_set = eval_trailer(context, context_set, trailer)
                 param_names = []
                 for context in context_set:
-                    try:
-                        get_param_names = context.get_param_names
-                    except AttributeError:
-                        pass
-                    else:
-                        for param_name in get_param_names():
+                    for signature in context.get_signatures():
+                        for param_name in signature.get_param_names():
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names
@@ -319,16 +389,14 @@ class Evaluator(object):
             parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
 
             if is_funcdef:
+                func = FunctionContext.from_context(
+                    parent_context,
+                    scope_node
+                )
                 if isinstance(parent_context, AnonymousInstance):
                     func = BoundMethod(
-                        self, parent_context, parent_context.class_context,
-                        parent_context.parent_context, scope_node
-                    )
-                else:
-                    func = FunctionContext(
-                        self,
-                        parent_context,
-                        scope_node
+                        instance=parent_context,
+                        function=func
                     )
                 if is_nested and not node_is_object:
                     return func.get_function_execution()
@@ -357,3 +425,17 @@ class Evaluator(object):
                 node = node.parent
             scope_node = parent_scope(node)
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
+
+    def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
+                           use_latest_grammar=False, **kwargs):
+        if self.allow_different_encoding:
+            if code is None:
+                with open(path, 'rb') as f:
+                    code = f.read()
+            code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
+
+        grammar = self.latest_grammar if use_latest_grammar else self.grammar
+        return grammar.parse(code=code, path=path, **kwargs), code
+
+    def parse(self, *args, **kwargs):
+        return self.parse_and_get_code(*args, **kwargs)[0]

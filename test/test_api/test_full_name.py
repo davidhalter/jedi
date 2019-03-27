@@ -24,8 +24,13 @@ from ..helpers import TestCase
 class MixinTestFullName(object):
     operation = None
 
+    @pytest.fixture(autouse=True)
+    def init(self, Script, environment):
+        self.Script = Script
+        self.environment = environment
+
     def check(self, source, desired):
-        script = jedi.Script(textwrap.dedent(source))
+        script = self.Script(textwrap.dedent(source))
         definitions = getattr(script, type(self).operation)()
         for d in definitions:
             self.assertEqual(d.full_name, desired)
@@ -40,12 +45,14 @@ class MixinTestFullName(object):
 class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
     operation = 'goto_definitions'
 
-    @pytest.mark.skipif('sys.version_info[0] < 3', reason='Python 2 also yields None.')
     def test_tuple_mapping(self):
+        if self.environment.version_info.major == 2:
+            pytest.skip('Python 2 also yields None.')
+
         self.check("""
         import re
         any_re = re.compile('.*')
-        any_re""", '_sre.SRE_Pattern')
+        any_re""", 'typing.Pattern')
 
     def test_from_import(self):
         self.check('from os import path', 'os.path')
@@ -59,9 +66,12 @@ class TestFullDefinedName(TestCase):
     """
     Test combination of ``obj.full_name`` and ``jedi.defined_names``.
     """
+    @pytest.fixture(autouse=True)
+    def init(self, environment):
+        self.environment = environment
 
     def check(self, source, desired):
-        definitions = jedi.names(textwrap.dedent(source))
+        definitions = jedi.names(textwrap.dedent(source), environment=self.environment)
         full_names = [d.full_name for d in definitions]
         self.assertEqual(full_names, desired)
 
@@ -80,25 +90,25 @@ class TestFullDefinedName(TestCase):
         """, ['os', 'os.path', 'os.path.join', 'os.path'])
 
 
-def test_sub_module():
+def test_sub_module(Script, jedi_path):
     """
     ``full_name needs to check sys.path to actually find it's real path module
     path.
     """
-    defs = jedi.Script('from jedi.api import classes; classes').goto_definitions()
+    sys_path = [jedi_path]
+    defs = Script('from jedi.api import classes; classes', sys_path=sys_path).goto_definitions()
     assert [d.full_name for d in defs] == ['jedi.api.classes']
-    defs = jedi.Script('import jedi.api; jedi.api').goto_definitions()
+    defs = Script('import jedi.api; jedi.api', sys_path=sys_path).goto_definitions()
     assert [d.full_name for d in defs] == ['jedi.api']
 
 
-def test_os_path():
-    d, = jedi.Script('from os.path import join').completions()
+def test_os_path(Script):
+    d, = Script('from os.path import join').completions()
     assert d.full_name == 'os.path.join'
-    d, = jedi.Script('import os.p').completions()
+    d, = Script('import os.p').completions()
     assert d.full_name == 'os.path'
 
 
-def test_os_issues():
+def test_os_issues(Script):
     """Issue #873"""
-    c, = jedi.Script('import os\nos.nt''').completions()
-    assert c.full_name == 'nt'
+    assert not Script('import os\nos.nt''').completions()

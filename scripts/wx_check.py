@@ -8,7 +8,7 @@ like a typical big Python modules. A mix between a lot of different Python
 things.
 
 You can view a markup version of it here:
-http://svn.wxwidgets.org/viewvc/wx/wxPython/trunk/src/gtk/_core.py?view=markup
+https://github.com/wxWidgets/wxPython/blob/master/src/gtk/_core.py
 """
 
 import resource
@@ -30,11 +30,12 @@ import jedi
 def process_memory():
     """
     In kB according to
-    http://stackoverflow.com/questions/938733/total-memory-used-by-python-process
+    https://stackoverflow.com/questions/938733/total-memory-used-by-python-process
     """
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 
-uri = 'http://svn.wxwidgets.org/viewvc/wx/wxPython/trunk/src/gtk/_core.py?revision=74740&content-type=text%2Fplain&view=co'
+
+uri = 'https://raw.githubusercontent.com/wxWidgets/wxPython/master/src/gtk/_core.py'
 
 wx_core = urllib2.urlopen(uri).read()
 

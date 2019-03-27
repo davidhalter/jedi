@@ -36,7 +36,7 @@ if [[ $tag_ref ]]; then
         exit 1
     fi
 else
-    git tag $tag
+    git tag -a $tag
     git push --tags
 fi
 

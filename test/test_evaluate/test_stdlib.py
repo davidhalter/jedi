@@ -5,19 +5,13 @@ with "Black Box Tests".
 from textwrap import dedent
 
 import pytest
-from jedi import Script
-from jedi._compatibility import is_py26
-
-# The namedtuple is different for different Python2.7 versions. Some versions
-# are missing the attribute `_class_template`.
-pytestmark = pytest.mark.skipif('sys.version_info[0] < 3')
 
 
 @pytest.mark.parametrize(['letter', 'expected'], [
     ('n', ['name']),
     ('s', ['smart']),
 ])
-def test_namedtuple_str(letter, expected):
+def test_namedtuple_str(letter, expected, Script):
     source = dedent("""\
         import collections
         Person = collections.namedtuple('Person', 'name smart')
@@ -25,13 +19,10 @@ def test_namedtuple_str(letter, expected):
         dave.%s""") % letter
     result = Script(source).completions()
     completions = set(r.name for r in result)
-    if is_py26:
-        assert completions == set()
-    else:
-        assert completions == set(expected)
+    assert completions == set(expected)
 
 
-def test_namedtuple_list():
+def test_namedtuple_list(Script):
     source = dedent("""\
         import collections
         Cat = collections.namedtuple('Person', ['legs', u'length', 'large'])
@@ -39,13 +30,10 @@ def test_namedtuple_list():
         garfield.l""")
     result = Script(source).completions()
     completions = set(r.name for r in result)
-    if is_py26:
-        assert completions == set()
-    else:
-        assert completions == set(['legs', 'length', 'large'])
+    assert completions == {'legs', 'length', 'large'}
 
 
-def test_namedtuple_content():
+def test_namedtuple_content(Script):
     source = dedent("""\
         import collections
         Foo = collections.namedtuple('Foo', ['bar', 'baz'])
@@ -63,7 +51,7 @@ def test_namedtuple_content():
     assert d(source + 'named.baz') == 'int'
 
 
-def test_nested_namedtuples():
+def test_nested_namedtuples(Script):
     """
     From issue #730.
     """
@@ -75,3 +63,41 @@ def test_nested_namedtuples():
         train_x.train.'''
     ))
     assert 'data' in [c.name for c in s.completions()]
+
+
+def test_namedtuple_goto_definitions(Script):
+    source = dedent("""
+        from collections import namedtuple
+
+        Foo = namedtuple('Foo', 'id timestamp gps_timestamp attributes')
+        Foo""")
+
+    from jedi.api import Script
+
+    d1, = Script(source).goto_definitions()
+
+    assert d1.get_line_code() == "class Foo(tuple):\n"
+    assert d1.module_path is None
+
+
+def test_re_sub(Script, environment):
+    """
+    This whole test was taken out of completion/stdlib.py, because of the
+    version differences.
+    """
+    def run(code):
+        defs = Script(code).goto_definitions()
+        return {d.name for d in defs}
+
+    names = run("import re; re.sub('a', 'a', 'f')")
+    if environment.version_info.major == 2:
+        assert names == {'str', 'unicode'}
+    else:
+        assert names == {'str', 'bytes'}
+
+    # This param is missing because of overloading.
+    names = run("import re; re.sub('a', 'a')")
+    if environment.version_info.major == 2:
+        assert names == {'str', 'unicode'}
+    else:
+        assert names == {'str', 'bytes'}

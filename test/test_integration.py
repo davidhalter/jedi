@@ -31,19 +31,24 @@ unspecified = %s
 """ % (case, sorted(d - a), sorted(a - d))
 
 
-def test_completion(case, monkeypatch):
-    if case.skip is not None:
-        pytest.skip(case.skip)
+def test_completion(case, monkeypatch, environment, has_typing):
+    skip_reason = case.get_skip_reason(environment)
+    if skip_reason is not None:
+        pytest.skip(skip_reason)
+
+    _CONTAINS_TYPING = ('pep0484_typing', 'pep0484_comments', 'pep0526_variables')
+    if not has_typing and any(x in case.path for x in _CONTAINS_TYPING):
+        pytest.skip('Needs the typing module installed to run this test.')
     repo_root = helpers.root_dir
     monkeypatch.chdir(os.path.join(repo_root, 'jedi'))
-    case.run(assert_case_equal)
+    case.run(assert_case_equal, environment)
 
 
-def test_static_analysis(static_analysis_case):
+def test_static_analysis(static_analysis_case, environment):
     if static_analysis_case.skip is not None:
         pytest.skip(static_analysis_case.skip)
     else:
-        static_analysis_case.run(assert_static_analysis)
+        static_analysis_case.run(assert_static_analysis, environment)
 
 
 def test_refactor(refactor_case):

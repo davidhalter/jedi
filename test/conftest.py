@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 
 import pytest
 
@@ -41,9 +42,9 @@ def parse_test_files_option(opt):
     opt = str(opt)
     if ':' in opt:
         (f_name, rest) = opt.split(':', 1)
-        return (f_name, list(map(int, rest.split(','))))
+        return f_name, list(map(int, rest.split(',')))
     else:
-        return (opt, [])
+        return opt, []
 
 
 def pytest_generate_tests(metafunc):
@@ -110,8 +111,12 @@ class StaticAnalysisCase(object):
                 cases.append((line_nr + 1, column, match.group(3)))
         return cases
 
-    def run(self, compare_cb):
-        analysis = jedi.Script(self._source, path=self._path)._analysis()
+    def run(self, compare_cb, environment):
+        analysis = jedi.Script(
+            self._source,
+            path=self._path,
+            environment=environment,
+        )._analysis()
         typ_str = lambda inst: 'warning ' if isinstance(inst, Warning) else ''
         analysis = [(r.line, r.column, typ_str(r) + r.name)
                     for r in analysis]
@@ -121,7 +126,40 @@ class StaticAnalysisCase(object):
         return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))
 
 
+@pytest.fixture(scope='session')
+def venv_path(tmpdir_factory, environment):
+    if environment.version_info.major < 3:
+        pytest.skip("python -m venv does not exist in Python 2")
+
+    tmpdir = tmpdir_factory.mktemp('venv_path')
+    dirname = os.path.join(tmpdir.dirname, 'venv')
+
+    # We cannot use the Python from tox because tox creates virtualenvs and
+    # they have different site.py files that work differently than the default
+    # ones. Instead, we find the real Python executable by printing the value
+    # of sys.base_prefix or sys.real_prefix if we are in a virtualenv.
+    output = subprocess.check_output([
+        environment.executable, "-c",
+        "import sys; "
+        "print(sys.real_prefix if hasattr(sys, 'real_prefix') else sys.base_prefix)"
+    ])
+    prefix = output.rstrip().decode('utf8')
+    if os.name == 'nt':
+        executable_path = os.path.join(prefix, 'python')
+    else:
+        executable_name = os.path.basename(environment.executable)
+        executable_path = os.path.join(prefix, 'bin', executable_name)
+
+    subprocess.call([executable_path, '-m', 'venv', dirname])
+    return dirname
+
+
 @pytest.fixture()
 def cwd_tmpdir(monkeypatch, tmpdir):
-    with helpers.set_cwd(tmpdir.dirpath):
+    with helpers.set_cwd(tmpdir.strpath):
         yield tmpdir
+
+
+@pytest.fixture
+def evaluator(Script):
+    return Script('')._evaluator

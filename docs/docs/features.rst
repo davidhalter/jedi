@@ -20,11 +20,11 @@ make it work.
 General Features
 ----------------
 
-- python 2.6+ and 3.3+ support
-- ignores syntax errors and wrong indentation
-- can deal with complex module / function / class structures
-- virtualenv support
-- can infer function arguments from sphinx, epydoc and basic numpydoc docstrings,
+- Python 2.7 and 3.4+ support
+- Ignores syntax errors and wrong indentation
+- Can deal with complex module / function / class structures
+- Great Virtualenv support
+- Can infer function arguments from sphinx, epydoc and basic numpydoc docstrings,
   and PEP0484-style type hints (:ref:`type hinting <type-hinting>`)
 
 
@@ -47,13 +47,12 @@ Supported Python Features
 - (nested) list comprehensions / ternary expressions
 - relative imports
 - ``getattr()`` / ``__getattr__`` / ``__getattribute__``
-- function annotations (py3k feature, are ignored right now, but being parsed.
-  I don't know what to do with them.)
+- function annotations
 - class decorators (py3k feature, are being ignored too, until I find a use
   case, that doesn't work with |jedi|)
 - simple/usual ``sys.path`` modifications
 - ``isinstance`` checks for if/while/assert
-- namespace packages (includes ``pkgutil`` and ``pkg_resources`` namespaces)
+- namespace packages (includes ``pkgutil``, ``pkg_resources`` and PEP420 namespaces)
 - Django / Flask / Buildout support
 
 
@@ -64,7 +63,6 @@ Not yet implemented:
 
 - manipulations of instances outside the instance variables without using
   methods
-- implicit namespace packages (Python 3.3+, `PEP 420 <https://www.python.org/dev/peps/pep-0420/>`_)
 
 Will probably never be implemented:
 
@@ -88,7 +86,7 @@ etc.
 **Security**
 
 Security is an important issue for |jedi|. Therefore no Python code is
-executed.  As long as you write pure python, everything is evaluated
+executed.  As long as you write pure Python, everything is evaluated
 statically. But: If you use builtin modules (``c_builtin``) there is no other
 option than to execute those modules. However: Execute isn't that critical (as
 e.g. in pythoncomplete, which used to execute *every* import!), because it
@@ -117,8 +115,7 @@ one of the following docstring/annotation syntax styles:
 
 https://www.python.org/dev/peps/pep-0484/
 
-function annotations (python 3 only; python 2 function annotations with
-comments in planned but not yet implemented)
+function annotations
 
 ::
 
@@ -129,7 +126,7 @@ comments in planned but not yet implemented)
         node.| # complete here
 
 
-assignment, for-loop and with-statement type hints (all python versions).
+assignment, for-loop and with-statement type hints (all Python versions).
 Note that the type hints must be on the same line as the statement
 
 ::
@@ -142,7 +139,7 @@ Note that the type hints must be on the same line as the statement
         print(f + 3)
 
 Most of the features in PEP-0484 are supported including the typing module
-(for python < 3.5 you have to do ``pip install typing`` to use these),
+(for Python < 3.5 you have to do ``pip install typing`` to use these),
 and forward references.
 
 Things that are missing (and this is not an exhaustive list; some of these
@@ -157,7 +154,7 @@ are planned, others might be hard to implement and provide little worth):
 
 **Sphinx style**
 
-http://sphinx-doc.org/domains.html#info-field-lists
+http://www.sphinx-doc.org/en/stable/domains.html#info-field-lists
 
 ::
 

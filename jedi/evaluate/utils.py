@@ -2,8 +2,17 @@
 import sys
 import contextlib
 import functools
+import re
+import os
 
 from jedi._compatibility import reraise
+
+
+_sep = os.path.sep
+if os.path.altsep is not None:
+    _sep += os.path.altsep
+_path_re = re.compile(r'(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
+del _sep
 
 
 def to_list(func):

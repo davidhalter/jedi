@@ -7,12 +7,12 @@ from textwrap import dedent
 
 from parso.python.parser import Parser
 from parso.python import tree
-from parso import split_lines
 
 from jedi._compatibility import u
 from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
-from jedi.cache import time_cache
+from jedi.evaluate.compiled import get_string_context_set
+from jedi.cache import call_signature_time_cache
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
@@ -20,7 +20,7 @@ CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
 
 def sorted_definitions(defs):
     # Note: `or ''` below is required because `module_path` could be
-    return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
+    return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0, x.name))
 
 
 def get_on_completion_name(module_node, lines, position):
@@ -44,7 +44,7 @@ def _get_code(code_lines, start_pos, end_pos):
     lines[-1] = lines[-1][:end_pos[1]]
     # Remove first line indentation.
     lines[0] = lines[0][start_pos[1]:]
-    return '\n'.join(lines)
+    return ''.join(lines)
 
 
 class OnErrorLeaf(Exception):
@@ -53,28 +53,11 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
-def _is_on_comment(leaf, position):
-    comment_lines = split_lines(leaf.prefix)
-    difference = leaf.start_pos[0] - position[0]
-    prefix_start_pos = leaf.get_start_pos_of_prefix()
-    if difference == 0:
-        indent = leaf.start_pos[1]
-    elif position[0] == prefix_start_pos[0]:
-        indent = prefix_start_pos[1]
-    else:
-        indent = 0
-    line = comment_lines[-difference - 1][:position[1] - indent]
-    return '#' in line
-
-
 def _get_code_for_stack(code_lines, module_node, position):
     leaf = module_node.get_leaf_for_position(position, include_prefixes=True)
     # It might happen that we're on whitespace or on a comment. This means
     # that we would not get the right leaf.
     if leaf.start_pos >= position:
-        if _is_on_comment(leaf, position):
-            return u('')
-
         # If we're not on a comment simply get the previous leaf and proceed.
         leaf = leaf.get_previous_leaf()
         if leaf is None:
@@ -122,11 +105,17 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         # TODO This is for now not an official parso API that exists purely
         #   for Jedi.
         tokens = grammar._tokenize(code)
-        for token_ in tokens:
-            if token_.string == safeword:
+        for token in tokens:
+            if token.string == safeword:
+                raise EndMarkerReached()
+            elif token.prefix.endswith(safeword):
+                # This happens with comments.
+                raise EndMarkerReached()
+            elif token.string.endswith(safeword):
+                yield token  # Probably an f-string literal that was not finished.
                 raise EndMarkerReached()
             else:
-                yield token_
+                yield token
 
     # The code might be indedented, just remove it.
     code = dedent(_get_code_for_stack(code_lines, module_node, pos))
@@ -134,65 +123,17 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     # completion.
     # Use Z as a prefix because it's not part of a number suffix.
     safeword = 'ZZZ_USER_WANTS_TO_COMPLETE_HERE_WITH_JEDI'
-    code = code + safeword
+    code = code + ' ' + safeword
 
     p = Parser(grammar._pgen_grammar, error_recovery=True)
     try:
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
-        return Stack(p.pgen_parser.stack)
-    raise SystemError("This really shouldn't happen. There's a bug in Jedi.")
-
-
-class Stack(list):
-    def get_node_names(self, grammar):
-        for dfa, state, (node_number, nodes) in self:
-            yield grammar.number2symbol[node_number]
-
-    def get_nodes(self):
-        for dfa, state, (node_number, nodes) in self:
-            for node in nodes:
-                yield node
-
-
-def get_possible_completion_types(pgen_grammar, stack):
-    def add_results(label_index):
-        try:
-            grammar_labels.append(inversed_tokens[label_index])
-        except KeyError:
-            try:
-                keywords.append(inversed_keywords[label_index])
-            except KeyError:
-                t, v = pgen_grammar.labels[label_index]
-                assert t >= 256
-                # See if it's a symbol and if we're in its first set
-                inversed_keywords
-                itsdfa = pgen_grammar.dfas[t]
-                itsstates, itsfirst = itsdfa
-                for first_label_index in itsfirst.keys():
-                    add_results(first_label_index)
-
-    inversed_keywords = dict((v, k) for k, v in pgen_grammar.keywords.items())
-    inversed_tokens = dict((v, k) for k, v in pgen_grammar.tokens.items())
-
-    keywords = []
-    grammar_labels = []
-
-    def scan_stack(index):
-        dfa, state, node = stack[index]
-        states, first = dfa
-        arcs = states[state]
-
-        for label_index, new_state in arcs:
-            if label_index == 0:
-                # An accepting state, check the stack below.
-                scan_stack(index - 1)
-            else:
-                add_results(label_index)
-
-    scan_stack(-1)
-
-    return keywords, grammar_labels
+        return p.stack
+    raise SystemError(
+        "This really shouldn't happen. There's a bug in Jedi:\n%s"
+        % list(tokenize_without_endmarker(code))
+    )
 
 
 def evaluate_goto_definition(evaluator, context, leaf):
@@ -208,6 +149,8 @@ def evaluate_goto_definition(evaluator, context, leaf):
         return evaluate_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         return eval_atom(context, leaf)
+    elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
+        return get_string_context_set(evaluator)
     return []
 
 
@@ -229,7 +172,8 @@ def _get_index_and_key(nodes, position):
 
     if nodes_before:
         last = nodes_before[-1]
-        if last.type == 'argument' and last.children[1].end_pos <= position:
+        if last.type == 'argument' and last.children[1] == '=' \
+                and last.children[1].end_pos <= position:
             # Checked if the argument
             key_str = last.children[0].value
         elif last == '=':
@@ -294,14 +238,14 @@ def get_call_signature_details(module, position):
     return None
 
 
-@time_cache("call_signatures_validity")
+@call_signature_time_cache("call_signatures_validity")
 def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
-    index = user_pos[0] - 1
+    line_index = user_pos[0] - 1
 
-    before_cursor = code_lines[index][:user_pos[1]]
-    other_lines = code_lines[bracket_leaf.start_pos[0]:index]
-    whole = '\n'.join(other_lines + [before_cursor])
+    before_cursor = code_lines[line_index][:user_pos[1]]
+    other_lines = code_lines[bracket_leaf.start_pos[0]:line_index]
+    whole = ''.join(other_lines + [before_cursor])
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
     module_path = context.get_root_context().py__file__()

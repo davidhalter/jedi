@@ -125,6 +125,7 @@ from jedi._compatibility import unicode, is_py3
 from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
+from jedi.api.environment import get_default_environment, get_system_environment
 
 
 TEST_COMPLETIONS = 0
@@ -138,7 +139,7 @@ grammar36 = parso.load_grammar(version='3.6')
 
 class IntegrationTestCase(object):
     def __init__(self, test_type, correct, line_nr, column, start, line,
-                 path=None, skip=None):
+                 path=None, skip_version_info=None):
         self.test_type = test_type
         self.correct = correct
         self.line_nr = line_nr
@@ -146,7 +147,32 @@ class IntegrationTestCase(object):
         self.start = start
         self.line = line
         self.path = path
-        self.skip = skip
+        self._skip_version_info = skip_version_info
+        self._skip = None
+
+    def set_skip(self, reason):
+        self._skip = reason
+
+    def get_skip_reason(self, environment):
+        if self._skip is not None:
+            return self._skip
+
+        if self._skip_version_info is None:
+            return
+
+        comp_map = {
+            '==': 'eq',
+            '<=': 'le',
+            '>=': 'ge',
+            '<': 'lt',
+            '>': 'gt',
+        }
+        min_version, operator_ = self._skip_version_info
+        operation = getattr(operator, comp_map[operator_])
+        if not operation(environment.version_info[:2], min_version):
+            return "Python version %s %s.%s" % (
+                operator_, min_version[0], min_version[1]
+            )
 
     @property
     def module_name(self):
@@ -161,27 +187,30 @@ class IntegrationTestCase(object):
         return '<%s: %s:%s %r>' % (self.__class__.__name__, self.path,
                                    self.line_nr_test, self.line.rstrip())
 
-    def script(self):
-        return jedi.Script(self.source, self.line_nr, self.column, self.path)
+    def script(self, environment):
+        return jedi.Script(
+            self.source, self.line_nr, self.column, self.path,
+            environment=environment
+        )
 
-    def run(self, compare_cb):
+    def run(self, compare_cb, environment=None):
         testers = {
             TEST_COMPLETIONS: self.run_completion,
             TEST_DEFINITIONS: self.run_goto_definitions,
             TEST_ASSIGNMENTS: self.run_goto_assignments,
             TEST_USAGES: self.run_usages,
         }
-        return testers[self.test_type](compare_cb)
+        return testers[self.test_type](compare_cb, environment)
 
-    def run_completion(self, compare_cb):
-        completions = self.script().completions()
+    def run_completion(self, compare_cb, environment):
+        completions = self.script(environment).completions()
         #import cProfile; cProfile.run('script.completions()')
 
-        comp_str = set([c.name for c in completions])
+        comp_str = {c.name for c in completions}
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))
 
-    def run_goto_definitions(self, compare_cb):
-        script = self.script()
+    def run_goto_definitions(self, compare_cb, environment):
+        script = self.script(environment)
         evaluator = script._evaluator
 
         def comparison(definition):
@@ -218,13 +247,13 @@ class IntegrationTestCase(object):
         is_str = set(comparison(r) for r in result)
         return compare_cb(self, is_str, should)
 
-    def run_goto_assignments(self, compare_cb):
-        result = self.script().goto_assignments()
+    def run_goto_assignments(self, compare_cb, environment):
+        result = self.script(environment).goto_assignments()
         comp_str = str(sorted(str(r.description) for r in result))
         return compare_cb(self, comp_str, self.correct)
 
-    def run_usages(self, compare_cb):
-        result = self.script().usages()
+    def run_usages(self, compare_cb, environment):
+        result = self.script(environment).usages()
         self.correct = self.correct.strip()
         compare = sorted((r.module_name, r.line, r.column) for r in result)
         wanted = []
@@ -246,34 +275,24 @@ class IntegrationTestCase(object):
 
 
 def skip_python_version(line):
-    comp_map = {
-        '==': 'eq',
-        '<=': 'le',
-        '>=': 'ge',
-        '<': 'lt',
-        '>': 'gt',
-    }
     # check for python minimal version number
     match = re.match(r" *# *python *([<>]=?|==) *(\d+(?:\.\d+)?)$", line)
     if match:
-        minimal_python_version = tuple(
-            map(int, match.group(2).split(".")))
-        operation = getattr(operator, comp_map[match.group(1)])
-        if not operation(sys.version_info, minimal_python_version):
-            return "Minimal python version %s %s" % (match.group(1), match.group(2))
-
+        minimal_python_version = tuple(map(int, match.group(2).split(".")))
+        return minimal_python_version, match.group(1)
     return None
 
 
 def collect_file_tests(path, lines, lines_to_execute):
     def makecase(t):
         return IntegrationTestCase(t, correct, line_nr, column,
-                                   start, line, path=path, skip=skip)
+                                   start, line, path=path,
+                                   skip_version_info=skip_version_info)
 
     start = None
     correct = None
     test_type = None
-    skip = None
+    skip_version_info = None
     for line_nr, line in enumerate(lines, 1):
         if correct is not None:
             r = re.match('^(\d+)\s*(.*)$', correct)
@@ -293,7 +312,7 @@ def collect_file_tests(path, lines, lines_to_execute):
                 yield makecase(TEST_DEFINITIONS)
             correct = None
         else:
-            skip = skip or skip_python_version(line)
+            skip_version_info = skip_python_version(line) or skip_version_info
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
                 # test_type is ? for completion and ! for goto_assignments
@@ -342,7 +361,7 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
                                            lines_to_execute):
                 case.source = source
                 if skip:
-                    case.skip = skip
+                    case.set_skip(skip)
                 yield case
 
 
@@ -353,7 +372,7 @@ An alternative testing format, which is much more hacky, but very nice to
 work with.
 
 Usage:
-    run.py [--pdb] [--debug] [--thirdparty] [<rest>...]
+    run.py [--pdb] [--debug] [--thirdparty] [--env <dotted>] [<rest>...]
     run.py --help
 
 Options:
@@ -361,6 +380,7 @@ Options:
     --pdb           Enable pdb debugging on fail.
     -d, --debug     Enable text output debugging (please install ``colorama``).
     --thirdparty    Also run thirdparty tests (in ``completion/thirdparty``).
+    --env <dotted>  A Python version, like 2.7, 3.4, etc.
 """
 if __name__ == '__main__':
     import docopt
@@ -392,7 +412,6 @@ if __name__ == '__main__':
     dir_ = os.path.dirname(os.path.realpath(__file__))
     completion_test_dir = os.path.join(dir_, '../test/completion')
     completion_test_dir = os.path.abspath(completion_test_dir)
-    summary = []
     tests_fail = 0
 
     # execute tests
@@ -404,7 +423,7 @@ if __name__ == '__main__':
     def file_change(current, tests, fails):
         if current is not None:
             current = os.path.basename(current)
-        print('%s \t\t %s tests and %s fails.' % (current, tests, fails))
+        print('{:25} {} tests and {} fails.'.format(current, tests, fails))
 
     def report(case, actual, desired):
         if actual == desired:
@@ -414,11 +433,17 @@ if __name__ == '__main__':
                   % (case.line_nr - 1, actual, desired))
             return 1
 
+    if arguments['--env']:
+        environment = get_system_environment(arguments['--env'])
+    else:
+        # Will be 3.6.
+        environment = get_default_environment()
+
     import traceback
     current = cases[0].path if cases else None
     count = fails = 0
     for c in cases:
-        if c.skip:
+        if c.get_skip_reason(environment):
             continue
         if current != c.path:
             file_change(current, count, fails)
@@ -426,7 +451,7 @@ if __name__ == '__main__':
             count = fails = 0
 
         try:
-            if c.run(report):
+            if c.run(report, environment):
                 tests_fail += 1
                 fails += 1
         except Exception:
@@ -444,8 +469,6 @@ if __name__ == '__main__':
 
     print('\nSummary: (%s fails of %s tests) in %.3fs'
           % (tests_fail, len(cases), time.time() - t_start))
-    for s in summary:
-        print(s)
 
     exit_code = 1 if tests_fail else 0
     sys.exit(exit_code)

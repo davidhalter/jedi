@@ -1,7 +1,8 @@
-from parso.python import token
+from parso.python.token import PythonTokenTypes
 from parso.python import tree
 from parso.tree import search_ancestor, Leaf
 
+from jedi._compatibility import Parameter
 from jedi import debug
 from jedi import settings
 from jedi.api import classes
@@ -18,24 +19,21 @@ def get_call_signature_param_names(call_signatures):
     for call_sig in call_signatures:
         for p in call_sig.params:
             # Allow protected access, because it's a public API.
-            tree_name = p._name.tree_name
-            # Compiled modules typically don't allow keyword arguments.
-            if tree_name is not None:
-                # Allow access on _definition here, because it's a
-                # public API and we don't want to make the internal
-                # Name object public.
-                tree_param = tree.search_ancestor(tree_name, 'param')
-                if tree_param.star_count == 0:  # no *args/**kwargs
-                    yield p._name
+            if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
+                                      Parameter.KEYWORD_ONLY):
+                yield p._name
 
 
 def filter_names(evaluator, completion_names, stack, like_name):
     comp_dct = {}
+    if settings.case_insensitive_completion:
+        like_name = like_name.lower()
     for name in completion_names:
-        if settings.case_insensitive_completion \
-                and name.string_name.lower().startswith(like_name.lower()) \
-                or name.string_name.startswith(like_name):
+        string = name.string_name
+        if settings.case_insensitive_completion:
+            string = string.lower()
 
+        if string.startswith(like_name):
             new = classes.Completion(
                 evaluator,
                 name,
@@ -59,7 +57,8 @@ def get_user_scope(module_context, position):
         def scan(scope):
             for s in scope.children:
                 if s.start_pos <= position <= s.end_pos:
-                    if isinstance(s, (tree.Scope, tree.Flow)):
+                    if isinstance(s, (tree.Scope, tree.Flow)) \
+                            or s.type in ('async_stmt', 'async_funcdef'):
                         return scan(s) or s
                     elif s.type in ('suite', 'decorated'):
                         return scan(s)
@@ -123,11 +122,11 @@ class Completion:
         grammar = self._evaluator.grammar
 
         try:
-            self.stack = helpers.get_stack_at_position(
+            self.stack = stack = helpers.get_stack_at_position(
                 grammar, self._code_lines, self._module_node, self._position
             )
         except helpers.OnErrorLeaf as e:
-            self.stack = None
+            self.stack = stack = None
             if e.error_leaf.value == '.':
                 # After ErrorLeaf's that are dots, we will not do any
                 # completions since this probably just confuses the user.
@@ -136,10 +135,10 @@ class Completion:
 
             return self._global_completions()
 
-        allowed_keywords, allowed_tokens = \
-            helpers.get_possible_completion_types(grammar._pgen_grammar, self.stack)
+        allowed_transitions = \
+            list(stack._allowed_transition_names_and_token_types())
 
-        if 'if' in allowed_keywords:
+        if 'if' in allowed_transitions:
             leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
             previous_leaf = leaf.get_previous_leaf()
 
@@ -165,50 +164,52 @@ class Completion:
                     # Compare indents
                     if stmt.start_pos[1] == indent:
                         if type_ == 'if_stmt':
-                            allowed_keywords += ['elif', 'else']
+                            allowed_transitions += ['elif', 'else']
                         elif type_ == 'try_stmt':
-                            allowed_keywords += ['except', 'finally', 'else']
+                            allowed_transitions += ['except', 'finally', 'else']
                         elif type_ == 'for_stmt':
-                            allowed_keywords.append('else')
+                            allowed_transitions.append('else')
 
-        completion_names = list(self._get_keyword_completion_names(allowed_keywords))
+        completion_names = list(self._get_keyword_completion_names(allowed_transitions))
 
-        if token.NAME in allowed_tokens or token.INDENT in allowed_tokens:
+        if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
+                                                  PythonTokenTypes.INDENT)):
             # This means that we actually have to do type inference.
 
-            symbol_names = list(self.stack.get_node_names(grammar._pgen_grammar))
+            nonterminals = [stack_node.nonterminal for stack_node in stack]
 
-            nodes = list(self.stack.get_nodes())
+            nodes = [node for stack_node in stack for node in stack_node.nodes]
 
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
                 return list(self._get_class_context_completions(is_function=True))
-            elif "import_stmt" in symbol_names:
-                level, names = self._parse_dotted_names(nodes, "import_from" in symbol_names)
+            elif "import_stmt" in nonterminals:
+                level, names = self._parse_dotted_names(nodes, "import_from" in nonterminals)
 
-                only_modules = not ("import_from" in symbol_names and 'import' in nodes)
+                only_modules = not ("import_from" in nonterminals and 'import' in nodes)
                 completion_names += self._get_importer_names(
                     names,
                     level,
                     only_modules=only_modules,
                 )
-            elif symbol_names[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
+            elif nonterminals[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
                 completion_names += self._trailer_completions(dot.get_previous_leaf())
             else:
                 completion_names += self._global_completions()
                 completion_names += self._get_class_context_completions(is_function=False)
 
-            if 'trailer' in symbol_names:
+            if 'trailer' in nonterminals:
                 call_signatures = self._call_signatures_method()
                 completion_names += get_call_signature_param_names(call_signatures)
 
         return completion_names
 
-    def _get_keyword_completion_names(self, keywords_):
-        for k in keywords_:
-            yield keywords.keyword(self._evaluator, k).name
+    def _get_keyword_completion_names(self, allowed_transitions):
+        for k in allowed_transitions:
+            if isinstance(k, str) and k.isalpha():
+                yield keywords.KeywordName(self._evaluator, k)
 
     def _global_completions(self):
         context = get_user_scope(self._module_context, self._position)
@@ -232,7 +233,7 @@ class Completion:
         )
         contexts = evaluate_call_of_leaf(evaluation_context, previous_leaf)
         completion_names = []
-        debug.dbg('trailer completion contexts: %s', contexts)
+        debug.dbg('trailer completion contexts: %s', contexts, color='MAGENTA')
         for context in contexts:
             for filter in context.get_filters(
                     search_global=False, origin_scope=user_context.tree_node):
@@ -287,5 +288,6 @@ class Completion:
         next(filters)
         for filter in filters:
             for name in filter.values():
+                # TODO we should probably check here for properties
                 if (name.api_type == 'function') == is_function:
                     yield name

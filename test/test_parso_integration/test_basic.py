@@ -1,12 +1,12 @@
 from textwrap import dedent
 
+import pytest
 from parso import parse
-import jedi
 
 
-def test_form_feed_characters():
+def test_form_feed_characters(Script):
     s = "\f\nclass Test(object):\n    pass"
-    jedi.Script(s, line=2, column=18).call_signatures()
+    Script(s, line=2, column=18).call_signatures()
 
 
 def check_p(src):
@@ -15,7 +15,7 @@ def check_p(src):
     return module_node
 
 
-def test_if():
+def test_if(Script):
     src = dedent('''\
     def func():
         x = 3
@@ -29,10 +29,10 @@ def test_if():
 
     # Two parsers needed, one for pass and one for the function.
     check_p(src)
-    assert [d.name for d in jedi.Script(src, 8, 6).goto_definitions()] == ['int']
+    assert [d.name for d in Script(src, 8, 6).goto_definitions()] == ['int']
 
 
-def test_class_and_if():
+def test_class_and_if(Script):
     src = dedent("""\
     class V:
         def __init__(self):
@@ -47,10 +47,10 @@ def test_class_and_if():
     # COMMENT
     a_func()""")
     check_p(src)
-    assert [d.name for d in jedi.Script(src).goto_definitions()] == ['int']
+    assert [d.name for d in Script(src).goto_definitions()] == ['int']
 
 
-def test_add_to_end():
+def test_add_to_end(Script):
     """
     The diff parser doesn't parse everything again. It just updates with the
     help of caches, this is an example that didn't work.
@@ -70,7 +70,7 @@ def test_add_to_end():
         "        self."
 
     def complete(code, line=None, column=None):
-        script = jedi.Script(code, line, column, 'example.py')
+        script = Script(code, line, column, 'example.py')
         assert script.completions()
 
     complete(a, 7, 12)
@@ -81,16 +81,15 @@ def test_add_to_end():
     complete(a + b)
 
 
-def test_tokenizer_with_string_literal_backslash():
-    c = jedi.Script("statement = u'foo\\\n'; statement").goto_definitions()
-    assert c[0]._name._context.obj == 'foo'
+def test_tokenizer_with_string_literal_backslash(Script):
+    c = Script("statement = u'foo\\\n'; statement").goto_definitions()
+    assert c[0]._name._context.get_safe_value() == 'foo'
 
 
-def test_ellipsis():
-    def_, = jedi.Script(dedent("""\
-        class Foo():
-            def __getitem__(self, index):
-                return index
-        Foo()[...]""")).goto_definitions()
+def test_ellipsis_without_getitem(Script, environment):
+    if environment.version_info.major == 2:
+        pytest.skip('In 2.7 Ellipsis can only be used like x[...]')
+
+    def_, = Script('x=...;x').goto_definitions()
 
     assert def_.name == 'ellipsis'

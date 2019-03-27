@@ -3,6 +3,53 @@
 Changelog
 ---------
 
+0.13.3 (2019-02-24)
++++++++++++++++++++
+
+- Fixed an issue with embedded Pytho, see https://github.com/davidhalter/jedi-vim/issues/870
+
+0.13.2 (2018-12-15)
++++++++++++++++++++
+
+- Fixed a bug that led to Jedi spawning a lot of subprocesses.
+
+0.13.1 (2018-10-02)
++++++++++++++++++++
+
+- Bugfixes, because tensorflow completions were still slow.
+
+0.13.0 (2018-10-02)
++++++++++++++++++++
+
+- A small release. Some bug fixes.
+- Remove Python 3.3 support. Python 3.3 support has been dropped by the Python
+  foundation.
+- Default environments are now using the same Python version as the Python
+  process. In 0.12.x, we used to load the latest Python version on the system.
+- Added ``include_builtins`` as a parameter to usages.
+- ``goto_assignments`` has a new ``follow_builtin_imports`` parameter that
+  changes the previous behavior slightly.
+
+0.12.1 (2018-06-30)
++++++++++++++++++++
+
+- This release forces you to upgrade parso. If you don't, nothing will work
+  anymore. Otherwise changes should be limited to bug fixes. Unfortunately Jedi
+  still uses a few internals of parso that make it hard to keep compatibility
+  over multiple releases. Parso >=0.3.0 is going to be needed.
+
+0.12.0 (2018-04-15)
++++++++++++++++++++
+
+- Virtualenv/Environment support
+- F-String Completion/Goto Support
+- Cannot crash with segfaults anymore
+- Cleaned up import logic
+- Understand async/await and autocomplete it (including async generators)
+- Better namespace completions
+- Passing tests for Windows (including CI for Windows)
+- Remove Python 2.6 support
+
 0.11.1 (2017-12-14)
 +++++++++++++++++++
 

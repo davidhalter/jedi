@@ -7,7 +7,7 @@ from parso.python import tree
 import pytest
 
 
-class TestCallAndName():
+class TestCallAndName:
     def get_call(self, source):
         # Get the simple_stmt and then the first one.
         node = parse(source).children[0]
@@ -75,7 +75,8 @@ def test_hex_values_in_docstring():
 
 @pytest.mark.parametrize(
     'code,call_signature', [
-        ('def my_function(x, y, z) -> str:\n return', 'my_function(x, y, z)'),
+        ('def my_function(x, typed: Type, z):\n return', 'my_function(x, typed: Type, z)'),
+        ('def my_function(x, y, z) -> str:\n return', 'my_function(x, y, z) -> str'),
         ('lambda x, y, z: x + y * z\n', '<lambda>(x, y, z)')
     ])
 def test_get_call_signature(code, call_signature):
@@ -84,4 +85,4 @@ def test_get_call_signature(code, call_signature):
         node = node.children[0]
     assert parser_utils.get_call_signature(node) == call_signature
 
-    assert parser_utils.get_doc_with_call_signature(node) == (call_signature + '\n\n')
+    assert parser_utils.get_doc_with_call_signature(node) == call_signature

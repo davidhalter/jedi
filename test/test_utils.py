@@ -56,7 +56,7 @@ class TestSetupReadline(unittest.TestCase):
             string = 'os.path.join("a").upper'
             assert self.completions(string) == [string]
 
-            c = set(['os.' + d for d in dir(os) if d.startswith('ch')])
+            c = {'os.' + d for d in dir(os) if d.startswith('ch')}
             assert set(self.completions('os.ch')) == set(c)
         finally:
             del self.namespace.sys
@@ -68,15 +68,19 @@ class TestSetupReadline(unittest.TestCase):
 
     def test_import(self):
         s = 'from os.path import a'
-        assert set(self.completions(s)) == set([s + 'ltsep', s + 'bspath'])
+        assert set(self.completions(s)) == {s + 'ltsep', s + 'bspath'}
         assert self.completions('import keyword') == ['import keyword']
 
         import os
         s = 'from os import '
-        goal = set([s + el for el in dir(os)])
+        goal = {s + el for el in dir(os)}
         # There are minor differences, e.g. the dir doesn't include deleted
         # items as well as items that are not only available on linux.
-        assert len(set(self.completions(s)).symmetric_difference(goal)) < 20
+        difference = set(self.completions(s)).symmetric_difference(goal)
+        difference = {x for x in difference if not x.startswith('from os import _')}
+        # There are quite a few differences, because both Windows and Linux
+        # (posix and nt) libraries are included.
+        assert len(difference) < 33
 
     @cwd_at('test')
     def test_local_import(self):
@@ -85,7 +89,7 @@ class TestSetupReadline(unittest.TestCase):
 
     def test_preexisting_values(self):
         self.namespace.a = range(10)
-        assert set(self.completions('a.')) == set(['a.' + n for n in dir(range(1))])
+        assert set(self.completions('a.')) == {'a.' + n for n in dir(range(1))}
         del self.namespace.a
 
     def test_colorama(self):

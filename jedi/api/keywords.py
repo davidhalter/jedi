@@ -1,10 +1,7 @@
 import pydoc
-import keyword
 
-from jedi._compatibility import is_py3, is_py35
 from jedi.evaluate.utils import ignored
 from jedi.evaluate.filters import AbstractNameDefinition
-from parso.python.tree import Leaf
 
 try:
     from pydoc_data import topics as pydoc_topics
@@ -17,87 +14,30 @@ except ImportError:
         # pydoc_data module in its file python3x.zip.
         pydoc_topics = None
 
-if is_py3:
-    if is_py35:
-        # in python 3.5 async and await are not proper keywords, but for
-        # completion pursposes should as as though they are
-        keys = keyword.kwlist + ["async", "await"]
-    else:
-        keys = keyword.kwlist
-else:
-    keys = keyword.kwlist + ['None', 'False', 'True']
-
-
-def has_inappropriate_leaf_keyword(pos, module):
-    relevant_errors = filter(
-        lambda error: error.first_pos[0] == pos[0],
-        module.error_statement_stacks)
-
-    for error in relevant_errors:
-        if error.next_token in keys:
-            return True
-
-    return False
-
-
-def completion_names(evaluator, stmt, pos, module):
-    keyword_list = all_keywords(evaluator)
-
-    if not isinstance(stmt, Leaf) or has_inappropriate_leaf_keyword(pos, module):
-        keyword_list = filter(
-            lambda keyword: not keyword.only_valid_as_leaf,
-            keyword_list
-        )
-    return [keyword.name for keyword in keyword_list]
-
-
-def all_keywords(evaluator, pos=(0, 0)):
-    return set([Keyword(evaluator, k, pos) for k in keys])
-
-
-def keyword(evaluator, string, pos=(0, 0)):
-    if string in keys:
-        return Keyword(evaluator, string, pos)
-    else:
-        return None
-
 
 def get_operator(evaluator, string, pos):
     return Keyword(evaluator, string, pos)
 
 
-keywords_only_valid_as_leaf = (
-    'continue',
-    'break',
-)
-
-
 class KeywordName(AbstractNameDefinition):
-    api_type = 'keyword'
+    api_type = u'keyword'
 
     def __init__(self, evaluator, name):
         self.evaluator = evaluator
         self.string_name = name
-        self.parent_context = evaluator.BUILTINS
-
-    def eval(self):
-        return set()
+        self.parent_context = evaluator.builtins_module
 
     def infer(self):
         return [Keyword(self.evaluator, self.string_name, (0, 0))]
 
 
 class Keyword(object):
-    api_type = 'keyword'
+    api_type = u'keyword'
 
     def __init__(self, evaluator, name, pos):
         self.name = KeywordName(evaluator, name)
         self.start_pos = pos
-        self.parent = evaluator.BUILTINS
-
-    @property
-    def only_valid_as_leaf(self):
-        return self.name.value in keywords_only_valid_as_leaf
+        self.parent = evaluator.builtins_module
 
     @property
     def names(self):
