@@ -67,6 +67,7 @@ from functools import partial
 from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
+from parso.file_io import FileIO
 
 from jedi import debug
 from jedi import parser_utils
@@ -453,7 +454,8 @@ class Evaluator(object):
                            use_latest_grammar=False, file_io=None, **kwargs):
         if self.allow_different_encoding:
             if code is None:
-                assert file_io is not None
+                if file_io is None:
+                    file_io = FileIO(path)
                 code = file_io.read()
             code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
 
