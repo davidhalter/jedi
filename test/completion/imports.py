@@ -128,6 +128,13 @@ def broken_import():
     #? 31 import_tree.mod1
     import json, import_tree.mod1.foo.
 
+    # Cases with ;
+    mod1 = 3
+    #? 25 int()
+    import import_tree; mod1.
+    #? 38 import_tree.mod1
+    import_tree; import import_tree.mod1.
+
     #! ['module json']
     from json
 

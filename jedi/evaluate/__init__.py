@@ -291,24 +291,33 @@ class Evaluator(object):
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
         else:
-            result = self.follow_error_node_imports_if_possible(context, name)
+            result = self._follow_error_node_imports_if_possible(context, name)
             if result is not None:
                 return result
 
         return helpers.evaluate_call_of_leaf(context, name)
 
-    def follow_error_node_imports_if_possible(self, context, name):
+    def _follow_error_node_imports_if_possible(self, context, name):
         error_node = tree.search_ancestor(name, 'error_node')
-        #if 'expr_stmt', 'del_stmt', 'flow_stmt',
-             #'import_stmt', 'global_stmt', 'nonlocal_stmt' 'assert_stmt'
         if error_node is not None:
+            # Get the first command start of a started simple_stmt. The error
+            # node is sometimes a small_stmt and sometimes a simple_stmt. Check
+            # for ; leaves that start a new statements.
+            start_index = 0
+            for index, n in enumerate(error_node.children):
+                if n.start_pos > name.start_pos:
+                    break
+                if n == ';':
+                    start_index = index + 1
+            nodes = error_node.children[start_index:]
+            first_name = nodes[0].get_first_leaf().value
+
             # Make it possible to infer stuff like `import foo.` or
             # `from foo.bar`.
-            first_name = error_node.get_first_leaf().value
             if first_name in ('from', 'import'):
                 is_import_from = first_name == 'from'
                 level, names = helpers.parse_dotted_names(
-                    error_node.children,
+                    nodes,
                     is_import_from=is_import_from,
                     until_node=name,
                 )
@@ -333,7 +342,7 @@ class Evaluator(object):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names
         else:
-            contexts = self.follow_error_node_imports_if_possible(context, name)
+            contexts = self._follow_error_node_imports_if_possible(context, name)
             if contexts is not None:
                 return [context.name for context in contexts]
 
