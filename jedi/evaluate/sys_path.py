@@ -210,7 +210,7 @@ def transform_path_to_dotted(sys_path, module_path):
     Returns the dotted path inside a sys.path as a list of names. e.g.
 
     >>> transform_path_to_dotted(["/foo"], '/foo/bar/baz.py')
-    ('bar', 'baz'), False
+    (('bar', 'baz'), False)
 
     Returns (None, False) if the path doesn't really resolve to anything.
     The second return part is if it is a package.

@@ -55,7 +55,10 @@ def test_load_module(evaluator):
         access_handle.py__mro__()
 
 
-def test_error_in_environment(evaluator, Script):
+def test_error_in_environment(evaluator, Script, environment):
+    if isinstance(environment, InterpreterEnvironment):
+        pytest.skip("We don't catch these errors at the moment.")
+
     # Provoke an error to show how Jedi can recover from it.
     with pytest.raises(jedi.InternalError):
         evaluator.compiled_subprocess._test_raise_error(KeyboardInterrupt)

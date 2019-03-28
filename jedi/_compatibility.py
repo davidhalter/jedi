@@ -127,7 +127,7 @@ def _from_loader(loader, string):
 
     # To avoid unicode and read bytes, "overwrite" loader.get_source if
     # possible.
-    f = loader.get_source.__func__
+    f = type(loader).get_source
     if is_py3 and f is not importlib.machinery.SourceFileLoader.get_source:
         # Unfortunately we are reading unicode here, not bytes.
         # It seems hard to get bytes, because the zip importer

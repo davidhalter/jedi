@@ -128,17 +128,18 @@ class Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
-class SameEnvironment(Environment):
+class _SameEnvironmentMixin(object):
     def __init__(self):
         self._start_executable = self.executable = sys.executable
         self.path = sys.prefix
         self.version_info = _VersionInfo(*sys.version_info[:3])
 
 
-class InterpreterEnvironment(_BaseEnvironment):
-    def __init__(self):
-        self.version_info = _VersionInfo(*sys.version_info[:3])
+class SameEnvironment(_SameEnvironmentMixin, Environment):
+    pass
 
+
+class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
     def get_evaluator_subprocess(self, evaluator):
         return EvaluatorSameProcess(evaluator)
 
