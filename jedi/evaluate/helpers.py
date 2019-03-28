@@ -241,7 +241,7 @@ def execute_evaluated(context, *value_list):
     return context.evaluator.execute(context, arguments)
 
 
-def parse_dotted_names(nodes, is_import_from):
+def parse_dotted_names(nodes, is_import_from, until_node=None):
     level = 0
     names = []
     for node in nodes[1:]:
@@ -249,9 +249,17 @@ def parse_dotted_names(nodes, is_import_from):
             if not names:
                 level += len(node.value)
         elif node.type == 'dotted_name':
-            names += node.children[::2]
+            for n in node.children[::2]:
+                names.append(n)
+                if n is until_node:
+                    break
+            else:
+                continue
+            break
         elif node.type == 'name':
             names.append(node)
+            if node is until_node:
+                break
         elif node == ',':
             if not is_import_from:
                 names = []

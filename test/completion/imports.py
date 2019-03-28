@@ -119,8 +119,14 @@ def broken_import():
     #? import_tree.mod1
     from import_tree.mod1
 
-    #? 20 import_tree.mod1
+    #? 25 import_tree.mod1
     import import_tree.mod1.
+    #? 25 import_tree.mod1
+    impo5t import_tree.mod1.foo
+    #? 25 import_tree.mod1
+    import import_tree.mod1.foo.
+    #? 31 import_tree.mod1
+    import json, import_tree.mod1.foo.
 
     #! ['module json']
     from json

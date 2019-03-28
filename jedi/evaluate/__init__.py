@@ -290,15 +290,17 @@ class Evaluator(object):
                 return check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
-
-        result = self.follow_error_node_imports_if_possible(context, name)
-        if result is not None:
-            return result
+        else:
+            result = self.follow_error_node_imports_if_possible(context, name)
+            if result is not None:
+                return result
 
         return helpers.evaluate_call_of_leaf(context, name)
 
     def follow_error_node_imports_if_possible(self, context, name):
         error_node = tree.search_ancestor(name, 'error_node')
+        #if 'expr_stmt', 'del_stmt', 'flow_stmt',
+             #'import_stmt', 'global_stmt', 'nonlocal_stmt' 'assert_stmt'
         if error_node is not None:
             # Make it possible to infer stuff like `import foo.` or
             # `from foo.bar`.
@@ -307,7 +309,8 @@ class Evaluator(object):
                 is_import_from = first_name == 'from'
                 level, names = helpers.parse_dotted_names(
                     error_node.children,
-                    is_import_from=is_import_from
+                    is_import_from=is_import_from,
+                    until_node=name,
                 )
                 return imports.Importer(self, names, context.get_root_context(), level).follow()
         return None
@@ -329,10 +332,10 @@ class Evaluator(object):
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names
-
-        contexts = self.follow_error_node_imports_if_possible(context, name)
-        if contexts is not None:
-            return [context.name for context in contexts]
+        else:
+            contexts = self.follow_error_node_imports_if_possible(context, name)
+            if contexts is not None:
+                return [context.name for context in contexts]
 
         par = name.parent
         node_type = par.type
