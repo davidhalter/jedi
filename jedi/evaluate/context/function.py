@@ -19,7 +19,6 @@ from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
 from jedi.evaluate.context import iterable
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
-from jedi.evaluate.gradual.annotation import infer_return_types
 
 
 class LambdaName(AbstractNameDefinition):
@@ -38,7 +37,24 @@ class LambdaName(AbstractNameDefinition):
         return ContextSet([self._lambda_context])
 
 
-class FunctionMixin(object):
+class FunctionAndClassMixin(object):
+    def get_qualified_names(self):
+        if self.parent_context.is_class():
+            n = self.parent_context.get_qualified_names()
+            if n is None:
+                # This means that the parent class lives within a function.
+                return None
+            return n + [self.py__name__()]
+        elif self.parent_context.is_module():
+            return [self.py__name__()]
+        else:
+            return None
+
+    def py__name__(self):
+        return self.name.string_name
+
+
+class FunctionMixin(FunctionAndClassMixin):
     api_type = u'function'
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
@@ -81,9 +97,6 @@ class FunctionMixin(object):
             arguments = AnonymousArguments()
 
         return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
-
-    def py__name__(self):
-        return self.name.string_name
 
 
 class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)):
@@ -179,6 +192,7 @@ class FunctionExecutionContext(TreeContext):
             returns = get_yield_exprs(self.evaluator, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
+            from jedi.evaluate.gradual.annotation import infer_return_types
             context_set = infer_return_types(self)
             if context_set:
                 # If there are annotations, prefer them over anything else.

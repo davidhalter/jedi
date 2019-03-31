@@ -49,6 +49,7 @@ from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
 from jedi.evaluate.arguments import unpack_arglist
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     TreeContext, NO_CONTEXTS
+from jedi.evaluate.context.function import FunctionAndClassMixin
 
 
 def apply_py__get__(context, instance, class_context):
@@ -118,7 +119,7 @@ class ClassFilter(ParserTreeFilter):
         return [name for name in names if self._access_possible(name)]
 
 
-class ClassMixin(object):
+class ClassMixin(FunctionAndClassMixin):
     def is_class(self):
         return True
 
@@ -132,9 +133,6 @@ class ClassMixin(object):
     @property
     def name(self):
         return ContextName(self, self.tree_node.name)
-
-    def py__name__(self):
-        return self.name.string_name
 
     def get_param_names(self):
         for context_ in self.py__getattribute__(u'__init__'):

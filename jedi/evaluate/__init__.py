@@ -84,6 +84,7 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
+from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible
 
 
 def _execute(context, arguments):
@@ -273,10 +274,15 @@ class Evaluator(object):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
-            if type_ == 'classdef':
-                return [ClassContext(self, context, name.parent)]
+            is_classdef = type_ == 'classdef'
+            if is_classdef or type_ == 'funcdef':
+                if is_classdef:
+                    c = ClassContext(self, context, name.parent)
+                else:
+                    c = FunctionContext.from_context(context, name.parent)
+                return with_stub_context_if_possible(c)
             elif type_ == 'funcdef':
-                return [FunctionContext.from_context(context, name.parent)]
+                return []
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')

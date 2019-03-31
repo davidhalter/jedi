@@ -187,24 +187,24 @@ def test_goto_stubs(Script):
 
 @pytest.mark.parametrize(
     'code', [
-        'import os; os.walk'
-        'from collections import Counter; Counter'
+        'import os; os.walk',
+        'from collections import Counter; Counter',
     ])
 def test_goto_stubs_on_itself(Script, code):
     """
     If goto_stubs is used on an identifier in e.g. the stdlib, we should goto
     the stub of it.
     """
-    s = Script()
-    os_module, = s.goto_definitions()
-    stub = os_module.goto_stubs()
+    s = Script(code)
+    def_, = s.goto_definitions()
+    stub, = def_.goto_stubs()
 
     script_on_source = Script(
-        path=os_module.module_path,
-        line=os_module.line,
-        column=os_module.column
+        path=def_.module_path,
+        line=def_.line,
+        column=def_.column
     )
-    definition, = script_on_source.goto_assignments()
+    definition, = script_on_source.goto_definitions()
     same_stub, = definition.goto_stubs()
     assert stub.module_path == same_stub.module_path
     assert stub.line == same_stub.line

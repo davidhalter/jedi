@@ -1,7 +1,7 @@
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.utils import safe_property
-from jedi.evaluate.base_context import ContextWrapper
+from jedi.evaluate.base_context import ContextWrapper, ContextSet
 from jedi.evaluate.context.function import FunctionMixin, FunctionContext, MethodContext
 from jedi.evaluate.context.klass import ClassMixin, ClassContext
 from jedi.evaluate.context.module import ModuleMixin, ModuleContext
@@ -208,37 +208,55 @@ class StubName(NameWrapper):
         self._stub_name = stub_name
 
     @memoize_method
-    @iterator_to_context_set
     def infer(self):
         stub_contexts = self._stub_name.infer()
         if not stub_contexts:
-            for c in self._wrapped_name.infer():
-                yield c
-            return
+            return self._wrapped_name.infer()
 
         typ = self._wrapped_name.tree_name.parent.type
+        # TODO is this if a performance optimization?
         if typ in ('classdef', 'funcdef'):
             actual_context, = self._wrapped_name.infer()
-            for stub_context in stub_contexts:
-                if isinstance(stub_context, MethodContext):
-                    assert isinstance(actual_context, MethodContext)
-                    cls = StubMethodContext
-                elif isinstance(stub_context, FunctionContext):
-                    cls = StubFunctionContext
-                elif isinstance(stub_context, StubOnlyClass):
-                    cls = StubClassContext
-                else:
-                    yield stub_context
-                    continue
-                yield cls.create_cached(
-                    actual_context.evaluator,
-                    self.parent_context,
-                    actual_context,
-                    stub_context,
-                )
+            return _add_stub_if_possible(self.parent_context, actual_context, stub_contexts)
         else:
-            for c in stub_contexts:
-                yield c
+            return stub_contexts
+
+
+@iterator_to_context_set
+def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
+    for stub_context in stub_contexts:
+        if isinstance(stub_context, MethodContext):
+            assert isinstance(actual_context, MethodContext)
+            cls = StubMethodContext
+        elif isinstance(stub_context, FunctionContext):
+            cls = StubFunctionContext
+        elif isinstance(stub_context, StubOnlyClass):
+            cls = StubClassContext
+        else:
+            yield stub_context
+            continue
+        yield cls.create_cached(
+            actual_context.evaluator,
+            parent_context,
+            actual_context,
+            stub_context,
+        )
+
+
+def with_stub_context_if_possible(actual_context):
+    names = actual_context.get_qualified_names()
+    stub_module = actual_context.get_root_context().stub_context
+    if stub_module is None:
+        return ContextSet([actual_context])
+
+    stub_contexts = ContextSet([stub_module])
+    for name in names:
+        stub_contexts = stub_contexts.py__getattribute__(name)
+    return _add_stub_if_possible(
+        actual_context.parent_context,
+        actual_context,
+        stub_contexts,
+    )
 
 
 class CompiledStubName(NameWrapper):

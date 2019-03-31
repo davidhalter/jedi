@@ -38,6 +38,7 @@ from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
+from jedi.evaluate.gradual.typeshed import try_to_merge_with_stub
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -165,6 +166,9 @@ class Script(object):
             string_names=names,
             code_lines=self._code_lines,
             is_package=is_package,
+        )
+        module, = try_to_merge_with_stub(
+            self._evaluator, None, module.string_names, ContextSet([module])
         )
         self._evaluator.module_cache.add(names, ContextSet([module]))
         return module

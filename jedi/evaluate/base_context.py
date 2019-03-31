@@ -172,6 +172,10 @@ class Context(HelperContextMixin, BaseContext):
         debug.warning("Not possible to return the stop iterations of %s", self)
         return NO_CONTEXTS
 
+    def get_qualified_names(self):
+        # Returns Optional[List[str]]
+        return None
+
 
 def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     """

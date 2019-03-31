@@ -136,44 +136,49 @@ def import_module_decorator(func):
             else:
                 raise
 
-        import_name = import_names[-1]
-        map_ = None
-        if len(import_names) == 1:
-            map_ = _cache_stub_file_map(evaluator.grammar.version_info)
-        elif isinstance(parent_module_context, StubModuleContext):
-            if not parent_module_context.stub_context.is_package:
-                # Only if it's a package (= a folder) something can be
-                # imported.
-                return context_set
-            path = parent_module_context.stub_context.py__path__()
-            map_ = _merge_create_stub_map(path)
-
-        if map_ is not None:
-            path = map_.get(import_name)
-            if path is not None:
-                try:
-                    stub_module_node = _load_stub(evaluator, path)
-                except FileNotFoundError:
-                    # The file has since been removed after looking for it.
-                    # TODO maybe empty cache?
-                    pass
-                else:
-                    if import_names == ('typing',):
-                        module_cls = TypingModuleWrapper
-                    else:
-                        module_cls = StubOnlyModuleContext
-                    file_name = os.path.basename(path)
-                    stub_module_context = module_cls(
-                        context_set, evaluator, stub_module_node,
-                        path=path,
-                        string_names=import_names,
-                        # The code was loaded with latest_grammar, so use
-                        # that.
-                        code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
-                        is_package=file_name == '__init__.pyi',
-                    )
-                    modules = _merge_modules(context_set, stub_module_context)
-                    return ContextSet(modules)
-        # If no stub is found, just return the default.
-        return context_set
+        return try_to_merge_with_stub(evaluator, parent_module_context,
+                                      import_names, context_set)
     return wrapper
+
+
+def try_to_merge_with_stub(evaluator, parent_module_context, import_names, actual_context_set):
+    import_name = import_names[-1]
+    map_ = None
+    if len(import_names) == 1:
+        map_ = _cache_stub_file_map(evaluator.grammar.version_info)
+    elif isinstance(parent_module_context, StubModuleContext):
+        if not parent_module_context.stub_context.is_package:
+            # Only if it's a package (= a folder) something can be
+            # imported.
+            return actual_context_set
+        path = parent_module_context.stub_context.py__path__()
+        map_ = _merge_create_stub_map(path)
+
+    if map_ is not None:
+        path = map_.get(import_name)
+        if path is not None:
+            try:
+                stub_module_node = _load_stub(evaluator, path)
+            except FileNotFoundError:
+                # The file has since been removed after looking for it.
+                # TODO maybe empty cache?
+                pass
+            else:
+                if import_names == ('typing',):
+                    module_cls = TypingModuleWrapper
+                else:
+                    module_cls = StubOnlyModuleContext
+                file_name = os.path.basename(path)
+                stub_module_context = module_cls(
+                    actual_context_set, evaluator, stub_module_node,
+                    path=path,
+                    string_names=import_names,
+                    # The code was loaded with latest_grammar, so use
+                    # that.
+                    code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
+                    is_package=file_name == '__init__.pyi',
+                )
+                modules = _merge_modules(actual_context_set, stub_module_context)
+                return ContextSet(modules)
+    # If no stub is found, just return the default.
+    return actual_context_set
