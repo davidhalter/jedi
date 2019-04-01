@@ -320,8 +320,7 @@ class BaseDefinition(object):
         names = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
         return [Definition(self._evaluator, n) for n in names]
 
-    def _goto_definitions(self):
-        # TODO make this function public.
+    def infer(self):
         return [Definition(self._evaluator, d.name) for d in self._name.infer()]
 
     @property

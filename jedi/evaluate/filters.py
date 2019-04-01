@@ -72,7 +72,7 @@ class ContextNameMixin(object):
         return ContextSet([self._context])
 
     def get_root_context(self):
-        if self.parent_context is None:
+        if self.parent_context is None:  # A module
             return self._context
         return super(ContextNameMixin, self).get_root_context()
 

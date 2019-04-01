@@ -244,8 +244,8 @@ def test_completion_params():
     script = jedi.Interpreter('foo', [locals()])
     c, = script.completions()
     assert [p.name for p in c.params] == ['a', 'b']
-    assert c.params[0]._goto_definitions() == []
-    t, = c.params[1]._goto_definitions()
+    assert c.params[0].infer() == []
+    t, = c.params[1].infer()
     assert t.name == 'int'
 
 
@@ -258,9 +258,9 @@ def test_completion_param_annotations():
     script = jedi.Interpreter('foo', [locals()])
     c, = script.completions()
     a, b, c = c.params
-    assert a._goto_definitions() == []
-    assert [d.name for d in b._goto_definitions()] == ['str']
-    assert {d.name for d in c._goto_definitions()} == {'int', 'float'}
+    assert a.infer() == []
+    assert [d.name for d in b.infer()] == ['str']
+    assert {d.name for d in c.infer()} == {'int', 'float'}
 
 
 def test_keyword_argument():
@@ -340,7 +340,7 @@ def test_dir_magic_method():
     assert 'bar' in names
 
     foo = [c for c in completions if c.name == 'foo'][0]
-    assert foo._goto_definitions() == []
+    assert foo.infer() == []
 
 
 def test_name_not_findable():

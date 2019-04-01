@@ -207,9 +207,9 @@ def test_goto_assignments_follow_imports(Script):
     assert definition.name == 'p'
     result, = definition.goto_assignments()
     assert result.name == 'p'
-    result, = definition._goto_definitions()
+    result, = definition.infer()
     assert result.name == 'int'
-    result, = result._goto_definitions()
+    result, = result.infer()
     assert result.name == 'int'
 
     definition, = script.goto_assignments()

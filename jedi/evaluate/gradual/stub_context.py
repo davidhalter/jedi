@@ -214,7 +214,8 @@ class StubName(NameWrapper):
             return self._wrapped_name.infer()
 
         typ = self._wrapped_name.tree_name.parent.type
-        # TODO is this if a performance optimization?
+        # Only for these two we want to merge, the function doesn't support
+        # anything else.
         if typ in ('classdef', 'funcdef'):
             actual_context, = self._wrapped_name.infer()
             return _add_stub_if_possible(self.parent_context, actual_context, stub_contexts)
@@ -244,6 +245,7 @@ def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
 
 
 def with_stub_context_if_possible(actual_context):
+    assert actual_context.tree_node.type in ('classdef', 'funcdef')
     names = actual_context.get_qualified_names()
     stub_module = actual_context.get_root_context().stub_context
     if stub_module is None:

@@ -185,6 +185,13 @@ def test_goto_stubs(Script):
     os_module, = s.goto_assignments()
 
 
+def _assert_is_same(d1, d2):
+    assert d1.name == d2.name
+    assert d1.module_path == d2.module_path
+    assert d1.line == d2.line
+    assert d1.column == d2.column
+
+
 @pytest.mark.parametrize(
     'code', [
         'import os; os.walk',
@@ -197,15 +204,30 @@ def test_goto_stubs_on_itself(Script, code):
     """
     s = Script(code)
     def_, = s.goto_definitions()
-    stub, = def_.goto_stubs()
+    #stub, = def_.goto_stubs()
 
     script_on_source = Script(
         path=def_.module_path,
         line=def_.line,
         column=def_.column
     )
+    print('GO')
     definition, = script_on_source.goto_definitions()
+    print('\ta', definition._name._context, definition._name._context.parent_context)
+    return
     same_stub, = definition.goto_stubs()
-    assert stub.module_path == same_stub.module_path
-    assert stub.line == same_stub.line
-    assert stub.column == same_stub.column
+    _assert_is_same(same_stub, stub)
+    _assert_is_same(definition, def_)
+    assert same_stub.module_path != def_.module_path
+
+    # And the reverse.
+    script_on_source = Script(
+        path=same_stub.module_path,
+        line=same_stub.line,
+        column=same_stub.column
+    )
+
+    same_definition, = script_on_source.goto_definitions()
+    same_definition2, = same_stub.infer()
+    _assert_is_same(same_definition, definition)
+    _assert_is_same(same_definition, same_definition2)
