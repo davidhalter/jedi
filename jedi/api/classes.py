@@ -13,6 +13,7 @@ from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
+from jedi.evaluate.filters import ParamName
 from jedi.evaluate.context import FunctionExecutionContext
 from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
 from jedi.api.keywords import KeywordName
@@ -323,7 +324,9 @@ class BaseDefinition(object):
     def infer(self):
         tree_name = self._name.tree_name
         parent_context = self._name.parent_context
-        if tree_name is None or parent_context is None:
+        # Param names are special because they are not handled by
+        # the evaluator method.
+        if tree_name is None or parent_context is None or isinstance(self._name, ParamName):
             context_set = self._name.infer()
         else:
             context_set = self._evaluator.goto_definitions(parent_context, tree_name)

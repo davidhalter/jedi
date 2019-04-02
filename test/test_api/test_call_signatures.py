@@ -7,7 +7,6 @@ import pytest
 from ..helpers import TestCase
 from jedi import cache
 from jedi.parser_utils import get_call_signature
-from jedi._compatibility import is_py3
 
 
 def assert_signature(Script, source, expected_name, expected_index=0, line=None, column=None):
@@ -308,18 +307,16 @@ def test_signature_is_definition(Script):
 
     # Now compare all the attributes that a CallSignature must also have.
     for attr_name in dir(definition):
-        dont_scan = ['defined_names', 'parent', 'goto_assignments', 'params']
+        dont_scan = ['defined_names', 'parent', 'goto_assignments', 'infer', 'params']
         if attr_name.startswith('_') or attr_name in dont_scan:
             continue
 
-        # Might trigger some deprecation warnings.
-        with warnings.catch_warnings(record=True):
-            attribute = getattr(definition, attr_name)
-            signature_attribute = getattr(signature, attr_name)
-            if inspect.ismethod(attribute):
-                assert attribute() == signature_attribute()
-            else:
-                assert attribute == signature_attribute
+        attribute = getattr(definition, attr_name)
+        signature_attribute = getattr(signature, attr_name)
+        if inspect.ismethod(attribute):
+            assert attribute() == signature_attribute()
+        else:
+            assert attribute == signature_attribute
 
 
 def test_no_signature(Script):

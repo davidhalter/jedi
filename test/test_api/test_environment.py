@@ -79,7 +79,7 @@ def test_killed_subprocess(evaluator, Script, environment):
     if isinstance(environment, InterpreterEnvironment):
         pytest.skip("We cannot kill our own process")
     # Just kill the subprocess.
-    evaluator.compiled_subprocess._compiled_subprocess._process.kill()
+    evaluator.compiled_subprocess._compiled_subprocess._get_process().kill()
     # Since the process was terminated (and nobody knows about it) the first
     # Jedi call fails.
     with pytest.raises(jedi.InternalError):
