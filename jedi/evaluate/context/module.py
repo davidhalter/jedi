@@ -152,6 +152,14 @@ class ModuleContext(ModuleMixin, TreeContext):
         self.code_lines = code_lines
         self.is_package = is_package
 
+    def is_stub(self):
+        if self._path is not None and self._path.endswith('.pyi'):
+            # Currently this is the way how we identify stubs when e.g. goto is
+            # used in them. This could be changed if stubs would be identified
+            # sooner and used as StubOnlyModuleContext.
+            return True
+        return super(ModuleContext, self).is_stub()
+
     def py__name__(self):
         if self.string_names is None:
             return None
@@ -217,5 +225,5 @@ class ModuleContext(ModuleMixin, TreeContext):
         return "<%s: %s@%s-%s is_stub=%s>" % (
             self.__class__.__name__, self._string_name,
             self.tree_node.start_pos[0], self.tree_node.end_pos[0],
-            self._path is not None and self._path.endswith('.pyi')
+            self._path is not None and self.is_stub()
         )

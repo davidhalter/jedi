@@ -438,7 +438,7 @@ class JediImportError(Exception):
 
 
 @import_module_decorator
-def import_module(evaluator, import_names, parent_module_context, sys_path):
+def import_module(evaluator, import_names, parent_module_context, sys_path, load_stub=True):
     """
     This method is very similar to importlib's `_gcd_import`.
     """

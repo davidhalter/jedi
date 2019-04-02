@@ -1,7 +1,7 @@
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.utils import safe_property
-from jedi.evaluate.base_context import ContextWrapper, ContextSet
+from jedi.evaluate.base_context import ContextWrapper, ContextSet, NO_CONTEXTS
 from jedi.evaluate.context.function import FunctionMixin, FunctionContext, MethodContext
 from jedi.evaluate.context.klass import ClassMixin, ClassContext
 from jedi.evaluate.context.module import ModuleMixin, ModuleContext
@@ -100,7 +100,7 @@ class _StubOnlyContextMixin(object):
     def get_stub_only_filter(self, parent_context, non_stub_filters, **filter_kwargs):
         # Here we remap the names from stubs to the actual module. This is
         # important if type inferences is needed in that module.
-        return StubFilter(
+        return _StubFilter(
             parent_context,
             non_stub_filters,
             self._get_stub_only_filters(**filter_kwargs),
@@ -111,7 +111,7 @@ class _StubOnlyContextMixin(object):
                           until_position=None, origin_scope=None):
         next(filters)  # Ignore the first filter and replace it with our own
         yield self.get_stub_only_filter(
-            parent_context=self,
+            parent_context=None,
             non_stub_filters=list(self._get_first_non_stub_filters()),
             search_global=search_global,
             until_position=until_position,
@@ -246,19 +246,32 @@ def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
 
 def with_stub_context_if_possible(actual_context):
     assert actual_context.tree_node.type in ('classdef', 'funcdef')
-    names = actual_context.get_qualified_names()
+    qualified_names = actual_context.get_qualified_names()
     stub_module = actual_context.get_root_context().stub_context
-    if stub_module is None:
+    if stub_module is None or qualified_names is None:
         return ContextSet([actual_context])
 
     stub_contexts = ContextSet([stub_module])
-    for name in names:
+    for name in qualified_names:
         stub_contexts = stub_contexts.py__getattribute__(name)
     return _add_stub_if_possible(
         actual_context.parent_context,
         actual_context,
         stub_contexts,
     )
+
+
+def stub_to_actual_context_set(stub_context):
+    qualified_names = stub_context.get_qualified_names()
+    if qualified_names is None:
+        return NO_CONTEXTS
+
+    stub_only_module = stub_context.get_root_context()
+    assert isinstance(stub_only_module, StubOnlyModuleContext), stub_only_module
+    non_stubs = stub_only_module.non_stub_context_set
+    for name in qualified_names:
+        non_stubs = non_stubs.py__getattribute__(name)
+    return non_stubs
 
 
 class CompiledStubName(NameWrapper):
@@ -333,12 +346,12 @@ class StubOnlyFilter(ParserTreeFilter):
         return True
 
 
-class StubFilter(AbstractFilter):
+class _StubFilter(AbstractFilter):
     """
     Merging names from stubs and non-stubs.
     """
     def __init__(self, parent_context, non_stub_filters, stub_filters, add_non_stubs):
-        self._parent_context = parent_context
+        self._parent_context = parent_context  # Optional[Context]
         self._non_stub_filters = non_stub_filters
         self._stub_filters = stub_filters
         self._add_non_stubs = add_non_stubs
@@ -393,9 +406,17 @@ class StubFilter(AbstractFilter):
                     stub_name = TypingModuleName(stub_name)
 
                 if isinstance(name, CompiledName):
-                    result.append(CompiledStubName(self._parent_context, name, stub_name))
+                    result.append(CompiledStubName(
+                        self._parent_context or stub_name.parent_context,
+                        name,
+                        stub_name
+                    ))
                 else:
-                    result.append(StubName(self._parent_context, name, stub_name))
+                    result.append(StubName(
+                        self._parent_context or name.parent_context,
+                        name,
+                        stub_name
+                    ))
         return result
 
     def __repr__(self):

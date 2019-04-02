@@ -84,7 +84,8 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible
+from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible, \
+    stub_to_actual_context_set
 
 
 def _execute(context, arguments):
@@ -138,7 +139,8 @@ class Evaluator(object):
             self,
         )
 
-    def import_module(self, import_names, parent_module_context=None, sys_path=None):
+    def import_module(self, import_names, parent_module_context=None,
+                      sys_path=None, load_stub=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
         try:
@@ -146,7 +148,8 @@ class Evaluator(object):
         except KeyError:
             pass
 
-        context_set = self._import_module(import_names, parent_module_context, sys_path)
+        context_set = self._import_module(import_names, parent_module_context,
+                                          sys_path, load_stub=load_stub)
         self.module_cache.add(import_names, context_set)
         return context_set
 
@@ -280,9 +283,10 @@ class Evaluator(object):
                     c = ClassContext(self, context, name.parent)
                 else:
                     c = FunctionContext.from_context(context, name.parent)
-                return with_stub_context_if_possible(c)
-            elif type_ == 'funcdef':
-                return []
+                if context.is_stub():
+                    return stub_to_actual_context_set(c)
+                else:
+                    return with_stub_context_if_possible(c)
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')

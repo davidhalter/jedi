@@ -39,6 +39,7 @@ from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
 from jedi.evaluate.gradual.typeshed import try_to_merge_with_stub
+from jedi.evaluate.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -150,7 +151,7 @@ class Script(object):
     # be called multiple times.
     @cache.memoize_method
     def _get_module(self):
-        names = ('__main__',)
+        names = None
         is_package = False
         if self.path is not None:
             import_names, is_p = transform_path_to_dotted(
@@ -160,6 +161,20 @@ class Script(object):
             if import_names is not None:
                 names = import_names
                 is_package = is_p
+
+        if self.path is not None and self.path.endswith('.pyi'):
+            # We are in a stub file. Try to load the stub properly.
+            stub_module = load_proper_stub_module(
+                self._evaluator,
+                cast_path(self.path),
+                names,
+                self._module_node
+            )
+            if stub_module is not None:
+                return stub_module
+
+        if names is None:
+            names = ('__main__',)
 
         module = ModuleContext(
             self._evaluator, self._module_node, cast_path(self.path),

@@ -321,7 +321,13 @@ class BaseDefinition(object):
         return [Definition(self._evaluator, n) for n in names]
 
     def infer(self):
-        return [Definition(self._evaluator, d.name) for d in self._name.infer()]
+        tree_name = self._name.tree_name
+        parent_context = self._name.parent_context
+        if tree_name is None or parent_context is None:
+            context_set = self._name.infer()
+        else:
+            context_set = self._evaluator.goto_definitions(parent_context, tree_name)
+        return [Definition(self._evaluator, d.name) for d in context_set]
 
     @property
     @memoize_method

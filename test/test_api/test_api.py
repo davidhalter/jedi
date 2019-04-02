@@ -20,7 +20,7 @@ def test_preload_modules():
         # Filter the typeshed parser cache.
         typeshed_cache_count = sum(
             1 for path in grammar_cache
-            if path is not None and path.startswith(typeshed._TYPESHED_PATH)
+            if path is not None and path.startswith(typeshed.TYPESHED_PATH)
         )
         # +1 for None module (currently used)
         assert len(grammar_cache) - typeshed_cache_count == len(modules) + 1
