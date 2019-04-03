@@ -1,8 +1,6 @@
 import sys
 import os
 
-from parso.file_io import KnownContentFileIO
-
 from jedi._compatibility import find_module, cast_path, force_unicode, \
     iter_modules, all_suffixes, print_to_stderr
 from jedi.evaluate.compiled import access
@@ -43,47 +41,6 @@ def get_module_info(evaluator, sys_path=None, full_name=None, **kwargs):
     finally:
         if sys_path is not None:
             sys.path = temp
-
-    # Unfortunately we are reading unicode here already, not bytes.
-    # It seems however hard to get bytes, because the zip importer
-    # logic just unpacks the zip file and returns a file descriptor
-    # that we cannot as easily access. Therefore we just read it as
-    # a string.
-    code = module_file.read()
-    module_path = cast_path(module_path)
-    if module_path.endswith(('.zip', '.egg')):
-        file_io = ZipFileIO(module_path, code, x)
-    else:
-        file_io = KnownContentFileIO(module_path, code)
-    return code, module_path, is_pkg
-    if is_pkg:
-        # In this case, we don't have a file yet. Search for the
-        # __init__ file.
-        if module_path.endswith(('.zip', '.egg')):
-            code = module_file.loader.get_source(full_name)
-            print(module_path)
-        else:
-            print('xxxx')
-            raise 1
-            module_path = _get_init_path(module_path)
-    elif module_file:
-        if module_path.endswith(('.zip', '.egg')):
-            # Unfortunately we are reading unicode here already, not byes.
-            # It seems however hard to get bytes, because the zip importer
-            # logic just unpacks the zip file and returns a file descriptor
-            # that we cannot as easily access. Therefore we just read it as
-            # a string.
-            code = module_file.read()
-        else:
-            # Read the code with a binary file, because the binary file
-            # might not be proper unicode. This is handled by the parser
-            # wrapper.
-            with open(module_path, 'rb') as f:
-                code = f.read()
-
-        module_file.close()
-
-    return code, cast_path(module_path), is_pkg
 
 
 def list_module_names(evaluator, search_path):

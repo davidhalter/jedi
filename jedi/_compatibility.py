@@ -2,6 +2,7 @@
 To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
 created. Clearly there is huge need to use conforming syntax.
 """
+from __future__ import print_function
 import errno
 import sys
 import os
@@ -85,25 +86,6 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
         raise ImportError("Couldn't find a loader for {}".format(string))
 
     return _from_loader(loader, string)
-    issss
-    is_package = loader.is_package(string)
-    if is_package:
-        if hasattr(loader, 'archive'):
-            module_file = DummyFile(loader, string)
-        else:
-            module_file = None
-    else:
-        try:
-            module_path = loader.get_filename(string)
-            module_file = DummyFile(loader, string)
-        except AttributeError:
-            try:
-                module_file = DummyFile(loader, string)
-            except AttributeError:
-                module_path = string
-                module_file = None
-
-    return module_file, module_path, is_package
 
 
 class ZipFileIO(KnownContentFileIO):
@@ -154,9 +136,9 @@ def _get_source(loader, fullname):
     path = loader.get_filename(fullname)
     try:
         return loader.get_data(path)
-    except OSError as exc:
+    except OSError:
         raise ImportError('source not available through get_data()',
-                          name=fullname) from exc
+                          name=fullname)
 
 
 def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True):
@@ -166,9 +148,14 @@ def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True
     try:
         module_file, module_path, description = imp.find_module(string, path)
         module_type = description[2]
+        is_package = module_type is imp.PKG_DIRECTORY
+        if module_file is None:
+            code = None
+            return None, is_package
+
         with module_file:
             code = module_file.read()
-        return KnownContentFileIO(module_path, code), module_type is imp.PKG_DIRECTORY
+        return KnownContentFileIO(module_path, code), is_package
     except ImportError:
         pass
 
@@ -178,6 +165,7 @@ def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True
         loader = pkgutil.get_importer(item)
         if loader:
             loader = loader.find_module(string)
+            print_to_stderr('lalala')
             return _from_loader(loader, string)
     raise ImportError("No module named {}".format(string))
 
@@ -401,9 +389,7 @@ def no_unicode_pprint(dct):
 
 def print_to_stderr(*args):
     if is_py3:
-        eval("print(*args, file=sys.stderr)")
-    else:
-        print >> sys.stderr, args
+        print(*args, file=sys.stderr)
     sys.stderr.flush()
 
 
