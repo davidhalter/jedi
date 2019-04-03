@@ -1,8 +1,9 @@
+from __future__ import print_function
 import sys
 import os
 
 from jedi._compatibility import find_module, cast_path, force_unicode, \
-    iter_modules, all_suffixes, print_to_stderr
+    iter_modules, all_suffixes
 from jedi.evaluate.compiled import access
 from jedi import parser_utils
 
@@ -66,7 +67,7 @@ def _test_print(evaluator, stderr=None, stdout=None):
     Force some prints in the subprocesses. This exists for unit tests.
     """
     if stderr is not None:
-        print_to_stderr(stderr)
+        print(stderr, file=sys.stderr)
         sys.stderr.flush()
     if stdout is not None:
         print(stdout)

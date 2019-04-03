@@ -22,7 +22,7 @@ except ImportError:
     from Queue import Queue, Empty  # python 2.7
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load, GeneralizedPopen, print_to_stderr
+    pickle_dump, pickle_load, GeneralizedPopen
 from jedi import debug
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions

@@ -1,12 +1,12 @@
+from __future__ import print_function
 import inspect
 import types
 import sys
-from textwrap import dedent
 import operator as op
 from collections import namedtuple
 
 from jedi._compatibility import unicode, is_py3, builtins, \
-    py_version, force_unicode, print_to_stderr
+    py_version, force_unicode
 from jedi.evaluate.compiled.getattr_static import getattr_static
 
 
@@ -134,13 +134,13 @@ def load_module(evaluator, dotted_name, sys_path):
         __import__(dotted_name)
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        print_to_stderr('Module %s not importable in path %s.' % (dotted_name, sys_path))
+        print('Module %s not importable in path %s.' % (dotted_name, sys_path), file=sys.stderr)
         return None
     except Exception:
         # Since __import__ pretty much makes code execution possible, just
         # catch any error here and print it.
         import traceback
-        print_to_stderr("Cannot import:\n%s" % traceback.format_exc())
+        print("Cannot import:\n%s" % traceback.format_exc(), file=sys.stderr)
         return None
     finally:
         sys.path = temp
