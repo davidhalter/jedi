@@ -312,3 +312,16 @@ with open('') as f1, open('') as f2:
     f1.closed
     #? ['closed']
     f2.closed
+
+
+# -----------------------------
+# power operator with indexing
+# -----------------------------
+
+def square_first(values):
+    return values[0]**2
+
+values = [0]
+#? ['__add__']
+square_first(values).__add__
+
