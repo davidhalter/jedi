@@ -165,7 +165,8 @@ def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True
         loader = pkgutil.get_importer(item)
         if loader:
             loader = loader.find_module(string)
-            return _from_loader(loader, string)
+            if loader is not None:
+                return _from_loader(loader, string)
     raise ImportError("No module named {}".format(string))
 
 
