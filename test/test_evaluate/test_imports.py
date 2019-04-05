@@ -82,7 +82,7 @@ def test_find_module_package_zipped(Script, evaluator, environment):
 
 )
 def test_correct_zip_package_behavior(Script, evaluator, environment, code,
-                                      file, package, path):
+                                      file, package, path, skip_python2):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
     pkg, = Script(code, sys_path=sys_path).goto_definitions()
     context, = pkg._name.infer()
