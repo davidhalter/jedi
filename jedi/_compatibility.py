@@ -149,6 +149,20 @@ def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True
         module_file, module_path, description = imp.find_module(string, path)
         module_type = description[2]
         is_package = module_type is imp.PKG_DIRECTORY
+        if is_package:
+            # In Python 2 directory package imports are returned as folder
+            # paths, not __init__.py paths.
+            p = os.path.join(module_path, '__init__.py')
+            try:
+                module_file = open(p)
+                module_path = p
+            except FileNotFoundError:
+                pass
+        elif module_type != imp.PY_SOURCE:
+            if module_file is not None:
+                module_file.close()
+            module_file = None
+
         if module_file is None:
             code = None
             return None, is_package
