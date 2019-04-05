@@ -146,11 +146,7 @@ class NestedImportModule(tree.Module):
                                    self._nested_import)
 
 
-def _add_error(context, name, message=None):
-    # Should be a name, not a string!
-    if message is None:
-        name_str = str(name.value) if isinstance(name, tree.Name) else name
-        message = 'No module named ' + name_str
+def _add_error(context, name, message):
     if hasattr(name, 'parent') and context is not None:
         analysis.add(context, 'import-error', name, message)
     else:
@@ -311,16 +307,11 @@ class Importer(object):
             + sys_path.check_sys_path_modifications(self.module_context)
         )
 
-        if self.import_path:
-            try:
-                file_path = self.module_context.py__file__()
-            except AttributeError:
-                # Can be None for certain compiled modules like 'builtins'.
-                file_path = None
-            else:
-                if self._evaluator.environment.version_info.major == 2:
-                    # Python2 uses an old strange way of importing relative imports.
-                    sys_path_mod.append(force_unicode(os.path.dirname(file_path)))
+        if self._evaluator.environment.version_info.major == 2:
+            file_path = self.module_context.py__file__()
+            if file_path is not None:
+                # Python2 uses an old strange way of importing relative imports.
+                sys_path_mod.append(force_unicode(os.path.dirname(file_path)))
 
         return sys_path_mod
 
@@ -346,7 +337,8 @@ class Importer(object):
                     for parent_module_context in context_set
                 ])
             except JediImportError:
-                _add_error(self.module_context, name)
+                message = 'No module named ' + '.'.join(import_names)
+                _add_error(self.module_context, name, message)
                 return NO_CONTEXTS
         return context_set
 
