@@ -95,7 +95,7 @@ _s = ['/a', '/b', '/c/d/']
         (['/foo', '/foo/bar'], '/foo/bar/baz', ('baz',), False),
         (['/foo/bar', '/foo'], '/foo/bar/baz', ('baz',), False),
     ])
-def test_calculate_dotted_from_path(sys_path_, module_path, expected, is_package):
+def test_transform_path_to_dotted(sys_path_, module_path, expected, is_package):
     # transform_path_to_dotted expects normalized absolute paths.
     sys_path_ = [os.path.abspath(path) for path in sys_path_]
     module_path = os.path.abspath(module_path)
