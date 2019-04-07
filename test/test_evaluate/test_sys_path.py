@@ -91,6 +91,9 @@ _s = ['/a', '/b', '/c/d/']
         (['/foo'], '/foo/bar/__init__.so', ('bar',), True),
         (['/foo'], '/x/bar.py', None, False),
         (['/foo'], '/foo/bar.xyz', ('bar.xyz',), False),
+
+        (['/foo', '/foo/bar'], '/foo/bar/baz', ('baz',), False),
+        (['/foo/bar', '/foo'], '/foo/bar/baz', ('baz',), False),
     ])
 def test_calculate_dotted_from_path(sys_path_, module_path, expected, is_package):
     # transform_path_to_dotted expects normalized absolute paths.

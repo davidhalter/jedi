@@ -228,18 +228,28 @@ def transform_path_to_dotted(sys_path, module_path):
         # -1 to remove the separator
         module_path = module_path[:-len('__init__') - 1]
 
-    for p in sys_path:
-        if module_path.startswith(p):
-            rest = module_path[len(p):]
-            # On Windows a path can also use a slash.
-            if rest.startswith(os.path.sep) or rest.startswith('/'):
-                # Remove a slash in cases it's still there.
-                rest = rest[1:]
+    def iter_potential_solutions():
+        for p in sys_path:
+            if module_path.startswith(p):
+                # Strip the trailing slash/backslash
+                rest = module_path[len(p) + 1:]
 
-            if rest:
-                split = rest.split(os.path.sep)
-                for string in split:
-                    if not string:
-                        return None, False
-                return tuple(split), is_package
-    return None, False
+                if rest:
+                    split = rest.split(os.path.sep)
+                    if not all(split):
+                        # This means that part of the file path was empty, this
+                        # is very strange and is probably a file that is called
+                        # `.py`.
+                        return
+                    yield tuple(split)
+
+    potential_solutions = tuple(iter_potential_solutions())
+    if not potential_solutions:
+        return None, False
+    # Try to find the shortest path, this makes more sense usually, because the
+    # user usually has venvs somewhere. This means that a path like
+    # .tox/py37/lib/python3.7/os.py can be normal for a file. However in that
+    # case we definitely want to return ['os'] as a path and not a crazy
+    # ['.tox', 'py37', 'lib', 'python3.7', 'os']. Keep in mind that this is a
+    # heuristic and there's now ay to "always" do it right.
+    return sorted(potential_solutions, key=lambda p: len(p))[0], is_package
