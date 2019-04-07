@@ -512,7 +512,7 @@ def _python2_dct_keys_to_unicode(data):
         return tuple(_python2_dct_keys_to_unicode(x) for x in data)
     elif isinstance(data, list):
         return list(_python2_dct_keys_to_unicode(x) for x in data)
-    elif hasattr(data, '__dict__') and type(data) == dict:
+    elif hasattr(data, '__dict__') and type(data.__dict__) == dict:
         data.__dict__ = {unicode(k): v for k, v in data.__dict__.items()}
     return data
 
