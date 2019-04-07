@@ -105,7 +105,7 @@ def _from_loader(loader, string):
     except AttributeError:
         return None, is_package
     else:
-        module_path = get_filename(string)
+        module_path = cast_path(get_filename(string))
 
     # To avoid unicode and read bytes, "overwrite" loader.get_source if
     # possible.
@@ -123,7 +123,7 @@ def _from_loader(loader, string):
     if code is None:
         return None, is_package
     if isinstance(loader, zipimporter):
-        return ZipFileIO(module_path, code, loader.archive), is_package
+        return ZipFileIO(module_path, code, cast_path(loader.archive)), is_package
 
     return KnownContentFileIO(module_path, code), is_package
 
@@ -169,7 +169,7 @@ def find_module_pre_py3(string, path=None, full_name=None, is_global_search=True
 
         with module_file:
             code = module_file.read()
-        return KnownContentFileIO(module_path, code), is_package
+        return KnownContentFileIO(cast_path(module_path), code), is_package
     except ImportError:
         pass
 
@@ -503,8 +503,24 @@ def pickle_load(file):
         raise
 
 
+def _python2_dct_keys_to_unicode(data):
+    """
+    Python 2 stores object __dict__ entries as bytes, not unicode, correct it
+    here. Python 2 can deal with both, Python 3 expects unicode.
+    """
+    if isinstance(data, tuple):
+        return tuple(_python2_dct_keys_to_unicode(x) for x in data)
+    elif isinstance(data, list):
+        return list(_python2_dct_keys_to_unicode(x) for x in data)
+    elif hasattr(data, '__dict__') and type(data) == dict:
+        data.__dict__ = {unicode(k): v for k, v in data.__dict__.items()}
+    return data
+
+
 def pickle_dump(data, file, protocol):
     try:
+        if not is_py3:
+            data = _python2_dct_keys_to_unicode(data)
         pickle.dump(data, file, protocol)
         # On Python 3.3 flush throws sometimes an error even though the writing
         # operation should be completed.
