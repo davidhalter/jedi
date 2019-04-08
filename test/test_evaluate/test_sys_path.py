@@ -94,6 +94,8 @@ _s = ['/a', '/b', '/c/d/']
 
         (['/foo', '/foo/bar'], '/foo/bar/baz', ('baz',), False),
         (['/foo/bar', '/foo'], '/foo/bar/baz', ('baz',), False),
+
+        (['/'], '/bar/baz.py', ('bar', 'baz',), False),
     ])
 def test_transform_path_to_dotted(sys_path_, module_path, expected, is_package):
     # transform_path_to_dotted expects normalized absolute paths.
