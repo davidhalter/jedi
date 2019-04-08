@@ -155,7 +155,7 @@ class Script(object):
         is_package = False
         if self.path is not None:
             import_names, is_p = transform_path_to_dotted(
-                self._evaluator.get_sys_path(),
+                self._evaluator.get_sys_path(add_parent_paths=False),
                 self.path
             )
             if import_names is not None:

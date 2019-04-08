@@ -172,9 +172,9 @@ class Evaluator(object):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def get_sys_path(self):
+    def get_sys_path(self, **kwargs):
         """Convenience function"""
-        return self.project._get_sys_path(self, environment=self.environment)
+        return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
     def eval_element(self, context, element):
         if not self.infer_enabled:

@@ -12,7 +12,7 @@ from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.api.project import Project
-from ..helpers import cwd_at, get_example_dir
+from ..helpers import cwd_at, get_example_dir, test_dir
 
 THIS_DIR = os.path.dirname(__file__)
 
@@ -396,3 +396,9 @@ def test_relative_import_out_of_file_system(Script):
 )
 def test_level_to_import_path(level, directory, project_path, result):
     assert imports._level_to_base_import_path(project_path, directory, level) == result
+
+
+def test_import_name_calculation(Script):
+    s = Script(path=os.path.join(test_dir, 'completion', 'isinstance.py'))
+    m = s._get_module()
+    assert m.string_names == ('test', 'completion', 'isinstance')
