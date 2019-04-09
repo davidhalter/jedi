@@ -138,6 +138,12 @@ class Evaluator(object):
             ),
             self,
         )
+        # TODO remove this `if`
+        if project is not None:
+            # These imports are essential for Jedi and should therefore always
+            # be present in the module cache.
+            self.builtins_module
+            self.typing_module
 
     def import_module(self, import_names, parent_module_context=None,
                       sys_path=None, load_stub=True):

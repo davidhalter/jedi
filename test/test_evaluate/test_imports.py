@@ -12,7 +12,7 @@ from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.api.project import Project
-from ..helpers import cwd_at, get_example_dir, test_dir
+from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
 
 THIS_DIR = os.path.dirname(__file__)
 
@@ -293,8 +293,9 @@ def test_compiled_import_none(monkeypatch, Script):
     """
     Related to #1079. An import might somehow fail and return None.
     """
+    script = Script('import sys')
     monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
-    assert not Script('import sys').goto_definitions()
+    assert not script.goto_definitions()
 
 
 @pytest.mark.parametrize(
@@ -402,3 +403,35 @@ def test_import_name_calculation(Script):
     s = Script(path=os.path.join(test_dir, 'completion', 'isinstance.py'))
     m = s._get_module()
     assert m.string_names == ('test', 'completion', 'isinstance')
+
+
+@pytest.mark.parametrize('name', ('builtins', 'typing'))
+def test_pre_defined_imports_module(Script, environment, name):
+    if environment.version_info.major < 3 and name == 'builtins':
+        name = '__builtin__'
+
+    path = os.path.join(root_dir, name + '.py')
+    module = Script('', path=path)._get_module()
+    module_cache = module.evaluator.module_cache
+    assert module.string_names == (name,)
+    m, = module_cache.get((name,))
+    assert m.py__file__() != path
+    assert m.evaluator.builtins_module.py__file__() != path
+    assert m.evaluator.typing_module.py__file__() != path
+
+
+@pytest.mark.parametrize('name', ('builtins', 'typing'))
+def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
+    if environment.version_info.major < 3 and name == 'builtins':
+        name = '__builtin__'
+
+    module_path = tmpdir.join(name + '.py')
+    module_path.write('int = ...')
+    script = Script(
+        'import ' + name,
+        path=tmpdir.join('something.py').strpath,
+        sys_path=[tmpdir.strpath] + environment.get_sys_path(),
+    )
+    module, = script.goto_definitions()
+    assert module._evaluator.builtins_module.py__file__() != module_path
+    assert module._evaluator.typing_module.py__file__() != module_path

@@ -185,7 +185,9 @@ class Script(object):
         module, = try_to_merge_with_stub(
             self._evaluator, None, module.string_names, ContextSet([module])
         )
-        self._evaluator.module_cache.add(names, ContextSet([module]))
+        if names[0] not in ('builtins', '__builtin__', 'typing'):
+            # These modules are essential for Jedi, so don't overwrite them.
+            self._evaluator.module_cache.add(names, ContextSet([module]))
         return module
 
     def __repr__(self):
