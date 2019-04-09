@@ -242,6 +242,14 @@ def is_scope(node):
     return node.type in ('file_input', 'classdef', 'funcdef', 'lambdef', 'comp_for')
 
 
+def is_name_of_func_or_class_def(name_node, func_or_class_def_node):
+    """Return True if name_node is the name of the func_or_class_def_node."""
+    return (
+        name_node.parent is func_or_class_def_node and
+        name_node.type == 'name' and
+        func_or_class_def_node.type in ('classdef', 'funcdef'))
+
+
 def get_parent_scope(node, include_flows=False):
     """
     Returns the underlying scope.

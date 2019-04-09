@@ -79,6 +79,22 @@ class TestDefinedNames(TestCase):
         self.assert_definition_names(subsubdefs, ['L3', 'f'])
         self.assert_definition_names(subsubdefs[0].defined_names(), ['f'])
 
+    def test_class_fields_with_all_scopes_false(self):
+        definitions = self.check_defined_names("""
+        from module import f
+        g = f(f)
+        class C:
+            h = g
+
+        def foo(x=a):
+           bar = x
+           return bar
+        """, ['f', 'g', 'C', 'foo'])
+        C_subdefs = definitions[-2].defined_names()
+        foo_subdefs = definitions[-1].defined_names()
+        self.assert_definition_names(C_subdefs, ['h'])
+        self.assert_definition_names(foo_subdefs, ['x', 'bar'])
+
 
 def test_follow_imports(environment):
     # github issue #344

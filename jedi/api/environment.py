@@ -235,7 +235,12 @@ def _try_get_same_env():
 def get_cached_default_environment():
     var = os.environ.get('VIRTUAL_ENV')
     environment = _get_cached_default_environment()
-    if var and var != environment.path:
+
+    # Under macOS in some cases - notably when using Pipenv - the
+    # sys.prefix of the virtualenv is /path/to/env/bin/.. instead of
+    # /path/to/env so we need to fully resolve the paths in order to
+    # compare them.
+    if var and os.path.realpath(var) != os.path.realpath(environment.path):
         _get_cached_default_environment.clear_cache()
         return _get_cached_default_environment()
     return environment
