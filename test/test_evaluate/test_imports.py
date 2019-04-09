@@ -412,12 +412,10 @@ def test_pre_defined_imports_module(Script, environment, name):
 
     path = os.path.join(root_dir, name + '.py')
     module = Script('', path=path)._get_module()
-    module_cache = module.evaluator.module_cache
     assert module.string_names == (name,)
-    m, = module_cache.get((name,))
-    assert m.py__file__() != path
-    assert m.evaluator.builtins_module.py__file__() != path
-    assert m.evaluator.typing_module.py__file__() != path
+
+    assert module.evaluator.builtins_module.py__file__() != path
+    assert module.evaluator.typing_module.py__file__() != path
 
 
 @pytest.mark.parametrize('name', ('builtins', 'typing'))
