@@ -1,17 +1,19 @@
 import os
 
+import pytest
+from parso.utils import PythonVersionInfo
+
 from jedi.evaluate.gradual import typeshed, stub_context
 from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext
-from parso.utils import PythonVersionInfo
 from jedi.evaluate.filters import TreeNameDefinition
 
-TYPESHED_PYTHON3 = os.path.join(typeshed._TYPESHED_PATH, 'stdlib', '3')
+TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
 
 
 def test_get_typeshed_directories():
     def get_dirs(version_info):
         return {
-            d.replace(typeshed._TYPESHED_PATH, '').lstrip(os.path.sep)
+            d.replace(typeshed.TYPESHED_PATH, '').lstrip(os.path.sep)
             for d in typeshed._get_typeshed_directories(version_info)
         }
 
@@ -69,7 +71,7 @@ def test_keywords_variable(Script):
     def_, = Script(code).goto_definitions()
     assert def_.name == 'Sequence'
     # This points towards the typeshed implementation
-    assert typeshed._TYPESHED_PATH in def_.module_path
+    assert typeshed.TYPESHED_PATH in def_.module_path
 
 
 def test_class(Script):
@@ -132,7 +134,7 @@ def test_sys_hexversion(Script):
     def_, = script.completions()
     assert isinstance(def_._name, stub_context.CompiledStubName), def_._name
     assert isinstance(def_._name._wrapped_name, TreeNameDefinition)
-    assert typeshed._TYPESHED_PATH in def_.module_path
+    assert typeshed.TYPESHED_PATH in def_.module_path
     def_, = script.goto_definitions()
     assert def_.name == 'int'
 
@@ -148,3 +150,81 @@ def test_type_var(Script):
     def_, = Script('import typing; T = typing.TypeVar("T1")').goto_definitions()
     assert def_.name == 'TypeVar'
     assert def_.description == 'TypeVar = object()'
+
+
+@pytest.mark.parametrize(
+    'code, full_name', (
+        ('import math', 'math'),
+        ('from math import cos', 'math.cos')
+    )
+)
+def test_math_is_stub(Script, code, full_name):
+    s = Script(code)
+    cos, = s.goto_definitions()
+    wanted = os.path.join('typeshed', 'stdlib', '2and3', 'math.pyi')
+    assert cos.module_path.endswith(wanted)
+    assert cos.is_stub() is True
+    assert cos.goto_stubs() == [cos]
+    assert cos.full_name == full_name
+
+    cos, = s.goto_assignments()
+    assert cos.module_path.endswith(wanted)
+    assert cos.goto_stubs() == [cos]
+    assert cos.is_stub() is True
+    assert cos.full_name == full_name
+
+
+def test_goto_stubs(Script):
+    s = Script('import os; os')
+    os_module, = s.goto_definitions()
+    assert os_module.full_name == 'os'
+    assert os_module.is_stub() is False
+    stub, = os_module.goto_stubs()
+    assert stub.is_stub() is True
+
+    os_module, = s.goto_assignments()
+
+
+def _assert_is_same(d1, d2):
+    assert d1.name == d2.name
+    assert d1.module_path == d2.module_path
+    assert d1.line == d2.line
+    assert d1.column == d2.column
+
+
+@pytest.mark.parametrize(
+    'code', [
+        'import os; os.walk',
+        'from collections import Counter; Counter',
+    ])
+def test_goto_stubs_on_itself(Script, code):
+    """
+    If goto_stubs is used on an identifier in e.g. the stdlib, we should goto
+    the stub of it.
+    """
+    s = Script(code)
+    def_, = s.goto_definitions()
+    stub, = def_.goto_stubs()
+
+    script_on_source = Script(
+        path=def_.module_path,
+        line=def_.line,
+        column=def_.column
+    )
+    definition, = script_on_source.goto_definitions()
+    same_stub, = definition.goto_stubs()
+    _assert_is_same(same_stub, stub)
+    _assert_is_same(definition, def_)
+    assert same_stub.module_path != def_.module_path
+
+    # And the reverse.
+    script_on_stub = Script(
+        path=same_stub.module_path,
+        line=same_stub.line,
+        column=same_stub.column
+    )
+
+    same_definition, = script_on_stub.goto_definitions()
+    same_definition2, = same_stub.infer()
+    _assert_is_same(same_definition, definition)
+    _assert_is_same(same_definition, same_definition2)

@@ -77,7 +77,8 @@ class Project(object):
 
         py2_comp(path, **kwargs)
 
-    def _get_base_sys_path(self, environment=None):
+    @evaluator_as_method_param_cache()
+    def _get_base_sys_path(self, evaluator, environment=None):
         if self._sys_path is not None:
             return self._sys_path
 
@@ -93,7 +94,7 @@ class Project(object):
         return sys_path
 
     @evaluator_as_method_param_cache()
-    def _get_sys_path(self, evaluator, environment=None):
+    def _get_sys_path(self, evaluator, environment=None, add_parent_paths=True):
         """
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
@@ -101,19 +102,20 @@ class Project(object):
         suffixed = []
         prefixed = []
 
-        sys_path = list(self._get_base_sys_path(environment))
+        sys_path = list(self._get_base_sys_path(evaluator, environment))
         if self._smart_sys_path:
             prefixed.append(self._path)
 
             if evaluator.script_path is not None:
                 suffixed += discover_buildout_paths(evaluator, evaluator.script_path)
 
-                traversed = list(traverse_parents(evaluator.script_path))
+                if add_parent_paths:
+                    traversed = list(traverse_parents(evaluator.script_path))
 
-                # AFAIK some libraries have imports like `foo.foo.bar`, which
-                # leads to the conclusion to by default prefer longer paths
-                # rather than shorter ones by default.
-                suffixed += reversed(traversed)
+                    # AFAIK some libraries have imports like `foo.foo.bar`, which
+                    # leads to the conclusion to by default prefer longer paths
+                    # rather than shorter ones by default.
+                    suffixed += reversed(traversed)
 
         if self._django:
             prefixed.append(self._path)

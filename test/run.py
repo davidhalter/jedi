@@ -421,7 +421,9 @@ if __name__ == '__main__':
         cases += collect_dir_tests(completion_test_dir, test_files, True)
 
     def file_change(current, tests, fails):
-        if current is not None:
+        if current is None:
+            current = ''
+        else:
             current = os.path.basename(current)
         print('{:25} {} tests and {} fails.'.format(current, tests, fails))
 

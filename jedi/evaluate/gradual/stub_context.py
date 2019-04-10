@@ -1,7 +1,7 @@
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.utils import safe_property
-from jedi.evaluate.base_context import ContextWrapper
+from jedi.evaluate.base_context import ContextWrapper, ContextSet, NO_CONTEXTS
 from jedi.evaluate.context.function import FunctionMixin, FunctionContext, MethodContext
 from jedi.evaluate.context.klass import ClassMixin, ClassContext
 from jedi.evaluate.context.module import ModuleMixin, ModuleContext
@@ -87,6 +87,9 @@ class StubMethodContext(StubFunctionContext):
 class _StubOnlyContextMixin(object):
     _add_non_stubs_in_filter = False
 
+    def is_stub(self):
+        return True
+
     def _get_stub_only_filters(self, **filter_kwargs):
         return [StubOnlyFilter(
             self.evaluator,
@@ -97,7 +100,7 @@ class _StubOnlyContextMixin(object):
     def get_stub_only_filter(self, parent_context, non_stub_filters, **filter_kwargs):
         # Here we remap the names from stubs to the actual module. This is
         # important if type inferences is needed in that module.
-        return StubFilter(
+        return _StubFilter(
             parent_context,
             non_stub_filters,
             self._get_stub_only_filters(**filter_kwargs),
@@ -108,7 +111,7 @@ class _StubOnlyContextMixin(object):
                           until_position=None, origin_scope=None):
         next(filters)  # Ignore the first filter and replace it with our own
         yield self.get_stub_only_filter(
-            parent_context=self,
+            parent_context=None,
             non_stub_filters=list(self._get_first_non_stub_filters()),
             search_global=search_global,
             until_position=until_position,
@@ -154,6 +157,9 @@ class _CompiledStubContext(ContextWrapper):
     def __init__(self, stub_context, compiled_context):
         super(_CompiledStubContext, self).__init__(stub_context)
         self._compiled_context = compiled_context
+
+    def is_stub(self):
+        return True
 
     def py__doc__(self, include_call_signature=False):
         doc = self._compiled_context.py__doc__()
@@ -202,37 +208,70 @@ class StubName(NameWrapper):
         self._stub_name = stub_name
 
     @memoize_method
-    @iterator_to_context_set
     def infer(self):
         stub_contexts = self._stub_name.infer()
         if not stub_contexts:
-            for c in self._wrapped_name.infer():
-                yield c
-            return
+            return self._wrapped_name.infer()
 
         typ = self._wrapped_name.tree_name.parent.type
+        # Only for these two we want to merge, the function doesn't support
+        # anything else.
         if typ in ('classdef', 'funcdef'):
             actual_context, = self._wrapped_name.infer()
-            for stub_context in stub_contexts:
-                if isinstance(stub_context, MethodContext):
-                    assert isinstance(actual_context, MethodContext)
-                    cls = StubMethodContext
-                elif isinstance(stub_context, FunctionContext):
-                    cls = StubFunctionContext
-                elif isinstance(stub_context, StubOnlyClass):
-                    cls = StubClassContext
-                else:
-                    yield stub_context
-                    continue
-                yield cls.create_cached(
-                    actual_context.evaluator,
-                    self.parent_context,
-                    actual_context,
-                    stub_context,
-                )
+            return _add_stub_if_possible(self.parent_context, actual_context, stub_contexts)
         else:
-            for c in stub_contexts:
-                yield c
+            return stub_contexts
+
+
+@iterator_to_context_set
+def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
+    for stub_context in stub_contexts:
+        if isinstance(stub_context, MethodContext):
+            assert isinstance(actual_context, MethodContext)
+            cls = StubMethodContext
+        elif isinstance(stub_context, FunctionContext):
+            cls = StubFunctionContext
+        elif isinstance(stub_context, StubOnlyClass):
+            cls = StubClassContext
+        else:
+            yield stub_context
+            continue
+        yield cls.create_cached(
+            actual_context.evaluator,
+            parent_context,
+            actual_context,
+            stub_context,
+        )
+
+
+def with_stub_context_if_possible(actual_context):
+    assert actual_context.tree_node.type in ('classdef', 'funcdef')
+    qualified_names = actual_context.get_qualified_names()
+    stub_module = actual_context.get_root_context().stub_context
+    if stub_module is None or qualified_names is None:
+        return ContextSet([actual_context])
+
+    stub_contexts = ContextSet([stub_module])
+    for name in qualified_names:
+        stub_contexts = stub_contexts.py__getattribute__(name)
+    return _add_stub_if_possible(
+        actual_context.parent_context,
+        actual_context,
+        stub_contexts,
+    )
+
+
+def stub_to_actual_context_set(stub_context):
+    qualified_names = stub_context.get_qualified_names()
+    if qualified_names is None:
+        return NO_CONTEXTS
+
+    stub_only_module = stub_context.get_root_context()
+    assert isinstance(stub_only_module, StubOnlyModuleContext), stub_only_module
+    non_stubs = stub_only_module.non_stub_context_set
+    for name in qualified_names:
+        non_stubs = non_stubs.py__getattribute__(name)
+    return non_stubs
 
 
 class CompiledStubName(NameWrapper):
@@ -307,12 +346,12 @@ class StubOnlyFilter(ParserTreeFilter):
         return True
 
 
-class StubFilter(AbstractFilter):
+class _StubFilter(AbstractFilter):
     """
     Merging names from stubs and non-stubs.
     """
     def __init__(self, parent_context, non_stub_filters, stub_filters, add_non_stubs):
-        self._parent_context = parent_context
+        self._parent_context = parent_context  # Optional[Context]
         self._non_stub_filters = non_stub_filters
         self._stub_filters = stub_filters
         self._add_non_stubs = add_non_stubs
@@ -367,9 +406,17 @@ class StubFilter(AbstractFilter):
                     stub_name = TypingModuleName(stub_name)
 
                 if isinstance(name, CompiledName):
-                    result.append(CompiledStubName(self._parent_context, name, stub_name))
+                    result.append(CompiledStubName(
+                        self._parent_context or stub_name.parent_context,
+                        name,
+                        stub_name
+                    ))
                 else:
-                    result.append(StubName(self._parent_context, name, stub_name))
+                    result.append(StubName(
+                        self._parent_context or name.parent_context,
+                        name,
+                        stub_name
+                    ))
         return result
 
     def __repr__(self):

@@ -37,7 +37,38 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
-class ModuleMixin(object):
+class SubModuleDictMixin(object):
+    @evaluator_method_cache()
+    def _sub_modules_dict(self):
+        """
+        Lists modules in the directory of this module (if this module is a
+        package).
+        """
+        from jedi.evaluate.imports import SubModuleName
+
+        names = {}
+        try:
+            method = self.py__path__
+        except AttributeError:
+            pass
+        else:
+            for path in method():
+                mods = iter_modules([path])
+                for module_loader, name, is_pkg in mods:
+                    # It's obviously a relative import to the current module.
+                    names[name] = SubModuleName(self, name)
+
+        # TODO add something like this in the future, its cleaner than the
+        #   import hacks.
+        # ``os.path`` is a hardcoded exception, because it's a
+        # ``sys.modules`` modification.
+        # if str(self.name) == 'os':
+        #     names.append(Name('path', parent_context=self))
+
+        return names
+
+
+class ModuleMixin(SubModuleDictMixin):
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
@@ -78,35 +109,6 @@ class ModuleMixin(object):
             return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
 
     @evaluator_method_cache()
-    def _sub_modules_dict(self):
-        """
-        Lists modules in the directory of this module (if this module is a
-        package).
-        """
-        from jedi.evaluate.imports import SubModuleName
-
-        names = {}
-        try:
-            method = self.py__path__
-        except AttributeError:
-            pass
-        else:
-            for path in method():
-                mods = iter_modules([path])
-                for module_loader, name, is_pkg in mods:
-                    # It's obviously a relative import to the current module.
-                    names[name] = SubModuleName(self, name)
-
-        # TODO add something like this in the future, its cleaner than the
-        #   import hacks.
-        # ``os.path`` is a hardcoded exception, because it's a
-        # ``sys.modules`` modification.
-        # if str(self.name) == 'os':
-        #     names.append(Name('path', parent_context=self))
-
-        return names
-
-    @evaluator_method_cache()
     def _module_attributes_dict(self):
         names = ['__file__', '__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
@@ -139,7 +141,7 @@ class ModuleContext(ModuleMixin, TreeContext):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node, path, string_names, code_lines):
+    def __init__(self, evaluator, module_node, path, string_names, code_lines, is_package=False):
         super(ModuleContext, self).__init__(
             evaluator,
             parent_context=None,
@@ -148,19 +150,15 @@ class ModuleContext(ModuleMixin, TreeContext):
         self._path = path
         self.string_names = string_names
         self.code_lines = code_lines
+        self.is_package = is_package
 
-    def _get_init_directory(self):
-        """
-        :return: The path to the directory of a package. None in case it's not
-                 a package.
-        """
-        for suffix in all_suffixes() + ['.pyi']:
-            ending = '__init__' + suffix
-            py__file__ = self.py__file__()
-            if py__file__ is not None and py__file__.endswith(ending):
-                # Remove the ending, including the separator.
-                return self.py__file__()[:-len(ending) - 1]
-        return None
+    def is_stub(self):
+        if self._path is not None and self._path.endswith('.pyi'):
+            # Currently this is the way how we identify stubs when e.g. goto is
+            # used in them. This could be changed if stubs would be identified
+            # sooner and used as StubOnlyModuleContext.
+            return True
+        return super(ModuleContext, self).is_stub()
 
     def py__name__(self):
         if self.string_names is None:
@@ -176,39 +174,35 @@ class ModuleContext(ModuleMixin, TreeContext):
 
         return os.path.abspath(self._path)
 
-    def is_package(self):
-        return self._get_init_directory() is not None
-
     def py__package__(self):
-        if self._get_init_directory() is None:
-            return re.sub(r'\.?[^.]+$', '', self.py__name__())
-        else:
-            return self.py__name__()
+        if self.is_package:
+            return self.string_names
+        return self.string_names[:-1]
 
     def _py__path__(self):
-        search_path = self.evaluator.get_sys_path()
-        init_path = self.py__file__()
-        if os.path.basename(init_path) in ('__init__.py', '__init__.pyi'):
-            with open(init_path, 'rb') as f:
-                content = python_bytes_to_unicode(f.read(), errors='replace')
-                # these are strings that need to be used for namespace packages,
-                # the first one is ``pkgutil``, the second ``pkg_resources``.
-                options = ('declare_namespace(__name__)', 'extend_path(__path__')
-                if options[0] in content or options[1] in content:
-                    # It is a namespace, now try to find the rest of the
-                    # modules on sys_path or whatever the search_path is.
-                    paths = set()
-                    for s in search_path:
-                        other = os.path.join(s, self.name.string_name)
-                        if os.path.isdir(other):
-                            paths.add(other)
-                    if paths:
-                        return list(paths)
-                    # TODO I'm not sure if this is how nested namespace
-                    # packages work. The tests are not really good enough to
-                    # show that.
-        # Default to this.
-        return [self._get_init_directory()]
+        # A namespace package is typically auto generated and ~10 lines long.
+        first_few_lines = ''.join(self.code_lines[:50])
+        # these are strings that need to be used for namespace packages,
+        # the first one is ``pkgutil``, the second ``pkg_resources``.
+        options = ('declare_namespace(__name__)', 'extend_path(__path__')
+        if options[0] in first_few_lines or options[1] in first_few_lines:
+            # It is a namespace, now try to find the rest of the
+            # modules on sys_path or whatever the search_path is.
+            paths = set()
+            for s in self.evaluator.get_sys_path():
+                other = os.path.join(s, self.name.string_name)
+                if os.path.isdir(other):
+                    paths.add(other)
+            if paths:
+                return list(paths)
+            # Nested namespace packages will not be supported. Nobody ever
+            # asked for it and in Python 3 they are there without using all the
+            # crap above.
+
+        # Default to the of this file.
+        file = self.py__file__()
+        assert file is not None  # Shouldn't be a package in the first place.
+        return [os.path.dirname(file)]
 
     @property
     def py__path__(self):
@@ -222,7 +216,7 @@ class ModuleContext(ModuleMixin, TreeContext):
         is a list of paths (strings).
         Raises an AttributeError if the module is not a package.
         """
-        if self.is_package():
+        if self.is_package:
             return self._py__path__
         else:
             raise AttributeError('Only packages have __path__ attributes.')
@@ -231,5 +225,5 @@ class ModuleContext(ModuleMixin, TreeContext):
         return "<%s: %s@%s-%s is_stub=%s>" % (
             self.__class__.__name__, self._string_name,
             self.tree_node.start_pos[0], self.tree_node.end_pos[0],
-            self._path is not None and self._path.endswith('.pyi')
+            self._path is not None and self.is_stub()
         )

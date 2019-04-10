@@ -1,6 +1,7 @@
 import os
 import re
 
+from parso.file_io import FileIO
 from jedi._compatibility import FileNotFoundError
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate.cache import evaluator_function_cache
@@ -10,7 +11,7 @@ from jedi.evaluate.gradual.stub_context import StubModuleContext, \
     TypingModuleWrapper, StubOnlyModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
+TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
 
 
 def _merge_create_stub_map(directories):
@@ -49,7 +50,7 @@ def _create_stub_map(directory):
 def _get_typeshed_directories(version_info):
     check_version_list = ['2and3', str(version_info.major)]
     for base in ['stdlib', 'third_party']:
-        base = os.path.join(_TYPESHED_PATH, base)
+        base = os.path.join(TYPESHED_PATH, base)
         base_list = os.listdir(base)
         for base_list_entry in base_list:
             match = re.match(r'(\d+)\.(\d+)$', base_list_entry)
@@ -64,7 +65,7 @@ def _get_typeshed_directories(version_info):
 
 @evaluator_function_cache()
 def _load_stub(evaluator, path):
-    return evaluator.parse(path=path, cache=True, use_latest_grammar=True)
+    return evaluator.parse(file_io=FileIO(path), cache=True, use_latest_grammar=True)
 
 
 def _merge_modules(context_set, stub_context):
@@ -104,7 +105,7 @@ def _cache_stub_file_map(version_info):
 
 
 def import_module_decorator(func):
-    def wrapper(evaluator, import_names, parent_module_context, sys_path):
+    def wrapper(evaluator, import_names, parent_module_context, sys_path, load_stub=True):
         if import_names == ('_sqlite3',):
             # TODO Maybe find a better solution for this?
             # The problem is IMO how star imports are priorized and that
@@ -126,7 +127,7 @@ def import_module_decorator(func):
                 evaluator,
                 import_names,
                 parent_module_context,
-                sys_path
+                sys_path,
             )
         except JediImportError:
             if import_names == ('typing',):
@@ -135,42 +136,56 @@ def import_module_decorator(func):
             else:
                 raise
 
-        import_name = import_names[-1]
-        map_ = None
-        if len(import_names) == 1:
-            map_ = _cache_stub_file_map(evaluator.grammar.version_info)
-        elif isinstance(parent_module_context, StubModuleContext):
-            if not parent_module_context.stub_context.is_package():
-                # Only if it's a package (= a folder) something can be
-                # imported.
-                return context_set
-            path = parent_module_context.stub_context.py__path__()
-            map_ = _merge_create_stub_map(path)
-
-        if map_ is not None:
-            path = map_.get(import_name)
-            if path is not None:
-                try:
-                    stub_module_node = _load_stub(evaluator, path)
-                except FileNotFoundError:
-                    # The file has since been removed after looking for it.
-                    # TODO maybe empty cache?
-                    pass
-                else:
-                    if import_names == ('typing',):
-                        module_cls = TypingModuleWrapper
-                    else:
-                        module_cls = StubOnlyModuleContext
-                    stub_module_context = module_cls(
-                        context_set, evaluator, stub_module_node,
-                        path=path,
-                        string_names=import_names,
-                        # The code was loaded with latest_grammar, so use
-                        # that.
-                        code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
-                    )
-                    modules = _merge_modules(context_set, stub_module_context)
-                    return ContextSet(modules)
-        # If no stub is found, just return the default.
-        return context_set
+        if not load_stub:
+            return context_set
+        return try_to_merge_with_stub(evaluator, parent_module_context,
+                                      import_names, context_set)
     return wrapper
+
+
+def try_to_merge_with_stub(evaluator, parent_module_context, import_names, actual_context_set):
+    import_name = import_names[-1]
+    map_ = None
+    if len(import_names) == 1:
+        map_ = _cache_stub_file_map(evaluator.grammar.version_info)
+    elif isinstance(parent_module_context, StubModuleContext):
+        if not parent_module_context.stub_context.is_package:
+            # Only if it's a package (= a folder) something can be
+            # imported.
+            return actual_context_set
+        path = parent_module_context.stub_context.py__path__()
+        map_ = _merge_create_stub_map(path)
+
+    if map_ is not None:
+        path = map_.get(import_name)
+        if path is not None:
+            try:
+                stub_module_node = _load_stub(evaluator, path)
+            except FileNotFoundError:
+                # The file has since been removed after looking for it.
+                # TODO maybe empty cache?
+                pass
+            else:
+                return create_stub_module(evaluator, actual_context_set,
+                                          stub_module_node, path, import_names)
+    # If no stub is found, just return the default.
+    return actual_context_set
+
+
+def create_stub_module(evaluator, actual_context_set, stub_module_node, path, import_names):
+    if import_names == ('typing',):
+        module_cls = TypingModuleWrapper
+    else:
+        module_cls = StubOnlyModuleContext
+    file_name = os.path.basename(path)
+    stub_module_context = module_cls(
+        actual_context_set, evaluator, stub_module_node,
+        path=path,
+        string_names=import_names,
+        # The code was loaded with latest_grammar, so use
+        # that.
+        code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
+        is_package=file_name == '__init__.pyi',
+    )
+    modules = _merge_modules(actual_context_set, stub_module_context)
+    return ContextSet(modules)

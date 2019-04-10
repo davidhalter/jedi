@@ -28,7 +28,7 @@ py__simple_getitem__(index: int/str)   Returns a a set of types of the index.
 py__getitem__(indexes: ContextSet)     Returns a a set of types of the index.
 py__file__()                           Only on modules. Returns None if does
                                        not exist.
-py__package__()                        Only on modules. For the import system.
+py__package__() -> List[str]           Only on modules. For the import system.
 py__path__()                           Only on modules. For the import system.
 py__get__(call_object)                 Only on instances. Simulates
                                        descriptors.
@@ -49,6 +49,7 @@ from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
 from jedi.evaluate.arguments import unpack_arglist
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     TreeContext, NO_CONTEXTS
+from jedi.evaluate.context.function import FunctionAndClassMixin
 
 
 def apply_py__get__(context, instance, class_context):
@@ -118,7 +119,7 @@ class ClassFilter(ParserTreeFilter):
         return [name for name in names if self._access_possible(name)]
 
 
-class ClassMixin(object):
+class ClassMixin(FunctionAndClassMixin):
     def is_class(self):
         return True
 
@@ -132,9 +133,6 @@ class ClassMixin(object):
     @property
     def name(self):
         return ContextName(self, self.tree_node.name)
-
-    def py__name__(self):
-        return self.name.string_name
 
     def get_param_names(self):
         for context_ in self.py__getattribute__(u'__init__'):

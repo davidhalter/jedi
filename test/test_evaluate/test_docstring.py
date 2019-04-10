@@ -359,7 +359,6 @@ def test_numpy_returns():
         x.d'''
     )
     names = [c.name for c in jedi.Script(s).completions()]
-    print(names)
     assert 'diagonal' in names
 
 
@@ -372,5 +371,4 @@ def test_numpy_comp_returns():
         x.d'''
     )
     names = [c.name for c in jedi.Script(s).completions()]
-    print(names)
     assert 'diagonal' in names

@@ -21,6 +21,7 @@ class NamespaceObject(object):
 
 
 class MixedModuleContext(Context):
+    # TODO use ContextWrapper!
     type = 'mixed_module'
 
     def __init__(self, evaluator, tree_module, namespaces, path, code_lines):

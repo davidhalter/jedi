@@ -13,7 +13,7 @@ import sys
 import pytest
 
 import jedi
-from jedi.api.environment import SameEnvironment
+from jedi.api.environment import SameEnvironment, InterpreterEnvironment
 
 
 SRC = """class Foo:
@@ -55,13 +55,19 @@ def pyc_project_path(tmpdir):
         shutil.rmtree(path)
 
 
-def test_pyc(pyc_project_path):
+def test_pyc(pyc_project_path, environment):
     """
     The list of completion must be greater than 2.
     """
     path = os.path.join(pyc_project_path, 'blub.py')
+    if not isinstance(environment, InterpreterEnvironment):
+        # We are using the same version for pyc completions here, because it
+        # was compiled in that version. However with interpreter environments
+        # we also have the same version and it's easier to debug.
+        environment = SameEnvironment()
+    environment = environment
     s = jedi.Script(
         "from dummy_package import dummy; dummy.",
         path=path,
-        environment=SameEnvironment())
+        environment=environment)
     assert len(s.completions()) >= 2

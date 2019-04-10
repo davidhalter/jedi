@@ -8,12 +8,12 @@ class FlaskPlugin(BasePlugin):
         Handle "magic" Flask extension imports:
         ``flask.ext.foo`` is really ``flask_foo`` or ``flaskext.foo``.
         """
-        def wrapper(evaluator, import_names, module_context, sys_path):
+        def wrapper(evaluator, import_names, module_context, sys_path, load_stub):
             if len(import_names) == 3 and import_names[:2] == ('flask', 'ext'):
                 # New style.
                 ipath = (u'flask_' + import_names[2]),
                 try:
-                    return callback(evaluator, ipath, None, sys_path)
+                    return callback(evaluator, ipath, None, sys_path, load_stub)
                 except JediImportError:
                     context_set = callback(evaluator, (u'flaskext',), None, sys_path)
                     # If context_set has no content a JediImportError is raised
@@ -24,5 +24,5 @@ class FlaskPlugin(BasePlugin):
                         next(iter(context_set)),
                         sys_path
                     )
-            return callback(evaluator, import_names, module_context, sys_path)
+            return callback(evaluator, import_names, module_context, sys_path, load_stub)
         return wrapper

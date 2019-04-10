@@ -119,3 +119,11 @@ def has_typing(environment):
 @pytest.fixture(scope='session')
 def jedi_path():
     return os.path.dirname(__file__)
+
+
+@pytest.fixture()
+def skip_python2(environment):
+    if environment.version_info.major == 2:
+        # This if is just needed to avoid that tests ever skip way more than
+        # they should for all Python versions.
+        pytest.skip()

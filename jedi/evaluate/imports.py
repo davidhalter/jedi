@@ -16,6 +16,7 @@ import os
 from parso.python import tree
 from parso.tree import search_ancestor
 from parso import python_bytes_to_unicode
+from parso.file_io import KnownContentFileIO
 
 from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
@@ -145,11 +146,7 @@ class NestedImportModule(tree.Module):
                                    self._nested_import)
 
 
-def _add_error(context, name, message=None):
-    # Should be a name, not a string!
-    if message is None:
-        name_str = str(name.value) if isinstance(name, tree.Name) else name
-        message = 'No module named ' + name_str
+def _add_error(context, name, message):
     if hasattr(name, 'parent') and context is not None:
         analysis.add(context, 'import-error', name, message)
     else:
@@ -238,17 +235,13 @@ class Importer(object):
         self._evaluator = evaluator
         self.level = level
         self.module_context = module_context
-        try:
-            self.file_path = module_context.py__file__()
-        except AttributeError:
-            # Can be None for certain compiled modules like 'builtins'.
-            self.file_path = None
 
         self._fixed_sys_path = None
         self._inference_possible = True
         if level:
-            base = module_context.py__package__().split('.')
+            base = module_context.py__package__()
             if base == [''] or base == ['__main__']:
+                raise NotImplementedError(module_context.py__package__())
                 base = []
             # We need to care for two cases, the first one is if it's a valid
             # Python import. This import has a properly defined module name
@@ -314,10 +307,11 @@ class Importer(object):
             + sys_path.check_sys_path_modifications(self.module_context)
         )
 
-        if self.import_path and self.file_path is not None \
-                and self._evaluator.environment.version_info.major == 2:
-            # Python2 uses an old strange way of importing relative imports.
-            sys_path_mod.append(force_unicode(os.path.dirname(self.file_path)))
+        if self._evaluator.environment.version_info.major == 2:
+            file_path = self.module_context.py__file__()
+            if file_path is not None:
+                # Python2 uses an old strange way of importing relative imports.
+                sys_path_mod.append(force_unicode(os.path.dirname(file_path)))
 
         return sys_path_mod
 
@@ -343,7 +337,8 @@ class Importer(object):
                     for parent_module_context in context_set
                 ])
             except JediImportError:
-                _add_error(self.module_context, name)
+                message = 'No module named ' + '.'.join(import_names)
+                _add_error(self.module_context, name, message)
                 return NO_CONTEXTS
         return context_set
 
@@ -435,29 +430,25 @@ class JediImportError(Exception):
 
 
 @import_module_decorator
-def import_module(evaluator, import_names, parent_module_context, sys_path):
+def import_module(evaluator, import_names, parent_module_context, sys_path, load_stub=True):
     """
     This method is very similar to importlib's `_gcd_import`.
     """
     if import_names[0] in settings.auto_import_modules:
-        module = _load_module(
-            evaluator,
-            import_names=import_names,
-            sys_path=sys_path,
-        )
+        module = _load_builtin_module(evaluator, import_names, sys_path)
         return ContextSet([module])
 
     module_name = '.'.join(import_names)
     if parent_module_context is None:
         # Override the sys.path. It works only good that way.
         # Injecting the path directly into `find_module` did not work.
-        code, module_path, is_pkg = evaluator.compiled_subprocess.get_module_info(
+        file_io_or_ns, is_pkg = evaluator.compiled_subprocess.get_module_info(
             string=import_names[-1],
             full_name=module_name,
             sys_path=sys_path,
             is_global_search=True,
         )
-        if module_path is None:
+        if is_pkg is None:
             raise JediImportError(import_names)
     else:
         try:
@@ -472,22 +463,32 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
                 # not important to be correct.
                 if not isinstance(path, list):
                     path = [path]
-                code, module_path, is_pkg = evaluator.compiled_subprocess.get_module_info(
+                file_io_or_ns, is_pkg = evaluator.compiled_subprocess.get_module_info(
                     string=import_names[-1],
                     path=path,
                     full_name=module_name,
                     is_global_search=False,
                 )
-                if module_path is not None:
+                if is_pkg is not None:
                     break
             else:
                 raise JediImportError(import_names)
 
-    module = _load_module(
-        evaluator, module_path, code, sys_path,
-        import_names=import_names,
-        safe_module_name=True,
-    )
+    if isinstance(file_io_or_ns, ImplicitNSInfo):
+        from jedi.evaluate.context.namespace import ImplicitNamespaceContext
+        module = ImplicitNamespaceContext(
+            evaluator,
+            fullname=file_io_or_ns.name,
+            paths=file_io_or_ns.paths,
+        )
+    elif file_io_or_ns is None:
+        module = _load_builtin_module(evaluator, import_names, sys_path)
+    else:
+        module = _load_python_module(
+            evaluator, file_io_or_ns, sys_path,
+            import_names=import_names,
+            is_package=is_pkg,
+        )
 
     if parent_module_context is None:
         debug.dbg('global search_module %s: %s', import_names[-1], module)
@@ -496,48 +497,41 @@ def import_module(evaluator, import_names, parent_module_context, sys_path):
     return ContextSet([module])
 
 
-def _load_module(evaluator, path=None, code=None, sys_path=None,
-                 import_names=None, safe_module_name=False):
-    if import_names is None:
-        dotted_name = None
-    else:
-        dotted_name = '.'.join(import_names)
+def _load_python_module(evaluator, file_io, sys_path=None,
+                        import_names=None, is_package=False):
     try:
-        return evaluator.module_cache.get_from_path(path)
+        return evaluator.module_cache.get_from_path(file_io.path)
     except KeyError:
         pass
 
-    if isinstance(path, ImplicitNSInfo):
-        from jedi.evaluate.context.namespace import ImplicitNamespaceContext
-        module = ImplicitNamespaceContext(
-            evaluator,
-            fullname=path.name,
-            paths=path.paths,
-        )
-    else:
-        if sys_path is None:
-            sys_path = evaluator.get_sys_path()
+    module_node = evaluator.parse(
+        file_io=file_io,
+        cache=True,
+        diff_cache=settings.fast_parser,
+        cache_path=settings.cache_directory
+    )
 
-        if path is not None and path.endswith(('.py', '.zip', '.egg')):
-            module_node = evaluator.parse(
-                code=code, path=path, cache=True,
-                diff_cache=settings.fast_parser,
-                cache_path=settings.cache_directory)
+    from jedi.evaluate.context import ModuleContext
+    return ModuleContext(
+        evaluator, module_node,
+        path=file_io.path,
+        string_names=import_names,
+        code_lines=get_cached_code_lines(evaluator.grammar, file_io.path),
+        is_package=is_package,
+    )
 
-            from jedi.evaluate.context import ModuleContext
-            module = ModuleContext(
-                evaluator, module_node,
-                path=path,
-                string_names=import_names,
-                code_lines=get_cached_code_lines(evaluator.grammar, path),
-            )
-        else:
-            assert dotted_name is not None
-            module = compiled.load_module(evaluator, dotted_name=dotted_name, sys_path=sys_path)
-            if module is None:
-                # The file might raise an ImportError e.g. and therefore not be
-                # importable.
-                raise JediImportError(import_names)
+
+def _load_builtin_module(evaluator, import_names=None, sys_path=None):
+    if sys_path is None:
+        sys_path = evaluator.get_sys_path()
+
+    dotted_name = '.'.join(import_names)
+    assert dotted_name is not None
+    module = compiled.load_module(evaluator, dotted_name=dotted_name, sys_path=sys_path)
+    if module is None:
+        # The file might raise an ImportError e.g. and therefore not be
+        # importable.
+        raise JediImportError(import_names)
     return module
 
 
@@ -561,19 +555,23 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
             if name in code:
                 e_sys_path = evaluator.get_sys_path()
-                module_name = os.path.basename(path)
-                if module_name.endswith('.py'):
-                    module_name = module_name[:-3]
-
                 if base_names:
+                    module_name = os.path.basename(path)
+                    module_name = sys_path.remove_python_path_suffix(module_name)
+                    is_package = module_name == '__init__'
+                    if is_package:
+                        raise NotImplementedError(
+                            "This is probably not possible yet, please add a failing test first")
+                        module_name = os.path.basename(os.path.dirname(path))
                     import_names = base_names + (module_name,)
                 else:
-                    import_names = sys_path.transform_path_to_dotted(e_sys_path, path)
+                    import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
 
-                module = _load_module(
-                    evaluator, path, code,
+                module = _load_python_module(
+                    evaluator, KnownContentFileIO(path, code),
                     sys_path=e_sys_path,
                     import_names=import_names,
+                    is_package=is_package,
                 )
                 evaluator.module_cache.add(import_names, ContextSet([module]))
                 return module
@@ -590,10 +588,7 @@ def get_modules_containing_name(evaluator, modules, name):
             if path is not None:
                 if path not in used_mod_paths:
                     used_mod_paths.add(path)
-                    string_names = m.string_names
-                    if not m.is_package() and string_names is not None:
-                        string_names = string_names[:-1]
-                    path_with_names_to_be_checked.append((path, string_names))
+                    path_with_names_to_be_checked.append((path, m.py__package__()))
         yield m
 
     if not settings.dynamic_params_for_other_modules:

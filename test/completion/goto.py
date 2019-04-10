@@ -120,6 +120,8 @@ import_tree.a
 
 #! ['module mod1']
 import import_tree.mod1
+#! ['module mod1']
+from import_tree.mod1
 #! ['a = 1']
 import_tree.mod1.a
 

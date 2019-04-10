@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from parso.python import tree
 
 from jedi._compatibility import unicode
-from jedi.parser_utils import get_parent_scope
+from jedi.parser_utils import get_parent_scope, is_name_of_func_or_class_def
 
 
 def is_stdlib_path(path):
@@ -166,13 +166,33 @@ def get_module_names(module, all_scopes):
     Returns a dictionary with name parts as keys and their call paths as
     values.
     """
-    names = chain.from_iterable(module.get_used_names().values())
+    names = list(chain.from_iterable(module.get_used_names().values()))
     if not all_scopes:
         # We have to filter all the names that don't have the module as a
         # parent_scope. There's None as a parent, because nodes in the module
         # node have the parent module and not suite as all the others.
         # Therefore it's important to catch that case.
-        names = [n for n in names if get_parent_scope(n) == module]
+
+        def is_module_scope_name(name):
+            parent_scope = get_parent_scope(name)
+            if is_name_of_func_or_class_def(name, parent_scope):
+                # XXX: In syntax tree function- and class-name nodes are immediate children of
+                # their respective class-definition or function-definition nodes. Technically,
+                # get_parent_scope(...) for them should return the parent of the definition node,
+                # because
+                #
+                # def foo(...): pass
+                #
+                # is equivalent to
+                #
+                # foo = lambda(...): None
+                #
+                # but that would be a big change that could break type inference, whereas for now
+                # this discrepancy looks like only a problem for "get_module_names".
+                parent_scope = parent_scope.parent
+            return parent_scope in (module, None)
+
+        names = [n for n in names if is_module_scope_name(n)]
     return names
 
 
@@ -239,3 +259,32 @@ def execute_evaluated(context, *value_list):
     from jedi.evaluate.base_context import ContextSet
     arguments = ValuesArguments([ContextSet([value]) for value in value_list])
     return context.evaluator.execute(context, arguments)
+
+
+def parse_dotted_names(nodes, is_import_from, until_node=None):
+    level = 0
+    names = []
+    for node in nodes[1:]:
+        if node in ('.', '...'):
+            if not names:
+                level += len(node.value)
+        elif node.type == 'dotted_name':
+            for n in node.children[::2]:
+                names.append(n)
+                if n is until_node:
+                    break
+            else:
+                continue
+            break
+        elif node.type == 'name':
+            names.append(node)
+            if node is until_node:
+                break
+        elif node == ',':
+            if not is_import_from:
+                names = []
+        else:
+            # Here if the keyword `import` comes along it stops checking
+            # for names.
+            break
+    return level, names

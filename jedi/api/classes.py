@@ -13,6 +13,7 @@ from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
+from jedi.evaluate.filters import ParamName
 from jedi.evaluate.context import FunctionExecutionContext
 from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
 from jedi.api.keywords import KeywordName
@@ -301,6 +302,18 @@ class BaseDefinition(object):
 
         return '.'.join(path if path[0] else path[1:])
 
+    def is_stub(self):
+        return all(c.is_stub() for c in self._name.infer())
+
+    def goto_stubs(self):
+        if self.is_stub():
+            return [self]
+
+        return [
+            Definition(self._evaluator, d.stub_context.name)
+            for d in self._name.infer() if d.stub_context is not None
+        ]
+
     def goto_assignments(self):
         if self._name.tree_name is None:
             return self
@@ -308,9 +321,16 @@ class BaseDefinition(object):
         names = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
         return [Definition(self._evaluator, n) for n in names]
 
-    def _goto_definitions(self):
-        # TODO make this function public.
-        return [Definition(self._evaluator, d.name) for d in self._name.infer()]
+    def infer(self):
+        tree_name = self._name.tree_name
+        parent_context = self._name.parent_context
+        # Param names are special because they are not handled by
+        # the evaluator method.
+        if tree_name is None or parent_context is None or isinstance(self._name, ParamName):
+            context_set = self._name.infer()
+        else:
+            context_set = self._evaluator.goto_definitions(parent_context, tree_name)
+        return [Definition(self._evaluator, d.name) for d in context_set]
 
     @property
     @memoize_method

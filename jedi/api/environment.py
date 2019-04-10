@@ -128,17 +128,18 @@ class Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
-class SameEnvironment(Environment):
+class _SameEnvironmentMixin(object):
     def __init__(self):
         self._start_executable = self.executable = sys.executable
         self.path = sys.prefix
         self.version_info = _VersionInfo(*sys.version_info[:3])
 
 
-class InterpreterEnvironment(_BaseEnvironment):
-    def __init__(self):
-        self.version_info = _VersionInfo(*sys.version_info[:3])
+class SameEnvironment(_SameEnvironmentMixin, Environment):
+    pass
 
+
+class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
     def get_evaluator_subprocess(self, evaluator):
         return EvaluatorSameProcess(evaluator)
 
@@ -234,7 +235,12 @@ def _try_get_same_env():
 def get_cached_default_environment():
     var = os.environ.get('VIRTUAL_ENV')
     environment = _get_cached_default_environment()
-    if var and var != environment.path:
+
+    # Under macOS in some cases - notably when using Pipenv - the
+    # sys.prefix of the virtualenv is /path/to/env/bin/.. instead of
+    # /path/to/env so we need to fully resolve the paths in order to
+    # compare them.
+    if var and os.path.realpath(var) != os.path.realpath(environment.path):
         _get_cached_default_environment.clear_cache()
         return _get_cached_default_environment()
     return environment

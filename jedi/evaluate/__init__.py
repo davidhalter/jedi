@@ -67,6 +67,7 @@ from functools import partial
 from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
+from parso.file_io import FileIO
 
 from jedi import debug
 from jedi import parser_utils
@@ -83,6 +84,8 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
+from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible, \
+    stub_to_actual_context_set
 
 
 def _execute(context, arguments):
@@ -136,7 +139,8 @@ class Evaluator(object):
             self,
         )
 
-    def import_module(self, import_names, parent_module_context=None, sys_path=None):
+    def import_module(self, import_names, parent_module_context=None,
+                      sys_path=None, load_stub=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
         try:
@@ -144,7 +148,8 @@ class Evaluator(object):
         except KeyError:
             pass
 
-        context_set = self._import_module(import_names, parent_module_context, sys_path)
+        context_set = self._import_module(import_names, parent_module_context,
+                                          sys_path, load_stub=load_stub)
         self.module_cache.add(import_names, context_set)
         return context_set
 
@@ -161,20 +166,15 @@ class Evaluator(object):
     @evaluator_function_cache()
     def typing_module(self):
         typing_module, = self.import_module((u'typing',))
-        try:
-            return typing_module.stub_context
-        except AttributeError:
-            # Python 2 and 3.4: In some cases there is no non-stub module,
-            # because the module was not installed with `pip install typing`.
-            return typing_module
+        return typing_module.stub_context or typing_module
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def get_sys_path(self):
+    def get_sys_path(self, **kwargs):
         """Convenience function"""
-        return self.project._get_sys_path(self, environment=self.environment)
+        return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
     def eval_element(self, context, element):
         if not self.infer_enabled:
@@ -272,10 +272,16 @@ class Evaluator(object):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
-            if type_ == 'classdef':
-                return [ClassContext(self, context, name.parent)]
-            elif type_ == 'funcdef':
-                return [FunctionContext.from_context(context, name.parent)]
+            is_classdef = type_ == 'classdef'
+            if is_classdef or type_ == 'funcdef':
+                if is_classdef:
+                    c = ClassContext(self, context, name.parent)
+                else:
+                    c = FunctionContext.from_context(context, name.parent)
+                if context.is_stub():
+                    return stub_to_actual_context_set(c)
+                else:
+                    return with_stub_context_if_possible(c)
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
@@ -289,8 +295,39 @@ class Evaluator(object):
                 return check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
+        else:
+            result = self._follow_error_node_imports_if_possible(context, name)
+            if result is not None:
+                return result
 
         return helpers.evaluate_call_of_leaf(context, name)
+
+    def _follow_error_node_imports_if_possible(self, context, name):
+        error_node = tree.search_ancestor(name, 'error_node')
+        if error_node is not None:
+            # Get the first command start of a started simple_stmt. The error
+            # node is sometimes a small_stmt and sometimes a simple_stmt. Check
+            # for ; leaves that start a new statements.
+            start_index = 0
+            for index, n in enumerate(error_node.children):
+                if n.start_pos > name.start_pos:
+                    break
+                if n == ';':
+                    start_index = index + 1
+            nodes = error_node.children[start_index:]
+            first_name = nodes[0].get_first_leaf().value
+
+            # Make it possible to infer stuff like `import foo.` or
+            # `from foo.bar`.
+            if first_name in ('from', 'import'):
+                is_import_from = first_name == 'from'
+                level, names = helpers.parse_dotted_names(
+                    nodes,
+                    is_import_from=is_import_from,
+                    until_node=name,
+                )
+                return imports.Importer(self, names, context.get_root_context(), level).follow()
+        return None
 
     def goto(self, context, name):
         definition = name.get_definition(import_name_always=True)
@@ -309,6 +346,10 @@ class Evaluator(object):
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names
+        else:
+            contexts = self._follow_error_node_imports_if_possible(context, name)
+            if contexts is not None:
+                return [context.name for context in contexts]
 
         par = name.parent
         node_type = par.type
@@ -427,15 +468,16 @@ class Evaluator(object):
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
 
     def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
-                           use_latest_grammar=False, **kwargs):
+                           use_latest_grammar=False, file_io=None, **kwargs):
         if self.allow_different_encoding:
             if code is None:
-                with open(path, 'rb') as f:
-                    code = f.read()
+                if file_io is None:
+                    file_io = FileIO(path)
+                code = file_io.read()
             code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
 
         grammar = self.latest_grammar if use_latest_grammar else self.grammar
-        return grammar.parse(code=code, path=path, **kwargs), code
+        return grammar.parse(code=code, path=path, file_io=file_io, **kwargs), code
 
     def parse(self, *args, **kwargs):
         return self.parse_and_get_code(*args, **kwargs)[0]
