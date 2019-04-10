@@ -111,6 +111,8 @@ class TypingModuleName(NameWrapper):
             yield builtin_from_name(evaluator, u'True')
         elif name == 'overload':
             yield OverloadFunction.create_cached(evaluator, self.parent_context, self.tree_name)
+        elif name == 'NewType':
+            yield NewTypeFunction.create_cached(evaluator, self.parent_context, self.tree_name)
         elif name == 'cast':
             # TODO implement cast
             for c in self._wrapped_name.infer():  # Fuck my life Python 2
@@ -446,6 +448,27 @@ class OverloadFunction(_BaseTypingContext):
     def py__call__(self, func_context_set):
         # Just pass arguments through.
         return func_context_set
+
+
+class NewTypeFunction(_BaseTypingContext):
+    def py__call__(self, arguments):
+        return ContextSet(
+            NewType(
+                self.evaluator,  # MWC: Not sure what I'm doing here
+                contextualized_node.context,
+                contextualized_node.node,
+                contextualized_node.infer(),  # MWC: Not sure what I'm doing here
+            ) for contextualized_node in arguments.get_calling_nodes())
+
+
+class NewType(Context):
+    def __init__(self, evaluator, parent_context, tree_node, type_context_set):
+        super(NewType, self).__init__(evaluator, parent_context)
+        self._type_context_set = type_context_set
+        self.tree_node = tree_node
+
+    def py__call__(self, arguments):
+        return self._type_context_set
 
 
 class BoundTypeVarName(AbstractNameDefinition):
