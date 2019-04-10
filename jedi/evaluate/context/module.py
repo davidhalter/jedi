@@ -136,6 +136,14 @@ class ModuleMixin(SubModuleDictMixin):
                 modules += new
         return modules
 
+    def get_qualified_names(self):
+        """
+        A module doesn't have a qualified name, but it's important to note that
+        it's reachable and not `None`. With this information we can add
+        qualified names on top for all context children.
+        """
+        return []
+
 
 class ModuleContext(ModuleMixin, TreeContext):
     api_type = u'module'

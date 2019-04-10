@@ -192,18 +192,22 @@ def _assert_is_same(d1, d2):
     assert d1.column == d2.column
 
 
+@pytest.mark.parametrize('type_', ['goto', 'infer'])
 @pytest.mark.parametrize(
     'code', [
         'import os; os.walk',
         'from collections import Counter; Counter',
     ])
-def test_goto_stubs_on_itself(Script, code):
+def test_goto_stubs_on_itself(Script, code, type_):
     """
     If goto_stubs is used on an identifier in e.g. the stdlib, we should goto
     the stub of it.
     """
     s = Script(code)
-    def_, = s.goto_definitions()
+    if type_ == 'infer':
+        def_, = s.goto_definitions()
+    else:
+        def_, = s.goto_assignments(follow_imports=True)
     stub, = def_.goto_stubs()
 
     script_on_source = Script(
@@ -211,7 +215,10 @@ def test_goto_stubs_on_itself(Script, code):
         line=def_.line,
         column=def_.column
     )
-    definition, = script_on_source.goto_definitions()
+    if type_ == 'infer':
+        definition, = script_on_source.goto_definitions()
+    else:
+        definition, = script_on_source.goto_assignments()
     same_stub, = definition.goto_stubs()
     _assert_is_same(same_stub, stub)
     _assert_is_same(definition, def_)
@@ -224,7 +231,10 @@ def test_goto_stubs_on_itself(Script, code):
         column=same_stub.column
     )
 
-    same_definition, = script_on_stub.goto_definitions()
+    if type_ == 'infer':
+        same_definition, = script_on_stub.goto_definitions()
+    else:
+        same_definition, = script_on_stub.goto_assignments()
     same_definition2, = same_stub.infer()
     _assert_is_same(same_definition, definition)
     _assert_is_same(same_definition, same_definition2)

@@ -261,6 +261,27 @@ def with_stub_context_if_possible(actual_context):
     )
 
 
+def goto_with_stubs_if_possible(name):
+    root = name.parent_context.get_root_context()
+    stub = root.get_root_context().stub_context
+    if stub is None:
+        return [name]
+
+    qualified_names = name.parent_context.get_qualified_names()
+    if qualified_names is None:
+        return [name]
+
+    stub_contexts = ContextSet([stub])
+    for name in qualified_names:
+        stub_contexts = stub_contexts.py__getattribute__(name)
+    names = stub_contexts.py__getattribute__(name.string_name, is_goto=True)
+    return [
+        n
+        for n in names
+        if n.start_pos == name.start_pos and n.parent_context == name.parent_context
+    ] or [name]
+
+
 def stub_to_actual_context_set(stub_context):
     qualified_names = stub_context.get_qualified_names()
     if qualified_names is None:

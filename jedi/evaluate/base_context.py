@@ -18,6 +18,13 @@ from jedi.evaluate.cache import evaluator_as_method_param_cache
 
 
 class HelperContextMixin(object):
+    def get_root_context(self):
+        context = self
+        while True:
+            if context.parent_context is None:
+                return context
+            context = context.parent_context
+
     @classmethod
     @evaluator_as_method_param_cache()
     def create_cached(cls, *args, **kwargs):
