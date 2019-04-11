@@ -6,6 +6,8 @@ A ContextSet is typically used to specify the return of a function or any other
 static analysis operation. In jedi there are always multiple returns and not
 just one.
 """
+from functools import reduce
+from operator import add
 from parso.python.tree import ExprStmt, CompFor
 
 from jedi import debug
@@ -355,6 +357,11 @@ class ContextSet(BaseContextSet):
 
     def execute_evaluated(self, *args, **kwargs):
         return ContextSet.from_sets(execute_evaluated(c, *args, **kwargs) for c in self._set)
+
+    def py__getattribute__(self, *args, **kwargs):
+        if kwargs.get('is_goto'):
+            return reduce(add, [c.py__getattribute__(*args, **kwargs) for c in self._set], [])
+        return ContextSet.from_sets(c.py__getattribute__(*args, **kwargs) for c in self._set)
 
     def get_item(self, *args, **kwargs):
         return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
