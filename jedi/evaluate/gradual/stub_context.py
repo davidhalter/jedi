@@ -303,6 +303,11 @@ def goto_with_stubs_if_possible(name):
     ] or [name]
 
 
+def goto_non_stub(parent_context, tree_name):
+    contexts = stub_to_actual_context_set(parent_context)
+    return contexts.py__getattribute__(tree_name, is_goto=True)
+
+
 def stub_to_actual_context_set(stub_context):
     qualified_names = stub_context.get_qualified_names()
     if qualified_names is None:
