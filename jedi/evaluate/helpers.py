@@ -190,6 +190,9 @@ def get_module_names(module, all_scopes):
                 # but that would be a big change that could break type inference, whereas for now
                 # this discrepancy looks like only a problem for "get_module_names".
                 parent_scope = parent_scope.parent
+            # async functions have an extra wrapper. Strip it.
+            if parent_scope and parent_scope.type == 'async_stmt':
+                parent_scope = parent_scope.parent
             return parent_scope in (module, None)
 
         names = [n for n in names if is_module_scope_name(n)]

@@ -82,18 +82,34 @@ class TestDefinedNames(TestCase):
     def test_class_fields_with_all_scopes_false(self):
         definitions = self.check_defined_names("""
         from module import f
+        import asyncio
+
         g = f(f)
         class C:
             h = g
+            def __init__(self):
+                pass
+
+            async def __aenter__(self):
+                pass
 
         def foo(x=a):
            bar = x
            return bar
-        """, ['f', 'g', 'C', 'foo'])
-        C_subdefs = definitions[-2].defined_names()
-        foo_subdefs = definitions[-1].defined_names()
-        self.assert_definition_names(C_subdefs, ['h'])
+
+        async def async_foo(duration):
+            async def wait():
+                await asyncio.sleep(100)
+            for i in range(duration//100):
+                await wait()
+            return duration//100*100
+        """, ['f', 'asyncio', 'g', 'C', 'foo', 'async_foo'])
+        C_subdefs = definitions[-3].defined_names()
+        foo_subdefs = definitions[-2].defined_names()
+        async_foo_subdefs = definitions[-1].defined_names()
+        self.assert_definition_names(C_subdefs, ['h', '__init__', '__aenter__'])
         self.assert_definition_names(foo_subdefs, ['x', 'bar'])
+        self.assert_definition_names(async_foo_subdefs, ['duration', 'wait', 'i'])
 
 
 def test_follow_imports(environment):
