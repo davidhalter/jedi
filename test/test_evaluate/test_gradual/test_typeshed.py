@@ -233,8 +233,10 @@ def test_goto_stubs_on_itself(Script, code, type_):
 
     if type_ == 'infer':
         same_definition, = script_on_stub.goto_definitions()
+        same_definition2, = same_stub.infer()
     else:
         same_definition, = script_on_stub.goto_assignments()
-    same_definition2, = same_stub.infer()
+        same_definition2, = same_stub.goto_assignments()
+
     _assert_is_same(same_definition, definition)
     _assert_is_same(same_definition, same_definition2)

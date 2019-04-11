@@ -68,22 +68,6 @@ def _load_stub(evaluator, path):
     return evaluator.parse(file_io=FileIO(path), cache=True, use_latest_grammar=True)
 
 
-def _merge_modules(context_set, stub_context):
-    if not context_set:
-        # If there are no results for normal modules, just
-        # use a normal context for stub modules and don't
-        # merge the actual module contexts with stubs.
-        yield stub_context
-        return
-
-    for context in context_set:
-        if isinstance(context, ModuleContext):
-            yield StubModuleContext.create_cached(context.evaluator, context, stub_context)
-        else:
-            # TODO do we want this? This includes compiled?!
-            yield stub_context
-
-
 _version_cache = {}
 
 
@@ -187,5 +171,4 @@ def create_stub_module(evaluator, actual_context_set, stub_module_node, path, im
         code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
         is_package=file_name == '__init__.pyi',
     )
-    modules = _merge_modules(actual_context_set, stub_module_context)
-    return ContextSet(modules)
+    return stub_module_context.get_stub_contexts()

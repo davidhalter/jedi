@@ -20,7 +20,7 @@ class _StubContextFilterMixin(object):
             search_global, until_position, origin_scope, **kwargs
         )
         yield self.stub_context.get_stub_only_filter(
-            parent_context=self,
+            parent_contexts=ContextSet([self]),
             # Take the first filter, which is here to filter module contents
             # and wrap it.
             non_stub_filters=[next(filters)],
@@ -87,6 +87,9 @@ class StubMethodContext(StubFunctionContext):
 class _StubOnlyContextMixin(object):
     _add_non_stubs_in_filter = False
 
+    def get_stub_contexts(self):
+        return ContextSet([self])
+
     def is_stub(self):
         return True
 
@@ -97,11 +100,11 @@ class _StubOnlyContextMixin(object):
             **filter_kwargs
         )]
 
-    def get_stub_only_filter(self, parent_context, non_stub_filters, **filter_kwargs):
+    def get_stub_only_filter(self, parent_contexts, non_stub_filters, **filter_kwargs):
         # Here we remap the names from stubs to the actual module. This is
         # important if type inferences is needed in that module.
         return _StubFilter(
-            parent_context,
+            parent_contexts,
             non_stub_filters,
             self._get_stub_only_filters(**filter_kwargs),
             add_non_stubs=self._add_non_stubs_in_filter,
@@ -111,7 +114,7 @@ class _StubOnlyContextMixin(object):
                           until_position=None, origin_scope=None):
         next(filters)  # Ignore the first filter and replace it with our own
         yield self.get_stub_only_filter(
-            parent_context=None,
+            parent_contexts=self.get_stub_contexts(),
             non_stub_filters=list(self._get_first_non_stub_filters()),
             search_global=search_global,
             until_position=until_position,
@@ -128,6 +131,24 @@ class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubOnlyModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
+
+    @memoize_method
+    @iterator_to_context_set
+    def get_stub_contexts(self):
+        if not self.non_stub_context_set:
+            # If there are no results for normal modules, just
+            # use a normal context for stub modules and don't
+            # merge the actual module contexts with stubs.
+            yield self
+            return
+
+        for context in self.non_stub_context_set:
+            if isinstance(context, ModuleContext):
+                yield StubModuleContext.create_cached(context.evaluator, context, self)
+            else:
+                # TODO do we want this? This includes compiled?!
+                yield self
+        return self
 
     def _get_first_non_stub_filters(self):
         for context in self.non_stub_context_set:
@@ -371,8 +392,8 @@ class _StubFilter(AbstractFilter):
     """
     Merging names from stubs and non-stubs.
     """
-    def __init__(self, parent_context, non_stub_filters, stub_filters, add_non_stubs):
-        self._parent_context = parent_context  # Optional[Context]
+    def __init__(self, parent_contexts, non_stub_filters, stub_filters, add_non_stubs):
+        self._parent_contexts = parent_contexts
         self._non_stub_filters = non_stub_filters
         self._stub_filters = stub_filters
         self._add_non_stubs = add_non_stubs
@@ -426,18 +447,11 @@ class _StubFilter(AbstractFilter):
                 if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
                     stub_name = TypingModuleName(stub_name)
 
-                if isinstance(name, CompiledName):
-                    result.append(CompiledStubName(
-                        self._parent_context or stub_name.parent_context,
-                        name,
-                        stub_name
-                    ))
-                else:
-                    result.append(StubName(
-                        self._parent_context or name.parent_context,
-                        name,
-                        stub_name
-                    ))
+                for parent_context in self._parent_contexts:
+                    if isinstance(name, CompiledName):
+                        result.append(CompiledStubName(parent_context, name, stub_name))
+                    else:
+                        result.append(StubName(parent_context, name, stub_name))
         return result
 
     def __repr__(self):
