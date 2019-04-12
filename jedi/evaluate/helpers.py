@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from parso.python import tree
 
 from jedi._compatibility import unicode
-from jedi.parser_utils import get_parent_scope, is_name_of_func_or_class_def
+from jedi.parser_utils import get_parent_scope
 
 
 def is_stdlib_path(path):
@@ -175,21 +175,6 @@ def get_module_names(module, all_scopes):
 
         def is_module_scope_name(name):
             parent_scope = get_parent_scope(name)
-            if is_name_of_func_or_class_def(name, parent_scope):
-                # XXX: In syntax tree function- and class-name nodes are immediate children of
-                # their respective class-definition or function-definition nodes. Technically,
-                # get_parent_scope(...) for them should return the parent of the definition node,
-                # because
-                #
-                # def foo(...): pass
-                #
-                # is equivalent to
-                #
-                # foo = lambda(...): None
-                #
-                # but that would be a big change that could break type inference, whereas for now
-                # this discrepancy looks like only a problem for "get_module_names".
-                parent_scope = parent_scope.parent
             # async functions have an extra wrapper. Strip it.
             if parent_scope and parent_scope.type == 'async_stmt':
                 parent_scope = parent_scope.parent
