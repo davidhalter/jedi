@@ -293,8 +293,8 @@ def goto_with_stubs_if_possible(name):
         return [name]
 
     stub_contexts = ContextSet([stub])
-    for name in qualified_names:
-        stub_contexts = stub_contexts.py__getattribute__(name)
+    for n in qualified_names:
+        stub_contexts = stub_contexts.py__getattribute__(n)
     names = stub_contexts.py__getattribute__(name.string_name, is_goto=True)
     return [
         n
