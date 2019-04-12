@@ -257,11 +257,19 @@ def get_parent_scope(node, include_flows=False):
     scope = node.parent
     if scope is None:
         return None  # It's a module already.
-    if scope.type in ('funcdef', 'classdef') and scope.name == node:
-        scope = scope.parent
 
     while True:
         if is_scope(scope) or include_flows and isinstance(scope, tree.Flow):
+            if scope.type in ('classdef', 'funcdef', 'lambdef'):
+                index = scope.children.index(':')
+                if scope.children[index].start_pos >= node.start_pos:
+                    if node.parent.type == 'param' and node.parent.name == node:
+                        pass
+                    elif node.parent.type == 'tfpdef' and node.parent.children[0] == node:
+                        pass
+                    else:
+                        scope = scope.parent
+                        continue
             return scope
         scope = scope.parent
     return scope
