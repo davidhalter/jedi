@@ -122,7 +122,7 @@ def _search_function_executions(evaluator, module_context, funcdef, string_name)
     compare_node = funcdef
     if string_name == '__init__':
         cls = get_parent_scope(funcdef)
-        if isinstance(cls, tree.Class):
+        if cls.type == 'classdef':
             string_name = cls.name.value
             compare_node = cls
 
