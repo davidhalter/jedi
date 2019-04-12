@@ -397,7 +397,7 @@ class Completion(BaseDefinition):
     def _complete(self, like_name):
         append = ''
         if settings.add_bracket_after_function \
-                and self.type == 'Function':
+                and self.type == 'function':
             append = '('
 
         if self._name.api_type == 'param' and self._stack is not None:
