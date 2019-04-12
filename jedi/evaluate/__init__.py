@@ -425,20 +425,25 @@ class Evaluator(object):
                         if n.type == 'comp_for':
                             return n
 
-        def from_scope_node(scope_node, child_is_funcdef=None, is_nested=True, node_is_object=False):
+        def from_scope_node(scope_node, is_nested=True, node_is_object=False):
             if scope_node == base_node:
                 return base_context
 
             is_funcdef = scope_node.type in ('funcdef', 'lambdef')
             parent_scope = parser_utils.get_parent_scope(scope_node)
-            parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
+            parent_context = from_scope_node(parent_scope)
 
             if is_funcdef:
+                parent_was_class = isinstance(parent_context, ClassContext)
+                if parent_was_class:
+                    parent_context = AnonymousInstance(
+                        self, parent_context.parent_context, parent_context)
+
                 func = FunctionContext.from_context(
                     parent_context,
                     scope_node
                 )
-                if isinstance(parent_context, AnonymousInstance):
+                if parent_was_class:
                     func = BoundMethod(
                         instance=parent_context,
                         function=func
@@ -447,12 +452,7 @@ class Evaluator(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                class_context = ClassContext(self, parent_context, scope_node)
-                if child_is_funcdef:
-                    # anonymous instance
-                    return AnonymousInstance(self, parent_context, class_context)
-                else:
-                    return class_context
+                return ClassContext(self, parent_context, scope_node)
             elif scope_node.type == 'comp_for':
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
