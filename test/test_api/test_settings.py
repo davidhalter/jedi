@@ -23,8 +23,9 @@ def test_add_dynamic_mods(Script):
     assert result[0].description == 'class int'
 
 
-def test_add_bracket_after_function(Script):
-    api.settings.add_bracket_after_function = True
+def test_add_bracket_after_function(monkeypatch, Script):
+    settings = api.settings
+    monkeypatch.setattr(settings, 'add_bracket_after_function', True)
     script = Script('''\
 def foo():
     pass
