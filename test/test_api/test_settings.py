@@ -21,3 +21,13 @@ def test_add_dynamic_mods(Script):
     result = script.goto_definitions()
     assert len(result) == 1
     assert result[0].description == 'class int'
+
+
+def test_add_bracket_after_function(Script):
+    api.settings.add_bracket_after_function = True
+    script = Script('''\
+def foo():
+    pass
+foo''')
+    completions = script.completions()
+    assert completions[0].complete == '('
