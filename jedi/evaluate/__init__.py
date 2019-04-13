@@ -80,7 +80,7 @@ from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
 from jedi.evaluate.context import ClassContext, FunctionContext, \
-    AnonymousInstance, BoundMethod
+    AnonymousInstance, BoundMethod, MethodContext
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
@@ -434,15 +434,16 @@ class Evaluator(object):
             parent_context = from_scope_node(parent_scope)
 
             if is_funcdef:
-                parent_was_class = isinstance(parent_context, ClassContext)
+                parent_was_class = parent_context.is_class()
                 if parent_was_class:
                     parent_context = AnonymousInstance(
                         self, parent_context.parent_context, parent_context)
+                    cls = MethodContext
+                else:
+                    cls = FunctionContext
 
-                func = FunctionContext.from_context(
-                    parent_context,
-                    scope_node
-                )
+                func = cls.from_context(parent_context, scope_node)
+
                 if parent_was_class:
                     func = BoundMethod(
                         instance=parent_context,
