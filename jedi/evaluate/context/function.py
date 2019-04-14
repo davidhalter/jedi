@@ -159,6 +159,14 @@ class MethodContext(FunctionContext):
     def get_default_param_context(self):
         return self.class_context
 
+    def get_qualified_names(self):
+        # Need to implement this, because the parent context of a method
+        # context is not the class context but the module.
+        names = self.class_context.get_qualified_names()
+        if names is None:
+            return None
+        return names + [self.py__name__()]
+
 
 class FunctionExecutionContext(TreeContext):
     """

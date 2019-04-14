@@ -340,7 +340,19 @@ class BaseDefinition(object):
         if tree_name is None or parent_context is None or isinstance(self._name, ParamName):
             context_set = self._name.infer()
         else:
-            context_set = self._evaluator.goto_definitions(parent_context, tree_name)
+
+            # TODO remove this paragraph, it's ugly and shouldn't be needed
+            inferred = self._name.infer()
+            if inferred:
+                inferred = next(iter(inferred))
+                if isinstance(inferred, MethodContext):
+                    c = inferred.class_context
+                else:
+                    c = self._name.parent_context
+            else:
+                c = self._name.parent_context
+
+            context_set = self._evaluator.goto_definitions(c, tree_name)
         return [Definition(self._evaluator, d.name) for d in context_set]
 
     @property
