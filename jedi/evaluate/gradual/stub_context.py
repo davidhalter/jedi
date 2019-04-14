@@ -315,10 +315,21 @@ def stub_to_actual_context_set(stub_context):
 
     stub_only_module = stub_context.get_root_context()
     assert isinstance(stub_only_module, StubOnlyModuleContext), stub_only_module
-    non_stubs = stub_only_module.non_stub_context_set
+    non_stubs = stub_only_module.get_stub_contexts()
     for name in qualified_names:
         non_stubs = non_stubs.py__getattribute__(name)
     return non_stubs
+
+
+def stubify(parent_context, context):
+    if parent_context.is_stub():
+        return ContextSet(
+            c.stub_context
+            for c in stub_to_actual_context_set(context)
+            if c.stub_context is not None
+        ) or ContextSet([context])
+    else:
+        return with_stub_context_if_possible(context)
 
 
 class CompiledStubName(NameWrapper):

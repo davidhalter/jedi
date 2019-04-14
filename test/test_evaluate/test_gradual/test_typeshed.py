@@ -197,7 +197,7 @@ def _assert_is_same(d1, d2):
     'code', [
         'import os; os.walk',
         'from collections import Counter; Counter',
-        #'from collections import Counter; Counter.most_common',
+        'from collections import Counter; Counter.most_common',
     ])
 def test_goto_stubs_on_itself(Script, code, type_):
     """

@@ -14,7 +14,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.filters import ParamName
-from jedi.evaluate.context import FunctionExecutionContext
+from jedi.evaluate.context import FunctionExecutionContext, MethodContext
 from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
 from jedi.api.keywords import KeywordName
 
@@ -318,7 +318,16 @@ class BaseDefinition(object):
         if self._name.tree_name is None:
             return self
 
-        names = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
+        # TODO remove this paragraph, it's ugly and shouldn't be needed
+        inferred = self._name.infer()
+        if not inferred:
+            return None
+        inferred = next(iter(inferred))
+        if isinstance(inferred, MethodContext):
+            c = inferred.class_context
+        else:
+            c = self._name.parent_context
+        names = self._evaluator.goto(c, self._name.tree_name)
         return [Definition(self._evaluator, n) for n in names]
 
     def infer(self):
