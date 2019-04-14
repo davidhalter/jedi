@@ -439,12 +439,9 @@ class Evaluator(object):
                 if parent_was_class:
                     parent_context = AnonymousInstance(
                         self, parent_context.parent_context, parent_context)
-                    cls = MethodContext
-                else:
-                    cls = FunctionContext
 
-                func = cls.from_context(parent_context, scope_node)
-                func = next(iter(stubify(func)))
+                func = FunctionContext.from_context(parent_context, scope_node)
+                func = next(iter(stubify(parent_context, func)))
 
                 if parent_was_class:
                     func = BoundMethod(

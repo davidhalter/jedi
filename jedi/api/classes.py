@@ -320,13 +320,15 @@ class BaseDefinition(object):
 
         # TODO remove this paragraph, it's ugly and shouldn't be needed
         inferred = self._name.infer()
-        if not inferred:
-            return None
-        inferred = next(iter(inferred))
-        if isinstance(inferred, MethodContext):
-            c = inferred.class_context
+        if inferred:
+            inferred = next(iter(inferred))
+            if isinstance(inferred, MethodContext):
+                c = inferred.class_context
+            else:
+                c = self._name.parent_context
         else:
             c = self._name.parent_context
+
         names = self._evaluator.goto(c, self._name.tree_name)
         return [Definition(self._evaluator, n) for n in names]
 

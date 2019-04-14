@@ -266,6 +266,8 @@ def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
 
 
 def with_stub_context_if_possible(actual_context):
+    if actual_context.tree_node.type == 'lambdef':
+        return ContextSet([actual_context])
     assert actual_context.tree_node.type in ('classdef', 'funcdef')
     qualified_names = actual_context.get_qualified_names()
     stub_module = actual_context.get_root_context().stub_context
