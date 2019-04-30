@@ -625,6 +625,9 @@ class AnnotatedClass(AbstractAnnotatedClass):
     def get_given_types(self):
         return list(_iter_over_arguments(self._index_context, self._context_of_index))
 
+    def annotate_other_class(self, cls):
+        return AnnotatedClass(cls, self._index_context, self._context_of_index)
+
 
 class AnnotatedSubClass(AbstractAnnotatedClass):
     def __init__(self, class_context, given_types):

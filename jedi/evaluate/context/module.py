@@ -53,7 +53,7 @@ class SubModuleDictMixin(object):
             pass
         else:
             for path in method():
-                mods = iter_modules([path])
+                mods = self._iter_modules(path)
                 for module_loader, name, is_pkg in mods:
                     # It's obviously a relative import to the current module.
                     names[name] = SubModuleName(self, name)
@@ -66,6 +66,9 @@ class SubModuleDictMixin(object):
         #     names.append(Name('path', parent_context=self))
 
         return names
+
+    def _iter_modules(self, path):
+        return iter_modules([path])
 
 
 class ModuleMixin(SubModuleDictMixin):

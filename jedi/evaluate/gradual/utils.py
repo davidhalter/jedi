@@ -1,6 +1,5 @@
 import os
 
-from jedi.evaluate.imports import JediImportError
 from jedi.evaluate.gradual.typeshed import TYPESHED_PATH, create_stub_module
 
 
@@ -20,9 +19,8 @@ def load_proper_stub_module(evaluator, path, import_names, module_node):
             import_names = import_names[:-1]
 
     if import_names is not None:
-        try:
-            actual_context_set = evaluator.import_module(import_names, load_stub=False)
-        except JediImportError as e:
+        actual_context_set = evaluator.import_module(import_names)
+        if not actual_context_set:
             return None
 
         context_set = create_stub_module(

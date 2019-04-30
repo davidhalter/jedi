@@ -82,6 +82,14 @@ class CompiledObject(Context):
     def py__path__(self):
         return self.access_handle.py__path__()
 
+    @property
+    def string_names(self):
+        # For modules
+        return tuple(self.py__name__().split('.'))
+
+    def get_qualified_names(self):
+        return self.string_names
+
     def py__bool__(self):
         return self.access_handle.py__bool__()
 

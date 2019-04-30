@@ -86,10 +86,14 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible, \
     stub_to_actual_context_set, goto_with_stubs_if_possible, goto_non_stub, \
-    stubify
+    stubify, load_stubs
 
 
 def _execute(context, arguments):
+    if not context.get_root_context().is_stub():
+        stubs = load_stubs(context)
+        if stubs:
+            return stubs.execute(arguments)
     try:
         func = context.py__call__
     except AttributeError:
@@ -113,6 +117,7 @@ class Evaluator(object):
         self.latest_grammar = parso.load_grammar(version='3.6')
         self.memoize_cache = {}  # for memoize decorators
         self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
+        self.stub_module_cache = {}  # Dict[Tuple[str, ...], Optional[ModuleContext]]
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
         self.inferred_element_counts = {}
         self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`
@@ -141,7 +146,7 @@ class Evaluator(object):
         )
 
     def import_module(self, import_names, parent_module_context=None,
-                      sys_path=None, load_stub=True):
+                      sys_path=None):
         if sys_path is None:
             sys_path = self.get_sys_path()
         try:
@@ -149,8 +154,7 @@ class Evaluator(object):
         except KeyError:
             pass
 
-        context_set = self._import_module(import_names, parent_module_context,
-                                          sys_path, load_stub=load_stub)
+        context_set = self._import_module(import_names, parent_module_context, sys_path)
         self.module_cache.add(import_names, context_set)
         return context_set
 

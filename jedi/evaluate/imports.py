@@ -327,16 +327,15 @@ class Importer(object):
 
         context_set = [None]
         for i, name in enumerate(self.import_path):
-            try:
-                context_set = ContextSet.from_sets([
-                    self._evaluator.import_module(
-                        import_names[:i+1],
-                        parent_module_context,
-                        self._sys_path_with_modifications(),
-                    )
-                    for parent_module_context in context_set
-                ])
-            except JediImportError:
+            context_set = ContextSet.from_sets([
+                self._evaluator.import_module(
+                    import_names[:i+1],
+                    parent_module_context,
+                    self._sys_path_with_modifications(),
+                )
+                for parent_module_context in context_set
+            ])
+            if not context_set:
                 message = 'No module named ' + '.'.join(import_names)
                 _add_error(self.module_context, name, message)
                 return NO_CONTEXTS
@@ -424,11 +423,6 @@ class Importer(object):
         return names
 
 
-class JediImportError(Exception):
-    def __init__(self, import_names):
-        self.import_names = import_names
-
-
 @import_module_decorator
 def import_module(evaluator, import_names, parent_module_context, sys_path, load_stub=True):
     """
@@ -436,6 +430,8 @@ def import_module(evaluator, import_names, parent_module_context, sys_path, load
     """
     if import_names[0] in settings.auto_import_modules:
         module = _load_builtin_module(evaluator, import_names, sys_path)
+        if module is None:
+            return NO_CONTEXTS
         return ContextSet([module])
 
     module_name = '.'.join(import_names)
@@ -449,13 +445,13 @@ def import_module(evaluator, import_names, parent_module_context, sys_path, load
             is_global_search=True,
         )
         if is_pkg is None:
-            raise JediImportError(import_names)
+            return NO_CONTEXTS
     else:
         try:
             method = parent_module_context.py__path__
         except AttributeError:
             # The module is not a package.
-            raise JediImportError(import_names)
+            return NO_CONTEXTS
         else:
             paths = method()
             for path in paths:
@@ -472,7 +468,7 @@ def import_module(evaluator, import_names, parent_module_context, sys_path, load
                 if is_pkg is not None:
                     break
             else:
-                raise JediImportError(import_names)
+                return NO_CONTEXTS
 
     if isinstance(file_io_or_ns, ImplicitNSInfo):
         from jedi.evaluate.context.namespace import ImplicitNamespaceContext
@@ -483,6 +479,8 @@ def import_module(evaluator, import_names, parent_module_context, sys_path, load
         )
     elif file_io_or_ns is None:
         module = _load_builtin_module(evaluator, import_names, sys_path)
+        if module is None:
+            return NO_CONTEXTS
     else:
         module = _load_python_module(
             evaluator, file_io_or_ns, sys_path,
@@ -531,7 +529,7 @@ def _load_builtin_module(evaluator, import_names=None, sys_path=None):
     if module is None:
         # The file might raise an ImportError e.g. and therefore not be
         # importable.
-        raise JediImportError(import_names)
+        return None
     return module
 
 

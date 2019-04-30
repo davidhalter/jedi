@@ -7,8 +7,12 @@ from jedi.evaluate.helpers import execute_evaluated
 
 
 def builtin_from_name(evaluator, string):
-    builtins = evaluator.builtins_module
-    filter_ = next(builtins.get_filters())
+    typing_builtins_module = evaluator.builtins_module
+    if string in ('None', 'True', 'False'):
+        builtins, = typing_builtins_module.non_stub_context_set
+        filter_ = next(builtins.get_filters())
+    else:
+        filter_ = next(typing_builtins_module.get_filters())
     name, = filter_.get(string)
     context, = name.infer()
     return context

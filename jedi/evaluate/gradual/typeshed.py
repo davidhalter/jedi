@@ -6,7 +6,6 @@ from jedi._compatibility import FileNotFoundError
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
-from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.gradual.stub_context import StubModuleContext, \
     TypingModuleWrapper, StubOnlyModuleContext
 
@@ -89,13 +88,7 @@ def _cache_stub_file_map(version_info):
 
 
 def import_module_decorator(func):
-    def wrapper(evaluator, import_names, parent_module_context, sys_path, load_stub=True):
-        if import_names == ('_sqlite3',):
-            # TODO Maybe find a better solution for this?
-            # The problem is IMO how star imports are priorized and that
-            # there's no clear ordering.
-            return NO_CONTEXTS
-
+    def wrapper(evaluator, import_names, parent_module_context, sys_path):
         if import_names == ('os', 'path'):
             # This is a huge exception, we follow a nested import
             # ``os.path``, because it's a very important one in Python
@@ -103,41 +96,33 @@ def import_module_decorator(func):
             # ``os``.
             if parent_module_context is None:
                 parent_module_context, = evaluator.import_module(('os',))
-            return parent_module_context.py__getattribute__('path')
-
-        from jedi.evaluate.imports import JediImportError
-        try:
-            context_set = func(
+            actual_context_set = parent_module_context.py__getattribute__('path')
+        else:
+            actual_context_set = func(
                 evaluator,
                 import_names,
                 parent_module_context,
                 sys_path,
             )
-        except JediImportError:
-            if import_names == ('typing',):
-                # TODO this is also quite ugly, please refactor.
-                context_set = NO_CONTEXTS
-            else:
-                raise
+        stub = _try_to_load_stub(evaluator, actual_context_set, parent_module_context, import_names)
+        if stub is not None:
+            return ContextSet(stub)
+        return actual_context_set
 
-        if not load_stub:
-            return context_set
-        return try_to_merge_with_stub(evaluator, parent_module_context,
-                                      import_names, context_set)
     return wrapper
 
 
-def try_to_merge_with_stub(evaluator, parent_module_context, import_names, actual_context_set):
+def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, import_names):
     import_name = import_names[-1]
     map_ = None
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(evaluator.grammar.version_info)
-    elif isinstance(parent_module_context, StubModuleContext):
-        if not parent_module_context.stub_context.is_package:
+    elif isinstance(parent_module_context, StubOnlyModuleContext):
+        if not parent_module_context.is_package:
             # Only if it's a package (= a folder) something can be
             # imported.
-            return actual_context_set
-        path = parent_module_context.stub_context.py__path__()
+            return None
+        path = parent_module_context.py__path__()
         map_ = _merge_create_stub_map(path)
 
     if map_ is not None:
@@ -150,10 +135,14 @@ def try_to_merge_with_stub(evaluator, parent_module_context, import_names, actua
                 # TODO maybe empty cache?
                 pass
             else:
-                return create_stub_module(evaluator, actual_context_set,
-                                          stub_module_node, path, import_names)
+                return create_stub_module(
+                    evaluator, actual_context_set, stub_module_node, path,
+                    import_names
+                )
+    evaluator.stub_module_cache[import_names] = None
     # If no stub is found, just return the default.
-    return actual_context_set
+
+    return None
 
 
 def create_stub_module(evaluator, actual_context_set, stub_module_node, path, import_names):
@@ -171,4 +160,5 @@ def create_stub_module(evaluator, actual_context_set, stub_module_node, path, im
         code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
         is_package=file_name == '__init__.pyi',
     )
-    return stub_module_context.get_stub_contexts()
+    evaluator.stub_module_cache[import_names] = stub_module_context
+    return [stub_module_context]

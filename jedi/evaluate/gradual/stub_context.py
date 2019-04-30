@@ -1,3 +1,5 @@
+import os
+
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.utils import safe_property
@@ -10,7 +12,8 @@ from jedi.evaluate.filters import ParserTreeFilter, \
     NameWrapper, AbstractFilter, TreeNameDefinition
 from jedi.evaluate.compiled.context import CompiledName
 from jedi.evaluate.utils import to_list
-from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, TypingModuleName
+from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, \
+    TypingModuleName, AnnotatedClass
 
 
 class _StubContextFilterMixin(object):
@@ -113,13 +116,13 @@ class _StubOnlyContextMixin(object):
     def _get_base_filters(self, filters, search_global=False,
                           until_position=None, origin_scope=None):
         next(filters)  # Ignore the first filter and replace it with our own
-        yield self.get_stub_only_filter(
-            parent_contexts=self.get_stub_contexts(),
-            non_stub_filters=list(self._get_first_non_stub_filters()),
+        stub_only_filters = self._get_stub_only_filters(
             search_global=search_global,
             until_position=until_position,
             origin_scope=origin_scope,
         )
+        for f in stub_only_filters:
+            yield f
 
         for f in filters:
             yield f
@@ -169,6 +172,15 @@ class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
         for f in self._get_base_filters(filters, search_global, until_position, origin_scope):
             yield f
 
+    def _iter_modules(self, path):
+        dirs = os.listdir(path)
+        for name in dirs:
+            if os.path.isdir(os.path.join(path, name)):
+                yield (None, name, True)
+            if name.endswith('.pyi'):
+                yield (None, name[:-4], True)
+        return []
+
 
 class StubOnlyClass(_StubOnlyContextMixin, ClassMixin, ContextWrapper):
     pass
@@ -209,8 +221,7 @@ class CompiledStubClass(_StubOnlyContextMixin, _CompiledStubContext, ClassMixin)
 
 
 class TypingModuleWrapper(StubOnlyModuleContext):
-    # TODO should use this instead of the isinstance check
-    def get_filterss(self, *args, **kwargs):
+    def get_filters(self, *args, **kwargs):
         filters = super(TypingModuleWrapper, self).get_filters(*args, **kwargs)
         yield TypingModuleFilterWrapper(next(filters))
         for f in filters:
@@ -332,6 +343,35 @@ def stubify(parent_context, context):
         ) or ContextSet([context])
     else:
         return with_stub_context_if_possible(context)
+
+
+def _load_or_get_stub_module(evaluator, names):
+    return evaluator.stub_module_cache.get(names)
+
+
+def load_stubs(context):
+    root_context = context.get_root_context()
+    stub_module = _load_or_get_stub_module(
+        context.evaluator,
+        root_context.string_names
+    )
+    if stub_module is None:
+        return NO_CONTEXTS
+
+    qualified_names = context.get_qualified_names()
+    if qualified_names is None:
+        return NO_CONTEXTS
+
+    stub_contexts = ContextSet([stub_module])
+    for name in qualified_names:
+        stub_contexts = stub_contexts.py__getattribute__(name)
+
+    if isinstance(context, AnnotatedClass):
+        return ContextSet([
+            context.annotate_other_class(c) if c.is_class() else c
+            for c in stub_contexts
+        ])
+    return stub_contexts
 
 
 class CompiledStubName(NameWrapper):
