@@ -12,13 +12,14 @@ class FlaskPlugin(BasePlugin):
                 # New style.
                 ipath = (u'flask_' + import_names[2]),
                 context_set = callback(evaluator, ipath, None, sys_path)
-                if not context_set:
-                    context_set = callback(evaluator, (u'flaskext',), None, sys_path)
-                    return callback(
-                        evaluator,
-                        (u'flaskext', import_names[2]),
-                        next(iter(context_set)),
-                        sys_path
-                    )
+                if context_set:
+                    return context_set
+                context_set = callback(evaluator, (u'flaskext',), None, sys_path)
+                return callback(
+                    evaluator,
+                    (u'flaskext', import_names[2]),
+                    next(iter(context_set)),
+                    sys_path
+                )
             return callback(evaluator, import_names, module_context, sys_path)
         return wrapper
