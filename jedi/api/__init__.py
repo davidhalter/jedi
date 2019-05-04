@@ -39,6 +39,8 @@ from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
 #from jedi.evaluate.gradual.typeshed import try_to_merge_with_stub
+from jedi.evaluate.gradual.stub_context import try_stubs_to_actual_context_set, \
+    try_stubs_to_actual_names
 from jedi.evaluate.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -252,6 +254,8 @@ class Script(object):
 
         context = self._evaluator.create_context(self._get_module(), leaf)
         definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
+        # We don't want stubs here we want the actual contexts, if possible.
+        definitions = try_stubs_to_actual_context_set(definitions)
 
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]
@@ -304,6 +308,7 @@ class Script(object):
                 return isinstance(name, imports.SubModuleName)
 
         names = filter_follow_imports(names, check)
+        names = try_stubs_to_actual_names(names)
 
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)

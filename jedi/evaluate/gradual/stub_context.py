@@ -3,11 +3,11 @@ import os
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.utils import safe_property
-from jedi.evaluate.base_context import ContextWrapper, ContextSet, NO_CONTEXTS
+from jedi.evaluate.base_context import ContextWrapper, ContextSet, \
+    NO_CONTEXTS, iterator_to_context_set
 from jedi.evaluate.context.function import FunctionMixin, FunctionContext, MethodContext
 from jedi.evaluate.context.klass import ClassMixin, ClassContext
 from jedi.evaluate.context.module import ModuleMixin, ModuleContext
-from jedi.evaluate.base_context import iterator_to_context_set
 from jedi.evaluate.filters import ParserTreeFilter, \
     NameWrapper, AbstractFilter, TreeNameDefinition
 from jedi.evaluate.compiled.context import CompiledName
@@ -326,12 +326,38 @@ def stub_to_actual_context_set(stub_context):
     if qualified_names is None:
         return NO_CONTEXTS
 
-    stub_only_module = stub_context.get_root_context()
-    assert isinstance(stub_only_module, StubOnlyModuleContext), stub_only_module
-    non_stubs = stub_only_module.get_stub_contexts()
+    stub_module = stub_context.get_root_context()
+
+    if not stub_module.is_stub():
+        return ContextSet([stub_context])
+
+    assert isinstance(stub_module, StubOnlyModuleContext), stub_module
+    non_stubs = stub_module.non_stub_context_set
     for name in qualified_names:
         non_stubs = non_stubs.py__getattribute__(name)
     return non_stubs
+
+
+def try_stubs_to_actual_context_set(stub_contexts):
+    return ContextSet.from_sets(
+        stub_to_actual_context_set(stub_context) or ContextSet(stub_context)
+        for stub_context in stub_contexts
+    )
+
+
+@to_list
+def try_stubs_to_actual_names(names):
+    for name in names:
+        parent_context = name.parent_context
+        if name.tree_name is None:
+            continue
+
+        if not parent_context.get_root_context().is_stub():
+            yield name
+            continue
+
+        for n in goto_non_stub(parent_context, name.tree_name):
+            yield n
 
 
 def stubify(parent_context, context):
@@ -371,6 +397,37 @@ def load_stubs(context):
             context.annotate_other_class(c) if c.is_class() else c
             for c in stub_contexts
         ])
+    return stub_contexts
+
+
+def _load_stub_module(module):
+    if module.is_stub():
+        return module
+    from jedi.evaluate.gradual.typeshed import _try_to_load_stub
+    return _try_to_load_stub(
+        module.evaluator,
+        ContextSet([module]),
+        parent_module_context=None,
+        import_names=module.string_names
+    )
+
+
+def name_to_stub(name):
+    return ContextSet.from_sets(to_stub(c) for c in name.infer())
+
+
+def to_stub(context):
+    if context.is_stub():
+        return ContextSet([context])
+
+    qualified_names = context.get_qualified_names()
+    stub_module = _load_stub_module(context.get_root_context())
+    if stub_module is None or qualified_names is None:
+        return NO_CONTEXTS
+
+    stub_contexts = ContextSet([stub_module])
+    for name in qualified_names:
+        stub_contexts = stub_contexts.py__getattribute__(name)
     return stub_contexts
 
 

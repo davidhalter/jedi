@@ -16,6 +16,7 @@ from jedi.evaluate.imports import ImportName
 from jedi.evaluate.filters import ParamName
 from jedi.evaluate.context import FunctionExecutionContext, MethodContext
 from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
+from jedi.evaluate.gradual.stub_context import name_to_stub
 from jedi.api.keywords import KeywordName
 
 
@@ -310,8 +311,8 @@ class BaseDefinition(object):
             return [self]
 
         return [
-            Definition(self._evaluator, d.stub_context.name)
-            for d in self._name.infer() if d.stub_context is not None
+            Definition(self._evaluator, stub_def.name)
+            for stub_def in name_to_stub(self._name)
         ]
 
     def goto_assignments(self):

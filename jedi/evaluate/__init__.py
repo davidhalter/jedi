@@ -146,7 +146,7 @@ class Evaluator(object):
         )
 
     def import_module(self, import_names, parent_module_context=None,
-                      sys_path=None):
+                      sys_path=None, prefer_stubs=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
         try:
@@ -154,7 +154,8 @@ class Evaluator(object):
         except KeyError:
             pass
 
-        context_set = self._import_module(import_names, parent_module_context, sys_path)
+        context_set = self._import_module(import_names, parent_module_context,
+                                          sys_path, prefer_stubs=prefer_stubs)
         self.module_cache.add(import_names, context_set)
         return context_set
 

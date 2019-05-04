@@ -88,14 +88,14 @@ def _cache_stub_file_map(version_info):
 
 
 def import_module_decorator(func):
-    def wrapper(evaluator, import_names, parent_module_context, sys_path):
+    def wrapper(evaluator, import_names, parent_module_context, sys_path, prefer_stubs):
         if import_names == ('os', 'path'):
             # This is a huge exception, we follow a nested import
             # ``os.path``, because it's a very important one in Python
             # that is being achieved by messing with ``sys.modules`` in
             # ``os``.
             if parent_module_context is None:
-                parent_module_context, = evaluator.import_module(('os',))
+                parent_module_context, = evaluator.import_module(('os',), prefer_stubs=False)
             actual_context_set = parent_module_context.py__getattribute__('path')
         else:
             actual_context_set = func(
@@ -104,15 +104,23 @@ def import_module_decorator(func):
                 parent_module_context,
                 sys_path,
             )
+        if not prefer_stubs:
+            return actual_context_set
+
         stub = _try_to_load_stub(evaluator, actual_context_set, parent_module_context, import_names)
         if stub is not None:
-            return ContextSet(stub)
+            return ContextSet([stub])
         return actual_context_set
 
     return wrapper
 
 
 def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, import_names):
+    try:
+        return evaluator.stub_module_cache[import_names]
+    except KeyError:
+        pass
+
     import_name = import_names[-1]
     map_ = None
     if len(import_names) == 1:
@@ -161,4 +169,4 @@ def create_stub_module(evaluator, actual_context_set, stub_module_node, path, im
         is_package=file_name == '__init__.pyi',
     )
     evaluator.stub_module_cache[import_names] = stub_module_context
-    return [stub_module_context]
+    return stub_module_context
