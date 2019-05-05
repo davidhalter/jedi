@@ -515,7 +515,7 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
         )
         return filter_
         # XXX
-        return cls.stub_context.get_stub_only_filter(
+        return cls.stub_context.get_stub_filter(
             # Take the first filter, which is here to filter module contents
             # and wrap it.
             self.parent_context,
