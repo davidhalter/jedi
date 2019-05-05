@@ -44,7 +44,7 @@ class Keyword(object):
         """ For a `parsing.Name` like comparision """
         return [self.name]
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         return imitate_pydoc(self.name.string_name)
 
     def __repr__(self):

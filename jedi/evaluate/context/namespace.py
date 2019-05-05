@@ -53,5 +53,8 @@ class ImplicitNamespaceContext(Context, SubModuleDictMixin):
     def py__name__(self):
         return self._fullname
 
+    def is_stub(self):
+        return False
+
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._fullname)

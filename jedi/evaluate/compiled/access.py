@@ -197,7 +197,7 @@ class DirectObjectAccess(object):
         except AttributeError:
             return None
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         return force_unicode(inspect.getdoc(self._obj)) or u''
 
     def py__name__(self):

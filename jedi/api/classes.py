@@ -678,6 +678,13 @@ class CallSignature(Definition):
         )
 
 
+def _format_signatures(context):
+    return '\n'.join(
+        signature.to_string()
+        for signature in context.get_signatures()
+    )
+
+
 class _Help(object):
     """
     Temporary implementation, will be used as `Script.help() or something in
@@ -702,15 +709,29 @@ class _Help(object):
 
         See :attr:`doc` for example.
         """
+        full_doc = ''
         # Using the first docstring that we see.
         for context in self._get_contexts(fast=fast):
-            doc = context.py__doc__(include_call_signature=not raw)
-            if doc:
-                return doc
-            if not context.is_stub():
-                for c in stub_to_actual_context_set(context):
-                    doc = c.py__doc__(include_call_signature=not raw)
-                    if doc:
-                        return doc
+            if full_doc:
+                # In case we have multiple contexts, just return all of them
+                # separated by a few dashes.
+                full_doc += '\n' + '-' * 30 + '\n'
 
-        return ''
+            doc = context.py__doc__()
+
+            if raw:
+                signature_text = ''
+            else:
+                signature_text = _format_signatures(context)
+            if not doc and context.is_stub():
+                for c in stub_to_actual_context_set(context):
+                    doc = c.py__doc__()
+                    if doc:
+                        break
+
+            if signature_text and doc:
+                full_doc += signature_text + '\n\n' + doc
+            else:
+                full_doc += signature_text + doc
+
+        return full_doc

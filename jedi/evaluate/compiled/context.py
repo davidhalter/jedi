@@ -108,7 +108,7 @@ class CompiledObject(Context):
     def is_stub(self):
         return False
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         return self.access_handle.py__doc__()
 
     def get_param_names(self):

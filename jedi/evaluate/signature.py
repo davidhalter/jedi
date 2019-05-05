@@ -1,4 +1,5 @@
 from abc import abstractproperty
+from jedi.parser_utils import get_call_signature
 
 
 class AbstractSignature(object):
@@ -38,7 +39,7 @@ class TreeSignature(AbstractSignature):
         return self._function_context.tree_node.annotation
 
     def to_string(self, normalize=False):
-        return self._function_context.tree_node
+        return get_call_signature(self._function_context.tree_node)
 
 
 class BuiltinSignature(AbstractSignature):

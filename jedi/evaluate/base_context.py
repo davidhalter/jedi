@@ -12,7 +12,7 @@ from parso.python.tree import ExprStmt, CompFor
 
 from jedi import debug
 from jedi._compatibility import Python3Method, zip_longest, unicode
-from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
+from jedi.parser_utils import clean_scope_docstring
 from jedi.common import BaseContextSet, BaseContext
 from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
 from jedi.evaluate.utils import safe_property
@@ -168,16 +168,13 @@ class Context(HelperContextMixin, BaseContext):
         """
         return True
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         try:
             self.tree_node.get_doc_node
         except AttributeError:
             return ''
         else:
-            if include_call_signature:
-                return get_doc_with_call_signature(self.tree_node)
-            else:
-                return clean_scope_docstring(self.tree_node)
+            return clean_scope_docstring(self.tree_node)
         return None
 
     def py__stop_iteration_returns(self):

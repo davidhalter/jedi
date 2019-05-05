@@ -181,19 +181,6 @@ def get_call_signature_for_any(any_node):
     return call_signature
 
 
-def get_doc_with_call_signature(scope_node):
-    """
-    Return a document string including call signature.
-    """
-    call_signature = get_call_signature_for_any(scope_node)
-    doc = clean_scope_docstring(scope_node)
-    if call_signature is None:
-        return doc
-    if not doc:
-        return call_signature
-    return '%s\n\n%s' % (call_signature, doc)
-
-
 def move(node, line_offset):
     """
     Move the `Node` start_pos.
