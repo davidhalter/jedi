@@ -324,6 +324,7 @@ class Importer(object):
             force_unicode(i.value if isinstance(i, tree.Name) else i)
             for i in self.import_path
         )
+        sys_path = self._sys_path_with_modifications()
 
         context_set = [None]
         for i, name in enumerate(self.import_path):
@@ -331,9 +332,8 @@ class Importer(object):
                 self._evaluator.import_module(
                     import_names[:i+1],
                     parent_module_context,
-                    self._sys_path_with_modifications(),
-                )
-                for parent_module_context in context_set
+                    sys_path
+                ) for parent_module_context in context_set
             ])
             if not context_set:
                 message = 'No module named ' + '.'.join(import_names)

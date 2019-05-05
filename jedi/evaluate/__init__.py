@@ -149,15 +149,8 @@ class Evaluator(object):
                       sys_path=None, prefer_stubs=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
-        try:
-            return self.module_cache.get(import_names)
-        except KeyError:
-            pass
-
-        context_set = self._import_module(import_names, parent_module_context,
-                                          sys_path, prefer_stubs=prefer_stubs)
-        self.module_cache.add(import_names, context_set)
-        return context_set
+        return self._import_module(import_names, parent_module_context,
+                                   sys_path, prefer_stubs=prefer_stubs)
 
     @property
     @evaluator_function_cache()

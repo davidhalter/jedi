@@ -88,21 +88,28 @@ def _cache_stub_file_map(version_info):
 
 def import_module_decorator(func):
     def wrapper(evaluator, import_names, parent_module_context, sys_path, prefer_stubs):
-        if import_names == ('os', 'path'):
-            # This is a huge exception, we follow a nested import
-            # ``os.path``, because it's a very important one in Python
-            # that is being achieved by messing with ``sys.modules`` in
-            # ``os``.
-            if parent_module_context is None:
-                parent_module_context, = evaluator.import_module(('os',), prefer_stubs=False)
-            actual_context_set = parent_module_context.py__getattribute__('path')
-        else:
-            actual_context_set = func(
-                evaluator,
-                import_names,
-                parent_module_context,
-                sys_path,
-            )
+        try:
+            actual_context_set = evaluator.module_cache.get(import_names)
+        except KeyError:
+            if import_names == ('os', 'path'):
+                # This is a huge exception, we follow a nested import
+                # ``os.path``, because it's a very important one in Python
+                # that is being achieved by messing with ``sys.modules`` in
+                # ``os``.
+                if parent_module_context is None:
+                    parent_module_context, = evaluator.import_module(('os',), prefer_stubs=False)
+                actual_context_set = parent_module_context.py__getattribute__('path')
+            else:
+                if parent_module_context is not None and parent_module_context.is_stub():
+                    parent_module_contexts = parent_module_context.non_stub_context_set
+                else:
+                    parent_module_contexts = [parent_module_context]
+                actual_context_set = ContextSet.from_sets(
+                    func(evaluator, import_names, p, sys_path,)
+                    for p in parent_module_contexts
+                )
+            evaluator.module_cache.add(import_names, actual_context_set)
+
         if not prefer_stubs:
             return actual_context_set
 
