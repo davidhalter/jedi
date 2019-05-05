@@ -1,13 +1,11 @@
 import os
 
-from jedi.cache import memoize_method
-from jedi.parser_utils import get_call_signature_for_any
 from jedi.evaluate.base_context import ContextWrapper, ContextSet, \
-    NO_CONTEXTS, iterator_to_context_set
+    NO_CONTEXTS
 from jedi.evaluate.context.klass import ClassMixin, ClassContext
 from jedi.evaluate.context.module import ModuleContext
 from jedi.evaluate.filters import ParserTreeFilter, \
-    NameWrapper, TreeNameDefinition
+    TreeNameDefinition
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, AnnotatedClass
 
@@ -78,40 +76,6 @@ class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
 
 class StubOnlyClass(_StubOnlyContextMixin, ClassMixin, ContextWrapper):
     pass
-
-
-class _CompiledStubContext(ContextWrapper):
-    def __init__(self, stub_context, compiled_context):
-        super(_CompiledStubContext, self).__init__(stub_context)
-        self._compiled_context = compiled_context
-
-    def is_stub(self):
-        return True
-
-    def py__doc__(self, include_call_signature=False):
-        doc = self._compiled_context.py__doc__()
-        if include_call_signature:
-            call_sig = get_call_signature_for_any(self._wrapped_context.tree_node)
-            if call_sig is not None:
-                doc = call_sig + '\n\n' + doc
-        return doc
-
-
-class CompiledStubFunction(_CompiledStubContext):
-    pass
-
-
-class CompiledStubClass(_StubOnlyContextMixin, _CompiledStubContext, ClassMixin):
-    def _get_first_non_stub_filters(self):
-        yield next(self._compiled_context.get_filters(search_global=False))
-
-    def get_filters(self, search_global=False, until_position=None,
-                    origin_scope=None, **kwargs):
-        filters = self._wrapped_context.get_filters(
-            search_global, until_position, origin_scope, **kwargs
-        )
-        for f in self._get_base_filters(filters, search_global, until_position, origin_scope):
-            yield f
 
 
 class TypingModuleWrapper(StubOnlyModuleContext):
@@ -271,42 +235,6 @@ def to_stub(context):
     for name in qualified_names:
         stub_contexts = stub_contexts.py__getattribute__(name)
     return stub_contexts
-
-
-class CompiledStubName(NameWrapper):
-    def __init__(self, parent_context, compiled_name, stub_name):
-        super(CompiledStubName, self).__init__(stub_name)
-        self.parent_context = parent_context
-        self._compiled_name = compiled_name
-
-    @memoize_method
-    @iterator_to_context_set
-    def infer(self):
-        compiled_contexts = self._compiled_name.infer()
-        stub_contexts = self._wrapped_name.infer()
-
-        if not compiled_contexts:
-            for c in stub_contexts:
-                yield c
-
-        for actual_context in compiled_contexts:
-            for stub_context in stub_contexts:
-                if isinstance(stub_context, _CompiledStubContext):
-                    # It's already a stub context, e.g. bytes in Python 2
-                    # behaves this way.
-                    yield stub_context
-                elif stub_context.is_class():
-                    assert not isinstance(stub_context, CompiledStubClass), \
-                        "%s and %s" % (self._wrapped_name, self._compiled_name)
-                    yield CompiledStubClass.create_cached(
-                        stub_context.evaluator, stub_context, actual_context)
-                elif stub_context.is_function():
-                    yield CompiledStubFunction.create_cached(
-                        stub_context.evaluator, stub_context, actual_context)
-                else:
-                    yield stub_context
-            if not stub_contexts:
-                yield actual_context
 
 
 class StubOnlyName(TreeNameDefinition):
