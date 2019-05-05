@@ -23,20 +23,6 @@ class _StubContextMixin(object):
             **filter_kwargs
         )]
 
-    def _get_base_filters(self, filters, search_global=False,
-                          until_position=None, origin_scope=None):
-        next(filters)  # Ignore the first filter and replace it with our own
-        stub_filters = self._get_stub_filters(
-            search_global=search_global,
-            until_position=until_position,
-            origin_scope=origin_scope,
-        )
-        for f in stub_filters:
-            yield f
-
-        for f in filters:
-            yield f
-
 
 class StubModuleContext(_StubContextMixin, ModuleContext):
     _add_non_stubs_in_filter = True
@@ -61,7 +47,16 @@ class StubModuleContext(_StubContextMixin, ModuleContext):
         filters = super(StubModuleContext, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
-        for f in self._get_base_filters(filters, search_global, until_position, origin_scope):
+        next(filters)  # Ignore the first filter and replace it with our own
+        stub_filters = self._get_stub_filters(
+            search_global=search_global,
+            until_position=until_position,
+            origin_scope=origin_scope,
+        )
+        for f in stub_filters:
+            yield f
+
+        for f in filters:
             yield f
 
     def _iter_modules(self, path):
