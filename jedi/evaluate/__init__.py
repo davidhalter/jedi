@@ -84,7 +84,7 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible, \
+from jedi.evaluate.gradual.stub_context import \
     stub_to_actual_context_set, goto_with_stubs_if_possible, goto_non_stub, \
     load_stubs
 
@@ -287,7 +287,7 @@ class Evaluator(object):
                 if context.is_stub():
                     return stub_to_actual_context_set(c)
                 else:
-                    return with_stub_context_if_possible(c)
+                    return ContextSet([c])
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')

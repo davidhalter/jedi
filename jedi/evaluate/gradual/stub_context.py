@@ -255,27 +255,6 @@ def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
         )
 
 
-def with_stub_context_if_possible(actual_context):
-    return ContextSet([actual_context])
-    # XXX
-    if actual_context.tree_node.type == 'lambdef':
-        return ContextSet([actual_context])
-    assert actual_context.tree_node.type in ('classdef', 'funcdef')
-    qualified_names = actual_context.get_qualified_names()
-    stub_module = actual_context.get_root_context().stub_context
-    if stub_module is None or qualified_names is None:
-        return ContextSet([actual_context])
-
-    stub_contexts = ContextSet([stub_module])
-    for name in qualified_names:
-        stub_contexts = stub_contexts.py__getattribute__(name)
-    return _add_stub_if_possible(
-        actual_context.parent_context,
-        actual_context,
-        stub_contexts,
-    )
-
-
 def goto_with_stubs_if_possible(name):
     return [name]
     # XXX
