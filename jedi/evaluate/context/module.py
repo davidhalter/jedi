@@ -1,10 +1,8 @@
 import re
 import os
 
-from parso import python_bytes_to_unicode
-
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi._compatibility import iter_modules, all_suffixes
+from jedi._compatibility import iter_modules
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
@@ -170,7 +168,7 @@ class ModuleContext(ModuleMixin, TreeContext):
         if self._path is not None and self._path.endswith('.pyi'):
             # Currently this is the way how we identify stubs when e.g. goto is
             # used in them. This could be changed if stubs would be identified
-            # sooner and used as StubOnlyModuleContext.
+            # sooner and used as StubModuleContext.
             return True
         return super(ModuleContext, self).is_stub()
 

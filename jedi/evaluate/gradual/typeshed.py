@@ -6,7 +6,7 @@ from jedi._compatibility import FileNotFoundError
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.base_context import ContextSet
-from jedi.evaluate.gradual.stub_context import TypingModuleWrapper, StubOnlyModuleContext
+from jedi.evaluate.gradual.stub_context import TypingModuleWrapper, StubModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
@@ -124,7 +124,7 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, impo
     map_ = None
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(evaluator.grammar.version_info)
-    elif isinstance(parent_module_context, StubOnlyModuleContext):
+    elif isinstance(parent_module_context, StubModuleContext):
         if not parent_module_context.is_package:
             # Only if it's a package (= a folder) something can be
             # imported.
@@ -156,7 +156,7 @@ def create_stub_module(evaluator, actual_context_set, stub_module_node, path, im
     if import_names == ('typing',):
         module_cls = TypingModuleWrapper
     else:
-        module_cls = StubOnlyModuleContext
+        module_cls = StubModuleContext
     file_name = os.path.basename(path)
     stub_module_context = module_cls(
         actual_context_set, evaluator, stub_module_node,

@@ -10,14 +10,14 @@ from jedi.evaluate.utils import to_list
 from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, AnnotatedClass
 
 
-class _StubOnlyContextMixin(object):
+class _StubContextMixin(object):
     _add_non_stubs_in_filter = False
 
     def is_stub(self):
         return True
 
     def _get_stub_only_filters(self, **filter_kwargs):
-        return [StubOnlyFilter(
+        return [StubFilter(
             self.evaluator,
             context=self,
             **filter_kwargs
@@ -38,11 +38,11 @@ class _StubOnlyContextMixin(object):
             yield f
 
 
-class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
+class StubModuleContext(_StubContextMixin, ModuleContext):
     _add_non_stubs_in_filter = True
 
     def __init__(self, non_stub_context_set, *args, **kwargs):
-        super(StubOnlyModuleContext, self).__init__(*args, **kwargs)
+        super(StubModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
 
     def _get_first_non_stub_filters(self):
@@ -50,7 +50,7 @@ class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
             yield next(context.get_filters(search_global=False))
 
     def _get_stub_only_filters(self, search_global, **filter_kwargs):
-        stub_filters = super(StubOnlyModuleContext, self)._get_stub_only_filters(
+        stub_filters = super(StubModuleContext, self)._get_stub_only_filters(
             search_global=search_global, **filter_kwargs
         )
         stub_filters += self.iter_star_filters(search_global=search_global)
@@ -58,7 +58,7 @@ class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
 
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
-        filters = super(StubOnlyModuleContext, self).get_filters(
+        filters = super(StubModuleContext, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
         for f in self._get_base_filters(filters, search_global, until_position, origin_scope):
@@ -74,11 +74,11 @@ class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
         return []
 
 
-class StubOnlyClass(_StubOnlyContextMixin, ClassMixin, ContextWrapper):
+class StubClass(_StubContextMixin, ClassMixin, ContextWrapper):
     pass
 
 
-class TypingModuleWrapper(StubOnlyModuleContext):
+class TypingModuleWrapper(StubModuleContext):
     def get_filters(self, *args, **kwargs):
         filters = super(TypingModuleWrapper, self).get_filters(*args, **kwargs)
         yield TypingModuleFilterWrapper(next(filters))
@@ -123,7 +123,7 @@ def stub_to_actual_context_set(stub_context, ignore_compiled=False):
     if qualified_names is None:
         return NO_CONTEXTS
 
-    assert isinstance(stub_module, StubOnlyModuleContext), stub_module
+    assert isinstance(stub_module, StubModuleContext), stub_module
     non_stubs = stub_module.non_stub_context_set
     if ignore_compiled:
         non_stubs = non_stubs.filter(lambda c: not c.is_compiled())
@@ -237,27 +237,27 @@ def to_stub(context):
     return stub_contexts
 
 
-class StubOnlyName(TreeNameDefinition):
+class _StubName(TreeNameDefinition):
     def infer(self):
-        inferred = super(StubOnlyName, self).infer()
+        inferred = super(_StubName, self).infer()
         if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
             return [VersionInfo(c) for c in inferred]
 
         return [
-            StubOnlyClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
+            StubClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
             for c in inferred
         ]
 
 
-class StubOnlyFilter(ParserTreeFilter):
-    name_class = StubOnlyName
+class StubFilter(ParserTreeFilter):
+    name_class = _StubName
 
     def __init__(self, *args, **kwargs):
         self._search_global = kwargs.pop('search_global')  # Python 2 :/
-        super(StubOnlyFilter, self).__init__(*args, **kwargs)
+        super(StubFilter, self).__init__(*args, **kwargs)
 
     def _is_name_reachable(self, name):
-        if not super(StubOnlyFilter, self)._is_name_reachable(name):
+        if not super(StubFilter, self)._is_name_reachable(name):
             return False
 
         if not self._search_global:
