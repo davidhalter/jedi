@@ -11,8 +11,6 @@ from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, AnnotatedCla
 
 
 class _StubContextMixin(object):
-    _add_non_stubs_in_filter = False
-
     def is_stub(self):
         return True
 
@@ -25,8 +23,6 @@ class _StubContextMixin(object):
 
 
 class StubModuleContext(_StubContextMixin, ModuleContext):
-    _add_non_stubs_in_filter = True
-
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
