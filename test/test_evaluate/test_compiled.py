@@ -4,6 +4,7 @@ import pytest
 
 from jedi.evaluate import compiled
 from jedi.evaluate.helpers import execute_evaluated
+from jedi.evaluate.gradual.stub_context import stub_to_actual_context_set
 
 
 def test_simple(evaluator, environment):
@@ -22,14 +23,15 @@ def test_builtin_loading(evaluator):
     string, = evaluator.builtins_module.py__getattribute__(u'str')
     from_name, = string.py__getattribute__(u'__init__')
     assert from_name.tree_node
-    assert from_name.py__doc__()
+    assert not from_name.py__doc__()  # It's a stub
 
 
-def test_fake_docstr(evaluator):
+def test_next_docstr(evaluator):
     next_ = compiled.builtin_from_name(evaluator, u'next')
-    assert next_.py__doc__()
     assert next_.tree_node is not None
-    assert next_.py__doc__() == next.__doc__
+    assert next_.py__doc__() == ''  # It's a stub
+    for non_stub in stub_to_actual_context_set(next_):
+        assert non_stub.py__doc__() == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():
