@@ -5,9 +5,8 @@ from parso.file_io import FileIO
 from jedi._compatibility import FileNotFoundError
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
-from jedi.evaluate.gradual.stub_context import StubModuleContext, \
-    TypingModuleWrapper, StubOnlyModuleContext
+from jedi.evaluate.base_context import ContextSet
+from jedi.evaluate.gradual.stub_context import TypingModuleWrapper, StubOnlyModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')

@@ -2,89 +2,14 @@ import os
 
 from jedi.cache import memoize_method
 from jedi.parser_utils import get_call_signature_for_any
-from jedi.evaluate.utils import safe_property
 from jedi.evaluate.base_context import ContextWrapper, ContextSet, \
     NO_CONTEXTS, iterator_to_context_set
-from jedi.evaluate.context.function import FunctionMixin, FunctionContext, MethodContext
 from jedi.evaluate.context.klass import ClassMixin, ClassContext
-from jedi.evaluate.context.module import ModuleMixin, ModuleContext
+from jedi.evaluate.context.module import ModuleContext
 from jedi.evaluate.filters import ParserTreeFilter, \
-    NameWrapper, AbstractFilter, TreeNameDefinition
-from jedi.evaluate.compiled.context import CompiledName
+    NameWrapper, TreeNameDefinition
 from jedi.evaluate.utils import to_list
-from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, \
-    TypingModuleName, AnnotatedClass
-
-
-class _StubContextFilterMixin(object):
-    def get_filters(self, search_global=False, until_position=None,
-                    origin_scope=None, **kwargs):
-        filters = self._wrapped_context.get_filters(
-            search_global, until_position, origin_scope, **kwargs
-        )
-        yield self.stub_context.get_stub_only_filter(
-            parent_contexts=ContextSet([self]),
-            # Take the first filter, which is here to filter module contents
-            # and wrap it.
-            non_stub_filters=[next(filters)],
-            search_global=search_global,
-            until_position=until_position,
-            origin_scope=origin_scope,
-        )
-        for f in filters:
-            yield f
-
-
-class StubModuleContext(_StubContextFilterMixin, ModuleMixin, ContextWrapper):
-    def __init__(self, context, stub_context):
-        super(StubModuleContext, self).__init__(context)
-        self.stub_context = stub_context
-
-
-class StubClassContext(_StubContextFilterMixin, ClassMixin, ContextWrapper):
-    def __init__(self, parent_context, actual_context, stub_context):
-        super(StubClassContext, self).__init__(actual_context)
-        self.parent_context = parent_context
-        self.stub_context = stub_context
-
-    def __getattribute__(self, name):
-        if name in ('py__getitem__', 'py__simple_getitem__', 'py__bases__',
-                    'execute_annotation', 'list_type_vars', 'get_signatures'):
-            # getitem is always done in the stub class.
-            return getattr(self.stub_context, name)
-        return super(StubClassContext, self).__getattribute__(name)
-
-    def define_generics(self, type_var_dict):
-        if not type_var_dict:
-            return self
-        return self.stub_context.define_generics(type_var_dict)
-
-
-class StubFunctionContext(FunctionMixin, ContextWrapper):
-    def __init__(self, parent_context, actual_context, stub_context):
-        super(StubFunctionContext, self).__init__(actual_context)
-        self.parent_context = parent_context
-        self.stub_context = stub_context
-
-    def get_function_execution(self, arguments=None):
-        return self.stub_context.get_function_execution(arguments)
-
-    def get_signatures(self):
-        return self.stub_context.get_signatures()
-
-
-class StubMethodContext(StubFunctionContext):
-    """
-    Both of the stub context and the actual context are a stub method.
-    """
-    @safe_property
-    def class_context(self):
-        return StubClassContext.create_cached(
-            self.evaluator,
-            self.parent_context,
-            actual_context=self._wrapped_context.class_context,
-            stub_context=self.stub_context.class_context
-        )
+from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, AnnotatedClass
 
 
 class _StubOnlyContextMixin(object):
@@ -99,16 +24,6 @@ class _StubOnlyContextMixin(object):
             context=self,
             **filter_kwargs
         )]
-
-    def get_stub_only_filter(self, parent_contexts, non_stub_filters, **filter_kwargs):
-        # Here we remap the names from stubs to the actual module. This is
-        # important if type inferences is needed in that module.
-        return _StubFilter(
-            parent_contexts,
-            non_stub_filters,
-            self._get_stub_only_filters(**filter_kwargs),
-            add_non_stubs=self._add_non_stubs_in_filter,
-        )
 
     def _get_base_filters(self, filters, search_global=False,
                           until_position=None, origin_scope=None):
@@ -205,54 +120,6 @@ class TypingModuleWrapper(StubOnlyModuleContext):
         yield TypingModuleFilterWrapper(next(filters))
         for f in filters:
             yield f
-
-
-class StubName(NameWrapper):
-    """
-    This name is only here to mix stub names with non-stub names. The idea is
-    that the user can goto the actual name, but end up on the definition of the
-    stub when inferring types.
-    """
-    def __init__(self, parent_context, non_stub_name, stub_name):
-        super(StubName, self).__init__(non_stub_name)
-        self.parent_context = parent_context
-        self._stub_name = stub_name
-
-    @memoize_method
-    def infer(self):
-        stub_contexts = self._stub_name.infer()
-        if not stub_contexts:
-            return self._wrapped_name.infer()
-
-        typ = self._wrapped_name.tree_name.parent.type
-        # Only for these two we want to merge, the function doesn't support
-        # anything else.
-        if typ in ('classdef', 'funcdef'):
-            actual_context, = self._wrapped_name.infer()
-            return _add_stub_if_possible(self.parent_context, actual_context, stub_contexts)
-        else:
-            return stub_contexts
-
-
-@iterator_to_context_set
-def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
-    for stub_context in stub_contexts:
-        if isinstance(stub_context, MethodContext):
-            assert isinstance(actual_context, MethodContext)
-            cls = StubMethodContext
-        elif isinstance(stub_context, FunctionContext):
-            cls = StubFunctionContext
-        elif isinstance(stub_context, StubOnlyClass):
-            cls = StubClassContext
-        else:
-            yield stub_context
-            continue
-        yield cls.create_cached(
-            actual_context.evaluator,
-            parent_context,
-            actual_context,
-            stub_context,
-        )
 
 
 def goto_with_stubs_if_possible(name):
@@ -477,80 +344,6 @@ class StubOnlyFilter(ParserTreeFilter):
             if n.startswith('_') and not (n.startswith('__') and n.endswith('__')):
                 return False
         return True
-
-
-class _StubFilter(AbstractFilter):
-    """
-    Merging names from stubs and non-stubs.
-    """
-    def __init__(self, parent_contexts, non_stub_filters, stub_filters, add_non_stubs):
-        self._parent_contexts = parent_contexts
-        self._non_stub_filters = non_stub_filters
-        self._stub_filters = stub_filters
-        self._add_non_stubs = add_non_stubs
-
-    def get(self, name):
-        non_stub_names = self._get_names_from_filters(self._non_stub_filters, name)
-        stub_names = self._get_names_from_filters(self._stub_filters, name)
-        return self._merge_names(non_stub_names, stub_names)
-
-    def values(self):
-        name_dict = {}
-        for non_stub_filter in self._non_stub_filters:
-            for name in non_stub_filter.values():
-                name_dict.setdefault(name.string_name, []).append(name)
-
-        # Try to match the names of stubs with non-stubs. If there's no
-        # match, just use the stub name. The user will be directed there
-        # for all API accesses. Otherwise the user will be directed to the
-        # non-stub positions (see StubName).
-        for stub_filter in self._stub_filters:
-            for stub_name in stub_filter.values():
-                merged_names = self._merge_names(
-                    names=name_dict.get(stub_name.string_name),
-                    stub_names=[stub_name]
-                )
-                for merged_name in merged_names:
-                    yield merged_name
-
-    def _get_names_from_filters(self, filters, string_name):
-        return [
-            name
-            for filter in filters
-            for name in filter.get(string_name)
-        ]
-
-    @to_list
-    def _merge_names(self, names, stub_names):
-        if not stub_names:
-            if self._add_non_stubs:
-                return names
-            return []
-        if not names:
-            if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
-                return [TypingModuleName(n) for n in stub_names]
-            return stub_names
-
-        result = []
-        # The names are contained in both filters.
-        for name in names:
-            for stub_name in stub_names:
-                if isinstance(self._stub_filters[0].context, TypingModuleWrapper):
-                    stub_name = TypingModuleName(stub_name)
-
-                for parent_context in self._parent_contexts:
-                    if isinstance(name, CompiledName):
-                        result.append(CompiledStubName(parent_context, name, stub_name))
-                    else:
-                        result.append(StubName(parent_context, name, stub_name))
-        return result
-
-    def __repr__(self):
-        return '%s(%s, %s)' % (
-            self.__class__.__name__,
-            self._non_stub_filters,
-            self._stub_filters,
-        )
 
 
 class VersionInfo(ContextWrapper):
