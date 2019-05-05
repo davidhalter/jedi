@@ -1,4 +1,3 @@
-from abc import abstractproperty
 from jedi.parser_utils import get_call_signature
 
 
@@ -7,7 +6,7 @@ class AbstractSignature(object):
         self.context = context
         self.is_bound = is_bound
 
-    @abstractproperty
+    @property
     def name(self):
         return self.context.name
 
@@ -39,13 +38,19 @@ class TreeSignature(AbstractSignature):
         return self._function_context.tree_node.annotation
 
     def to_string(self, normalize=False):
-        return get_call_signature(self._function_context.tree_node)
+        return get_call_signature(
+            self._function_context.tree_node,
+            call_string=self.name.string_name,
+        )
 
 
 class BuiltinSignature(AbstractSignature):
     @property
     def _function_context(self):
         return self.context
+
+    def to_string(self):
+        return ''
 
     def bind(self, context):
         raise NotImplementedError('pls implement, need test case, %s' % context)
