@@ -298,6 +298,8 @@ def with_stub_context_if_possible(actual_context):
 
 
 def goto_with_stubs_if_possible(name):
+    return [name]
+    # XXX
     root = name.parent_context.get_root_context()
     stub = root.get_root_context().stub_context
     if stub is None:
@@ -323,7 +325,7 @@ def goto_non_stub(parent_context, tree_name):
     return contexts.py__getattribute__(tree_name, is_goto=True)
 
 
-def stub_to_actual_context_set(stub_context):
+def stub_to_actual_context_set(stub_context, ignore_compiled=False):
     qualified_names = stub_context.get_qualified_names()
     if qualified_names is None:
         return NO_CONTEXTS
@@ -335,6 +337,8 @@ def stub_to_actual_context_set(stub_context):
 
     assert isinstance(stub_module, StubOnlyModuleContext), stub_module
     non_stubs = stub_module.non_stub_context_set
+    if ignore_compiled:
+        non_stubs = non_stubs.filter(lambda c: not c.is_compiled())
     for name in qualified_names:
         non_stubs = non_stubs.py__getattribute__(name)
     return non_stubs
@@ -342,34 +346,47 @@ def stub_to_actual_context_set(stub_context):
 
 def try_stubs_to_actual_context_set(stub_contexts, prefer_stub_to_compiled=False):
     return ContextSet.from_sets(
-        stub_to_actual_context_set(stub_context) or ContextSet(stub_context)
+        stub_to_actual_context_set(stub_context, ignore_compiled=prefer_stub_to_compiled)
+        or ContextSet([stub_context])
         for stub_context in stub_contexts
     )
 
 
 @to_list
-def try_stubs_to_actual_names(names, prefer_stub_to_compiled=False):
+def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
     for name in names:
-        parent_context = name.parent_context
+        # Using the tree_name is better, if it's available, becuase no
+        # information is lost. If the name given is defineda as `foo: int` we
+        # would otherwise land on int, which is not what we want. We want foo
+        # from the non-stub module.
         if name.tree_name is None:
-            continue
-
-        if not parent_context.get_root_context().is_stub():
-            yield name
-            continue
-
-        contexts = stub_to_actual_context_set(parent_context)
-        if prefer_stub_to_compiled:
-            # We don't really care about
-            contexts = ContextSet([c for c in contexts if not c.is_compiled()])
-
-        new_names = contexts.py__getattribute__(name.tree_name, is_goto=True)
-
-        if new_names:
-            for n in new_names:
-                yield n
+            actual_contexts = ContextSet.from_sets(
+                stub_to_actual_context_set(c) for c in name.infer()
+            )
+            actual_contexts = actual_contexts.filter(lambda c: not c.is_compiled())
+            if actual_contexts:
+                for s in actual_contexts:
+                    yield s.name
+            else:
+                yield name
         else:
-            yield name
+            parent_context = name.parent_context
+            if not parent_context.is_stub():
+                yield name
+                continue
+
+            contexts = stub_to_actual_context_set(parent_context)
+            if prefer_stub_to_compiled:
+                # We don't really care about
+                contexts = contexts.filter(lambda c: not c.is_compiled())
+
+            new_names = contexts.py__getattribute__(name.tree_name, is_goto=True)
+
+            if new_names:
+                for n in new_names:
+                    yield n
+            else:
+                yield name
 
 
 def stubify(parent_context, context):

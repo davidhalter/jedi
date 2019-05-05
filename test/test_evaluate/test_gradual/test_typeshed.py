@@ -4,7 +4,8 @@ import pytest
 from parso.utils import PythonVersionInfo
 
 from jedi.evaluate.gradual import typeshed, stub_context
-from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext
+from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext, \
+    MethodContext, ClassContext
 from jedi.evaluate.filters import TreeNameDefinition
 
 TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
@@ -45,17 +46,10 @@ def test_get_stub_files():
 
 
 def test_function(Script, environment):
-    if environment.version_info.major == 2:
-        # In Python 2, the definitions are a bit weird in typeshed. Therefore
-        # it's for now a FunctionContext.
-        expected = FunctionContext
-    else:
-        expected = stub_context.StubFunctionContext
-
     code = 'import threading; threading.current_thread'
     def_, = Script(code).goto_definitions()
     context = def_._name._context
-    assert isinstance(context, expected), context
+    assert isinstance(context, FunctionContext), context
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
@@ -63,7 +57,7 @@ def test_function(Script, environment):
     assert isinstance(context.class_context, stub_context.StubOnlyClass), context
 
     def_, = Script('import threading; threading.Thread').goto_definitions()
-    assert isinstance(def_._name._context, stub_context.StubClassContext), def_
+    assert isinstance(def_._name._context, ClassContext), def_
 
 
 def test_keywords_variable(Script):
@@ -77,20 +71,20 @@ def test_keywords_variable(Script):
 def test_class(Script):
     def_, = Script('import threading; threading.Thread').goto_definitions()
     context = def_._name._context
-    assert isinstance(context, stub_context.StubClassContext), context
+    assert isinstance(context, ClassContext), context
 
 
 def test_instance(Script):
     def_, = Script('import threading; threading.Thread()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, stub_context.StubClassContext), context
+    assert isinstance(context.class_context, stub_context.StubOnlyClass), context
 
 
 def test_class_function(Script):
     def_, = Script('import threading; threading.Thread.getName').goto_definitions()
     context = def_._name._context
-    assert isinstance(context, stub_context.StubFunctionContext), context
+    assert isinstance(context, MethodContext), context
 
 
 def test_method(Script):
@@ -98,7 +92,7 @@ def test_method(Script):
     def_, = Script(code).goto_definitions()
     context = def_._name._context
     assert isinstance(context, BoundMethod), context
-    assert isinstance(context._wrapped_context, stub_context.StubFunctionContext), context
+    assert isinstance(context._wrapped_context, MethodContext), context
 
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
@@ -132,8 +126,7 @@ def test_sys_getwindowsversion(Script, environment):
 def test_sys_hexversion(Script):
     script = Script('import sys; sys.hexversion')
     def_, = script.completions()
-    assert isinstance(def_._name, stub_context.CompiledStubName), def_._name
-    assert isinstance(def_._name._wrapped_name, TreeNameDefinition)
+    assert isinstance(def_._name, stub_context.StubOnlyName), def_._name
     assert typeshed.TYPESHED_PATH in def_.module_path
     def_, = script.goto_definitions()
     assert def_.name == 'int'

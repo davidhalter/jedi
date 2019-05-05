@@ -393,12 +393,6 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         if isinstance(self._wrapped_context, OverloadedFunctionContext):
             return self._wrapped_context.py__call__(self._get_arguments(arguments))
 
-        # This might not be the most beautiful way, but prefer stub_contexts
-        # and execute those if possible.
-        stub_context = self._wrapped_context.stub_context
-        if stub_context is not None:
-            return stub_context.py__call__(arguments)
-
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
 

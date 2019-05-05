@@ -93,6 +93,9 @@ class ModuleMixin(SubModuleDictMixin):
     def is_module(self):
         return True
 
+    def is_stub(self):
+        return False
+
     @property
     @evaluator_method_cache()
     def name(self):

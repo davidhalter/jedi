@@ -101,6 +101,10 @@ class HelperContextMixin(object):
             return class2.is_same_class(self)
         return self == class2
 
+    def is_stub(self):
+        # The root context knows if it's a stub or not.
+        return self.parent_context.is_stub()
+
 
 class Context(HelperContextMixin, BaseContext):
     """
@@ -152,9 +156,6 @@ class Context(HelperContextMixin, BaseContext):
         return False
 
     def is_module(self):
-        return False
-
-    def is_stub(self):
         return False
 
     def is_compiled(self):

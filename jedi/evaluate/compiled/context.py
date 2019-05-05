@@ -102,6 +102,9 @@ class CompiledObject(Context):
     def is_compiled(self):
         return True
 
+    def is_stub(self):
+        return False
+
     def py__doc__(self, include_call_signature=False):
         return self.access_handle.py__doc__()
 
