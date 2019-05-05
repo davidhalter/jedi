@@ -47,6 +47,12 @@ class Keyword(object):
     def py__doc__(self):
         return imitate_pydoc(self.name.string_name)
 
+    def get_signatures(self):
+        # TODO this makes no sense, I think Keyword should somehow merge with
+        #   Context to make it easier for the api/classes.py to deal with all
+        #   of it.
+        return []
+
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)
 
