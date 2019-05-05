@@ -194,17 +194,12 @@ def predefine_names(context, flow_scope, dct):
         del predefined[flow_scope]
 
 
-def is_compiled(context):
-    from jedi.evaluate.compiled import CompiledObject, CompiledValue
-    return isinstance(context, (CompiledObject, CompiledValue))
-
-
 def is_string(context):
     if context.evaluator.environment.version_info.major == 2:
         str_classes = (unicode, bytes)
     else:
         str_classes = (unicode,)
-    return is_compiled(context) and isinstance(context.get_safe_value(default=None), str_classes)
+    return context.is_compiled() and isinstance(context.get_safe_value(default=None), str_classes)
 
 
 def is_literal(context):
@@ -212,7 +207,7 @@ def is_literal(context):
 
 
 def _get_safe_value_or_none(context, accept):
-    if is_compiled(context):
+    if context.is_compiled():
         value = context.get_safe_value(default=None)
         if isinstance(value, accept):
             return value

@@ -21,7 +21,7 @@ from jedi.evaluate.context import ClassContext, FunctionContext
 from jedi.evaluate.context import iterable
 from jedi.evaluate.context import TreeInstance
 from jedi.evaluate.finder import NameFinder
-from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
+from jedi.evaluate.helpers import is_string, is_literal, is_number
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.gradual.stub_context import VersionInfo
@@ -483,7 +483,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
         # `int() % float()`.
         return ContextSet([left])
     elif str_operator in COMPARISON_OPERATORS:
-        if is_compiled(left) and is_compiled(right):
+        if left.is_compiled() and right.is_compiled():
             # Possible, because the return is not an option. Just compare.
             try:
                 return ContextSet([left.execute_operation(right, str_operator)])
