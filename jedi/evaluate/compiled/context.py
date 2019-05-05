@@ -269,7 +269,7 @@ class CompiledName(AbstractNameDefinition):
 
     @underscore_memoization
     def infer(self):
-        return ContextSet([create_from_name(
+        return ContextSet([_create_from_name(
             self._evaluator, self.parent_context, self.string_name
         )])
 
@@ -473,7 +473,7 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def create_from_name(evaluator, compiled_object, name):
+def _create_from_name(evaluator, compiled_object, name):
     access = compiled_object.access_handle.getattr(name, default=None)
     parent_context = compiled_object
     if parent_context.is_class():

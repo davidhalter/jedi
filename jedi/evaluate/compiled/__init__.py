@@ -1,7 +1,6 @@
 from jedi._compatibility import unicode
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
-    CompiledObjectFilter, CompiledContextName, create_from_access_path, \
-    create_from_name
+    CompiledObjectFilter, CompiledContextName, create_from_access_path
 from jedi.evaluate.base_context import ContextWrapper
 from jedi.evaluate.helpers import execute_evaluated
 
@@ -25,7 +24,7 @@ class CompiledValue(ContextWrapper):
 
     def __getattribute__(self, name):
         if name in ('get_safe_value', 'execute_operation', 'access_handle',
-                    'negate', 'py__bool__'):
+                    'negate', 'py__bool__', 'is_compiled'):
             return getattr(self._compiled_obj, name)
         return super(CompiledValue, self).__getattribute__(name)
 
