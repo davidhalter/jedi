@@ -37,7 +37,7 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
 
 class SubModuleDictMixin(object):
     @evaluator_method_cache()
-    def _sub_modules_dict(self):
+    def sub_modules_dict(self):
         """
         Lists modules in the directory of this module (if this module is a
         package).
@@ -80,7 +80,7 @@ class ModuleMixin(SubModuleDictMixin):
             ),
             GlobalNameFilter(self, self.tree_node),
         )
-        yield DictFilter(self._sub_modules_dict())
+        yield DictFilter(self.sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         for star_filter in self.iter_star_filters():
             yield star_filter

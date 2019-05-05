@@ -20,6 +20,23 @@ class StubModuleContext(_StubContextMixin, ModuleContext):
         super(StubModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
 
+    def sub_modules_dict(self):
+        """
+        We have to overwrite this, because it's possible to have stubs that
+        don't have code for all the child modules. At the time of writing this
+        there are for example no stubs for `json.tool`.
+        """
+        names = {}
+        for context in self.non_stub_context_set:
+            try:
+                method = context.sub_modules_dict
+            except AttributeError:
+                pass
+            else:
+                names.update(method())
+        names.update(super(StubModuleContext, self).sub_modules_dict())
+        return names
+
     def _get_first_non_stub_filters(self):
         for context in self.non_stub_context_set:
             yield next(context.get_filters(search_global=False))
