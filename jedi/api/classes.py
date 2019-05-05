@@ -16,7 +16,7 @@ from jedi.evaluate.imports import ImportName
 from jedi.evaluate.filters import ParamName
 from jedi.evaluate.context import FunctionExecutionContext, MethodContext
 from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
-from jedi.evaluate.gradual.stub_context import name_to_stub
+from jedi.evaluate.gradual.stub_context import name_to_stub, stub_to_actual_context_set
 from jedi.api.keywords import KeywordName
 
 
@@ -702,9 +702,15 @@ class _Help(object):
 
         See :attr:`doc` for example.
         """
-        # TODO: Use all of the followed objects as output. Possibly divinding
-        # them by a few dashes.
+        # Using the first docstring that we see.
         for context in self._get_contexts(fast=fast):
-            return context.py__doc__(include_call_signature=not raw)
+            doc = context.py__doc__(include_call_signature=not raw)
+            if doc:
+                return doc
+            if not context.is_stub():
+                for c in stub_to_actual_context_set(context):
+                    doc = c.py__doc__(include_call_signature=not raw)
+                    if doc:
+                        return doc
 
         return ''

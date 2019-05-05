@@ -151,14 +151,13 @@ def goto_non_stub(parent_context, tree_name):
 
 
 def stub_to_actual_context_set(stub_context, ignore_compiled=False):
+    stub_module = stub_context.get_root_context()
+    if not stub_module.is_stub():
+        return ContextSet([stub_context])
+
     qualified_names = stub_context.get_qualified_names()
     if qualified_names is None:
         return NO_CONTEXTS
-
-    stub_module = stub_context.get_root_context()
-
-    if not stub_module.is_stub():
-        return ContextSet([stub_context])
 
     assert isinstance(stub_module, StubOnlyModuleContext), stub_module
     non_stubs = stub_module.non_stub_context_set
