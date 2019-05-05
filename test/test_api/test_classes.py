@@ -114,7 +114,7 @@ def test_class_call_signature(Script):
             pass
     Foo""").goto_definitions()
     doc = defs[0].docstring()
-    assert "Foo(self, x, y=1, z='a')" in str(doc)
+    assert doc == "Foo(x, y=1, z='a')"
 
 
 def test_position_none_if_builtin(Script):
