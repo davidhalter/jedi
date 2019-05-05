@@ -54,7 +54,7 @@ def test_function(Script, environment):
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, stub_context.StubOnlyClass), context
+    assert isinstance(context.class_context, stub_context.StubClass), context
 
     def_, = Script('import threading; threading.Thread').goto_definitions()
     assert isinstance(def_._name._context, ClassContext), def_
@@ -78,7 +78,7 @@ def test_instance(Script):
     def_, = Script('import threading; threading.Thread()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, stub_context.StubOnlyClass), context
+    assert isinstance(context.class_context, stub_context.StubClass), context
 
 
 def test_class_function(Script):
@@ -126,7 +126,7 @@ def test_sys_getwindowsversion(Script, environment):
 def test_sys_hexversion(Script):
     script = Script('import sys; sys.hexversion')
     def_, = script.completions()
-    assert isinstance(def_._name, stub_context.StubOnlyName), def_._name
+    assert isinstance(def_._name, stub_context._StubName), def_._name
     assert typeshed.TYPESHED_PATH in def_.module_path
     def_, = script.goto_definitions()
     assert def_.name == 'int'
