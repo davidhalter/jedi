@@ -14,13 +14,6 @@ class _StubContextMixin(object):
     def is_stub(self):
         return True
 
-    def _get_stub_filters(self, **filter_kwargs):
-        return [StubFilter(
-            self.evaluator,
-            context=self,
-            **filter_kwargs
-        )]
-
 
 class StubModuleContext(_StubContextMixin, ModuleContext):
     def __init__(self, non_stub_context_set, *args, **kwargs):
@@ -32,11 +25,12 @@ class StubModuleContext(_StubContextMixin, ModuleContext):
             yield next(context.get_filters(search_global=False))
 
     def _get_stub_filters(self, search_global, **filter_kwargs):
-        stub_filters = super(StubModuleContext, self)._get_stub_filters(
-            search_global=search_global, **filter_kwargs
-        )
-        stub_filters += self.iter_star_filters(search_global=search_global)
-        return stub_filters
+        return [StubFilter(
+            self.evaluator,
+            context=self,
+            search_global=search_global,
+            **filter_kwargs
+        )] + list(self.iter_star_filters(search_global=search_global))
 
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
