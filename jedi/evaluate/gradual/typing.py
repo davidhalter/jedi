@@ -513,8 +513,8 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
         filter_ = super(AbstractAnnotatedClass, self)._create_class_filter(
             cls, origin_scope, is_instance
         )
-        if cls.stub_context is None:
-            return filter_
+        return filter_
+        # XXX
         return cls.stub_context.get_stub_only_filter(
             # Take the first filter, which is here to filter module contents
             # and wrap it.

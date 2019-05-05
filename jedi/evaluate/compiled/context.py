@@ -85,7 +85,10 @@ class CompiledObject(Context):
     @property
     def string_names(self):
         # For modules
-        return tuple(self.py__name__().split('.'))
+        name = self.py__name__()
+        if name is None:
+            return []
+        return tuple(name.split('.'))
 
     def get_qualified_names(self):
         return self.string_names

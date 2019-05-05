@@ -348,7 +348,7 @@ class FunctionExecutionContext(TreeContext):
                 generics = (yield_contexts.py__class__(), NO_CONTEXTS)
                 return ContextSet(
                     # In Python 3.6 AsyncGenerator is still a class.
-                    AnnotatedSubClass(c.stub_context or c, generics)
+                    AnnotatedSubClass(c, generics)
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
@@ -359,10 +359,7 @@ class FunctionExecutionContext(TreeContext):
                 # Only the first generic is relevant.
                 generics = (return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
                 return ContextSet(
-                    AnnotatedSubClass(
-                        c if c.stub_context is None else c.stub_context,
-                        generics
-                    ) for c in async_classes
+                    AnnotatedSubClass(c, generics) for c in async_classes
                 ).execute_annotation()
         else:
             if is_generator:
