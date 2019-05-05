@@ -172,18 +172,6 @@ def get_call_signature(funcdef, width=72, call_string=None,
     return '\n'.join(textwrap.wrap(code, width))
 
 
-def get_call_signature_for_any(any_node):
-    call_signature = None
-    if any_node.type == 'classdef':
-        for funcdef in any_node.iter_funcdefs():
-            if funcdef.name.value == '__init__':
-                call_signature = \
-                    get_call_signature(funcdef, call_string=any_node.name.value)
-    elif any_node.type in ('funcdef', 'lambdef'):
-        call_signature = get_call_signature(any_node)
-    return call_signature
-
-
 def move(node, line_offset):
     """
     Move the `Node` start_pos.
