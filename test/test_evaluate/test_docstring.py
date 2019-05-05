@@ -35,7 +35,20 @@ def test_class_doc(Script):
     class TestClass():
         '''Docstring of `TestClass`.'''
     TestClass""").goto_definitions()
-    assert defs[0].docstring() == 'Docstring of `TestClass`.'
+
+    expected = 'Docstring of `TestClass`.'
+    assert defs[0].docstring(raw=True) == expected
+    assert defs[0].docstring() == 'TestClass()\n\n' + expected
+
+
+def test_class_doc_with_init(Script):
+    d, = Script("""
+    class TestClass():
+        '''Docstring'''
+        def __init__(self, foo, bar=3): pass
+    TestClass""").goto_definitions()
+
+    assert d.docstring() == 'TestClass(foo, bar=3)\n\nDocstring'
 
 
 def test_instance_doc(Script):

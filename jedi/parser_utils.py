@@ -138,7 +138,8 @@ def safe_literal_eval(value):
         return ''
 
 
-def get_call_signature(funcdef, width=72, call_string=None):
+def get_call_signature(funcdef, width=72, call_string=None,
+                       omit_first_param=False, omit_return_annotation=False):
     """
     Generate call signature of this function.
 
@@ -155,12 +156,14 @@ def get_call_signature(funcdef, width=72, call_string=None):
             call_string = '<lambda>'
         else:
             call_string = funcdef.name.value
-    if funcdef.type == 'lambdef':
-        p = '(' + ''.join(param.get_code() for param in funcdef.get_params()).strip() + ')'
-    else:
-        p = funcdef.children[2].get_code()
+    params = funcdef.get_params()
+    if omit_first_param:
+        params = params[1:]
+    print(params, omit_first_param)
+    p = '(' + ''.join(param.get_code() for param in params).strip() + ')'
+    # TODO this is pretty bad, we should probably just normalize.
     p = re.sub(r'\s+', ' ', p)
-    if funcdef.annotation:
+    if funcdef.annotation and not omit_return_annotation:
         rtype = " ->" + funcdef.annotation.get_code()
     else:
         rtype = ""

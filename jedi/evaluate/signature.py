@@ -41,6 +41,8 @@ class TreeSignature(AbstractSignature):
         return get_call_signature(
             self._function_context.tree_node,
             call_string=self.name.string_name,
+            omit_first_param=self.is_bound,
+            omit_return_annotation=self.context.is_class(),
         )
 
 
