@@ -99,6 +99,9 @@ class CompiledObject(Context):
     def is_class(self):
         return self.access_handle.is_class()
 
+    def is_compiled(self):
+        return True
+
     def py__doc__(self, include_call_signature=False):
         return self.access_handle.py__doc__()
 

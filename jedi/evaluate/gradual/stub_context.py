@@ -277,6 +277,8 @@ def _add_stub_if_possible(parent_context, actual_context, stub_contexts):
 
 
 def with_stub_context_if_possible(actual_context):
+    return ContextSet([actual_context])
+    # XXX
     if actual_context.tree_node.type == 'lambdef':
         return ContextSet([actual_context])
     assert actual_context.tree_node.type in ('classdef', 'funcdef')
@@ -338,7 +340,7 @@ def stub_to_actual_context_set(stub_context):
     return non_stubs
 
 
-def try_stubs_to_actual_context_set(stub_contexts):
+def try_stubs_to_actual_context_set(stub_contexts, prefer_stub_to_compiled=False):
     return ContextSet.from_sets(
         stub_to_actual_context_set(stub_context) or ContextSet(stub_context)
         for stub_context in stub_contexts
@@ -346,7 +348,7 @@ def try_stubs_to_actual_context_set(stub_contexts):
 
 
 @to_list
-def try_stubs_to_actual_names(names):
+def try_stubs_to_actual_names(names, prefer_stub_to_compiled=False):
     for name in names:
         parent_context = name.parent_context
         if name.tree_name is None:
@@ -356,12 +358,24 @@ def try_stubs_to_actual_names(names):
             yield name
             continue
 
-        for n in goto_non_stub(parent_context, name.tree_name):
-            yield n
+        contexts = stub_to_actual_context_set(parent_context)
+        if prefer_stub_to_compiled:
+            # We don't really care about
+            contexts = ContextSet([c for c in contexts if not c.is_compiled()])
+
+        new_names = contexts.py__getattribute__(name.tree_name, is_goto=True)
+
+        if new_names:
+            for n in new_names:
+                yield n
+        else:
+            yield name
 
 
 def stubify(parent_context, context):
     if parent_context.is_stub():
+        return ContextSet([context])
+        # XXX
         return ContextSet(
             c.stub_context
             for c in stub_to_actual_context_set(context)

@@ -111,10 +111,6 @@ class Context(HelperContextMixin, BaseContext):
     To be defined by subclasses.
     """
     tree_node = None
-    stub_context = None
-
-    def is_stub(self):
-        return False
 
     @property
     def api_type(self):
@@ -156,6 +152,12 @@ class Context(HelperContextMixin, BaseContext):
         return False
 
     def is_module(self):
+        return False
+
+    def is_stub(self):
+        return False
+
+    def is_compiled(self):
         return False
 
     def py__bool__(self):
