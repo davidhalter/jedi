@@ -86,7 +86,7 @@ from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible, \
     stub_to_actual_context_set, goto_with_stubs_if_possible, goto_non_stub, \
-    stubify, load_stubs
+    load_stubs
 
 
 def _execute(context, arguments):
@@ -446,7 +446,6 @@ class Evaluator(object):
                         self, parent_context.parent_context, parent_context)
 
                 func = FunctionContext.from_context(parent_context, scope_node)
-                func = next(iter(stubify(parent_context, func)))
 
                 if parent_was_class:
                     func = BoundMethod(
@@ -457,10 +456,7 @@ class Evaluator(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                return next(iter(stubify(
-                    parent_context,
-                    ClassContext(self, parent_context, scope_node)
-                )))
+                return ClassContext(self, parent_context, scope_node)
             elif scope_node.type == 'comp_for':
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context

@@ -368,19 +368,6 @@ def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
                 yield name
 
 
-def stubify(parent_context, context):
-    if parent_context.is_stub():
-        return ContextSet([context])
-        # XXX
-        return ContextSet(
-            c.stub_context
-            for c in stub_to_actual_context_set(context)
-            if c.stub_context is not None
-        ) or ContextSet([context])
-    else:
-        return with_stub_context_if_possible(context)
-
-
 def _load_or_get_stub_module(evaluator, names):
     return evaluator.stub_module_cache.get(names)
 
