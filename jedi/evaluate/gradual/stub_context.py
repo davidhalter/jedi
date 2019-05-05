@@ -90,9 +90,6 @@ class StubMethodContext(StubFunctionContext):
 class _StubOnlyContextMixin(object):
     _add_non_stubs_in_filter = False
 
-    def get_stub_contexts(self):
-        return ContextSet([self])
-
     def is_stub(self):
         return True
 
@@ -134,24 +131,6 @@ class StubOnlyModuleContext(_StubOnlyContextMixin, ModuleContext):
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubOnlyModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
-
-    @memoize_method
-    @iterator_to_context_set
-    def get_stub_contexts(self):
-        if not self.non_stub_context_set:
-            # If there are no results for normal modules, just
-            # use a normal context for stub modules and don't
-            # merge the actual module contexts with stubs.
-            yield self
-            return
-
-        for context in self.non_stub_context_set:
-            if isinstance(context, ModuleContext):
-                yield StubModuleContext.create_cached(context.evaluator, context, self)
-            else:
-                # TODO do we want this? This includes compiled?!
-                yield self
-        return self
 
     def _get_first_non_stub_filters(self):
         for context in self.non_stub_context_set:
