@@ -7,7 +7,7 @@ from jedi.evaluate.context.module import ModuleContext
 from jedi.evaluate.filters import ParserTreeFilter, \
     TreeNameDefinition
 from jedi.evaluate.utils import to_list
-from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper, AnnotatedClass
+from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper
 
 
 class _StubContextMixin(object):
@@ -179,35 +179,6 @@ def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
                     yield n
             else:
                 yield name
-
-
-def _load_or_get_stub_module(evaluator, names):
-    return evaluator.stub_module_cache.get(names)
-
-
-def __load_stubs(context):  # TODO remove?
-    root_context = context.get_root_context()
-    stub_module = _load_or_get_stub_module(
-        context.evaluator,
-        root_context.string_names
-    )
-    if stub_module is None:
-        return NO_CONTEXTS
-
-    qualified_names = context.get_qualified_names()
-    if qualified_names is None:
-        return NO_CONTEXTS
-
-    stub_contexts = ContextSet([stub_module])
-    for name in qualified_names:
-        stub_contexts = stub_contexts.py__getattribute__(name)
-
-    if isinstance(context, AnnotatedClass):
-        return ContextSet([
-            context.annotate_other_class(c) if c.is_class() else c
-            for c in stub_contexts
-        ])
-    return stub_contexts
 
 
 def _load_stub_module(module):
