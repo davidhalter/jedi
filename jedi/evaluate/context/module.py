@@ -2,7 +2,6 @@ import re
 import os
 
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi._compatibility import iter_modules
 from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
@@ -50,11 +49,10 @@ class SubModuleDictMixin(object):
         except AttributeError:
             pass
         else:
-            for path in method():
-                mods = self._iter_modules(path)
-                for module_loader, name, is_pkg in mods:
-                    # It's obviously a relative import to the current module.
-                    names[name] = SubModuleName(self, name)
+            mods = self._iter_module_names(method())
+            for name in mods:
+                # It's obviously a relative import to the current module.
+                names[name] = SubModuleName(self, name)
 
         # TODO add something like this in the future, its cleaner than the
         #   import hacks.
@@ -65,8 +63,8 @@ class SubModuleDictMixin(object):
 
         return names
 
-    def _iter_modules(self, path):
-        return iter_modules([path])
+    def _iter_module_names(self, path):
+        return self.evaluator.compiled_subprocess.list_module_names(path)
 
 
 class ModuleMixin(SubModuleDictMixin):

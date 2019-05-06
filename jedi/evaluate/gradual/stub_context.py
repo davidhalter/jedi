@@ -66,14 +66,16 @@ class StubModuleContext(_StubContextMixin, ModuleContext):
         for f in filters:
             yield f
 
-    def _iter_modules(self, path):
-        dirs = os.listdir(path)
-        for name in dirs:
-            if os.path.isdir(os.path.join(path, name)):
-                yield (None, name, True)
-            if name.endswith('.pyi'):
-                yield (None, name[:-4], True)
-        return []
+    def _iter_module_names(self, paths):
+        for path in paths:
+            dirs = os.listdir(path)
+            for name in dirs:
+                if os.path.isdir(os.path.join(path, name)):
+                    if name != '__pycache__':
+                        yield name
+                if name.endswith('.pyi'):
+                    if name != '__init__.pyi':
+                        yield name[:-4]
 
 
 class StubClass(_StubContextMixin, ClassMixin, ContextWrapper):

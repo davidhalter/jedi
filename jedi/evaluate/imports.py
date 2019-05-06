@@ -393,14 +393,15 @@ class Importer(object):
                 # Non-modules are not completable.
                 if context.api_type != 'module':  # not a module
                     continue
+                names += context.sub_modules_dict().values()
                 # namespace packages
-                try:
-                    path_method = context.py__path__
-                except AttributeError:
-                    pass
-                else:
-                    # For implicit namespace packages and module names.
-                    names += self._get_module_names(path_method(), in_module=context)
+                #try:
+                #    path_method = context.py__path__
+                #except AttributeError:
+                #    pass
+                #else:
+                #    # For implicit namespace packages and module names.
+                #    names += self._get_module_names(path_method(), in_module=context)
 
                 if only_modules:
                     # In the case of an import like `from x.` we don't need to
