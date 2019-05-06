@@ -6,7 +6,7 @@ from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
-from jedi.evaluate.names import SubModuleName, OsPathName
+from jedi.evaluate.names import SubModuleName
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -207,15 +207,6 @@ class ModuleContext(ModuleMixin, TreeContext):
         file = self.py__file__()
         assert file is not None  # Shouldn't be a package in the first place.
         return [os.path.dirname(file)]
-
-    def sub_modules_dict(self):
-        dct = super(ModuleContext, self).sub_modules_dict()
-        if ('os',) == self.string_names:
-            dct = dict(dct)
-            # os.path is a hardcoded exception, because it's a
-            # ``sys.modules`` modification.
-            dct['path'] = OsPathName(self, 'path')
-        return dct
 
     @property
     def py__path__(self):

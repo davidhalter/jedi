@@ -32,8 +32,3 @@ class ImportName(AbstractNameDefinition):
 
 class SubModuleName(ImportName):
     _level = 1
-
-
-class OsPathName(ImportName):
-    def infer(self):
-        return self.parent_context.evaluator.import_module(('os', 'path'))
