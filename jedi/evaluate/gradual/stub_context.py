@@ -185,7 +185,7 @@ def _load_or_get_stub_module(evaluator, names):
     return evaluator.stub_module_cache.get(names)
 
 
-def load_stubs(context):
+def __load_stubs(context):  # TODO remove?
     root_context = context.get_root_context()
     stub_module = _load_or_get_stub_module(
         context.evaluator,

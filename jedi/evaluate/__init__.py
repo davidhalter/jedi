@@ -80,20 +80,15 @@ from jedi.evaluate.filters import TreeNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
 from jedi.evaluate.context import ClassContext, FunctionContext, \
-    AnonymousInstance, BoundMethod, MethodContext
+    AnonymousInstance, BoundMethod
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi.evaluate.gradual.stub_context import \
-    stub_to_actual_context_set, goto_with_stubs_if_possible, goto_non_stub, \
-    load_stubs
+    stub_to_actual_context_set, goto_with_stubs_if_possible, goto_non_stub
 
 
 def _execute(context, arguments):
-    if not context.get_root_context().is_stub():
-        stubs = load_stubs(context)
-        if stubs:
-            return stubs.execute(arguments)
     try:
         func = context.py__call__
     except AttributeError:
@@ -182,8 +177,6 @@ class Evaluator(object):
         if isinstance(context, CompForContext):
             return eval_node(context, element)
 
-        #import traceback, sys; traceback.print_stack(file=sys.stdout)
-        #print(element, id(context), context)
         if_stmt = element
         while if_stmt is not None:
             if_stmt = if_stmt.parent
