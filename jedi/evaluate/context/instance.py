@@ -3,7 +3,8 @@ from abc import abstractproperty
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
-from jedi.evaluate import filters
+from jedi.evaluate.filters import AbstractFilter
+from jedi.evaluate.names import ContextName, TreeNameDefinition
 from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
     iterator_to_context_set, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
@@ -267,7 +268,7 @@ class TreeInstance(AbstractInstanceContext):
 
     @property
     def name(self):
-        return filters.ContextName(self, self.class_context.name.tree_name)
+        return ContextName(self, self.class_context.name.tree_name)
 
     # This can recurse, if the initialization of the class includes a reference
     # to itself.
@@ -340,7 +341,7 @@ class CompiledInstanceName(compiled.CompiledName):
                 yield result_context
 
 
-class CompiledInstanceClassFilter(filters.AbstractFilter):
+class CompiledInstanceClassFilter(AbstractFilter):
     name_class = CompiledInstanceName
 
     def __init__(self, evaluator, instance, klass):
@@ -419,7 +420,7 @@ class CompiledBoundMethod(compiled.CompiledObject):
         return list(super(CompiledBoundMethod, self).get_param_names())[1:]
 
 
-class SelfName(filters.TreeNameDefinition):
+class SelfName(TreeNameDefinition):
     """
     This name calculates the parent_context lazily.
     """
@@ -452,7 +453,7 @@ class LazyInstanceClassName(object):
         return '<%s: %s>' % (self.__class__.__name__, self._class_member_name)
 
 
-class InstanceClassFilter(filters.AbstractFilter):
+class InstanceClassFilter(AbstractFilter):
     """
     This filter is special in that it uses the class filter and wraps the
     resulting names in LazyINstanceClassName. The idea is that the class name

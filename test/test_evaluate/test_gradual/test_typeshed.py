@@ -6,7 +6,6 @@ from parso.utils import PythonVersionInfo
 from jedi.evaluate.gradual import typeshed, stub_context
 from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext, \
     MethodContext, ClassContext
-from jedi.evaluate.filters import TreeNameDefinition
 
 TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
 

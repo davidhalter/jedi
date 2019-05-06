@@ -205,7 +205,7 @@ class ContextWrapper(HelperContextMixin, object):
 
     @safe_property
     def name(self):
-        from jedi.evaluate.filters import ContextName
+        from jedi.evaluate.names import ContextName
         wrapped_name = self._wrapped_context.name
         if wrapped_name.tree_name is not None:
             return ContextName(self, wrapped_name.tree_name)

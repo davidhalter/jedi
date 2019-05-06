@@ -1,5 +1,6 @@
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, ContextNameMixin
+from jedi.evaluate.filters import DictFilter
+from jedi.evaluate.names import ContextNameMixin, AbstractNameDefinition
 from jedi.evaluate.base_context import Context
 from jedi.evaluate.context.module import SubModuleDictMixin
 

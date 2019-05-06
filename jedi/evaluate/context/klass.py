@@ -43,8 +43,8 @@ from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass, \
     evaluator_method_generator_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.lazy_context import LazyKnownContexts
-from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
-    ContextName
+from jedi.evaluate.filters import ParserTreeFilter
+from jedi.evaluate.names import TreeNameDefinition, ContextName
 from jedi.evaluate.arguments import unpack_arglist
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     TreeContext, NO_CONTEXTS

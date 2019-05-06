@@ -33,7 +33,7 @@ from jedi.evaluate import usages
 from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import transform_path_to_dotted
-from jedi.evaluate.filters import TreeNameDefinition, ParamName
+from jedi.evaluate.names import TreeNameDefinition, ParamName
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet

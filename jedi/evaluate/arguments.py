@@ -8,7 +8,7 @@ from jedi.evaluate.utils import PushBackIterator
 from jedi.evaluate import analysis
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext, get_merged_lazy_context
-from jedi.evaluate.filters import ParamName
+from jedi.evaluate.names import ParamName
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet, ContextualizedNode
 from jedi.evaluate.context import iterable
 from jedi.evaluate.param import get_executed_params_and_issues, ExecutedParam

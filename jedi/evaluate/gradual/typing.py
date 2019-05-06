@@ -15,8 +15,9 @@ from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic
 from jedi.evaluate.utils import to_list
-from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
-    AbstractTreeName, AbstractNameDefinition, ContextName
+from jedi.evaluate.filters import FilterWrapper
+from jedi.evaluate.names import NameWrapper, AbstractTreeName, \
+    AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
 from jedi.evaluate.context.klass import ClassMixin
 

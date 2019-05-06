@@ -25,7 +25,8 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate.arguments import TreeArguments
 from jedi.evaluate import helpers
 from jedi.evaluate.context import iterable
-from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
+from jedi.evaluate.filters import get_global_filters
+from jedi.evaluate.names import TreeNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.parser_utils import is_scope, get_parent_scope
 

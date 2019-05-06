@@ -1,7 +1,7 @@
 import pytest
 
 from jedi import settings
-from jedi.evaluate.filters import ContextName
+from jedi.evaluate.names import ContextName
 from jedi.evaluate.compiled import CompiledContextName
 from jedi.evaluate.gradual.typeshed import StubModuleContext
 

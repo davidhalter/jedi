@@ -76,7 +76,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import helpers
-from jedi.evaluate.filters import TreeNameDefinition, ParamName
+from jedi.evaluate.names import TreeNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
 from jedi.evaluate.context import ClassContext, FunctionContext, \

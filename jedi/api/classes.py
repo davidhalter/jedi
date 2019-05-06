@@ -13,7 +13,7 @@ from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
-from jedi.evaluate.filters import ParamName
+from jedi.evaluate.names import ParamName
 from jedi.evaluate.context import FunctionExecutionContext, MethodContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
 from jedi.evaluate.gradual.stub_context import name_to_stub, stub_to_actual_context_set

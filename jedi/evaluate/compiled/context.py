@@ -7,8 +7,8 @@ from functools import partial
 from jedi import debug
 from jedi._compatibility import force_unicode, Parameter
 from jedi.cache import underscore_memoization, memoize_method
-from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
-    ContextNameMixin
+from jedi.evaluate.filters import AbstractFilter
+from jedi.evaluate.names import AbstractNameDefinition, ContextNameMixin
 from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel

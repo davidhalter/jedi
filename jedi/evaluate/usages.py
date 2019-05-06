@@ -1,5 +1,5 @@
 from jedi.evaluate import imports
-from jedi.evaluate.filters import TreeNameDefinition
+from jedi.evaluate.names import TreeNameDefinition
 
 
 def _resolve_names(definition_names, avoid_names=()):

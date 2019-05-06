@@ -10,8 +10,8 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import helpers
 from jedi.evaluate.signature import TreeSignature
 from jedi.evaluate.arguments import AnonymousArguments
-from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
-    ContextName, AbstractNameDefinition, ParamName
+from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter
+from jedi.evaluate.names import ContextName, AbstractNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
     ContextSet, TreeContext, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \

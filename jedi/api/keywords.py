@@ -1,7 +1,7 @@
 import pydoc
 
 from jedi.evaluate.utils import ignored
-from jedi.evaluate.filters import AbstractNameDefinition
+from jedi.evaluate.names import AbstractNameDefinition
 
 try:
     from pydoc_data import topics as pydoc_topics
