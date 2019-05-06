@@ -6,6 +6,7 @@ from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
     AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
+from jedi.evaluate.names import SubModuleName, OsPathName
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -41,8 +42,6 @@ class SubModuleDictMixin(object):
         Lists modules in the directory of this module (if this module is a
         package).
         """
-        from jedi.evaluate.imports import SubModuleName
-
         names = {}
         try:
             method = self.py__path__
@@ -54,13 +53,8 @@ class SubModuleDictMixin(object):
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self, name)
 
-        # TODO add something like this in the future, its cleaner than the
-        #   import hacks.
-        # ``os.path`` is a hardcoded exception, because it's a
-        # ``sys.modules`` modification.
-        # if str(self.name) == 'os':
-        #     names.append(Name('path', parent_context=self))
-
+        # In the case of an import like `from x.` we don't need to
+        # add all the variables, this is only about submodules.
         return names
 
     def _iter_module_names(self, path):
@@ -213,6 +207,15 @@ class ModuleContext(ModuleMixin, TreeContext):
         file = self.py__file__()
         assert file is not None  # Shouldn't be a package in the first place.
         return [os.path.dirname(file)]
+
+    def sub_modules_dict(self):
+        dct = super(ModuleContext, self).sub_modules_dict()
+        if ('os',) == self.string_names:
+            dct = dict(dct)
+            # os.path is a hardcoded exception, because it's a
+            # ``sys.modules`` modification.
+            dct['path'] = OsPathName(self, 'path')
+        return dct
 
     @property
     def py__path__(self):

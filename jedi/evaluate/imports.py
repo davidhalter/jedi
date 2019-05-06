@@ -29,7 +29,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate.utils import unite
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.filters import AbstractNameDefinition
+from jedi.evaluate.names import ImportName, SubModuleName
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.evaluate.gradual.typeshed import import_module_decorator
 
@@ -151,43 +151,6 @@ def _add_error(context, name, message):
         analysis.add(context, 'import-error', name, message)
     else:
         debug.warning('ImportError without origin: ' + message)
-
-
-class ImportName(AbstractNameDefinition):
-    start_pos = (1, 0)
-    _level = 0
-
-    def __init__(self, parent_context, string_name):
-        self.parent_context = parent_context
-        self.string_name = string_name
-
-    def infer(self):
-        return Importer(
-            self.parent_context.evaluator,
-            [self.string_name],
-            self.parent_context,
-            level=self._level,
-        ).follow()
-
-    def goto(self):
-        return [m.name for m in self.infer()]
-
-    def get_root_context(self):
-        # Not sure if this is correct.
-        return self.parent_context.get_root_context()
-
-    @property
-    def api_type(self):
-        return 'module'
-
-
-class SubModuleName(ImportName):
-    _level = 1
-
-
-class OsPathName(ImportName):
-    def infer(self):
-        return self.parent_context.evaluator.import_module(('os', 'path'))
 
 
 def _level_to_base_import_path(project_path, directory, level):
@@ -394,22 +357,8 @@ class Importer(object):
                 if context.api_type != 'module':  # not a module
                     continue
                 names += context.sub_modules_dict().values()
-                # namespace packages
-                #try:
-                #    path_method = context.py__path__
-                #except AttributeError:
-                #    pass
-                #else:
-                #    # For implicit namespace packages and module names.
-                #    names += self._get_module_names(path_method(), in_module=context)
 
                 if only_modules:
-                    # In the case of an import like `from x.` we don't need to
-                    # add all the variables.
-                    if ('os',) == self._str_import_path and not self.level:
-                        # os.path is a hardcoded exception, because it's a
-                        # ``sys.modules`` modification.
-                        names.append(OsPathName(context, 'path'))
                     continue
 
                 for filter in context.get_filters(search_global=False):
