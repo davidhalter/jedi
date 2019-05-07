@@ -1,8 +1,26 @@
 #!/usr/bin/env python
 
+import fnmatch
+import os
 from setuptools import setup, find_packages
 
 import ast
+
+
+def rglob(top, pat, strip=0):
+    matches = []
+
+    for root, dirnames, filenames in os.walk(top):
+        if strip:
+            stripped_root = os.path.sep.join(root.split(os.path.sep)[strip:])
+        else:
+            stripped_root = root
+
+        for filename in fnmatch.filter(filenames, pat):
+            matches.append(os.path.join(stripped_root, filename))
+
+    return matches
+
 
 __AUTHOR__ = 'David Halter'
 __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
@@ -40,7 +58,9 @@ setup(name='jedi',
               'colorama',
           ],
       },
-      package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
+      package_data={
+          'jedi': ['evaluate/compiled/fake/*.pym'] + rglob('jedi/third_party/typeshed', '*.pyi', 1)
+      },
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
