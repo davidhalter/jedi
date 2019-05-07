@@ -64,15 +64,22 @@ class BaseDefinition(object):
         """
         self.is_keyword = isinstance(self._name, KeywordName)
 
-        # generate a path to the definition
-        self._module = name.get_root_context()
+    @memoize_method
+    def _get_module(self):
+        # This can take a while to complete, because in the worst case of
+        # imports (consider `import a` completions), we need to load all
+        # modules starting with a first.
+        return self._name.get_root_context()
+
+    @property
+    def module_path(self):
+        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
         try:
-            py__file__ = self._module.py__file__
+            py__file__ = self._get_module().py__file__
         except AttributeError:
-            self.module_path = None
+            return None
         else:
-            self.module_path = py__file__()
-            """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+            return py__file__()
 
     @property
     def name(self):
@@ -203,14 +210,14 @@ class BaseDefinition(object):
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
         json
         """
-        return self._module.name.string_name
+        return self._get_module().name.string_name
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        if isinstance(self._module, StubModuleContext):
+        if isinstance(self._get_module(), StubModuleContext):
             return any(isinstance(context, compiled.CompiledObject)
-                       for context in self._module.non_stub_context_set)
-        return isinstance(self._module, compiled.CompiledObject)
+                       for context in self._get_module().non_stub_context_set)
+        return isinstance(self._get_module(), compiled.CompiledObject)
 
     @property
     def line(self):

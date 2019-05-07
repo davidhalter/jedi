@@ -4,6 +4,7 @@ from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
 from jedi.evaluate.base_context import ContextSet
+from jedi.cache import memoize_method
 
 
 class AbstractNameDefinition(object):
@@ -139,24 +140,27 @@ class ImportName(AbstractNameDefinition):
     _level = 0
 
     def __init__(self, parent_context, string_name):
-        self.parent_context = parent_context
+        self._from_module_context = parent_context
         self.string_name = string_name
 
+    @property
+    def parent_context(self):
+        m = self._from_module_context
+        import_contexts = self.infer()
+        if not import_contexts:
+            return m
+        # It's almost always possible to find the import or to not find it. The
+        # importing returns only one context, pretty much always.
+        return next(iter(import_contexts))
+
+    @memoize_method
     def infer(self):
         from jedi.evaluate.imports import Importer
-        return Importer(
-            self.parent_context.evaluator,
-            [self.string_name],
-            self.parent_context,
-            level=self._level,
-        ).follow()
+        m = self._from_module_context
+        return Importer(m.evaluator, [self.string_name], m, level=self._level).follow()
 
     def goto(self):
         return [m.name for m in self.infer()]
-
-    def get_root_context(self):
-        # Not sure if this is correct.
-        return self.parent_context.get_root_context()
 
     @property
     def api_type(self):

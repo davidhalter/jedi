@@ -286,7 +286,7 @@ class Script(object):
                             if new_name.start_pos is None:
                                 found_builtin = True
 
-                    if found_builtin and not isinstance(name, imports.SubModuleName):
+                    if found_builtin:
                         yield name
                     else:
                         for new_name in new_names:
@@ -305,7 +305,7 @@ class Script(object):
                 return name.is_import()
         else:
             def check(name):
-                return isinstance(name, imports.SubModuleName)
+                return False
 
         names = filter_follow_imports(names, check)
         names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
