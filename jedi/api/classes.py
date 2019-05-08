@@ -16,7 +16,8 @@ from jedi.evaluate.imports import ImportName
 from jedi.evaluate.names import ParamName
 from jedi.evaluate.context import FunctionExecutionContext, MethodContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.stub_context import name_to_stub, stub_to_actual_context_set
+from jedi.evaluate.gradual.stub_context import name_to_stub, \
+    stub_to_actual_context_set, try_stub_to_actual_names
 from jedi.api.keywords import KeywordName
 
 
@@ -326,18 +327,8 @@ class BaseDefinition(object):
         if self._name.tree_name is None:
             return self
 
-        # TODO remove this paragraph, it's ugly and shouldn't be needed
-        inferred = self._name.infer()
-        if inferred:
-            inferred = next(iter(inferred))
-            if isinstance(inferred, MethodContext):
-                c = inferred.class_context
-            else:
-                c = self._name.parent_context
-        else:
-            c = self._name.parent_context
-
-        names = self._evaluator.goto(c, self._name.tree_name)
+        names = self._name.goto()
+        names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
         return [Definition(self._evaluator, n) for n in names]
 
     def infer(self):
