@@ -8,7 +8,7 @@ from jedi.evaluate.utils import PushBackIterator
 from jedi.evaluate import analysis
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext, get_merged_lazy_context
-from jedi.evaluate.names import ParamName
+from jedi.evaluate.names import ParamName, TreeNameDefinition
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet, ContextualizedNode
 from jedi.evaluate.context import iterable
 from jedi.evaluate.param import get_executed_params_and_issues, ExecutedParam
@@ -244,13 +244,21 @@ class TreeArguments(AbstractArguments):
         for named_arg in named_args:
             yield named_arg
 
-    def as_tree_tuple_objects(self):
+    def _as_tree_tuple_objects(self):
         for star_count, argument in unpack_arglist(self.argument_node):
             if argument.type == 'argument':
                 argument, default = argument.children[::2]
             else:
                 default = None
             yield argument, default, star_count
+
+    def iter_calling_names_with_star(self):
+        for name, default, star_count in self._as_tree_tuple_objects():
+            # TODO this function is a bit strange. probably refactor?
+            if not star_count or not isinstance(name, tree.Name):
+                continue
+
+            yield TreeNameDefinition(self.context, name)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
@@ -265,11 +273,8 @@ class TreeArguments(AbstractArguments):
                 break
 
             old_arguments_list.append(arguments)
-            for name, default, star_count in reversed(list(arguments.as_tree_tuple_objects())):
-                if not star_count or not isinstance(name, tree.Name):
-                    continue
-
-                names = self._evaluator.goto(arguments.context, name)
+            for calling_name in reversed(list(arguments.iter_calling_names_with_star())):
+                names = calling_name.goto()
                 if len(names) != 1:
                     break
                 if not isinstance(names[0], ParamName):

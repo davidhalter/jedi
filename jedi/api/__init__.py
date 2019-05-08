@@ -301,13 +301,7 @@ class Script(object):
         names = list(self._evaluator.goto(context, tree_name))
 
         if follow_imports:
-            def check(name):
-                return name.is_import()
-        else:
-            def check(name):
-                return False
-
-        names = filter_follow_imports(names, check)
+            names = filter_follow_imports(names, lambda name: name.is_import())
         names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
 
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
