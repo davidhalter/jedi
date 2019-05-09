@@ -38,7 +38,6 @@ from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-#from jedi.evaluate.gradual.typeshed import try_to_merge_with_stub
 from jedi.evaluate.gradual.stub_context import try_stubs_to_actual_context_set, \
     try_stub_to_actual_names
 from jedi.evaluate.gradual.utils import load_proper_stub_module

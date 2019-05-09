@@ -23,6 +23,10 @@ class AbstractNameDefinition(object):
         # name will always result on itself.
         return {self}
 
+    @abstractmethod
+    def get_qualified_names(self):
+        raise NotImplementedError
+
     def get_root_context(self):
         return self.parent_context.get_root_context()
 
@@ -44,6 +48,12 @@ class AbstractTreeName(AbstractNameDefinition):
         self.parent_context = parent_context
         self.tree_name = tree_name
 
+    def get_qualified_names(self):
+        parent_names = self.parent_context.get_qualified_names()
+        if parent_names is None:
+            return None
+        return parent_names + [self.tree_name.value]
+
     def goto(self):
         return self.parent_context.evaluator.goto(self.parent_context, self.tree_name)
 
@@ -64,6 +74,9 @@ class ContextNameMixin(object):
     def infer(self):
         return ContextSet([self._context])
 
+    def get_qualified_names(self):
+        return self._context.get_qualified_names()
+
     def get_root_context(self):
         if self.parent_context is None:  # A module
             return self._context
@@ -78,6 +91,10 @@ class ContextName(ContextNameMixin, AbstractTreeName):
     def __init__(self, context, tree_name):
         super(ContextName, self).__init__(context.parent_context, tree_name)
         self._context = context
+
+    def goto(self):
+        from jedi.evaluate.gradual.stub_context import try_stub_to_actual_names
+        return try_stub_to_actual_names([self._context.name])
 
 
 class TreeNameDefinition(AbstractTreeName):
@@ -142,6 +159,9 @@ class ImportName(AbstractNameDefinition):
     def __init__(self, parent_context, string_name):
         self._from_module_context = parent_context
         self.string_name = string_name
+
+    def get_qualified_names(self):
+        return []
 
     @property
     def parent_context(self):

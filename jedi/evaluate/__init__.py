@@ -85,7 +85,8 @@ from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi.evaluate.gradual.stub_context import \
-    stub_to_actual_context_set, goto_with_stubs_if_possible, goto_non_stub
+    stub_to_actual_context_set, goto_with_stubs_if_possible, \
+    try_stub_to_actual_names
 
 
 def _execute(context, arguments):
@@ -322,6 +323,11 @@ class Evaluator(object):
         return None
 
     def goto(self, context, name):
+        names = self._goto(context, name)
+        names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
+        return names
+
+    def _goto(self, context, name):
         definition = name.get_definition(import_name_always=True)
         if definition is not None:
             type_ = definition.type
@@ -334,11 +340,8 @@ class Evaluator(object):
             elif type_ == 'param':
                 return [ParamName(context, name)]
             elif type_ in ('funcdef', 'classdef'):
-                if context.is_stub():
-                    return goto_non_stub(context, name)
-                else:
-                    n = TreeNameDefinition(context, name)
-                    return goto_with_stubs_if_possible(n)
+                n = TreeNameDefinition(context, name)
+                return goto_with_stubs_if_possible(n)
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names

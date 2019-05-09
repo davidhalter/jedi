@@ -324,12 +324,8 @@ class BaseDefinition(object):
         ]
 
     def goto_assignments(self):
-        if self._name.tree_name is None:
-            return self
-
-        names = self._name.goto()
-        names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
-        return [Definition(self._evaluator, n) for n in names]
+        return [self if n == self._name else Definition(self._evaluator, n)
+                for n in self._name.goto()]
 
     def infer(self):
         tree_name = self._name.tree_name

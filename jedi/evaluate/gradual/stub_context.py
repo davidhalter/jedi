@@ -113,17 +113,16 @@ def goto_with_stubs_if_possible(name):
     ] or [name]
 
 
-def goto_non_stub(parent_context, tree_name):
-    contexts = stub_to_actual_context_set(parent_context)
-    return contexts.py__getattribute__(tree_name, is_goto=True)
-
-
 def stub_to_actual_context_set(stub_context, ignore_compiled=False):
     stub_module = stub_context.get_root_context()
     if not stub_module.is_stub():
         return ContextSet([stub_context])
 
     qualified_names = stub_context.get_qualified_names()
+    return _infer_from_stub(stub_module, qualified_names, ignore_compiled)
+
+
+def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
     if qualified_names is None:
         return NO_CONTEXTS
 
@@ -147,6 +146,30 @@ def try_stubs_to_actual_context_set(stub_contexts, prefer_stub_to_compiled=False
 @to_list
 def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
     for name in names:
+        module = name.get_root_context()
+        if not module.is_stub():
+            yield name
+            continue
+
+        name_list = name.get_qualified_names()
+        if name_list is None:
+            contexts = NO_CONTEXTS
+        else:
+            contexts = _infer_from_stub(
+                module,
+                name_list[:-1],
+                ignore_compiled=prefer_stub_to_compiled,
+            )
+        if contexts:
+            if name_list:
+                for new_name in contexts.py__getattribute__(name_list[-1], is_goto=True):
+                    yield new_name
+            else:
+                for c in contexts:
+                    yield c.name
+        else:
+            yield name
+        continue  # XXX
         # Using the tree_name is better, if it's available, becuase no
         # information is lost. If the name given is defineda as `foo: int` we
         # would otherwise land on int, which is not what we want. We want foo
