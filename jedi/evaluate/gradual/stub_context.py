@@ -90,6 +90,46 @@ class TypingModuleWrapper(StubModuleContext):
             yield f
 
 
+class _StubName(TreeNameDefinition):
+    def infer(self):
+        inferred = super(_StubName, self).infer()
+        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
+            return [VersionInfo(c) for c in inferred]
+
+        return [
+            StubClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
+            for c in inferred
+        ]
+
+
+class StubFilter(ParserTreeFilter):
+    name_class = _StubName
+
+    def __init__(self, *args, **kwargs):
+        self._search_global = kwargs.pop('search_global')  # Python 2 :/
+        super(StubFilter, self).__init__(*args, **kwargs)
+
+    def _is_name_reachable(self, name):
+        if not super(StubFilter, self)._is_name_reachable(name):
+            return False
+
+        if not self._search_global:
+            # Imports in stub files are only public if they have an "as"
+            # export.
+            definition = name.get_definition()
+            if definition.type in ('import_from', 'import_name'):
+                if name.parent.type not in ('import_as_name', 'dotted_as_name'):
+                    return False
+            n = name.value
+            if n.startswith('_') and not (n.startswith('__') and n.endswith('__')):
+                return False
+        return True
+
+
+class VersionInfo(ContextWrapper):
+    pass
+
+
 def stub_to_actual_context_set(stub_context, ignore_compiled=False):
     stub_module = stub_context.get_root_context()
     if not stub_module.is_stub():
@@ -177,43 +217,3 @@ def to_stub(context):
     for name in qualified_names:
         stub_contexts = stub_contexts.py__getattribute__(name)
     return stub_contexts
-
-
-class _StubName(TreeNameDefinition):
-    def infer(self):
-        inferred = super(_StubName, self).infer()
-        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
-            return [VersionInfo(c) for c in inferred]
-
-        return [
-            StubClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
-            for c in inferred
-        ]
-
-
-class StubFilter(ParserTreeFilter):
-    name_class = _StubName
-
-    def __init__(self, *args, **kwargs):
-        self._search_global = kwargs.pop('search_global')  # Python 2 :/
-        super(StubFilter, self).__init__(*args, **kwargs)
-
-    def _is_name_reachable(self, name):
-        if not super(StubFilter, self)._is_name_reachable(name):
-            return False
-
-        if not self._search_global:
-            # Imports in stub files are only public if they have an "as"
-            # export.
-            definition = name.get_definition()
-            if definition.type in ('import_from', 'import_name'):
-                if name.parent.type not in ('import_as_name', 'dotted_as_name'):
-                    return False
-            n = name.value
-            if n.startswith('_') and not (n.startswith('__') and n.endswith('__')):
-                return False
-        return True
-
-
-class VersionInfo(ContextWrapper):
-    pass
