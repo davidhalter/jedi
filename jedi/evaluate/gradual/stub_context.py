@@ -1,22 +1,19 @@
 import os
 
 from jedi.evaluate.base_context import ContextWrapper
-from jedi.evaluate.context.klass import ClassMixin, ClassContext
 from jedi.evaluate.context.module import ModuleContext
 from jedi.evaluate.filters import ParserTreeFilter, \
     TreeNameDefinition
 from jedi.evaluate.gradual.typing import TypingModuleFilterWrapper
 
 
-class _StubContextMixin(object):
-    def is_stub(self):
-        return True
-
-
-class StubModuleContext(_StubContextMixin, ModuleContext):
+class StubModuleContext(ModuleContext):
     def __init__(self, non_stub_context_set, *args, **kwargs):
         super(StubModuleContext, self).__init__(*args, **kwargs)
         self.non_stub_context_set = non_stub_context_set
+
+    def is_stub(self):
+        return True
 
     def sub_modules_dict(self):
         """
@@ -76,10 +73,6 @@ class StubModuleContext(_StubContextMixin, ModuleContext):
                         yield name[:-4]
 
 
-class StubClass(_StubContextMixin, ClassMixin, ContextWrapper):
-    pass
-
-
 class TypingModuleWrapper(StubModuleContext):
     def get_filters(self, *args, **kwargs):
         filters = super(TypingModuleWrapper, self).get_filters(*args, **kwargs)
@@ -88,16 +81,13 @@ class TypingModuleWrapper(StubModuleContext):
             yield f
 
 
+# From here on down we make looking up the sys.version_info fast.
 class _StubName(TreeNameDefinition):
     def infer(self):
         inferred = super(_StubName, self).infer()
         if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
             return [VersionInfo(c) for c in inferred]
-
-        return [
-            StubClass.create_cached(c.evaluator, c) if isinstance(c, ClassContext) else c
-            for c in inferred
-        ]
+        return inferred
 
 
 class StubFilter(ParserTreeFilter):
