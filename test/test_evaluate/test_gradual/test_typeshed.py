@@ -53,7 +53,6 @@ def test_function(Script, environment):
     def_, = Script(code + '()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, stub_context.StubClass), context
 
     def_, = Script('import threading; threading.Thread').goto_definitions()
     assert isinstance(def_._name._context, ClassContext), def_
@@ -77,7 +76,6 @@ def test_instance(Script):
     def_, = Script('import threading; threading.Thread()').goto_definitions()
     context = def_._name._context
     assert isinstance(context, TreeInstance)
-    assert isinstance(context.class_context, stub_context.StubClass), context
 
 
 def test_class_function(Script):
