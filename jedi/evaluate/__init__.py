@@ -84,9 +84,8 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi.evaluate.gradual.stub_context import \
-    stub_to_actual_context_set, goto_with_stubs_if_possible, \
-    try_stub_to_actual_names
+from jedi.evaluate.gradual.stub_context import try_stub_to_actual_names, \
+    stub_to_actual_context_set
 
 
 def _execute(context, arguments):
@@ -340,8 +339,7 @@ class Evaluator(object):
             elif type_ == 'param':
                 return [ParamName(context, name)]
             elif type_ in ('funcdef', 'classdef'):
-                n = TreeNameDefinition(context, name)
-                return goto_with_stubs_if_possible(n)
+                return [TreeNameDefinition(context, name)]
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names

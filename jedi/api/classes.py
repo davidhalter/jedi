@@ -16,8 +16,7 @@ from jedi.evaluate.imports import ImportName
 from jedi.evaluate.names import ParamName
 from jedi.evaluate.context import FunctionExecutionContext, MethodContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.stub_context import name_to_stub, \
-    stub_to_actual_context_set, try_stub_to_actual_names
+from jedi.evaluate.gradual.stub_context import name_to_stub, stub_to_actual_context_set
 from jedi.api.keywords import KeywordName
 
 

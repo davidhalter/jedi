@@ -90,29 +90,6 @@ class TypingModuleWrapper(StubModuleContext):
             yield f
 
 
-def goto_with_stubs_if_possible(name):
-    return [name]
-    # XXX
-    root = name.parent_context.get_root_context()
-    stub = root.get_root_context().stub_context
-    if stub is None:
-        return [name]
-
-    qualified_names = name.parent_context.get_qualified_names()
-    if qualified_names is None:
-        return [name]
-
-    stub_contexts = ContextSet([stub])
-    for n in qualified_names:
-        stub_contexts = stub_contexts.py__getattribute__(n)
-    names = stub_contexts.py__getattribute__(name.string_name, is_goto=True)
-    return [
-        n
-        for n in names
-        if n.start_pos == name.start_pos and n.parent_context == name.parent_context
-    ] or [name]
-
-
 def stub_to_actual_context_set(stub_context, ignore_compiled=False):
     stub_module = stub_context.get_root_context()
     if not stub_module.is_stub():
