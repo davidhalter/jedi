@@ -4,7 +4,7 @@ import pytest
 
 from jedi.evaluate import compiled
 from jedi.evaluate.helpers import execute_evaluated
-from jedi.evaluate.gradual.stub_context import stub_to_actual_context_set
+from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 
 
 def test_simple(evaluator, environment):

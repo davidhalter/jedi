@@ -93,7 +93,7 @@ class ContextName(ContextNameMixin, AbstractTreeName):
         self._context = context
 
     def goto(self):
-        from jedi.evaluate.gradual.stub_context import try_stub_to_actual_names
+        from jedi.evaluate.gradual.conversion import try_stub_to_actual_names
         return try_stub_to_actual_names([self._context.name])
 
 

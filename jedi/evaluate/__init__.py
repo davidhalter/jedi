@@ -84,7 +84,7 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi.evaluate.gradual.stub_context import try_stub_to_actual_names, \
+from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
     stub_to_actual_context_set
 
 

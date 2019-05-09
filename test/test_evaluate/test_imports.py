@@ -12,7 +12,7 @@ from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.api.project import Project
-from jedi.evaluate.gradual.stub_context import stub_to_actual_context_set
+from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
 
 THIS_DIR = os.path.dirname(__file__)
