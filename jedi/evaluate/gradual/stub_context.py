@@ -169,39 +169,6 @@ def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
                     yield c.name
         else:
             yield name
-        continue  # XXX
-        # Using the tree_name is better, if it's available, becuase no
-        # information is lost. If the name given is defineda as `foo: int` we
-        # would otherwise land on int, which is not what we want. We want foo
-        # from the non-stub module.
-        if name.tree_name is None:
-            actual_contexts = ContextSet.from_sets(
-                stub_to_actual_context_set(c) for c in name.infer()
-            )
-            actual_contexts = actual_contexts.filter(lambda c: not c.is_compiled())
-            if actual_contexts:
-                for s in actual_contexts:
-                    yield s.name
-            else:
-                yield name
-        else:
-            parent_context = name.parent_context
-            if not parent_context.is_stub():
-                yield name
-                continue
-
-            contexts = stub_to_actual_context_set(parent_context)
-            if prefer_stub_to_compiled:
-                # We don't really care about
-                contexts = contexts.filter(lambda c: not c.is_compiled())
-
-            new_names = contexts.py__getattribute__(name.tree_name, is_goto=True)
-
-            if new_names:
-                for n in new_names:
-                    yield n
-            else:
-                yield name
 
 
 def _load_stub_module(module):
