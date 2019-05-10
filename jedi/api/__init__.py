@@ -253,8 +253,6 @@ class Script(object):
 
         context = self._evaluator.create_context(self._get_module(), leaf)
         definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
-        # We don't want stubs here we want the actual contexts, if possible.
-        definitions = try_stubs_to_actual_context_set(definitions, prefer_stub_to_compiled=True)
 
         names = [s.name for s in definitions]
         defs = [classes.Definition(self._evaluator, name) for name in names]

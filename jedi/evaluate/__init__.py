@@ -85,7 +85,7 @@ from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
 from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
-    stub_to_actual_context_set
+    try_stubs_to_actual_context_set
 
 
 def _execute(context, arguments):
@@ -261,6 +261,13 @@ class Evaluator(object):
         return eval_node(context, element)
 
     def goto_definitions(self, context, name):
+        # We don't want stubs here we want the actual contexts, if possible.
+        return try_stubs_to_actual_context_set(
+            self._goto_definitions(context, name),
+            prefer_stub_to_compiled=True
+        )
+
+    def _goto_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
@@ -270,10 +277,7 @@ class Evaluator(object):
                     c = ClassContext(self, context, name.parent)
                 else:
                     c = FunctionContext.from_context(context, name.parent)
-                if context.is_stub():
-                    return stub_to_actual_context_set(c)
-                else:
-                    return ContextSet([c])
+                return ContextSet([c])
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
