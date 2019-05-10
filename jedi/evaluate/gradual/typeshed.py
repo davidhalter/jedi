@@ -91,19 +91,20 @@ def import_module_decorator(func):
         try:
             actual_context_set = evaluator.module_cache.get(import_names)
         except KeyError:
+            if parent_module_context is not None and parent_module_context.is_stub():
+                parent_module_contexts = parent_module_context.non_stub_context_set
+            else:
+                parent_module_contexts = [parent_module_context]
             if import_names == ('os', 'path'):
                 # This is a huge exception, we follow a nested import
                 # ``os.path``, because it's a very important one in Python
                 # that is being achieved by messing with ``sys.modules`` in
                 # ``os``.
-                if parent_module_context is None:
-                    parent_module_context, = evaluator.import_module(('os',), prefer_stubs=False)
-                actual_context_set = parent_module_context.py__getattribute__('path')
+                actual_parent = next(iter(parent_module_contexts))
+                if actual_parent is None:
+                    actual_parent, = evaluator.import_module(('os',), prefer_stubs=False)
+                actual_context_set = actual_parent.py__getattribute__('path')
             else:
-                if parent_module_context is not None and parent_module_context.is_stub():
-                    parent_module_contexts = parent_module_context.non_stub_context_set
-                else:
-                    parent_module_contexts = [parent_module_context]
                 actual_context_set = ContextSet.from_sets(
                     func(evaluator, import_names, p, sys_path,)
                     for p in parent_module_contexts
