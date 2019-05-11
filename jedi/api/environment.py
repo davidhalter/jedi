@@ -317,11 +317,10 @@ def find_system_environments():
 
 def get_system_environments(version):
     """
-    Return the first Python environment found for a string of the form 'X.Y'
+    Return a list of Python environment found for a string of the form 'X.Y'
     where X and Y are the major and minor versions of Python.
-
     :raises: :exc:`.InvalidPythonEnvironment`
-    :returns: :class:`Environment`
+    :returns: list of :class:`Environment`
     """
     exes = which('python' + version, flag="a")
     environments = []
@@ -329,8 +328,8 @@ def get_system_environments(version):
         if exe == sys.executable:
             environments.append(SameEnvironment())
         environments.append(Environment(exe))
-    if len(environments) > 0:
-        return environments
+    # if len(environments) > 0:
+        # return environments
     if os.name == 'nt':
         for exe in _get_executables_from_windows_registry(version):
             # TODO not too sure if this works
