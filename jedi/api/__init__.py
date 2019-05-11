@@ -373,6 +373,8 @@ class Script(object):
         )
         debug.speed('func_call followed')
 
+        # TODO here we use stubs instead of the actual contexts. We should use
+        # the signatures from stubs, but the actual contexts, probably?!
         return [classes.CallSignature(self._evaluator, signature,
                                       call_signature_details.bracket_leaf.start_pos,
                                       call_signature_details.call_index,

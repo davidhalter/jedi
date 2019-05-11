@@ -136,11 +136,14 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     )
 
 
-def evaluate_goto_definition(evaluator, context, leaf):
+def evaluate_goto_definition(evaluator, context, leaf, prefer_stubs=False):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
-        return evaluator.goto_definitions(context, leaf)
+        if prefer_stubs:
+            return evaluator.goto_stub_definitions(context, leaf)
+        else:
+            return evaluator.goto_definitions(context, leaf)
 
     parent = leaf.parent
     if parent.type == 'atom':
@@ -256,5 +259,6 @@ def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos
     yield evaluate_goto_definition(
         evaluator,
         context,
-        bracket_leaf.get_previous_leaf()
+        bracket_leaf.get_previous_leaf(),
+        prefer_stubs=True,
     )

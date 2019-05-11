@@ -263,11 +263,11 @@ class Evaluator(object):
     def goto_definitions(self, context, name):
         # We don't want stubs here we want the actual contexts, if possible.
         return try_stubs_to_actual_context_set(
-            self._goto_definitions(context, name),
+            self.goto_stub_definitions(context, name),
             prefer_stub_to_compiled=True
         )
 
-    def _goto_definitions(self, context, name):
+    def goto_stub_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
