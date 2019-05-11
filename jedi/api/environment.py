@@ -324,6 +324,7 @@ def get_system_environments(version):
     :returns: list of :class:`Environment`
     """
     exes = which('python' + version, flag="a")
+    exes = exes if exes is not None else []
     environments = []
     for exe in exes:
         if exe == sys.executable:
