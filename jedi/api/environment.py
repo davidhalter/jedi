@@ -310,7 +310,8 @@ def find_system_environments():
     """
     for version_string in _SUPPORTED_PYTHONS:
         try:
-            yield get_system_environment(version_string)
+            for environment in get_system_environments(version_string):
+                yield environment
         except InvalidPythonEnvironment:
             pass
 
