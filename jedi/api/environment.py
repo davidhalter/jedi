@@ -315,13 +315,36 @@ def find_system_environments():
             pass
 
 
-# TODO: this function should probably return a list of environments since
-# multiple Python installations can be found on a system for the same version.
-def get_system_environment(version):
+def get_system_environments(version):
     """
     Return the first Python environment found for a string of the form 'X.Y'
     where X and Y are the major and minor versions of Python.
 
+    :raises: :exc:`.InvalidPythonEnvironment`
+    :returns: :class:`Environment`
+    """
+    exes = which('python' + version, flag="a")
+    environments = []
+    for exe in exes:
+        if exe == sys.executable:
+            environments.append(SameEnvironment())
+        environments.append(Environment(exe))
+    if len(environments) > 0:
+        return environments
+    if os.name == 'nt':
+        for exe in _get_executables_from_windows_registry(version):
+            # TODO not too sure if this works
+            environments.append(Environment(exe))
+    # TODO this is duplicate of line 324-325?
+    if len(environments) > 0:
+        return environments
+    raise InvalidPythonEnvironment("Cannot find executable python%s." % version)
+
+
+def get_system_environment(version):
+    """
+    Return the first Python environment found for a string of the form 'X.Y'
+    where X and Y are the major and minor versions of Python.
     :raises: :exc:`.InvalidPythonEnvironment`
     :returns: :class:`Environment`
     """

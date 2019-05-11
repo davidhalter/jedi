@@ -531,7 +531,8 @@ class GeneralizedPopen(subprocess.Popen):
 
 
 # shutil.which is not available on Python 2.7.
-def which(cmd, mode=os.F_OK | os.X_OK, path=None):
+# TODO support s flag if needed in the future
+def which(cmd, mode=os.F_OK | os.X_OK, path=None, flag=""):
     """Given a command, mode, and a PATH string, return the path which
     conforms to the given mode on the PATH, or None if there is no such
     file.
@@ -558,6 +559,7 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
 
     if path is None:
         path = os.environ.get("PATH", os.defpath)
+
     if not path:
         return None
     path = path.split(os.pathsep)
@@ -583,6 +585,7 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
         files = [cmd]
 
     seen = set()
+    names = []
     for dir in path:
         normdir = os.path.normcase(dir)
         if normdir not in seen:
@@ -590,5 +593,11 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
             for thefile in files:
                 name = os.path.join(dir, thefile)
                 if _access_check(name, mode):
-                    return name
+                    if "a" in flag:
+                        names.append(name)
+                    else:
+                        return name
+    if len(names) > 0:
+        return names
     return None
+
