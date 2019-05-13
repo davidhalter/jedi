@@ -128,6 +128,35 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, impo
     except KeyError:
         pass
 
+    for c in actual_context_set:
+        try:
+            method = c.py__file__
+        except AttributeError:
+            pass
+        else:
+            file_path = method()
+            if file_path is not None and file_path.endswith('.py'):
+                m = _try_to_load_stub_from_file(
+                    evaluator,
+                    actual_context_set,
+                    # The file path should end with .pyi
+                    file_path + 'i',
+                    import_names
+                )
+                if m is not None:
+                    return m
+
+    m = _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names)
+    if m is not None:
+        return m
+
+    evaluator.stub_module_cache[import_names] = None
+    # If no stub is found, just return the default.
+
+    return None
+
+
+def _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names):
     import_name = import_names[-1]
     map_ = None
     if len(import_names) == 1:
@@ -143,22 +172,20 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, impo
     if map_ is not None:
         path = map_.get(import_name)
         if path is not None:
-            try:
-                stub_module_node = _load_stub(evaluator, path)
-            except FileNotFoundError:
-                # The file has since been removed after looking for it.
-                # TODO maybe empty cache?
-                pass
-            else:
-                return create_stub_module(
-                    evaluator, actual_context_set, stub_module_node, path,
-                    import_names
-                )
-    evaluator.stub_module_cache[import_names] = None
-    # If no stub is found, just return the default.
+            return _try_to_load_stub_from_file(evaluator, actual_context_set, path, import_names)
 
-    return None
 
+def _try_to_load_stub_from_file(evaluator, actual_context_set, path, import_names):
+    try:
+        stub_module_node = _load_stub(evaluator, path)
+    except FileNotFoundError:
+        # The file that you're looking for doesn't exist (anymore).
+        return None
+    else:
+        return create_stub_module(
+            evaluator, actual_context_set, stub_module_node, path,
+            import_names
+        )
 
 def create_stub_module(evaluator, actual_context_set, stub_module_node, path, import_names):
     if import_names == ('typing',):
