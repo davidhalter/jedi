@@ -124,6 +124,12 @@ def import_module_decorator(func):
 
 
 def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_path, import_names):
+    """
+    Trying to load a stub for a set of import_names.
+
+    This is modelled to work like "PEP 561 -- Distributing and Packaging Type
+    Information", see https://www.python.org/dev/peps/pep-0561.
+    """
     try:
         return evaluator.stub_module_cache[import_names]
     except KeyError:
