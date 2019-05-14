@@ -114,7 +114,8 @@ def import_module_decorator(func):
         if not prefer_stubs:
             return actual_context_set
 
-        stub = _try_to_load_stub(evaluator, actual_context_set, parent_module_context, import_names)
+        stub = _try_to_load_stub(evaluator, actual_context_set,
+                                 parent_module_context, sys_path, import_names)
         if stub is not None:
             return ContextSet([stub])
         return actual_context_set
@@ -122,12 +123,13 @@ def import_module_decorator(func):
     return wrapper
 
 
-def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, import_names):
+def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_path, import_names):
     try:
         return evaluator.stub_module_cache[import_names]
     except KeyError:
         pass
 
+    # 2. try to load pyi files next to py files.
     for c in actual_context_set:
         try:
             method = c.py__file__
@@ -146,13 +148,36 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, impo
                 if m is not None:
                     return m
 
+    # 3. Try to load pyi file somewhere if actual_context_set was not defined.
+    if not actual_context_set:
+        if parent_module_context is not None:
+            # TODO this attribute doesn't always exist
+            check_path = parent_module_context.py__path__()
+            # In case import_names
+            names_for_path = (import_names[-1],)
+        else:
+            check_path = sys_path
+            names_for_path = import_names
+        names_for_path = names_for_path[:-1] + (names_for_path[-1] + '.pyi',)
+
+        for p in check_path:
+            m = _try_to_load_stub_from_file(
+                evaluator,
+                actual_context_set,
+                os.path.join(p, *names_for_path),
+                import_names
+            )
+            if m is not None:
+                return m
+
+    # 4. finally try to load typeshed
     m = _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names)
     if m is not None:
         return m
 
     evaluator.stub_module_cache[import_names] = None
-    # If no stub is found, just return the default.
-
+    # If no stub is found, that's fine, the calling function has to deal with
+    # it.
     return None
 
 
@@ -178,7 +203,7 @@ def _load_from_typeshed(evaluator, actual_context_set, parent_module_context, im
 def _try_to_load_stub_from_file(evaluator, actual_context_set, path, import_names):
     try:
         stub_module_node = _load_stub(evaluator, path)
-    except FileNotFoundError:
+    except OSError:
         # The file that you're looking for doesn't exist (anymore).
         return None
     else:
