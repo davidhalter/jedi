@@ -135,7 +135,16 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_
     except KeyError:
         pass
 
-    # 2. try to load pyi files next to py files.
+    # 1. Try to load foo-stubs folders on path for import name foo.
+    if not parent_module_context:
+        # foo-stubs
+        for p in sys_path:
+            init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
+            m = _try_to_load_stub_from_file(evaluator, actual_context_set, init, import_names)
+            if m is not None:
+                return m
+
+    # 2. Try to load pyi files next to py files.
     for c in actual_context_set:
         try:
             method = c.py__file__
@@ -217,6 +226,7 @@ def _try_to_load_stub_from_file(evaluator, actual_context_set, path, import_name
             evaluator, actual_context_set, stub_module_node, path,
             import_names
         )
+
 
 def create_stub_module(evaluator, actual_context_set, stub_module_node, path, import_names):
     if import_names == ('typing',):
