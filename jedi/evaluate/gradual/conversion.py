@@ -65,20 +65,21 @@ def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
 def _load_stub_module(module):
     if module.is_stub():
         return module
-    from jedi.evaluate.gradual.typeshed import _try_to_load_stub
-    return _try_to_load_stub(
+    from jedi.evaluate.gradual.typeshed import _try_to_load_stub_cached
+    return _try_to_load_stub_cached(
         module.evaluator,
-        ContextSet([module]),
+        import_names=module.string_names,
+        actual_context_set=ContextSet([module]),
         parent_module_context=None,
-        import_names=module.string_names
+        sys_path=module.evaluator.get_sys_path(),
     )
 
 
 def name_to_stub(name):
-    return ContextSet.from_sets(to_stub(c) for c in name.infer())
+    return ContextSet.from_sets(_to_stub(c) for c in name.infer())
 
 
-def to_stub(context):
+def _to_stub(context):
     if context.is_stub():
         return ContextSet([context])
 
