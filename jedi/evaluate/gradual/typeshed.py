@@ -163,7 +163,12 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_
                 if m is not None:
                     return m
 
-    # 3. Try to load pyi file somewhere if actual_context_set was not defined.
+    # 3. finally try to load typeshed
+    m = _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names)
+    if m is not None:
+        return m
+
+    # 4. Try to load pyi file somewhere if actual_context_set was not defined.
     if not actual_context_set:
         if parent_module_context is not None:
             # TODO this attribute doesn't always exist
@@ -184,11 +189,6 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_
             )
             if m is not None:
                 return m
-
-    # 4. finally try to load typeshed
-    m = _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names)
-    if m is not None:
-        return m
 
     evaluator.stub_module_cache[import_names] = None
     # If no stub is found, that's fine, the calling function has to deal with
