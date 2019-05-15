@@ -185,8 +185,12 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
     # 4. Try to load pyi file somewhere if actual_context_set was not defined.
     if not actual_context_set:
         if parent_module_context is not None:
-            # TODO this attribute doesn't always exist
-            check_path = parent_module_context.py__path__()
+            try:
+                method = parent_module_context.py__path__
+            except AttributeError:
+                check_path = []
+            else:
+                check_path = method()
             # In case import_names
             names_for_path = (import_names[-1],)
         else:
