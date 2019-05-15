@@ -158,6 +158,9 @@ class Context(HelperContextMixin, BaseContext):
     def is_module(self):
         return False
 
+    def is_namespace(self):
+        return False
+
     def is_compiled(self):
         return False
 

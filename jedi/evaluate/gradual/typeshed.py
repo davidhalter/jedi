@@ -160,12 +160,18 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
             pass
         else:
             file_path = method()
-            if file_path is not None and file_path.endswith('.py'):
+            file_paths = []
+            if c.is_namespace():
+                file_paths = [os.path.join(p, '__init__.pyi') for p in c.py__path__()]
+            elif file_path is not None and file_path.endswith('.py'):
+                file_paths = [file_path + 'i']
+
+            for file_path in file_paths:
                 m = _try_to_load_stub_from_file(
                     evaluator,
                     actual_context_set,
                     # The file path should end with .pyi
-                    file_path + 'i',
+                    file_path,
                     import_names
                 )
                 if m is not None:
@@ -186,14 +192,13 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
         else:
             check_path = sys_path
             names_for_path = import_names
-        names_for_path = names_for_path[:-1] + (names_for_path[-1] + '.pyi',)
 
         for p in check_path:
             m = _try_to_load_stub_from_file(
                 evaluator,
                 actual_context_set,
-                os.path.join(p, *names_for_path),
-                import_names
+                os.path.join(p, *names_for_path) + '.pyi',
+                import_names,
             )
             if m is not None:
                 return m

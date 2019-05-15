@@ -54,6 +54,9 @@ class ImplicitNamespaceContext(Context, SubModuleDictMixin):
     def py__name__(self):
         return self._fullname
 
+    def is_namespace(self):
+        return True
+
     def is_stub(self):
         return False
 
