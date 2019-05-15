@@ -114,8 +114,8 @@ def import_module_decorator(func):
         if not prefer_stubs:
             return actual_context_set
 
-        stub = _try_to_load_stub(evaluator, actual_context_set,
-                                 parent_module_context, sys_path, import_names)
+        stub = _try_to_load_stub_cached(evaluator, import_names, actual_context_set,
+                                        parent_module_context, sys_path)
         if stub is not None:
             return ContextSet([stub])
         return actual_context_set
@@ -123,18 +123,26 @@ def import_module_decorator(func):
     return wrapper
 
 
-def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_path, import_names):
+def _try_to_load_stub_cached(evaluator, import_names, *args, **kwargs):
+    try:
+        return evaluator.stub_module_cache[import_names]
+    except KeyError:
+        pass
+
+    evaluator.stub_module_cache[import_names] = None
+    evaluator.stub_module_cache[import_names] = result = \
+        _try_to_load_stub(evaluator, import_names, *args, **kwargs)
+    return result
+
+
+def _try_to_load_stub(evaluator, import_names, actual_context_set,
+                      parent_module_context, sys_path):
     """
     Trying to load a stub for a set of import_names.
 
     This is modelled to work like "PEP 561 -- Distributing and Packaging Type
     Information", see https://www.python.org/dev/peps/pep-0561.
     """
-    try:
-        return evaluator.stub_module_cache[import_names]
-    except KeyError:
-        pass
-
     # 1. Try to load foo-stubs folders on path for import name foo.
     if not parent_module_context:
         # foo-stubs
@@ -163,7 +171,7 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_
                 if m is not None:
                     return m
 
-    # 3. finally try to load typeshed
+    # 3. Try to load typeshed
     m = _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names)
     if m is not None:
         return m
@@ -190,7 +198,6 @@ def _try_to_load_stub(evaluator, actual_context_set, parent_module_context, sys_
             if m is not None:
                 return m
 
-    evaluator.stub_module_cache[import_names] = None
     # If no stub is found, that's fine, the calling function has to deal with
     # it.
     return None
@@ -243,5 +250,4 @@ def create_stub_module(evaluator, actual_context_set, stub_module_node, path, im
         code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
         is_package=file_name == '__init__.pyi',
     )
-    evaluator.stub_module_cache[import_names] = stub_module_context
     return stub_module_context
