@@ -237,14 +237,19 @@ class Completion:
         debug.dbg('trailer completion contexts: %s', contexts, color='MAGENTA')
         for context in contexts:
             for filter in context.get_filters(
-                    search_global=False, origin_scope=user_context.tree_node):
+                    search_global=False,
+                    origin_scope=user_context.tree_node):
                 completion_names += filter.values()
 
         for context in contexts:
-            stub_contexts = stub_to_actual_context_set(context, ignore_compiled=True)
-            for stub_context in stub_contexts:
-                for filter in stub_context.get_filters(
-                        search_global=False, origin_scope=user_context.tree_node):
+            if not context.is_stub():
+                continue
+
+            actual_contexts = stub_to_actual_context_set(context, ignore_compiled=True)
+            for c in actual_contexts:
+                for filter in c.get_filters(
+                        search_global=False,
+                        origin_scope=user_context.tree_node):
                     completion_names += filter.values()
         return completion_names
 
