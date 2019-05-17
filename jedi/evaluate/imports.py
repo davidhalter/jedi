@@ -352,17 +352,24 @@ class Importer(object):
                     if os.path.isdir(flaskext):
                         names += self._get_module_names([flaskext])
 
-            for context in self.follow():
+            contexts = self.follow()
+            for context in contexts:
                 # Non-modules are not completable.
                 if context.api_type != 'module':  # not a module
                     continue
                 names += context.sub_modules_dict().values()
 
-                if only_modules:
-                    continue
-
-                for filter in context.get_filters(search_global=False):
-                    names += filter.values()
+            if not only_modules:
+                from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
+                contexts = ContextSet([context])
+                both_contexts = ContextSet.from_sets(
+                    stub_to_actual_context_set(context, ignore_compiled=True)
+                    for context in contexts
+                    if context.is_stub()
+                ) | contexts
+                for c in both_contexts:
+                    for filter in c.get_filters(search_global=False):
+                        names += filter.values()
         else:
             if self.level:
                 # We only get here if the level cannot be properly calculated.

@@ -31,7 +31,7 @@ with_stub.in_
 #? ['in_with_stub_both', 'in_with_stub_python', 'in_with_stub_stub']
 from stub_folder.with_stub import in_
 
-#? ['with_stub', 'stub_only']
+#? ['with_stub', 'stub_only', 'with_stub_folder', 'stub_only_folder']
 from stub_folder.
 
 # -------------------------
