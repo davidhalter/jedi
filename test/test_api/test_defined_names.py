@@ -165,7 +165,6 @@ def test_no_error(environment):
                 a = 20
         """)
     func_name, = names(code)
-    print(func_name.defined_names())
     a, b, a20 = func_name.defined_names()
     assert a.name == 'a'
     assert b.name == 'b'

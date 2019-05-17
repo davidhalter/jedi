@@ -159,7 +159,6 @@ def get_call_signature(funcdef, width=72, call_string=None,
     params = funcdef.get_params()
     if omit_first_param:
         params = params[1:]
-    print(params, omit_first_param)
     p = '(' + ''.join(param.get_code() for param in params).strip() + ')'
     # TODO this is pretty bad, we should probably just normalize.
     p = re.sub(r'\s+', ' ', p)
