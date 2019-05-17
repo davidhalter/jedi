@@ -34,7 +34,10 @@ def test_follow_import_incomplete(Script, environment):
 
     # incomplete `from * import` part
     datetime = check_follow_definition_types(Script, "from datetime import datetim")
-    assert datetime == ['class']
+    if environment.version_info.major == 2:
+        assert datetime == ['class']
+    else:
+        assert set(datetime) == {'class', 'instance'}  # py3: builtin and pure py version
     # os.path check
     ospath = check_follow_definition_types(Script, "from os.path import abspat")
     assert ospath == ['function']
