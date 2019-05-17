@@ -108,6 +108,9 @@ def warning(message, *args, **kwargs):
         debug_function('RED', i + 'warning: ' + message)
 
 
+error = warning  # Just for compatibility with logging.
+
+
 def speed(name):
     if debug_function and enable_speed:
         now = time.time()
