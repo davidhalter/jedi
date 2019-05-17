@@ -24,8 +24,15 @@ with_stub.in_with_stub_stub
 
 #? ['in_stub_only']
 stub_only.in_
+#? ['in_stub_only']
+from stub_folder.stub_only import in_
 #? ['in_with_stub_both', 'in_with_stub_python', 'in_with_stub_stub']
 with_stub.in_
+#? ['in_with_stub_both', 'in_with_stub_python', 'in_with_stub_stub']
+from stub_folder.with_stub import in_
+
+#? ['with_stub', 'stub_only']
+from stub_folder.
 
 # -------------------------
 # Folders
