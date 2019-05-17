@@ -293,7 +293,9 @@ class Script(object):
 
         tree_name = self._module_node.get_name_of_position(self._pos)
         if tree_name is None:
-            return []
+            # Without a name we really just want to jump to the result e.g.
+            # executed by `foo()`, if we the cursor is after `)`.
+            return self.goto_definitions()
         context = self._evaluator.create_context(self._get_module(), tree_name)
         names = list(self._evaluator.goto(context, tree_name))
 
