@@ -21,6 +21,7 @@ rm -rf $PROJECT_NAME
 git clone .. $PROJECT_NAME
 cd $PROJECT_NAME
 git checkout $BRANCH
+git submodule update --init
 
 # Test first.
 tox
