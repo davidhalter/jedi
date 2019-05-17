@@ -16,7 +16,7 @@ def ScriptInStubFolder(Script):
     ('code', 'expected'), [
         ('from no_python import foo', ['int']),
         ('from with_python import stub_only', ['str']),
-        ('from with_python import python_only', []),
+        ('from with_python import python_only', ['int']),
         ('from with_python import both', ['int']),
         ('from with_python import something_random', []),
         ('from with_python.module import in_sub_module', ['int']),

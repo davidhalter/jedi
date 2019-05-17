@@ -29,6 +29,7 @@ from jedi.evaluate.filters import get_global_filters
 from jedi.evaluate.names import TreeNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.parser_utils import is_scope, get_parent_scope
+from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 
 
 class NameFinder(object):
@@ -116,7 +117,17 @@ class NameFinder(object):
 
             return get_global_filters(self._evaluator, self._context, position, origin_scope)
         else:
-            return self._context.get_filters(search_global, self._position, origin_scope=origin_scope)
+            return self._get_context_filters(origin_scope)
+
+    def _get_context_filters(self, origin_scope):
+        for f in self._context.get_filters(False, self._position, origin_scope=origin_scope):
+            yield f
+        # This covers the case where a stub files are incomplete.
+        if self._context.is_stub():
+            contexts = stub_to_actual_context_set(self._context, ignore_compiled=True)
+            for c in contexts:
+                for f in c.get_filters():
+                    yield f
 
     def filter_name(self, filters):
         """
