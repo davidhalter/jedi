@@ -180,6 +180,10 @@ def eval_atom(context, atom):
     might be a name or a literal as well.
     """
     if atom.type == 'name':
+        if atom.value in ('True', 'False', 'None'):
+            # Python 2...
+            return ContextSet([compiled.builtin_from_name(context.evaluator, atom.value)])
+
         # This is the first global lookup.
         stmt = tree.search_ancestor(
             atom, 'expr_stmt', 'lambdef'

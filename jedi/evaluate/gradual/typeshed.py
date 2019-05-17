@@ -234,7 +234,7 @@ def _load_from_typeshed(evaluator, actual_context_set, parent_module_context, im
 def _try_to_load_stub_from_file(evaluator, actual_context_set, path, import_names):
     try:
         stub_module_node = _load_stub(evaluator, path)
-    except OSError:
+    except (OSError, IOError):  # IOError is Python 2 only
         # The file that you're looking for doesn't exist (anymore).
         return None
     else:

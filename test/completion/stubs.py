@@ -1,3 +1,4 @@
+# python >= 3.4
 from stub_folder import with_stub, stub_only, with_stub_folder, stub_only_folder
 
 # -------------------------

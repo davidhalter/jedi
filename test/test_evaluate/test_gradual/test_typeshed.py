@@ -60,11 +60,11 @@ def test_function(Script, environment):
 
 def test_keywords_variable(Script):
     code = 'import keyword; keyword.kwlist'
-    seq1, seq2 = Script(code).goto_definitions()
-    assert seq1.name, seq2.name == 'Sequence'
-    # This points towards the typeshed implementation
-    stub_seq, = seq1.goto_stubs()
-    assert typeshed.TYPESHED_PATH in stub_seq.module_path
+    for seq in Script(code).goto_definitions():
+        assert seq.name == 'Sequence'
+        # This points towards the typeshed implementation
+        stub_seq, = seq.goto_stubs()
+        assert typeshed.TYPESHED_PATH in stub_seq.module_path
 
 
 def test_class(Script):
