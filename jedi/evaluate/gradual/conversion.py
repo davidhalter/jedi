@@ -9,8 +9,19 @@ def stub_to_actual_context_set(stub_context, ignore_compiled=False):
     if not stub_module.is_stub():
         return ContextSet([stub_context])
 
+    was_instance = stub_context.is_instance()
+    if was_instance:
+        stub_context = stub_context.py__class__()
+
     qualified_names = stub_context.get_qualified_names()
-    return _infer_from_stub(stub_module, qualified_names, ignore_compiled)
+    contexts = _infer_from_stub(stub_module, qualified_names, ignore_compiled)
+    if was_instance:
+        contexts = ContextSet.from_sets(
+            c.execute_evaluated()
+            for c in contexts
+            if c.is_class()
+        )
+    return contexts
 
 
 def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
@@ -83,6 +94,10 @@ def _to_stub(context):
     if context.is_stub():
         return ContextSet([context])
 
+    was_instance = context.is_instance()
+    if was_instance:
+        context = context.py__class__()
+
     qualified_names = context.get_qualified_names()
     stub_module = _load_stub_module(context.get_root_context())
     if stub_module is None or qualified_names is None:
@@ -91,4 +106,11 @@ def _to_stub(context):
     stub_contexts = ContextSet([stub_module])
     for name in qualified_names:
         stub_contexts = stub_contexts.py__getattribute__(name)
+
+    if was_instance:
+        stub_contexts = ContextSet.from_sets(
+            c.execute_evaluated()
+            for c in stub_contexts
+            if c.is_class()
+        )
     return stub_contexts

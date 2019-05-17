@@ -60,10 +60,11 @@ def test_function(Script, environment):
 
 def test_keywords_variable(Script):
     code = 'import keyword; keyword.kwlist'
-    def_, = Script(code).goto_definitions()
-    assert def_.name == 'Sequence'
+    seq1, seq2 = Script(code).goto_definitions()
+    assert seq1.name, seq2.name == 'Sequence'
     # This points towards the typeshed implementation
-    assert typeshed.TYPESHED_PATH in def_.module_path
+    stub_seq, = seq1.goto_stubs()
+    assert typeshed.TYPESHED_PATH in stub_seq.module_path
 
 
 def test_class(Script):
@@ -187,6 +188,7 @@ def _assert_is_same(d1, d2):
     'code', [
         'import os; os.walk',
         'from collections import Counter; Counter',
+        'from collections import Counter; Counter()',
         'from collections import Counter; Counter.most_common',
     ])
 def test_goto_stubs_on_itself(Script, code, type_):

@@ -9,6 +9,7 @@ from parso.python.parser import Parser
 from parso.python import tree
 
 from jedi._compatibility import u
+from jedi.evaluate.base_context import NO_CONTEXTS
 from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi.evaluate.compiled import get_string_context_set
@@ -146,15 +147,22 @@ def evaluate_goto_definition(evaluator, context, leaf, prefer_stubs=False):
             return evaluator.goto_definitions(context, leaf)
 
     parent = leaf.parent
+    definitions = NO_CONTEXTS
     if parent.type == 'atom':
-        return context.eval_node(leaf.parent)
+        definitions = context.eval_node(leaf.parent)
     elif parent.type == 'trailer':
-        return evaluate_call_of_leaf(context, leaf)
+        definitions = evaluate_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         return eval_atom(context, leaf)
     elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
         return get_string_context_set(evaluator)
-    return []
+    if prefer_stubs:
+        return definitions
+    from jedi.evaluate.gradual.conversion import try_stubs_to_actual_context_set
+    return try_stubs_to_actual_context_set(
+        definitions,
+        prefer_stub_to_compiled=True,
+    )
 
 
 CallSignatureDetails = namedtuple(
