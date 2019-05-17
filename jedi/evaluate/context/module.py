@@ -1,5 +1,6 @@
 import re
 import os
+import logging
 
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.names import ContextNameMixin, AbstractNameDefinition
@@ -7,6 +8,8 @@ from jedi.evaluate.filters import GlobalNameFilter, ParserTreeFilter, DictFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
 from jedi.evaluate.names import SubModuleName
+
+logger = logging.getLogger(__name__)
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -35,6 +38,32 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
+def iter_module_names(evaluator, paths):
+    # Python modules/packages
+    for n in evaluator.compiled_subprocess.list_module_names(paths):
+        yield n
+
+    for path in paths:
+        try:
+            dirs = os.listdir(path)
+        except OSError:
+            # The file might not exist or reading it might lead to an error.
+            logger.error("Not possible to list directory: %s", path)
+            continue
+        for name in dirs:
+            # Namespaces
+            if os.path.isdir(os.path.join(path, name)):
+                # pycache is obviously not an interestin namespace. Also the
+                # name must be a valid identifier.
+                # TODO use str.isidentifier, once Python 2 is removed
+                if name != '__pycache__' and not re.search('\W|^\d', name):
+                    yield name
+            # Stub files
+            if name.endswith('.pyi'):
+                if name != '__init__.pyi':
+                    yield name[:-4]
+
+
 class SubModuleDictMixin(object):
     @evaluator_method_cache()
     def sub_modules_dict(self):
@@ -48,7 +77,7 @@ class SubModuleDictMixin(object):
         except AttributeError:
             pass
         else:
-            mods = self._iter_module_names(method())
+            mods = iter_module_names(self.evaluator, method())
             for name in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self, name)
@@ -56,9 +85,6 @@ class SubModuleDictMixin(object):
         # In the case of an import like `from x.` we don't need to
         # add all the variables, this is only about submodules.
         return names
-
-    def _iter_module_names(self, path):
-        return self.evaluator.compiled_subprocess.list_module_names(path)
 
 
 class ModuleMixin(SubModuleDictMixin):

@@ -178,9 +178,9 @@ def test_hashlib_params(Script, environment):
     if environment.version_info < (3,):
         pytest.skip()
 
-    script = Script(source='from hashlib import ', line=1, column=20)
-    c = script.completions()
-    assert c[2].params
+    script = Script(source='from hashlib import sha256')
+    c, = script.completions()
+    assert [p.name for p in c.params] == ['arg']
 
 
 def test_signature_params(Script):

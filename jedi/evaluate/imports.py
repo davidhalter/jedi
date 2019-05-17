@@ -32,6 +32,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.names import ImportName, SubModuleName
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.evaluate.gradual.typeshed import import_module_decorator
+from jedi.evaluate.context.module import iter_module_names
 
 
 class ModuleCache(object):
@@ -309,18 +310,16 @@ class Importer(object):
         Get the names of all modules in the search_path. This means file names
         and not names defined in the files.
         """
-        sub = self._evaluator.compiled_subprocess
-
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
             names += [ImportName(self.module_context, name)
-                      for name in sub.get_builtin_module_names()]
+                      for name in self._evaluator.compiled_subprocess.get_builtin_module_names()]
 
         if search_path is None:
             search_path = self._sys_path_with_modifications()
 
-        for name in sub.list_module_names(search_path):
+        for name in iter_module_names(self._evaluator, search_path):
             if in_module is None:
                 n = ImportName(self.module_context, name)
             else:
@@ -361,7 +360,6 @@ class Importer(object):
 
             if not only_modules:
                 from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
-                contexts = ContextSet([context])
                 both_contexts = ContextSet.from_sets(
                     stub_to_actual_context_set(context, ignore_compiled=True)
                     for context in contexts
