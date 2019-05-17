@@ -62,15 +62,19 @@ def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
                 name_list[:-1],
                 ignore_compiled=prefer_stub_to_compiled,
             )
-        if contexts:
-            if name_list:
-                for new_name in contexts.py__getattribute__(name_list[-1], is_goto=True):
-                    yield new_name
-            else:
-                for c in contexts:
-                    yield c.name
-        else:
-            yield name
+        if contexts and name_list:
+            new_names = contexts.py__getattribute__(name_list[-1], is_goto=True)
+            for new_name in new_names:
+                yield new_name
+            if new_names:
+                continue
+        elif contexts:
+            for c in contexts:
+                yield c.name
+            continue
+        # This is the part where if we haven't found anything, just return the
+        # stub name.
+        yield name
 
 
 def _load_stub_module(module):

@@ -13,6 +13,14 @@ with_stub.in_with_stub_python
 #? float()
 with_stub.in_with_stub_stub
 
+#! ['in_stub_only: int']
+stub_only.in_stub_only
+#! ['in_with_stub_both = 5']
+with_stub.in_with_stub_both
+#! ['in_with_stub_python = 8']
+with_stub.in_with_stub_python
+#! ['in_with_stub_stub: float']
+with_stub.in_with_stub_stub
 
 # -------------------------
 # Folders
