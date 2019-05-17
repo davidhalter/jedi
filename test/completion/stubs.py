@@ -22,6 +22,11 @@ with_stub.in_with_stub_python
 #! ['in_with_stub_stub: float']
 with_stub.in_with_stub_stub
 
+#? ['in_stub_only']
+stub_only.in_
+#? ['in_with_stub_both', 'in_with_stub_python', 'in_with_stub_stub']
+with_stub.in_
+
 # -------------------------
 # Folders
 # -------------------------
@@ -34,6 +39,11 @@ with_stub_folder.in_with_stub_both_folder
 with_stub_folder.in_with_stub_python_folder
 #? float()
 with_stub_folder.in_with_stub_stub_folder
+
+#? ['in_stub_only_folder']
+stub_only_folder.in_
+#? ['in_with_stub_both_folder', 'in_with_stub_python_folder', 'in_with_stub_stub_folder']
+with_stub_folder.in_
 
 # -------------------------
 # Folders nested with stubs
@@ -53,6 +63,13 @@ nested_with_stub.in_stub
 #? str()
 python_only.in_python
 
+#? ['in_stub_only_folder']
+stub_only_folder.in_
+#? ['in_with_stub_both_folder', 'in_with_stub_python_folder', 'in_with_stub_stub_folder']
+with_stub_folder.in_
+#? ['in_python']
+python_only.in_
+
 # -------------------------
 # Folders nested with stubs
 # -------------------------
@@ -70,3 +87,10 @@ nested_with_stub.in_python
 nested_with_stub.in_stub
 #? str()
 python_only.in_python
+
+#? ['in_stub_only']
+nested_stub_only.in_
+#? ['in_both', 'in_python', 'in_stub']
+nested_with_stub.in_
+#? ['in_python']
+python_only.in_

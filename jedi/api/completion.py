@@ -11,6 +11,7 @@ from jedi.evaluate import imports
 from jedi.api import keywords
 from jedi.evaluate.helpers import evaluate_call_of_leaf, parse_dotted_names
 from jedi.evaluate.filters import get_global_filters
+from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 from jedi.parser_utils import get_statement_of_position
 
 
@@ -238,6 +239,13 @@ class Completion:
             for filter in context.get_filters(
                     search_global=False, origin_scope=user_context.tree_node):
                 completion_names += filter.values()
+
+        for context in contexts:
+            stub_contexts = stub_to_actual_context_set(context, ignore_compiled=True)
+            for stub_context in stub_contexts:
+                for filter in stub_context.get_filters(
+                        search_global=False, origin_scope=user_context.tree_node):
+                    completion_names += filter.values()
         return completion_names
 
     def _get_importer_names(self, names, level=0, only_modules=True):
