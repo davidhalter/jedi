@@ -111,4 +111,4 @@ def test_os_path(Script):
 
 def test_os_issues(Script):
     """Issue #873"""
-    assert not Script('import os\nos.nt''').completions()
+    assert [c.name for c in Script('import os\nos.nt''').completions()] == ['nt']
