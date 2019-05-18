@@ -28,6 +28,7 @@ from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
 from jedi.evaluate.syntax_tree import is_string
+from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 
 
 # Copied from Python 3.6's stdlib.
@@ -283,7 +284,13 @@ def builtins_reversed(sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    instance = TreeInstance(obj.evaluator, obj.parent_context, obj, ValuesArguments([]))
+    reversed_non_stub, = stub_to_actual_context_set(obj)
+    instance = TreeInstance(
+        obj.evaluator,
+        reversed_non_stub.parent_context,
+        reversed_non_stub,
+        ValuesArguments([])
+    )
     return ContextSet([ReversedObject(instance, list(reversed(ordered)))])
 
 
