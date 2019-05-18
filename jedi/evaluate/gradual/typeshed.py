@@ -2,7 +2,7 @@ import os
 import re
 
 from parso.file_io import FileIO
-from jedi._compatibility import FileNotFoundError
+from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.base_context import ContextSet
@@ -31,6 +31,7 @@ def _create_stub_map(directory):
             return
 
         for entry in listed:
+            entry = cast_path(entry)
             path = os.path.join(directory, entry)
             if os.path.isdir(path):
                 init = os.path.join(path, '__init__.pyi')

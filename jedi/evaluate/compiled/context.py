@@ -5,7 +5,7 @@ import re
 from functools import partial
 
 from jedi import debug
-from jedi._compatibility import force_unicode, Parameter
+from jedi._compatibility import force_unicode, Parameter, cast_path
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter
 from jedi.evaluate.names import AbstractNameDefinition, ContextNameMixin
@@ -80,7 +80,7 @@ class CompiledObject(Context):
 
     @CheckAttribute()
     def py__path__(self):
-        return self.access_handle.py__path__()
+        return map(cast_path, self.access_handle.py__path__())
 
     @property
     def string_names(self):
@@ -97,7 +97,7 @@ class CompiledObject(Context):
         return self.access_handle.py__bool__()
 
     def py__file__(self):
-        return self.access_handle.py__file__()
+        return cast_path(self.access_handle.py__file__())
 
     def is_class(self):
         return self.access_handle.is_class()
