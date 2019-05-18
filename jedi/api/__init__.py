@@ -119,6 +119,7 @@ class Script(object):
             code=source,
             path=self.path,
             encoding=encoding,
+            use_latest_grammar=path and path.endswith('.pyi'),
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
             cache_path=settings.cache_directory,
