@@ -17,7 +17,7 @@ readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 with open('requirements.txt') as f:
     install_requires = f.read().splitlines()
 
-assert os.path.isfile("third_party/typeshed/LICENSE"), \
+assert os.path.isfile("jedi/third_party/typeshed/LICENSE"), \
     "Please download the typeshed submodule first"
 
 setup(name='jedi',
