@@ -172,13 +172,6 @@ class ClassMixin(FunctionAndClassMixin):
                             mro.append(cls_new)
                             yield cls_new
 
-    def _create_class_filter(self, cls, origin_scope, is_instance):
-        return ClassFilter(
-            self.evaluator, self, node_context=cls,
-            origin_scope=origin_scope,
-            is_instance=is_instance
-        )
-
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, is_instance=False):
         if search_global:
@@ -194,7 +187,11 @@ class ClassMixin(FunctionAndClassMixin):
                     for filter in cls.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield self._create_class_filter(cls, origin_scope, is_instance)
+                    yield ClassFilter(
+                        self.evaluator, self, node_context=cls,
+                        origin_scope=origin_scope,
+                        is_instance=is_instance
+                    )
         if not is_instance:
             from jedi.evaluate.compiled import builtin_from_name
             type_ = builtin_from_name(self.evaluator, u'type')
