@@ -109,7 +109,7 @@ class Evaluator(object):
         self.compiled_subprocess = environment.get_evaluator_subprocess(self)
         self.grammar = environment.get_grammar()
 
-        self.latest_grammar = parso.load_grammar(version='3.6')
+        self.latest_grammar = parso.load_grammar(version='3.7')
         self.memoize_cache = {}  # for memoize decorators
         self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
         self.stub_module_cache = {}  # Dict[Tuple[str, ...], Optional[ModuleContext]]
