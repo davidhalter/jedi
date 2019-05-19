@@ -32,8 +32,9 @@ class AbstractNameDefinition(object):
 
     def __repr__(self):
         if self.start_pos is None:
-            return '<%s: %s>' % (self.__class__.__name__, self.string_name)
-        return '<%s: %s@%s>' % (self.__class__.__name__, self.string_name, self.start_pos)
+            return '<%s: string_name=%s>' % (self.__class__.__name__, self.string_name)
+        return '<%s: string_name=%s start_pos=%s>' % (self.__class__.__name__,
+                                                      self.string_name, self.start_pos)
 
     def is_import(self):
         return False
