@@ -3,6 +3,7 @@ from abc import abstractproperty
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
+from jedi.evaluate.helpers import contexts_from_qualified_names
 from jedi.evaluate.filters import AbstractFilter
 from jedi.evaluate.names import ContextName, TreeNameDefinition
 from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
@@ -369,7 +370,8 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         self.instance = instance
 
     def py__class__(self):
-        return compiled.get_special_object(self.evaluator, u'BOUND_METHOD_CLASS')
+        c, = contexts_from_qualified_names(self.evaluator, 'types', 'MethodType')
+        return c
 
     def _get_arguments(self, arguments):
         if arguments is None:
