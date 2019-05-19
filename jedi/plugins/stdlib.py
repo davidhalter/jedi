@@ -18,7 +18,7 @@ from jedi.evaluate.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
-from jedi.evaluate.context.instance import TreeInstance, \
+from jedi.evaluate.context.instance import \
     AbstractInstanceContext, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper
@@ -28,7 +28,7 @@ from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
 from jedi.evaluate.syntax_tree import is_string
-from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
+from jedi.evaluate.filters import AbstractObjectOverwrite, publish_method
 
 
 # Copied from Python 3.6's stdlib.
@@ -247,7 +247,6 @@ def builtins_super(types, objects, context):
     return NO_CONTEXTS
 
 
-from jedi.evaluate.filters import AbstractObjectOverwrite, publish_method
 class ReversedObject(AbstractObjectOverwrite, ContextWrapper):
     def __init__(self, reversed_obj, iter_list):
         super(ReversedObject, self).__init__(reversed_obj)
@@ -284,14 +283,8 @@ def builtins_reversed(sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    reversed_non_stub, = stub_to_actual_context_set(obj)
-    instance = TreeInstance(
-        obj.evaluator,
-        reversed_non_stub.parent_context,
-        reversed_non_stub,
-        ValuesArguments([])
-    )
-    return ContextSet([ReversedObject(instance, list(reversed(ordered)))])
+    seq, = obj.evaluator.typing_module.py__getattribute__('Iterator').execute_evaluated()
+    return ContextSet([ReversedObject(seq, list(reversed(ordered)))])
 
 
 @argument_clinic('obj, type, /', want_arguments=True, want_evaluator=True)
