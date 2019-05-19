@@ -48,13 +48,12 @@ _numpy_doc_string_cache = None
 
 def _get_numpy_doc_string_cls():
     global _numpy_doc_string_cache
-    if isinstance(_numpy_doc_string_cache, ImportError):
+    if isinstance(_numpy_doc_string_cache, (ImportError, SyntaxError)):
         raise _numpy_doc_string_cache
     try:
         from numpydoc.docscrape import NumpyDocString
         _numpy_doc_string_cache = NumpyDocString
-    except ImportError as e:
-        _numpy_doc_string_cache = e
+    except (ImportError, SyntaxError) as e:
         raise
     return _numpy_doc_string_cache
 
@@ -65,7 +64,7 @@ def _search_param_in_numpydocstr(docstr, param_str):
         # This is a non-public API. If it ever changes we should be
         # prepared and return gracefully.
         params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
-    except (KeyError, AttributeError, ImportError):
+    except (KeyError, AttributeError, ImportError, SyntaxError):
         return []
     for p_name, p_type, p_descr in params:
         if p_name == param_str:
