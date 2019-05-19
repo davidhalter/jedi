@@ -438,12 +438,3 @@ def _is_class_instance(obj):
         return False
     else:
         return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
-
-
-class _SPECIAL_OBJECTS(object):
-    BOUND_METHOD_CLASS = type(DirectObjectAccess(None, None).py__bool__)
-
-
-def get_special_object(evaluator, identifier):
-    obj = getattr(_SPECIAL_OBJECTS, identifier)
-    return create_access_path(evaluator, obj)

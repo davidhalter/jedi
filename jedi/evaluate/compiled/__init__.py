@@ -46,13 +46,6 @@ def create_simple_object(evaluator, obj):
     return CompiledValue(instance, compiled_obj)
 
 
-def get_special_object(evaluator, identifier):
-    return create_from_access_path(
-        evaluator,
-        evaluator.compiled_subprocess.get_special_object(identifier)
-    )
-
-
 def get_string_context_set(evaluator):
     return execute_evaluated(builtin_from_name(evaluator, u'str'))
 
