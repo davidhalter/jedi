@@ -18,7 +18,7 @@ How to run tests?
 +++++++++++++++++
 
 Jedi uses pytest_ to run unit and integration tests.  To run tests,
-simply run ``py.test``.  You can also use tox_ to run tests for
+simply run ``pytest``.  You can also use tox_ to run tests for
 multiple Python versions.
 
 .. _pytest: http://pytest.org
@@ -30,7 +30,7 @@ definitions), ``#!`` (assignments), or ``#<`` (usages).
 There is also support for third party libraries. In a normal test run they are
 not being executed, you have to provide a ``--thirdparty`` option.
 
-In addition to standard `-k` and `-m` options in py.test, you can use
+In addition to standard `-k` and `-m` options in pytest, you can use the
 `-T` (`--test-files`) option to specify integration test cases to run.
 It takes the format of ``FILE_NAME[:LINE[,LINE[,...]]]`` where
 ``FILE_NAME`` is a file in ``test/completion`` and ``LINE`` is a line
@@ -38,20 +38,20 @@ number of the test comment.  Here is some recipes:
 
 Run tests only in ``basic.py`` and ``imports.py``::
 
-    py.test test/test_integration.py -T basic.py -T imports.py
+    pytest test/test_integration.py -T basic.py -T imports.py
 
 Run test at line 4, 6, and 8 in ``basic.py``::
 
-    py.test test/test_integration.py -T basic.py:4,6,8
+    pytest test/test_integration.py -T basic.py:4,6,8
 
-See ``py.test --help`` for more information.
+See ``pytest --help`` for more information.
 
 If you want to debug a test, just use the ``--pdb`` option.
 
 Alternate Test Runner
 +++++++++++++++++++++
 
-If you don't like the output of ``py.test``, there's an alternate test runner
+If you don't like the output of ``pytest``, there's an alternate test runner
 that you can start by running ``./run.py``. The above example could be run by::
 
     ./run.py basic 4 6 8 50-80
