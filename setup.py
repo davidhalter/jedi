@@ -44,7 +44,7 @@ setup(name='jedi',
               'colorama',
           ],
       },
-      package_data={'jedi': ['third_party']},
+      package_data={'jedi': ['*.pyi']},
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
