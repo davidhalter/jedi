@@ -442,7 +442,6 @@ def _is_class_instance(obj):
 
 class _SPECIAL_OBJECTS(object):
     BOUND_METHOD_CLASS = type(DirectObjectAccess(None, None).py__bool__)
-    MODULE_CLASS = types.ModuleType
 
 
 def get_special_object(evaluator, identifier):

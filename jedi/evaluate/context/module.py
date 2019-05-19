@@ -8,6 +8,7 @@ from jedi.evaluate.filters import GlobalNameFilter, ParserTreeFilter, DictFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
 from jedi.evaluate.names import SubModuleName
+from jedi.evaluate.helpers import contexts_from_qualified_names
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,8 @@ class ModuleMixin(SubModuleDictMixin):
             yield star_filter
 
     def py__class__(self):
-        return compiled.get_special_object(self.evaluator, u'MODULE_CLASS')
+        c, = contexts_from_qualified_names(self.evaluator, 'types', 'ModuleType')
+        return c
 
     def is_module(self):
         return True
