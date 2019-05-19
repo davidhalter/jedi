@@ -112,12 +112,13 @@ def test_sys_exc_info(Script):
 
 
 def test_sys_getwindowsversion(Script, environment):
-    # This should only exist on Windows, but cmpletion should happen
+    # This should only exist on Windows, but type inference should happen
     # everywhere.
-    def_, = Script('import sys; sys.getwindowsversion().major').goto_definitions()
+    definitions = Script('import sys; sys.getwindowsversion().major').goto_definitions()
     if environment.version_info.major == 2:
-        assert def_.name == 'ellipsis'
+        assert not definitions
     else:
+        def_, = definitions
         assert def_.name == 'int'
 
 
