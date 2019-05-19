@@ -62,10 +62,12 @@ I need to mention now that lazy evaluation is really good because it
 only *evaluates* what needs to be *evaluated*. All the statements and modules
 that are not used are just being ignored.
 """
+from functools import partial
 
 from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
+from parso.file_io import FileIO
 
 from jedi import debug
 from jedi import parser_utils
@@ -73,9 +75,8 @@ from jedi.evaluate.utils import unite
 from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate import compiled
 from jedi.evaluate import helpers
-from jedi.evaluate.filters import TreeNameDefinition, ParamName
+from jedi.evaluate.names import TreeNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
 from jedi.evaluate.context import ClassContext, FunctionContext, \
@@ -83,6 +84,20 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
+from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
+    try_stubs_to_actual_context_set
+
+
+def _execute(context, arguments):
+    try:
+        func = context.py__call__
+    except AttributeError:
+        debug.warning("no execution possible %s", context)
+        return NO_CONTEXTS
+    else:
+        context_set = func(arguments=arguments)
+        debug.dbg('execute result: %s in %s', context_set, context)
+        return context_set
 
 
 class Evaluator(object):
@@ -94,9 +109,10 @@ class Evaluator(object):
         self.compiled_subprocess = environment.get_evaluator_subprocess(self)
         self.grammar = environment.get_grammar()
 
-        self.latest_grammar = parso.load_grammar(version='3.6')
+        self.latest_grammar = parso.load_grammar(version='3.7')
         self.memoize_cache = {}  # for memoize decorators
         self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
+        self.stub_module_cache = {}  # Dict[Tuple[str, ...], Optional[ModuleContext]]
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
         self.inferred_element_counts = {}
         self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`
@@ -105,24 +121,59 @@ class Evaluator(object):
         self.is_analysis = False
         self.project = project
         self.access_cache = {}
+        # This setting is only temporary to limit the work we have to do with
+        # tensorflow and others.
+        self.infer_enabled = True
 
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
 
+        # Plugin API
+        from jedi.plugins import plugin_manager
+        plugin_callbacks = plugin_manager.get_callbacks(self)
+        self.execute = plugin_callbacks.decorate('execute', callback=_execute)
+        self._import_module = partial(
+            plugin_callbacks.decorate(
+                'import_module',
+                callback=imports.import_module
+            ),
+            self,
+        )
+
+    def import_module(self, import_names, parent_module_context=None,
+                      sys_path=None, prefer_stubs=True):
+        if sys_path is None:
+            sys_path = self.get_sys_path()
+        return self._import_module(import_names, parent_module_context,
+                                   sys_path, prefer_stubs=prefer_stubs)
+
     @property
     @evaluator_function_cache()
     def builtins_module(self):
-        return compiled.get_special_object(self, u'BUILTINS')
+        module_name = u'builtins'
+        if self.environment.version_info.major == 2:
+            module_name = u'__builtin__'
+        builtins_module, = self.import_module((module_name,), sys_path=())
+        return builtins_module
+
+    @property
+    @evaluator_function_cache()
+    def typing_module(self):
+        typing_module, = self.import_module((u'typing',))
+        return typing_module
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
         self.execution_recursion_detector = recursion.ExecutionRecursionDetector(self)
 
-    def get_sys_path(self):
+    def get_sys_path(self, **kwargs):
         """Convenience function"""
-        return self.project._get_sys_path(self, environment=self.environment)
+        return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
     def eval_element(self, context, element):
+        if not self.infer_enabled:
+            return NO_CONTEXTS
+
         if isinstance(context, CompForContext):
             return eval_node(context, element)
 
@@ -173,14 +224,14 @@ class Evaluator(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][if_name.value] = ContextSet(definition)
+                                    new_name_dicts[i][if_name.value] = ContextSet([definition])
 
                                 name_dicts += new_name_dicts
                         else:
                             for name_dict in name_dicts:
                                 name_dict[if_name.value] = definitions
             if len(name_dicts) > 1:
-                result = ContextSet()
+                result = NO_CONTEXTS
                 for name_dict in name_dicts:
                     with helpers.predefine_names(context, if_stmt, name_dict):
                         result |= eval_node(context, element)
@@ -210,13 +261,23 @@ class Evaluator(object):
         return eval_node(context, element)
 
     def goto_definitions(self, context, name):
+        # We don't want stubs here we want the actual contexts, if possible.
+        return try_stubs_to_actual_context_set(
+            self.goto_stub_definitions(context, name),
+            prefer_stub_to_compiled=True
+        )
+
+    def goto_stub_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
-            if type_ == 'classdef':
-                return [ClassContext(self, context, name.parent)]
-            elif type_ == 'funcdef':
-                return [FunctionContext(self, context, name.parent)]
+            is_classdef = type_ == 'classdef'
+            if is_classdef or type_ == 'funcdef':
+                if is_classdef:
+                    c = ClassContext(self, context, name.parent)
+                else:
+                    c = FunctionContext.from_context(context, name.parent)
+                return ContextSet([c])
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
@@ -230,10 +291,46 @@ class Evaluator(object):
                 return check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
+        else:
+            result = self._follow_error_node_imports_if_possible(context, name)
+            if result is not None:
+                return result
 
         return helpers.evaluate_call_of_leaf(context, name)
 
+    def _follow_error_node_imports_if_possible(self, context, name):
+        error_node = tree.search_ancestor(name, 'error_node')
+        if error_node is not None:
+            # Get the first command start of a started simple_stmt. The error
+            # node is sometimes a small_stmt and sometimes a simple_stmt. Check
+            # for ; leaves that start a new statements.
+            start_index = 0
+            for index, n in enumerate(error_node.children):
+                if n.start_pos > name.start_pos:
+                    break
+                if n == ';':
+                    start_index = index + 1
+            nodes = error_node.children[start_index:]
+            first_name = nodes[0].get_first_leaf().value
+
+            # Make it possible to infer stuff like `import foo.` or
+            # `from foo.bar`.
+            if first_name in ('from', 'import'):
+                is_import_from = first_name == 'from'
+                level, names = helpers.parse_dotted_names(
+                    nodes,
+                    is_import_from=is_import_from,
+                    until_node=name,
+                )
+                return imports.Importer(self, names, context.get_root_context(), level).follow()
+        return None
+
     def goto(self, context, name):
+        names = self._goto(context, name)
+        names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
+        return names
+
+    def _goto(self, context, name):
         definition = name.get_definition(import_name_always=True)
         if definition is not None:
             type_ = definition.type
@@ -250,6 +347,10 @@ class Evaluator(object):
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names
+        else:
+            contexts = self._follow_error_node_imports_if_possible(context, name)
+            if contexts is not None:
+                return [context.name for context in contexts]
 
         par = name.parent
         node_type = par.type
@@ -271,12 +372,8 @@ class Evaluator(object):
                         context_set = eval_trailer(context, context_set, trailer)
                 param_names = []
                 for context in context_set:
-                    try:
-                        get_param_names = context.get_param_names
-                    except AttributeError:
-                        pass
-                    else:
-                        for param_name in get_param_names():
+                    for signature in context.get_signatures():
+                        for param_name in signature.get_param_names():
                             if param_name.string_name == name.value:
                                 param_names.append(param_name)
                 return param_names
@@ -325,36 +422,32 @@ class Evaluator(object):
                         if n.type == 'comp_for':
                             return n
 
-        def from_scope_node(scope_node, child_is_funcdef=None, is_nested=True, node_is_object=False):
+        def from_scope_node(scope_node, is_nested=True, node_is_object=False):
             if scope_node == base_node:
                 return base_context
 
             is_funcdef = scope_node.type in ('funcdef', 'lambdef')
             parent_scope = parser_utils.get_parent_scope(scope_node)
-            parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
+            parent_context = from_scope_node(parent_scope)
 
             if is_funcdef:
-                if isinstance(parent_context, AnonymousInstance):
+                parent_was_class = parent_context.is_class()
+                if parent_was_class:
+                    parent_context = AnonymousInstance(
+                        self, parent_context.parent_context, parent_context)
+
+                func = FunctionContext.from_context(parent_context, scope_node)
+
+                if parent_was_class:
                     func = BoundMethod(
-                        self, parent_context, parent_context.class_context,
-                        parent_context.parent_context, scope_node
-                    )
-                else:
-                    func = FunctionContext(
-                        self,
-                        parent_context,
-                        scope_node
+                        instance=parent_context,
+                        function=func
                     )
                 if is_nested and not node_is_object:
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                class_context = ClassContext(self, parent_context, scope_node)
-                if child_is_funcdef:
-                    # anonymous instance
-                    return AnonymousInstance(self, parent_context, class_context)
-                else:
-                    return class_context
+                return ClassContext(self, parent_context, scope_node)
             elif scope_node.type == 'comp_for':
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
@@ -373,14 +466,17 @@ class Evaluator(object):
             scope_node = parent_scope(node)
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
 
-    def parse_and_get_code(self, code=None, path=None, **kwargs):
+    def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
+                           use_latest_grammar=False, file_io=None, **kwargs):
         if self.allow_different_encoding:
             if code is None:
-                with open(path, 'rb') as f:
-                    code = f.read()
-            code = python_bytes_to_unicode(code, errors='replace')
+                if file_io is None:
+                    file_io = FileIO(path)
+                code = file_io.read()
+            code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
 
-        return self.grammar.parse(code=code, path=path, **kwargs), code
+        grammar = self.latest_grammar if use_latest_grammar else self.grammar
+        return grammar.parse(code=code, path=path, file_io=file_io, **kwargs), code
 
     def parse(self, *args, **kwargs):
         return self.parse_and_get_code(*args, **kwargs)[0]

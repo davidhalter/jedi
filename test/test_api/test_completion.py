@@ -29,7 +29,7 @@ def test_in_empty_space(Script):
     comps = Script(code, 3, 7).completions()
     self, = [c for c in comps if c.name == 'self']
     assert self.name == 'self'
-    def_, = self._goto_definitions()
+    def_, = self.infer()
     assert def_.name == 'X'
 
 
@@ -132,7 +132,6 @@ def test_async(Script, environment):
             hey = 3
               ho'''
     )
-    print(code)
     comps = Script(code, column=4).completions()
     names = [c.name for c in comps]
     assert 'foo' in names

@@ -18,7 +18,7 @@ import textwrap
 import pytest
 
 import jedi
-from ..helpers import TestCase, cwd_at
+from ..helpers import TestCase
 
 
 class MixinTestFullName(object):
@@ -52,7 +52,7 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
         self.check("""
         import re
         any_re = re.compile('.*')
-        any_re""", '_sre.SRE_Pattern')
+        any_re""", 'typing.Pattern')
 
     def test_from_import(self):
         self.check('from os import path', 'os.path')
@@ -111,5 +111,4 @@ def test_os_path(Script):
 
 def test_os_issues(Script):
     """Issue #873"""
-    c, = Script('import os\nos.nt''').completions()
-    assert c.full_name == 'nt'
+    assert [c.name for c in Script('import os\nos.nt''').completions()] == ['nt']

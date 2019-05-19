@@ -126,11 +126,12 @@ class StaticAnalysisCase(object):
         return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))
 
 
-@pytest.fixture()
-def venv_path(tmpdir, environment):
+@pytest.fixture(scope='session')
+def venv_path(tmpdir_factory, environment):
     if environment.version_info.major < 3:
         pytest.skip("python -m venv does not exist in Python 2")
 
+    tmpdir = tmpdir_factory.mktemp('venv_path')
     dirname = os.path.join(tmpdir.dirname, 'venv')
 
     # We cannot use the Python from tox because tox creates virtualenvs and

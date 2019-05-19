@@ -21,6 +21,7 @@ from textwrap import dedent
 from parso import parse, ParserSyntaxError
 
 from jedi._compatibility import u
+from jedi import debug
 from jedi.evaluate.utils import indent_block
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import iterator_to_context_set, ContextSet, \
@@ -47,13 +48,12 @@ _numpy_doc_string_cache = None
 
 def _get_numpy_doc_string_cls():
     global _numpy_doc_string_cache
-    if isinstance(_numpy_doc_string_cache, ImportError):
+    if isinstance(_numpy_doc_string_cache, (ImportError, SyntaxError)):
         raise _numpy_doc_string_cache
     try:
         from numpydoc.docscrape import NumpyDocString
         _numpy_doc_string_cache = NumpyDocString
-    except ImportError as e:
-        _numpy_doc_string_cache = e
+    except (ImportError, SyntaxError) as e:
         raise
     return _numpy_doc_string_cache
 
@@ -64,11 +64,11 @@ def _search_param_in_numpydocstr(docstr, param_str):
         # This is a non-public API. If it ever changes we should be
         # prepared and return gracefully.
         params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
-    except (KeyError, AttributeError, ImportError):
+    except (KeyError, AttributeError, ImportError, SyntaxError):
         return []
     for p_name, p_type, p_descr in params:
         if p_name == param_str:
-            m = re.match('([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
+            m = re.match(r'([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
             if m:
                 p_type = m.group(1)
             return list(_expand_typestr(p_type))
@@ -103,11 +103,11 @@ def _expand_typestr(type_str):
     Attempts to interpret the possible types in `type_str`
     """
     # Check if alternative types are specified with 'or'
-    if re.search('\\bor\\b', type_str):
+    if re.search(r'\bor\b', type_str):
         for t in type_str.split('or'):
             yield t.split('of')[0].strip()
     # Check if like "list of `type`" and set type to list
-    elif re.search('\\bof\\b', type_str):
+    elif re.search(r'\bof\b', type_str):
         yield type_str.split('of')[0]
     # Check if type has is a set of valid literal values eg: {'C', 'F', 'A'}
     elif type_str.startswith('{'):
@@ -194,7 +194,7 @@ def _evaluate_for_statement_string(module_context, string):
     if string is None:
         return []
 
-    for element in re.findall('((?:\w+\.)*\w+)\.', string):
+    for element in re.findall(r'((?:\w+\.)*\w+)\.', string):
         # Try to import module part in dotted name.
         # (e.g., 'threading' in 'threading.Thread').
         string = 'import %s\n' % element + string
@@ -202,6 +202,7 @@ def _evaluate_for_statement_string(module_context, string):
     # Take the default grammar here, if we load the Python 2.7 grammar here, it
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
+    debug.dbg('Parse docstring code %s', string, color='BLUE')
     grammar = module_context.evaluator.latest_grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
@@ -261,15 +262,16 @@ def _execute_array_values(evaluator, array):
             values.append(LazyKnownContexts(objects))
         return {FakeSequence(evaluator, array.array_type, values)}
     else:
-        return array.execute_evaluated()
+        return array.execute_annotation()
 
 
 @evaluator_method_cache()
 def infer_param(execution_context, param):
-    from jedi.evaluate.context.instance import AnonymousInstanceFunctionExecution
+    from jedi.evaluate.context.instance import InstanceArguments
+    from jedi.evaluate.context import FunctionExecutionContext
 
     def eval_docstring(docstring):
-        return ContextSet.from_iterable(
+        return ContextSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _evaluate_for_statement_string(module_context, param_str)
@@ -280,11 +282,13 @@ def infer_param(execution_context, param):
         return NO_CONTEXTS
 
     types = eval_docstring(execution_context.py__doc__())
-    if isinstance(execution_context, AnonymousInstanceFunctionExecution) and \
-            execution_context.function_context.name.string_name == '__init__':
-        class_context = execution_context.instance.class_context
+    if isinstance(execution_context, FunctionExecutionContext) \
+            and isinstance(execution_context.var_args, InstanceArguments) \
+            and execution_context.function_context.py__name__() == '__init__':
+        class_context = execution_context.var_args.instance.class_context
         types |= eval_docstring(class_context.py__doc__())
 
+    debug.dbg('Found param types for docstring: %s', types, color='BLUE')
     return types
 
 

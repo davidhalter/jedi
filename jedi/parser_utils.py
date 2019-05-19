@@ -1,3 +1,4 @@
+import re
 import textwrap
 from inspect import cleandoc
 
@@ -137,7 +138,8 @@ def safe_literal_eval(value):
         return ''
 
 
-def get_call_signature(funcdef, width=72, call_string=None):
+def get_call_signature(funcdef, width=72, call_string=None,
+                       omit_first_param=False, omit_return_annotation=False):
     """
     Generate call signature of this function.
 
@@ -154,36 +156,19 @@ def get_call_signature(funcdef, width=72, call_string=None):
             call_string = '<lambda>'
         else:
             call_string = funcdef.name.value
-    if funcdef.type == 'lambdef':
-        p = '(' + ''.join(param.get_code() for param in funcdef.get_params()).strip() + ')'
-    else:
-        p = funcdef.children[2].get_code()
-    if funcdef.annotation:
+    params = funcdef.get_params()
+    if omit_first_param:
+        params = params[1:]
+    p = '(' + ''.join(param.get_code() for param in params).strip() + ')'
+    # TODO this is pretty bad, we should probably just normalize.
+    p = re.sub(r'\s+', ' ', p)
+    if funcdef.annotation and not omit_return_annotation:
         rtype = " ->" + funcdef.annotation.get_code()
     else:
         rtype = ""
     code = call_string + p + rtype
 
     return '\n'.join(textwrap.wrap(code, width))
-
-
-def get_doc_with_call_signature(scope_node):
-    """
-    Return a document string including call signature.
-    """
-    call_signature = None
-    if scope_node.type == 'classdef':
-        for funcdef in scope_node.iter_funcdefs():
-            if funcdef.name.value == '__init__':
-                call_signature = \
-                    get_call_signature(funcdef, call_string=scope_node.name.value)
-    elif scope_node.type in ('funcdef', 'lambdef'):
-        call_signature = get_call_signature(scope_node)
-
-    doc = clean_scope_docstring(scope_node)
-    if call_signature is None:
-        return doc
-    return '%s\n\n%s' % (call_signature, doc)
 
 
 def move(node, line_offset):
@@ -239,11 +224,22 @@ def get_parent_scope(node, include_flows=False):
     Returns the underlying scope.
     """
     scope = node.parent
-    while scope is not None:
-        if include_flows and isinstance(scope, tree.Flow):
+    if scope is None:
+        return None  # It's a module already.
+
+    while True:
+        if is_scope(scope) or include_flows and isinstance(scope, tree.Flow):
+            if scope.type in ('classdef', 'funcdef', 'lambdef'):
+                index = scope.children.index(':')
+                if scope.children[index].start_pos >= node.start_pos:
+                    if node.parent.type == 'param' and node.parent.name == node:
+                        pass
+                    elif node.parent.type == 'tfpdef' and node.parent.children[0] == node:
+                        pass
+                    else:
+                        scope = scope.parent
+                        continue
             return scope
-        if is_scope(scope):
-            break
         scope = scope.parent
     return scope
 

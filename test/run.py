@@ -126,6 +126,7 @@ from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
+from jedi.evaluate.gradual.conversion import try_stubs_to_actual_context_set
 
 
 TEST_COMPLETIONS = 0
@@ -230,7 +231,10 @@ class IntegrationTestCase(object):
                 if user_context.api_type == 'function':
                     user_context = user_context.get_function_execution()
                 element.parent = user_context.tree_node
-                results = evaluator.eval_element(user_context, element)
+                results = try_stubs_to_actual_context_set(
+                    evaluator.eval_element(user_context, element),
+                    prefer_stub_to_compiled=True
+                )
                 if not results:
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))
@@ -412,7 +416,6 @@ if __name__ == '__main__':
     dir_ = os.path.dirname(os.path.realpath(__file__))
     completion_test_dir = os.path.join(dir_, '../test/completion')
     completion_test_dir = os.path.abspath(completion_test_dir)
-    summary = []
     tests_fail = 0
 
     # execute tests
@@ -422,9 +425,11 @@ if __name__ == '__main__':
         cases += collect_dir_tests(completion_test_dir, test_files, True)
 
     def file_change(current, tests, fails):
-        if current is not None:
+        if current is None:
+            current = ''
+        else:
             current = os.path.basename(current)
-        print('%s \t\t %s tests and %s fails.' % (current, tests, fails))
+        print('{:25} {} tests and {} fails.'.format(current, tests, fails))
 
     def report(case, actual, desired):
         if actual == desired:
@@ -470,8 +475,6 @@ if __name__ == '__main__':
 
     print('\nSummary: (%s fails of %s tests) in %.3fs'
           % (tests_fail, len(cases), time.time() - t_start))
-    for s in summary:
-        print(s)
 
     exit_code = 1 if tests_fail else 0
     sys.exit(exit_code)

@@ -12,4 +12,4 @@ def test_django_default_project(Script):
     )
     c, = script.completions()
     assert c.name == "SomeModel"
-    assert script._project._django is True
+    assert script._evaluator.project._django is True

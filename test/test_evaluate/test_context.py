@@ -3,5 +3,5 @@ def test_module_attributes(Script):
     assert def_.name == '__name__'
     assert def_.line is None
     assert def_.column is None
-    str_, = def_._goto_definitions()
+    str_, = def_.infer()
     assert str_.name == 'str'

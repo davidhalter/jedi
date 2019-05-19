@@ -5,17 +5,25 @@ Test all things related to the ``jedi.api`` module.
 import os
 from textwrap import dedent
 
-from jedi import preload_module
-from jedi._compatibility import is_py3
 from pytest import raises
 from parso import cache
+
+from jedi import preload_module
+from jedi.evaluate.gradual import typeshed
 
 
 def test_preload_modules():
     def check_loaded(*modules):
+        for grammar_cache in cache.parser_cache.values():
+            if None in grammar_cache:
+                break
+        # Filter the typeshed parser cache.
+        typeshed_cache_count = sum(
+            1 for path in grammar_cache
+            if path is not None and path.startswith(typeshed.TYPESHED_PATH)
+        )
         # +1 for None module (currently used)
-        grammar_cache = next(iter(cache.parser_cache.values()))
-        assert len(grammar_cache) == len(modules) + 1
+        assert len(grammar_cache) - typeshed_cache_count == len(modules) + 1
         for i in modules:
             assert [i in k for k in grammar_cache.keys() if k is not None]
 
@@ -111,11 +119,7 @@ def test_goto_assignments_on_non_name(Script, environment):
     assert Script('for').goto_assignments() == []
 
     assert Script('assert').goto_assignments() == []
-    if environment.version_info.major == 2:
-        # In Python 2.7 True is still a name.
-        assert Script('True').goto_assignments()[0].description == 'instance True'
-    else:
-        assert Script('True').goto_assignments() == []
+    assert Script('True').goto_assignments() == []
 
 
 def test_goto_definitions_on_non_name(Script):
@@ -199,9 +203,9 @@ def test_goto_assignments_follow_imports(Script):
     assert definition.name == 'p'
     result, = definition.goto_assignments()
     assert result.name == 'p'
-    result, = definition._goto_definitions()
+    result, = definition.infer()
     assert result.name == 'int'
-    result, = result._goto_definitions()
+    result, = result.infer()
     assert result.name == 'int'
 
     definition, = script.goto_assignments()
@@ -285,3 +289,11 @@ def test_backslash_continuation_and_bracket(Script):
     column = lines[-1].index('(')
     def_, = Script(code, line=len(lines), column=column).goto_definitions()
     assert def_.name == 'int'
+
+
+def test_goto_follow_builtin_imports(Script):
+    s = Script('import sys; sys')
+    d, = s.goto_assignments(follow_imports=True)
+    assert d.in_builtin_module() is True
+    d, = s.goto_assignments(follow_imports=True, follow_builtin_imports=True)
+    assert d.in_builtin_module() is True

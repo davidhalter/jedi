@@ -76,7 +76,11 @@ class TestSetupReadline(unittest.TestCase):
         goal = {s + el for el in dir(os)}
         # There are minor differences, e.g. the dir doesn't include deleted
         # items as well as items that are not only available on linux.
-        assert len(set(self.completions(s)).symmetric_difference(goal)) < 20
+        difference = set(self.completions(s)).symmetric_difference(goal)
+        difference = {x for x in difference if not x.startswith('from os import _')}
+        # There are quite a few differences, because both Windows and Linux
+        # (posix and nt) libraries are included.
+        assert len(difference) < 38
 
     @cwd_at('test')
     def test_local_import(self):

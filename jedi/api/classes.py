@@ -13,8 +13,10 @@ from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
-from jedi.evaluate.context import instance
-from jedi.evaluate.context import ClassContext, FunctionContext, FunctionExecutionContext
+from jedi.evaluate.names import ParamName
+from jedi.evaluate.context import FunctionExecutionContext, MethodContext
+from jedi.evaluate.gradual.typeshed import StubModuleContext
+from jedi.evaluate.gradual.conversion import name_to_stub, stub_to_actual_context_set
 from jedi.api.keywords import KeywordName
 
 
@@ -58,17 +60,26 @@ class BaseDefinition(object):
         self._evaluator = evaluator
         self._name = name
         """
-        An instance of :class:`parso.reprsentation.Name` subclass.
+        An instance of :class:`parso.python.tree.Name` subclass.
         """
         self.is_keyword = isinstance(self._name, KeywordName)
 
-        # generate a path to the definition
-        self._module = name.get_root_context()
-        if self.in_builtin_module():
-            self.module_path = None
+    @memoize_method
+    def _get_module(self):
+        # This can take a while to complete, because in the worst case of
+        # imports (consider `import a` completions), we need to load all
+        # modules starting with a first.
+        return self._name.get_root_context()
+
+    @property
+    def module_path(self):
+        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+        try:
+            py__file__ = self._get_module().py__file__
+        except AttributeError:
+            return None
         else:
-            self.module_path = self._module.py__file__()
-            """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+            return py__file__()
 
     @property
     def name(self):
@@ -199,11 +210,14 @@ class BaseDefinition(object):
         >>> print(d.module_name)                       # doctest: +ELLIPSIS
         json
         """
-        return self._module.name.string_name
+        return self._get_module().name.string_name
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        return isinstance(self._module, compiled.CompiledObject)
+        if isinstance(self._get_module(), StubModuleContext):
+            return any(isinstance(context, compiled.CompiledObject)
+                       for context in self._get_module().non_stub_context_set)
+        return isinstance(self._get_module(), compiled.CompiledObject)
 
     @property
     def line(self):
@@ -296,16 +310,44 @@ class BaseDefinition(object):
 
         return '.'.join(path if path[0] else path[1:])
 
+    def is_stub(self):
+        return all(c.is_stub() for c in self._name.infer())
+
+    def goto_stubs(self):
+        if self.is_stub():
+            return [self]
+
+        return [
+            Definition(self._evaluator, stub_def.name)
+            for stub_def in name_to_stub(self._name)
+        ]
+
     def goto_assignments(self):
-        if self._name.tree_name is None:
-            return self
+        return [self if n == self._name else Definition(self._evaluator, n)
+                for n in self._name.goto()]
 
-        names = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
-        return [Definition(self._evaluator, n) for n in names]
+    def infer(self):
+        tree_name = self._name.tree_name
+        parent_context = self._name.parent_context
+        # Param names are special because they are not handled by
+        # the evaluator method.
+        if tree_name is None or parent_context is None or isinstance(self._name, ParamName):
+            context_set = self._name.infer()
+        else:
 
-    def _goto_definitions(self):
-        # TODO make this function public.
-        return [Definition(self._evaluator, d.name) for d in self._name.infer()]
+            # TODO remove this paragraph, it's ugly and shouldn't be needed
+            inferred = self._name.infer()
+            if inferred:
+                inferred = next(iter(inferred))
+                if isinstance(inferred, MethodContext):
+                    c = inferred.class_context
+                else:
+                    c = self._name.parent_context
+            else:
+                c = self._name.parent_context
+
+            context_set = self._evaluator.goto_definitions(c, tree_name)
+        return [Definition(self._evaluator, d.name) for d in context_set]
 
     @property
     @memoize_method
@@ -314,38 +356,13 @@ class BaseDefinition(object):
         Raises an ``AttributeError``if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
-        def get_param_names(context):
-            param_names = []
-            if context.api_type == 'function':
-                param_names = list(context.get_param_names())
-                if isinstance(context, instance.BoundMethod):
-                    param_names = param_names[1:]
-            elif isinstance(context, (instance.AbstractInstanceContext, ClassContext)):
-                if isinstance(context, ClassContext):
-                    search = u'__init__'
-                else:
-                    search = u'__call__'
-                names = context.get_function_slot_names(search)
-                if not names:
-                    return []
+        # Only return the first one. There might be multiple one, especially
+        # with overloading.
+        for context in self._name.infer():
+            for signature in context.get_signatures():
+                return [Definition(self._evaluator, n) for n in signature.get_param_names()]
 
-                # Just take the first one here, not optimal, but currently
-                # there's no better solution.
-                inferred = names[0].infer()
-                param_names = get_param_names(next(iter(inferred)))
-                if isinstance(context, ClassContext):
-                    param_names = param_names[1:]
-                return param_names
-            elif isinstance(context, compiled.CompiledObject):
-                return list(context.get_param_names())
-            return param_names
-
-        followed = list(self._name.infer())
-        if not followed or not hasattr(followed[0], 'py__call__'):
-            raise AttributeError('There are no params defined on this.')
-        context = followed[0]  # only check the first one.
-
-        return [Definition(self._evaluator, n) for n in get_param_names(context)]
+        raise AttributeError('There are no params defined on this.')
 
     def parent(self):
         context = self._name.parent_context
@@ -353,10 +370,7 @@ class BaseDefinition(object):
             return None
 
         if isinstance(context, FunctionExecutionContext):
-            # TODO the function context should be a part of the function
-            # execution context.
-            context = FunctionContext(
-                self._evaluator, context.parent_context, context.tree_node)
+            context = context.function_context
         return Definition(self._evaluator, context.name)
 
     def __repr__(self):
@@ -400,7 +414,7 @@ class Completion(BaseDefinition):
     def _complete(self, like_name):
         append = ''
         if settings.add_bracket_after_function \
-                and self.type == 'Function':
+                and self.type == 'function':
             append = '('
 
         if self._name.api_type == 'param' and self._stack is not None:
@@ -536,9 +550,9 @@ class Definition(BaseDefinition):
         # here.
         txt = definition.get_code(include_prefix=False)
         # Delete comments:
-        txt = re.sub('#[^\n]+\n', ' ', txt)
+        txt = re.sub(r'#[^\n]+\n', ' ', txt)
         # Delete multi spaces/newlines
-        txt = re.sub('\s+', ' ', txt).strip()
+        txt = re.sub(r'\s+', ' ', txt).strip()
         return txt
 
     @property
@@ -597,11 +611,12 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, executable_name, bracket_start_pos, index, key_name_str):
-        super(CallSignature, self).__init__(evaluator, executable_name)
+    def __init__(self, evaluator, signature, bracket_start_pos, index, key_name_str):
+        super(CallSignature, self).__init__(evaluator, signature.name)
         self._index = index
         self._key_name_str = key_name_str
         self._bracket_start_pos = bracket_start_pos
+        self._signature = signature
 
     @property
     def index(self):
@@ -631,6 +646,10 @@ class CallSignature(Definition):
         return self._index
 
     @property
+    def params(self):
+        return [Definition(self._evaluator, n) for n in self._signature.get_param_names()]
+
+    @property
     def bracket_start(self):
         """
         The indent of the bracket that is responsible for the last function
@@ -638,9 +657,25 @@ class CallSignature(Definition):
         """
         return self._bracket_start_pos
 
+    @property
+    def _params_str(self):
+        return ', '.join([p.description[6:]
+                          for p in self.params])
+
     def __repr__(self):
-        return '<%s: %s index %s>' % \
-            (type(self).__name__, self._name.string_name, self.index)
+        return '<%s: %s index=%r params=[%s]>' % (
+            type(self).__name__,
+            self._name.string_name,
+            self._index,
+            self._params_str,
+        )
+
+
+def _format_signatures(context):
+    return '\n'.join(
+        signature.to_string()
+        for signature in context.get_signatures()
+    )
 
 
 class _Help(object):
@@ -667,9 +702,29 @@ class _Help(object):
 
         See :attr:`doc` for example.
         """
-        # TODO: Use all of the followed objects as output. Possibly divinding
-        # them by a few dashes.
+        full_doc = ''
+        # Using the first docstring that we see.
         for context in self._get_contexts(fast=fast):
-            return context.py__doc__(include_call_signature=not raw)
+            if full_doc:
+                # In case we have multiple contexts, just return all of them
+                # separated by a few dashes.
+                full_doc += '\n' + '-' * 30 + '\n'
 
-        return ''
+            doc = context.py__doc__()
+
+            if raw:
+                signature_text = ''
+            else:
+                signature_text = _format_signatures(context)
+            if not doc and context.is_stub():
+                for c in stub_to_actual_context_set(context):
+                    doc = c.py__doc__()
+                    if doc:
+                        break
+
+            if signature_text and doc:
+                full_doc += signature_text + '\n\n' + doc
+            else:
+                full_doc += signature_text + doc
+
+        return full_doc

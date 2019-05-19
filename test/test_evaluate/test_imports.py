@@ -6,46 +6,92 @@ Tests".
 import os
 
 import pytest
+from parso.file_io import FileIO
 
 from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
-from ..helpers import cwd_at
+from jedi.evaluate import imports
+from jedi.api.project import Project
+from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
+from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
+
+THIS_DIR = os.path.dirname(__file__)
 
 
 @pytest.mark.skipif('sys.version_info < (3,3)')
 def test_find_module_py33():
     """Needs to work like the old find_module."""
-    assert find_module_py33('_io') == (None, '_io', False)
+    assert find_module_py33('_io') == (None, False)
+    with pytest.raises(ImportError):
+        assert find_module_py33('_DOESNTEXIST_') == (None, None)
 
 
 def test_find_module_package():
-    file, path, is_package = find_module('json')
-    assert file is None
-    assert path.endswith('json')
+    file_io, is_package = find_module('json')
+    assert file_io.path.endswith(os.path.join('json', '__init__.py'))
     assert is_package is True
 
 
 def test_find_module_not_package():
-    file, path, is_package = find_module('io')
-    assert file is not None
-    assert path.endswith('io.py')
+    file_io, is_package = find_module('io')
+    assert file_io.path.endswith('io.py')
     assert is_package is False
 
 
+pkg_zip_path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
+
+
 def test_find_module_package_zipped(Script, evaluator, environment):
-    path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
-    sys_path = environment.get_sys_path() + [path]
+    sys_path = environment.get_sys_path() + [pkg_zip_path]
     script = Script('import pkg; pkg.mod', sys_path=sys_path)
     assert len(script.completions()) == 1
 
-    code, path, is_package = evaluator.compiled_subprocess.get_module_info(
+    file_io, is_package = evaluator.compiled_subprocess.get_module_info(
         sys_path=sys_path,
         string=u'pkg',
         full_name=u'pkg'
     )
-    assert code is not None
-    assert path.endswith('pkg.zip')
+    assert file_io is not None
+    assert file_io.path.endswith(os.path.join('pkg.zip', 'pkg', '__init__.py'))
+    assert file_io._zip_path.endswith('pkg.zip')
     assert is_package is True
+
+
+@pytest.mark.parametrize(
+    'code, file, package, path', [
+        ('import pkg', '__init__.py', 'pkg', 'pkg'),
+        ('import pkg', '__init__.py', 'pkg', 'pkg'),
+
+        ('from pkg import module', 'module.py', 'pkg', None),
+        ('from pkg.module', 'module.py', 'pkg', None),
+
+        ('from pkg import nested', os.path.join('nested', '__init__.py'),
+         'pkg.nested', os.path.join('pkg', 'nested')),
+        ('from pkg.nested', os.path.join('nested', '__init__.py'),
+         'pkg.nested', os.path.join('pkg', 'nested')),
+
+        ('from pkg.nested import nested_module',
+         os.path.join('nested', 'nested_module.py'), 'pkg.nested', None),
+        ('from pkg.nested.nested_module',
+         os.path.join('nested', 'nested_module.py'), 'pkg.nested', None),
+
+        ('from pkg.namespace import namespace_module',
+         os.path.join('namespace', 'namespace_module.py'), 'pkg.namespace', None),
+        ('from pkg.namespace.namespace_module',
+         os.path.join('namespace', 'namespace_module.py'), 'pkg.namespace', None),
+    ]
+
+)
+def test_correct_zip_package_behavior(Script, evaluator, environment, code,
+                                      file, package, path, skip_python2):
+    sys_path = environment.get_sys_path() + [pkg_zip_path]
+    pkg, = Script(code, sys_path=sys_path).goto_definitions()
+    context, = pkg._name.infer()
+    assert context.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
+    assert '.'.join(context.py__package__()) == package
+    assert context.is_package is (path is not None)
+    if path is not None:
+        assert context.py__path__() == [os.path.join(pkg_zip_path, path)]
 
 
 def test_find_module_not_package_zipped(Script, evaluator, environment):
@@ -54,13 +100,12 @@ def test_find_module_not_package_zipped(Script, evaluator, environment):
     script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
     assert len(script.completions()) == 1
 
-    code, path, is_package = evaluator.compiled_subprocess.get_module_info(
+    file_io, is_package = evaluator.compiled_subprocess.get_module_info(
         sys_path=sys_path,
         string=u'not_pkg',
         full_name=u'not_pkg'
     )
-    assert code is not None
-    assert path.endswith('not_pkg.zip')
+    assert file_io.path.endswith(os.path.join('not_pkg.zip', 'not_pkg.py'))
     assert is_package is False
 
 
@@ -87,10 +132,10 @@ def test_import_not_in_sys_path(Script):
     ("from flask.ext.", "bar"),
     ("from flask.ext.", "baz"),
     ("from flask.ext.", "moo"),
-    pytest.mark.xfail(("import flask.ext.foo; flask.ext.foo.", "Foo")),
-    pytest.mark.xfail(("import flask.ext.bar; flask.ext.bar.", "Foo")),
-    pytest.mark.xfail(("import flask.ext.baz; flask.ext.baz.", "Foo")),
-    pytest.mark.xfail(("import flask.ext.moo; flask.ext.moo.", "Foo")),
+    pytest.param("import flask.ext.foo; flask.ext.foo.", "Foo", marks=pytest.mark.xfail),
+    pytest.param("import flask.ext.bar; flask.ext.bar.", "Foo", marks=pytest.mark.xfail),
+    pytest.param("import flask.ext.baz; flask.ext.baz.", "Foo", marks=pytest.mark.xfail),
+    pytest.param("import flask.ext.moo; flask.ext.moo.", "Foo", marks=pytest.mark.xfail),
 ])
 def test_flask_ext(Script, code, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
@@ -132,13 +177,13 @@ def test_cache_works_with_sys_path_param(Script, tmpdir):
 def test_import_completion_docstring(Script):
     import abc
     s = Script('"""test"""\nimport ab')
-    completions = s.completions()
-    assert len(completions) == 1
-    assert completions[0].docstring(fast=False) == abc.__doc__
+    abc_completions = [c for c in s.completions() if c.name == 'abc']
+    assert len(abc_completions) == 1
+    assert abc_completions[0].docstring(fast=False) == abc.__doc__
 
     # However for performance reasons not all modules are loaded and the
     # docstring is empty in this case.
-    assert completions[0].docstring() == ''
+    assert abc_completions[0].docstring() == ''
 
 
 def test_goto_definition_on_import(Script):
@@ -249,5 +294,146 @@ def test_compiled_import_none(monkeypatch, Script):
     """
     Related to #1079. An import might somehow fail and return None.
     """
+    script = Script('import sys')
     monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
-    assert not Script('import sys').goto_definitions()
+    def_, = script.goto_definitions()
+    assert def_.type == 'module'
+    context, = def_._name.infer()
+    assert not stub_to_actual_context_set(context)
+
+
+@pytest.mark.parametrize(
+    ('path', 'is_package', 'goal'), [
+        (os.path.join(THIS_DIR, 'test_docstring.py'), False, ('ok', 'lala', 'test_imports')),
+        (os.path.join(THIS_DIR, '__init__.py'), True, ('ok', 'lala', 'x', 'test_imports')),
+    ]
+)
+def test_get_modules_containing_name(evaluator, path, goal, is_package):
+    module = imports._load_python_module(
+        evaluator,
+        FileIO(path),
+        import_names=('ok', 'lala', 'x'),
+        is_package=is_package,
+    )
+    assert module
+    input_module, found_module = imports.get_modules_containing_name(
+        evaluator,
+        [module],
+        'string_that_only_exists_here'
+    )
+    assert input_module is module
+    assert found_module.string_names == goal
+
+
+@pytest.mark.parametrize(
+    'path', ('api/whatever/test_this.py', 'api/whatever/file'))
+@pytest.mark.parametrize('empty_sys_path', (False, True))
+def test_relative_imports_with_multiple_similar_directories(Script, path, empty_sys_path):
+    dir = get_example_dir('issue1209')
+    if empty_sys_path:
+        project = Project(dir, sys_path=(), smart_sys_path=False)
+    else:
+        project = Project(dir)
+    script = Script(
+        "from . ",
+        path=os.path.join(dir, path),
+        _project=project,
+    )
+    name, import_ = script.completions()
+    assert import_.name == 'import'
+    assert name.name == 'api_test1'
+
+
+def test_relative_imports_with_outside_paths(Script):
+    dir = get_example_dir('issue1209')
+    project = Project(dir, sys_path=[], smart_sys_path=False)
+    script = Script(
+        "from ...",
+        path=os.path.join(dir, 'api/whatever/test_this.py'),
+        _project=project,
+    )
+    assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']
+
+    script = Script(
+        "from " + '.' * 100,
+        path=os.path.join(dir, 'api/whatever/test_this.py'),
+        _project=project,
+    )
+    assert [c.name for c in script.completions()] == ['import']
+
+
+@cwd_at('test/examples/issue1209/api/whatever/')
+def test_relative_imports_without_path(Script):
+    project = Project('.', sys_path=[], smart_sys_path=False)
+    script = Script("from . ", _project=project)
+    assert [c.name for c in script.completions()] == ['api_test1', 'import']
+
+    script = Script("from .. ", _project=project)
+    assert [c.name for c in script.completions()] == ['import', 'whatever']
+
+    script = Script("from ... ", _project=project)
+    assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']
+
+
+def test_relative_import_out_of_file_system(Script):
+    script = Script("from " + '.' * 100)
+    import_, = script.completions()
+    assert import_.name == 'import'
+
+    script = Script("from " + '.' * 100 + 'abc import ABCMeta')
+    assert not script.goto_definitions()
+    assert not script.completions()
+
+
+@pytest.mark.parametrize(
+    'level, directory, project_path, result', [
+        (1, '/a/b/c', '/a', (['b', 'c'], '/a')),
+        (2, '/a/b/c', '/a', (['b'], '/a')),
+        (3, '/a/b/c', '/a', ([], '/a')),
+        (4, '/a/b/c', '/a', (None, '/')),
+        (5, '/a/b/c', '/a', (None, None)),
+        (1, '/', '/', ([], '/')),
+        (2, '/', '/', (None, None)),
+        (1, '/a/b', '/a/b/c', (None, '/a/b')),
+        (2, '/a/b', '/a/b/c', (None, '/a')),
+        (3, '/a/b', '/a/b/c', (None, '/')),
+    ]
+)
+def test_level_to_import_path(level, directory, project_path, result):
+    assert imports._level_to_base_import_path(project_path, directory, level) == result
+
+
+def test_import_name_calculation(Script):
+    s = Script(path=os.path.join(test_dir, 'completion', 'isinstance.py'))
+    m = s._get_module()
+    assert m.string_names == ('test', 'completion', 'isinstance')
+
+
+@pytest.mark.parametrize('name', ('builtins', 'typing'))
+def test_pre_defined_imports_module(Script, environment, name):
+    if environment.version_info.major < 3 and name == 'builtins':
+        name = '__builtin__'
+
+    path = os.path.join(root_dir, name + '.py')
+    module = Script('', path=path)._get_module()
+    assert module.string_names == (name,)
+
+    assert module.evaluator.builtins_module.py__file__() != path
+    assert module.evaluator.typing_module.py__file__() != path
+
+
+@pytest.mark.parametrize('name', ('builtins', 'typing'))
+def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
+    if environment.version_info.major < 3 and name == 'builtins':
+        name = '__builtin__'
+
+    module_path = tmpdir.join(name + '.py')
+    module_path.write('int = ...')
+    script = Script(
+        'import ' + name,
+        path=tmpdir.join('something.py').strpath,
+        sys_path=[tmpdir.strpath] + environment.get_sys_path(),
+    )
+    module, = script.goto_definitions()
+    assert module._evaluator.builtins_module.py__file__() != module_path
+    assert module._evaluator.typing_module.py__file__() != module_path

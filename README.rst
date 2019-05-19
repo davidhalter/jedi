@@ -111,8 +111,8 @@ understands, see: `Features
 <https://jedi.readthedocs.org/en/latest/docs/features.html>`_. A list of
 caveats can be found on the same page.
 
-You can run Jedi on CPython 2.7 or 3.3+ but it should also
-understand/parse code older than those versions. Additonally you should be able
+You can run Jedi on CPython 2.7 or 3.4+ but it should also
+understand/parse code older than those versions. Additionally you should be able
 to use `Virtualenvs <https://jedi.readthedocs.org/en/latest/docs/api.html#environments>`_
 very well.
 
@@ -122,7 +122,7 @@ Tips on how to use Jedi efficiently can be found `here
 API
 ---
 
-You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/plugin-api.html>`_.
+You can find the documentation for the `API here <https://jedi.readthedocs.org/en/latest/docs/api.html>`_.
 
 
 Autocompletion / Goto / Pydoc

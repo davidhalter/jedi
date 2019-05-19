@@ -52,12 +52,12 @@ left
 [a for a in {1:'x'}][0]
 
 # list comprehensions should also work in combination with functions
-def listen(arg):
+def _listen(arg):
     for x in arg:
         #? str()
         x
 
-listen(['' for x in [1]])
+_listen(['' for x in [1]])
 #?
 ([str for x in []])[0]
 
@@ -212,3 +212,14 @@ next(iter({a for a in range(10)}))
 
 #? int()
 [a for a in {1, 2, 3}][0]
+
+# -----------------
+# syntax errors
+# -----------------
+
+# Issue #1146
+
+#? ['list']
+[int(str(x.value) for x in list
+
+def reset_missing_bracket(): pass

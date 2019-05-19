@@ -15,27 +15,41 @@ import errno
 import weakref
 import traceback
 from functools import partial
+from threading import Thread
+try:
+    from queue import Queue, Empty
+except ImportError:
+    from Queue import Queue, Empty  # python 2.7
 
 from jedi._compatibility import queue, is_py3, force_unicode, \
-    pickle_dump, pickle_load, highest_pickle_protocol, GeneralizedPopen
+    pickle_dump, pickle_load, GeneralizedPopen
+from jedi import debug
 from jedi.cache import memoize_method
 from jedi.evaluate.compiled.subprocess import functions
 from jedi.evaluate.compiled.access import DirectObjectAccess, AccessPath, \
     SignatureParam
 from jedi.api.exceptions import InternalError
 
-_subprocesses = {}
 
 _MAIN_PATH = os.path.join(os.path.dirname(__file__), '__main__.py')
 
 
-def get_subprocess(executable, version):
-    try:
-        return _subprocesses[executable]
-    except KeyError:
-        sub = _subprocesses[executable] = _CompiledSubprocess(executable,
-                                                              version)
-        return sub
+def _enqueue_output(out, queue):
+    for line in iter(out.readline, b''):
+        queue.put(line)
+    out.close()
+
+
+def _add_stderr_to_debug(stderr_queue):
+    while True:
+        # Try to do some error reporting from the subprocess and print its
+        # stderr contents.
+        try:
+            line = stderr_queue.get_nowait()
+            line = line.decode('utf-8', 'replace')
+            debug.warning('stderr output: %s' % line.rstrip('\n'))
+        except Empty:
+            break
 
 
 def _get_function(name):
@@ -119,30 +133,40 @@ class EvaluatorSubprocess(_EvaluatorProcess):
         return obj
 
     def __del__(self):
-        if self._used:
+        if self._used and not self._compiled_subprocess.is_crashed:
             self._compiled_subprocess.delete_evaluator(self._evaluator_id)
 
 
-class _CompiledSubprocess(object):
-    _crashed = False
+class CompiledSubprocess(object):
+    is_crashed = False
+    # Start with 2, gets set after _get_info.
+    _pickle_protocol = 2
 
-    def __init__(self, executable, version):
+    def __init__(self, executable):
         self._executable = executable
         self._evaluator_deletion_queue = queue.deque()
-        self._pickle_protocol = highest_pickle_protocol([sys.version_info,
-                                                         version])
 
-    @property
+    def __repr__(self):
+        pid = os.getpid()
+        return '<%s _executable=%r, _pickle_protocol=%r, is_crashed=%r, pid=%r>' % (
+            self.__class__.__name__,
+            self._executable,
+            self._pickle_protocol,
+            self.is_crashed,
+            pid,
+        )
+
     @memoize_method
-    def _process(self):
+    def _get_process(self):
+        debug.dbg('Start environment subprocess %s', self._executable)
         parso_path = sys.modules['parso'].__file__
         args = (
             self._executable,
             _MAIN_PATH,
             os.path.dirname(os.path.dirname(parso_path)),
-            str(self._pickle_protocol)
+            '.'.join(str(x) for x in sys.version_info[:3]),
         )
-        return GeneralizedPopen(
+        process = GeneralizedPopen(
             args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -151,6 +175,14 @@ class _CompiledSubprocess(object):
             # (this is already the case on Python 3).
             bufsize=-1
         )
+        self._stderr_queue = Queue()
+        self._stderr_thread = t = Thread(
+            target=_enqueue_output,
+            args=(process.stderr, self._stderr_queue)
+        )
+        t.daemon = True
+        t.start()
+        return process
 
     def run(self, evaluator, function, args=(), kwargs={}):
         # Delete old evaluators.
@@ -168,24 +200,23 @@ class _CompiledSubprocess(object):
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
 
-    def kill(self):
-        self._crashed = True
+    def _kill(self):
+        self.is_crashed = True
         try:
-            subprocess = _subprocesses[self._executable]
-        except KeyError:
-            # Fine it was already removed from the cache.
+            self._get_process().kill()
+            self._get_process().wait()
+        except (AttributeError, TypeError):
+            # If the Python process is terminating, it will remove some modules
+            # earlier than others and in general it's unclear how to deal with
+            # that so we just ignore the exceptions here.
             pass
-        else:
-            # In the `!=` case there is already a new subprocess in place
-            # and we don't need to do anything here anymore.
-            if subprocess == self:
-                del _subprocesses[self._executable]
 
-        self._process.kill()
-        self._process.wait()
+    def __del__(self):
+        if not self.is_crashed:
+            self._kill()
 
     def _send(self, evaluator_id, function, args=(), kwargs={}):
-        if self._crashed:
+        if self.is_crashed:
             raise InternalError("The subprocess %s has crashed." % self._executable)
 
         if not is_py3:
@@ -194,7 +225,7 @@ class _CompiledSubprocess(object):
 
         data = evaluator_id, function, args, kwargs
         try:
-            pickle_dump(data, self._process.stdin, self._pickle_protocol)
+            pickle_dump(data, self._get_process().stdin, self._pickle_protocol)
         except (socket.error, IOError) as e:
             # Once Python2 will be removed we can just use `BrokenPipeError`.
             # Also, somehow in windows it returns EINVAL instead of EPIPE if
@@ -202,24 +233,27 @@ class _CompiledSubprocess(object):
             if e.errno not in (errno.EPIPE, errno.EINVAL):
                 # Not a broken pipe
                 raise
-            self.kill()
+            self._kill()
             raise InternalError("The subprocess %s was killed. Maybe out of memory?"
                                 % self._executable)
 
         try:
-            is_exception, traceback, result = pickle_load(self._process.stdout)
+            is_exception, traceback, result = pickle_load(self._get_process().stdout)
         except EOFError as eof_error:
             try:
-                stderr = self._process.stderr.read()
+                stderr = self._get_process().stderr.read().decode('utf-8', 'replace')
             except Exception as exc:
                 stderr = '<empty/not available (%r)>' % exc
-            self.kill()
+            self._kill()
+            _add_stderr_to_debug(self._stderr_queue)
             raise InternalError(
                 "The subprocess %s has crashed (%r, stderr=%s)." % (
                     self._executable,
                     eof_error,
                     stderr,
                 ))
+
+        _add_stderr_to_debug(self._stderr_queue)
 
         if is_exception:
             # Replace the attribute error message with a the traceback. It's
@@ -284,11 +318,9 @@ class Listener(object):
 
     def listen(self):
         stdout = sys.stdout
-        # Mute stdout/stderr. Nobody should actually be able to write to those,
-        # because stdout is used for IPC and stderr will just be annoying if it
-        # leaks (on module imports).
+        # Mute stdout. Nobody should actually be able to write to it,
+        # because stdout is used for IPC.
         sys.stdout = open(os.devnull, 'w')
-        sys.stderr = open(os.devnull, 'w')
         stdin = sys.stdin
         if sys.version_info[0] > 2:
             stdout = stdout.buffer
@@ -304,9 +336,9 @@ class Listener(object):
             try:
                 payload = pickle_load(stdin)
             except EOFError:
-                # It looks like the parent process closed. Don't make a big fuss
-                # here and just exit.
-                exit(1)
+                # It looks like the parent process closed.
+                # Don't make a big fuss here and just exit.
+                exit(0)
             try:
                 result = False, None, self._run(*payload)
             except Exception as e:

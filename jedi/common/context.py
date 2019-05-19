@@ -12,17 +12,15 @@ class BaseContext(object):
 
 
 class BaseContextSet(object):
-    def __init__(self, *args):
-        self._set = set(args)
+    def __init__(self, iterable):
+        self._set = frozenset(iterable)
+        for context in iterable:
+            assert not isinstance(context, BaseContextSet)
 
     @classmethod
-    def from_iterable(cls, iterable):
-        return cls.from_set(set(iterable))
-
-    @classmethod
-    def from_set(cls, set_):
-        self = cls()
-        self._set = set_
+    def _from_frozen_set(cls, frozenset_):
+        self = cls.__new__(cls)
+        self._set = frozenset_
         return self
 
     @classmethod
@@ -31,16 +29,18 @@ class BaseContextSet(object):
         Used to work with an iterable of set.
         """
         aggregated = set()
-        sets = list(sets)
         for set_ in sets:
             if isinstance(set_, BaseContextSet):
                 aggregated |= set_._set
             else:
-                aggregated |= set_
-        return cls.from_set(aggregated)
+                aggregated |= frozenset(set_)
+        return cls._from_frozen_set(frozenset(aggregated))
 
     def __or__(self, other):
-        return type(self).from_set(self._set | other._set)
+        return self._from_frozen_set(self._set | other._set)
+
+    def __and__(self, other):
+        return self._from_frozen_set(self._set & other._set)
 
     def __iter__(self):
         for element in self._set:
@@ -56,12 +56,18 @@ class BaseContextSet(object):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))
 
     def filter(self, filter_func):
-        return type(self).from_iterable(filter(filter_func, self._set))
+        return self.__class__(filter(filter_func, self._set))
 
     def __getattr__(self, name):
         def mapper(*args, **kwargs):
-            return type(self).from_sets(
+            return self.from_sets(
                 getattr(context, name)(*args, **kwargs)
                 for context in self._set
             )
         return mapper
+
+    def __eq__(self, other):
+        return self._set == other._set
+
+    def __hash__(self):
+        return hash(self._set)

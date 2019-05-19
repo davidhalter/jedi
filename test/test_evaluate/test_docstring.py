@@ -35,7 +35,20 @@ def test_class_doc(Script):
     class TestClass():
         '''Docstring of `TestClass`.'''
     TestClass""").goto_definitions()
-    assert defs[0].docstring() == 'Docstring of `TestClass`.'
+
+    expected = 'Docstring of `TestClass`.'
+    assert defs[0].docstring(raw=True) == expected
+    assert defs[0].docstring() == 'TestClass()\n\n' + expected
+
+
+def test_class_doc_with_init(Script):
+    d, = Script("""
+    class TestClass():
+        '''Docstring'''
+        def __init__(self, foo, bar=3): pass
+    TestClass""").goto_definitions()
+
+    assert d.docstring() == 'TestClass(foo, bar=3)\n\nDocstring'
 
 
 def test_instance_doc(Script):
@@ -140,6 +153,16 @@ def test_docstring_instance(Script):
 def test_docstring_keyword(Script):
     completions = Script('assert').completions()
     assert 'assert' in completions[0].docstring()
+
+
+def test_docstring_params_formatting(Script):
+    defs = Script("""
+    def func(param1,
+             param2,
+             param3):
+        pass
+    func""").goto_definitions()
+    assert defs[0].docstring() == 'func(param1, param2, param3)'
 
 
 # ---- Numpy Style Tests ---
@@ -349,7 +372,6 @@ def test_numpy_returns():
         x.d'''
     )
     names = [c.name for c in jedi.Script(s).completions()]
-    print(names)
     assert 'diagonal' in names
 
 
@@ -362,5 +384,4 @@ def test_numpy_comp_returns():
         x.d'''
     )
     names = [c.name for c in jedi.Script(s).completions()]
-    print(names)
     assert 'diagonal' in names

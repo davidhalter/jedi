@@ -36,6 +36,7 @@ class TestClass(object):
         self2.var_inst = first_param
         self2.second = second_param
         self2.first = first_param
+        self2.first.var_on_argument = 5
         a = 3
 
     def var_func(self):
@@ -56,6 +57,8 @@ class TestClass(object):
     def ret(self, a1):
         # should not know any class functions!
         #? []
+        values
+        #?
         values
         #? ['return']
         ret
@@ -417,6 +420,9 @@ class PrivateVar():
     def __private_func(self):
         return 1
 
+    #? int()
+    __private_func()
+
     def wrap_private(self):
         return self.__private_func()
 #? []
@@ -425,6 +431,8 @@ PrivateVar().__var
 PrivateVar().__var
 #? []
 PrivateVar().__private_func
+#? []
+PrivateVar.__private_func
 #? int()
 PrivateVar().wrap_private()
 
@@ -571,3 +579,26 @@ class Foo(object):
 
 #? int()
 Foo().b
+
+# -----------------
+# default arguments
+# -----------------
+
+default = ''
+class DefaultArg():
+    default = 3
+    def x(self, arg=default):
+        #? str()
+        default
+        return arg
+    def y(self):
+        return default
+
+#? int()
+DefaultArg().x()
+#? str()
+DefaultArg().y()
+#? int()
+DefaultArg.x()
+#? str()
+DefaultArg.y()

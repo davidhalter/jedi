@@ -1,8 +1,9 @@
+from __future__ import print_function
 import sys
 import os
 
 from jedi._compatibility import find_module, cast_path, force_unicode, \
-    iter_modules, all_suffixes, print_to_stderr
+    iter_modules, all_suffixes
 from jedi.evaluate.compiled import access
 from jedi import parser_utils
 
@@ -20,51 +21,23 @@ def get_compiled_method_return(evaluator, id, attribute, *args, **kwargs):
     return getattr(handle.access, attribute)(*args, **kwargs)
 
 
-def get_special_object(evaluator, identifier):
-    return access.get_special_object(evaluator, identifier)
-
-
 def create_simple_object(evaluator, obj):
     return access.create_access_path(evaluator, obj)
 
 
 def get_module_info(evaluator, sys_path=None, full_name=None, **kwargs):
+    """
+    Returns Tuple[Union[NamespaceInfo, FileIO, None], Optional[bool]]
+    """
     if sys_path is not None:
         sys.path, temp = sys_path, sys.path
     try:
-        module_file, module_path, is_pkg = find_module(full_name=full_name, **kwargs)
+        return find_module(full_name=full_name, **kwargs)
     except ImportError:
-        return None, None, None
+        return None, None
     finally:
         if sys_path is not None:
             sys.path = temp
-
-    code = None
-    if is_pkg:
-        # In this case, we don't have a file yet. Search for the
-        # __init__ file.
-        if module_path.endswith(('.zip', '.egg')):
-            code = module_file.loader.get_source(full_name)
-        else:
-            module_path = _get_init_path(module_path)
-    elif module_file:
-        if module_path.endswith(('.zip', '.egg')):
-            # Unfortunately we are reading unicode here already, not byes.
-            # It seems however hard to get bytes, because the zip importer
-            # logic just unpacks the zip file and returns a file descriptor
-            # that we cannot as easily access. Therefore we just read it as
-            # a string.
-            code = module_file.read()
-        else:
-            # Read the code with a binary file, because the binary file
-            # might not be proper unicode. This is handled by the parser
-            # wrapper.
-            with open(module_path, 'rb') as f:
-                code = f.read()
-
-        module_file.close()
-
-    return code, cast_path(module_path), is_pkg
 
 
 def list_module_names(evaluator, search_path):
@@ -90,7 +63,7 @@ def _test_print(evaluator, stderr=None, stdout=None):
     Force some prints in the subprocesses. This exists for unit tests.
     """
     if stderr is not None:
-        print_to_stderr(stderr)
+        print(stderr, file=sys.stderr)
         sys.stderr.flush()
     if stdout is not None:
         print(stdout)

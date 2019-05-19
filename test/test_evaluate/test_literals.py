@@ -1,12 +1,12 @@
 import pytest
-from jedi.evaluate.context import CompiledInstance
+from jedi.evaluate.context import TreeInstance
 
 
 def _eval_literal(Script, code, is_fstring=False):
     def_, = Script(code).goto_definitions()
     if is_fstring:
         assert def_.name == 'str'
-        assert isinstance(def_._name._context, CompiledInstance)
+        assert isinstance(def_._name._context, TreeInstance)
         return ''
     else:
         return def_._name._context.get_safe_value()

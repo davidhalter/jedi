@@ -9,6 +9,7 @@ from parso.python.parser import Parser
 from parso.python import tree
 
 from jedi._compatibility import u
+from jedi.evaluate.base_context import NO_CONTEXTS
 from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
 from jedi.evaluate.compiled import get_string_context_set
@@ -20,7 +21,7 @@ CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
 
 def sorted_definitions(defs):
     # Note: `or ''` below is required because `module_path` could be
-    return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0))
+    return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0, x.name))
 
 
 def get_on_completion_name(module_node, lines, position):
@@ -105,14 +106,17 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         # TODO This is for now not an official parso API that exists purely
         #   for Jedi.
         tokens = grammar._tokenize(code)
-        for token_ in tokens:
-            if token_.string == safeword:
+        for token in tokens:
+            if token.string == safeword:
                 raise EndMarkerReached()
-            elif token_.prefix.endswith(safeword):
+            elif token.prefix.endswith(safeword):
                 # This happens with comments.
                 raise EndMarkerReached()
+            elif token.string.endswith(safeword):
+                yield token  # Probably an f-string literal that was not finished.
+                raise EndMarkerReached()
             else:
-                yield token_
+                yield token
 
     # The code might be indedented, just remove it.
     code = dedent(_get_code_for_stack(code_lines, module_node, pos))
@@ -127,25 +131,38 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
         p.parse(tokens=tokenize_without_endmarker(code))
     except EndMarkerReached:
         return p.stack
-    raise SystemError("This really shouldn't happen. There's a bug in Jedi.")
+    raise SystemError(
+        "This really shouldn't happen. There's a bug in Jedi:\n%s"
+        % list(tokenize_without_endmarker(code))
+    )
 
 
-def evaluate_goto_definition(evaluator, context, leaf):
+def evaluate_goto_definition(evaluator, context, leaf, prefer_stubs=False):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
-        return evaluator.goto_definitions(context, leaf)
+        if prefer_stubs:
+            return evaluator.goto_stub_definitions(context, leaf)
+        else:
+            return evaluator.goto_definitions(context, leaf)
 
     parent = leaf.parent
+    definitions = NO_CONTEXTS
     if parent.type == 'atom':
-        return context.eval_node(leaf.parent)
+        definitions = context.eval_node(leaf.parent)
     elif parent.type == 'trailer':
-        return evaluate_call_of_leaf(context, leaf)
+        definitions = evaluate_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         return eval_atom(context, leaf)
     elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
         return get_string_context_set(evaluator)
-    return []
+    if prefer_stubs:
+        return definitions
+    from jedi.evaluate.gradual.conversion import try_stubs_to_actual_context_set
+    return try_stubs_to_actual_context_set(
+        definitions,
+        prefer_stub_to_compiled=True,
+    )
 
 
 CallSignatureDetails = namedtuple(
@@ -166,7 +183,8 @@ def _get_index_and_key(nodes, position):
 
     if nodes_before:
         last = nodes_before[-1]
-        if last.type == 'argument' and last.children[1].end_pos <= position:
+        if last.type == 'argument' and last.children[1] == '=' \
+                and last.children[1].end_pos <= position:
             # Checked if the argument
             key_str = last.children[0].value
         elif last == '=':
@@ -249,5 +267,6 @@ def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos
     yield evaluate_goto_definition(
         evaluator,
         context,
-        bracket_leaf.get_previous_leaf()
+        bracket_leaf.get_previous_leaf(),
+        prefer_stubs=True,
     )

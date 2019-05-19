@@ -19,7 +19,7 @@ def is_stdlib_path(path):
         return False
 
     base_path = os.path.join(sys.prefix, 'lib', 'python')
-    return bool(re.match(re.escape(base_path) + '\d.\d', path))
+    return bool(re.match(re.escape(base_path) + r'\d.\d', path))
 
 
 def deep_ast_copy(obj):
@@ -64,6 +64,10 @@ def evaluate_call_of_leaf(context, leaf, cut_own_trailer=False):
     The option ``cut_own_trailer`` must be set to true for the second purpose.
     """
     trailer = leaf.parent
+    if trailer.type == 'fstring':
+        from jedi.evaluate import compiled
+        return compiled.get_string_context_set(context.evaluator)
+
     # The leaf may not be the last or first child, because there exist three
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
@@ -162,13 +166,21 @@ def get_module_names(module, all_scopes):
     Returns a dictionary with name parts as keys and their call paths as
     values.
     """
-    names = chain.from_iterable(module.get_used_names().values())
+    names = list(chain.from_iterable(module.get_used_names().values()))
     if not all_scopes:
         # We have to filter all the names that don't have the module as a
         # parent_scope. There's None as a parent, because nodes in the module
         # node have the parent module and not suite as all the others.
         # Therefore it's important to catch that case.
-        names = [n for n in names if get_parent_scope(n).parent in (module, None)]
+
+        def is_module_scope_name(name):
+            parent_scope = get_parent_scope(name)
+            # async functions have an extra wrapper. Strip it.
+            if parent_scope and parent_scope.type == 'async_stmt':
+                parent_scope = parent_scope.parent
+            return parent_scope in (module, None)
+
+        names = [n for n in names if is_module_scope_name(n)]
     return names
 
 
@@ -182,17 +194,12 @@ def predefine_names(context, flow_scope, dct):
         del predefined[flow_scope]
 
 
-def is_compiled(context):
-    from jedi.evaluate.compiled import CompiledObject
-    return isinstance(context, CompiledObject)
-
-
 def is_string(context):
     if context.evaluator.environment.version_info.major == 2:
         str_classes = (unicode, bytes)
     else:
         str_classes = (unicode,)
-    return is_compiled(context) and isinstance(context.get_safe_value(default=None), str_classes)
+    return context.is_compiled() and isinstance(context.get_safe_value(default=None), str_classes)
 
 
 def is_literal(context):
@@ -200,7 +207,7 @@ def is_literal(context):
 
 
 def _get_safe_value_or_none(context, accept):
-    if is_compiled(context):
+    if context.is_compiled():
         value = context.get_safe_value(default=None)
         if isinstance(value, accept):
             return value
@@ -214,22 +221,57 @@ def is_number(context):
     return _get_safe_value_or_none(context, (int, float)) is not None
 
 
-class EvaluatorTypeError(Exception):
-    pass
-
-
-class EvaluatorIndexError(Exception):
-    pass
-
-
-class EvaluatorKeyError(Exception):
+class SimpleGetItemNotFound(Exception):
     pass
 
 
 @contextmanager
-def reraise_as_evaluator(*exception_classes):
+def reraise_getitem_errors(*exception_classes):
     try:
         yield
     except exception_classes as e:
-        new_exc_cls = globals()['Evaluator' + e.__class__.__name__]
-        raise new_exc_cls(e)
+        raise SimpleGetItemNotFound(e)
+
+
+def execute_evaluated(context, *value_list):
+    """
+    Execute a function with already executed arguments.
+    """
+    # TODO move this out of here to the evaluator.
+    from jedi.evaluate.arguments import ValuesArguments
+    from jedi.evaluate.base_context import ContextSet
+    arguments = ValuesArguments([ContextSet([value]) for value in value_list])
+    return context.evaluator.execute(context, arguments)
+
+
+def parse_dotted_names(nodes, is_import_from, until_node=None):
+    level = 0
+    names = []
+    for node in nodes[1:]:
+        if node in ('.', '...'):
+            if not names:
+                level += len(node.value)
+        elif node.type == 'dotted_name':
+            for n in node.children[::2]:
+                names.append(n)
+                if n is until_node:
+                    break
+            else:
+                continue
+            break
+        elif node.type == 'name':
+            names.append(node)
+            if node is until_node:
+                break
+        elif node == ',':
+            if not is_import_from:
+                names = []
+        else:
+            # Here if the keyword `import` comes along it stops checking
+            # for names.
+            break
+    return level, names
+
+
+def contexts_from_qualified_names(evaluator, *names):
+    return evaluator.import_module(names[:-1]).py__getattribute__(names[-1])

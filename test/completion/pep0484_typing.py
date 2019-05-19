@@ -40,6 +40,8 @@ def we_can_has_sequence(p, q, r, s, t, u):
     t[1]
     #? ["append"]
     u.a
+    #? float() list()
+    u[1.0]
     #? float()
     u[1]
 
@@ -114,13 +116,9 @@ def tuple(p, q, r):
     i, s, f = q
     #? int()
     i
-    ##? str()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    #?
+    #? str()
     s
-    ##? float()  --- TODO fix support for tuple assignment
-    # https://github.com/davidhalter/jedi/pull/663#issuecomment-172317854
-    #?
+    #? float()
     f
 
 class Key:
@@ -173,6 +171,21 @@ def mapping(p, q, d, dd, r, s, t):
         key
         #? Value()
         value
+    for key, value in q.items():
+        #? Key()
+        key
+        #? Value()
+        value
+    for key, value in d.items():
+        #? Key()
+        key
+        #? Value()
+        value
+    for key, value in dd.items():
+        #? Key()
+        key
+        #? Value()
+        value
     for key in r:
         #? Key()
         key
@@ -211,7 +224,7 @@ def optional(p):
     as being of that type. Jedi doesn't do anything with the extra into that
     it can be None as well
     """
-    #? int()
+    #? int() None
     p
 
 class ForwardReference:
@@ -243,7 +256,7 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
-# python >= 3.2
+# python >= 3.4
 
 class TestDefaultDict(typing.DefaultDict[str, int]):
     def setdud(self):
@@ -271,7 +284,7 @@ for key in x.keys():
 for value in x.values():
     #? int()
     value
-# python >= 3.2
+# python >= 3.4
 
 
 """
@@ -292,3 +305,49 @@ from typing import Union as U
 def union4(x: U[int, str]):
     #? int() str()
     x
+
+
+TYPE_VAR = typing.TypeVar('TYPE_VAR')
+# TODO there should at least be some results.
+#? []
+TYPE_VAR.
+#! ["TYPE_VAR = typing.TypeVar('TYPE_VAR')"]
+TYPE_VAR
+
+
+class WithTypeVar(typing.Generic[TYPE_VAR]):
+    def lala(self) -> TYPE_VAR:
+        ...
+
+
+def maaan(p: WithTypeVar[int]):
+    #? int()
+    p.lala()
+
+
+if typing.TYPE_CHECKING:
+    with_type_checking = 1
+else:
+    without_type_checking = 1.0
+#? int()
+with_type_checking
+#?
+without_type_checking
+
+def foo(a: typing.List, b: typing.Dict, c: typing.MutableMapping) -> typing.Type[int]:
+    #? ['append']
+    a.appen
+    #? list()
+    a
+    #?
+    a[0]
+    #? ['setdefault']
+    b.setd
+    #? ['setdefault']
+    c.setd
+    #? typing.MutableMapping()
+    c
+    #?
+    c['asdf']
+#? int
+foo()

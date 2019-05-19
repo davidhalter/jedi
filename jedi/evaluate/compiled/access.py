@@ -1,15 +1,13 @@
+from __future__ import print_function
 import inspect
 import types
 import sys
-from textwrap import dedent
 import operator as op
 from collections import namedtuple
 
-from jedi import debug
-from jedi._compatibility import unicode, is_py3, is_py34, builtins, \
-    py_version, force_unicode, print_to_stderr
+from jedi._compatibility import unicode, is_py3, builtins, \
+    py_version, force_unicode
 from jedi.evaluate.compiled.getattr_static import getattr_static
-from jedi.evaluate.utils import dotted_from_fs_path
 
 
 MethodDescriptorType = type(str.replace)
@@ -33,10 +31,9 @@ NOT_CLASS_TYPES = (
 if is_py3:
     NOT_CLASS_TYPES += (
         types.MappingProxyType,
-        types.SimpleNamespace
+        types.SimpleNamespace,
+        types.DynamicClassAttribute,
     )
-    if is_py34:
-        NOT_CLASS_TYPES += (types.DynamicClassAttribute,)
 
 
 # Those types don't exist in typing.
@@ -45,12 +42,6 @@ WrapperDescriptorType = type(set.__iter__)
 # `object.__subclasshook__` is an already executed descriptor.
 object_class_dict = type.__dict__["__dict__"].__get__(object)
 ClassMethodDescriptorType = type(object_class_dict['__subclasshook__'])
-
-def _a_generator(foo):
-    """Used to have an object to return for generators."""
-    yield 42
-    yield foo
-
 
 _sentinel = object()
 
@@ -137,33 +128,26 @@ def create_access(evaluator, obj):
     return evaluator.compiled_subprocess.get_or_create_access_handle(obj)
 
 
-def load_module(evaluator, path=None, name=None, sys_path=None):
-    if sys_path is None:
-        sys_path = list(evaluator.get_sys_path())
-    if path is not None:
-        dotted_path = dotted_from_fs_path(path, sys_path=sys_path)
-    else:
-        dotted_path = name
-
+def load_module(evaluator, dotted_name, sys_path):
     temp, sys.path = sys.path, sys_path
     try:
-        __import__(dotted_path)
+        __import__(dotted_name)
     except ImportError:
         # If a module is "corrupt" or not really a Python module or whatever.
-        debug.warning('Module %s not importable in path %s.', dotted_path, path)
+        print('Module %s not importable in path %s.' % (dotted_name, sys_path), file=sys.stderr)
         return None
     except Exception:
         # Since __import__ pretty much makes code execution possible, just
         # catch any error here and print it.
         import traceback
-        print_to_stderr("Cannot import:\n%s" % traceback.format_exc())
+        print("Cannot import:\n%s" % traceback.format_exc(), file=sys.stderr)
         return None
     finally:
         sys.path = temp
 
     # Just access the cache after import, because of #59 as well as the very
     # complicated import structure of Python.
-    module = sys.modules[dotted_path]
+    module = sys.modules[dotted_name]
     return create_access_path(evaluator, module)
 
 
@@ -213,7 +197,7 @@ class DirectObjectAccess(object):
         except AttributeError:
             return None
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         return force_unicode(inspect.getdoc(self._obj)) or u''
 
     def py__name__(self):
@@ -236,7 +220,12 @@ class DirectObjectAccess(object):
     def py__mro__accesses(self):
         return tuple(self._create_access_path(cls) for cls in self._obj.__mro__[1:])
 
-    def py__getitem__(self, index):
+    def py__getitem__all_values(self):
+        if isinstance(self._obj, dict):
+            return [self._create_access_path(v) for v in self._obj.values()]
+        return self.py__iter__list()
+
+    def py__simple_getitem__(self, index):
         if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return None
@@ -244,6 +233,9 @@ class DirectObjectAccess(object):
         return self._create_access_path(self._obj[index])
 
     def py__iter__list(self):
+        if not hasattr(self._obj, '__getitem__'):
+            return None
+
         if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return []
@@ -261,6 +253,9 @@ class DirectObjectAccess(object):
 
     def py__bases__(self):
         return [self._create_access_path(base) for base in self._obj.__bases__]
+
+    def py__path__(self):
+        return self._obj.__path__
 
     @_force_unicode_decorator
     def get_repr(self):
@@ -366,7 +361,6 @@ class DirectObjectAccess(object):
                     yield builtins
                 else:
                     try:
-                        # TODO use sys.modules, __module__ can be faked.
                         yield sys.modules[imp_plz]
                     except KeyError:
                         # __module__ can be something arbitrary that doesn't exist.
@@ -423,12 +417,6 @@ class DirectObjectAccess(object):
     def negate(self):
         return self._create_access_path(-self._obj)
 
-    def dict_values(self):
-        return [self._create_access_path(v) for v in self._obj.values()]
-
-    def is_super_class(self, exception):
-        return issubclass(exception, self._obj)
-
     def get_dir_infos(self):
         """
         Used to return a couple of infos that are needed when accessing the sub
@@ -450,41 +438,3 @@ def _is_class_instance(obj):
         return False
     else:
         return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
-
-
-if py_version >= 35:
-    exec(compile(dedent("""
-        async def _coroutine(): pass
-        _coroutine = _coroutine()
-        CoroutineType = type(_coroutine)
-        _coroutine.close()  # Prevent ResourceWarning
-    """), 'blub', 'exec'))
-    _coroutine_wrapper = _coroutine.__await__()
-else:
-    _coroutine = None
-    _coroutine_wrapper = None
-
-if py_version >= 36:
-    exec(compile(dedent("""
-        async def _async_generator():
-            yield
-        _async_generator = _async_generator()
-        AsyncGeneratorType = type(_async_generator)
-    """), 'blub', 'exec'))
-else:
-    _async_generator = None
-
-class _SPECIAL_OBJECTS(object):
-    FUNCTION_CLASS = types.FunctionType
-    METHOD_CLASS = type(DirectObjectAccess.py__bool__)
-    MODULE_CLASS = types.ModuleType
-    GENERATOR_OBJECT = _a_generator(1.0)
-    BUILTINS = builtins
-    COROUTINE = _coroutine
-    COROUTINE_WRAPPER = _coroutine_wrapper
-    ASYNC_GENERATOR = _async_generator
-
-
-def get_special_object(evaluator, identifier):
-    obj = getattr(_SPECIAL_OBJECTS, identifier)
-    return create_access_path(evaluator, obj)

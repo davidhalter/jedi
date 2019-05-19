@@ -65,7 +65,7 @@ def execution_allowed(evaluator, node):
 
     if node in pushed_nodes:
         debug.warning('catched stmt recursion: %s @%s', node,
-                      node.start_pos)
+                      getattr(node, 'start_pos', None))
         yield False
     else:
         try:
@@ -77,14 +77,14 @@ def execution_allowed(evaluator, node):
 
 def execution_recursion_decorator(default=NO_CONTEXTS):
     def decorator(func):
-        def wrapper(execution, **kwargs):
-            detector = execution.evaluator.execution_recursion_detector
-            allowed = detector.push_execution(execution)
+        def wrapper(self, **kwargs):
+            detector = self.evaluator.execution_recursion_detector
+            limit_reached = detector.push_execution(self)
             try:
-                if allowed:
+                if limit_reached:
                     result = default
                 else:
-                    result = func(execution, **kwargs)
+                    result = func(self, **kwargs)
             finally:
                 detector.pop_execution()
             return result
@@ -116,6 +116,7 @@ class ExecutionRecursionDetector(object):
         self._parent_execution_funcs.append(funcdef)
 
         module = execution.get_root_context()
+
         if module == self._evaluator.builtins_module:
             # We have control over builtins so we know they are not recursing
             # like crazy. Therefore we just let them execute always, because
@@ -123,16 +124,30 @@ class ExecutionRecursionDetector(object):
             return False
 
         if self._recursion_level > recursion_limit:
+            debug.warning('Recursion limit (%s) reached', recursion_limit)
             return True
 
         if self._execution_count >= total_function_execution_limit:
+            debug.warning('Function execution limit (%s) reached', total_function_execution_limit)
             return True
         self._execution_count += 1
 
         if self._funcdef_execution_counts.setdefault(funcdef, 0) >= per_function_execution_limit:
+            if module.py__name__() in ('builtins', 'typing'):
+                return False
+            debug.warning(
+                'Per function execution limit (%s) reached: %s',
+                per_function_execution_limit,
+                funcdef
+            )
             return True
         self._funcdef_execution_counts[funcdef] += 1
 
         if self._parent_execution_funcs.count(funcdef) > per_function_recursion_limit:
+            debug.warning(
+                'Per function recursion limit (%s) reached: %s',
+                per_function_recursion_limit,
+                funcdef
+            )
             return True
         return False

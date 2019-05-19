@@ -3,6 +3,33 @@
 Changelog
 ---------
 
+0.13.3 (2019-02-24)
++++++++++++++++++++
+
+- Fixed an issue with embedded Python, see https://github.com/davidhalter/jedi-vim/issues/870
+
+0.13.2 (2018-12-15)
++++++++++++++++++++
+
+- Fixed a bug that led to Jedi spawning a lot of subprocesses.
+
+0.13.1 (2018-10-02)
++++++++++++++++++++
+
+- Bugfixes, because tensorflow completions were still slow.
+
+0.13.0 (2018-10-02)
++++++++++++++++++++
+
+- A small release. Some bug fixes.
+- Remove Python 3.3 support. Python 3.3 support has been dropped by the Python
+  foundation.
+- Default environments are now using the same Python version as the Python
+  process. In 0.12.x, we used to load the latest Python version on the system.
+- Added ``include_builtins`` as a parameter to usages.
+- ``goto_assignments`` has a new ``follow_builtin_imports`` parameter that
+  changes the previous behavior slightly.
+
 0.12.1 (2018-06-30)
 +++++++++++++++++++
 

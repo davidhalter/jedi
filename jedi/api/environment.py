@@ -3,23 +3,21 @@ Environments are a way to activate different Python versions or Virtualenvs for
 static analysis. The Python binary in that environment is going to be executed.
 """
 import os
-import re
 import sys
 import hashlib
 import filecmp
-from subprocess import PIPE
 from collections import namedtuple
 
-from jedi._compatibility import GeneralizedPopen, which
+from jedi._compatibility import highest_pickle_protocol, which
 from jedi.cache import memoize_method, time_cache
-from jedi.evaluate.compiled.subprocess import get_subprocess, \
+from jedi.evaluate.compiled.subprocess import CompiledSubprocess, \
     EvaluatorSameProcess, EvaluatorSubprocess
 
 import parso
 
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
-_SUPPORTED_PYTHONS = ['3.6', '3.5', '3.4', '3.3', '2.7']
+_SUPPORTED_PYTHONS = ['3.7', '3.6', '3.5', '3.4', '3.3', '2.7']
 _SAFE_PATHS = ['/usr/bin', '/usr/local/bin']
 _CURRENT_VERSION = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
 
@@ -46,49 +44,66 @@ class _BaseEnvironment(object):
             return self._hash
 
 
+def _get_info():
+    return (
+        sys.executable,
+        sys.prefix,
+        sys.version_info[:3],
+    )
+
+
 class Environment(_BaseEnvironment):
     """
     This class is supposed to be created by internal Jedi architecture. You
     should not create it directly. Please use create_environment or the other
     functions instead. It is then returned by that function.
     """
-    def __init__(self, path, executable):
-        self.path = os.path.abspath(path)
-        """
-        The path to an environment, matches ``sys.prefix``.
-        """
-        self.executable = os.path.abspath(executable)
+    _subprocess = None
+
+    def __init__(self, executable):
+        self._start_executable = executable
+        # Initialize the environment
+        self._get_subprocess()
+
+    def _get_subprocess(self):
+        if self._subprocess is not None and not self._subprocess.is_crashed:
+            return self._subprocess
+
+        try:
+            self._subprocess = CompiledSubprocess(self._start_executable)
+            info = self._subprocess._send(None, _get_info)
+        except Exception as exc:
+            raise InvalidPythonEnvironment(
+                "Could not get version information for %r: %r" % (
+                    self._start_executable,
+                    exc))
+
+        # Since it could change and might not be the same(?) as the one given,
+        # set it here.
+        self.executable = info[0]
         """
         The Python executable, matches ``sys.executable``.
         """
-        self.version_info = self._get_version()
+        self.path = info[1]
         """
-
+        The path to an environment, matches ``sys.prefix``.
+        """
+        self.version_info = _VersionInfo(*info[2])
+        """
         Like ``sys.version_info``. A tuple to show the current Environment's
         Python version.
         """
 
-    def _get_version(self):
-        try:
-            process = GeneralizedPopen([self.executable, '--version'], stdout=PIPE, stderr=PIPE)
-            stdout, stderr = process.communicate()
-            retcode = process.poll()
-            if retcode:
-                raise InvalidPythonEnvironment(
-                    "Exited with %d (stdout=%r, stderr=%r)" % (
-                        retcode, stdout, stderr))
-        except OSError as exc:
-            raise InvalidPythonEnvironment(
-                "Could not get version information: %r" % exc)
+        # py2 sends bytes via pickle apparently?!
+        if self.version_info.major == 2:
+            self.executable = self.executable.decode()
+            self.path = self.path.decode()
 
-        # Until Python 3.4 wthe version string is part of stderr, after that
-        # stdout.
-        output = stdout + stderr
-        match = re.match(br'Python (\d+)\.(\d+)\.(\d+)', output)
-        if match is None:
-            raise InvalidPythonEnvironment("--version not working")
+        # Adjust pickle protocol according to host and client version.
+        self._subprocess._pickle_protocol = highest_pickle_protocol([
+            sys.version_info, self.version_info])
 
-        return _VersionInfo(*[int(m) for m in match.groups()])
+        return self._subprocess
 
     def __repr__(self):
         version = '.'.join(str(i) for i in self.version_info)
@@ -96,9 +111,6 @@ class Environment(_BaseEnvironment):
 
     def get_evaluator_subprocess(self, evaluator):
         return EvaluatorSubprocess(evaluator, self._get_subprocess())
-
-    def _get_subprocess(self):
-        return get_subprocess(self.executable, self.version_info)
 
     @memoize_method
     def get_sys_path(self):
@@ -116,18 +128,18 @@ class Environment(_BaseEnvironment):
         return self._get_subprocess().get_sys_path()
 
 
-class SameEnvironment(Environment):
+class _SameEnvironmentMixin(object):
     def __init__(self):
-        super(SameEnvironment, self).__init__(sys.prefix, sys.executable)
-
-    def _get_version(self):
-        return _VersionInfo(*sys.version_info[:3])
-
-
-class InterpreterEnvironment(_BaseEnvironment):
-    def __init__(self):
+        self._start_executable = self.executable = sys.executable
+        self.path = sys.prefix
         self.version_info = _VersionInfo(*sys.version_info[:3])
 
+
+class SameEnvironment(_SameEnvironmentMixin, Environment):
+    pass
+
+
+class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
     def get_evaluator_subprocess(self, evaluator):
         return EvaluatorSameProcess(evaluator)
 
@@ -136,13 +148,22 @@ class InterpreterEnvironment(_BaseEnvironment):
 
 
 def _get_virtual_env_from_var():
+    """Get virtualenv environment from VIRTUAL_ENV environment variable.
+
+    It uses `safe=False` with ``create_environment``, because the environment
+    variable is considered to be safe / controlled by the user solely.
+    """
     var = os.environ.get('VIRTUAL_ENV')
-    if var is not None:
-        if var == sys.prefix:
-            return SameEnvironment()
+    if var:
+        # Under macOS in some cases - notably when using Pipenv - the
+        # sys.prefix of the virtualenv is /path/to/env/bin/.. instead of
+        # /path/to/env so we need to fully resolve the paths in order to
+        # compare them.
+        if os.path.realpath(var) == os.path.realpath(sys.prefix):
+            return _try_get_same_env()
 
         try:
-            return create_environment(var)
+            return create_environment(var, safe=False)
         except InvalidPythonEnvironment:
             pass
 
@@ -168,16 +189,65 @@ def get_default_environment():
     if virtual_env is not None:
         return virtual_env
 
-    for environment in find_system_environments():
-        return environment
+    return _try_get_same_env()
 
-    # If no Python Environment is found, use the environment we're already
+
+def _try_get_same_env():
+    env = SameEnvironment()
+    if not os.path.basename(env.executable).lower().startswith('python'):
+        # This tries to counter issues with embedding. In some cases (e.g.
+        # VIM's Python Mac/Windows, sys.executable is /foo/bar/vim. This
+        # happens, because for Mac a function called `_NSGetExecutablePath` is
+        # used and for Windows `GetModuleFileNameW`. These are both platform
+        # specific functions. For all other systems sys.executable should be
+        # alright. However here we try to generalize:
+        #
+        # 1. Check if the executable looks like python (heuristic)
+        # 2. In case it's not try to find the executable
+        # 3. In case we don't find it use an interpreter environment.
+        #
+        # The last option will always work, but leads to potential crashes of
+        # Jedi - which is ok, because it happens very rarely and even less,
+        # because the code below should work for most cases.
+        if os.name == 'nt':
+            # The first case would be a virtualenv and the second a normal
+            # Python installation.
+            checks = (r'Scripts\python.exe', 'python.exe')
+        else:
+            # For unix it looks like Python is always in a bin folder.
+            checks = (
+                'bin/python%s.%s' % (sys.version_info[0], sys.version[1]),
+                'bin/python%s' % (sys.version_info[0]),
+                'bin/python',
+            )
+        for check in checks:
+            guess = os.path.join(sys.exec_prefix, check)
+            if os.path.isfile(guess):
+                # Bingo - We think we have our Python.
+                return Environment(guess)
+        # It looks like there is no reasonable Python to be found.
+        return InterpreterEnvironment()
+    # If no virtualenv is found, use the environment we're already
     # using.
-    return SameEnvironment()
+    return env
+
+
+def get_cached_default_environment():
+    var = os.environ.get('VIRTUAL_ENV')
+    environment = _get_cached_default_environment()
+
+    # Under macOS in some cases - notably when using Pipenv - the
+    # sys.prefix of the virtualenv is /path/to/env/bin/.. instead of
+    # /path/to/env so we need to fully resolve the paths in order to
+    # compare them.
+    if var and os.path.realpath(var) != os.path.realpath(environment.path):
+        _get_cached_default_environment.clear_cache()
+        return _get_cached_default_environment()
+    return environment
 
 
 @time_cache(seconds=10 * 60)  # 10 Minutes
-def get_cached_default_environment():
+def _get_cached_default_environment():
     return get_default_environment()
 
 
@@ -222,7 +292,7 @@ def find_virtualenvs(paths=None, **kwargs):
 
                 try:
                     executable = _get_executable_path(path, safe=safe)
-                    yield Environment(path, executable)
+                    yield Environment(executable)
                 except InvalidPythonEnvironment:
                     pass
 
@@ -246,23 +316,6 @@ def find_system_environments():
             pass
 
 
-# TODO: the logic to find the Python prefix is much more complicated than that.
-# See Modules/getpath.c for UNIX and PC/getpathp.c for Windows in CPython's
-# source code. A solution would be to deduce it by running the Python
-# interpreter and printing the value of sys.prefix.
-def _get_python_prefix(executable):
-    if os.name != 'nt':
-        return os.path.dirname(os.path.dirname(executable))
-    landmark = os.path.join('Lib', 'os.py')
-    prefix = os.path.dirname(executable)
-    while prefix:
-        if os.path.join(prefix, landmark):
-            return prefix
-        prefix = os.path.dirname(prefix)
-    raise InvalidPythonEnvironment(
-        "Cannot find prefix of executable %s." % executable)
-
-
 # TODO: this function should probably return a list of environments since
 # multiple Python installations can be found on a system for the same version.
 def get_system_environment(version):
@@ -277,17 +330,20 @@ def get_system_environment(version):
     if exe:
         if exe == sys.executable:
             return SameEnvironment()
-        return Environment(_get_python_prefix(exe), exe)
+        return Environment(exe)
 
     if os.name == 'nt':
-        for prefix, exe in _get_executables_from_windows_registry(version):
-            return Environment(prefix, exe)
+        for exe in _get_executables_from_windows_registry(version):
+            try:
+                return Environment(exe)
+            except InvalidPythonEnvironment:
+                pass
     raise InvalidPythonEnvironment("Cannot find executable python%s." % version)
 
 
 def create_environment(path, safe=True):
     """
-    Make it possible to manually create an environment by specifying a
+    Make it possible to manually create an Environment object by specifying a
     Virtualenv path or an executable path.
 
     :raises: :exc:`.InvalidPythonEnvironment`
@@ -295,8 +351,8 @@ def create_environment(path, safe=True):
     """
     if os.path.isfile(path):
         _assert_safe(path, safe)
-        return Environment(_get_python_prefix(path), path)
-    return Environment(path, _get_executable_path(path, safe=safe))
+        return Environment(path)
+    return Environment(_get_executable_path(path, safe=safe))
 
 
 def _get_executable_path(path, safe=True):
@@ -318,16 +374,16 @@ def _get_executable_path(path, safe=True):
 def _get_executables_from_windows_registry(version):
     # The winreg module is named _winreg on Python 2.
     try:
-      import winreg
+        import winreg
     except ImportError:
-      import _winreg as winreg
+        import _winreg as winreg
 
     # TODO: support Python Anaconda.
     sub_keys = [
-      r'SOFTWARE\Python\PythonCore\{version}\InstallPath',
-      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}\InstallPath',
-      r'SOFTWARE\Python\PythonCore\{version}-32\InstallPath',
-      r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}-32\InstallPath'
+        r'SOFTWARE\Python\PythonCore\{version}\InstallPath',
+        r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}\InstallPath',
+        r'SOFTWARE\Python\PythonCore\{version}-32\InstallPath',
+        r'SOFTWARE\Wow6432Node\Python\PythonCore\{version}-32\InstallPath'
     ]
     for root_key in [winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE]:
         for sub_key in sub_keys:
@@ -337,7 +393,7 @@ def _get_executables_from_windows_registry(version):
                     prefix = winreg.QueryValueEx(key, '')[0]
                     exe = os.path.join(prefix, 'python.exe')
                     if os.path.isfile(exe):
-                        yield prefix, exe
+                        yield exe
             except WindowsError:
                 pass
 

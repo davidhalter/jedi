@@ -2,6 +2,7 @@
 
 from setuptools import setup, find_packages
 
+import os
 import ast
 
 __AUTHOR__ = 'David Halter'
@@ -10,11 +11,14 @@ __AUTHOR_EMAIL__ = 'davidhalter88@gmail.com'
 # Get the version from within jedi. It's defined in exactly one place now.
 with open('jedi/__init__.py') as f:
     tree = ast.parse(f.read())
-version = tree.body[1].value.s
+version = tree.body[int(not hasattr(tree, 'docstring'))].value.s
 
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 with open('requirements.txt') as f:
     install_requires = f.read().splitlines()
+
+assert os.path.isfile("jedi/third_party/typeshed/LICENSE"), \
+    "Please download the typeshed submodule first"
 
 setup(name='jedi',
       version=version,
@@ -29,10 +33,19 @@ setup(name='jedi',
       keywords='python completion refactoring vim',
       long_description=readme,
       packages=find_packages(exclude=['test', 'test.*']),
-      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*',
+      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
       install_requires=install_requires,
-      extras_require={'dev': ['docopt']},
-      package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
+      extras_require={
+          'testing': [
+              'pytest>=3.1.0',
+              # docopt for sith doctests
+              'docopt',
+              # coloroma for colored debug output
+              'colorama',
+          ],
+      },
+      package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',
+                             'third_party/typeshed/README']},
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',
@@ -43,7 +56,6 @@ setup(name='jedi',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.3',
           'Programming Language :: Python :: 3.4',
           'Programming Language :: Python :: 3.5',
           'Programming Language :: Python :: 3.6',

@@ -1,10 +1,8 @@
-import os
-from itertools import chain
-
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate import imports
-from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, ContextNameMixin
-from jedi.evaluate.base_context import TreeContext, ContextSet
+from jedi.evaluate.filters import DictFilter
+from jedi.evaluate.names import ContextNameMixin, AbstractNameDefinition
+from jedi.evaluate.base_context import Context
+from jedi.evaluate.context.module import SubModuleDictMixin
 
 
 class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
@@ -17,7 +15,7 @@ class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
         self.string_name = string_name
 
 
-class ImplicitNamespaceContext(TreeContext):
+class ImplicitNamespaceContext(Context, SubModuleDictMixin):
     """
     Provides support for implicit namespace packages
     """
@@ -31,15 +29,15 @@ class ImplicitNamespaceContext(TreeContext):
         super(ImplicitNamespaceContext, self).__init__(evaluator, parent_context=None)
         self.evaluator = evaluator
         self._fullname = fullname
-        self.paths = paths
+        self._paths = paths
 
-    def get_filters(self, search_global, until_position=None, origin_scope=None):
-        yield DictFilter(self._sub_modules_dict())
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
+        yield DictFilter(self.sub_modules_dict())
 
     @property
     @evaluator_method_cache()
     def name(self):
-        string_name = self.py__package__().rpartition('.')[-1]
+        string_name = self.py__package__()[-1]
         return ImplicitNSName(self, string_name)
 
     def py__file__(self):
@@ -48,25 +46,19 @@ class ImplicitNamespaceContext(TreeContext):
     def py__package__(self):
         """Return the fullname
         """
-        return self._fullname
+        return self._fullname.split('.')
 
     def py__path__(self):
-        return [self.paths]
+        return self._paths
 
     def py__name__(self):
         return self._fullname
 
-    @evaluator_method_cache()
-    def _sub_modules_dict(self):
-        names = {}
+    def is_namespace(self):
+        return True
 
-        file_names = chain.from_iterable(os.listdir(path) for path in self.paths)
-        mods = [
-            file_name.rpartition('.')[0] if '.' in file_name else file_name
-            for file_name in file_names
-            if file_name != '__pycache__'
-        ]
+    def is_stub(self):
+        return False
 
-        for name in mods:
-            names[name] = imports.SubModuleName(self, name)
-        return names
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._fullname)

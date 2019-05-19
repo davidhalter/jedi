@@ -6,8 +6,9 @@
 1 - '1'
 
 -1 - - 1
--1 - int()
-int() - float()
+# TODO uncomment
+#-1 - int()
+#int() - float()
 float() - 3.0
 
 a = 3

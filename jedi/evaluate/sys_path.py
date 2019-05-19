@@ -99,7 +99,7 @@ def check_sys_path_modifications(module_context):
     def get_sys_path_powers(names):
         for name in names:
             power = name.parent.parent
-            if power.type in ('power', 'atom_expr'):
+            if power is not None and power.type in ('power', 'atom_expr'):
                 c = power.children
                 if c[0].type == 'name' and c[0].value == 'sys' \
                         and c[1].type == 'trailer':
@@ -153,6 +153,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
     from jedi.evaluate.context import ModuleContext
     module = ModuleContext(
         evaluator, module_node, buildout_script_path,
+        string_names=None,
         code_lines=get_cached_code_lines(evaluator.grammar, buildout_script_path),
     )
     for path in check_sys_path_modifications(module):
@@ -196,31 +197,63 @@ def _get_buildout_script_paths(search_path):
             continue
 
 
-def dotted_path_in_sys_path(sys_path, module_path):
+def remove_python_path_suffix(path):
+    for suffix in all_suffixes():
+        if path.endswith(suffix):
+            path = path[:-len(suffix)]
+            break
+    return path
+
+
+def transform_path_to_dotted(sys_path, module_path):
     """
-    Returns the dotted path inside a sys.path.
+    Returns the dotted path inside a sys.path as a list of names. e.g.
+
+    >>> from os.path import abspath
+    >>> transform_path_to_dotted([abspath("/foo")], abspath('/foo/bar/baz.py'))
+    (('bar', 'baz'), False)
+
+    Returns (None, False) if the path doesn't really resolve to anything.
+    The second return part is if it is a package.
     """
     # First remove the suffix.
-    for suffix in all_suffixes():
-        if module_path.endswith(suffix):
-            module_path = module_path[:-len(suffix)]
-        break
-    else:
-        # There should always be a suffix in a valid Python file on the path.
-        return None
+    module_path = remove_python_path_suffix(module_path)
 
-    if module_path.startswith(os.path.sep):
-        # The paths in sys.path most of the times don't end with a slash.
-        module_path = module_path[1:]
+    # Once the suffix was removed we are using the files as we know them. This
+    # means that if someone uses an ending like .vim for a Python file, .vim
+    # will be part of the returned dotted part.
 
-    for p in sys_path:
-        if module_path.startswith(p):
-            rest = module_path[len(p):]
-            if rest:
-                split = rest.split(os.path.sep)
-                for string in split:
-                    if not string or '.' in string:
-                        return None
-                return '.'.join(split)
+    is_package = module_path.endswith(os.path.sep + '__init__')
+    if is_package:
+        # -1 to remove the separator
+        module_path = module_path[:-len('__init__') - 1]
 
-    return None
+    def iter_potential_solutions():
+        for p in sys_path:
+            if module_path.startswith(p):
+                # Strip the trailing slash/backslash
+                rest = module_path[len(p):]
+                # On Windows a path can also use a slash.
+                if rest.startswith(os.path.sep) or rest.startswith('/'):
+                    # Remove a slash in cases it's still there.
+                    rest = rest[1:]
+
+                if rest:
+                    split = rest.split(os.path.sep)
+                    if not all(split):
+                        # This means that part of the file path was empty, this
+                        # is very strange and is probably a file that is called
+                        # `.py`.
+                        return
+                    yield tuple(split)
+
+    potential_solutions = tuple(iter_potential_solutions())
+    if not potential_solutions:
+        return None, False
+    # Try to find the shortest path, this makes more sense usually, because the
+    # user usually has venvs somewhere. This means that a path like
+    # .tox/py37/lib/python3.7/os.py can be normal for a file. However in that
+    # case we definitely want to return ['os'] as a path and not a crazy
+    # ['.tox', 'py37', 'lib', 'python3.7', 'os']. Keep in mind that this is a
+    # heuristic and there's now ay to "always" do it right.
+    return sorted(potential_solutions, key=lambda p: len(p))[0], is_package

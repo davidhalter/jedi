@@ -36,3 +36,18 @@ char: str
 for char in NOT_DEFINED:
     #? str()
     char
+
+
+class Foo():
+    bar: int
+    baz: typing.ClassVar[str]
+
+
+#? int()
+Foo.bar
+#? int()
+Foo().bar
+#? str()
+Foo.baz
+#? str()
+Foo().baz
