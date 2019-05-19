@@ -105,7 +105,7 @@ class ModuleMixin(SubModuleDictMixin):
             yield star_filter
 
     def py__class__(self):
-        c, = contexts_from_qualified_names(self.evaluator, 'types', 'ModuleType')
+        c, = contexts_from_qualified_names(self.evaluator, u'types', u'ModuleType')
         return c
 
     def is_module(self):

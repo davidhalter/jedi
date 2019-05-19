@@ -140,7 +140,7 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)
         return function
 
     def py__class__(self):
-        c, = contexts_from_qualified_names(self.evaluator, 'types', 'FunctionType')
+        c, = contexts_from_qualified_names(self.evaluator, u'types', u'FunctionType')
         return c
 
     def get_default_param_context(self):

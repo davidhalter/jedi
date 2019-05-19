@@ -370,7 +370,7 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         self.instance = instance
 
     def py__class__(self):
-        c, = contexts_from_qualified_names(self.evaluator, 'types', 'MethodType')
+        c, = contexts_from_qualified_names(self.evaluator, u'types', u'MethodType')
         return c
 
     def _get_arguments(self, arguments):
