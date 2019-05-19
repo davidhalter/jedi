@@ -9,7 +9,9 @@ include pytest.ini
 include tox.ini
 include requirements.txt
 include jedi/parser/python/grammar*.txt
-recursive-include jedi/third_party *
+recursive-include jedi/third_party *.pyi
+recursive-include jedi/third_party/typeshed/LICENSE
+recursive-include jedi/third_party/typeshed/README
 recursive-include test *
 recursive-include docs *
 recursive-exclude * *.pyc
