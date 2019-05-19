@@ -8,8 +8,8 @@ include conftest.py
 include pytest.ini
 include tox.ini
 include requirements.txt
-include jedi/evaluate/compiled/fake/*.pym
 include jedi/parser/python/grammar*.txt
+recursive-include jedi/third_party *
 recursive-include test *
 recursive-include docs *
 recursive-exclude * *.pyc
