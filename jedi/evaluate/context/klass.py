@@ -256,6 +256,15 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
         from jedi.evaluate.gradual.typing import AnnotatedSubClass
 
         def remap_type_vars():
+            """
+            The TypeVars in the resulting classes have sometimes different names
+            and we need to check for that, e.g. a signature can be:
+
+            def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
+
+            However, the iterator is defined as Iterator[_T_co], which means it has
+            a different type var name.
+            """
             for type_var in self.list_type_vars():
                 yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
 

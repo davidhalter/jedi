@@ -203,26 +203,6 @@ def infer_return_types(function_execution_context):
 
     type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
 
-    def remap_type_vars(context, type_var_dict):
-        """
-        The TypeVars in the resulting classes have sometimes different names
-        and we need to check for that, e.g. a signature can be:
-
-        def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
-
-        However, the iterator is defined as Iterator[_T_co], which means it has
-        a different type var name.
-        """
-        try:
-            func = context.list_type_vars
-        except AttributeError:
-            return type_var_dict
-        else:
-            return {
-                to.py__name__(): type_var_dict.get(from_.py__name__(), NO_CONTEXTS)
-                for from_, to in zip(unknown_type_vars, func())
-            }
-
     return ContextSet(
         ann.define_generics(type_var_dict)
         if isinstance(ann, AbstractAnnotatedClass) else ann
