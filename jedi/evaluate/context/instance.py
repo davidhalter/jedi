@@ -399,13 +399,6 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
 
-    def get_matching_functions(self, arguments):
-        for func in self._wrapped_context.get_matching_functions(arguments):
-            if func is self:
-                yield self
-            else:
-                yield BoundMethod(self.instance, func)
-
     def get_signatures(self):
         return [sig.bind(self) for sig in self._wrapped_context.get_signatures()]
 

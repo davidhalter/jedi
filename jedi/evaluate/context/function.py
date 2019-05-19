@@ -146,9 +146,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)
     def get_default_param_context(self):
         return self.parent_context
 
-    def get_matching_functions(self, arguments):
-        yield self
-
     def get_signatures(self):
         return [TreeSignature(self)]
 
@@ -394,17 +391,6 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
             # In this case we want precision.
             return NO_CONTEXTS
         return ContextSet.from_sets(fe.infer() for fe in function_executions)
-
-    def get_matching_functions(self, arguments):
-        for f in self.overloaded_functions:
-            signature = parser_utils.get_call_signature(f.tree_node)
-            if signature_matches(f, arguments):
-                debug.dbg("Overloading match: %s@%s",
-                          signature, f.tree_node.start_pos[0], color='BLUE')
-                yield f
-            else:
-                debug.dbg("Overloading no match: %s@%s (%s)",
-                          signature, f.tree_node.start_pos[0], arguments, color='BLUE')
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.overloaded_functions]
