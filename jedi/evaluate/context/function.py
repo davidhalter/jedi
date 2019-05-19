@@ -19,6 +19,7 @@ from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
 from jedi.evaluate.context import iterable
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
+from jedi.evaluate.helpers import contexts_from_qualified_names
 
 
 class LambdaName(AbstractNameDefinition):
@@ -139,7 +140,8 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)
         return function
 
     def py__class__(self):
-        return compiled.get_special_object(self.evaluator, u'FUNCTION_CLASS')
+        c, = contexts_from_qualified_names(self.evaluator, 'types', 'FunctionType')
+        return c
 
     def get_default_param_context(self):
         return self.parent_context

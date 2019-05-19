@@ -271,3 +271,7 @@ def parse_dotted_names(nodes, is_import_from, until_node=None):
             # for names.
             break
     return level, names
+
+
+def contexts_from_qualified_names(evaluator, *names):
+    return evaluator.import_module(names[:-1]).py__getattribute__(names[-1])
