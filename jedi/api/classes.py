@@ -102,6 +102,7 @@ class BaseDefinition(object):
         to Jedi, :meth:`jedi.Script.goto_definitions` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
+        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... import keyword
@@ -127,9 +128,11 @@ class BaseDefinition(object):
         so that it is easy to relate the result to the source code.
 
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> defs                           # doctest: +NORMALIZE_WHITESPACE
-        [<Definition module keyword>, <Definition class C>,
-         <Definition instance D>, <Definition def f>]
+        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        [<Definition full_name='keyword', description='module keyword'>,
+         <Definition full_name='__main__.C', description='class C'>,
+         <Definition full_name='__main__.D', description='instance D'>,
+         <Definition full_name='__main__.f', description='def f'>]
 
         Finally, here is what you can get from :attr:`type`:
 
@@ -207,7 +210,7 @@ class BaseDefinition(object):
         >>> source = 'import json'
         >>> script = Script(source, path='example.py')
         >>> d = script.goto_definitions()[0]
-        >>> print(d.module_name)                       # doctest: +ELLIPSIS
+        >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
         return self._get_module().name.string_name
@@ -515,6 +518,7 @@ class Definition(BaseDefinition):
 
         Example:
 
+        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... def f():
@@ -527,8 +531,9 @@ class Definition(BaseDefinition):
         >>> script = Script(source, column=3)  # line is maximum by default
         >>> defs = script.goto_definitions()
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> defs
-        [<Definition def f>, <Definition class C>]
+        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        [<Definition full_name='__main__.f', description='def f'>,
+         <Definition full_name='__main__.C', description='class C'>]
         >>> str(defs[0].description)  # strip literals in python2
         'def f'
         >>> str(defs[1].description)

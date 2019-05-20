@@ -359,10 +359,11 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
 
     First we get the names from the function scope.
 
-    >>> no_unicode_pprint(filters[0])                    #doctest: +ELLIPSIS
+    >>> no_unicode_pprint(filters[0])  # doctest: +ELLIPSIS
     MergedFilter(<ParserTreeFilter: ...>, <GlobalNameFilter: ...>)
-    >>> sorted(str(n) for n in filters[0].values())
-    ['<TreeNameDefinition: func@(3, 4)>', '<TreeNameDefinition: x@(2, 0)>']
+    >>> sorted(str(n) for n in filters[0].values())  # doctest: +NORMALIZE_WHITESPACE
+    ['<TreeNameDefinition: string_name=func start_pos=(3, 4)>',
+     '<TreeNameDefinition: string_name=x start_pos=(2, 0)>']
     >>> filters[0]._filters[0]._until_position
     (4, 0)
     >>> filters[0]._filters[1]._until_position
@@ -380,7 +381,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     Finally, it yields the builtin filter, if `include_builtin` is
     true (default).
 
-    >>> list(filters[3].values())                        #doctest: +ELLIPSIS
+    >>> list(filters[3].values())  # doctest: +ELLIPSIS
     [...]
     """
     from jedi.evaluate.context.function import FunctionExecutionContext
