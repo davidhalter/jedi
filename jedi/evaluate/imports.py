@@ -485,6 +485,34 @@ def _load_builtin_module(evaluator, import_names=None, sys_path=None):
     return module
 
 
+def _load_module_from_path(evaluator, path, base_names, code):
+    """
+    This should pretty much only be used for get_modules_containing_name. It's
+    here to ensure that a random path is still properly loaded into the Jedi
+    module structure.
+    """
+    e_sys_path = evaluator.get_sys_path()
+    if base_names:
+        module_name = os.path.basename(path)
+        module_name = sys_path.remove_python_path_suffix(module_name)
+        is_package = module_name == '__init__'
+        if is_package:
+            import_names = base_names
+        else:
+            import_names = base_names + (module_name,)
+    else:
+        import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
+
+    module = _load_python_module(
+        evaluator, KnownContentFileIO(path, code),
+        sys_path=e_sys_path,
+        import_names=import_names,
+        is_package=is_package,
+    )
+    evaluator.module_cache.add(import_names, ContextSet([module]))
+    return module
+
+
 def get_modules_containing_name(evaluator, modules, name):
     """
     Search a name in the directories of modules.
@@ -505,28 +533,7 @@ def get_modules_containing_name(evaluator, modules, name):
             code = python_bytes_to_unicode(f.read(), errors='replace')
         if name not in code:
             return None
-
-        e_sys_path = evaluator.get_sys_path()
-        if base_names:
-            module_name = os.path.basename(path)
-            module_name = sys_path.remove_python_path_suffix(module_name)
-            is_package = module_name == '__init__'
-            if is_package:
-                raise NotImplementedError(
-                    "This is probably not possible yet, please add a failing test first")
-                module_name = os.path.basename(os.path.dirname(path))
-            import_names = base_names + (module_name,)
-        else:
-            import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
-
-        module = _load_python_module(
-            evaluator, KnownContentFileIO(path, code),
-            sys_path=e_sys_path,
-            import_names=import_names,
-            is_package=is_package,
-        )
-        evaluator.module_cache.add(import_names, ContextSet([module]))
-        return module
+        return _load_module_from_path(evaluator, path, base_names, code)
 
     # skip non python modules
     used_mod_paths = set()

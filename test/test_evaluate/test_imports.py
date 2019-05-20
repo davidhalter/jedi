@@ -326,6 +326,22 @@ def test_get_modules_containing_name(evaluator, path, goal, is_package):
 
 
 @pytest.mark.parametrize(
+    ('path', 'base_names', 'is_package', 'names'), [
+        ('/foo/bar.py', ('foo',), False, ('foo', 'bar')),
+        ('/foo/bar.py', ('foo', 'baz'), False, ('foo', 'baz', 'bar')),
+        ('/foo/__init__.py', ('foo',), True, ('foo',)),
+        ('/__init__.py', ('foo',), True, ('foo',)),
+        ('/foo/bar/__init__.py', ('foo',), True, ('foo',)),
+        ('/foo/bar/__init__.py', ('foo', 'bar'), True, ('foo', 'bar')),
+    ]
+)
+def test_load_module_from_path(evaluator, path, base_names, is_package, names):
+    m = imports._load_module_from_path(evaluator, path, base_names, '')
+    assert m.is_package == is_package
+    assert m.string_names == names
+
+
+@pytest.mark.parametrize(
     'path', ('api/whatever/test_this.py', 'api/whatever/file'))
 @pytest.mark.parametrize('empty_sys_path', (False, True))
 def test_relative_imports_with_multiple_similar_directories(Script, path, empty_sys_path):
