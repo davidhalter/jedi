@@ -38,7 +38,9 @@ def test_find_module_not_package():
     assert is_package is False
 
 
-pkg_zip_path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
+pkg_zip_path = os.path.join(os.path.dirname(__file__),
+                            'zipped_imports',
+                            'pkg.zip')
 
 
 def test_find_module_package_zipped(Script, evaluator, environment):
