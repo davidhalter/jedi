@@ -223,7 +223,7 @@ class Importer(object):
                 path = module_context.py__file__()
                 import_path = list(import_path)
                 if path is None:
-                    # If no path is defined, our best case is that the current
+                    # If no path is defined, our best guess is that the current
                     # file is edited by a user on the current working
                     # directory. We need to add an initial path, because it
                     # will get removed as the name of the current file.
