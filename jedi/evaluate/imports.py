@@ -204,9 +204,6 @@ class Importer(object):
         self._inference_possible = True
         if level:
             base = module_context.py__package__()
-            if base == [''] or base == ['__main__']:
-                raise NotImplementedError(module_context.py__package__())
-                base = []
             # We need to care for two cases, the first one is if it's a valid
             # Python import. This import has a properly defined module name
             # chain like `foo.bar.baz` and an import in baz is made for
