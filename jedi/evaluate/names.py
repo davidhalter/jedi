@@ -121,7 +121,12 @@ class TreeNameDefinition(AbstractTreeName):
         return self._API_TYPES.get(definition.type, 'statement')
 
 
-class ParamName(AbstractTreeName):
+class ParamNameInterface(object):
+    def get_kind(self):
+        raise NotImplementedError
+
+
+class ParamName(AbstractTreeName, ParamNameInterface):
     api_type = u'param'
 
     def __init__(self, parent_context, tree_name):

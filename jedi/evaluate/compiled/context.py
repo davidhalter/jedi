@@ -9,7 +9,8 @@ from jedi.evaluate.utils import to_list
 from jedi._compatibility import force_unicode, Parameter, cast_path
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter
-from jedi.evaluate.names import AbstractNameDefinition, ContextNameMixin
+from jedi.evaluate.names import AbstractNameDefinition, ContextNameMixin, \
+    ParamNameInterface
 from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
@@ -283,7 +284,7 @@ class CompiledName(AbstractNameDefinition):
         )])
 
 
-class SignatureParamName(AbstractNameDefinition):
+class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
     api_type = u'param'
 
     def __init__(self, compiled_obj, signature_param):
