@@ -377,6 +377,21 @@ class DirectObjectAccess(object):
         return inspect.isclass(self._obj) and self._obj != type
 
     def get_signature_params(self):
+        return [
+            SignatureParam(
+                name=p.name,
+                has_default=p.default is not p.empty,
+                default=self._create_access_path(p.default),
+                has_annotation=p.annotation is not p.empty,
+                annotation=self._create_access_path(p.annotation),
+                kind_name=str(p.kind)
+            ) for p in self._get_signature().parameters.values()
+        ]
+
+    def get_signature_text(self):
+        return str(self._get_signature())
+
+    def _get_signature(self):
         obj = self._obj
         if py_version < 33:
             raise ValueError("inspect.signature was introduced in 3.3")
@@ -397,22 +412,12 @@ class DirectObjectAccess(object):
                 raise ValueError
 
         try:
-            signature = inspect.signature(obj)
+            return inspect.signature(obj)
         except (RuntimeError, TypeError):
             # Reading the code of the function in Python 3.6 implies there are
             # at least these errors that might occur if something is wrong with
             # the signature. In that case we just want a simple escape for now.
             raise ValueError
-        return [
-            SignatureParam(
-                name=p.name,
-                has_default=p.default is not p.empty,
-                default=self._create_access_path(p.default),
-                has_annotation=p.annotation is not p.empty,
-                annotation=self._create_access_path(p.annotation),
-                kind_name=str(p.kind)
-            ) for p in signature.parameters.values()
-        ]
 
     def negate(self):
         return self._create_access_path(-self._obj)

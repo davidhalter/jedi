@@ -10,6 +10,7 @@ class AbstractSignature(object):
     def name(self):
         return self.context.name
 
+    @property
     def annotation(self):
         return None
 
@@ -34,6 +35,7 @@ class TreeSignature(AbstractSignature):
     def bind(self, context):
         return TreeSignature(context, self._function_context, is_bound=True)
 
+    @property
     def annotation(self):
         return self._function_context.tree_node.annotation
 
@@ -52,7 +54,7 @@ class BuiltinSignature(AbstractSignature):
         return self.context
 
     def to_string(self):
-        return ''
+        return self.name.string_name + self.context.get_signature_text()
 
     def bind(self, context):
         raise NotImplementedError('pls implement, need test case, %s' % context)

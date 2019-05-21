@@ -5,6 +5,7 @@ import re
 from functools import partial
 
 from jedi import debug
+from jedi.evaluate.utils import to_list
 from jedi._compatibility import force_unicode, Parameter, cast_path
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.evaluate.filters import AbstractFilter
@@ -111,6 +112,7 @@ class CompiledObject(Context):
     def py__doc__(self):
         return self.access_handle.py__doc__()
 
+    @to_list
     def get_param_names(self):
         try:
             signature_params = self.access_handle.get_signature_params()
@@ -125,6 +127,13 @@ class CompiledObject(Context):
         else:
             for signature_param in signature_params:
                 yield SignatureParamName(self, signature_param)
+
+    def get_signature_text(self):
+        try:
+            return self.access_handle.get_signature_text()
+        except ValueError:
+            params_str, ret = self._parse_function_doc()
+            return '(' + params_str + ')' + ret
 
     def get_signatures(self):
         return [BuiltinSignature(self)]
