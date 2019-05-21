@@ -3,7 +3,9 @@ To ensure compatibility from Python ``2.7`` - ``3.x``, a module has been
 created. Clearly there is huge need to use conforming syntax.
 """
 from __future__ import print_function
+import atexit
 import errno
+import functools
 import sys
 import os
 import re
@@ -11,6 +13,7 @@ import pkgutil
 import warnings
 import inspect
 import subprocess
+import weakref
 try:
     import importlib
 except ImportError:
@@ -635,3 +638,49 @@ def which(cmd, mode=os.F_OK | os.X_OK, path=None):
                 if _access_check(name, mode):
                     return name
     return None
+
+
+if not is_py3:
+    # Simplified backport of Python 3 weakref.finalize:
+    # https://github.com/python/cpython/blob/ded4737989316653469763230036b04513cb62b3/Lib/weakref.py#L502-L662
+    class finalize(object):
+        """Class for finalization of weakrefable objects.
+
+        finalize(obj, func, *args, **kwargs) returns a callable finalizer
+        object which will be called when obj is garbage collected. The
+        first time the finalizer is called it evaluates func(*arg, **kwargs)
+        and returns the result. After this the finalizer is dead, and
+        calling it just returns None.
+
+        When the program exits any remaining finalizers will be run.
+        """
+
+        # Finalizer objects don't have any state of their own.
+        # This ensures that they cannot be part of a ref-cycle.
+        __slots__ = ()
+        _registry = {}
+
+        def __init__(self, obj, func, *args, **kwargs):
+            info = functools.partial(func, *args, **kwargs)
+            info.weakref = weakref.ref(obj, self)
+            self._registry[self] = info
+
+        def __call__(self):
+            """Return func(*args, **kwargs) if alive."""
+            info = self._registry.pop(self, None)
+            if info:
+                return info()
+
+        @classmethod
+        def _exitfunc(cls):
+            if not cls._registry:
+                return
+            for finalizer in list(cls._registry):
+                try:
+                    finalizer(None)
+                except Exception:
+                    sys.excepthook(*sys.exc_info())
+                assert finalizer not in cls._registry
+
+    atexit.register(finalize._exitfunc)
+    weakref.finalize = finalize
