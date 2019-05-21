@@ -680,7 +680,7 @@ if not is_py3:
                 return
             for finalizer in list(cls._registry):
                 try:
-                    finalizer(None)
+                    finalizer()
                 except Exception:
                     sys.excepthook(*sys.exc_info())
                 assert finalizer not in cls._registry
