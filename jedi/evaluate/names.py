@@ -122,6 +122,7 @@ class TreeNameDefinition(AbstractTreeName):
 
 
 class ParamNameInterface(object):
+    # annotation default?!
     def get_kind(self):
         raise NotImplementedError
 

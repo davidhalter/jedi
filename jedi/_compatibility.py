@@ -98,7 +98,10 @@ class ZipFileIO(KnownContentFileIO):
         self._zip_path = zip_path
 
     def get_last_modified(self):
-        return os.path.getmtime(self._zip_path)
+        try:
+            return os.path.getmtime(self._zip_path)
+        except OSError:  # Python 3 would probably only need FileNotFoundError
+            return None
 
 
 def _from_loader(loader, string):
