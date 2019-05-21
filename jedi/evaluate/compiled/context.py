@@ -134,7 +134,7 @@ class CompiledObject(Context):
             return self.access_handle.get_signature_text()
         except ValueError:
             params_str, ret = self._parse_function_doc()
-            return '(' + params_str + ')' + ret
+            return '(' + params_str + ')' + (ret and ' -> ' + ret)
 
     def get_signatures(self):
         return [BuiltinSignature(self)]

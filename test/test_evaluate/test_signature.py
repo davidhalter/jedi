@@ -1,15 +1,18 @@
 import pytest
-from operator import ge, le
+from operator import ge, lt
 
 from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 
 
 @pytest.mark.parametrize(
     'code, sig, names, op, version', [
-        ('import math; math.cos', 'cos(x)', ['x'], le, (3, 6)),
+        ('import math; math.cos', 'cos(x)', ['x'], lt, (3, 7)),
         ('import math; math.cos', 'cos(x, /)', ['x'], ge, (3, 7)),
 
         ('next', 'next(iterator, default=None)', ['iterator', 'default'], ge, (2, 7)),
+
+        ('pow', 'pow(x, y, z=None) -> number', ['x', 'y', 'z'], lt, (3, 5)),
+        ('pow', 'pow(x, y, z=None, /)', ['x', 'y', 'z'], ge, (3, 5)),
     ]
 )
 def test_compiled_signature(Script, environment, code, sig, names, op, version):
