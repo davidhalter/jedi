@@ -369,6 +369,9 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         super(BoundMethod, self).__init__(function)
         self.instance = instance
 
+    def is_bound_method(self):
+        return True
+
     def py__class__(self):
         c, = contexts_from_qualified_names(self.evaluator, u'types', u'MethodType')
         return c
@@ -410,6 +413,9 @@ class CompiledBoundMethod(compiled.CompiledObject):
     def __init__(self, func):
         super(CompiledBoundMethod, self).__init__(
             func.evaluator, func.access_handle, func.parent_context)
+
+    def is_bound_method(self):
+        return True
 
     def get_param_names(self):
         return list(super(CompiledBoundMethod, self).get_param_names())[1:]

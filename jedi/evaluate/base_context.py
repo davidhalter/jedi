@@ -164,6 +164,9 @@ class Context(HelperContextMixin, BaseContext):
     def is_compiled(self):
         return False
 
+    def is_bound_method(self):
+        return False
+
     def py__bool__(self):
         """
         Since Wrapper is a super class for classes, functions and modules,
