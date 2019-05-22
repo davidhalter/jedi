@@ -14,6 +14,16 @@ def stub_to_actual_context_set(stub_context, ignore_compiled=False):
         stub_context = stub_context.py__class__()
 
     qualified_names = stub_context.get_qualified_names()
+    if qualified_names is None:
+        return NO_CONTEXTS
+
+    was_bound_method = stub_context.is_bound_method()
+    if was_bound_method:
+        # Infer the object first. We can infer the method later.
+        method_name = qualified_names[-1]
+        qualified_names = qualified_names[:-1]
+        was_instance = True
+
     contexts = _infer_from_stub(stub_module, qualified_names, ignore_compiled)
     if was_instance:
         contexts = ContextSet.from_sets(
@@ -21,13 +31,14 @@ def stub_to_actual_context_set(stub_context, ignore_compiled=False):
             for c in contexts
             if c.is_class()
         )
+    if was_bound_method:
+        # Now that the instance has been properly created, we can simply get
+        # the method.
+        contexts = contexts.py__getattribute__(method_name)
     return contexts
 
 
 def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
-    if qualified_names is None:
-        return NO_CONTEXTS
-
     assert isinstance(stub_module, StubModuleContext), stub_module
     non_stubs = stub_module.non_stub_context_set
     if ignore_compiled:

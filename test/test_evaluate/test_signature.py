@@ -18,7 +18,7 @@ from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
         ('bytes.partition', 'partition(self, sep, /)', ['self', 'sep'], ge, (3, 5)),
 
         ('bytes().partition', 'partition(sep) -> (head, sep, tail)', ['sep'], lt, (3, 5)),
-        ('bytes().partition', 'partition(sep, /)', ['sep'], ge, (3, 5)),
+        ('bytes().partition', 'partition(self, sep, /)', ['sep'], ge, (3, 5)),
     ]
 )
 def test_compiled_signature(Script, environment, code, sig, names, op, version):
