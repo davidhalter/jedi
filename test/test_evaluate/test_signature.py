@@ -13,11 +13,17 @@ from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 
         ('pow', 'pow(x, y, z=None) -> number', ['x', 'y', 'z'], lt, (3, 5)),
         ('pow', 'pow(x, y, z=None, /)', ['x', 'y', 'z'], ge, (3, 5)),
+
+        ('bytes.partition', 'partition(self, sep) -> (head, sep, tail)', ['self', 'sep'], lt, (3, 5)),
+        ('bytes.partition', 'partition(self, sep, /)', ['self', 'sep'], ge, (3, 5)),
+
+        ('bytes().partition', 'partition(sep) -> (head, sep, tail)', ['sep'], lt, (3, 5)),
+        ('bytes().partition', 'partition(sep, /)', ['sep'], ge, (3, 5)),
     ]
 )
 def test_compiled_signature(Script, environment, code, sig, names, op, version):
     if not op(environment.version_info, version):
-        pytest.skip("Not running for this version")
+        return  # The test right next to it should take over.
 
     d, = Script(code).goto_definitions()
     context, = d._name.infer()

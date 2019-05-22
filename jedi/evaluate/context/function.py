@@ -38,7 +38,7 @@ class LambdaName(AbstractNameDefinition):
         return ContextSet([self._lambda_context])
 
 
-class FunctionAndClassMixin(object):
+class FunctionAndClassBase(TreeContext):
     def get_qualified_names(self):
         if self.parent_context.is_class():
             n = self.parent_context.get_qualified_names()
@@ -51,11 +51,8 @@ class FunctionAndClassMixin(object):
         else:
             return None
 
-    def py__name__(self):
-        return self.name.string_name
 
-
-class FunctionMixin(FunctionAndClassMixin):
+class FunctionMixin(object):
     api_type = u'function'
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
@@ -89,6 +86,9 @@ class FunctionMixin(FunctionAndClassMixin):
             return LambdaName(self)
         return ContextName(self, self.tree_node.name)
 
+    def py__name__(self):
+        return self.name.string_name
+
     def py__call__(self, arguments):
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
@@ -100,7 +100,7 @@ class FunctionMixin(FunctionAndClassMixin):
         return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
 
 
-class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)):
+class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """

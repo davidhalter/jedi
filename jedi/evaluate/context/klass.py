@@ -47,8 +47,8 @@ from jedi.evaluate.filters import ParserTreeFilter
 from jedi.evaluate.names import TreeNameDefinition, ContextName
 from jedi.evaluate.arguments import unpack_arglist
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
-    TreeContext, NO_CONTEXTS
-from jedi.evaluate.context.function import FunctionAndClassMixin
+    NO_CONTEXTS
+from jedi.evaluate.context.function import FunctionAndClassBase
 
 
 def apply_py__get__(context, instance, class_context):
@@ -118,7 +118,7 @@ class ClassFilter(ParserTreeFilter):
         return [name for name in names if self._access_possible(name)]
 
 
-class ClassMixin(FunctionAndClassMixin):
+class ClassMixin(object):
     def is_class(self):
         return True
 
@@ -132,6 +132,9 @@ class ClassMixin(FunctionAndClassMixin):
     @property
     def name(self):
         return ContextName(self, self.tree_node.name)
+
+    def py__name__(self):
+        return self.name.string_name
 
     def get_param_names(self):
         for context_ in self.py__getattribute__(u'__init__'):
@@ -199,7 +202,7 @@ class ClassMixin(FunctionAndClassMixin):
                 yield next(type_.get_filters())
 
 
-class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
+class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
