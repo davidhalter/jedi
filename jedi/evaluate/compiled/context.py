@@ -123,21 +123,15 @@ class CompiledObject(Context):
             if self.access_handle.ismethoddescriptor():
                 tokens.insert(0, 'self')
             for p in tokens:
-                parts = p.strip().split('=')
-                yield UnresolvableParamName(self, parts[0])
+                name, _, default = p.strip().partition('=')
+                yield UnresolvableParamName(self, name, default)
         else:
             for signature_param in signature_params:
                 yield SignatureParamName(self, signature_param)
 
-    def get_signature_text(self):
-        try:
-            return self.access_handle.get_signature_text()
-        except ValueError:
-            params_str, ret = self._parse_function_doc()
-            return '(' + params_str + ')' + (ret and ' -> ' + ret)
-
     def get_signatures(self):
-        return [BuiltinSignature(self)]
+        _, return_string = self._parse_function_doc()
+        return [BuiltinSignature(self, return_string)]
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.access_handle.get_repr())
@@ -295,6 +289,14 @@ class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
     def string_name(self):
         return self._signature_param.name
 
+    def to_string(self):
+        s = self.string_name
+        if self._signature_param.has_annotation:
+            s += ': ' + self._signature_param.annotation_string
+        if self._signature_param.has_default:
+            s += '=' + self._signature_param.default_string
+        return s
+
     def get_kind(self):
         return getattr(Parameter, self._signature_param.kind_name)
 
@@ -313,15 +315,22 @@ class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
         return contexts
 
 
-class UnresolvableParamName(AbstractNameDefinition):
+class UnresolvableParamName(AbstractNameDefinition, ParamNameInterface):
     api_type = u'param'
 
-    def __init__(self, compiled_obj, name):
+    def __init__(self, compiled_obj, name, default):
         self.parent_context = compiled_obj.parent_context
         self.string_name = name
+        self._default = default
 
     def get_kind(self):
         return Parameter.POSITIONAL_ONLY
+
+    def to_string(self):
+        string = self.string_name
+        if self._default:
+            string += '=' + self._default
+        return string
 
     def infer(self):
         return NO_CONTEXTS

@@ -92,7 +92,7 @@ def safe_getattr(obj, name, default=_sentinel):
 
 SignatureParam = namedtuple(
     'SignatureParam',
-    'name has_default default has_annotation annotation kind_name'
+    'name has_default default default_string has_annotation annotation annotation_string kind_name'
 )
 
 
@@ -382,14 +382,13 @@ class DirectObjectAccess(object):
                 name=p.name,
                 has_default=p.default is not p.empty,
                 default=self._create_access_path(p.default),
+                default_string=str(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
+                annotation_string=str(p.default),
                 kind_name=str(p.kind)
             ) for p in self._get_signature().parameters.values()
         ]
-
-    def get_signature_text(self):
-        return str(self._get_signature())
 
     def _get_signature(self):
         obj = self._obj
