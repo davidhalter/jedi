@@ -16,7 +16,7 @@ class AbstractSignature(object):
         s = self.name.string_name + '(' + param_code + ')'
         annotation = self.annotation
         if annotation is not None:
-            s += ' -> ' + annotation.get_code(include_prefix=False)
+                s += ' -> ' + annotation.get_code(include_prefix=False)
         return s
 
     def bind(self, context):
@@ -39,6 +39,10 @@ class TreeSignature(AbstractSignature):
 
     @property
     def annotation(self):
+        # Classes don't need annotations, even if __init__ has one. They always
+        # return themselves.
+        if self.context.is_class():
+            return None
         return self._function_context.tree_node.annotation
 
 
