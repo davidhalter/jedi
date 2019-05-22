@@ -1,6 +1,3 @@
-from jedi.parser_utils import get_call_signature
-
-
 class AbstractSignature(object):
     def __init__(self, context, is_bound=False):
         self.context = context
@@ -15,7 +12,12 @@ class AbstractSignature(object):
         return None
 
     def to_string(self):
-        raise NotImplementedError
+        param_code = ', '.join(n.to_string() for n in self.get_param_names())
+        s = self.name.string_name + '(' + param_code + ')'
+        annotation = self.annotation
+        if annotation is not None:
+            s += ' -> ' + annotation.get_code(include_prefix=False)
+        return s
 
     def bind(self, context):
         raise NotImplementedError
@@ -38,14 +40,6 @@ class TreeSignature(AbstractSignature):
     @property
     def annotation(self):
         return self._function_context.tree_node.annotation
-
-    def to_string(self, normalize=False):
-        return get_call_signature(
-            self._function_context.tree_node,
-            call_string=self.name.string_name,
-            omit_first_param=self.is_bound,
-            omit_return_annotation=self.context.is_class(),
-        )
 
 
 class BuiltinSignature(AbstractSignature):

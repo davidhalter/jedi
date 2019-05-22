@@ -122,8 +122,10 @@ class TreeNameDefinition(AbstractTreeName):
 
 
 class ParamNameInterface(object):
-    # annotation default?!
     def get_kind(self):
+        raise NotImplementedError
+
+    def to_string(self):
         raise NotImplementedError
 
 
@@ -134,8 +136,11 @@ class ParamName(AbstractTreeName, ParamNameInterface):
         self.parent_context = parent_context
         self.tree_name = tree_name
 
+    def _get_param_node(self):
+        return search_ancestor(self.tree_name, 'param')
+
     def get_kind(self):
-        tree_param = search_ancestor(self.tree_name, 'param')
+        tree_param = self._get_param_node()
         if tree_param.star_count == 1:  # *args
             return Parameter.VAR_POSITIONAL
         if tree_param.star_count == 2:  # **kwargs
@@ -149,6 +154,15 @@ class ParamName(AbstractTreeName, ParamNameInterface):
                 if p == tree_param:
                     break
         return Parameter.POSITIONAL_OR_KEYWORD
+
+    def to_string(self):
+        output = self.string_name
+        param_node = self._get_param_node()
+        if param_node.annotation is not None:
+            output += ': ' + param_node.annotation.get_code(include_prefix=False)
+        if param_node.default is not None:
+            output += '=' + param_node.default.get_code(include_prefix=False)
+        return output
 
     def infer(self):
         return self.get_param().infer()
