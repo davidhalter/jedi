@@ -10,6 +10,8 @@ from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 
         ('next', 'next(iterator, default=None, /)', ['iterator', 'default'], ge, (2, 7)),
 
+        ('str', "str(object='', /) -> str", ['object'], ge, (2, 7)),
+
         ('pow', 'pow(x, y, z=None, /) -> number', ['x', 'y', 'z'], lt, (3, 5)),
         ('pow', 'pow(x, y, z=None, /)', ['x', 'y', 'z'], ge, (3, 5)),
 
