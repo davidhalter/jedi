@@ -17,7 +17,7 @@ matrix:
   allow_failures:
     - python: pypy
     - env: TOXENV=sith
-    - python: 3.7
+    - python: 3.8-dev
   include:
     - python: 3.6
       env:
@@ -28,6 +28,9 @@ matrix:
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.
     #- python: pypy
+    - python: 3.8-dev
+      env:
+        - JEDI_TEST_ENVIRONMENT=36
 install:
     - pip install --quiet tox-travis
 script:
