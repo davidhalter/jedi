@@ -208,10 +208,10 @@ class Sequence(BuiltinOverwrite, IterableMixin):
 
     @memoize_method
     def get_object(self):
-        from jedi.evaluate.gradual.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import GenericClass
         klass = compiled.builtin_from_name(self.evaluator, self.array_type)
         # TODO is this execute annotation wrong? it returns a context set?!
-        return AnnotatedSubClass(klass, self._get_generics()).execute_annotation()
+        return GenericClass(klass, self._get_generics()).execute_annotation()
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.

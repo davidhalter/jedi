@@ -333,7 +333,7 @@ class FunctionExecutionContext(TreeContext):
         evaluator = self.evaluator
         is_coroutine = self.tree_node.parent.type in ('async_stmt', 'async_funcdef')
         is_generator = bool(get_yield_exprs(evaluator, self.tree_node))
-        from jedi.evaluate.gradual.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import GenericClass
 
         if is_coroutine:
             if is_generator:
@@ -347,7 +347,7 @@ class FunctionExecutionContext(TreeContext):
                 generics = (yield_contexts.py__class__(), NO_CONTEXTS)
                 return ContextSet(
                     # In Python 3.6 AsyncGenerator is still a class.
-                    AnnotatedSubClass(c, generics)
+                    GenericClass(c, generics)
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
@@ -358,7 +358,7 @@ class FunctionExecutionContext(TreeContext):
                 # Only the first generic is relevant.
                 generics = (return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
                 return ContextSet(
-                    AnnotatedSubClass(c, generics) for c in async_classes
+                    GenericClass(c, generics) for c in async_classes
                 ).execute_annotation()
         else:
             if is_generator:

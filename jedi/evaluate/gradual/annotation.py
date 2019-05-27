@@ -12,7 +12,7 @@ from parso import ParserSyntaxError, parse
 from jedi._compatibility import force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
-from jedi.evaluate.gradual.typing import TypeVar, AnnotatedClass, \
+from jedi.evaluate.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
 from jedi.evaluate.helpers import is_string
 from jedi import debug
@@ -274,7 +274,7 @@ def _infer_type_vars(annotation_context, context_set):
     type_var_dict = {}
     if isinstance(annotation_context, TypeVar):
         return {annotation_context.py__name__(): context_set.py__class__()}
-    elif isinstance(annotation_context, AnnotatedClass):
+    elif isinstance(annotation_context, LazyGenericClass):
         name = annotation_context.py__name__()
         if name == 'Iterable':
             given = annotation_context.get_generics()

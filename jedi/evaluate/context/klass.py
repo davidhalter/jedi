@@ -243,11 +243,11 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
             )]
 
     def py__getitem__(self, index_context_set, contextualized_node):
-        from jedi.evaluate.gradual.typing import AnnotatedClass
+        from jedi.evaluate.gradual.typing import LazyGenericClass
         if not index_context_set:
             return ContextSet([self])
         return ContextSet(
-            AnnotatedClass(
+            LazyGenericClass(
                 self,
                 index_context,
                 context_of_index=contextualized_node.context,
@@ -256,7 +256,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         )
 
     def define_generics(self, type_var_dict):
-        from jedi.evaluate.gradual.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import GenericClass
 
         def remap_type_vars():
             """
@@ -272,7 +272,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                 yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
 
         if type_var_dict:
-            return AnnotatedSubClass(
+            return GenericClass(
                 self,
                 generics=tuple(remap_type_vars())
             )

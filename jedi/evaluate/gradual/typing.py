@@ -588,7 +588,7 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
             # cached results.
             return self
 
-        return AnnotatedSubClass(
+        return GenericClass(
             self._wrapped_context,
             generics=tuple(new_generics)
         )
@@ -606,9 +606,9 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
             yield LazyAnnotatedBaseClass(self, base)
 
 
-class AnnotatedClass(AbstractAnnotatedClass):
+class LazyGenericClass(AbstractAnnotatedClass):
     def __init__(self, class_context, index_context, context_of_index):
-        super(AnnotatedClass, self).__init__(class_context)
+        super(LazyGenericClass, self).__init__(class_context)
         self._index_context = index_context
         self._context_of_index = context_of_index
 
@@ -617,9 +617,9 @@ class AnnotatedClass(AbstractAnnotatedClass):
         return list(_iter_over_arguments(self._index_context, self._context_of_index))
 
 
-class AnnotatedSubClass(AbstractAnnotatedClass):
+class GenericClass(AbstractAnnotatedClass):
     def __init__(self, class_context, generics):
-        super(AnnotatedSubClass, self).__init__(class_context)
+        super(GenericClass, self).__init__(class_context)
         self._generics = generics
 
     def get_generics(self):
@@ -636,7 +636,7 @@ class LazyAnnotatedBaseClass(object):
         for base in self._lazy_base_class.infer():
             if isinstance(base, AbstractAnnotatedClass):
                 # Here we have to recalculate the given types.
-                yield AnnotatedSubClass.create_cached(
+                yield GenericClass.create_cached(
                     base.evaluator,
                     base._wrapped_context,
                     tuple(self._remap_type_vars(base)),
