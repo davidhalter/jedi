@@ -203,9 +203,9 @@ def infer_return_types(function_execution_context):
 
     type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
 
-    return ContextSet(
+    return ContextSet.from_sets(
         ann.define_generics(type_var_dict)
-        if isinstance(ann, AbstractAnnotatedClass) else ann
+        if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ann
         for ann in annotation_contexts
     ).execute_annotation()
 

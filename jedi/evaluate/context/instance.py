@@ -283,7 +283,7 @@ class TreeInstance(AbstractInstanceContext):
                 continue
 
             all_annotations = py__annotations__(execution.tree_node)
-            defined = self.class_context.define_generics(
+            defined, = self.class_context.define_generics(
                 infer_type_vars_for_execution(execution, all_annotations),
             )
             debug.dbg('Inferred instance context as %s', defined, color='BLUE')

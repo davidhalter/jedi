@@ -432,6 +432,16 @@ class TypeVar(_BaseTypingContext):
             lazy.infer() for lazy in self._constraints_lazy_contexts
         )
 
+    def define_generics(self, type_var_dict):
+        try:
+            found = type_var_dict[self.py__name__()]
+        except KeyError:
+            pass
+        else:
+            if found:
+                return found
+        return self._get_classes() or ContextSet({self})
+
     def execute_annotation(self):
         return self._get_classes().execute_annotation()
 
@@ -564,32 +574,25 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
         for generic_set in self.get_generics():
             contexts = NO_CONTEXTS
             for generic in generic_set:
-                if isinstance(generic, AbstractAnnotatedClass):
-                    new_generic = generic.define_generics(type_var_dict)
-                    contexts |= ContextSet([new_generic])
-                    if new_generic != generic:
+                if isinstance(generic, (AbstractAnnotatedClass, TypeVar)):
+                    result = generic.define_generics(type_var_dict)
+                    contexts |= result
+                    if result != ContextSet({generic}):
                         changed = True
                 else:
-                    if isinstance(generic, TypeVar):
-                        try:
-                            contexts |= type_var_dict[generic.py__name__()]
-                            changed = True
-                        except KeyError:
-                            contexts |= ContextSet([generic])
-                    else:
-                        contexts |= ContextSet([generic])
+                    contexts |= ContextSet([generic])
             new_generics.append(contexts)
 
         if not changed:
             # There might not be any type vars that change. In that case just
             # return itself, because it does not make sense to potentially lose
             # cached results.
-            return self
+            return ContextSet([self])
 
-        return GenericClass(
+        return ContextSet([GenericClass(
             self._wrapped_context,
             generics=tuple(new_generics)
-        )
+        )])
 
     def __repr__(self):
         return '<%s: %s%s>' % (

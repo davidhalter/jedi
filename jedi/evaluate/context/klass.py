@@ -272,11 +272,11 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                 yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
 
         if type_var_dict:
-            return GenericClass(
+            return ContextSet([GenericClass(
                 self,
                 generics=tuple(remap_type_vars())
-            )
-        return self
+            )])
+        return ContextSet({self})
 
     def get_signatures(self):
         init_funcs = self.py__getattribute__('__init__')
