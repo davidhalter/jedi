@@ -17,6 +17,7 @@ from jedi.common import BaseContextSet, BaseContext
 from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.cache import evaluator_as_method_param_cache
+from jedi.cache import memoize_method
 
 
 class HelperContextMixin(object):
@@ -66,6 +67,12 @@ class HelperContextMixin(object):
         if is_goto:
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
+
+    def py__await__(self):
+        await_context_set = self.py__getattribute__(u"__await__")
+        if not await_context_set:
+            debug.warning('Tried to run __await__ on context %s', self)
+        return await_context_set.execute_evaluated()
 
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
@@ -203,11 +210,9 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     )
 
 
-class ContextWrapper(HelperContextMixin, object):
+class _ContextWrapperBase(HelperContextMixin):
     py__getattribute__ = Context.py__getattribute__
-
-    def __init__(self, wrapped_context):
-        self._wrapped_context = wrapped_context
+    predefined_names = {}
 
     @safe_property
     def name(self):
@@ -225,7 +230,26 @@ class ContextWrapper(HelperContextMixin, object):
         return cls(*args, **kwargs)
 
     def __getattr__(self, name):
+        assert name != '_wrapped_context'
         return getattr(self._wrapped_context, name)
+
+
+class LazyContextWrapper(_ContextWrapperBase):
+    @safe_property
+    @memoize_method
+    def _wrapped_context(self):
+        return self._get_wrapped_context()
+
+    def __repr__(self):
+        return '<%s>' % (self.__class__.__name__)
+
+    def _get_wrapped_context(self):
+        raise NotImplementedError
+
+
+class ContextWrapper(_ContextWrapperBase):
+    def __init__(self, wrapped_context):
+        self._wrapped_context = wrapped_context
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_context)

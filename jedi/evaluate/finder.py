@@ -48,7 +48,6 @@ class NameFinder(object):
         self._found_predefined_types = None
         self._analysis_errors = analysis_errors
 
-    @debug.increase_indent
     def find(self, filters, attribute_lookup):
         """
         :params bool attribute_lookup: Tell to logic if we're accessing the

@@ -101,7 +101,6 @@ _NAMEDTUPLE_FIELD_TEMPLATE = '''\
 class StdlibPlugin(BasePlugin):
     def execute(self, callback):
         def wrapper(context, arguments):
-            debug.dbg('execute: %s %s', context, arguments)
             try:
                 obj_name = context.name.string_name
             except AttributeError:

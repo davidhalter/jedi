@@ -48,6 +48,7 @@ class CompiledObject(Context):
     @CheckAttribute()
     def py__call__(self, arguments):
         if self.tree_node is not None and self.tree_node.type == 'funcdef':
+            # TODO delete, this is dead code
             from jedi.evaluate.context.function import FunctionContext
             return FunctionContext(
                 self.evaluator,
