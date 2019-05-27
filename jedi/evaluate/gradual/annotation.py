@@ -277,7 +277,7 @@ def _infer_type_vars(annotation_context, context_set):
     elif isinstance(annotation_context, AnnotatedClass):
         name = annotation_context.py__name__()
         if name == 'Iterable':
-            given = annotation_context.get_given_types()
+            given = annotation_context.get_generics()
             if given:
                 for nested_annotation_context in given[0]:
                     _merge_type_var_dicts(
@@ -288,7 +288,7 @@ def _infer_type_vars(annotation_context, context_set):
                         )
                     )
         elif name == 'Mapping':
-            given = annotation_context.get_given_types()
+            given = annotation_context.get_generics()
             if len(given) == 2:
                 for context in context_set:
                     try:

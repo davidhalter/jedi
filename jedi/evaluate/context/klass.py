@@ -274,7 +274,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         if type_var_dict:
             return AnnotatedSubClass(
                 self,
-                given_types=tuple(remap_type_vars())
+                generics=tuple(remap_type_vars())
             )
         return self
 
