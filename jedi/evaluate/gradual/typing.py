@@ -418,9 +418,7 @@ class TypeVar(_BaseTypingContext):
         if self._bound_lazy_context is not None:
             return self._bound_lazy_context.infer()
         if self._constraints_lazy_contexts:
-            return ContextSet.from_sets(
-                l.infer() for l in self._constraints_lazy_contexts
-            )
+            return self.constraints
         debug.warning('Tried to infer the TypeVar %s without a given type', self._var_name)
         return NO_CONTEXTS
 
