@@ -205,7 +205,7 @@ def infer_return_types(function_execution_context):
 
     return ContextSet.from_sets(
         ann.define_generics(type_var_dict)
-        if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ann
+        if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ContextSet({ann})
         for ann in annotation_contexts
     ).execute_annotation()
 
