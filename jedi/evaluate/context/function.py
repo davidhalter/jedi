@@ -353,7 +353,6 @@ class FunctionExecutionContext(TreeContext):
             else:
                 if evaluator.environment.version_info < (3, 5):
                     return NO_CONTEXTS
-                #return ContextSet({CoroutineObject(evaluator, self)})
                 async_classes = evaluator.typing_module.py__getattribute__('Coroutine')
                 return_contexts = self.get_return_values()
                 # Only the first generic is relevant.
@@ -366,34 +365,6 @@ class FunctionExecutionContext(TreeContext):
                 return ContextSet([iterable.Generator(evaluator, self)])
             else:
                 return self.get_return_values()
-
-
-class CoroutineObject(LazyContextWrapper):
-    def __init__(self, evaluator, function_execution):
-        self.evaluator = evaluator
-        self._function_execution = function_execution
-
-    def _get_wrapped_context(self):
-        c, = self.evaluator.typing_module.py__getattribute__('Coroutine') \
-            .execute_annotation()
-        return c
-
-    def py__await__(self):
-        return ContextSet({CoroutineWrapper(self.evaluator, self._function_execution)})
-
-
-class CoroutineWrapper(LazyContextWrapper):
-    def __init__(self, evaluator, function_execution):
-        self.evaluator = evaluator
-        self._function_execution = function_execution
-
-    def _get_wrapped_context(self):
-        c, = self.evaluator.typing_module.py__getattribute__('Generator') \
-            .execute_annotation()
-        return c
-
-    def py__stop_iteration_returns(self):
-        return self._function_execution.get_return_values()
 
 
 class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
