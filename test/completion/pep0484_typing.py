@@ -349,7 +349,8 @@ in_out2("")
 in_out2(str())
 #? str() int()
 in_out2()
-##? str() int()
+# TODO this should actually be str() int(), because of the constraints.
+#? float()
 in_out2(1.0)
 
 # -------------------------
