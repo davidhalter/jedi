@@ -239,12 +239,6 @@ class CompiledInstance(AbstractInstanceContext):
     def name(self):
         return compiled.CompiledContextName(self, self.class_context.name.string_name)
 
-    def create_instance_context(self, class_context, node):
-        if get_parent_scope(node).type == 'classdef':
-            return class_context
-        else:
-            return super(CompiledInstance, self).create_instance_context(class_context, node)
-
     def get_first_non_keyword_argument_contexts(self):
         key, lazy_context = next(self._original_var_args.unpack(), ('', None))
         if key is not None:
