@@ -114,8 +114,7 @@ class TypingModuleName(NameWrapper):
             yield OverloadFunction.create_cached(evaluator, self.parent_context, self.tree_name)
         elif name == 'cast':
             # TODO implement cast
-            for c in self._wrapped_name.infer():  # Fuck my life Python 2
-                yield c
+            yield CastFunction.create_cached(evaluator, self.parent_context, self.tree_name)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
@@ -447,6 +446,12 @@ class OverloadFunction(_BaseTypingContext):
     def py__call__(self, func_context_set):
         # Just pass arguments through.
         return func_context_set
+
+
+class CastFunction(_BaseTypingContext):
+    @repack_with_argument_clinic('type, object, /')
+    def py__call__(self, type_context_set, object_context_set):
+        return type_context_set.execute_annotation()
 
 
 class BoundTypeVarName(AbstractNameDefinition):
