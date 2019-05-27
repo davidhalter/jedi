@@ -331,7 +331,7 @@ class FunctionExecutionContext(TreeContext):
         Created to be used by inheritance.
         """
         evaluator = self.evaluator
-        is_coroutine = self.tree_node.parent.type == 'async_stmt'
+        is_coroutine = self.tree_node.parent.type in ('async_stmt', 'async_funcdef')
         is_generator = bool(get_yield_exprs(evaluator, self.tree_node))
         from jedi.evaluate.gradual.typing import AnnotatedSubClass
 
