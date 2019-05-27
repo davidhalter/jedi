@@ -88,4 +88,5 @@ class BuiltinSignature(AbstractSignature):
         return self.context
 
     def bind(self, context):
-        raise NotImplementedError('pls implement, need test case, %s' % context)
+        assert not self.is_bound
+        return BuiltinSignature(context, self._return_string, is_bound=True)

@@ -403,16 +403,12 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_context)
 
 
-class CompiledBoundMethod(compiled.CompiledObject):
-    def __init__(self, func):
-        super(CompiledBoundMethod, self).__init__(
-            func.evaluator, func.access_handle, func.parent_context)
-
+class CompiledBoundMethod(ContextWrapper):
     def is_bound_method(self):
         return True
 
-    def get_param_names(self):
-        return list(super(CompiledBoundMethod, self).get_param_names())[1:]
+    def get_signatures(self):
+        return [sig.bind(self) for sig in self._wrapped_context.get_signatures()]
 
 
 class SelfName(TreeNameDefinition):
