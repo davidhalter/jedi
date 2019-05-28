@@ -21,6 +21,7 @@ def get_operator(evaluator, string, pos):
 
 class KeywordName(AbstractNameDefinition):
     api_type = u'keyword'
+    is_context_name = False
 
     def __init__(self, evaluator, name):
         self.evaluator = evaluator

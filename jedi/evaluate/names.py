@@ -12,6 +12,10 @@ class AbstractNameDefinition(object):
     string_name = None
     parent_context = None
     tree_name = None
+    is_context_name = True
+    """
+    Used for the Jedi API to know if it's a keyword or an actual name.
+    """
 
     @abstractmethod
     def infer(self):

@@ -4,6 +4,7 @@ These classes are the much bigger part of the whole API, because they contain
 the interesting information about completion and goto operations.
 """
 import re
+import warnings
 
 from parso.python.tree import search_ancestor
 
@@ -314,9 +315,14 @@ class BaseDefinition(object):
         return '.'.join(path if path[0] else path[1:])
 
     def is_stub(self):
+        if not self._name.is_context_name:
+            return False
         return all(c.is_stub() for c in self._name.infer())
 
     def goto_stubs(self):
+        if not self._name.is_context_name:
+            return []
+
         if self.is_stub():
             return [self]
 
@@ -326,10 +332,16 @@ class BaseDefinition(object):
         ]
 
     def goto_assignments(self):
+        if not self._name.is_context_name:
+            return []
+
         return [self if n == self._name else Definition(self._evaluator, n)
                 for n in self._name.goto()]
 
     def infer(self):
+        if not self._name.is_context_name:
+            return []
+
         tree_name = self._name.tree_name
         parent_context = self._name.parent_context
         # Param names are special because they are not handled by
@@ -368,6 +380,9 @@ class BaseDefinition(object):
         raise AttributeError('There are no params defined on this.')
 
     def parent(self):
+        if not self._name.is_context_name:
+            return None
+
         context = self._name.parent_context
         if context is None:
             return None
@@ -393,7 +408,7 @@ class BaseDefinition(object):
         :return str: Returns the line(s) of code or an empty string if it's a
                      builtin.
         """
-        if self.in_builtin_module():
+        if not self._name.is_context_name or self.in_builtin_module():
             return ''
 
         lines = self._name.get_root_context().code_lines
@@ -491,6 +506,8 @@ class Completion(BaseDefinition):
     @memoize_method
     def follow_definition(self):
         """
+        Deprecated!
+
         Return the original definitions. I strongly recommend not using it for
         your completions, because it might slow down |jedi|. If you want to
         read only a few objects (<=20), it might be useful, especially to get
@@ -498,6 +515,14 @@ class Completion(BaseDefinition):
         follows all results. This means with 1000 completions (e.g.  numpy),
         it's just PITA-slow.
         """
+        warnings.warn(
+            "Deprecated since version 0.14.0. Use .infer.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        if not self._name.is_context_name:
+            return []
+
         defs = self._name.infer()
         return [Definition(self._evaluator, d.name) for d in defs]
 

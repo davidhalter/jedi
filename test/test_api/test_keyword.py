@@ -25,3 +25,24 @@ def test_keyword(Script, environment):
     completions = Script("import", 1, 1).completions()
     assert len(completions) > 10 and 'if' in [c.name for c in completions]
     assert Script("assert").goto_definitions() == []
+
+
+def test_keyword_attributes(Script):
+    def_, = Script('def').completions()
+    assert def_.name == 'def'
+    assert def_.complete == ''
+    assert def_.is_keyword is True
+    assert def_.is_stub() is False
+    assert def_.goto_stubs() == []
+    assert def_.goto_assignments() == []
+    assert def_.infer() == []
+    assert def_.parent() is None
+    assert def_.docstring()
+    assert def_.description == 'keyword def'
+    assert def_.get_line_code() == ''
+    assert def_.full_name == 'def'
+    assert def_.line is def_.column is None
+    assert def_.in_builtin_module() is True
+    assert def_.module_name in ('builtins', '__builtin__')
+    assert 'typeshed' in def_.module_path
+    assert def_.type == 'keyword'
