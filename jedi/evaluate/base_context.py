@@ -238,7 +238,8 @@ class LazyContextWrapper(_ContextWrapperBase):
     @safe_property
     @memoize_method
     def _wrapped_context(self):
-        return self._get_wrapped_context()
+        with debug.increase_indent_cm('Resolve lazy context wrapper'):
+            return self._get_wrapped_context()
 
     def __repr__(self):
         return '<%s>' % (self.__class__.__name__)

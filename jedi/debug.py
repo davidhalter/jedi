@@ -84,13 +84,17 @@ def increase_indent(func):
 
 
 @contextmanager
-def increase_indent_cm():
+def increase_indent_cm(title=None):
     global _debug_indent
+    if title:
+        dbg('Start: ' + title, color='MAGENTA')
     _debug_indent += 1
     try:
         yield
     finally:
         _debug_indent -= 1
+        if title:
+            dbg('End: ' + title, color='MAGENTA')
 
 
 def dbg(message, *args, **kwargs):
