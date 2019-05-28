@@ -47,6 +47,14 @@ b[:]
 
 #? int()
 b[:, 1]
+#? int()
+b[:1, 1]
+#? int()
+b[1:1, 1]
+#? int()
+b[1:1:, ...]
+#? int()
+b[1:1:5, ...]
 
 class _StrangeSlice():
     def __getitem__(self, sliced):

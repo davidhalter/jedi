@@ -356,8 +356,12 @@ class SequenceLiteralContext(Sequence):
                 yield LazyKnownContexts(types)
         else:
             for node in self.get_tree_entries():
-                yield LazyTreeContext(self._defining_context, node)
-
+                if node == ':' or node.type == 'subscript':
+                    # TODO this should probably use at least part of the code
+                    #      of eval_subscript_list.
+                    yield LazyKnownContext(Slice(self._defining_context, None, None, None))
+                else:
+                    yield LazyTreeContext(self._defining_context, node)
             for addition in check_array_additions(self._defining_context, self):
                 yield addition
 
