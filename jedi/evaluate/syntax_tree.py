@@ -639,7 +639,7 @@ def _apply_decorators(context, node):
         decoratee_context = FunctionContext.from_context(context, node)
     initial = values = ContextSet([decoratee_context])
     for dec in reversed(node.get_decorators()):
-        debug.dbg('decorator: %s %s', dec, values)
+        debug.dbg('decorator: %s %s', dec, values, color="MAGENTA")
         with debug.increase_indent_cm():
             dec_values = context.eval_node(dec.children[1])
             trailer_nodes = dec.children[2:-1]
@@ -663,7 +663,7 @@ def _apply_decorators(context, node):
                 debug.warning('not possible to resolve wrappers found %s', node)
                 return initial
 
-        debug.dbg('decorator end %s', values)
+        debug.dbg('decorator end %s', values, color="MAGENTA")
     return values
 
 

@@ -146,8 +146,10 @@ class AbstractInstanceContext(Context):
     def py__getitem__(self, index_context_set, contextualized_node):
         names = self.get_function_slot_names(u'__getitem__')
         if not names:
-            debug.warning('Found no __getitem__ on %s', self)
-            return NO_CONTEXTS
+            return super(AbstractInstanceContext, self).py__getitem__(
+                index_context_set,
+                contextualized_node,
+            )
 
         args = ValuesArguments([index_context_set])
         return ContextSet.from_sets(name.infer().execute(args) for name in names)

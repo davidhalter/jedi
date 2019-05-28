@@ -55,6 +55,12 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
             .execute_annotation()
         return generator
 
+    def is_instance(self):
+        return False
+
+    def py__bool__(self):
+        return True
+
     @publish_method('__iter__')
     def py__iter__(self, contextualized_node=None):
         return ContextSet([self])
