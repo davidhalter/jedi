@@ -640,27 +640,28 @@ def _apply_decorators(context, node):
     initial = values = ContextSet([decoratee_context])
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values)
-        dec_values = context.eval_node(dec.children[1])
-        trailer_nodes = dec.children[2:-1]
-        if trailer_nodes:
-            # Create a trailer and evaluate it.
-            trailer = tree.PythonNode('trailer', trailer_nodes)
-            trailer.parent = dec
-            dec_values = eval_trailer(context, dec_values, trailer)
+        with debug.increase_indent_cm():
+            dec_values = context.eval_node(dec.children[1])
+            trailer_nodes = dec.children[2:-1]
+            if trailer_nodes:
+                # Create a trailer and evaluate it.
+                trailer = tree.PythonNode('trailer', trailer_nodes)
+                trailer.parent = dec
+                dec_values = eval_trailer(context, dec_values, trailer)
 
-        if not len(dec_values):
-            code = dec.get_code(include_prefix=False)
-            # For the short future, we don't want to hear about the runtime
-            # decorator in typing that was intentionally omitted. This is not
-            # "correct", but helps with debugging.
-            if code != '@runtime\n':
-                debug.warning('decorator not found: %s on %s', dec, node)
-            return initial
+            if not len(dec_values):
+                code = dec.get_code(include_prefix=False)
+                # For the short future, we don't want to hear about the runtime
+                # decorator in typing that was intentionally omitted. This is not
+                # "correct", but helps with debugging.
+                if code != '@runtime\n':
+                    debug.warning('decorator not found: %s on %s', dec, node)
+                return initial
 
-        values = dec_values.execute(arguments.ValuesArguments([values]))
-        if not len(values):
-            debug.warning('not possible to resolve wrappers found %s', node)
-            return initial
+            values = dec_values.execute(arguments.ValuesArguments([values]))
+            if not len(values):
+                debug.warning('not possible to resolve wrappers found %s', node)
+                return initial
 
         debug.dbg('decorator end %s', values)
     return values

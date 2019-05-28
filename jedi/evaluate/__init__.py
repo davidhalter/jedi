@@ -88,7 +88,6 @@ from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
     try_stubs_to_actual_context_set
 
 
-@debug.increase_indent
 def _execute(context, arguments):
     debug.dbg('execute: %s %s', context, arguments)
     try:
@@ -97,7 +96,8 @@ def _execute(context, arguments):
         debug.warning("no execution possible %s", context)
         return NO_CONTEXTS
     else:
-        context_set = func(arguments=arguments)
+        with debug.increase_indent_cm():
+            context_set = func(arguments=arguments)
         debug.dbg('execute result: %s in %s', context_set, context)
         return context_set
 
