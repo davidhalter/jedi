@@ -8,7 +8,8 @@ from parso.tree import search_ancestor
 
 from jedi._compatibility import use_metaclass
 from jedi.evaluate import flow_analysis
-from jedi.evaluate.base_context import ContextSet, Context
+from jedi.evaluate.base_context import ContextSet, Context, ContextWrapper, \
+    LazyContextWrapper
 from jedi.parser_utils import get_parent_scope
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_function_cache
@@ -309,23 +310,23 @@ class _OverwriteMeta(type):
         cls.overwritten_methods = base_dct
 
 
-class AbstractObjectOverwrite(use_metaclass(_OverwriteMeta, object)):
-    def get_object(self):
-        raise NotImplementedError
-
+class _AttributeOverwriteMixin(object):
     def get_filters(self, search_global=False, *args, **kwargs):
-        yield SpecialMethodFilter(self, self.overwritten_methods, self.get_object())
+        yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_context)
 
-        for filter in self.get_object().get_filters(search_global):
+        for filter in self._wrapped_context.get_filters(search_global):
             yield filter
 
 
-class BuiltinOverwrite(Context, AbstractObjectOverwrite):
+class LazyAttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
+                                           LazyContextWrapper)):
     def __init__(self, evaluator):
-        super(BuiltinOverwrite, self).__init__(evaluator, evaluator.builtins_module)
+        self.evaluator = evaluator
 
-    def py__class__(self):
-        return self.get_object().py__class__()
+
+class AttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
+                                       ContextWrapper)):
+    pass
 
 
 def publish_method(method_name, python_version_match=None):

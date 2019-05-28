@@ -28,7 +28,7 @@ from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
 from jedi.evaluate.syntax_tree import is_string
-from jedi.evaluate.filters import AbstractObjectOverwrite, publish_method
+from jedi.evaluate.filters import AttributeOverwrite, publish_method
 
 
 # Copied from Python 3.6's stdlib.
@@ -246,13 +246,10 @@ def builtins_super(types, objects, context):
     return NO_CONTEXTS
 
 
-class ReversedObject(AbstractObjectOverwrite, ContextWrapper):
+class ReversedObject(AttributeOverwrite):
     def __init__(self, reversed_obj, iter_list):
         super(ReversedObject, self).__init__(reversed_obj)
         self._iter_list = iter_list
-
-    def get_object(self):
-        return self._wrapped_context
 
     @publish_method('__iter__')
     def py__iter__(self, contextualized_node=None):
@@ -328,7 +325,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
     )
 
 
-class StaticMethodObject(AbstractObjectOverwrite, ContextWrapper):
+class StaticMethodObject(AttributeOverwrite, ContextWrapper):
     def get_object(self):
         return self._wrapped_context
 
@@ -341,7 +338,7 @@ def builtins_staticmethod(functions):
     return ContextSet(StaticMethodObject(f) for f in functions)
 
 
-class ClassMethodObject(AbstractObjectOverwrite, ContextWrapper):
+class ClassMethodObject(AttributeOverwrite, ContextWrapper):
     def __init__(self, class_method_obj, function):
         super(ClassMethodObject, self).__init__(class_method_obj)
         self._function = function
@@ -356,7 +353,7 @@ class ClassMethodObject(AbstractObjectOverwrite, ContextWrapper):
         ])
 
 
-class ClassMethodGet(AbstractObjectOverwrite, ContextWrapper):
+class ClassMethodGet(AttributeOverwrite, ContextWrapper):
     def __init__(self, get_method, klass, function):
         super(ClassMethodGet, self).__init__(get_method)
         self._class = klass

@@ -23,7 +23,6 @@ It is important to note that:
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import force_unicode, is_py3
-from jedi.cache import memoize_method
 from jedi.evaluate import compiled
 from jedi.evaluate import analysis
 from jedi.evaluate import recursion
@@ -35,7 +34,7 @@ from jedi.evaluate.helpers import get_int_or_none, is_string, \
 from jedi.evaluate.utils import safe_property, to_list
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.helpers import execute_evaluated
-from jedi.evaluate.filters import ParserTreeFilter, BuiltinOverwrite, \
+from jedi.evaluate.filters import ParserTreeFilter, LazyAttributeOverwrite, \
     publish_method
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, \
     TreeContext, ContextualizedNode, iterate_contexts, HelperContextMixin
@@ -47,11 +46,10 @@ class IterableMixin(object):
         return ContextSet([compiled.builtin_from_name(self.evaluator, u'None')])
 
 
-class GeneratorBase(BuiltinOverwrite, IterableMixin):
+class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
     array_type = None
 
-    @memoize_method
-    def get_object(self):
+    def _get_wrapped_context(self):
         generator, = self.evaluator.typing_module \
             .py__getattribute__('Generator') \
             .execute_annotation()
@@ -196,7 +194,7 @@ class _DictMixin(object):
         return tuple(c_set.py__class__() for c_set in self.get_mapping_item_contexts())
 
 
-class Sequence(BuiltinOverwrite, IterableMixin):
+class Sequence(LazyAttributeOverwrite, IterableMixin):
     api_type = u'instance'
 
     @property
@@ -206,12 +204,11 @@ class Sequence(BuiltinOverwrite, IterableMixin):
     def _get_generics(self):
         return (self.merge_types_of_iterate().py__class__(),)
 
-    @memoize_method
-    def get_object(self):
+    def _get_wrapped_context(self):
         from jedi.evaluate.gradual.typing import GenericClass
         klass = compiled.builtin_from_name(self.evaluator, self.array_type)
-        # TODO is this execute annotation wrong? it returns a context set?!
-        return GenericClass(klass, self._get_generics()).execute_annotation()
+        c, = GenericClass(klass, self._get_generics()).execute_annotation()
+        return c
 
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
