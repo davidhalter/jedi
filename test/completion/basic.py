@@ -295,6 +295,11 @@ __file__
 #? ['__file__']
 __file__
 
+#? str()
+math.__file__
+# Should not lead to errors
+#?
+math()
 
 # -----------------
 # with statements

@@ -108,7 +108,7 @@ class StdlibPlugin(BasePlugin):
             else:
                 if context.parent_context == self._evaluator.builtins_module:
                     module_name = 'builtins'
-                elif context.parent_context.is_module():
+                elif context.parent_context is not None and context.parent_context.is_module():
                     module_name = context.parent_context.name.string_name
                 else:
                     return callback(context, arguments=arguments)
