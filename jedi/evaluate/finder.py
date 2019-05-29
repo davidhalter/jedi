@@ -197,12 +197,6 @@ class NameFinder(object):
                 not self._name_context.is_instance():
             flow_scope = self._name
             base_nodes = [self._name_context.tree_node]
-            try:
-                stub_node = self._name_context.stub_context.tree_node
-            except AttributeError:
-                pass
-            else:
-                base_nodes.append(stub_node)
 
             if any(b.type == 'comp_for' for b in base_nodes):
                 return contexts
