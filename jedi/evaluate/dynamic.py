@@ -102,7 +102,8 @@ def search_params(evaluator, execution_context, funcdef):
                     function_execution.get_executed_params_and_issues()[0]
                     for function_execution in function_executions
                 ))
-                params = [DynamicExecutedParams(evaluator, executed_params) for executed_params in zipped_params]
+                params = [DynamicExecutedParams(evaluator, executed_params)
+                          for executed_params in zipped_params]
                 # Evaluate the ExecutedParams to types.
             else:
                 return create_default_params(execution_context, funcdef)

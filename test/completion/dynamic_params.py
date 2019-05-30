@@ -122,6 +122,15 @@ A(3).test(2.0)
 A(3).test2()
 
 
+def from_class(x):
+    #?
+    x
+
+from UNDEFINED import from_class
+
+class Foo(from_class(1),):
+    pass
+
 # -----------------
 # comprehensions
 # -----------------

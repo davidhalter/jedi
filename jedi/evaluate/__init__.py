@@ -461,11 +461,13 @@ class Evaluator(object):
         if node_is_context and parser_utils.is_scope(node):
             scope_node = node
         else:
-            if node.parent.type in ('funcdef', 'classdef') and node.parent.name == node:
-                # When we're on class/function names/leafs that define the
-                # object itself and not its contents.
-                node = node.parent
             scope_node = parent_scope(node)
+            if scope_node.type in ('funcdef', 'classdef'):
+                colon = scope_node.children[scope_node.children.index(':')]
+                if node.start_pos < colon.start_pos:
+                    parent = node.parent
+                    if not (parent.type == 'param' and parent.name == node):
+                        scope_node = parent_scope(scope_node)
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
 
     def parse_and_get_code(self, code=None, path=None, encoding='utf-8',

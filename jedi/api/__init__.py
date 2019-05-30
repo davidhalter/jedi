@@ -499,9 +499,8 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
             cls = ParamName
         else:
             cls = TreeNameDefinition
-        is_module = name.parent.type == 'file_input'
         return cls(
-            module_context.create_context(name if is_module else name.parent),
+            module_context.create_context(name),
             name
         )
 
