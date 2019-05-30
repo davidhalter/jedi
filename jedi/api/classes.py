@@ -14,10 +14,10 @@ from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
-from jedi.evaluate.names import ParamName
-from jedi.evaluate.context import FunctionExecutionContext, MethodContext
+from jedi.evaluate.context import FunctionExecutionContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.conversion import name_to_stub, stub_to_actual_context_set
+from jedi.evaluate.gradual.conversion import name_to_stub, \
+    stub_to_actual_context_set, try_stubs_to_actual_context_set
 from jedi.api.keywords import KeywordName
 
 
@@ -342,26 +342,12 @@ class BaseDefinition(object):
         if not self._name.is_context_name:
             return []
 
-        tree_name = self._name.tree_name
-        parent_context = self._name.parent_context
         # Param names are special because they are not handled by
         # the evaluator method.
-        if tree_name is None or parent_context is None or isinstance(self._name, ParamName):
-            context_set = self._name.infer()
-        else:
-
-            # TODO remove this paragraph, it's ugly and shouldn't be needed
-            inferred = self._name.infer()
-            if inferred:
-                inferred = next(iter(inferred))
-                if isinstance(inferred, MethodContext):
-                    c = inferred.class_context
-                else:
-                    c = self._name.parent_context
-            else:
-                c = self._name.parent_context
-
-            context_set = self._evaluator.goto_definitions(c, tree_name)
+        context_set = try_stubs_to_actual_context_set(
+            self._name.infer(),
+            prefer_stub_to_compiled=True,
+        )
         return [Definition(self._evaluator, d.name) for d in context_set]
 
     @property
@@ -520,11 +506,7 @@ class Completion(BaseDefinition):
             DeprecationWarning,
             stacklevel=2
         )
-        if not self._name.is_context_name:
-            return []
-
-        defs = self._name.infer()
-        return [Definition(self._evaluator, d.name) for d in defs]
+        return self.infer()
 
 
 class Definition(BaseDefinition):
