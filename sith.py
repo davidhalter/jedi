@@ -111,7 +111,13 @@ class TestCase(object):
         if not lines:
             lines = ['']
         line = random.randint(1, len(lines))
-        column = random.randint(0, len(lines[line - 1]))
+        line_string = lines[line - 1]
+        line_len = len(line_string)
+        if line_string.endswith('\r\n'):
+            line_len -= 1
+        if line_string.endswith('\n'):
+            line_len -= 1
+        column = random.randint(0, line_len)
         return cls(operation, path, line, column)
 
     def run(self, debugger, record=None, print_result=False):
