@@ -728,15 +728,15 @@ class _Help(object):
 
             doc = context.py__doc__()
 
-            if raw:
-                signature_text = ''
-            else:
-                signature_text = _format_signatures(context)
-            if not doc and context.is_stub():
-                for c in stub_to_actual_context_set(context):
-                    doc = c.py__doc__()
-                    if doc:
-                        break
+            signature_text = ''
+            if self._name.is_context_name:
+                if not raw:
+                    signature_text = _format_signatures(context)
+                if not doc and context.is_stub():
+                    for c in stub_to_actual_context_set(context):
+                        doc = c.py__doc__()
+                        if doc:
+                            break
 
             if signature_text and doc:
                 full_doc += signature_text + '\n\n' + doc

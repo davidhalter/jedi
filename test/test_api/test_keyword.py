@@ -46,3 +46,9 @@ def test_keyword_attributes(Script):
     assert def_.module_name in ('builtins', '__builtin__')
     assert 'typeshed' in def_.module_path
     assert def_.type == 'keyword'
+
+
+def test_none_keyword(Script):
+    none, = Script('None').completions()
+    assert not none.docstring()
+    assert none.name == 'None'
