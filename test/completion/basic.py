@@ -153,6 +153,7 @@ ret()[0]
 # -----------------
 
 def global_define():
+    #? int()
     global global_var_in_func
     global_var_in_func = 3
 
@@ -168,6 +169,7 @@ def funct1():
     global global_dict_var
     global_dict_var = dict()
 def funct2():
+    #! ['global_dict_var', 'global_dict_var']
     global global_dict_var
     #? dict()
     global_dict_var

@@ -160,7 +160,8 @@ class NameFinder(object):
                         # it's kind of hard, because for Jedi it's not clear
                         # that that name has not been defined, yet.
                         if n.tree_name == self._name:
-                            if self._name.get_definition().type == 'import_from':
+                            def_ = self._name.get_definition()
+                            if def_ is not None and def_.type == 'import_from':
                                 continue
                 break
 
