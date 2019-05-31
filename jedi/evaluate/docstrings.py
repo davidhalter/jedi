@@ -64,7 +64,7 @@ def _search_param_in_numpydocstr(docstr, param_str):
         # This is a non-public API. If it ever changes we should be
         # prepared and return gracefully.
         params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
-    except (KeyError, AttributeError, ImportError, SyntaxError):
+    except Exception:
         return []
     for p_name, p_type, p_descr in params:
         if p_name == param_str:
@@ -88,7 +88,7 @@ def _search_return_in_numpydocstr(docstr):
         # prepared and return gracefully.
         returns = doc._parsed_data['Returns']
         returns += doc._parsed_data['Yields']
-    except (KeyError, AttributeError):
+    except Exception:
         return
     for r_name, r_type, r_descr in returns:
         # Return names are optional and if so the type is in the name
