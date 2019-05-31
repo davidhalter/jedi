@@ -53,7 +53,7 @@ class BaseContextSet(object):
         return len(self._set)
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(str(s) for s in self._set))
+        return 'S{%s}' % (', '.join(str(s) for s in self._set))
 
     def filter(self, filter_func):
         return self.__class__(filter(filter_func, self._set))
