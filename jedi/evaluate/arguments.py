@@ -233,8 +233,8 @@ class TreeArguments(AbstractArguments):
                         named_args.append((c[0].value, LazyTreeContext(self.context, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
-                        comp = iterable.GeneratorComprehension(
-                            self._evaluator, self.context, self.argument_node.parent)
+                        comp = iterable.ArgumentGeneratorComprehension(
+                            self._evaluator, self.context, el)
                         yield None, LazyKnownContext(comp)
                 else:
                     yield None, LazyTreeContext(self.context, el)
@@ -246,10 +246,10 @@ class TreeArguments(AbstractArguments):
 
     def _as_tree_tuple_objects(self):
         for star_count, argument in unpack_arglist(self.argument_node):
+            default = None
             if argument.type == 'argument':
-                argument, default = argument.children[::2]
-            else:
-                default = None
+                if len(argument.children) == 3:  # Keyword argument.
+                    argument, default = argument.children[::2]
             yield argument, default, star_count
 
     def iter_calling_names_with_star(self):

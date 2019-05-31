@@ -127,22 +127,17 @@ class ComprehensionMixin(object):
         self._defining_context = defining_context
         self._atom = atom
 
-    def _get_comprehension(self):
-        "return 'a for a in b'"
-        # The atom contains a testlist_comp
-        return self._atom.children[1]
-
     def _get_comp_for(self):
-        "return CompFor('for a in b')"
-        return self._get_comprehension().children[1]
+        """return CompFor('for a in b')"""
+        return self._atom.children[1].children[1]
 
-    def _eval_node(self, index=0):
+    def _entry_node(self):
         """
         The first part `x + 1` of the list comprehension:
 
             [x + 1 for x in foo]
         """
-        return self._get_comprehension().children[index]
+        return self._atom.children[1].children[0]
 
     @evaluator_method_cache()
     def _get_comp_for_context(self, parent_context, comp_for):
@@ -174,9 +169,9 @@ class ComprehensionMixin(object):
                     for result in self._nested(comp_fors[1:], context_):
                         yield result
                 except IndexError:
-                    iterated = context_.eval_node(self._eval_node())
+                    iterated = context_.eval_node(self._entry_node())
                     if self.array_type == 'dict':
-                        yield iterated, context_.eval_node(self._eval_node(2))
+                        yield iterated, context_.eval_node(self._value_node())
                     else:
                         yield iterated
 
@@ -253,7 +248,10 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
     array_type = u'dict'
 
     def _get_comp_for(self):
-        return self._get_comprehension().children[3]
+        return self._atom.children[1].children[3]
+
+    def _value_node(self):
+        return self._atom.children[1].children[2]
 
     def py__iter__(self, contextualized_node=None):
         for keys, values in self._iterate():
@@ -305,6 +303,16 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
 
 class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
     pass
+
+
+class ArgumentGeneratorComprehension(ComprehensionMixin, GeneratorBase):
+    def _get_comp_for(self):
+        # Not actually an atom. But need to correct this comprehension madness
+        # anyway.
+        return self._atom.children[1]
+
+    def _entry_node(self):
+        return self._atom.children[0]
 
 
 class SequenceLiteralContext(Sequence):
