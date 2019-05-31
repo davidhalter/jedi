@@ -46,7 +46,7 @@ class IterableMixin(object):
         return ContextSet([compiled.builtin_from_name(self.evaluator, u'None')])
 
 
-class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
+class GeneratorMixin(LazyAttributeOverwrite, IterableMixin):
     array_type = None
 
     def _get_wrapped_context(self):
@@ -79,7 +79,7 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
         return compiled.CompiledContextName(self, 'generator')
 
 
-class Generator(GeneratorBase):
+class Generator(GeneratorMixin):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func_execution_context):
         super(Generator, self).__init__(evaluator)
@@ -301,11 +301,11 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
         return []
 
 
-class GeneratorComprehension(ComprehensionMixin, GeneratorBase):
+class GeneratorComprehension(ComprehensionMixin, GeneratorMixin):
     pass
 
 
-class ArgumentGeneratorComprehension(ComprehensionMixin, GeneratorBase):
+class ArgumentGeneratorComprehension(ComprehensionMixin, GeneratorMixin):
     def _get_comp_for(self):
         # Not actually an atom. But need to correct this comprehension madness
         # anyway.
