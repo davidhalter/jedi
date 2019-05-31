@@ -1,7 +1,7 @@
 import re
 import os
-import logging
 
+from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.names import ContextNameMixin, AbstractNameDefinition
 from jedi.evaluate.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
@@ -9,8 +9,6 @@ from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
 from jedi.evaluate.names import SubModuleName
 from jedi.evaluate.helpers import contexts_from_qualified_names
-
-logger = logging.getLogger(__name__)
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -49,7 +47,7 @@ def iter_module_names(evaluator, paths):
             dirs = os.listdir(path)
         except OSError:
             # The file might not exist or reading it might lead to an error.
-            logger.error("Not possible to list directory: %s", path)
+            debug.warning("Not possible to list directory: %s", path)
             continue
         for name in dirs:
             # Namespaces
