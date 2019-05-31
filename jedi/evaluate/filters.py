@@ -45,7 +45,7 @@ class FilterWrapper(object):
     def get(self, name):
         return self.wrap_names(self._wrapped_filter.get(name))
 
-    def values(self, name):
+    def values(self):
         return self.wrap_names(self._wrapped_filter.values())
 
 
