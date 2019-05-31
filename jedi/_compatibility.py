@@ -20,7 +20,7 @@ except ImportError:
     pass
 from zipimport import zipimporter
 
-from parso.file_io import KnownContentFileIO
+from jedi.file_io import KnownContentFileIO, ZipFileIO
 
 is_py3 = sys.version_info[0] >= 3
 is_py35 = is_py3 and sys.version_info[1] >= 5
@@ -89,19 +89,6 @@ def find_module_py33(string, path=None, loader=None, full_name=None, is_global_s
         raise ImportError("Couldn't find a loader for {}".format(string))
 
     return _from_loader(loader, string)
-
-
-class ZipFileIO(KnownContentFileIO):
-    """For .zip and .egg archives"""
-    def __init__(self, path, code, zip_path):
-        super(ZipFileIO, self).__init__(path, code)
-        self._zip_path = zip_path
-
-    def get_last_modified(self):
-        try:
-            return os.path.getmtime(self._zip_path)
-        except OSError:  # Python 3 would probably only need FileNotFoundError
-            return None
 
 
 def _from_loader(loader, string):

@@ -16,7 +16,7 @@ import os
 from parso.python import tree
 from parso.tree import search_ancestor
 from parso import python_bytes_to_unicode
-from parso.file_io import KnownContentFileIO
+from jedi.file_io import KnownContentFileIO
 
 from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)

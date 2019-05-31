@@ -67,7 +67,7 @@ from functools import partial
 from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
-from parso.file_io import FileIO
+from jedi.file_io import FileIO
 
 from jedi import debug
 from jedi import parser_utils
