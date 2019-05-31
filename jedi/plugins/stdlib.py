@@ -14,6 +14,7 @@ import parso
 from jedi._compatibility import force_unicode
 from jedi.plugins.base import BasePlugin
 from jedi import debug
+from jedi.evaluate.helpers import get_str_or_none
 from jedi.evaluate.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.evaluate import analysis
@@ -397,10 +398,18 @@ def collections_namedtuple(obj, arguments):
     evaluator = obj.evaluator
 
     # Process arguments
+    name = u'jedi_unknown_namedtuple'
+    for c in _follow_param(evaluator, arguments, 0):
+        x = get_str_or_none(c)
+        if x is not None:
+            name = force_unicode(x)
+            break
+
     # TODO here we only use one of the types, we should use all.
-    # TODO this is buggy, doesn't need to be a string
-    name = force_unicode(list(_follow_param(evaluator, arguments, 0))[0].get_safe_value())
-    _fields = list(_follow_param(evaluator, arguments, 1))[0]
+    param_contexts = _follow_param(evaluator, arguments, 1)
+    if not param_contexts:
+        return NO_CONTEXTS
+    _fields = list(param_contexts)[0]
     if isinstance(_fields, compiled.CompiledValue):
         fields = force_unicode(_fields.get_safe_value()).replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
