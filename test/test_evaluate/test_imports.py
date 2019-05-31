@@ -6,7 +6,7 @@ Tests".
 import os
 
 import pytest
-from parso.file_io import FileIO
+from jedi.file_io import FileIO, KnownContentFileIO
 
 from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
@@ -338,7 +338,8 @@ def test_get_modules_containing_name(evaluator, path, goal, is_package):
     ]
 )
 def test_load_module_from_path(evaluator, path, base_names, is_package, names):
-    m = imports._load_module_from_path(evaluator, path, base_names, '')
+    file_io = KnownContentFileIO(path, '')
+    m = imports._load_module_from_path(evaluator, file_io, base_names)
     assert m.is_package == is_package
     assert m.string_names == names
 

@@ -179,8 +179,8 @@ class ModuleContext(ModuleMixin, TreeContext):
             parent_context=None,
             tree_node=module_node
         )
-        self._file_io = file_io
-        if self._file_io is None:
+        self.file_io = file_io
+        if file_io is None:
             self._path = None
         else:
             self._path = file_io.path

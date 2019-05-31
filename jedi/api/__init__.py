@@ -164,7 +164,10 @@ class Script(object):
                 names = import_names
                 is_package = is_p
 
-        file_io = KnownContentFileIO(cast_path(self.path), self._code)
+        if self.path is None:
+            file_io = None
+        else:
+            file_io = KnownContentFileIO(cast_path(self.path), self._code)
         if self.path is not None and self.path.endswith('.pyi'):
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(

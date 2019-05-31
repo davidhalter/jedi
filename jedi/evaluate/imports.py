@@ -16,12 +16,12 @@ import os
 from parso.python import tree
 from parso.tree import search_ancestor
 from parso import python_bytes_to_unicode
-from jedi.file_io import KnownContentFileIO
 
 from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
 from jedi import debug
 from jedi import settings
+from jedi.file_io import KnownContentFileIO, FolderIO
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -485,13 +485,14 @@ def _load_builtin_module(evaluator, import_names=None, sys_path=None):
     return module
 
 
-def _load_module_from_path(evaluator, path, base_names, code):
+def _load_module_from_path(evaluator, file_io, base_names):
     """
     This should pretty much only be used for get_modules_containing_name. It's
     here to ensure that a random path is still properly loaded into the Jedi
     module structure.
     """
     e_sys_path = evaluator.get_sys_path()
+    path = file_io.path
     if base_names:
         module_name = os.path.basename(path)
         module_name = sys_path.remove_python_path_suffix(module_name)
@@ -504,7 +505,7 @@ def _load_module_from_path(evaluator, path, base_names, code):
         import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
 
     module = _load_python_module(
-        evaluator, KnownContentFileIO(path, code),
+        evaluator, file_io,
         sys_path=e_sys_path,
         import_names=import_names,
         is_package=is_package,
@@ -517,37 +518,34 @@ def get_modules_containing_name(evaluator, modules, name):
     """
     Search a name in the directories of modules.
     """
-    def check_directory(path):
-        d = os.path.dirname(os.path.abspath(path))
-        for file_name in os.listdir(d):
-            path = os.path.join(d, file_name)
+    def check_directory(folder_io):
+        for file_name in folder_io.list():
             if file_name.endswith('.py'):
-                yield path
+                yield folder_io.get_file_io(file_name)
 
-    def check_fs(path, base_names):
+    def check_fs(file_io, base_names):
         try:
-            f = open(path, 'rb')
+            code = file_io.read()
         except FileNotFoundError:
             return None
-        with f:
-            code = python_bytes_to_unicode(f.read(), errors='replace')
+        code = python_bytes_to_unicode(code, errors='replace')
         if name not in code:
             return None
-        return _load_module_from_path(evaluator, path, base_names, code)
+        new_file_io = KnownContentFileIO(file_io.path, code)
+        return _load_module_from_path(evaluator, new_file_io, base_names)
 
     # skip non python modules
     used_mod_paths = set()
-    path_with_names_to_be_checked = []
+    folders_with_names_to_be_checked = []
     for m in modules:
-        try:
-            path = m.py__file__()
-        except AttributeError:
-            pass
-        else:
-            if path is not None:
-                if path not in used_mod_paths:
-                    used_mod_paths.add(path)
-                    path_with_names_to_be_checked.append((path, m.py__package__()))
+        if m.file_io is not None:
+            path = m.file_io.path
+            if path not in used_mod_paths:
+                used_mod_paths.add(path)
+                folders_with_names_to_be_checked.append((
+                    m.file_io.get_parent_folder(),
+                    m.py__package__()
+                ))
         yield m
 
     if not settings.dynamic_params_for_other_modules:
@@ -556,10 +554,10 @@ def get_modules_containing_name(evaluator, modules, name):
     for p in settings.additional_dynamic_modules:
         p = os.path.abspath(p)
         if p not in used_mod_paths:
-            path_with_names_to_be_checked.append((p, None))
+            folders_with_names_to_be_checked.append((FolderIO(p), None))
 
-    for p, base_names in path_with_names_to_be_checked:
-        for file_path in check_directory(p):
-            m = check_fs(file_path, base_names)
+    for folder_io, base_names in folders_with_names_to_be_checked:
+        for file_io in check_directory(folder_io):
+            m = check_fs(file_io, base_names)
             if m is not None and not isinstance(m, compiled.CompiledObject):
                 yield m
