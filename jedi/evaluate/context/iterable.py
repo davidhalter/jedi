@@ -181,7 +181,7 @@ class ComprehensionMixin(object):
             yield LazyKnownContexts(set_)
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self._atom)
+        return "<%s of %s>" % (type(self).__name__, self._comp_for_node)
 
 
 class _DictMixin(object):
