@@ -141,7 +141,6 @@ class ComprehensionMixin(object):
 
     @evaluator_method_cache()
     def _get_comp_for_context(self, parent_context, comp_for):
-        # TODO shouldn't this be part of create_context?
         return CompForContext.from_comp_for(parent_context, comp_for)
 
     def _nested(self, comp_fors, parent_context=None):
