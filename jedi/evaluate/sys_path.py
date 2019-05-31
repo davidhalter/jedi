@@ -6,6 +6,7 @@ from jedi.evaluate.base_context import ContextualizedNode
 from jedi.evaluate.helpers import is_string
 from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
+from jedi.file_io import FileIO
 from jedi import settings
 from jedi import debug
 
@@ -140,9 +141,10 @@ def discover_buildout_paths(evaluator, script_path):
 
 
 def _get_paths_from_buildout_script(evaluator, buildout_script_path):
+    file_io = FileIO(buildout_script_path)
     try:
         module_node = evaluator.parse(
-            path=buildout_script_path,
+            file_io=file_io,
             cache=True,
             cache_path=settings.cache_directory
         )
@@ -152,7 +154,7 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
 
     from jedi.evaluate.context import ModuleContext
     module = ModuleContext(
-        evaluator, module_node, buildout_script_path,
+        evaluator, module_node, file_io,
         string_names=None,
         code_lines=get_cached_code_lines(evaluator.grammar, buildout_script_path),
     )

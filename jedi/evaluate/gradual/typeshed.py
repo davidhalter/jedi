@@ -4,7 +4,6 @@ import re
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
-from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.gradual.stub_context import TypingModuleWrapper, StubModuleContext
 
@@ -60,11 +59,6 @@ def _get_typeshed_directories(version_info):
 
         for check_version in check_version_list:
             yield os.path.join(base, check_version)
-
-
-@evaluator_function_cache()
-def _load_stub(evaluator, path):
-    return evaluator.parse(file_io=FileIO(path), cache=True, use_latest_grammar=True)
 
 
 _version_cache = {}
@@ -149,7 +143,12 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
         # foo-stubs
         for p in sys_path:
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
-            m = _try_to_load_stub_from_file(evaluator, actual_context_set, init, import_names)
+            m = _try_to_load_stub_from_file(
+                evaluator,
+                actual_context_set,
+                file_io=FileIO(init),
+                import_names=import_names,
+            )
             if m is not None:
                 return m
 
@@ -172,8 +171,8 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
                     evaluator,
                     actual_context_set,
                     # The file path should end with .pyi
-                    file_path,
-                    import_names
+                    file_io=FileIO(file_path),
+                    import_names=import_names,
                 )
                 if m is not None:
                     return m
@@ -202,8 +201,8 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
             m = _try_to_load_stub_from_file(
                 evaluator,
                 actual_context_set,
-                os.path.join(p, *names_for_path) + '.pyi',
-                import_names,
+                file_io=FileIO(os.path.join(p, *names_for_path) + '.pyi'),
+                import_names=import_names,
             )
             if m is not None:
                 return m
@@ -229,35 +228,44 @@ def _load_from_typeshed(evaluator, actual_context_set, parent_module_context, im
     if map_ is not None:
         path = map_.get(import_name)
         if path is not None:
-            return _try_to_load_stub_from_file(evaluator, actual_context_set, path, import_names)
+            return _try_to_load_stub_from_file(
+                evaluator,
+                actual_context_set,
+                file_io=FileIO(path),
+                import_names=import_names,
+            )
 
 
-def _try_to_load_stub_from_file(evaluator, actual_context_set, path, import_names):
+def _try_to_load_stub_from_file(evaluator, actual_context_set, file_io, import_names):
     try:
-        stub_module_node = _load_stub(evaluator, path)
+        stub_module_node = evaluator.parse(
+            file_io=file_io,
+            cache=True,
+            use_latest_grammar=True
+        )
     except (OSError, IOError):  # IOError is Python 2 only
         # The file that you're looking for doesn't exist (anymore).
         return None
     else:
         return create_stub_module(
-            evaluator, actual_context_set, stub_module_node, path,
+            evaluator, actual_context_set, stub_module_node, file_io,
             import_names
         )
 
 
-def create_stub_module(evaluator, actual_context_set, stub_module_node, path, import_names):
+def create_stub_module(evaluator, actual_context_set, stub_module_node, file_io, import_names):
     if import_names == ('typing',):
         module_cls = TypingModuleWrapper
     else:
         module_cls = StubModuleContext
-    file_name = os.path.basename(path)
+    file_name = os.path.basename(file_io.path)
     stub_module_context = module_cls(
         actual_context_set, evaluator, stub_module_node,
-        path=path,
+        file_io=file_io,
         string_names=import_names,
         # The code was loaded with latest_grammar, so use
         # that.
-        code_lines=get_cached_code_lines(evaluator.latest_grammar, path),
+        code_lines=get_cached_code_lines(evaluator.latest_grammar, file_io.path),
         is_package=file_name == '__init__.pyi',
     )
     return stub_module_context

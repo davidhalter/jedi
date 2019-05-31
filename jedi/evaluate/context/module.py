@@ -173,13 +173,17 @@ class ModuleContext(ModuleMixin, TreeContext):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node, path, string_names, code_lines, is_package=False):
+    def __init__(self, evaluator, module_node, file_io, string_names, code_lines, is_package=False):
         super(ModuleContext, self).__init__(
             evaluator,
             parent_context=None,
             tree_node=module_node
         )
-        self._path = path
+        self._file_io = file_io
+        if self._file_io is None:
+            self._path = None
+        else:
+            self._path = file_io.path
         self.string_names = string_names
         self.code_lines = code_lines
         self.is_package = is_package

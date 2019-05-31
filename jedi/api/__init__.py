@@ -21,6 +21,7 @@ from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
 from jedi import cache
+from jedi.file_io import KnownContentFileIO
 from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
@@ -38,8 +39,7 @@ from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-from jedi.evaluate.gradual.conversion import try_stubs_to_actual_context_set, \
-    try_stub_to_actual_names
+from jedi.evaluate.gradual.conversion import try_stub_to_actual_names
 from jedi.evaluate.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -164,11 +164,12 @@ class Script(object):
                 names = import_names
                 is_package = is_p
 
+        file_io = KnownContentFileIO(cast_path(self.path), self._code)
         if self.path is not None and self.path.endswith('.pyi'):
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
                 self._evaluator,
-                cast_path(self.path),
+                file_io,
                 names,
                 self._module_node
             )
@@ -179,14 +180,11 @@ class Script(object):
             names = ('__main__',)
 
         module = ModuleContext(
-            self._evaluator, self._module_node, cast_path(self.path),
+            self._evaluator, self._module_node, file_io,
             string_names=names,
             code_lines=self._code_lines,
             is_package=is_package,
         )
-        #module, = try_to_merge_with_stub(
-        #    self._evaluator, None, module.string_names, ContextSet([module])
-        #)
         if names[0] not in ('builtins', '__builtin__', 'typing'):
             # These modules are essential for Jedi, so don't overwrite them.
             self._evaluator.module_cache.add(names, ContextSet([module]))
@@ -469,7 +467,7 @@ class Interpreter(Script):
             self._evaluator,
             self._module_node,
             self.namespaces,
-            path=self.path,
+            file_io=KnownContentFileIO(self.path, self._code),
             code_lines=self._code_lines,
         )
 

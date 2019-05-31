@@ -464,7 +464,7 @@ def _load_python_module(evaluator, file_io, sys_path=None,
     from jedi.evaluate.context import ModuleContext
     return ModuleContext(
         evaluator, module_node,
-        path=file_io.path,
+        file_io=file_io,
         string_names=import_names,
         code_lines=get_cached_code_lines(evaluator.grammar, file_io.path),
         is_package=is_package,

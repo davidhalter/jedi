@@ -437,7 +437,7 @@ def collections_namedtuple(obj, arguments):
     generated_class = next(module.iter_classdefs())
     parent_context = ModuleContext(
         evaluator, module,
-        path=None,
+        file_io=None,
         string_names=None,
         code_lines=parso.split_lines(code, keepends=True),
     )

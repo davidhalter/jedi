@@ -11,6 +11,7 @@ from jedi import settings
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.evaluate import imports
+from jedi.file_io import FileIO
 from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
@@ -140,6 +141,7 @@ def _find_syntax_node_name(evaluator, access_handle):
         # The path might not exist or be e.g. <stdin>.
         return None
 
+    file_io = FileIO(path)
     module_node = _load_module(evaluator, path)
 
     if inspect.ismodule(python_object):
@@ -147,7 +149,7 @@ def _find_syntax_node_name(evaluator, access_handle):
         # a way to write a module in a module in Python (and also __name__ can
         # be something like ``email.utils``).
         code_lines = get_cached_code_lines(evaluator.grammar, path)
-        return module_node, module_node, path, code_lines
+        return module_node, module_node, file_io, code_lines
 
     try:
         name_str = python_object.__name__
@@ -186,7 +188,7 @@ def _find_syntax_node_name(evaluator, access_handle):
     # completions at some points but will lead to mostly correct type
     # inference, because people tend to define a public name in a module only
     # once.
-    return module_node, names[-1].parent, path, code_lines
+    return module_node, names[-1].parent, file_io, code_lines
 
 
 @compiled_objects_cache('mixed_cache')
@@ -198,7 +200,7 @@ def _create(evaluator, access_handle, parent_context, *args):
     if result is None:
         return compiled_object
 
-    module_node, tree_node, path, code_lines = result
+    module_node, tree_node, file_io, code_lines = result
 
     if parent_context.tree_node.get_root_node() == module_node:
         module_context = parent_context.get_root_context()
@@ -208,7 +210,7 @@ def _create(evaluator, access_handle, parent_context, *args):
         string_names = tuple(name.split('.'))
         module_context = ModuleContext(
             evaluator, module_node,
-            path=path,
+            file_io=file_io,
             string_names=string_names,
             code_lines=code_lines,
             is_package=hasattr(compiled_object, 'py__path__'),

@@ -24,14 +24,14 @@ class MixedModuleContext(Context):
     # TODO use ContextWrapper!
     type = 'mixed_module'
 
-    def __init__(self, evaluator, tree_module, namespaces, path, code_lines):
+    def __init__(self, evaluator, tree_module, namespaces, file_io, code_lines):
         self.evaluator = evaluator
         self._namespaces = namespaces
 
         self._namespace_objects = [NamespaceObject(n) for n in namespaces]
         self._module_context = ModuleContext(
             evaluator, tree_module,
-            path=path,
+            file_io=file_io,
             string_names=('__main__',),
             code_lines=code_lines
         )

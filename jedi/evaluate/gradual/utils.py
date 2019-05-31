@@ -3,11 +3,12 @@ import os
 from jedi.evaluate.gradual.typeshed import TYPESHED_PATH, create_stub_module
 
 
-def load_proper_stub_module(evaluator, path, import_names, module_node):
+def load_proper_stub_module(evaluator, file_io, import_names, module_node):
     """
     This function is given a random .pyi file and should return the proper
     module.
     """
+    path = file_io.path
     assert path.endswith('.pyi')
     if path.startswith(TYPESHED_PATH):
         # /foo/stdlib/3/os/__init__.pyi -> stdlib/3/os/__init__
@@ -24,7 +25,7 @@ def load_proper_stub_module(evaluator, path, import_names, module_node):
             return None
 
         stub = create_stub_module(
-            evaluator, actual_context_set, module_node, path, import_names
+            evaluator, actual_context_set, module_node, file_io, import_names
         )
         evaluator.stub_module_cache[import_names] = stub
         return stub
