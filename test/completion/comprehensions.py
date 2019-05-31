@@ -27,6 +27,9 @@ a[0]
 a = [a for a,b in [(1,'')]]
 #? int()
 a[0]
+a = [a for (a,b) in [(1,'')]]
+#? int()
+a[0]
 
 arr = [1,'']
 a = [a for a in arr]

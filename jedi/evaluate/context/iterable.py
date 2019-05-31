@@ -584,7 +584,7 @@ def unpack_tuple_to_dict(context, types, exprlist):
     """
     if exprlist.type == 'name':
         return {exprlist.value: types}
-    elif exprlist.type == 'atom' and exprlist.children[0] in '([':
+    elif exprlist.type == 'atom' and exprlist.children[0] in ('(', '['):
         return unpack_tuple_to_dict(context, types, exprlist.children[1])
     elif exprlist.type in ('testlist', 'testlist_comp', 'exprlist',
                            'testlist_star_expr'):
