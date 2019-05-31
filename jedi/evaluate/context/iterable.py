@@ -46,7 +46,7 @@ class IterableMixin(object):
         return ContextSet([compiled.builtin_from_name(self.evaluator, u'None')])
 
 
-class GeneratorMixin(LazyAttributeOverwrite, IterableMixin):
+class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
     array_type = None
 
     def _get_wrapped_context(self):
@@ -79,7 +79,7 @@ class GeneratorMixin(LazyAttributeOverwrite, IterableMixin):
         return compiled.CompiledContextName(self, 'generator')
 
 
-class Generator(GeneratorMixin):
+class Generator(GeneratorBase):
     """Handling of `yield` functions."""
     def __init__(self, evaluator, func_execution_context):
         super(Generator, self).__init__(evaluator)
@@ -109,36 +109,31 @@ class CompForContext(TreeContext):
 
 def comprehension_from_atom(evaluator, context, atom):
     bracket = atom.children[0]
+    test_list_comp = atom.children[1]
     if bracket == '{':
         if atom.children[1].children[1] == ':':
-            cls = DictComprehension
+            return DictComprehension(
+                evaluator,
+                context,
+                comp_for_node=test_list_comp.children[3],
+                key_node=test_list_comp.children[0],
+                value_node=test_list_comp.children[2],
+            )
         else:
             cls = SetComprehension
     elif bracket == '(':
         cls = GeneratorComprehension
     elif bracket == '[':
         cls = ListComprehension
-    return cls(evaluator, context, atom)
+    return cls(
+        evaluator,
+        defining_context=context,
+        comp_for_node=test_list_comp.children[1],
+        entry_node=test_list_comp.children[0],
+    )
 
 
 class ComprehensionMixin(object):
-    def __init__(self, evaluator, defining_context, atom):
-        super(ComprehensionMixin, self).__init__(evaluator)
-        self._defining_context = defining_context
-        self._atom = atom
-
-    def _get_comp_for(self):
-        """return CompFor('for a in b')"""
-        return self._atom.children[1].children[1]
-
-    def _entry_node(self):
-        """
-        The first part `x + 1` of the list comprehension:
-
-            [x + 1 for x in foo]
-        """
-        return self._atom.children[1].children[0]
-
     @evaluator_method_cache()
     def _get_comp_for_context(self, parent_context, comp_for):
         return CompForContext.from_comp_for(parent_context, comp_for)
@@ -168,16 +163,16 @@ class ComprehensionMixin(object):
                     for result in self._nested(comp_fors[1:], context_):
                         yield result
                 except IndexError:
-                    iterated = context_.eval_node(self._entry_node())
+                    iterated = context_.eval_node(self._entry_node)
                     if self.array_type == 'dict':
-                        yield iterated, context_.eval_node(self._value_node())
+                        yield iterated, context_.eval_node(self._value_node)
                     else:
                         yield iterated
 
     @evaluator_method_cache(default=[])
     @to_list
     def _iterate(self):
-        comp_fors = tuple(get_comp_fors(self._get_comp_for()))
+        comp_fors = tuple(get_comp_fors(self._comp_for_node))
         for result in self._nested(comp_fors):
             yield result
 
@@ -226,7 +221,15 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
         return iterate_contexts(ContextSet([self]))
 
 
-class ListComprehension(ComprehensionMixin, Sequence):
+class _BaseComprehension(ComprehensionMixin):
+    def __init__(self, evaluator, defining_context, comp_for_node, entry_node):
+        super(_BaseComprehension, self).__init__(evaluator)
+        self._defining_context = defining_context
+        self._comp_for_node = comp_for_node
+        self._entry_node = entry_node
+
+
+class ListComprehension(_BaseComprehension, Sequence):
     array_type = u'list'
 
     def py__simple_getitem__(self, index):
@@ -239,18 +242,23 @@ class ListComprehension(ComprehensionMixin, Sequence):
         return lazy_context.infer()
 
 
-class SetComprehension(ComprehensionMixin, Sequence):
+class SetComprehension(_BaseComprehension, Sequence):
     array_type = u'set'
 
 
-class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
+class GeneratorComprehension(_BaseComprehension, GeneratorBase):
+    pass
+
+
+class DictComprehension(ComprehensionMixin, Sequence):
     array_type = u'dict'
 
-    def _get_comp_for(self):
-        return self._atom.children[1].children[3]
-
-    def _value_node(self):
-        return self._atom.children[1].children[2]
+    def __init__(self, evaluator, defining_context, comp_for_node, key_node, value_node):
+        super(DictComprehension, self).__init__(evaluator)
+        self._defining_context = defining_context
+        self._comp_for_node = comp_for_node
+        self._entry_node = key_node
+        self._value_node = value_node
 
     def py__iter__(self, contextualized_node=None):
         for keys, values in self._iterate():
@@ -298,20 +306,6 @@ class DictComprehension(_DictMixin, ComprehensionMixin, Sequence):
         # NOTE: A smarter thing can probably done here to achieve better
         # completions, but at least like this jedi doesn't crash
         return []
-
-
-class GeneratorComprehension(ComprehensionMixin, GeneratorMixin):
-    pass
-
-
-class ArgumentGeneratorComprehension(ComprehensionMixin, GeneratorMixin):
-    def _get_comp_for(self):
-        # Not actually an atom. But need to correct this comprehension madness
-        # anyway.
-        return self._atom.children[1]
-
-    def _entry_node(self):
-        return self._atom.children[0]
 
 
 class SequenceLiteralContext(Sequence):
