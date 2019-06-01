@@ -2,6 +2,8 @@
 Test of keywords and ``jedi.keywords``
 """
 
+import pytest
+
 
 def test_goto_assignments_keyword(Script):
     """
@@ -48,7 +50,11 @@ def test_keyword_attributes(Script):
     assert def_.type == 'keyword'
 
 
-def test_none_keyword(Script):
+def test_none_keyword(Script, environment):
+    if environment.version_info.major == 2:
+        # Just don't care about Python 2 anymore, it's almost gone.
+        pytest.skip()
+
     none, = Script('None').completions()
     assert not none.docstring()
     assert none.name == 'None'
