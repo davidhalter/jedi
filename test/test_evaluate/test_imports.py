@@ -456,3 +456,9 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
     module, = script.goto_definitions()
     assert module._evaluator.builtins_module.py__file__() != module_path
     assert module._evaluator.typing_module.py__file__() != module_path
+
+
+def test_import_with_semicolon(Script):
+    names = [c.name for c in Script('xzy; from abc import ').completions()]
+    assert 'ABCMeta' in names
+    assert 'abc' not in names

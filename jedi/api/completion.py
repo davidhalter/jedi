@@ -179,7 +179,12 @@ class Completion:
 
             nonterminals = [stack_node.nonterminal for stack_node in stack]
 
-            nodes = [node for stack_node in stack for node in stack_node.nodes]
+            nodes = []
+            for stack_node in stack:
+                if stack_node.dfa.from_rule == 'small_stmt':
+                    nodes = []
+                else:
+                    nodes += stack_node.nodes
 
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
