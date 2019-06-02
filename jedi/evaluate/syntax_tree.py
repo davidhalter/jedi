@@ -142,6 +142,8 @@ def eval_node(context, element):
 
         # Generator.send() is not implemented.
         return NO_CONTEXTS
+    elif typ == 'namedexpr_test':
+        return eval_node(context, element.children[2])
     else:
         return eval_or_test(context, element)
 
