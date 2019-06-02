@@ -299,7 +299,7 @@ def collect_file_tests(path, lines, lines_to_execute):
     skip_version_info = None
     for line_nr, line in enumerate(lines, 1):
         if correct is not None:
-            r = re.match('^(\d+)\s*(.*)$', correct)
+            r = re.match(r'^(\d+)\s*(.*)$', correct)
             if r:
                 column = int(r.group(1))
                 correct = r.group(2)
@@ -402,7 +402,7 @@ if __name__ == '__main__':
     test_files = {}
     last = None
     for arg in arguments['<rest>']:
-        match = re.match('(\d+)-(\d+)', arg)
+        match = re.match(r'(\d+)-(\d+)', arg)
         if match:
             start, end = match.groups()
             test_files[last].append((int(start), int(end)))
