@@ -174,6 +174,12 @@ def test_completion_params(Script):
     assert [p.name for p in c.params] == ['s', 'sep']
 
 
+def test_functions_should_have_params(Script):
+    for c in Script('bool.').completions():
+        if c.type == 'function':
+            assert isinstance(c.params, list)
+
+
 def test_hashlib_params(Script, environment):
     if environment.version_info < (3,):
         pytest.skip()

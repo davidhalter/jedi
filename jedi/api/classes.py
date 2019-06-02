@@ -363,6 +363,10 @@ class BaseDefinition(object):
             for signature in context.get_signatures():
                 return [Definition(self._evaluator, n) for n in signature.get_param_names()]
 
+        if self.type == 'function' or self.type == 'class':
+            # Fallback, if no signatures were defined (which is probably by
+            # itself a bug).
+            return []
         raise AttributeError('There are no params defined on this.')
 
     def parent(self):
