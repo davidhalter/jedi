@@ -100,9 +100,6 @@ class CompForContext(TreeContext):
     def from_comp_for(cls, parent_context, comp_for):
         return cls(parent_context.evaluator, parent_context, comp_for)
 
-    def get_node(self):
-        return self.tree_node
-
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self.evaluator, self)
 

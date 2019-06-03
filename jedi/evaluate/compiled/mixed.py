@@ -10,7 +10,6 @@ from jedi.parser_utils import get_cached_code_lines
 from jedi import settings
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
-from jedi.evaluate import imports
 from jedi.file_io import FileIO
 from jedi.evaluate.base_context import Context, ContextSet
 from jedi.evaluate.context import ModuleContext

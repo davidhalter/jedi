@@ -37,9 +37,6 @@ class MixedModuleContext(Context):
         )
         self.tree_node = tree_module
 
-    def get_node(self):
-        return self.tree_node
-
     def get_filters(self, *args, **kwargs):
         for filter in self._module_context.get_filters(*args, **kwargs):
             yield filter
