@@ -102,10 +102,10 @@ def _load_stub_module(module):
 
 
 def name_to_stub(name):
-    return ContextSet.from_sets(_to_stub(c) for c in name.infer())
+    return ContextSet.from_sets(to_stub(c) for c in name.infer())
 
 
-def _to_stub(context):
+def to_stub(context):
     if context.is_stub():
         return ContextSet([context])
 
@@ -118,6 +118,13 @@ def _to_stub(context):
     if stub_module is None or qualified_names is None:
         return NO_CONTEXTS
 
+    was_bound_method = context.is_bound_method()
+    if was_bound_method:
+        # Infer the object first. We can infer the method later.
+        method_name = qualified_names[-1]
+        qualified_names = qualified_names[:-1]
+        was_instance = True
+
     stub_contexts = ContextSet([stub_module])
     for name in qualified_names:
         stub_contexts = stub_contexts.py__getattribute__(name)
@@ -128,4 +135,8 @@ def _to_stub(context):
             for c in stub_contexts
             if c.is_class()
         )
+    if was_bound_method:
+        # Now that the instance has been properly created, we can simply get
+        # the method.
+        stub_contexts = stub_contexts.py__getattribute__(method_name)
     return stub_contexts

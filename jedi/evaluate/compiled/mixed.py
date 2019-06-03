@@ -19,6 +19,7 @@ from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.compiled.access import compiled_objects_cache
 from jedi.evaluate.compiled.context import create_cached_compiled_object
+from jedi.evaluate.gradual.conversion import to_stub
 
 
 class MixedObject(object):
@@ -83,9 +84,7 @@ class MixedName(compiled.CompiledName):
         access_handle = self.parent_context.access_handle
         # TODO use logic from compiled.CompiledObjectFilter
         access_handle = access_handle.getattr(self.string_name, default=None)
-        return ContextSet([
-            _create(self._evaluator, access_handle, parent_context=self.parent_context)
-        ])
+        return _create(self._evaluator, access_handle, parent_context=self.parent_context)
 
     @property
     def api_type(self):
@@ -198,7 +197,7 @@ def _create(evaluator, access_handle, parent_context, *args):
 
     result = _find_syntax_node_name(evaluator, access_handle)
     if result is None:
-        return compiled_object
+        return ContextSet([compiled_object])
 
     module_node, tree_node, file_io, code_lines = result
 
@@ -228,9 +227,11 @@ def _create(evaluator, access_handle, parent_context, *args):
             # Is an instance, not a class.
             tree_context, = execute_evaluated(tree_context)
 
-    return MixedObject(
-        evaluator,
-        parent_context,
-        compiled_object,
-        tree_context=tree_context
-    )
+    return ContextSet({
+        MixedObject(
+            evaluator,
+            parent_context,
+            compiled_object,
+            tree_context=c,
+        ) for c in to_stub(tree_context) or [tree_context]
+    })

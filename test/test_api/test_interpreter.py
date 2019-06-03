@@ -358,6 +358,12 @@ def test_name_not_findable():
     assert jedi.Interpreter("X.NOT_FINDA", [locals()]).completions()
 
 
+def test_stubs_working():
+    from multiprocessing import cpu_count
+    defs = jedi.Interpreter("cpu_count()", [locals()]).goto_definitions()
+    assert [d.name for d in defs] == ['int']
+
+
 def test_sys_path_docstring():  # Was an issue in #1298
     import jedi
     s = jedi.Interpreter("from sys import path\npath", line=2, column=4, namespaces=[locals()])
