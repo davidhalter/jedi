@@ -248,6 +248,9 @@ class CompiledInstance(AbstractInstanceContext):
 
         return lazy_context.infer()
 
+    def is_stub(self):
+        return False
+
 
 class TreeInstance(AbstractInstanceContext):
     def __init__(self, evaluator, parent_context, class_context, var_args):

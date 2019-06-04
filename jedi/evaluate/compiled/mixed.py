@@ -46,6 +46,11 @@ class MixedObject(ContextWrapper):
     def get_filters(self, *args, **kwargs):
         yield MixedObjectFilter(self.evaluator, self)
 
+    def py__call__(self, arguments):
+        print(self._wrapped_context)
+        print(to_stub(self._wrapped_context))
+        return self._wrapped_context.py__call__(arguments)
+
     def __repr__(self):
         return '<%s: %s>' % (
             type(self).__name__,
@@ -77,10 +82,14 @@ class MixedName(compiled.CompiledName):
             self.string_name,
             default=None
         )
+        assert len(access_paths)
         context = None
         for access in access_paths:
-            return _create(self._evaluator, access, parent_context=context)
-        return context
+            if context is None or isinstance(context, MixedObject):
+                context = _create(self._evaluator, access, parent_context=context)
+            else:
+                context = create_cached_compiled_object(context.evaluator, access, context)
+        return ContextSet([context])
 
     @property
     def api_type(self):
@@ -189,17 +198,18 @@ def _find_syntax_node_name(evaluator, access_handle):
 @compiled_objects_cache('mixed_cache')
 def _create(evaluator, access_handle, parent_context, *args):
     compiled_object = create_cached_compiled_object(
-        evaluator, access_handle, parent_context=parent_context.compiled_object)
+        evaluator,
+        access_handle,
+        parent_context=parent_context and parent_context.compiled_object
+    )
 
     result = _find_syntax_node_name(evaluator, access_handle)
     if result is None:
-        return ContextSet([compiled_object])
+        return compiled_object
 
     module_node, tree_node, file_io, code_lines = result
 
-    if parent_context.tree_node.get_root_node() == module_node:
-        module_context = parent_context.get_root_context()
-    else:
+    if parent_context is None:
         # TODO this __name__ is probably wrong.
         name = compiled_object.get_root_context().py__name__()
         string_names = tuple(name.split('.'))
@@ -212,6 +222,9 @@ def _create(evaluator, access_handle, parent_context, *args):
         )
         if name is not None:
             evaluator.module_cache.add(string_names, ContextSet([module_context]))
+    else:
+        assert parent_context.tree_node.get_root_node() == module_node
+        module_context = parent_context.get_root_context()
 
     tree_context = module_context.create_context(
         tree_node,
@@ -223,7 +236,4 @@ def _create(evaluator, access_handle, parent_context, *args):
             # Is an instance, not a class.
             tree_context, = execute_evaluated(tree_context)
 
-    return ContextSet({
-        MixedObject(compiled_object, tree_context=c)
-        for c in to_stub(tree_context) or [tree_context]
-    })
+    return MixedObject(compiled_object, tree_context=tree_context)
