@@ -305,16 +305,26 @@ class DirectObjectAccess(object):
                 return True, True
         return True, False
 
-    def getattr(self, name, default=_sentinel):
+    def getattr_paths(self, name, default=_sentinel):
         try:
-            return self._create_access(getattr(self._obj, name))
+            return_obj = getattr(self._obj, name)
         except AttributeError:
             # Happens e.g. in properties of
             # PyQt4.QtGui.QStyleOptionComboBox.currentText
             # -> just set it to None
             if default is _sentinel:
                 raise
-            return self._create_access(default)
+            return_obj = default
+        access = self._create_access(return_obj)
+        if inspect.ismodule(self._obj):
+            return [access]
+
+        module = inspect.getmodule(return_obj)
+        if module is None:
+            module = inspect.getmodule(type(return_obj))
+            if module is None:
+                module = builtins
+        return [self._create_access(module), access]
 
     def get_safe_value(self):
         if type(self._obj) in (bool, bytes, float, int, str, unicode, slice):

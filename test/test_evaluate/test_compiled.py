@@ -3,6 +3,7 @@ from textwrap import dedent
 import pytest
 
 from jedi.evaluate import compiled
+from jedi.evaluate.compiled.access import DirectObjectAccess
 from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
 
@@ -101,3 +102,39 @@ def test_getitem_on_none(Script):
     assert not script.goto_definitions()
     issue, = script._evaluator.analysis
     assert issue.name == 'type-error-not-subscriptable'
+
+
+@pytest.mark.parametrize(
+    'attribute, expected_name, expected_parent', [
+        ('x', 'int', 'builtins'),
+        ('y', 'int', 'builtins'),
+        ('z', 'bool', 'builtins'),
+        ('cos', 'cos', 'math'),
+        ('dec', 'Decimal', 'decimal'),
+        ('dt', 'datetime', 'datetime'),
+    ]
+)
+def test_parent_context(same_process_evaluator, attribute, expected_name, expected_parent):
+    import math
+    import decimal
+    import datetime
+
+    class C:
+        x = 1
+        y = int
+        z = True
+        cos = math.cos
+        dec = decimal.Decimal(1)
+        dt = datetime.datetime(2000, 1, 1)
+
+    o = compiled.CompiledObject(
+        same_process_evaluator,
+        DirectObjectAccess(same_process_evaluator, C)
+    )
+    x, = o.py__getattribute__(attribute)
+    assert x.py__name__() == expected_name
+    module_name = x.parent_context.py__name__()
+    if module_name == '__builtin__':
+        module_name = 'builtins'  # Python 2
+    assert module_name == expected_parent
+    assert x.parent_context.parent_context is None

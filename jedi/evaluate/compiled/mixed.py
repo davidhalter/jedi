@@ -11,7 +11,7 @@ from jedi import settings
 from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
-from jedi.evaluate.base_context import Context, ContextSet
+from jedi.evaluate.base_context import ContextSet, ContextWrapper
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.helpers import execute_evaluated
@@ -21,7 +21,7 @@ from jedi.evaluate.compiled.context import create_cached_compiled_object
 from jedi.evaluate.gradual.conversion import to_stub
 
 
-class MixedObject(object):
+class MixedObject(ContextWrapper):
     """
     A ``MixedObject`` is used in two ways:
 
@@ -38,27 +38,19 @@ class MixedObject(object):
     fewer special cases, because we in Python you don't have the same freedoms
     to modify the runtime.
     """
-    def __init__(self, evaluator, parent_context, compiled_object, tree_context):
-        self.evaluator = evaluator
-        self.parent_context = parent_context
+    def __init__(self, compiled_object, tree_context):
+        super(MixedObject, self).__init__(tree_context)
         self.compiled_object = compiled_object
-        self._context = tree_context
         self.access_handle = compiled_object.access_handle
-
-    # We have to overwrite everything that has to do with trailers, name
-    # lookups and filters to make it possible to route name lookups towards
-    # compiled objects and the rest towards tree node contexts.
-    def py__getattribute__(*args, **kwargs):
-        return Context.py__getattribute__(*args, **kwargs)
 
     def get_filters(self, *args, **kwargs):
         yield MixedObjectFilter(self.evaluator, self)
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.access_handle.get_repr())
-
-    def __getattr__(self, name):
-        return getattr(self._context, name)
+        return '<%s: %s>' % (
+            type(self).__name__,
+            self.access_handle.get_repr()
+        )
 
 
 class MixedName(compiled.CompiledName):
@@ -80,10 +72,15 @@ class MixedName(compiled.CompiledName):
 
     @underscore_memoization
     def infer(self):
-        access_handle = self.parent_context.access_handle
         # TODO use logic from compiled.CompiledObjectFilter
-        access_handle = access_handle.getattr(self.string_name, default=None)
-        return _create(self._evaluator, access_handle, parent_context=self.parent_context)
+        access_paths = self.parent_context.access_handle.getattr_paths(
+            self.string_name,
+            default=None
+        )
+        context = None
+        for access in access_paths:
+            return _create(self._evaluator, access, parent_context=context)
+        return context
 
     @property
     def api_type(self):
@@ -227,10 +224,6 @@ def _create(evaluator, access_handle, parent_context, *args):
             tree_context, = execute_evaluated(tree_context)
 
     return ContextSet({
-        MixedObject(
-            evaluator,
-            parent_context,
-            compiled_object,
-            tree_context=c,
-        ) for c in to_stub(tree_context) or [tree_context]
+        MixedObject(compiled_object, tree_context=c)
+        for c in to_stub(tree_context) or [tree_context]
     })

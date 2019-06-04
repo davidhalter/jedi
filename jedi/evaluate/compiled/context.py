@@ -36,7 +36,7 @@ class CheckAttribute(object):
             return self
 
         # This might raise an AttributeError. That's wanted.
-        instance.access_handle.getattr(self.check_name)
+        instance.access_handle.getattr_paths(self.check_name)
         return partial(self.func, instance)
 
 
@@ -219,7 +219,7 @@ class CompiledObject(Context):
             try:
                 # TODO wtf is this? this is exactly the same as the thing
                 # below. It uses getattr as well.
-                self.evaluator.builtins_module.access_handle.getattr(name)
+                self.evaluator.builtins_module.access_handle.getattr_paths(name)
             except AttributeError:
                 continue
             else:
@@ -486,13 +486,17 @@ def _parse_function_doc(doc):
 
 
 def _create_from_name(evaluator, compiled_object, name):
-    access = compiled_object.access_handle.getattr(name, default=None)
+    access_paths = compiled_object.access_handle.getattr_paths(name, default=None)
     parent_context = compiled_object
     if parent_context.is_class():
         parent_context = parent_context.parent_context
-    return create_cached_compiled_object(
-        evaluator, access, parent_context=parent_context
-    )
+
+    context = None
+    for access_path in access_paths:
+        context = create_cached_compiled_object(
+            evaluator, access_path, parent_context=context
+        )
+    return context
 
 
 def _normalize_create_args(func):

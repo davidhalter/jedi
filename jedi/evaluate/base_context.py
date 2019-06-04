@@ -11,7 +11,7 @@ from operator import add
 from parso.python.tree import ExprStmt, CompFor
 
 from jedi import debug
-from jedi._compatibility import Python3Method, zip_longest, unicode
+from jedi._compatibility import zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring
 from jedi.common import BaseContextSet, BaseContext
 from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
@@ -51,7 +51,6 @@ class HelperContextMixin(object):
             for lazy_context in self.iterate(contextualized_node, is_async)
         )
 
-    @Python3Method
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            search_global=False, is_goto=False,
                            analysis_errors=True):
