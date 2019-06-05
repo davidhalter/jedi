@@ -210,7 +210,6 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
 
 
 class _ContextWrapperBase(HelperContextMixin):
-    py__getattribute__ = Context.py__getattribute__
     predefined_names = {}
 
     @safe_property
