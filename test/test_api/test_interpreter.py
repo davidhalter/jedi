@@ -368,3 +368,28 @@ def test_sys_path_docstring():  # Was an issue in #1298
     import jedi
     s = jedi.Interpreter("from sys import path\npath", line=2, column=4, namespaces=[locals()])
     s.completions()[0].docstring()
+
+
+@pytest.mark.parametrize(
+    'code, completions', [
+        ('x[0].uppe', ['upper']),
+        ('x[1337].uppe', ['upper']),
+        ('x[""].uppe', ['upper']),
+        ('x.appen', ['append']),
+
+        ('y.add', ['add']),
+        ('y[0].', []),
+        ('list(y)[0].', []),  # TODO use stubs properly to improve this.
+
+        ('z[0].uppe', ['upper']),
+        ('z[0].append', ['append']),
+        ('z[1].uppe', ['upper']),
+        ('z[1].append', []),
+    ]
+)
+def test_simple_completions(code, completions):
+    x = [str]
+    y = {1}
+    z = {1: str, 2: list}
+    defs = jedi.Interpreter(code, [locals()]).completions()
+    assert [d.name for d in defs] == completions

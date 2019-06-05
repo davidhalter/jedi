@@ -202,6 +202,8 @@ def _create(evaluator, access_handle, parent_context, *args):
     )
 
     result = _find_syntax_node_name(evaluator, access_handle)
+    # TODO use stub contexts here. If we do that we probably have to care about
+    # generics from stuff like `[1]`.
     if result is None:
         return compiled_object
 
