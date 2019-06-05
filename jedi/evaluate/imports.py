@@ -21,7 +21,7 @@ from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
 from jedi import debug
 from jedi import settings
-from jedi.file_io import KnownContentFileIO, FolderIO
+from jedi.file_io import KnownContentFileIO, FolderIO, FileIO
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -532,7 +532,10 @@ def get_modules_containing_name(evaluator, modules, name):
         if name not in code:
             return None
         new_file_io = KnownContentFileIO(file_io.path, code)
-        return _load_module_from_path(evaluator, new_file_io, base_names)
+        m = _load_module_from_path(evaluator, new_file_io, base_names)
+        if isinstance(m, compiled.CompiledObject):
+            return None
+        return m
 
     # skip non python modules
     used_mod_paths = set()
@@ -551,13 +554,17 @@ def get_modules_containing_name(evaluator, modules, name):
     if not settings.dynamic_params_for_other_modules:
         return
 
-    for p in settings.additional_dynamic_modules:
-        p = os.path.abspath(p)
-        if p not in used_mod_paths:
-            folders_with_names_to_be_checked.append((FolderIO(p), None))
+    def get_file_ios_to_check():
+        for folder_io, base_names in folders_with_names_to_be_checked:
+            for file_io in check_directory(folder_io):
+                yield file_io, base_names
 
-    for folder_io, base_names in folders_with_names_to_be_checked:
-        for file_io in check_directory(folder_io):
-            m = check_fs(file_io, base_names)
-            if m is not None and not isinstance(m, compiled.CompiledObject):
-                yield m
+        for p in settings.additional_dynamic_modules:
+            p = os.path.abspath(p)
+            if p not in used_mod_paths:
+                yield FileIO(p), None
+
+    for file_io, base_names in get_file_ios_to_check():
+        m = check_fs(file_io, base_names)
+        if m is not None:
+            yield m
