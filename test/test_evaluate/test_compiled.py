@@ -104,6 +104,9 @@ def test_getitem_on_none(Script):
     assert issue.name == 'type-error-not-subscriptable'
 
 
+def _return_int():
+    return 1
+
 @pytest.mark.parametrize(
     'attribute, expected_name, expected_parent', [
         ('x', 'int', 'builtins'),
@@ -112,6 +115,7 @@ def test_getitem_on_none(Script):
         ('cos', 'cos', 'math'),
         ('dec', 'Decimal', 'decimal'),
         ('dt', 'datetime', 'datetime'),
+        ('ret_int', '_return_int', 'test.test_evaluate.test_compiled'),
     ]
 )
 def test_parent_context(same_process_evaluator, attribute, expected_name, expected_parent):
@@ -126,6 +130,7 @@ def test_parent_context(same_process_evaluator, attribute, expected_name, expect
         cos = math.cos
         dec = decimal.Decimal(1)
         dt = datetime.datetime(2000, 1, 1)
+        ret_int = _return_int
 
     o = compiled.CompiledObject(
         same_process_evaluator,

@@ -4,7 +4,7 @@ import re
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
-from jedi.evaluate.base_context import ContextSet
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.evaluate.gradual.stub_context import TypingModuleWrapper, StubModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -124,6 +124,8 @@ def _try_to_load_stub_cached(evaluator, import_names, *args, **kwargs):
     except KeyError:
         pass
 
+    # TODO is this needed? where are the exceptions coming from that make this
+    # necessary? Just remove this line.
     evaluator.stub_module_cache[import_names] = None
     evaluator.stub_module_cache[import_names] = result = \
         _try_to_load_stub(evaluator, import_names, *args, **kwargs)
@@ -138,8 +140,16 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
     This is modelled to work like "PEP 561 -- Distributing and Packaging Type
     Information", see https://www.python.org/dev/peps/pep-0561.
     """
+    if parent_module_context is None and len(import_names) > 1:
+        try:
+            parent_module_context = _try_to_load_stub_cached(
+                evaluator, import_names[:-1], NO_CONTEXTS,
+                parent_module_context=None, sys_path=sys_path)
+        except KeyError:
+            pass
+
     # 1. Try to load foo-stubs folders on path for import name foo.
-    if not parent_module_context:
+    if len(import_names) == 1:
         # foo-stubs
         for p in sys_path:
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'

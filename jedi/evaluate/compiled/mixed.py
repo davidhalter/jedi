@@ -47,9 +47,7 @@ class MixedObject(ContextWrapper):
         yield MixedObjectFilter(self.evaluator, self)
 
     def py__call__(self, arguments):
-        print(self._wrapped_context)
-        print(to_stub(self._wrapped_context))
-        return self._wrapped_context.py__call__(arguments)
+        return (to_stub(self._wrapped_context) or self._wrapped_context).py__call__(arguments)
 
     def __repr__(self):
         return '<%s: %s>' % (
