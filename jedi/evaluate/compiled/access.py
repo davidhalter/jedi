@@ -316,7 +316,7 @@ class DirectObjectAccess(object):
                 raise
             return_obj = default
         access = self._create_access(return_obj)
-        if inspect.ismodule(self._obj):
+        if inspect.ismodule(return_obj):
             return [access]
 
         module = inspect.getmodule(return_obj)
