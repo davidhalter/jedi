@@ -13,7 +13,7 @@ from jedi.evaluate.arguments import AnonymousArguments
 from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter
 from jedi.evaluate.names import ContextName, AbstractNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
-    ContextSet, TreeContext, ContextWrapper, LazyContextWrapper
+    ContextSet, TreeContext, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
 from jedi.evaluate.context import iterable
