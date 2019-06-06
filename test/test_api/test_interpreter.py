@@ -390,6 +390,13 @@ def test_sys_path_docstring():  # Was an issue in #1298
         ('deq.app', ['append', 'appendleft']),
         ('deq.pop', ['pop', 'popleft']),
         ('deq.pop().', []),
+
+        ('collections.Counter("asdf").setdef', ['setdefault']),
+        ('collections.Counter("asdf").pop().imag', ['imag']),
+        ('list(collections.Counter("asdf").keys())[0].uppe', ['upper']),
+        ('counter.setdefa', ['setdefault']),
+        ('counter.pop().imag', []),  # TODO stubs could make this better
+        ('counter.keys())[0].uppe', []),
     ]
 )
 def test_simple_completions(code, completions):
@@ -398,6 +405,7 @@ def test_simple_completions(code, completions):
     z = {1: str, 2: list}
     import collections
     deq = collections.deque([1])
+    counter = collections.Counter(['asdf'])
 
     defs = jedi.Interpreter(code, [locals()]).completions()
     assert [d.name for d in defs] == completions
