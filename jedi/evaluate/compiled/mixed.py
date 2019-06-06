@@ -164,7 +164,13 @@ def _find_syntax_node_name(evaluator, access_handle):
 
     # Doesn't always work (e.g. os.stat_result)
     names = module_node.get_used_names().get(name_str, [])
-    names = [n for n in names if n.is_definition()]
+    # Only functions and classes are relevant. If a name e.g. points to an
+    # import, it's probably a builtin (like collections.deque) and needs to be
+    # ignored.
+    names = [
+        n for n in names
+        if n.parent.type in ('funcdef', 'classdef') and n.parent.name == n
+    ]
     if not names:
         return None
 
