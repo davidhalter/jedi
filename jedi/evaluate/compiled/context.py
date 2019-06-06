@@ -86,11 +86,11 @@ class CompiledObject(Context):
         # For modules
         name = self.py__name__()
         if name is None:
-            return []
+            return ()
         return tuple(name.split('.'))
 
     def get_qualified_names(self):
-        return self.string_names
+        return self.access_handle.get_qualified_names()
 
     def py__bool__(self):
         return self.access_handle.py__bool__()
@@ -100,6 +100,9 @@ class CompiledObject(Context):
 
     def is_class(self):
         return self.access_handle.is_class()
+
+    def is_module(self):
+        return self.access_handle.is_module()
 
     def is_compiled(self):
         return True

@@ -397,6 +397,9 @@ def test_sys_path_docstring():  # Was an issue in #1298
         ('counter.setdefa', ['setdefault']),
         ('counter.pop().imag', []),  # TODO stubs could make this better
         ('counter.keys())[0].uppe', []),
+
+        ('string.upper().uppe', ['upper']),
+        ('"".upper().uppe', ['upper']),
     ]
 )
 def test_simple_completions(code, completions):
@@ -406,6 +409,7 @@ def test_simple_completions(code, completions):
     import collections
     deq = collections.deque([1])
     counter = collections.Counter(['asdf'])
+    string = ''
 
     defs = jedi.Interpreter(code, [locals()]).completions()
     assert [d.name for d in defs] == completions

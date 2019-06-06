@@ -1,4 +1,8 @@
 from textwrap import dedent
+import math
+import sys
+from collections import Counter
+from datetime import datetime
 
 import pytest
 
@@ -107,6 +111,7 @@ def test_getitem_on_none(Script):
 def _return_int():
     return 1
 
+
 @pytest.mark.parametrize(
     'attribute, expected_name, expected_parent', [
         ('x', 'int', 'builtins'),
@@ -119,9 +124,7 @@ def _return_int():
     ]
 )
 def test_parent_context(same_process_evaluator, attribute, expected_name, expected_parent):
-    import math
     import decimal
-    import datetime
 
     class C:
         x = 1
@@ -129,7 +132,7 @@ def test_parent_context(same_process_evaluator, attribute, expected_name, expect
         z = True
         cos = math.cos
         dec = decimal.Decimal(1)
-        dt = datetime.datetime(2000, 1, 1)
+        dt = datetime(2000, 1, 1)
         ret_int = _return_int
 
     o = compiled.CompiledObject(
@@ -143,3 +146,27 @@ def test_parent_context(same_process_evaluator, attribute, expected_name, expect
         module_name = 'builtins'  # Python 2
     assert module_name == expected_parent
     assert x.parent_context.parent_context is None
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize(
+    'obj, expected_names', [
+        ('', ['str']),
+        (str, ['str']),
+        (''.upper, ['str', 'upper']),
+        (str.upper, ['str', 'upper']),
+
+        (math.cos, ['cos']),
+
+        (Counter, ['Counter']),
+        (Counter(""), ['Counter']),
+        (Counter.most_common, ['Counter', 'most_common']),
+        (Counter("").most_common, ['Counter', 'most_common']),
+    ]
+)
+def test_qualified_names(same_process_evaluator, obj, expected_names):
+    o = compiled.CompiledObject(
+        same_process_evaluator,
+        DirectObjectAccess(same_process_evaluator, obj)
+    )
+    assert o.get_qualified_names() == expected_names

@@ -81,13 +81,15 @@ class MixedName(compiled.CompiledName):
             default=None
         )
         assert len(access_paths)
-        context = None
+        contexts = [None]
         for access in access_paths:
-            if context is None or isinstance(context, MixedObject):
-                context = _create(self._evaluator, access, parent_context=context)
-            else:
-                context = create_cached_compiled_object(context.evaluator, access, context)
-        return ContextSet([context])
+            contexts = ContextSet.from_sets(
+                _create(self._evaluator, access, parent_context=c)
+                if c is None or isinstance(c, MixedObject)
+                else ContextSet({create_cached_compiled_object(c.evaluator, access, c)})
+                for c in contexts
+            )
+        return contexts
 
     @property
     def api_type(self):
@@ -211,35 +213,40 @@ def _create(evaluator, access_handle, parent_context, *args):
     # TODO use stub contexts here. If we do that we probably have to care about
     # generics from stuff like `[1]`.
     if result is None:
-        return compiled_object
-
-    module_node, tree_node, file_io, code_lines = result
-
-    if parent_context is None:
-        # TODO this __name__ is probably wrong.
-        name = compiled_object.get_root_context().py__name__()
-        string_names = tuple(name.split('.'))
-        module_context = ModuleContext(
-            evaluator, module_node,
-            file_io=file_io,
-            string_names=string_names,
-            code_lines=code_lines,
-            is_package=hasattr(compiled_object, 'py__path__'),
-        )
-        if name is not None:
-            evaluator.module_cache.add(string_names, ContextSet([module_context]))
+        return ContextSet({compiled_object})
     else:
-        assert parent_context.tree_node.get_root_node() == module_node
-        module_context = parent_context.get_root_context()
+        module_node, tree_node, file_io, code_lines = result
 
-    tree_context = module_context.create_context(
-        tree_node,
-        node_is_context=True,
-        node_is_object=True
+        if parent_context is None:
+            # TODO this __name__ is probably wrong.
+            name = compiled_object.get_root_context().py__name__()
+            string_names = tuple(name.split('.'))
+            module_context = ModuleContext(
+                evaluator, module_node,
+                file_io=file_io,
+                string_names=string_names,
+                code_lines=code_lines,
+                is_package=hasattr(compiled_object, 'py__path__'),
+            )
+            if name is not None:
+                evaluator.module_cache.add(string_names, ContextSet([module_context]))
+        else:
+            assert parent_context.tree_node.get_root_node() == module_node
+            module_context = parent_context.get_root_context()
+
+        tree_contexts = ContextSet({
+            module_context.create_context(
+                tree_node,
+                node_is_context=True,
+                node_is_object=True
+            )
+        })
+        if tree_node.type == 'classdef':
+            if not access_handle.is_class():
+                # Is an instance, not a class.
+                tree_contexts = tree_contexts.execute_evaluated()
+
+    return ContextSet(
+        MixedObject(compiled_object, tree_context=tree_context)
+        for tree_context in tree_contexts
     )
-    if tree_node.type == 'classdef':
-        if not access_handle.is_class():
-            # Is an instance, not a class.
-            tree_context, = execute_evaluated(tree_context)
-
-    return MixedObject(compiled_object, tree_context=tree_context)

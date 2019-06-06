@@ -279,8 +279,24 @@ class DirectObjectAccess(object):
     def is_class(self):
         return inspect.isclass(self._obj)
 
+    def is_module(self):
+        return inspect.ismodule(self._obj)
+
     def ismethoddescriptor(self):
         return inspect.ismethoddescriptor(self._obj)
+
+    def get_qualified_names(self):
+        def try_to_get_name(obj):
+            return getattr(obj, '__qualname__', getattr(obj, '__name__', None))
+
+        if self.is_module():
+            return ()
+        name = try_to_get_name(self._obj)
+        if name is None:
+            name = try_to_get_name(type(self._obj))
+            if name is None:
+                return ()
+        return name.split('.')
 
     def dir(self):
         return list(map(force_unicode, dir(self._obj)))
