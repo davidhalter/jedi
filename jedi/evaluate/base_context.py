@@ -185,6 +185,10 @@ class Context(HelperContextMixin, BaseContext):
             return clean_scope_docstring(self.tree_node)
         return None
 
+    def py__call__(self, arguments):
+        debug.warning("no execution possible %s", self)
+        return NO_CONTEXTS
+
     def py__stop_iteration_returns(self):
         debug.warning("Not possible to return the stop iterations of %s", self)
         return NO_CONTEXTS

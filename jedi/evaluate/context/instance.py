@@ -76,17 +76,13 @@ class AbstractInstanceContext(Context):
     def get_annotated_class_object(self):
         return self.class_context  # This is the default.
 
-    @property
-    def py__call__(self):
+    def py__call__(self, arguments):
         names = self.get_function_slot_names(u'__call__')
         if not names:
             # Means the Instance is not callable.
-            raise AttributeError
+            return super(AbstractInstanceContext, self).py__call__(arguments)
 
-        def execute(arguments):
-            return ContextSet.from_sets(name.infer().execute(arguments) for name in names)
-
-        return execute
+        return ContextSet.from_sets(name.infer().execute(arguments) for name in names)
 
     def py__class__(self):
         return self.class_context

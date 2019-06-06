@@ -385,11 +385,15 @@ def test_sys_path_docstring():  # Was an issue in #1298
         ('z[0].append', ['append']),
         ('z[1].uppe', ['upper']),
         ('z[1].append', []),
+
+        ('collections.deque().app', ['append', 'appendleft']),
     ]
 )
 def test_simple_completions(code, completions):
     x = [str]
     y = {1}
     z = {1: str, 2: list}
+    import collections
+
     defs = jedi.Interpreter(code, [locals()]).completions()
     assert [d.name for d in defs] == completions

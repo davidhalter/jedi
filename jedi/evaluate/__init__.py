@@ -90,16 +90,10 @@ from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
 
 def _execute(context, arguments):
     debug.dbg('execute: %s %s', context, arguments)
-    try:
-        func = context.py__call__
-    except AttributeError:
-        debug.warning("no execution possible %s", context)
-        return NO_CONTEXTS
-    else:
-        with debug.increase_indent_cm():
-            context_set = func(arguments=arguments)
-        debug.dbg('execute result: %s in %s', context_set, context)
-        return context_set
+    with debug.increase_indent_cm():
+        context_set = context.py__call__(arguments=arguments)
+    debug.dbg('execute result: %s in %s', context_set, context)
+    return context_set
 
 
 class Evaluator(object):

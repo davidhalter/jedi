@@ -45,15 +45,19 @@ class CompiledObject(Context):
         super(CompiledObject, self).__init__(evaluator, parent_context)
         self.access_handle = access_handle
 
-    @CheckAttribute()
     def py__call__(self, arguments):
-        if self.access_handle.is_class():
-            from jedi.evaluate.context import CompiledInstance
-            return ContextSet([
-                CompiledInstance(self.evaluator, self.parent_context, self, arguments)
-            ])
+        try:
+            self.access_handle.getattr_paths(u'__call__')
+        except AttributeError:
+            return super(CompiledObject, self).py__call__(arguments)
         else:
-            return ContextSet(self._execute_function(arguments))
+            if self.access_handle.is_class():
+                from jedi.evaluate.context import CompiledInstance
+                return ContextSet([
+                    CompiledInstance(self.evaluator, self.parent_context, self, arguments)
+                ])
+            else:
+                return ContextSet(self._execute_function(arguments))
 
     @CheckAttribute()
     def py__class__(self):
