@@ -3,10 +3,12 @@
 Changelog
 ---------
 
-0.13.3 (2019-02-24)
+0.14.0 (2019-06-24)
 +++++++++++++++++++
 
-- reworked full_name
+- Stubs are working now is included
+- Typeshed is used for better type inference
+- Reworked full_name, should be more precise, now.
 
 0.13.3 (2019-02-24)
 +++++++++++++++++++
