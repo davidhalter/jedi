@@ -201,7 +201,7 @@ class Context(HelperContextMixin, BaseContext):
         return NO_CONTEXTS
 
     def get_qualified_names(self):
-        # Returns Optional[List[str]]
+        # Returns Optional[Tuple[str, ...]]
         return None
 
     def is_stub(self):

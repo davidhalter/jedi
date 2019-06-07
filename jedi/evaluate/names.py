@@ -28,7 +28,7 @@ class AbstractNameDefinition(object):
         return {self}
 
     @abstractmethod
-    def get_qualified_names(self):
+    def get_qualified_names(self, include_module_names=False):
         raise NotImplementedError
 
     def get_root_context(self):
@@ -53,11 +53,21 @@ class AbstractTreeName(AbstractNameDefinition):
         self.parent_context = parent_context
         self.tree_name = tree_name
 
-    def get_qualified_names(self):
+    def get_qualified_names(self, include_module_names=False):
+        import_node = search_ancestor(self.tree_name, 'import_name', 'import_from')
+        if import_node is not None:
+            return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
+
         parent_names = self.parent_context.get_qualified_names()
         if parent_names is None:
             return None
-        return parent_names + [self.tree_name.value]
+        parent_names += (self.tree_name.value,)
+        if include_module_names:
+            module_names = self.get_root_context().string_names
+            if module_names is None:
+                return None
+            return module_names + parent_names
+        return parent_names
 
     def goto(self):
         return self.parent_context.evaluator.goto(self.parent_context, self.tree_name)
@@ -79,8 +89,15 @@ class ContextNameMixin(object):
     def infer(self):
         return ContextSet([self._context])
 
-    def get_qualified_names(self):
-        return self._context.get_qualified_names()
+    def get_qualified_names(self, include_module_names=False):
+        qualified_names = self._context.get_qualified_names()
+        if qualified_names is None or not include_module_names:
+            return qualified_names
+
+        module_names = self.get_root_context().string_names
+        if module_names is None:
+            return None
+        return module_names + qualified_names
 
     def get_root_context(self):
         if self.parent_context is None:  # A module
@@ -185,8 +202,16 @@ class ImportName(AbstractNameDefinition):
         self._from_module_context = parent_context
         self.string_name = string_name
 
-    def get_qualified_names(self):
-        return []
+    def get_qualified_names(self, include_module_names=False):
+        if include_module_names:
+            if self._level:
+                assert self._level == 1, "Everything else is not supported for now"
+                module_names = self._from_module_context.string_names
+                if module_names is None:
+                    return module_names
+                return module_names + (self.string_name,)
+            return self.string_name
+        return ()
 
     @property
     def parent_context(self):

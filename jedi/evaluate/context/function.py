@@ -45,9 +45,9 @@ class FunctionAndClassBase(TreeContext):
             if n is None:
                 # This means that the parent class lives within a function.
                 return None
-            return n + [self.py__name__()]
+            return n + (self.py__name__(),)
         elif self.parent_context.is_module():
-            return [self.py__name__()]
+            return (self.py__name__(),)
         else:
             return None
 
@@ -164,7 +164,7 @@ class MethodContext(FunctionContext):
         names = self.class_context.get_qualified_names()
         if names is None:
             return None
-        return names + [self.py__name__()]
+        return names + (self.py__name__(),)
 
 
 class FunctionExecutionContext(TreeContext):

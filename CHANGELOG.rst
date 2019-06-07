@@ -6,6 +6,11 @@ Changelog
 0.13.3 (2019-02-24)
 +++++++++++++++++++
 
+- reworked full_name
+
+0.13.3 (2019-02-24)
++++++++++++++++++++
+
 - Fixed an issue with embedded Python, see https://github.com/davidhalter/jedi-vim/issues/870
 
 0.13.2 (2018-12-15)

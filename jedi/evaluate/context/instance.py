@@ -73,6 +73,9 @@ class AbstractInstanceContext(Context):
     def is_instance(self):
         return True
 
+    def get_qualified_names(self):
+        return self.class_context.get_qualified_names()
+
     def get_annotated_class_object(self):
         return self.class_context  # This is the default.
 

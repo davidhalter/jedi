@@ -9,7 +9,7 @@ import warnings
 from parso.python.tree import search_ancestor
 
 from jedi import settings
-from jedi.evaluate.utils import ignored, unite
+from jedi.evaluate.utils import unite
 from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
@@ -49,8 +49,7 @@ class BaseDefinition(object):
         '_io': 'io',
         '_functools': 'functools',
         '_sqlite3': 'sqlite3',
-        '__builtin__': '',
-        'builtins': '',
+        '__builtin__': 'builtins',
     }
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
@@ -162,46 +161,6 @@ class BaseDefinition(object):
                 return context.api_type
         return self._name.api_type
 
-    def _path(self):
-        """The path to a module/class/function definition."""
-        def to_reverse():
-            name = self._name
-            if name.api_type == 'module':
-                try:
-                    name = list(name.infer())[0].name
-                except IndexError:
-                    pass
-
-            if name.api_type in 'module':
-                module_contexts = name.infer()
-                if module_contexts:
-                    module_context, = module_contexts
-                    for n in reversed(module_context.py__name__().split('.')):
-                        yield n
-                else:
-                    # We don't really know anything about the path here. This
-                    # module is just an import that would lead in an
-                    # ImportError. So simply return the name.
-                    yield name.string_name
-                    return
-            else:
-                yield name.string_name
-
-            parent_context = name.parent_context
-            while parent_context is not None:
-                try:
-                    method = parent_context.py__name__
-                except AttributeError:
-                    try:
-                        yield parent_context.name.string_name
-                    except AttributeError:
-                        pass
-                else:
-                    for name in reversed(method().split('.')):
-                        yield name
-                parent_context = parent_context.parent_context
-        return reversed(list(to_reverse()))
-
     @property
     def module_name(self):
         """
@@ -301,18 +260,20 @@ class BaseDefinition(object):
         be ``<module 'posixpath' ...>```. However most users find the latter
         more practical.
         """
-        path = list(self._path())
-        # TODO add further checks, the mapping should only occur on stdlib.
-        if not path:
-            return None  # for keywords the path is empty
+        if not self._name.is_context_name:
+            return None
 
-        with ignored(KeyError):
-            path[0] = self._mapping[path[0]]
-        for key, repl in self._tuple_mapping.items():
-            if tuple(path[:len(key)]) == key:
-                path = [repl] + path[len(key):]
+        names = self._name.get_qualified_names(include_module_names=True)
+        if names is None:
+            return names
 
-        return '.'.join(path if path[0] else path[1:])
+        names = list(names)
+        try:
+            names[0] = self._mapping[names[0]]
+        except KeyError:
+            pass
+
+        return '.'.join(names)
 
     def is_stub(self):
         if not self._name.is_context_name:

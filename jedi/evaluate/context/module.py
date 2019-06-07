@@ -164,7 +164,7 @@ class ModuleMixin(SubModuleDictMixin):
         it's reachable and not `None`. With this information we can add
         qualified names on top for all context children.
         """
-        return []
+        return ()
 
 
 class ModuleContext(ModuleMixin, TreeContext):
@@ -182,7 +182,7 @@ class ModuleContext(ModuleMixin, TreeContext):
             self._path = None
         else:
             self._path = file_io.path
-        self.string_names = string_names
+        self.string_names = string_names  # Optional[Tuple[str, ...]]
         self.code_lines = code_lines
         self.is_package = is_package
 

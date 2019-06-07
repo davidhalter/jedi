@@ -39,7 +39,7 @@ class MixinTestFullName(object):
         self.check('import os; os.path.join', 'os.path.join')
 
     def test_builtin(self):
-        self.check('TypeError', 'TypeError')
+        self.check('TypeError', 'builtins.TypeError')
 
 
 class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
