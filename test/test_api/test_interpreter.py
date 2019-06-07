@@ -176,7 +176,6 @@ def test_getattr():
     _assert_interpreter_complete('getattr(Foo1, baz).app', locals(), ['append'])
 
 
-@pytest.mark.xfail(reason='For now slicing on strings is not supported for mixed objects')
 def test_slice():
     class Foo1:
         bar = []

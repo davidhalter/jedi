@@ -9,6 +9,7 @@ from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode
 from jedi.evaluate.compiled.getattr_static import getattr_static
 
+ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
 
 MethodDescriptorType = type(str.replace)
 # These are not considered classes and access is granted even though they have
@@ -226,7 +227,7 @@ class DirectObjectAccess(object):
         return self.py__iter__list()
 
     def py__simple_getitem__(self, index):
-        if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+        if type(self._obj) not in ALLOWED_GETITEM_TYPES:
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return None
 
@@ -236,7 +237,7 @@ class DirectObjectAccess(object):
         if not hasattr(self._obj, '__getitem__'):
             return None
 
-        if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+        if type(self._obj) not in ALLOWED_GETITEM_TYPES:
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return []
 

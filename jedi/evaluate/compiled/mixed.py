@@ -12,10 +12,12 @@ from jedi.evaluate import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
 from jedi.evaluate.base_context import ContextSet, ContextWrapper
+from jedi.evaluate.helpers import SimpleGetItemNotFound
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled.getattr_static import getattr_static
-from jedi.evaluate.compiled.access import compiled_objects_cache
+from jedi.evaluate.compiled.access import compiled_objects_cache, \
+    ALLOWED_GETITEM_TYPES
 from jedi.evaluate.compiled.context import create_cached_compiled_object
 from jedi.evaluate.gradual.conversion import to_stub
 
@@ -55,6 +57,12 @@ class MixedObject(ContextWrapper):
             return self.compiled_object.get_safe_value()
         else:
             return self.compiled_object.get_safe_value(default)
+
+    def py__simple_getitem__(self, index):
+        python_object = self.compiled_object.access_handle.access._obj
+        if type(python_object) in ALLOWED_GETITEM_TYPES:
+            return self.compiled_object.py__simple_getitem__(index)
+        raise SimpleGetItemNotFound
 
     def __repr__(self):
         return '<%s: %s>' % (
