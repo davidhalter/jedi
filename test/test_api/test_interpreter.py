@@ -1,6 +1,8 @@
 """
 Tests of ``jedi.api.Interpreter``.
 """
+import sys
+
 import pytest
 
 import jedi
@@ -378,6 +380,7 @@ def test_sys_path_docstring():  # Was an issue in #1298
     s.completions()[0].docstring()
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'code, completions', [
         ('x[0].uppe', ['upper']),

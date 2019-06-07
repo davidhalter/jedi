@@ -219,6 +219,7 @@ def get_int_or_none(context):
 def get_str_or_none(context):
     return _get_safe_value_or_none(context, (bytes, unicode))
 
+
 def is_number(context):
     return _get_safe_value_or_none(context, (int, float)) is not None
 
