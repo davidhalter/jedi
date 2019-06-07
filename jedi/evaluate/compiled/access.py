@@ -282,6 +282,9 @@ class DirectObjectAccess(object):
     def is_module(self):
         return inspect.ismodule(self._obj)
 
+    def is_instance(self):
+        return _is_class_instance(self._obj)
+
     def ismethoddescriptor(self):
         return inspect.ismethoddescriptor(self._obj)
 

@@ -19,6 +19,8 @@ from jedi.evaluate.utils import safe_property
 from jedi.evaluate.cache import evaluator_as_method_param_cache
 from jedi.cache import memoize_method
 
+_sentinel = object()
+
 
 class HelperContextMixin(object):
     def get_root_context(self):
@@ -184,6 +186,11 @@ class Context(HelperContextMixin, BaseContext):
         else:
             return clean_scope_docstring(self.tree_node)
         return None
+
+    def get_safe_value(self, default=_sentinel):
+        if default is _sentinel:
+            raise ValueError("There exists no safe value for context %s" % self)
+        return default
 
     def py__call__(self, arguments):
         debug.warning("no execution possible %s", self)

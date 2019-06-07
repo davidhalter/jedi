@@ -110,6 +110,9 @@ class CompiledObject(Context):
     def is_stub(self):
         return False
 
+    def is_instance(self):
+        return self.access_handle.is_instance()
+
     def py__doc__(self):
         return self.access_handle.py__doc__()
 

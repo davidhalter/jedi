@@ -14,11 +14,12 @@ from jedi.file_io import FileIO
 from jedi.evaluate.base_context import ContextSet, ContextWrapper
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.compiled.access import compiled_objects_cache
 from jedi.evaluate.compiled.context import create_cached_compiled_object
 from jedi.evaluate.gradual.conversion import to_stub
+
+_sentinel = object()
 
 
 class MixedObject(ContextWrapper):
@@ -48,6 +49,12 @@ class MixedObject(ContextWrapper):
 
     def py__call__(self, arguments):
         return (to_stub(self._wrapped_context) or self._wrapped_context).py__call__(arguments)
+
+    def get_safe_value(self, default=_sentinel):
+        if default is _sentinel:
+            return self.compiled_object.get_safe_value()
+        else:
+            return self.compiled_object.get_safe_value(default)
 
     def __repr__(self):
         return '<%s: %s>' % (
@@ -210,10 +217,15 @@ def _create(evaluator, access_handle, parent_context, *args):
     )
 
     result = _find_syntax_node_name(evaluator, access_handle)
-    # TODO use stub contexts here. If we do that we probably have to care about
-    # generics from stuff like `[1]`.
     if result is None:
-        return ContextSet({compiled_object})
+        # TODO Care about generics from stuff like `[1]` and don't return like this.
+        python_object = access_handle.access._obj
+        if type(python_object) in (dict, list, tuple):
+            return ContextSet({compiled_object})
+
+        tree_contexts = to_stub(compiled_object)
+        if not tree_contexts:
+            return ContextSet({compiled_object})
     else:
         module_node, tree_node, file_io, code_lines = result
 

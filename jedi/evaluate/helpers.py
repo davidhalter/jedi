@@ -207,10 +207,9 @@ def is_literal(context):
 
 
 def _get_safe_value_or_none(context, accept):
-    if context.is_compiled():
-        value = context.get_safe_value(default=None)
-        if isinstance(value, accept):
-            return value
+    value = context.get_safe_value(default=None)
+    if isinstance(value, accept):
+        return value
 
 
 def get_int_or_none(context):

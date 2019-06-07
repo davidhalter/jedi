@@ -157,7 +157,7 @@ class AbstractInstanceContext(Context):
 
         def iterate():
             for generator in self.execute_function_slots(iter_slot_names):
-                if generator.is_instance():
+                if generator.is_instance() and not generator.is_compiled():
                     # `__next__` logic.
                     if self.evaluator.environment.version_info.major == 2:
                         name = u'next'

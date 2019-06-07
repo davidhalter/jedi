@@ -189,13 +189,13 @@ class NameFinder(object):
         contexts = ContextSet.from_sets(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, contexts)
-        if not names and self._context.is_instance():
+        if not names and self._context.is_instance() and not self._context.is_compiled():
             # handling __getattr__ / __getattribute__
             return self._check_getattr(self._context)
 
         # Add isinstance and other if/assert knowledge.
         if not contexts and isinstance(self._name, tree.Name) and \
-                not self._name_context.is_instance():
+                not self._name_context.is_instance() and not self._context.is_compiled():
             flow_scope = self._name
             base_nodes = [self._name_context.tree_node]
 

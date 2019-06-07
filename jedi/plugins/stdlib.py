@@ -212,11 +212,12 @@ def builtins_getattr(objects, names, defaults=None):
     # follow the first param
     for obj in objects:
         for name in names:
-            if is_string(name):
-                return obj.py__getattribute__(force_unicode(name.get_safe_value()))
-            else:
+            string = get_str_or_none(name)
+            if string is None:
                 debug.warning('getattr called without str')
                 continue
+            else:
+                return obj.py__getattribute__(force_unicode(string))
     return NO_CONTEXTS
 
 

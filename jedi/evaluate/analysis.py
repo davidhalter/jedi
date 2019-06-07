@@ -118,7 +118,7 @@ def add_attribute_error(name_context, lookup_context, name):
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
     typ = Error
-    if lookup_context.is_instance():
+    if lookup_context.is_instance() and not lookup_context.is_compiled():
         slot_names = lookup_context.get_function_slot_names(u'__getattr__') + \
             lookup_context.get_function_slot_names(u'__getattribute__')
         for n in slot_names:
