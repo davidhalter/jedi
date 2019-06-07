@@ -210,7 +210,7 @@ class ImportName(AbstractNameDefinition):
                 if module_names is None:
                     return module_names
                 return module_names + (self.string_name,)
-            return self.string_name
+            return (self.string_name,)
         return ()
 
     @property

@@ -169,4 +169,4 @@ def test_qualified_names(same_process_evaluator, obj, expected_names):
         same_process_evaluator,
         DirectObjectAccess(same_process_evaluator, obj)
     )
-    assert o.get_qualified_names() == expected_names
+    assert o.get_qualified_names() == tuple(expected_names)

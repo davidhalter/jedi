@@ -42,7 +42,7 @@ def test_keyword_attributes(Script):
     assert def_.docstring()
     assert def_.description == 'keyword def'
     assert def_.get_line_code() == ''
-    assert def_.full_name == 'def'
+    assert def_.full_name is None
     assert def_.line is def_.column is None
     assert def_.in_builtin_module() is True
     assert def_.module_name in ('builtins', '__builtin__')
