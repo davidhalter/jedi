@@ -76,7 +76,7 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
 
     @property
     def name(self):
-        return compiled.CompiledContextName(self, 'generator')
+        return compiled.CompiledContextName(self, 'Generator')
 
 
 class Generator(GeneratorBase):

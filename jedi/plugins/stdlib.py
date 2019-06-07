@@ -575,5 +575,11 @@ _implemented = {
         # Not sure if this is necessary, but it's used a lot in typeshed and
         # it's for now easier to just pass the function.
         'abstractmethod': _return_first_param,
-    }
+    },
+    'typing': {
+        # The _alias function just leads to some annoying type inference.
+        # Therefore, just make it return nothing, which leads to the stubs
+        # being used instead. This only matters for 3.7+.
+        '_alias': lambda obj, arguments: NO_CONTEXTS,
+    },
 }

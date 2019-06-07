@@ -1,3 +1,4 @@
+from jedi import debug
 from jedi.evaluate.base_context import ContextSet, \
     NO_CONTEXTS
 from jedi.evaluate.utils import to_list
@@ -49,11 +50,13 @@ def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
 
 
 def try_stubs_to_actual_context_set(stub_contexts, prefer_stub_to_compiled=False):
-    return ContextSet.from_sets(
+    contexts = ContextSet.from_sets(
         stub_to_actual_context_set(stub_context, ignore_compiled=prefer_stub_to_compiled)
         or ContextSet([stub_context])
         for stub_context in stub_contexts
     )
+    debug.dbg('Stubs to actual: %s to %s', stub_contexts, contexts)
+    return contexts
 
 
 @to_list

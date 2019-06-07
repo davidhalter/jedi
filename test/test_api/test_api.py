@@ -128,7 +128,7 @@ def test_goto_definitions_on_non_name(Script):
 
 def test_goto_definitions_on_generator(Script):
     def_, = Script('def x(): yield 1\ny=x()\ny').goto_definitions()
-    assert def_.name == 'generator'
+    assert def_.name == 'Generator'
 
 
 def test_goto_definition_not_multiple(Script):
