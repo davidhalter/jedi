@@ -17,7 +17,7 @@ import parso
 
 _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
-_SUPPORTED_PYTHONS = ['3.7', '3.6', '3.5', '3.4', '3.3', '2.7']
+_SUPPORTED_PYTHONS = ['3.8', '3.7', '3.6', '3.5', '3.4', '2.7']
 _SAFE_PATHS = ['/usr/bin', '/usr/local/bin']
 _CURRENT_VERSION = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
 
