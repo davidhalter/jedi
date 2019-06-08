@@ -28,7 +28,7 @@ matrix:
     #- python: pypy
     - python: 3.8-dev
       env:
-        - JEDI_TEST_ENVIRONMENT=36
+        - JEDI_TEST_ENVIRONMENT=38
 install:
     - pip install --quiet tox-travis
 script:
