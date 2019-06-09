@@ -410,12 +410,12 @@ class Evaluator(object):
                 if parser_utils.is_scope(node):
                     return node
                 elif node.type in ('argument', 'testlist_comp'):
-                    if node.children[1].type == 'comp_for':
+                    if node.children[1].type in ('comp_for', 'sync_comp_for'):
                         return node.children[1]
                 elif node.type == 'dictorsetmaker':
                     for n in node.children[1:4]:
                         # In dictionaries it can be pretty much anything.
-                        if n.type == 'comp_for':
+                        if n.type in ('comp_for', 'sync_comp_for'):
                             return n
 
         def from_scope_node(scope_node, is_nested=True, node_is_object=False):
@@ -441,7 +441,7 @@ class Evaluator(object):
                 return func
             elif scope_node.type == 'classdef':
                 return ClassContext(self, parent_context, scope_node)
-            elif scope_node.type == 'comp_for':
+            elif scope_node.type in ('comp_for', 'sync_comp_for'):
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
                 return CompForContext.from_comp_for(parent_context, scope_node)

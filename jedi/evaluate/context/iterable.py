@@ -38,7 +38,7 @@ from jedi.evaluate.filters import ParserTreeFilter, LazyAttributeOverwrite, \
     publish_method
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, \
     TreeContext, ContextualizedNode, iterate_contexts, HelperContextMixin
-from jedi.parser_utils import get_comp_fors
+from jedi.parser_utils import get_sync_comp_fors
 
 
 class IterableMixin(object):
@@ -107,12 +107,17 @@ class CompForContext(TreeContext):
 def comprehension_from_atom(evaluator, context, atom):
     bracket = atom.children[0]
     test_list_comp = atom.children[1]
+
     if bracket == '{':
         if atom.children[1].children[1] == ':':
+            sync_comp_for = test_list_comp.children[3]
+            if sync_comp_for.type == 'comp_for':
+                sync_comp_for = sync_comp_for.children[1]
+
             return DictComprehension(
                 evaluator,
                 context,
-                comp_for_node=test_list_comp.children[3],
+                sync_comp_for_node=sync_comp_for,
                 key_node=test_list_comp.children[0],
                 value_node=test_list_comp.children[2],
             )
@@ -122,10 +127,15 @@ def comprehension_from_atom(evaluator, context, atom):
         cls = GeneratorComprehension
     elif bracket == '[':
         cls = ListComprehension
+
+    sync_comp_for = test_list_comp.children[1]
+    if sync_comp_for.type == 'comp_for':
+        sync_comp_for = sync_comp_for.children[1]
+
     return cls(
         evaluator,
         defining_context=context,
-        comp_for_node=test_list_comp.children[1],
+        sync_comp_for_node=sync_comp_for,
         entry_node=test_list_comp.children[0],
     )
 
@@ -138,16 +148,16 @@ class ComprehensionMixin(object):
     def _nested(self, comp_fors, parent_context=None):
         comp_for = comp_fors[0]
 
-        is_async = 'async' == comp_for.children[comp_for.children.index('for') - 1]
+        is_async = comp_for.parent.type == 'comp_for'
 
-        input_node = comp_for.children[comp_for.children.index('in') + 1]
+        input_node = comp_for.children[3]
         parent_context = parent_context or self._defining_context
         input_types = parent_context.eval_node(input_node)
         # TODO: simulate await if self.is_async
 
         cn = ContextualizedNode(parent_context, input_node)
         iterated = input_types.iterate(cn, is_async=is_async)
-        exprlist = comp_for.children[comp_for.children.index('for') + 1]
+        exprlist = comp_for.children[1]
         for i, lazy_context in enumerate(iterated):
             types = lazy_context.infer()
             dct = unpack_tuple_to_dict(parent_context, types, exprlist)
@@ -169,7 +179,7 @@ class ComprehensionMixin(object):
     @evaluator_method_cache(default=[])
     @to_list
     def _iterate(self):
-        comp_fors = tuple(get_comp_fors(self._comp_for_node))
+        comp_fors = tuple(get_sync_comp_fors(self._sync_comp_for_node))
         for result in self._nested(comp_fors):
             yield result
 
@@ -178,7 +188,7 @@ class ComprehensionMixin(object):
             yield LazyKnownContexts(set_)
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self._comp_for_node)
+        return "<%s of %s>" % (type(self).__name__, self._sync_comp_for_node)
 
 
 class _DictMixin(object):
@@ -219,10 +229,11 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
 
 
 class _BaseComprehension(ComprehensionMixin):
-    def __init__(self, evaluator, defining_context, comp_for_node, entry_node):
+    def __init__(self, evaluator, defining_context, sync_comp_for_node, entry_node):
+        assert sync_comp_for_node.type == 'sync_comp_for'
         super(_BaseComprehension, self).__init__(evaluator)
         self._defining_context = defining_context
-        self._comp_for_node = comp_for_node
+        self._sync_comp_for_node = sync_comp_for_node
         self._entry_node = entry_node
 
 
@@ -250,10 +261,11 @@ class GeneratorComprehension(_BaseComprehension, GeneratorBase):
 class DictComprehension(ComprehensionMixin, Sequence):
     array_type = u'dict'
 
-    def __init__(self, evaluator, defining_context, comp_for_node, key_node, value_node):
+    def __init__(self, evaluator, defining_context, sync_comp_for_node, key_node, value_node):
+        assert sync_comp_for_node.type == 'sync_comp_for'
         super(DictComprehension, self).__init__(evaluator)
         self._defining_context = defining_context
-        self._comp_for_node = comp_for_node
+        self._sync_comp_for_node = sync_comp_for_node
         self._entry_node = key_node
         self._value_node = value_node
 

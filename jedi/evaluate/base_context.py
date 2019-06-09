@@ -8,7 +8,7 @@ just one.
 """
 from functools import reduce
 from operator import add
-from parso.python.tree import ExprStmt, CompFor
+from parso.python.tree import ExprStmt, SyncCompFor
 
 from jedi import debug
 from jedi._compatibility import zip_longest, unicode
@@ -330,7 +330,7 @@ class ContextualizedName(ContextualizedNode):
                 is_star_expr = False
             elif node.type == 'star_expr':
                 is_star_expr = True
-            elif isinstance(node, (ExprStmt, CompFor)):
+            elif isinstance(node, (ExprStmt, SyncCompFor)):
                 break
 
             compare = node

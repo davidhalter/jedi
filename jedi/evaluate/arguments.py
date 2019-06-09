@@ -233,10 +233,13 @@ class TreeArguments(AbstractArguments):
                         named_args.append((c[0].value, LazyTreeContext(self.context, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
+                        sync_comp_for = el.children[1]
+                        if sync_comp_for.type == 'comp_for':
+                            sync_comp_for = sync_comp_for.children[1]
                         comp = iterable.GeneratorComprehension(
                             self._evaluator,
                             defining_context=self.context,
-                            comp_for_node=el.children[1],
+                            sync_comp_for_node=sync_comp_for,
                             entry_node=el.children[0],
                         )
                         yield None, LazyKnownContext(comp)

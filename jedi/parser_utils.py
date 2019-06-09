@@ -54,11 +54,13 @@ def get_executable_nodes(node, last_added=False):
     return result
 
 
-def get_comp_fors(comp_for):
+def get_sync_comp_fors(comp_for):
     yield comp_for
     last = comp_for.children[-1]
     while True:
         if last.type == 'comp_for':
+            yield last.children[1]  # Ignore the async.
+        elif last.type == 'sync_comp_for':
             yield last
         elif not last.type == 'comp_if':
             break
@@ -216,7 +218,12 @@ def get_following_comment_same_line(node):
 
 
 def is_scope(node):
-    return node.type in ('file_input', 'classdef', 'funcdef', 'lambdef', 'comp_for')
+    t = node.type
+    if t == 'comp_for':
+        # Starting with Python 3.8, async is outside of the statement.
+        return node.children[1].type != 'sync_comp_for'
+
+    return t in ('file_input', 'classdef', 'funcdef', 'lambdef', 'sync_comp_for')
 
 
 def get_parent_scope(node, include_flows=False):

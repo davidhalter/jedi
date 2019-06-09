@@ -134,11 +134,12 @@ class NameFinder(object):
         ``filters``), until a name fits.
         """
         names = []
+        # TODO why is this paragraph needed?
         if self._context.predefined_names and isinstance(self._name, tree.Name):
             node = self._name
             while node is not None and not is_scope(node):
                 node = node.parent
-                if node.type in ("if_stmt", "for_stmt", "comp_for"):
+                if node.type in ("if_stmt", "for_stmt", "comp_for", 'sync_comp_for'):
                     try:
                         name_dict = self._context.predefined_names[node]
                         types = name_dict[self._string_name]
@@ -199,7 +200,7 @@ class NameFinder(object):
             flow_scope = self._name
             base_nodes = [self._name_context.tree_node]
 
-            if any(b.type == 'comp_for' for b in base_nodes):
+            if any(b.type in ('comp_for', 'sync_comp_for') for b in base_nodes):
                 return contexts
             while True:
                 flow_scope = get_parent_scope(flow_scope, include_flows=True)

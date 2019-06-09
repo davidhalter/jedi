@@ -247,7 +247,7 @@ def eval_atom(context, atom):
                 except IndexError:
                     pass
 
-            if comp_for.type == 'comp_for':
+            if comp_for.type in ('comp_for', 'sync_comp_for'):
                 return ContextSet([iterable.comprehension_from_atom(
                     context.evaluator, context, atom
                 )])
@@ -588,7 +588,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         if types:
             return types
 
-    if typ in ('for_stmt', 'comp_for'):
+    if typ in ('for_stmt', 'comp_for', 'sync_comp_for'):
         try:
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
