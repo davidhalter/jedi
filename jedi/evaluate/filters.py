@@ -207,6 +207,10 @@ class DictFilter(AbstractFilter):
     def _convert(self, name, value):
         return value
 
+    def __repr__(self):
+        keys = ', '.join(self._dct.keys())
+        return '<%s: for {%s}>' % (self.__class__.__name__, keys)
+
 
 class MergedFilter(object):
     def __init__(self, *filters):
