@@ -135,7 +135,7 @@ def convert_names(names, only_stubs=False, prefer_stubs=False):
             return _try_stub_to_python_names(names, prefer_stub_to_compiled=True)
 
 
-def convert_contexts(contexts, only_stubs=False, prefer_stubs=False):
+def convert_contexts(contexts, only_stubs=False, prefer_stubs=False, ignore_compiled=True):
     assert not (only_stubs and prefer_stubs)
     with debug.increase_indent_cm('convert contexts'):
         if only_stubs or prefer_stubs:
@@ -146,7 +146,7 @@ def convert_contexts(contexts, only_stubs=False, prefer_stubs=False):
             )
         else:
             return ContextSet.from_sets(
-                stub_to_python_context_set(stub_context, ignore_compiled=True)
+                stub_to_python_context_set(stub_context, ignore_compiled=ignore_compiled)
                 or ContextSet({stub_context})
                 for stub_context in contexts
             )

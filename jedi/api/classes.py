@@ -17,8 +17,8 @@ from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import FunctionExecutionContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.conversion import convert_names, convert_contexts, \
-    stub_to_python_context_set
+from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
+from jedi.evaluate.base_context import ContextSet
 from jedi.api.keywords import KeywordName
 
 
@@ -705,7 +705,8 @@ class _Help(object):
                 if not raw:
                     signature_text = _format_signatures(context)
                 if not doc and context.is_stub():
-                    for c in stub_to_python_context_set(context):
+                    for c in convert_contexts(ContextSet({context}), ignore_compiled=False):
+                        print(c)
                         doc = c.py__doc__()
                         if doc:
                             break
