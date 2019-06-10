@@ -17,8 +17,8 @@ from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import FunctionExecutionContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
-    stub_to_actual_context_set, try_stubs_to_actual_context_set, actual_to_stub_names
+from jedi.evaluate.gradual.conversion import convert_names, \
+    stub_to_actual_context_set
 from jedi.api.keywords import KeywordName
 
 
@@ -291,12 +291,11 @@ class BaseDefinition(object):
         if not self._name.is_context_name:
             return []
 
-        names = self._name.goto()
-        if only_stubs or prefer_stubs:
-            names = actual_to_stub_names(names, fallback_to_actual=prefer_stubs)
-        else:
-            names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
-
+        names = convert_names(
+            self._name.goto(),
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
+        )
         return [self if n == self._name else Definition(self._evaluator, n)
                 for n in names]
 
@@ -310,13 +309,13 @@ class BaseDefinition(object):
         if not self._name.is_context_name:
             return []
 
-        # Param names are special because they are not handled by
-        # the evaluator method.
-        context_set = try_stubs_to_actual_context_set(
-            self._name.infer(),
-            prefer_stub_to_compiled=True,
+        names = convert_names(
+            [c.name for c in self._name.infer()],
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
         )
-        return [Definition(self._evaluator, d.name) for d in context_set]
+        return [self if n == self._name else Definition(self._evaluator, n)
+                for n in names]
 
     @property
     @memoize_method

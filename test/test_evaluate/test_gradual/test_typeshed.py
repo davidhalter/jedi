@@ -3,9 +3,11 @@ import os
 import pytest
 from parso.utils import PythonVersionInfo
 
+from jedi.api.project import Project
 from jedi.evaluate.gradual import typeshed, stub_context
 from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext, \
     MethodContext, ClassContext
+from test.helpers import root_dir
 
 TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
 
@@ -234,3 +236,53 @@ def test_goto_stubs_on_itself(Script, code, type_):
 
     _assert_is_same(same_definition, definition)
     _assert_is_same(same_definition, same_definition2)
+
+
+@pytest.mark.parametrize('way', ['direct', 'indirect'])
+@pytest.mark.parametrize(
+    'kwargs', [
+        dict(only_stubs=False, prefer_stubs=False),
+        dict(only_stubs=False, prefer_stubs=True),
+        dict(only_stubs=True, prefer_stubs=False),
+    ]
+)
+@pytest.mark.parametrize(
+    ('code', 'full_name', 'has_stub', 'has_python'), [
+        ['import os; os.walk', 'os.walk', True, True],
+        ['from collections import Counter', 'collections.Counter', True, True],
+        ['from collections', 'collections', True, True],
+        ['from collections import Counter; Counter', 'collections.Counter', True, True],
+        ['from collections import Counter; Counter()', 'collections.Counter', True, True],
+        ['from collections import Counter; Counter.most_common',
+         'collections.Counter.most_common', True, True],
+
+        ['from keyword import kwlist; kwlist', 'typing.Sequence', True, True],
+        #['from keyword import kwlist', 'typing.Sequence', True, True],
+
+        ['import with_stub', 'with_stub', True, True],
+        ['import with_stub', 'with_stub', True, True],
+        ['import with_stub_folder.python_only', 'with_stub_folder.python_only', False, True],
+        ['import stub_only', 'stub_only', True, False],
+    ])
+def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way, kwargs):
+    project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
+    s = Script(code, _project=project)
+    if way == 'direct':
+        defs = s.goto_definitions(**kwargs)
+    else:
+        goto_defs = s.goto_assignments()
+        defs = [d for goto_def in goto_defs for d in goto_def.infer(**kwargs)]
+
+    only_stubs = kwargs['only_stubs']
+    prefer_stubs = kwargs['prefer_stubs']
+    if not has_stub and only_stubs:
+        assert not defs
+    else:
+        assert defs
+
+    for d in defs:
+        if prefer_stubs and has_stub:
+            assert d.is_stub()
+        if only_stubs:
+            assert d.is_stub()
+        assert d.full_name == full_name

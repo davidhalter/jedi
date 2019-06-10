@@ -137,14 +137,11 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
     )
 
 
-def evaluate_goto_definition(evaluator, context, leaf, prefer_stubs=False):
+def evaluate_goto_definition(evaluator, context, leaf):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
-        if prefer_stubs:
-            return evaluator.goto_stub_definitions(context, leaf)
-        else:
-            return evaluator.goto_definitions(context, leaf)
+        return evaluator.goto_definitions(context, leaf)
 
     parent = leaf.parent
     definitions = NO_CONTEXTS
@@ -156,13 +153,7 @@ def evaluate_goto_definition(evaluator, context, leaf, prefer_stubs=False):
         return eval_atom(context, leaf)
     elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
         return get_string_context_set(evaluator)
-    if prefer_stubs:
-        return definitions
-    from jedi.evaluate.gradual.conversion import try_stubs_to_actual_context_set
-    return try_stubs_to_actual_context_set(
-        definitions,
-        prefer_stub_to_compiled=True,
-    )
+    return definitions
 
 
 CallSignatureDetails = namedtuple(
@@ -268,5 +259,4 @@ def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos
         evaluator,
         context,
         bracket_leaf.get_previous_leaf(),
-        prefer_stubs=True,
     )

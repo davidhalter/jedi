@@ -84,8 +84,6 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
-    actual_to_stub_names, try_stubs_to_actual_context_set
 
 
 def _execute(context, arguments):
@@ -257,13 +255,6 @@ class Evaluator(object):
         return eval_node(context, element)
 
     def goto_definitions(self, context, name):
-        # We don't want stubs here we want the actual contexts, if possible.
-        return try_stubs_to_actual_context_set(
-            self.goto_stub_definitions(context, name),
-            prefer_stub_to_compiled=True
-        )
-
-    def goto_stub_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type

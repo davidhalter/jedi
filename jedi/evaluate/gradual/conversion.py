@@ -136,6 +136,14 @@ def actual_to_stub_names(names, fallback_to_actual=False):
             yield name
 
 
+def convert_names(names, only_stubs, prefer_stubs):
+    with debug.increase_indent_cm('convert names'):
+        if only_stubs or prefer_stubs:
+            return actual_to_stub_names(names, fallback_to_actual=prefer_stubs)
+        else:
+            return try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
+
+
 def to_stub(context):
     if context.is_stub():
         return ContextSet([context])

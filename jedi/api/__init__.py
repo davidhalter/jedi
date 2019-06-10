@@ -39,7 +39,7 @@ from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-from jedi.evaluate.gradual.conversion import try_stub_to_actual_names
+from jedi.evaluate.gradual.conversion import convert_names
 from jedi.evaluate.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -235,7 +235,7 @@ class Script(object):
         debug.speed('completions end')
         return completions
 
-    def goto_definitions(self):
+    def goto_definitions(self, **kwargs):
         """
         Return the definitions of a the path under the cursor.  goto function!
         This follows complicated paths and returns the end, not the first
@@ -245,8 +245,14 @@ class Script(object):
         because Python itself is a dynamic language, which means depending on
         an option you can have two different versions of a function.
 
+        :param only_stubs: Only return stubs for this goto call.
+        :param prefer_stubs: Prefer stubs to Python obects for this goto call.
         :rtype: list of :class:`classes.Definition`
         """
+        with debug.increase_indent_cm('goto_definitions'):
+            return self._goto_definitions(**kwargs)
+
+    def _goto_definitions(self, only_stubs=False, prefer_stubs=False):
         leaf = self._module_node.get_name_of_position(self._pos)
         if leaf is None:
             leaf = self._module_node.get_leaf_for_position(self._pos)
@@ -256,25 +262,40 @@ class Script(object):
         context = self._evaluator.create_context(self._get_module(), leaf)
         definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
 
-        names = [s.name for s in definitions]
+        names = convert_names(
+            [s.name for s in definitions],
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
+        )
+
         defs = [classes.Definition(self._evaluator, name) for name in names]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
         return helpers.sorted_definitions(set(defs))
 
-    def goto_assignments(self, follow_imports=False, follow_builtin_imports=False):
+    def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
+        .. note:: It is deprecated to use follow_imports and follow_builtin_imports as
+            positional arguments. Will be a keyword argument in 0.16.0.
+
         :param follow_imports: The goto call will follow imports.
         :param follow_builtin_imports: If follow_imports is True will decide if
             it follow builtin imports.
+        :param only_stubs: Only return stubs for this goto call.
+        :param prefer_stubs: Prefer stubs to Python obects for this goto call.
         :rtype: list of :class:`classes.Definition`
         """
+        with debug.increase_indent_cm('goto_assignments'):
+            return self._goto_assignments(follow_imports, follow_builtin_imports, **kwargs)
+
+    def _goto_assignments(self, follow_imports, follow_builtin_imports,
+                          only_stubs=False, prefer_stubs=False):
         def filter_follow_imports(names, check):
             for name in names:
                 if check(name):
@@ -297,13 +318,17 @@ class Script(object):
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
-            return self.goto_definitions()
+            return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
         context = self._evaluator.create_context(self._get_module(), tree_name)
         names = list(self._evaluator.goto(context, tree_name))
 
         if follow_imports:
             names = filter_follow_imports(names, lambda name: name.is_import())
-        names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
+        names = convert_names(
+            names,
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
+        )
 
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
