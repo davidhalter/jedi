@@ -1,7 +1,7 @@
 import pytest
 from operator import ge, lt
 
-from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
+from jedi.evaluate.gradual.conversion import stub_to_python_context_set
 
 
 @pytest.mark.parametrize(
@@ -28,7 +28,7 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
 
     d, = Script(code).goto_definitions()
     context, = d._name.infer()
-    compiled, = stub_to_actual_context_set(context)
+    compiled, = stub_to_python_context_set(context)
     signature, = compiled.get_signatures()
     assert signature.to_string() == sig
     assert [n.string_name for n in signature.get_param_names()] == names

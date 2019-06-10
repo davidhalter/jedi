@@ -12,7 +12,7 @@ from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.api.project import Project
-from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
+from jedi.evaluate.gradual.conversion import stub_to_python_context_set
 from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
 
 THIS_DIR = os.path.dirname(__file__)
@@ -301,7 +301,7 @@ def test_compiled_import_none(monkeypatch, Script):
     def_, = script.goto_definitions()
     assert def_.type == 'module'
     context, = def_._name.infer()
-    assert not stub_to_actual_context_set(context)
+    assert not stub_to_python_context_set(context)
 
 
 @pytest.mark.parametrize(
