@@ -84,7 +84,7 @@ def _cache_stub_file_map(version_info):
 def import_module_decorator(func):
     def wrapper(evaluator, import_names, parent_module_context, sys_path, prefer_stubs):
         try:
-            actual_context_set = evaluator.module_cache.get(import_names)
+            python_context_set = evaluator.module_cache.get(import_names)
         except KeyError:
             if parent_module_context is not None and parent_module_context.is_stub():
                 parent_module_contexts = parent_module_context.non_stub_context_set
@@ -95,25 +95,25 @@ def import_module_decorator(func):
                 # ``os.path``, because it's a very important one in Python
                 # that is being achieved by messing with ``sys.modules`` in
                 # ``os``.
-                actual_parent = next(iter(parent_module_contexts))
-                if actual_parent is None:
-                    actual_parent, = evaluator.import_module(('os',), prefer_stubs=False)
-                actual_context_set = actual_parent.py__getattribute__('path')
+                python_parent = next(iter(parent_module_contexts))
+                if python_parent is None:
+                    python_parent, = evaluator.import_module(('os',), prefer_stubs=False)
+                python_context_set = python_parent.py__getattribute__('path')
             else:
-                actual_context_set = ContextSet.from_sets(
+                python_context_set = ContextSet.from_sets(
                     func(evaluator, import_names, p, sys_path,)
                     for p in parent_module_contexts
                 )
-            evaluator.module_cache.add(import_names, actual_context_set)
+            evaluator.module_cache.add(import_names, python_context_set)
 
         if not prefer_stubs:
-            return actual_context_set
+            return python_context_set
 
-        stub = _try_to_load_stub_cached(evaluator, import_names, actual_context_set,
+        stub = _try_to_load_stub_cached(evaluator, import_names, python_context_set,
                                         parent_module_context, sys_path)
         if stub is not None:
             return ContextSet([stub])
-        return actual_context_set
+        return python_context_set
 
     return wrapper
 
@@ -132,7 +132,7 @@ def _try_to_load_stub_cached(evaluator, import_names, *args, **kwargs):
     return result
 
 
-def _try_to_load_stub(evaluator, import_names, actual_context_set,
+def _try_to_load_stub(evaluator, import_names, python_context_set,
                       parent_module_context, sys_path):
     """
     Trying to load a stub for a set of import_names.
@@ -155,7 +155,7 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
             m = _try_to_load_stub_from_file(
                 evaluator,
-                actual_context_set,
+                python_context_set,
                 file_io=FileIO(init),
                 import_names=import_names,
             )
@@ -163,7 +163,7 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
                 return m
 
     # 2. Try to load pyi files next to py files.
-    for c in actual_context_set:
+    for c in python_context_set:
         try:
             method = c.py__file__
         except AttributeError:
@@ -179,7 +179,7 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
             for file_path in file_paths:
                 m = _try_to_load_stub_from_file(
                     evaluator,
-                    actual_context_set,
+                    python_context_set,
                     # The file path should end with .pyi
                     file_io=FileIO(file_path),
                     import_names=import_names,
@@ -188,12 +188,12 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
                     return m
 
     # 3. Try to load typeshed
-    m = _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names)
+    m = _load_from_typeshed(evaluator, python_context_set, parent_module_context, import_names)
     if m is not None:
         return m
 
-    # 4. Try to load pyi file somewhere if actual_context_set was not defined.
-    if not actual_context_set:
+    # 4. Try to load pyi file somewhere if python_context_set was not defined.
+    if not python_context_set:
         if parent_module_context is not None:
             try:
                 method = parent_module_context.py__path__
@@ -210,7 +210,7 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
         for p in check_path:
             m = _try_to_load_stub_from_file(
                 evaluator,
-                actual_context_set,
+                python_context_set,
                 file_io=FileIO(os.path.join(p, *names_for_path) + '.pyi'),
                 import_names=import_names,
             )
@@ -222,7 +222,7 @@ def _try_to_load_stub(evaluator, import_names, actual_context_set,
     return None
 
 
-def _load_from_typeshed(evaluator, actual_context_set, parent_module_context, import_names):
+def _load_from_typeshed(evaluator, python_context_set, parent_module_context, import_names):
     import_name = import_names[-1]
     map_ = None
     if len(import_names) == 1:
@@ -240,13 +240,13 @@ def _load_from_typeshed(evaluator, actual_context_set, parent_module_context, im
         if path is not None:
             return _try_to_load_stub_from_file(
                 evaluator,
-                actual_context_set,
+                python_context_set,
                 file_io=FileIO(path),
                 import_names=import_names,
             )
 
 
-def _try_to_load_stub_from_file(evaluator, actual_context_set, file_io, import_names):
+def _try_to_load_stub_from_file(evaluator, python_context_set, file_io, import_names):
     try:
         stub_module_node = evaluator.parse(
             file_io=file_io,
@@ -258,19 +258,19 @@ def _try_to_load_stub_from_file(evaluator, actual_context_set, file_io, import_n
         return None
     else:
         return create_stub_module(
-            evaluator, actual_context_set, stub_module_node, file_io,
+            evaluator, python_context_set, stub_module_node, file_io,
             import_names
         )
 
 
-def create_stub_module(evaluator, actual_context_set, stub_module_node, file_io, import_names):
+def create_stub_module(evaluator, python_context_set, stub_module_node, file_io, import_names):
     if import_names == ('typing',):
         module_cls = TypingModuleWrapper
     else:
         module_cls = StubModuleContext
     file_name = os.path.basename(file_io.path)
     stub_module_context = module_cls(
-        actual_context_set, evaluator, stub_module_node,
+        python_context_set, evaluator, stub_module_node,
         file_io=file_io,
         string_names=import_names,
         # The code was loaded with latest_grammar, so use

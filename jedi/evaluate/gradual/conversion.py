@@ -60,7 +60,7 @@ def try_stubs_to_actual_context_set(stub_contexts, prefer_stub_to_compiled=False
 
 
 @to_list
-def try_stub_to_actual_names(names, prefer_stub_to_compiled=False):
+def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
     for name in names:
         module = name.get_root_context()
         if not module.is_stub():
@@ -98,14 +98,14 @@ def _load_stub_module(module):
     return _try_to_load_stub_cached(
         module.evaluator,
         import_names=module.string_names,
-        actual_context_set=ContextSet([module]),
+        python_context_set=ContextSet([module]),
         parent_module_context=None,
         sys_path=module.evaluator.get_sys_path(),
     )
 
 
 @to_list
-def actual_to_stub_names(names, fallback_to_actual=False):
+def _python_to_stub_names(names, fallback_to_python=False):
     for name in names:
         module = name.get_root_context()
         if module.is_stub():
@@ -130,7 +130,7 @@ def actual_to_stub_names(names, fallback_to_actual=False):
             for c in stubs:
                 yield c.name
             continue
-        if fallback_to_actual:
+        if fallback_to_python:
             # This is the part where if we haven't found anything, just return
             # the stub name.
             yield name
@@ -139,9 +139,9 @@ def actual_to_stub_names(names, fallback_to_actual=False):
 def convert_names(names, only_stubs, prefer_stubs):
     with debug.increase_indent_cm('convert names'):
         if only_stubs or prefer_stubs:
-            return actual_to_stub_names(names, fallback_to_actual=prefer_stubs)
+            return _python_to_stub_names(names, fallback_to_python=prefer_stubs)
         else:
-            return try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
+            return _try_stub_to_python_names(names, prefer_stub_to_compiled=True)
 
 
 def to_stub(context):
