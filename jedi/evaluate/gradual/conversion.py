@@ -104,8 +104,36 @@ def _load_stub_module(module):
     )
 
 
-def name_to_stub(name):
-    return ContextSet.from_sets(to_stub(c) for c in name.infer())
+@to_list
+def actual_to_stub_names(names, fallback_to_actual=False):
+    for name in names:
+        module = name.get_root_context()
+        if module.is_stub():
+            yield name
+            continue
+
+        name_list = name.get_qualified_names()
+        stubs = NO_CONTEXTS
+        if name_list is not None:
+            stub_module = _load_stub_module(module)
+            if stub_module is not None:
+                stubs = ContextSet({stub_module})
+                for name in name_list[:-1]:
+                    stubs = stubs.py__getattribute__(name)
+        if stubs and name_list:
+            new_names = stubs.py__getattribute__(name_list[-1], is_goto=True)
+            for new_name in new_names:
+                yield new_name
+            if new_names:
+                continue
+        elif stubs:
+            for c in stubs:
+                yield c.name
+            continue
+        if fallback_to_actual:
+            # This is the part where if we haven't found anything, just return
+            # the stub name.
+            yield name
 
 
 def to_stub(context):

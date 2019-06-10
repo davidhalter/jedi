@@ -27,8 +27,18 @@ class AbstractNameDefinition(object):
         # name will always result on itself.
         return {self}
 
-    @abstractmethod
     def get_qualified_names(self, include_module_names=False):
+        qualified_names = self._get_qualified_names()
+        if qualified_names is None or not include_module_names:
+            return qualified_names
+
+        module_names = self.get_root_context().string_names
+        if module_names is None:
+            return None
+        return module_names + qualified_names
+
+    @abstractmethod
+    def _get_qualified_names(self):
         raise NotImplementedError
 
     def get_root_context(self):
@@ -56,21 +66,20 @@ class AbstractTreeName(AbstractNameDefinition):
     def get_qualified_names(self, include_module_names=False):
         import_node = search_ancestor(self.tree_name, 'import_name', 'import_from')
         if import_node is not None:
-            return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
+            if include_module_names:
+                return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
+            else:
+                return ()
+        return super(AbstractTreeName, self).get_qualified_names(include_module_names)
 
+    def _get_qualified_names(self):
         parent_names = self.parent_context.get_qualified_names()
         if parent_names is None:
             return None
-        parent_names += (self.tree_name.value,)
-        if include_module_names:
-            module_names = self.get_root_context().string_names
-            if module_names is None:
-                return None
-            return module_names + parent_names
-        return parent_names
+        return parent_names + (self.tree_name.value,)
 
-    def goto(self):
-        return self.parent_context.evaluator.goto(self.parent_context, self.tree_name)
+    def goto(self, **kwargs):
+        return self.parent_context.evaluator.goto(self.parent_context, self.tree_name, **kwargs)
 
     def is_import(self):
         imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
@@ -89,15 +98,8 @@ class ContextNameMixin(object):
     def infer(self):
         return ContextSet([self._context])
 
-    def get_qualified_names(self, include_module_names=False):
-        qualified_names = self._context.get_qualified_names()
-        if qualified_names is None or not include_module_names:
-            return qualified_names
-
-        module_names = self.get_root_context().string_names
-        if module_names is None:
-            return None
-        return module_names + qualified_names
+    def _get_qualified_names(self):
+        return self._context.get_qualified_names()
 
     def get_root_context(self):
         if self.parent_context is None:  # A module
@@ -115,8 +117,7 @@ class ContextName(ContextNameMixin, AbstractTreeName):
         self._context = context
 
     def goto(self):
-        from jedi.evaluate.gradual.conversion import try_stub_to_actual_names
-        return try_stub_to_actual_names([self._context.name])
+        return ContextSet([self._context.name])
 
 
 class TreeNameDefinition(AbstractTreeName):

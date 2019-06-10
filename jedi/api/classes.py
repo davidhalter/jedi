@@ -9,6 +9,7 @@ import warnings
 from parso.python.tree import search_ancestor
 
 from jedi import settings
+from jedi import debug
 from jedi.evaluate.utils import unite
 from jedi.cache import memoize_method
 from jedi.evaluate import imports
@@ -16,8 +17,8 @@ from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import FunctionExecutionContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.conversion import name_to_stub, \
-    stub_to_actual_context_set, try_stubs_to_actual_context_set
+from jedi.evaluate.gradual.conversion import try_stub_to_actual_names, \
+    stub_to_actual_context_set, try_stubs_to_actual_context_set, actual_to_stub_names
 from jedi.api.keywords import KeywordName
 
 
@@ -280,26 +281,30 @@ class BaseDefinition(object):
             return False
         return all(c.is_stub() for c in self._name.infer())
 
-    def goto_stubs(self):
+    def goto_assignments(self, **kwargs):  # Python 2...
+        return self._goto_assignments(**kwargs)
+
+    def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
+        assert not (only_stubs and prefer_stubs)
+
         if not self._name.is_context_name:
             return []
 
-        if self.is_stub():
-            return [self]
-
-        return [
-            Definition(self._evaluator, stub_def.name)
-            for stub_def in name_to_stub(self._name)
-        ]
-
-    def goto_assignments(self):
-        if not self._name.is_context_name:
-            return []
+        names = self._name.goto()
+        if only_stubs or prefer_stubs:
+            names = actual_to_stub_names(names, fallback_to_actual=prefer_stubs)
+        else:
+            names = try_stub_to_actual_names(names, prefer_stub_to_compiled=True)
 
         return [self if n == self._name else Definition(self._evaluator, n)
-                for n in self._name.goto()]
+                for n in names]
 
-    def infer(self):
+    def infer(self, **kwargs):  # Python 2...
+        return self._infer(**kwargs)
+
+    def _infer(self, only_stubs=False, prefer_stubs=False):
+        assert not (only_stubs and prefer_stubs)
+
         if not self._name.is_context_name:
             return []
 

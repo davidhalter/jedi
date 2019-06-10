@@ -263,6 +263,10 @@ class CompiledName(AbstractNameDefinition):
         self.parent_context = parent_context
         self.string_name = name
 
+    def _get_qualified_names(self):
+        parent_qualified_names = self.parent_context.get_qualified_names()
+        return parent_qualified_names + (self.string_name,)
+
     def __repr__(self):
         try:
             name = self.parent_context.name  # __name__ is not defined all the time
