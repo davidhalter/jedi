@@ -71,7 +71,8 @@ class AbstractTreeName(AbstractNameDefinition):
         # lookup.
         if import_node is not None and not (import_node.level == 1
                                             and self.get_root_context().is_package):
-            if include_module_names:
+            # TODO improve the situation for when level is present.
+            if include_module_names and not import_node.level:
                 return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
             else:
                 return ()
