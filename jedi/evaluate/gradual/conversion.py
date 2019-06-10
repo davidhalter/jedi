@@ -5,7 +5,7 @@ from jedi.evaluate.utils import to_list
 from jedi.evaluate.gradual.stub_context import StubModuleContext
 
 
-def stub_to_python_context_set(stub_context, ignore_compiled=False):
+def _stub_to_python_context_set(stub_context, ignore_compiled=False):
     stub_module = stub_context.get_root_context()
     if not stub_module.is_stub():
         return ContextSet([stub_context])
@@ -146,7 +146,7 @@ def convert_contexts(contexts, only_stubs=False, prefer_stubs=False, ignore_comp
             )
         else:
             return ContextSet.from_sets(
-                stub_to_python_context_set(stub_context, ignore_compiled=ignore_compiled)
+                _stub_to_python_context_set(stub_context, ignore_compiled=ignore_compiled)
                 or ContextSet({stub_context})
                 for stub_context in contexts
             )
