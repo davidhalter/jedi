@@ -16,6 +16,7 @@ annotations.
 """
 
 import re
+import warnings
 from textwrap import dedent
 
 from parso import parse, ParserSyntaxError
@@ -60,12 +61,14 @@ def _get_numpy_doc_string_cls():
 
 def _search_param_in_numpydocstr(docstr, param_str):
     """Search `docstr` (in numpydoc format) for type(-s) of `param_str`."""
-    try:
-        # This is a non-public API. If it ever changes we should be
-        # prepared and return gracefully.
-        params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
-    except Exception:
-        return []
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            # This is a non-public API. If it ever changes we should be
+            # prepared and return gracefully.
+            params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
+        except Exception:
+            return []
     for p_name, p_type, p_descr in params:
         if p_name == param_str:
             m = re.match(r'([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
@@ -79,10 +82,12 @@ def _search_return_in_numpydocstr(docstr):
     """
     Search `docstr` (in numpydoc format) for type(-s) of function returns.
     """
-    try:
-        doc = _get_numpy_doc_string_cls()(docstr)
-    except Exception:
-        return
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            doc = _get_numpy_doc_string_cls()(docstr)
+        except Exception:
+            return
     try:
         # This is a non-public API. If it ever changes we should be
         # prepared and return gracefully.
