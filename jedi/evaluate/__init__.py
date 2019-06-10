@@ -381,10 +381,7 @@ class Evaluator(object):
 
         if node_type == 'trailer' and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
-            return unite(
-                value.py__getattribute__(name, name_context=context, is_goto=True)
-                for value in values
-            )
+            return values.py__getattribute__(name, name_context=context, is_goto=True)
         else:
             stmt = tree.search_ancestor(
                 name, 'expr_stmt', 'lambdef'

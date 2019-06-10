@@ -282,7 +282,8 @@ class BaseDefinition(object):
         return all(c.is_stub() for c in self._name.infer())
 
     def goto_assignments(self, **kwargs):  # Python 2...
-        return self._goto_assignments(**kwargs)
+        with debug.increase_indent_cm('goto for %s' % self._name):
+            return self._goto_assignments(**kwargs)
 
     def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
@@ -300,7 +301,8 @@ class BaseDefinition(object):
                 for n in names]
 
     def infer(self, **kwargs):  # Python 2...
-        return self._infer(**kwargs)
+        with debug.increase_indent_cm('infer for %s' % self._name):
+            return self._infer(**kwargs)
 
     def _infer(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
