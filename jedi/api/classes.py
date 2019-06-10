@@ -706,7 +706,6 @@ class _Help(object):
                     signature_text = _format_signatures(context)
                 if not doc and context.is_stub():
                     for c in convert_contexts(ContextSet({context}), ignore_compiled=False):
-                        print(c)
                         doc = c.py__doc__()
                         if doc:
                             break
