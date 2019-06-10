@@ -65,11 +65,17 @@ class AbstractTreeName(AbstractNameDefinition):
 
     def get_qualified_names(self, include_module_names=False):
         import_node = search_ancestor(self.tree_name, 'import_name', 'import_from')
-        if import_node is not None:
+        # For import nodes we cannot just have names, because it's very unclear
+        # how they would look like. For now we just ignore them in most cases.
+        # In case of level == 1, it works always, because it's like a submodule
+        # lookup.
+        if import_node is not None and not (import_node.level == 1
+                                            and self.get_root_context().is_package):
             if include_module_names:
                 return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
             else:
                 return ()
+
         return super(AbstractTreeName, self).get_qualified_names(include_module_names)
 
     def _get_qualified_names(self):
