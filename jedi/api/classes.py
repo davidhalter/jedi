@@ -314,7 +314,7 @@ class BaseDefinition(object):
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
-        names = [c.name for c in contexts],
+        names = [c.name for c in contexts]
         return [self if n == self._name else Definition(self._evaluator, n)
                 for n in names]
 
