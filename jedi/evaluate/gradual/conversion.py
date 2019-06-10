@@ -126,12 +126,30 @@ def _python_to_stub_names(names, fallback_to_python=False):
             yield name
 
 
-def convert_names(names, only_stubs, prefer_stubs):
+def convert_names(names, only_stubs=False, prefer_stubs=False):
+    assert not (only_stubs and prefer_stubs)
     with debug.increase_indent_cm('convert names'):
         if only_stubs or prefer_stubs:
             return _python_to_stub_names(names, fallback_to_python=prefer_stubs)
         else:
             return _try_stub_to_python_names(names, prefer_stub_to_compiled=True)
+
+
+def convert_contexts(contexts, only_stubs=False, prefer_stubs=False):
+    assert not (only_stubs and prefer_stubs)
+    with debug.increase_indent_cm('convert contexts'):
+        if only_stubs or prefer_stubs:
+            return ContextSet.from_sets(
+                to_stub(context)
+                or (ContextSet({context}) if prefer_stubs else NO_CONTEXTS)
+                for context in contexts
+            )
+        else:
+            return ContextSet.from_sets(
+                stub_to_python_context_set(stub_context, ignore_compiled=True)
+                or ContextSet({stub_context})
+                for stub_context in contexts
+            )
 
 
 # TODO merge with _python_to_stub_names?

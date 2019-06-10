@@ -17,7 +17,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
 from jedi.evaluate.context import FunctionExecutionContext
 from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.conversion import convert_names, \
+from jedi.evaluate.gradual.conversion import convert_names, convert_contexts, \
     stub_to_python_context_set
 from jedi.api.keywords import KeywordName
 
@@ -309,11 +309,12 @@ class BaseDefinition(object):
         if not self._name.is_context_name:
             return []
 
-        names = convert_names(
-            [c.name for c in self._name.infer()],
+        contexts = convert_contexts(
+            self._name.infer(),
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
+        names = [c.name for c in contexts],
         return [self if n == self._name else Definition(self._evaluator, n)
                 for n in names]
 

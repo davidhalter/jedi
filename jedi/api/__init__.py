@@ -39,7 +39,7 @@ from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-from jedi.evaluate.gradual.conversion import convert_names
+from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
 from jedi.evaluate.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -260,15 +260,15 @@ class Script(object):
                 return []
 
         context = self._evaluator.create_context(self._get_module(), leaf)
-        definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
 
-        names = convert_names(
-            [s.name for s in definitions],
+        contexts = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
+        contexts = convert_contexts(
+            contexts,
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._evaluator, name) for name in names]
+        defs = [classes.Definition(self._evaluator, c.name) for c in contexts]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
