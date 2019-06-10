@@ -81,7 +81,7 @@ def _search_return_in_numpydocstr(docstr):
     """
     try:
         doc = _get_numpy_doc_string_cls()(docstr)
-    except ImportError:
+    except Exception:
         return
     try:
         # This is a non-public API. If it ever changes we should be
