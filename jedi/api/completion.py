@@ -11,7 +11,7 @@ from jedi.evaluate import imports
 from jedi.api import keywords
 from jedi.evaluate.helpers import evaluate_call_of_leaf, parse_dotted_names
 from jedi.evaluate.filters import get_global_filters
-from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
+from jedi.evaluate.gradual.conversion import stub_to_python_context_set
 from jedi.parser_utils import get_statement_of_position
 
 
@@ -250,7 +250,7 @@ class Completion:
             if not context.is_stub():
                 continue
 
-            actual_contexts = stub_to_actual_context_set(context, ignore_compiled=True)
+            actual_contexts = stub_to_python_context_set(context, ignore_compiled=True)
             for c in actual_contexts:
                 for filter in c.get_filters(
                         search_global=False,

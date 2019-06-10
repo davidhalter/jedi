@@ -356,9 +356,9 @@ class Importer(object):
                 names += context.sub_modules_dict().values()
 
             if not only_modules:
-                from jedi.evaluate.gradual.conversion import stub_to_actual_context_set
+                from jedi.evaluate.gradual.conversion import stub_to_python_context_set
                 both_contexts = ContextSet.from_sets(
-                    stub_to_actual_context_set(context, ignore_compiled=True)
+                    stub_to_python_context_set(context, ignore_compiled=True)
                     for context in contexts
                     if context.is_stub()
                 ) | contexts

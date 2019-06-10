@@ -126,7 +126,8 @@ from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
-from jedi.evaluate.gradual.conversion import try_stubs_to_actual_context_set
+from jedi.evaluate.gradual.conversion import stub_to_python_context_set
+from jedi.evaluate.base_context import ContextSet
 
 
 TEST_COMPLETIONS = 0
@@ -136,6 +137,16 @@ TEST_USAGES = 3
 
 
 grammar36 = parso.load_grammar(version='3.6')
+
+
+def try_stubs_to_python_context_set(stub_contexts, prefer_stub_to_compiled=False):
+    contexts = ContextSet.from_sets(
+        stub_to_python_context_set(stub_context, ignore_compiled=prefer_stub_to_compiled)
+        or ContextSet([stub_context])
+        for stub_context in stub_contexts
+    )
+    debug.dbg('Stubs to actual: %s to %s', stub_contexts, contexts)
+    return contexts
 
 
 class IntegrationTestCase(object):
@@ -231,7 +242,7 @@ class IntegrationTestCase(object):
                 if user_context.api_type == 'function':
                     user_context = user_context.get_function_execution()
                 element.parent = user_context.tree_node
-                results = try_stubs_to_actual_context_set(
+                results = try_stubs_to_python_context_set(
                     evaluator.eval_element(user_context, element),
                     prefer_stub_to_compiled=True
                 )

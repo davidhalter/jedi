@@ -5,7 +5,7 @@ from jedi.evaluate.utils import to_list
 from jedi.evaluate.gradual.stub_context import StubModuleContext
 
 
-def stub_to_actual_context_set(stub_context, ignore_compiled=False):
+def stub_to_python_context_set(stub_context, ignore_compiled=False):
     stub_module = stub_context.get_root_context()
     if not stub_module.is_stub():
         return ContextSet([stub_context])
@@ -47,16 +47,6 @@ def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
     for name in qualified_names:
         non_stubs = non_stubs.py__getattribute__(name)
     return non_stubs
-
-
-def try_stubs_to_actual_context_set(stub_contexts, prefer_stub_to_compiled=False):
-    contexts = ContextSet.from_sets(
-        stub_to_actual_context_set(stub_context, ignore_compiled=prefer_stub_to_compiled)
-        or ContextSet([stub_context])
-        for stub_context in stub_contexts
-    )
-    debug.dbg('Stubs to actual: %s to %s', stub_contexts, contexts)
-    return contexts
 
 
 @to_list
@@ -144,6 +134,7 @@ def convert_names(names, only_stubs, prefer_stubs):
             return _try_stub_to_python_names(names, prefer_stub_to_compiled=True)
 
 
+# TODO merge with _python_to_stub_names?
 def to_stub(context):
     if context.is_stub():
         return ContextSet([context])
