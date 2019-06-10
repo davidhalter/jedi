@@ -9,7 +9,7 @@ import pytest
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled.access import DirectObjectAccess
 from jedi.evaluate.helpers import execute_evaluated
-from jedi.evaluate.gradual.conversion import stub_to_python_context_set
+from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
 
 
 def test_simple(evaluator, environment):
@@ -35,7 +35,7 @@ def test_next_docstr(evaluator):
     next_ = compiled.builtin_from_name(evaluator, u'next')
     assert next_.tree_node is not None
     assert next_.py__doc__() == ''  # It's a stub
-    for non_stub in stub_to_python_context_set(next_):
+    for non_stub in _stub_to_python_context_set(next_):
         assert non_stub.py__doc__() == next.__doc__
 
 
