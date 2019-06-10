@@ -134,7 +134,8 @@ class NameFinder(object):
         ``filters``), until a name fits.
         """
         names = []
-        # TODO why is this paragraph needed?
+        # This paragraph is currently needed for proper branch evaluation
+        # (static analysis).
         if self._context.predefined_names and isinstance(self._name, tree.Name):
             node = self._name
             while node is not None and not is_scope(node):
