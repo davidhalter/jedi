@@ -18,7 +18,7 @@ with open('requirements.txt') as f:
     install_requires = f.read().splitlines()
 
 assert os.path.isfile("jedi/third_party/typeshed/LICENSE"), \
-    "Please download the typeshed submodule first"
+    "Please download the typeshed submodule first (Hint: git submodule update --init)"
 
 setup(name='jedi',
       version=version,
