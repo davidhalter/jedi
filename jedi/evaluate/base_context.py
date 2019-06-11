@@ -35,7 +35,7 @@ class HelperContextMixin(object):
     def create_cached(cls, *args, **kwargs):
         return cls(*args, **kwargs)
 
-    def execute(self, arguments=None):
+    def execute(self, arguments):
         return self.evaluator.execute(self, arguments=arguments)
 
     def execute_evaluated(self, *value_list):

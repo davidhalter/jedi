@@ -42,7 +42,7 @@ def create_simple_object(evaluator, obj):
         evaluator,
         evaluator.compiled_subprocess.create_simple_object(obj)
     )
-    instance, = builtin_from_name(evaluator, compiled_obj.name.string_name).execute()
+    instance, = builtin_from_name(evaluator, compiled_obj.name.string_name).execute_evaluated()
     return CompiledValue(instance, compiled_obj)
 
 
