@@ -33,7 +33,6 @@ from jedi.evaluate.helpers import get_int_or_none, is_string, \
     SimpleGetItemNotFound
 from jedi.evaluate.utils import safe_property, to_list
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.filters import ParserTreeFilter, LazyAttributeOverwrite, \
     publish_method
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, \
@@ -772,7 +771,7 @@ class Slice(object):
     def __getattr__(self, name):
         if self._slice_object is None:
             context = compiled.builtin_from_name(self._context.evaluator, 'slice')
-            self._slice_object, = execute_evaluated(context)
+            self._slice_object, = context.execute_evaluated()
         return getattr(self._slice_object, name)
 
     @property

@@ -15,7 +15,7 @@ from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate.helpers import reraise_getitem_errors, execute_evaluated
+from jedi.evaluate.helpers import reraise_getitem_errors
 from jedi.evaluate.signature import BuiltinSignature
 
 
@@ -318,7 +318,7 @@ class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
             contexts = ContextSet([create_from_access_path(evaluator, p.default)])
         if p.has_annotation:
             annotation = create_from_access_path(evaluator, p.annotation)
-            contexts |= execute_evaluated(annotation)
+            contexts |= annotation.execute_evaluated()
         return contexts
 
 

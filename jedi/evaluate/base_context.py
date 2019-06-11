@@ -14,7 +14,7 @@ from jedi import debug
 from jedi._compatibility import zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring
 from jedi.common import BaseContextSet, BaseContext
-from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
+from jedi.evaluate.helpers import SimpleGetItemNotFound
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.cache import evaluator_as_method_param_cache
 from jedi.cache import memoize_method
@@ -39,7 +39,9 @@ class HelperContextMixin(object):
         return self.evaluator.execute(self, arguments=arguments)
 
     def execute_evaluated(self, *value_list):
-        return execute_evaluated(self, *value_list)
+        from jedi.evaluate.arguments import ValuesArguments
+        arguments = ValuesArguments([ContextSet([value]) for value in value_list])
+        return self.evaluator.execute(self, arguments)
 
     def execute_annotation(self):
         return self.execute_evaluated()
@@ -396,7 +398,7 @@ class ContextSet(BaseContextSet):
         return ContextSet.from_sets(c.evaluator.execute(c, arguments) for c in self._set)
 
     def execute_evaluated(self, *args, **kwargs):
-        return ContextSet.from_sets(execute_evaluated(c, *args, **kwargs) for c in self._set)
+        return ContextSet.from_sets(c.execute_evaluated(*args, **kwargs) for c in self._set)
 
     def py__getattribute__(self, *args, **kwargs):
         if kwargs.get('is_goto'):

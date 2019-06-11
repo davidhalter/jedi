@@ -236,17 +236,6 @@ def reraise_getitem_errors(*exception_classes):
         raise SimpleGetItemNotFound(e)
 
 
-def execute_evaluated(context, *value_list):
-    """
-    Execute a function with already executed arguments.
-    """
-    # TODO move this out of here to the evaluator.
-    from jedi.evaluate.arguments import ValuesArguments
-    from jedi.evaluate.base_context import ContextSet
-    arguments = ValuesArguments([ContextSet([value]) for value in value_list])
-    return context.evaluator.execute(context, arguments)
-
-
 def parse_dotted_names(nodes, is_import_from, until_node=None):
     level = 0
     names = []

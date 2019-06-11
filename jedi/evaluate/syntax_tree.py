@@ -389,7 +389,7 @@ def _literals_to_types(evaluator, result):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
             cls = compiled.builtin_from_name(evaluator, typ.name.string_name)
-            new_result |= helpers.execute_evaluated(cls)
+            new_result |= cls.execute_evaluated()
         else:
             new_result |= ContextSet([typ])
     return new_result

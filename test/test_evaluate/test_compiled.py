@@ -8,14 +8,13 @@ import pytest
 
 from jedi.evaluate import compiled
 from jedi.evaluate.compiled.access import DirectObjectAccess
-from jedi.evaluate.helpers import execute_evaluated
 from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
 
 
 def test_simple(evaluator, environment):
     obj = compiled.create_simple_object(evaluator, u'_str_')
     upper, = obj.py__getattribute__(u'upper')
-    objs = list(execute_evaluated(upper))
+    objs = list(upper.execute_evaluated())
     assert len(objs) == 1
     if environment.version_info.major == 2:
         expected = 'unicode'
