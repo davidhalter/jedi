@@ -243,6 +243,9 @@ def builtins_super(types, objects, context):
     if isinstance(context, FunctionExecutionContext):
         if isinstance(context.var_args, InstanceArguments):
             su = context.var_args.instance.py__class__().py__bases__()
+            # If super class cannot be infered
+            if len(su) == 0:
+                return NO_CONTEXTS
             return su[0].infer().execute_evaluated()
 
     return NO_CONTEXTS
