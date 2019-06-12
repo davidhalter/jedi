@@ -277,8 +277,7 @@ class Importer(object):
         return sys_path_mod
 
     def follow(self):
-        if not self.import_path or not self._evaluator.infer_enabled \
-                or not self._inference_possible:
+        if not self.import_path or not self._inference_possible:
             return NO_CONTEXTS
 
         import_names = tuple(

@@ -208,32 +208,12 @@ class Script(object):
         :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`classes.Completion`
         """
-        debug.speed('completions start')
-        completion = Completion(
-            self._evaluator, self._get_module(), self._code_lines,
-            self._pos, self.call_signatures
-        )
-        completions = completion.completions()
-
-        def iter_import_completions():
-            for c in completions:
-                tree_name = c._name.tree_name
-                if tree_name is None:
-                    continue
-                definition = tree_name.get_definition()
-                if definition is not None \
-                        and definition.type in ('import_name', 'import_from'):
-                    yield c
-
-        if len(list(iter_import_completions())) > 10:
-            # For now disable completions if there's a lot of imports that
-            # might potentially be resolved. This is the case for tensorflow
-            # and has been fixed for it. This is obviously temporary until we
-            # have a better solution.
-            self._evaluator.infer_enabled = False
-
-        debug.speed('completions end')
-        return completions
+        with debug.increase_indent_cm('completions'):
+            completion = Completion(
+                self._evaluator, self._get_module(), self._code_lines,
+                self._pos, self.call_signatures
+            )
+            return completion.completions()
 
     def goto_definitions(self, **kwargs):
         """
