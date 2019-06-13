@@ -452,12 +452,17 @@ class OverloadFunction(_BaseTypingContext):
 
 class NewTypeFunction(_BaseTypingContext):
     def py__call__(self, arguments):
+        ordered_args = arguments.unpack()
+        next(ordered_args, None)
+        second_arg = next(ordered_args, None)
+        if second_arg is None:
+            return NO_CONTEXTS
         return ContextSet(
             NewType(
-                self.evaluator,  # MWC: Not sure what I'm doing here
+                self.evaluator,
                 contextualized_node.context,
                 contextualized_node.node,
-                contextualized_node.infer(),  # MWC: Not sure what I'm doing here
+                second_arg.infer(),
             ) for contextualized_node in arguments.get_calling_nodes())
 
 
