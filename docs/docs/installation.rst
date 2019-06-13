@@ -62,7 +62,8 @@ Manual installation from GitHub
 
 If you prefer not to use an automated package installer, you can clone the source from GitHub and install it manually. To install it, run these commands::
 
-    git clone --recurse-submodules
+    git clone --recurse-submodules https://github.com/davidhalter/jedi
+    cd jedi
     sudo python setup.py install
 
 Inclusion as a submodule
