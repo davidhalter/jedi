@@ -461,8 +461,8 @@ class OverloadFunction(_BaseTypingContext):
 class NewTypeFunction(_BaseTypingContext):
     def py__call__(self, arguments):
         ordered_args = arguments.unpack()
-        next(ordered_args, None)
-        second_arg = next(ordered_args, None)
+        next(ordered_args, (None, None))
+        _, second_arg = next(ordered_args, (None, None))
         if second_arg is None:
             return NO_CONTEXTS
         return ContextSet(
