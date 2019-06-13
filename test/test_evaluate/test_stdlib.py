@@ -91,9 +91,9 @@ def test_re_sub(Script, environment):
 
     names = run("import re; re.sub('a', 'a', 'f')")
     if environment.version_info.major == 2:
-        assert names == {'str', 'unicode'}
+        assert names == {'str'}
     else:
-        assert names == {'str', 'bytes'}
+        assert names == {'str'}
 
     # This param is missing because of overloading.
     names = run("import re; re.sub('a', 'a')")

@@ -80,7 +80,7 @@ class TestSetupReadline(unittest.TestCase):
         difference = {x for x in difference if not x.startswith('from os import _')}
         # There are quite a few differences, because both Windows and Linux
         # (posix and nt) libraries are included.
-        assert len(difference) < 33
+        assert len(difference) < 38
 
     @cwd_at('test')
     def test_local_import(self):

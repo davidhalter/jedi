@@ -16,6 +16,7 @@ annotations.
 """
 
 import re
+import warnings
 from textwrap import dedent
 
 from parso import parse, ParserSyntaxError
@@ -48,25 +49,26 @@ _numpy_doc_string_cache = None
 
 def _get_numpy_doc_string_cls():
     global _numpy_doc_string_cache
-    if isinstance(_numpy_doc_string_cache, ImportError):
+    if isinstance(_numpy_doc_string_cache, (ImportError, SyntaxError)):
         raise _numpy_doc_string_cache
     try:
         from numpydoc.docscrape import NumpyDocString
         _numpy_doc_string_cache = NumpyDocString
-    except ImportError as e:
-        _numpy_doc_string_cache = e
+    except (ImportError, SyntaxError) as e:
         raise
     return _numpy_doc_string_cache
 
 
 def _search_param_in_numpydocstr(docstr, param_str):
     """Search `docstr` (in numpydoc format) for type(-s) of `param_str`."""
-    try:
-        # This is a non-public API. If it ever changes we should be
-        # prepared and return gracefully.
-        params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
-    except (KeyError, AttributeError, ImportError):
-        return []
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            # This is a non-public API. If it ever changes we should be
+            # prepared and return gracefully.
+            params = _get_numpy_doc_string_cls()(docstr)._parsed_data['Parameters']
+        except Exception:
+            return []
     for p_name, p_type, p_descr in params:
         if p_name == param_str:
             m = re.match(r'([^,]+(,[^,]+)*?)(,[ ]*optional)?$', p_type)
@@ -80,16 +82,18 @@ def _search_return_in_numpydocstr(docstr):
     """
     Search `docstr` (in numpydoc format) for type(-s) of function returns.
     """
-    try:
-        doc = _get_numpy_doc_string_cls()(docstr)
-    except ImportError:
-        return
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            doc = _get_numpy_doc_string_cls()(docstr)
+        except Exception:
+            return
     try:
         # This is a non-public API. If it ever changes we should be
         # prepared and return gracefully.
         returns = doc._parsed_data['Returns']
         returns += doc._parsed_data['Yields']
-    except (KeyError, AttributeError):
+    except Exception:
         return
     for r_name, r_type, r_descr in returns:
         # Return names are optional and if so the type is in the name
@@ -112,7 +116,7 @@ def _expand_typestr(type_str):
         yield type_str.split('of')[0]
     # Check if type has is a set of valid literal values eg: {'C', 'F', 'A'}
     elif type_str.startswith('{'):
-        node = parse(type_str, version='3.6').children[0]
+        node = parse(type_str, version='3.7').children[0]
         if node.type == 'atom':
             for leaf in node.children[1].children:
                 if leaf.type == 'number':

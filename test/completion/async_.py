@@ -82,3 +82,28 @@ async def foo():
     normal_var2 = False
     #? ['normal_var1', 'normal_var2']
     normal_var
+
+
+class C:
+    @classmethod
+    async def async_for_classmethod(cls) -> "C":
+        return
+
+    async def async_for_method(cls) -> int:
+        return
+
+
+async def f():
+    c = await C.async_for_method()
+    #? int()
+    c
+    d = await C().async_for_method()
+    #? int()
+    d
+
+    e = await C.async_for_classmethod()
+    #? C()
+    e
+    f = await C().async_for_classmethod()
+    #? C()
+    f

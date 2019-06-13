@@ -21,7 +21,7 @@ from jedi.evaluate.context import ClassContext, FunctionContext
 from jedi.evaluate.context import iterable
 from jedi.evaluate.context import TreeInstance
 from jedi.evaluate.finder import NameFinder
-from jedi.evaluate.helpers import is_string, is_literal, is_number, is_compiled
+from jedi.evaluate.helpers import is_string, is_literal, is_number
 from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.gradual.stub_context import VersionInfo
@@ -99,10 +99,7 @@ def eval_node(context, element):
             context_set = eval_trailer(context, context_set, trailer)
 
         if had_await:
-            await_context_set = context_set.py__getattribute__(u"__await__")
-            if not await_context_set:
-                debug.warning('Tried to run py__await__ on context %s', context)
-            return await_context_set.execute_evaluated().py__stop_iteration_returns()
+            return context_set.py__await__().py__stop_iteration_returns()
         return context_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
@@ -145,6 +142,8 @@ def eval_node(context, element):
 
         # Generator.send() is not implemented.
         return NO_CONTEXTS
+    elif typ == 'namedexpr_test':
+        return eval_node(context, element.children[2])
     else:
         return eval_or_test(context, element)
 
@@ -180,6 +179,10 @@ def eval_atom(context, atom):
     might be a name or a literal as well.
     """
     if atom.type == 'name':
+        if atom.value in ('True', 'False', 'None'):
+            # Python 2...
+            return ContextSet([compiled.builtin_from_name(context.evaluator, atom.value)])
+
         # This is the first global lookup.
         stmt = tree.search_ancestor(
             atom, 'expr_stmt', 'lambdef'
@@ -244,7 +247,7 @@ def eval_atom(context, atom):
                 except IndexError:
                     pass
 
-            if comp_for.type == 'comp_for':
+            if comp_for.type in ('comp_for', 'sync_comp_for'):
                 return ContextSet([iterable.comprehension_from_atom(
                     context.evaluator, context, atom
                 )])
@@ -386,7 +389,7 @@ def _literals_to_types(evaluator, result):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
             cls = compiled.builtin_from_name(evaluator, typ.name.string_name)
-            new_result |= helpers.execute_evaluated(cls)
+            new_result |= cls.execute_evaluated()
         else:
             new_result |= ContextSet([typ])
     return new_result
@@ -483,7 +486,7 @@ def _eval_comparison_part(evaluator, context, left, operator, right):
         # `int() % float()`.
         return ContextSet([left])
     elif str_operator in COMPARISON_OPERATORS:
-        if is_compiled(left) and is_compiled(right):
+        if left.is_compiled() and right.is_compiled():
             # Possible, because the return is not an option. Just compare.
             try:
                 return ContextSet([left.execute_operation(right, str_operator)])
@@ -585,7 +588,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         if types:
             return types
 
-    if typ in ('for_stmt', 'comp_for'):
+    if typ in ('for_stmt', 'comp_for', 'sync_comp_for'):
         try:
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
@@ -638,30 +641,31 @@ def _apply_decorators(context, node):
         decoratee_context = FunctionContext.from_context(context, node)
     initial = values = ContextSet([decoratee_context])
     for dec in reversed(node.get_decorators()):
-        debug.dbg('decorator: %s %s', dec, values)
-        dec_values = context.eval_node(dec.children[1])
-        trailer_nodes = dec.children[2:-1]
-        if trailer_nodes:
-            # Create a trailer and evaluate it.
-            trailer = tree.PythonNode('trailer', trailer_nodes)
-            trailer.parent = dec
-            dec_values = eval_trailer(context, dec_values, trailer)
+        debug.dbg('decorator: %s %s', dec, values, color="MAGENTA")
+        with debug.increase_indent_cm():
+            dec_values = context.eval_node(dec.children[1])
+            trailer_nodes = dec.children[2:-1]
+            if trailer_nodes:
+                # Create a trailer and evaluate it.
+                trailer = tree.PythonNode('trailer', trailer_nodes)
+                trailer.parent = dec
+                dec_values = eval_trailer(context, dec_values, trailer)
 
-        if not len(dec_values):
-            code = dec.get_code(include_prefix=False)
-            # For the short future, we don't want to hear about the runtime
-            # decorator in typing that was intentionally omitted. This is not
-            # "correct", but helps with debugging.
-            if code != '@runtime\n':
-                debug.warning('decorator not found: %s on %s', dec, node)
-            return initial
+            if not len(dec_values):
+                code = dec.get_code(include_prefix=False)
+                # For the short future, we don't want to hear about the runtime
+                # decorator in typing that was intentionally omitted. This is not
+                # "correct", but helps with debugging.
+                if code != '@runtime\n':
+                    debug.warning('decorator not found: %s on %s', dec, node)
+                return initial
 
-        values = dec_values.execute(arguments.ValuesArguments([values]))
-        if not len(values):
-            debug.warning('not possible to resolve wrappers found %s', node)
-            return initial
+            values = dec_values.execute(arguments.ValuesArguments([values]))
+            if not len(values):
+                debug.warning('not possible to resolve wrappers found %s', node)
+                return initial
 
-        debug.dbg('decorator end %s', values)
+        debug.dbg('decorator end %s', values, color="MAGENTA")
     return values
 
 

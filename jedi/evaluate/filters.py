@@ -6,139 +6,14 @@ from abc import abstractmethod
 
 from parso.tree import search_ancestor
 
-from jedi._compatibility import use_metaclass, Parameter
+from jedi._compatibility import use_metaclass
 from jedi.evaluate import flow_analysis
-from jedi.evaluate.base_context import ContextSet, Context
+from jedi.evaluate.base_context import ContextSet, Context, ContextWrapper, \
+    LazyContextWrapper
 from jedi.parser_utils import get_parent_scope
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_function_cache
-
-
-class AbstractNameDefinition(object):
-    start_pos = None
-    string_name = None
-    parent_context = None
-    tree_name = None
-
-    @abstractmethod
-    def infer(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def goto(self):
-        # Typically names are already definitions and therefore a goto on that
-        # name will always result on itself.
-        return {self}
-
-    def get_root_context(self):
-        return self.parent_context.get_root_context()
-
-    def __repr__(self):
-        if self.start_pos is None:
-            return '<%s: %s>' % (self.__class__.__name__, self.string_name)
-        return '<%s: %s@%s>' % (self.__class__.__name__, self.string_name, self.start_pos)
-
-    def is_import(self):
-        return False
-
-    @property
-    def api_type(self):
-        return self.parent_context.api_type
-
-
-class AbstractTreeName(AbstractNameDefinition):
-    def __init__(self, parent_context, tree_name):
-        self.parent_context = parent_context
-        self.tree_name = tree_name
-
-    def goto(self):
-        return self.parent_context.evaluator.goto(self.parent_context, self.tree_name)
-
-    def is_import(self):
-        imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
-        return imp is not None
-
-    @property
-    def string_name(self):
-        return self.tree_name.value
-
-    @property
-    def start_pos(self):
-        return self.tree_name.start_pos
-
-
-class ContextNameMixin(object):
-    def infer(self):
-        return ContextSet([self._context])
-
-    def get_root_context(self):
-        if self.parent_context is None:  # A module
-            return self._context
-        return super(ContextNameMixin, self).get_root_context()
-
-    @property
-    def api_type(self):
-        return self._context.api_type
-
-
-class ContextName(ContextNameMixin, AbstractTreeName):
-    def __init__(self, context, tree_name):
-        super(ContextName, self).__init__(context.parent_context, tree_name)
-        self._context = context
-
-
-class TreeNameDefinition(AbstractTreeName):
-    _API_TYPES = dict(
-        import_name='module',
-        import_from='module',
-        funcdef='function',
-        param='param',
-        classdef='class',
-    )
-
-    def infer(self):
-        # Refactor this, should probably be here.
-        from jedi.evaluate.syntax_tree import tree_name_to_contexts
-        return tree_name_to_contexts(self.parent_context.evaluator, self.parent_context, self.tree_name)
-
-    @property
-    def api_type(self):
-        definition = self.tree_name.get_definition(import_name_always=True)
-        if definition is None:
-            return 'statement'
-        return self._API_TYPES.get(definition.type, 'statement')
-
-
-class ParamName(AbstractTreeName):
-    api_type = u'param'
-
-    def __init__(self, parent_context, tree_name):
-        self.parent_context = parent_context
-        self.tree_name = tree_name
-
-    def get_kind(self):
-        tree_param = search_ancestor(self.tree_name, 'param')
-        if tree_param.star_count == 1:  # *args
-            return Parameter.VAR_POSITIONAL
-        if tree_param.star_count == 2:  # **kwargs
-            return Parameter.VAR_KEYWORD
-
-        parent = tree_param.parent
-        for p in parent.children:
-            if p.type == 'param':
-                if p.star_count:
-                    return Parameter.KEYWORD_ONLY
-                if p == tree_param:
-                    break
-        return Parameter.POSITIONAL_OR_KEYWORD
-
-    def infer(self):
-        return self.get_param().infer()
-
-    def get_param(self):
-        params, _ = self.parent_context.get_executed_params_and_issues()
-        param_node = search_ancestor(self.tree_name, 'param')
-        return params[param_node.position_index]
+from jedi.evaluate.names import TreeNameDefinition, ParamName, AbstractNameDefinition
 
 
 class AbstractFilter(object):
@@ -170,23 +45,8 @@ class FilterWrapper(object):
     def get(self, name):
         return self.wrap_names(self._wrapped_filter.get(name))
 
-    def values(self, name):
+    def values(self):
         return self.wrap_names(self._wrapped_filter.values())
-
-
-class NameWrapper(object):
-    def __init__(self, wrapped_name):
-        self._wrapped_name = wrapped_name
-
-    @abstractmethod
-    def infer(self):
-        raise NotImplementedError
-
-    def __getattr__(self, name):
-        return getattr(self._wrapped_name, name)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._wrapped_name)
 
 
 @evaluator_function_cache()
@@ -347,6 +207,10 @@ class DictFilter(AbstractFilter):
     def _convert(self, name, value):
         return value
 
+    def __repr__(self):
+        keys = ', '.join(self._dct.keys())
+        return '<%s: for {%s}>' % (self.__class__.__name__, keys)
+
 
 class MergedFilter(object):
     def __init__(self, *filters):
@@ -450,23 +314,23 @@ class _OverwriteMeta(type):
         cls.overwritten_methods = base_dct
 
 
-class AbstractObjectOverwrite(use_metaclass(_OverwriteMeta, object)):
-    def get_object(self):
-        raise NotImplementedError
-
+class _AttributeOverwriteMixin(object):
     def get_filters(self, search_global=False, *args, **kwargs):
-        yield SpecialMethodFilter(self, self.overwritten_methods, self.get_object())
+        yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_context)
 
-        for filter in self.get_object().get_filters(search_global):
+        for filter in self._wrapped_context.get_filters(search_global):
             yield filter
 
 
-class BuiltinOverwrite(Context, AbstractObjectOverwrite):
+class LazyAttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
+                                           LazyContextWrapper)):
     def __init__(self, evaluator):
-        super(BuiltinOverwrite, self).__init__(evaluator, evaluator.builtins_module)
+        self.evaluator = evaluator
 
-    def py__class__(self):
-        return self.get_object().py__class__()
+
+class AttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
+                                       ContextWrapper)):
+    pass
 
 
 def publish_method(method_name, python_version_match=None):
@@ -500,10 +364,11 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
 
     First we get the names from the function scope.
 
-    >>> no_unicode_pprint(filters[0])                    #doctest: +ELLIPSIS
+    >>> no_unicode_pprint(filters[0])  # doctest: +ELLIPSIS
     MergedFilter(<ParserTreeFilter: ...>, <GlobalNameFilter: ...>)
-    >>> sorted(str(n) for n in filters[0].values())
-    ['<TreeNameDefinition: func@(3, 4)>', '<TreeNameDefinition: x@(2, 0)>']
+    >>> sorted(str(n) for n in filters[0].values())  # doctest: +NORMALIZE_WHITESPACE
+    ['<TreeNameDefinition: string_name=func start_pos=(3, 4)>',
+     '<TreeNameDefinition: string_name=x start_pos=(2, 0)>']
     >>> filters[0]._filters[0]._until_position
     (4, 0)
     >>> filters[0]._filters[1]._until_position
@@ -521,7 +386,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     Finally, it yields the builtin filter, if `include_builtin` is
     true (default).
 
-    >>> list(filters[3].values())                        #doctest: +ELLIPSIS
+    >>> list(filters[3].values())  # doctest: +ELLIPSIS
     [...]
     """
     from jedi.evaluate.context.function import FunctionExecutionContext

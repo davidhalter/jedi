@@ -5,15 +5,17 @@ import re
 from functools import partial
 
 from jedi import debug
-from jedi._compatibility import force_unicode, Parameter
+from jedi.evaluate.utils import to_list
+from jedi._compatibility import force_unicode, Parameter, cast_path
 from jedi.cache import underscore_memoization, memoize_method
-from jedi.evaluate.filters import AbstractFilter, AbstractNameDefinition, \
-    ContextNameMixin
+from jedi.evaluate.filters import AbstractFilter
+from jedi.evaluate.names import AbstractNameDefinition, ContextNameMixin, \
+    ParamNameInterface
 from jedi.evaluate.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.evaluate.lazy_context import LazyKnownContext
 from jedi.evaluate.compiled.access import _sentinel
 from jedi.evaluate.cache import evaluator_function_cache
-from jedi.evaluate.helpers import reraise_getitem_errors, execute_evaluated
+from jedi.evaluate.helpers import reraise_getitem_errors
 from jedi.evaluate.signature import BuiltinSignature
 
 
@@ -34,7 +36,7 @@ class CheckAttribute(object):
             return self
 
         # This might raise an AttributeError. That's wanted.
-        instance.access_handle.getattr(self.check_name)
+        instance.access_handle.getattr_paths(self.check_name)
         return partial(self.func, instance)
 
 
@@ -43,22 +45,19 @@ class CompiledObject(Context):
         super(CompiledObject, self).__init__(evaluator, parent_context)
         self.access_handle = access_handle
 
-    @CheckAttribute()
     def py__call__(self, arguments):
-        if self.tree_node is not None and self.tree_node.type == 'funcdef':
-            from jedi.evaluate.context.function import FunctionContext
-            return FunctionContext(
-                self.evaluator,
-                parent_context=self.parent_context,
-                tree_node=self.tree_node
-            ).py__call__(arguments=arguments)
-        if self.access_handle.is_class():
-            from jedi.evaluate.context import CompiledInstance
-            return ContextSet([
-                CompiledInstance(self.evaluator, self.parent_context, self, arguments)
-            ])
+        try:
+            self.access_handle.getattr_paths(u'__call__')
+        except AttributeError:
+            return super(CompiledObject, self).py__call__(arguments)
         else:
-            return ContextSet(self._execute_function(arguments))
+            if self.access_handle.is_class():
+                from jedi.evaluate.context import CompiledInstance
+                return ContextSet([
+                    CompiledInstance(self.evaluator, self.parent_context, self, arguments)
+                ])
+            else:
+                return ContextSet(self._execute_function(arguments))
 
     @CheckAttribute()
     def py__class__(self):
@@ -80,20 +79,44 @@ class CompiledObject(Context):
 
     @CheckAttribute()
     def py__path__(self):
-        return self.access_handle.py__path__()
+        return map(cast_path, self.access_handle.py__path__())
+
+    @property
+    def string_names(self):
+        # For modules
+        name = self.py__name__()
+        if name is None:
+            return ()
+        return tuple(name.split('.'))
+
+    def get_qualified_names(self):
+        return self.access_handle.get_qualified_names()
 
     def py__bool__(self):
         return self.access_handle.py__bool__()
 
     def py__file__(self):
-        return self.access_handle.py__file__()
+        return cast_path(self.access_handle.py__file__())
 
     def is_class(self):
         return self.access_handle.is_class()
 
-    def py__doc__(self, include_call_signature=False):
+    def is_module(self):
+        return self.access_handle.is_module()
+
+    def is_compiled(self):
+        return True
+
+    def is_stub(self):
+        return False
+
+    def is_instance(self):
+        return self.access_handle.is_instance()
+
+    def py__doc__(self):
         return self.access_handle.py__doc__()
 
+    @to_list
     def get_param_names(self):
         try:
             signature_params = self.access_handle.get_signature_params()
@@ -103,14 +126,15 @@ class CompiledObject(Context):
             if self.access_handle.ismethoddescriptor():
                 tokens.insert(0, 'self')
             for p in tokens:
-                parts = p.strip().split('=')
-                yield UnresolvableParamName(self, parts[0])
+                name, _, default = p.strip().partition('=')
+                yield UnresolvableParamName(self, name, default)
         else:
             for signature_param in signature_params:
                 yield SignatureParamName(self, signature_param)
 
     def get_signatures(self):
-        return [BuiltinSignature(self)]
+        _, return_string = self._parse_function_doc()
+        return [BuiltinSignature(self, return_string)]
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.access_handle.get_repr())
@@ -205,7 +229,7 @@ class CompiledObject(Context):
             try:
                 # TODO wtf is this? this is exactly the same as the thing
                 # below. It uses getattr as well.
-                self.evaluator.builtins_module.access_handle.getattr(name)
+                self.evaluator.builtins_module.access_handle.getattr_paths(name)
             except AttributeError:
                 continue
             else:
@@ -239,6 +263,10 @@ class CompiledName(AbstractNameDefinition):
         self.parent_context = parent_context
         self.string_name = name
 
+    def _get_qualified_names(self):
+        parent_qualified_names = self.parent_context.get_qualified_names()
+        return parent_qualified_names + (self.string_name,)
+
     def __repr__(self):
         try:
             name = self.parent_context.name  # __name__ is not defined all the time
@@ -252,12 +280,12 @@ class CompiledName(AbstractNameDefinition):
 
     @underscore_memoization
     def infer(self):
-        return ContextSet([create_from_name(
+        return ContextSet([_create_from_name(
             self._evaluator, self.parent_context, self.string_name
         )])
 
 
-class SignatureParamName(AbstractNameDefinition):
+class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
     api_type = u'param'
 
     def __init__(self, compiled_obj, signature_param):
@@ -267,6 +295,14 @@ class SignatureParamName(AbstractNameDefinition):
     @property
     def string_name(self):
         return self._signature_param.name
+
+    def to_string(self):
+        s = self.string_name
+        if self._signature_param.has_annotation:
+            s += ': ' + self._signature_param.annotation_string
+        if self._signature_param.has_default:
+            s += '=' + self._signature_param.default_string
+        return s
 
     def get_kind(self):
         return getattr(Parameter, self._signature_param.kind_name)
@@ -282,19 +318,26 @@ class SignatureParamName(AbstractNameDefinition):
             contexts = ContextSet([create_from_access_path(evaluator, p.default)])
         if p.has_annotation:
             annotation = create_from_access_path(evaluator, p.annotation)
-            contexts |= execute_evaluated(annotation)
+            contexts |= annotation.execute_evaluated()
         return contexts
 
 
-class UnresolvableParamName(AbstractNameDefinition):
+class UnresolvableParamName(AbstractNameDefinition, ParamNameInterface):
     api_type = u'param'
 
-    def __init__(self, compiled_obj, name):
+    def __init__(self, compiled_obj, name, default):
         self.parent_context = compiled_obj.parent_context
         self.string_name = name
+        self._default = default
 
     def get_kind(self):
         return Parameter.POSITIONAL_ONLY
+
+    def to_string(self):
+        string = self.string_name
+        if self._default:
+            string += '=' + self._default
+        return string
 
     def infer(self):
         return NO_CONTEXTS
@@ -456,14 +499,18 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def create_from_name(evaluator, compiled_object, name):
-    access = compiled_object.access_handle.getattr(name, default=None)
+def _create_from_name(evaluator, compiled_object, name):
+    access_paths = compiled_object.access_handle.getattr_paths(name, default=None)
     parent_context = compiled_object
     if parent_context.is_class():
         parent_context = parent_context.parent_context
-    return create_cached_compiled_object(
-        evaluator, access, parent_context=parent_context
-    )
+
+    context = None
+    for access_path in access_paths:
+        context = create_cached_compiled_object(
+            evaluator, access_path, parent_context=context
+        )
+    return context
 
 
 def _normalize_create_args(func):

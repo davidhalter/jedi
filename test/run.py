@@ -18,7 +18,7 @@ How to run tests?
 +++++++++++++++++
 
 Jedi uses pytest_ to run unit and integration tests.  To run tests,
-simply run ``py.test``.  You can also use tox_ to run tests for
+simply run ``pytest``.  You can also use tox_ to run tests for
 multiple Python versions.
 
 .. _pytest: http://pytest.org
@@ -30,7 +30,7 @@ definitions), ``#!`` (assignments), or ``#<`` (usages).
 There is also support for third party libraries. In a normal test run they are
 not being executed, you have to provide a ``--thirdparty`` option.
 
-In addition to standard `-k` and `-m` options in py.test, you can use
+In addition to standard `-k` and `-m` options in pytest, you can use the
 `-T` (`--test-files`) option to specify integration test cases to run.
 It takes the format of ``FILE_NAME[:LINE[,LINE[,...]]]`` where
 ``FILE_NAME`` is a file in ``test/completion`` and ``LINE`` is a line
@@ -38,20 +38,20 @@ number of the test comment.  Here is some recipes:
 
 Run tests only in ``basic.py`` and ``imports.py``::
 
-    py.test test/test_integration.py -T basic.py -T imports.py
+    pytest test/test_integration.py -T basic.py -T imports.py
 
 Run test at line 4, 6, and 8 in ``basic.py``::
 
-    py.test test/test_integration.py -T basic.py:4,6,8
+    pytest test/test_integration.py -T basic.py:4,6,8
 
-See ``py.test --help`` for more information.
+See ``pytest --help`` for more information.
 
 If you want to debug a test, just use the ``--pdb`` option.
 
 Alternate Test Runner
 +++++++++++++++++++++
 
-If you don't like the output of ``py.test``, there's an alternate test runner
+If you don't like the output of ``pytest``, there's an alternate test runner
 that you can start by running ``./run.py``. The above example could be run by::
 
     ./run.py basic 4 6 8 50-80
@@ -126,6 +126,7 @@ from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
+from jedi.evaluate.gradual.conversion import convert_contexts
 
 
 TEST_COMPLETIONS = 0
@@ -230,7 +231,9 @@ class IntegrationTestCase(object):
                 if user_context.api_type == 'function':
                     user_context = user_context.get_function_execution()
                 element.parent = user_context.tree_node
-                results = evaluator.eval_element(user_context, element)
+                results = convert_contexts(
+                    evaluator.eval_element(user_context, element),
+                )
                 if not results:
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))
@@ -295,7 +298,7 @@ def collect_file_tests(path, lines, lines_to_execute):
     skip_version_info = None
     for line_nr, line in enumerate(lines, 1):
         if correct is not None:
-            r = re.match('^(\d+)\s*(.*)$', correct)
+            r = re.match(r'^(\d+)\s*(.*)$', correct)
             if r:
                 column = int(r.group(1))
                 correct = r.group(2)
@@ -353,9 +356,11 @@ def collect_dir_tests(base_dir, test_files, check_thirdparty=False):
             path = os.path.join(base_dir, f_name)
 
             if is_py3:
-                source = open(path, encoding='utf-8').read()
+                with open(path, encoding='utf-8') as f:
+                    source = f.read()
             else:
-                source = unicode(open(path).read(), 'UTF-8')
+                with open(path) as f:
+                    source = unicode(f.read(), 'UTF-8')
 
             for case in collect_file_tests(path, StringIO(source),
                                            lines_to_execute):
@@ -396,7 +401,7 @@ if __name__ == '__main__':
     test_files = {}
     last = None
     for arg in arguments['<rest>']:
-        match = re.match('(\d+)-(\d+)', arg)
+        match = re.match(r'(\d+)-(\d+)', arg)
         if match:
             start, end = match.groups()
             test_files[last].append((int(start), int(end)))

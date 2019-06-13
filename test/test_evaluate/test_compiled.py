@@ -1,15 +1,20 @@
 from textwrap import dedent
+import math
+import sys
+from collections import Counter
+from datetime import datetime
 
 import pytest
 
 from jedi.evaluate import compiled
-from jedi.evaluate.helpers import execute_evaluated
+from jedi.evaluate.compiled.access import DirectObjectAccess
+from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
 
 
 def test_simple(evaluator, environment):
     obj = compiled.create_simple_object(evaluator, u'_str_')
     upper, = obj.py__getattribute__(u'upper')
-    objs = list(execute_evaluated(upper))
+    objs = list(upper.execute_evaluated())
     assert len(objs) == 1
     if environment.version_info.major == 2:
         expected = 'unicode'
@@ -22,14 +27,15 @@ def test_builtin_loading(evaluator):
     string, = evaluator.builtins_module.py__getattribute__(u'str')
     from_name, = string.py__getattribute__(u'__init__')
     assert from_name.tree_node
-    assert from_name.py__doc__()
+    assert not from_name.py__doc__()  # It's a stub
 
 
-def test_fake_docstr(evaluator):
+def test_next_docstr(evaluator):
     next_ = compiled.builtin_from_name(evaluator, u'next')
-    assert next_.py__doc__()
     assert next_.tree_node is not None
-    assert next_.py__doc__() == next.__doc__
+    assert next_.py__doc__() == ''  # It's a stub
+    for non_stub in _stub_to_python_context_set(next_):
+        assert non_stub.py__doc__() == next.__doc__
 
 
 def test_parse_function_doc_illegal_docstr():
@@ -99,3 +105,67 @@ def test_getitem_on_none(Script):
     assert not script.goto_definitions()
     issue, = script._evaluator.analysis
     assert issue.name == 'type-error-not-subscriptable'
+
+
+def _return_int():
+    return 1
+
+
+@pytest.mark.parametrize(
+    'attribute, expected_name, expected_parent', [
+        ('x', 'int', 'builtins'),
+        ('y', 'int', 'builtins'),
+        ('z', 'bool', 'builtins'),
+        ('cos', 'cos', 'math'),
+        ('dec', 'Decimal', 'decimal'),
+        ('dt', 'datetime', 'datetime'),
+        ('ret_int', '_return_int', 'test.test_evaluate.test_compiled'),
+    ]
+)
+def test_parent_context(same_process_evaluator, attribute, expected_name, expected_parent):
+    import decimal
+
+    class C:
+        x = 1
+        y = int
+        z = True
+        cos = math.cos
+        dec = decimal.Decimal(1)
+        dt = datetime(2000, 1, 1)
+        ret_int = _return_int
+
+    o = compiled.CompiledObject(
+        same_process_evaluator,
+        DirectObjectAccess(same_process_evaluator, C)
+    )
+    x, = o.py__getattribute__(attribute)
+    assert x.py__name__() == expected_name
+    module_name = x.parent_context.py__name__()
+    if module_name == '__builtin__':
+        module_name = 'builtins'  # Python 2
+    assert module_name == expected_parent
+    assert x.parent_context.parent_context is None
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize(
+    'obj, expected_names', [
+        ('', ['str']),
+        (str, ['str']),
+        (''.upper, ['str', 'upper']),
+        (str.upper, ['str', 'upper']),
+
+        (math.cos, ['cos']),
+
+        (Counter, ['Counter']),
+        (Counter(""), ['Counter']),
+        (Counter.most_common, ['Counter', 'most_common']),
+        (Counter("").most_common, ['Counter', 'most_common']),
+    ]
+)
+def test_qualified_names(same_process_evaluator, obj, expected_names):
+    o = compiled.CompiledObject(
+        same_process_evaluator,
+        DirectObjectAccess(same_process_evaluator, obj)
+    )
+    assert o.get_qualified_names() == tuple(expected_names)

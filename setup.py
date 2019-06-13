@@ -2,6 +2,7 @@
 
 from setuptools import setup, find_packages
 
+import os
 import ast
 
 __AUTHOR__ = 'David Halter'
@@ -15,6 +16,9 @@ version = tree.body[int(not hasattr(tree, 'docstring'))].value.s
 readme = open('README.rst').read() + '\n\n' + open('CHANGELOG.rst').read()
 with open('requirements.txt') as f:
     install_requires = f.read().splitlines()
+
+assert os.path.isfile("jedi/third_party/typeshed/LICENSE"), \
+    "Please download the typeshed submodule first (Hint: git submodule update --init)"
 
 setup(name='jedi',
       version=version,
@@ -40,7 +44,8 @@ setup(name='jedi',
               'colorama',
           ],
       },
-      package_data={'jedi': ['evaluate/compiled/fake/*.pym']},
+      package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',
+                             'third_party/typeshed/README']},
       platforms=['any'],
       classifiers=[
           'Development Status :: 4 - Beta',

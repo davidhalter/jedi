@@ -15,8 +15,9 @@ from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic
 from jedi.evaluate.utils import to_list
-from jedi.evaluate.filters import FilterWrapper, NameWrapper, \
-    AbstractTreeName, AbstractNameDefinition, ContextName
+from jedi.evaluate.filters import FilterWrapper
+from jedi.evaluate.names import NameWrapper, AbstractTreeName, \
+    AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
 from jedi.evaluate.context.klass import ClassMixin
 
@@ -115,8 +116,7 @@ class TypingModuleName(NameWrapper):
             yield NewTypeFunction.create_cached(evaluator, self.parent_context, self.tree_name)
         elif name == 'cast':
             # TODO implement cast
-            for c in self._wrapped_name.infer():  # Fuck my life Python 2
-                yield c
+            yield CastFunction.create_cached(evaluator, self.parent_context, self.tree_name)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
@@ -420,9 +420,7 @@ class TypeVar(_BaseTypingContext):
         if self._bound_lazy_context is not None:
             return self._bound_lazy_context.infer()
         if self._constraints_lazy_contexts:
-            return ContextSet.from_sets(
-                l.infer() for l in self._constraints_lazy_contexts
-            )
+            return self.constraints
         debug.warning('Tried to infer the TypeVar %s without a given type', self._var_name)
         return NO_CONTEXTS
 
@@ -435,6 +433,16 @@ class TypeVar(_BaseTypingContext):
         return ContextSet.from_sets(
             lazy.infer() for lazy in self._constraints_lazy_contexts
         )
+
+    def define_generics(self, type_var_dict):
+        try:
+            found = type_var_dict[self.py__name__()]
+        except KeyError:
+            pass
+        else:
+            if found:
+                return found
+        return self._get_classes() or ContextSet({self})
 
     def execute_annotation(self):
         return self._get_classes().execute_annotation()
@@ -476,6 +484,12 @@ class NewType(Context):
         return self._type_context_set
 
 
+class CastFunction(_BaseTypingContext):
+    @repack_with_argument_clinic('type, object, /')
+    def py__call__(self, type_context_set, object_context_set):
+        return type_context_set.execute_annotation()
+
+
 class BoundTypeVarName(AbstractNameDefinition):
     """
     This type var was bound to a certain type, e.g. int.
@@ -514,15 +528,15 @@ class TypeVarFilter(object):
 
     In this example we would have two type vars given: A and B
     """
-    def __init__(self, given_types, type_vars):
-        self._given_types = given_types
+    def __init__(self, generics, type_vars):
+        self._generics = generics
         self._type_vars = type_vars
 
     def get(self, name):
         for i, type_var in enumerate(self._type_vars):
             if type_var.py__name__() == name:
                 try:
-                    return [BoundTypeVarName(type_var, self._given_types[i])]
+                    return [BoundTypeVarName(type_var, self._generics[i])]
                 except IndexError:
                     return [type_var.name]
         return []
@@ -535,22 +549,7 @@ class TypeVarFilter(object):
 
 class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
     def get_type_var_filter(self):
-        return TypeVarFilter(self.get_given_types(), self.list_type_vars())
-
-    def _create_class_filter(self, cls, origin_scope, is_instance):
-        filter_ = super(AbstractAnnotatedClass, self)._create_class_filter(
-            cls, origin_scope, is_instance
-        )
-        if cls.stub_context is None:
-            return filter_
-        return cls.stub_context.get_stub_only_filter(
-            # Take the first filter, which is here to filter module contents
-            # and wrap it.
-            self.parent_context,
-            [filter_],
-            search_global=False,
-            origin_scope=origin_scope,
-        )
+        return TypeVarFilter(self.get_generics(), self.list_type_vars())
 
     def get_filters(self, search_global=False, *args, **kwargs):
         filters = super(AbstractAnnotatedClass, self).get_filters(
@@ -572,8 +571,8 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
         if self.tree_node != other.tree_node:
             # TODO not sure if this is nice.
             return False
-        given_params1 = self.get_given_types()
-        given_params2 = other.get_given_types()
+        given_params1 = self.get_generics()
+        given_params2 = other.get_generics()
 
         if len(given_params1) != len(given_params2):
             # If the amount of type vars doesn't match, the class doesn't
@@ -594,47 +593,40 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
         instance, = super(AbstractAnnotatedClass, self).py__call__(arguments)
         return ContextSet([InstanceWrapper(instance)])
 
-    def get_given_types(self):
+    def get_generics(self):
         raise NotImplementedError
 
     def define_generics(self, type_var_dict):
         changed = False
         new_generics = []
-        for generic_set in self.get_given_types():
+        for generic_set in self.get_generics():
             contexts = NO_CONTEXTS
             for generic in generic_set:
-                if isinstance(generic, AbstractAnnotatedClass):
-                    new_generic = generic.define_generics(type_var_dict)
-                    contexts |= ContextSet([new_generic])
-                    if new_generic != generic:
+                if isinstance(generic, (AbstractAnnotatedClass, TypeVar)):
+                    result = generic.define_generics(type_var_dict)
+                    contexts |= result
+                    if result != ContextSet({generic}):
                         changed = True
                 else:
-                    if isinstance(generic, TypeVar):
-                        try:
-                            contexts |= type_var_dict[generic.py__name__()]
-                            changed = True
-                        except KeyError:
-                            contexts |= ContextSet([generic])
-                    else:
-                        contexts |= ContextSet([generic])
+                    contexts |= ContextSet([generic])
             new_generics.append(contexts)
 
         if not changed:
             # There might not be any type vars that change. In that case just
             # return itself, because it does not make sense to potentially lose
             # cached results.
-            return self
+            return ContextSet([self])
 
-        return AnnotatedSubClass(
+        return ContextSet([GenericClass(
             self._wrapped_context,
-            given_types=tuple(new_generics)
-        )
+            generics=tuple(new_generics)
+        )])
 
     def __repr__(self):
         return '<%s: %s%s>' % (
             self.__class__.__name__,
             self._wrapped_context,
-            list(self.get_given_types()),
+            list(self.get_generics()),
         )
 
     @to_list
@@ -643,24 +635,24 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
             yield LazyAnnotatedBaseClass(self, base)
 
 
-class AnnotatedClass(AbstractAnnotatedClass):
+class LazyGenericClass(AbstractAnnotatedClass):
     def __init__(self, class_context, index_context, context_of_index):
-        super(AnnotatedClass, self).__init__(class_context)
+        super(LazyGenericClass, self).__init__(class_context)
         self._index_context = index_context
         self._context_of_index = context_of_index
 
     @evaluator_method_cache()
-    def get_given_types(self):
+    def get_generics(self):
         return list(_iter_over_arguments(self._index_context, self._context_of_index))
 
 
-class AnnotatedSubClass(AbstractAnnotatedClass):
-    def __init__(self, class_context, given_types):
-        super(AnnotatedSubClass, self).__init__(class_context)
-        self._given_types = given_types
+class GenericClass(AbstractAnnotatedClass):
+    def __init__(self, class_context, generics):
+        super(GenericClass, self).__init__(class_context)
+        self._generics = generics
 
-    def get_given_types(self):
-        return self._given_types
+    def get_generics(self):
+        return self._generics
 
 
 class LazyAnnotatedBaseClass(object):
@@ -673,7 +665,7 @@ class LazyAnnotatedBaseClass(object):
         for base in self._lazy_base_class.infer():
             if isinstance(base, AbstractAnnotatedClass):
                 # Here we have to recalculate the given types.
-                yield AnnotatedSubClass.create_cached(
+                yield GenericClass.create_cached(
                     base.evaluator,
                     base._wrapped_context,
                     tuple(self._remap_type_vars(base)),
@@ -683,7 +675,7 @@ class LazyAnnotatedBaseClass(object):
 
     def _remap_type_vars(self, base):
         filter = self._class_context.get_type_var_filter()
-        for type_var_set in base.get_given_types():
+        for type_var_set in base.get_generics():
             new = NO_CONTEXTS
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar):
@@ -703,9 +695,9 @@ class InstanceWrapper(ContextWrapper):
     def py__stop_iteration_returns(self):
         for cls in self._wrapped_context.class_context.py__mro__():
             if cls.py__name__() == 'Generator':
-                given_types = cls.get_given_types()
+                generics = cls.get_generics()
                 try:
-                    return given_types[2].execute_annotation()
+                    return generics[2].execute_annotation()
                 except IndexError:
                     pass
             elif cls.py__name__() == 'Iterator':

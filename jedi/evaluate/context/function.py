@@ -10,8 +10,8 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate import helpers
 from jedi.evaluate.signature import TreeSignature
 from jedi.evaluate.arguments import AnonymousArguments
-from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter, \
-    ContextName, AbstractNameDefinition, ParamName
+from jedi.evaluate.filters import ParserTreeFilter, FunctionExecutionFilter
+from jedi.evaluate.names import ContextName, AbstractNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedNode, NO_CONTEXTS, \
     ContextSet, TreeContext, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
@@ -19,6 +19,7 @@ from jedi.evaluate.lazy_context import LazyKnownContexts, LazyKnownContext, \
 from jedi.evaluate.context import iterable
 from jedi import parser_utils
 from jedi.evaluate.parser_cache import get_yield_exprs
+from jedi.evaluate.helpers import contexts_from_qualified_names
 
 
 class LambdaName(AbstractNameDefinition):
@@ -37,24 +38,21 @@ class LambdaName(AbstractNameDefinition):
         return ContextSet([self._lambda_context])
 
 
-class FunctionAndClassMixin(object):
+class FunctionAndClassBase(TreeContext):
     def get_qualified_names(self):
         if self.parent_context.is_class():
             n = self.parent_context.get_qualified_names()
             if n is None:
                 # This means that the parent class lives within a function.
                 return None
-            return n + [self.py__name__()]
+            return n + (self.py__name__(),)
         elif self.parent_context.is_module():
-            return [self.py__name__()]
+            return (self.py__name__(),)
         else:
             return None
 
-    def py__name__(self):
-        return self.name.string_name
 
-
-class FunctionMixin(FunctionAndClassMixin):
+class FunctionMixin(object):
     api_type = u'function'
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
@@ -88,6 +86,9 @@ class FunctionMixin(FunctionAndClassMixin):
             return LambdaName(self)
         return ContextName(self, self.tree_node.name)
 
+    def py__name__(self):
+        return self.name.string_name
+
     def py__call__(self, arguments):
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
@@ -99,7 +100,7 @@ class FunctionMixin(FunctionAndClassMixin):
         return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
 
 
-class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)):
+class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
     """
     Needed because of decorators. Decorators are evaluated here.
     """
@@ -139,13 +140,11 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, TreeContext)
         return function
 
     def py__class__(self):
-        return compiled.get_special_object(self.evaluator, u'FUNCTION_CLASS')
+        c, = contexts_from_qualified_names(self.evaluator, u'types', u'FunctionType')
+        return c
 
     def get_default_param_context(self):
         return self.parent_context
-
-    def get_matching_functions(self, arguments):
-        yield self
 
     def get_signatures(self):
         return [TreeSignature(self)]
@@ -158,6 +157,14 @@ class MethodContext(FunctionContext):
 
     def get_default_param_context(self):
         return self.class_context
+
+    def get_qualified_names(self):
+        # Need to implement this, because the parent context of a method
+        # context is not the class context but the module.
+        names = self.class_context.get_qualified_names()
+        if names is None:
+            return None
+        return names + (self.py__name__(),)
 
 
 class FunctionExecutionContext(TreeContext):
@@ -324,9 +331,9 @@ class FunctionExecutionContext(TreeContext):
         Created to be used by inheritance.
         """
         evaluator = self.evaluator
-        is_coroutine = self.tree_node.parent.type == 'async_stmt'
+        is_coroutine = self.tree_node.parent.type in ('async_stmt', 'async_funcdef')
         is_generator = bool(get_yield_exprs(evaluator, self.tree_node))
-        from jedi.evaluate.gradual.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import GenericClass
 
         if is_coroutine:
             if is_generator:
@@ -340,7 +347,7 @@ class FunctionExecutionContext(TreeContext):
                 generics = (yield_contexts.py__class__(), NO_CONTEXTS)
                 return ContextSet(
                     # In Python 3.6 AsyncGenerator is still a class.
-                    AnnotatedSubClass(c.stub_context or c, generics)
+                    GenericClass(c, generics)
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
@@ -351,10 +358,7 @@ class FunctionExecutionContext(TreeContext):
                 # Only the first generic is relevant.
                 generics = (return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
                 return ContextSet(
-                    AnnotatedSubClass(
-                        c if c.stub_context is None else c.stub_context,
-                        generics
-                    ) for c in async_classes
+                    GenericClass(c, generics) for c in async_classes
                 ).execute_annotation()
         else:
             if is_generator:
@@ -387,17 +391,6 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
             # In this case we want precision.
             return NO_CONTEXTS
         return ContextSet.from_sets(fe.infer() for fe in function_executions)
-
-    def get_matching_functions(self, arguments):
-        for f in self.overloaded_functions:
-            signature = parser_utils.get_call_signature(f.tree_node)
-            if signature_matches(f, arguments):
-                debug.dbg("Overloading match: %s@%s",
-                          signature, f.tree_node.start_pos[0], color='BLUE')
-                yield f
-            else:
-                debug.dbg("Overloading no match: %s@%s (%s)",
-                          signature, f.tree_node.start_pos[0], arguments, color='BLUE')
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.overloaded_functions]

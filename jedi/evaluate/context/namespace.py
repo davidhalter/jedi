@@ -1,5 +1,6 @@
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi.evaluate.filters import DictFilter, AbstractNameDefinition, ContextNameMixin
+from jedi.evaluate.filters import DictFilter
+from jedi.evaluate.names import ContextNameMixin, AbstractNameDefinition
 from jedi.evaluate.base_context import Context
 from jedi.evaluate.context.module import SubModuleDictMixin
 
@@ -31,7 +32,7 @@ class ImplicitNamespaceContext(Context, SubModuleDictMixin):
         self._paths = paths
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
-        yield DictFilter(self._sub_modules_dict())
+        yield DictFilter(self.sub_modules_dict())
 
     @property
     @evaluator_method_cache()
@@ -52,6 +53,12 @@ class ImplicitNamespaceContext(Context, SubModuleDictMixin):
 
     def py__name__(self):
         return self._fullname
+
+    def is_namespace(self):
+        return True
+
+    def is_stub(self):
+        return False
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._fullname)

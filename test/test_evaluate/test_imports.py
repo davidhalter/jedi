@@ -6,12 +6,13 @@ Tests".
 import os
 
 import pytest
-from parso.file_io import FileIO
+from jedi.file_io import FileIO, KnownContentFileIO
 
 from jedi._compatibility import find_module_py33, find_module
 from jedi.evaluate import compiled
 from jedi.evaluate import imports
 from jedi.api.project import Project
+from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
 from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
 
 THIS_DIR = os.path.dirname(__file__)
@@ -37,7 +38,9 @@ def test_find_module_not_package():
     assert is_package is False
 
 
-pkg_zip_path = os.path.join(os.path.dirname(__file__), 'zipped_imports/pkg.zip')
+pkg_zip_path = os.path.join(os.path.dirname(__file__),
+                            'zipped_imports',
+                            'pkg.zip')
 
 
 def test_find_module_package_zipped(Script, evaluator, environment):
@@ -295,7 +298,10 @@ def test_compiled_import_none(monkeypatch, Script):
     """
     script = Script('import sys')
     monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
-    assert not script.goto_definitions()
+    def_, = script.goto_definitions()
+    assert def_.type == 'module'
+    context, = def_._name.infer()
+    assert not _stub_to_python_context_set(context)
 
 
 @pytest.mark.parametrize(
@@ -319,6 +325,23 @@ def test_get_modules_containing_name(evaluator, path, goal, is_package):
     )
     assert input_module is module
     assert found_module.string_names == goal
+
+
+@pytest.mark.parametrize(
+    ('path', 'base_names', 'is_package', 'names'), [
+        ('/foo/bar.py', ('foo',), False, ('foo', 'bar')),
+        ('/foo/bar.py', ('foo', 'baz'), False, ('foo', 'baz', 'bar')),
+        ('/foo/__init__.py', ('foo',), True, ('foo',)),
+        ('/__init__.py', ('foo',), True, ('foo',)),
+        ('/foo/bar/__init__.py', ('foo',), True, ('foo',)),
+        ('/foo/bar/__init__.py', ('foo', 'bar'), True, ('foo', 'bar')),
+    ]
+)
+def test_load_module_from_path(evaluator, path, base_names, is_package, names):
+    file_io = KnownContentFileIO(path, '')
+    m = imports._load_module_from_path(evaluator, file_io, base_names)
+    assert m.is_package == is_package
+    assert m.string_names == names
 
 
 @pytest.mark.parametrize(
@@ -433,3 +456,9 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
     module, = script.goto_definitions()
     assert module._evaluator.builtins_module.py__file__() != module_path
     assert module._evaluator.typing_module.py__file__() != module_path
+
+
+def test_import_with_semicolon(Script):
+    names = [c.name for c in Script('xzy; from abc import ').completions()]
+    assert 'ABCMeta' in names
+    assert 'abc' not in names

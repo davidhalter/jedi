@@ -11,6 +11,7 @@ from jedi.evaluate import imports
 from jedi.api import keywords
 from jedi.evaluate.helpers import evaluate_call_of_leaf, parse_dotted_names
 from jedi.evaluate.filters import get_global_filters
+from jedi.evaluate.gradual.conversion import convert_contexts
 from jedi.parser_utils import get_statement_of_position
 
 
@@ -178,7 +179,12 @@ class Completion:
 
             nonterminals = [stack_node.nonterminal for stack_node in stack]
 
-            nodes = [node for stack_node in stack for node in stack_node.nodes]
+            nodes = []
+            for stack_node in stack:
+                if stack_node.dfa.from_rule == 'small_stmt':
+                    nodes = []
+                else:
+                    nodes += stack_node.nodes
 
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
@@ -236,8 +242,17 @@ class Completion:
         debug.dbg('trailer completion contexts: %s', contexts, color='MAGENTA')
         for context in contexts:
             for filter in context.get_filters(
-                    search_global=False, origin_scope=user_context.tree_node):
+                    search_global=False,
+                    origin_scope=user_context.tree_node):
                 completion_names += filter.values()
+
+        python_contexts = convert_contexts(contexts)
+        for c in python_contexts:
+            if c not in contexts:
+                for filter in c.get_filters(
+                        search_global=False,
+                        origin_scope=user_context.tree_node):
+                    completion_names += filter.values()
         return completion_names
 
     def _get_importer_names(self, names, level=0, only_modules=True):

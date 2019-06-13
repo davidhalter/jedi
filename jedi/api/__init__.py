@@ -21,6 +21,7 @@ from jedi.parser_utils import get_executable_nodes
 from jedi import debug
 from jedi import settings
 from jedi import cache
+from jedi.file_io import KnownContentFileIO
 from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
@@ -33,12 +34,12 @@ from jedi.evaluate import usages
 from jedi.evaluate.arguments import try_iter_content
 from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
 from jedi.evaluate.sys_path import transform_path_to_dotted
-from jedi.evaluate.filters import TreeNameDefinition, ParamName
+from jedi.evaluate.names import TreeNameDefinition, ParamName
 from jedi.evaluate.syntax_tree import tree_name_to_contexts
 from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.base_context import ContextSet
 from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-from jedi.evaluate.gradual.typeshed import try_to_merge_with_stub
+from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
 from jedi.evaluate.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -118,6 +119,7 @@ class Script(object):
             code=source,
             path=self.path,
             encoding=encoding,
+            use_latest_grammar=path and path.endswith('.pyi'),
             cache=False,  # No disk cache, because the current script often changes.
             diff_cache=settings.fast_parser,
             cache_path=settings.cache_directory,
@@ -162,11 +164,15 @@ class Script(object):
                 names = import_names
                 is_package = is_p
 
+        if self.path is None:
+            file_io = None
+        else:
+            file_io = KnownContentFileIO(cast_path(self.path), self._code)
         if self.path is not None and self.path.endswith('.pyi'):
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
                 self._evaluator,
-                cast_path(self.path),
+                file_io,
                 names,
                 self._module_node
             )
@@ -177,13 +183,10 @@ class Script(object):
             names = ('__main__',)
 
         module = ModuleContext(
-            self._evaluator, self._module_node, cast_path(self.path),
+            self._evaluator, self._module_node, file_io,
             string_names=names,
             code_lines=self._code_lines,
             is_package=is_package,
-        )
-        module, = try_to_merge_with_stub(
-            self._evaluator, None, module.string_names, ContextSet([module])
         )
         if names[0] not in ('builtins', '__builtin__', 'typing'):
             # These modules are essential for Jedi, so don't overwrite them.
@@ -205,34 +208,14 @@ class Script(object):
         :return: Completion objects, sorted by name and __ comes last.
         :rtype: list of :class:`classes.Completion`
         """
-        debug.speed('completions start')
-        completion = Completion(
-            self._evaluator, self._get_module(), self._code_lines,
-            self._pos, self.call_signatures
-        )
-        completions = completion.completions()
+        with debug.increase_indent_cm('completions'):
+            completion = Completion(
+                self._evaluator, self._get_module(), self._code_lines,
+                self._pos, self.call_signatures
+            )
+            return completion.completions()
 
-        def iter_import_completions():
-            for c in completions:
-                tree_name = c._name.tree_name
-                if tree_name is None:
-                    continue
-                definition = tree_name.get_definition()
-                if definition is not None \
-                        and definition.type in ('import_name', 'import_from'):
-                    yield c
-
-        if len(list(iter_import_completions())) > 10:
-            # For now disable completions if there's a lot of imports that
-            # might potentially be resolved. This is the case for tensorflow
-            # and has been fixed for it. This is obviously temporary until we
-            # have a better solution.
-            self._evaluator.infer_enabled = False
-
-        debug.speed('completions end')
-        return completions
-
-    def goto_definitions(self):
+    def goto_definitions(self, **kwargs):
         """
         Return the definitions of a the path under the cursor.  goto function!
         This follows complicated paths and returns the end, not the first
@@ -242,8 +225,14 @@ class Script(object):
         because Python itself is a dynamic language, which means depending on
         an option you can have two different versions of a function.
 
+        :param only_stubs: Only return stubs for this goto call.
+        :param prefer_stubs: Prefer stubs to Python obects for this goto call.
         :rtype: list of :class:`classes.Definition`
         """
+        with debug.increase_indent_cm('goto_definitions'):
+            return self._goto_definitions(**kwargs)
+
+    def _goto_definitions(self, only_stubs=False, prefer_stubs=False):
         leaf = self._module_node.get_name_of_position(self._pos)
         if leaf is None:
             leaf = self._module_node.get_leaf_for_position(self._pos)
@@ -251,27 +240,42 @@ class Script(object):
                 return []
 
         context = self._evaluator.create_context(self._get_module(), leaf)
-        definitions = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
 
-        names = [s.name for s in definitions]
-        defs = [classes.Definition(self._evaluator, name) for name in names]
+        contexts = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
+        contexts = convert_contexts(
+            contexts,
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
+        )
+
+        defs = [classes.Definition(self._evaluator, c.name) for c in contexts]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
         return helpers.sorted_definitions(set(defs))
 
-    def goto_assignments(self, follow_imports=False, follow_builtin_imports=False):
+    def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
+        .. note:: It is deprecated to use follow_imports and follow_builtin_imports as
+            positional arguments. Will be a keyword argument in 0.16.0.
+
         :param follow_imports: The goto call will follow imports.
         :param follow_builtin_imports: If follow_imports is True will decide if
             it follow builtin imports.
+        :param only_stubs: Only return stubs for this goto call.
+        :param prefer_stubs: Prefer stubs to Python obects for this goto call.
         :rtype: list of :class:`classes.Definition`
         """
+        with debug.increase_indent_cm('goto_assignments'):
+            return self._goto_assignments(follow_imports, follow_builtin_imports, **kwargs)
+
+    def _goto_assignments(self, follow_imports, follow_builtin_imports,
+                          only_stubs=False, prefer_stubs=False):
         def filter_follow_imports(names, check):
             for name in names:
                 if check(name):
@@ -282,7 +286,7 @@ class Script(object):
                             if new_name.start_pos is None:
                                 found_builtin = True
 
-                    if found_builtin and not isinstance(name, imports.SubModuleName):
+                    if found_builtin:
                         yield name
                     else:
                         for new_name in new_names:
@@ -292,18 +296,19 @@ class Script(object):
 
         tree_name = self._module_node.get_name_of_position(self._pos)
         if tree_name is None:
-            return []
+            # Without a name we really just want to jump to the result e.g.
+            # executed by `foo()`, if we the cursor is after `)`.
+            return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
         context = self._evaluator.create_context(self._get_module(), tree_name)
         names = list(self._evaluator.goto(context, tree_name))
 
         if follow_imports:
-            def check(name):
-                return name.is_import()
-        else:
-            def check(name):
-                return isinstance(name, imports.SubModuleName)
-
-        names = filter_follow_imports(names, check)
+            names = filter_follow_imports(names, lambda name: name.is_import())
+        names = convert_names(
+            names,
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
+        )
 
         defs = [classes.Definition(self._evaluator, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
@@ -377,6 +382,8 @@ class Script(object):
         )
         debug.speed('func_call followed')
 
+        # TODO here we use stubs instead of the actual contexts. We should use
+        # the signatures from stubs, but the actual contexts, probably?!
         return [classes.CallSignature(self._evaluator, signature,
                                       call_signature_details.bracket_leaf.start_pos,
                                       call_signature_details.call_index,
@@ -468,7 +475,7 @@ class Interpreter(Script):
             self._evaluator,
             self._module_node,
             self.namespaces,
-            path=self.path,
+            file_io=KnownContentFileIO(self.path, self._code),
             code_lines=self._code_lines,
         )
 
@@ -498,9 +505,8 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
             cls = ParamName
         else:
             cls = TreeNameDefinition
-        is_module = name.parent.type == 'file_input'
         return cls(
-            module_context.create_context(name if is_module else name.parent),
+            module_context.create_context(name),
             name
         )
 

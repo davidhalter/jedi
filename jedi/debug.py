@@ -1,6 +1,8 @@
-from jedi._compatibility import encoding, is_py3, u
 import os
 import time
+from contextlib import contextmanager
+
+from jedi._compatibility import encoding, is_py3, u
 
 _inited = False
 
@@ -76,13 +78,23 @@ def reset_time():
 def increase_indent(func):
     """Decorator for makin """
     def wrapper(*args, **kwargs):
-        global _debug_indent
-        _debug_indent += 1
-        try:
+        with increase_indent_cm():
             return func(*args, **kwargs)
-        finally:
-            _debug_indent -= 1
     return wrapper
+
+
+@contextmanager
+def increase_indent_cm(title=None):
+    global _debug_indent
+    if title:
+        dbg('Start: ' + title, color='MAGENTA')
+    _debug_indent += 1
+    try:
+        yield
+    finally:
+        _debug_indent -= 1
+        if title:
+            dbg('End: ' + title, color='MAGENTA')
 
 
 def dbg(message, *args, **kwargs):

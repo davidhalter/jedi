@@ -1,14 +1,14 @@
 import re
 import os
 
-from parso import python_bytes_to_unicode
-
+from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
-from jedi._compatibility import iter_modules, all_suffixes
-from jedi.evaluate.filters import GlobalNameFilter, ContextNameMixin, \
-    AbstractNameDefinition, ParserTreeFilter, DictFilter, MergedFilter
+from jedi.evaluate.names import ContextNameMixin, AbstractNameDefinition
+from jedi.evaluate.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
+from jedi.evaluate.names import SubModuleName
+from jedi.evaluate.helpers import contexts_from_qualified_names
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -37,34 +37,52 @@ class ModuleName(ContextNameMixin, AbstractNameDefinition):
         return self._name
 
 
+def iter_module_names(evaluator, paths):
+    # Python modules/packages
+    for n in evaluator.compiled_subprocess.list_module_names(paths):
+        yield n
+
+    for path in paths:
+        try:
+            dirs = os.listdir(path)
+        except OSError:
+            # The file might not exist or reading it might lead to an error.
+            debug.warning("Not possible to list directory: %s", path)
+            continue
+        for name in dirs:
+            # Namespaces
+            if os.path.isdir(os.path.join(path, name)):
+                # pycache is obviously not an interestin namespace. Also the
+                # name must be a valid identifier.
+                # TODO use str.isidentifier, once Python 2 is removed
+                if name != '__pycache__' and not re.search('\W|^\d', name):
+                    yield name
+            # Stub files
+            if name.endswith('.pyi'):
+                if name != '__init__.pyi':
+                    yield name[:-4]
+
+
 class SubModuleDictMixin(object):
     @evaluator_method_cache()
-    def _sub_modules_dict(self):
+    def sub_modules_dict(self):
         """
         Lists modules in the directory of this module (if this module is a
         package).
         """
-        from jedi.evaluate.imports import SubModuleName
-
         names = {}
         try:
             method = self.py__path__
         except AttributeError:
             pass
         else:
-            for path in method():
-                mods = iter_modules([path])
-                for module_loader, name, is_pkg in mods:
-                    # It's obviously a relative import to the current module.
-                    names[name] = SubModuleName(self, name)
+            mods = iter_module_names(self.evaluator, method())
+            for name in mods:
+                # It's obviously a relative import to the current module.
+                names[name] = SubModuleName(self, name)
 
-        # TODO add something like this in the future, its cleaner than the
-        #   import hacks.
-        # ``os.path`` is a hardcoded exception, because it's a
-        # ``sys.modules`` modification.
-        # if str(self.name) == 'os':
-        #     names.append(Name('path', parent_context=self))
-
+        # In the case of an import like `from x.` we don't need to
+        # add all the variables, this is only about submodules.
         return names
 
 
@@ -79,16 +97,20 @@ class ModuleMixin(SubModuleDictMixin):
             ),
             GlobalNameFilter(self, self.tree_node),
         )
-        yield DictFilter(self._sub_modules_dict())
+        yield DictFilter(self.sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
         for star_filter in self.iter_star_filters():
             yield star_filter
 
     def py__class__(self):
-        return compiled.get_special_object(self.evaluator, u'MODULE_CLASS')
+        c, = contexts_from_qualified_names(self.evaluator, u'types', u'ModuleType')
+        return c
 
     def is_module(self):
         return True
+
+    def is_stub(self):
+        return False
 
     @property
     @evaluator_method_cache()
@@ -136,19 +158,31 @@ class ModuleMixin(SubModuleDictMixin):
                 modules += new
         return modules
 
+    def get_qualified_names(self):
+        """
+        A module doesn't have a qualified name, but it's important to note that
+        it's reachable and not `None`. With this information we can add
+        qualified names on top for all context children.
+        """
+        return ()
+
 
 class ModuleContext(ModuleMixin, TreeContext):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, evaluator, module_node, path, string_names, code_lines, is_package=False):
+    def __init__(self, evaluator, module_node, file_io, string_names, code_lines, is_package=False):
         super(ModuleContext, self).__init__(
             evaluator,
             parent_context=None,
             tree_node=module_node
         )
-        self._path = path
-        self.string_names = string_names
+        self.file_io = file_io
+        if file_io is None:
+            self._path = None
+        else:
+            self._path = file_io.path
+        self.string_names = string_names  # Optional[Tuple[str, ...]]
         self.code_lines = code_lines
         self.is_package = is_package
 
@@ -156,7 +190,7 @@ class ModuleContext(ModuleMixin, TreeContext):
         if self._path is not None and self._path.endswith('.pyi'):
             # Currently this is the way how we identify stubs when e.g. goto is
             # used in them. This could be changed if stubs would be identified
-            # sooner and used as StubOnlyModuleContext.
+            # sooner and used as StubModuleContext.
             return True
         return super(ModuleContext, self).is_stub()
 
@@ -225,5 +259,5 @@ class ModuleContext(ModuleMixin, TreeContext):
         return "<%s: %s@%s-%s is_stub=%s>" % (
             self.__class__.__name__, self._string_name,
             self.tree_node.start_pos[0], self.tree_node.end_pos[0],
-            self._path is not None and self.is_stub()
+            self.is_stub()
         )

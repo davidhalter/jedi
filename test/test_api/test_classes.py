@@ -114,7 +114,7 @@ def test_class_call_signature(Script):
             pass
     Foo""").goto_definitions()
     doc = defs[0].docstring()
-    assert "Foo(self, x, y=1, z='a')" in str(doc)
+    assert doc == "Foo(x, y=1, z='a')"
 
 
 def test_position_none_if_builtin(Script):
@@ -174,13 +174,19 @@ def test_completion_params(Script):
     assert [p.name for p in c.params] == ['s', 'sep']
 
 
+def test_functions_should_have_params(Script):
+    for c in Script('bool.').completions():
+        if c.type == 'function':
+            assert isinstance(c.params, list)
+
+
 def test_hashlib_params(Script, environment):
     if environment.version_info < (3,):
         pytest.skip()
 
-    script = Script(source='from hashlib import ', line=1, column=20)
-    c = script.completions()
-    assert c[2].params
+    script = Script(source='from hashlib import sha256')
+    c, = script.completions()
+    assert [p.name for p in c.params] == ['arg']
 
 
 def test_signature_params(Script):

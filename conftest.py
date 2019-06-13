@@ -22,7 +22,7 @@ collect_ignore = [
 # to modify `jedi.settings.cache_directory` because `clean_jedi_cache`
 # has no effect during doctests.  Without these hooks, doctests uses
 # user's cache (e.g., ~/.cache/jedi/).  We should remove this
-# workaround once the problem is fixed in py.test.
+# workaround once the problem is fixed in pytest.
 #
 # See:
 # - https://github.com/davidhalter/jedi/pull/168

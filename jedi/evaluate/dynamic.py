@@ -102,7 +102,8 @@ def search_params(evaluator, execution_context, funcdef):
                     function_execution.get_executed_params_and_issues()[0]
                     for function_execution in function_executions
                 ))
-                params = [DynamicExecutedParams(evaluator, executed_params) for executed_params in zipped_params]
+                params = [DynamicExecutedParams(evaluator, executed_params)
+                          for executed_params in zipped_params]
                 # Evaluate the ExecutedParams to types.
             else:
                 return create_default_params(execution_context, funcdef)
@@ -122,7 +123,7 @@ def _search_function_executions(evaluator, module_context, funcdef, string_name)
     compare_node = funcdef
     if string_name == '__init__':
         cls = get_parent_scope(funcdef)
-        if isinstance(cls, tree.Class):
+        if cls.type == 'classdef':
             string_name = cls.name.value
             compare_node = cls
 

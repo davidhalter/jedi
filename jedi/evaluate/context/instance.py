@@ -3,7 +3,9 @@ from abc import abstractproperty
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
-from jedi.evaluate import filters
+from jedi.evaluate.helpers import contexts_from_qualified_names
+from jedi.evaluate.filters import AbstractFilter
+from jedi.evaluate.names import ContextName, TreeNameDefinition
 from jedi.evaluate.base_context import Context, NO_CONTEXTS, ContextSet, \
     iterator_to_context_set, ContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
@@ -71,20 +73,19 @@ class AbstractInstanceContext(Context):
     def is_instance(self):
         return True
 
+    def get_qualified_names(self):
+        return self.class_context.get_qualified_names()
+
     def get_annotated_class_object(self):
         return self.class_context  # This is the default.
 
-    @property
-    def py__call__(self):
+    def py__call__(self, arguments):
         names = self.get_function_slot_names(u'__call__')
         if not names:
             # Means the Instance is not callable.
-            raise AttributeError
+            return super(AbstractInstanceContext, self).py__call__(arguments)
 
-        def execute(arguments):
-            return ContextSet.from_sets(name.infer().execute(arguments) for name in names)
-
-        return execute
+        return ContextSet.from_sets(name.infer().execute(arguments) for name in names)
 
     def py__class__(self):
         return self.class_context
@@ -144,8 +145,10 @@ class AbstractInstanceContext(Context):
     def py__getitem__(self, index_context_set, contextualized_node):
         names = self.get_function_slot_names(u'__getitem__')
         if not names:
-            debug.warning('Found no __getitem__ on %s', self)
-            return NO_CONTEXTS
+            return super(AbstractInstanceContext, self).py__getitem__(
+                index_context_set,
+                contextualized_node,
+            )
 
         args = ValuesArguments([index_context_set])
         return ContextSet.from_sets(name.infer().execute(args) for name in names)
@@ -157,7 +160,7 @@ class AbstractInstanceContext(Context):
 
         def iterate():
             for generator in self.execute_function_slots(iter_slot_names):
-                if generator.is_instance():
+                if generator.is_instance() and not generator.is_compiled():
                     # `__next__` logic.
                     if self.evaluator.environment.version_info.major == 2:
                         name = u'next'
@@ -212,7 +215,7 @@ class AbstractInstanceContext(Context):
             elif scope.type == 'classdef':
                 class_context = ClassContext(self.evaluator, parent_context, scope)
                 return class_context
-            elif scope.type == 'comp_for':
+            elif scope.type in ('comp_for', 'sync_comp_for'):
                 # Comprehensions currently don't have a special scope in Jedi.
                 return self.create_instance_context(class_context, scope)
             else:
@@ -237,18 +240,15 @@ class CompiledInstance(AbstractInstanceContext):
     def name(self):
         return compiled.CompiledContextName(self, self.class_context.name.string_name)
 
-    def create_instance_context(self, class_context, node):
-        if get_parent_scope(node).type == 'classdef':
-            return class_context
-        else:
-            return super(CompiledInstance, self).create_instance_context(class_context, node)
-
     def get_first_non_keyword_argument_contexts(self):
         key, lazy_context = next(self._original_var_args.unpack(), ('', None))
         if key is not None:
             return NO_CONTEXTS
 
         return lazy_context.infer()
+
+    def is_stub(self):
+        return False
 
 
 class TreeInstance(AbstractInstanceContext):
@@ -267,7 +267,7 @@ class TreeInstance(AbstractInstanceContext):
 
     @property
     def name(self):
-        return filters.ContextName(self, self.class_context.name.tree_name)
+        return ContextName(self, self.class_context.name.tree_name)
 
     # This can recurse, if the initialization of the class includes a reference
     # to itself.
@@ -287,7 +287,7 @@ class TreeInstance(AbstractInstanceContext):
                 continue
 
             all_annotations = py__annotations__(execution.tree_node)
-            defined = self.class_context.define_generics(
+            defined, = self.class_context.define_generics(
                 infer_type_vars_for_execution(execution, all_annotations),
             )
             debug.dbg('Inferred instance context as %s', defined, color='BLUE')
@@ -340,7 +340,7 @@ class CompiledInstanceName(compiled.CompiledName):
                 yield result_context
 
 
-class CompiledInstanceClassFilter(filters.AbstractFilter):
+class CompiledInstanceClassFilter(AbstractFilter):
     name_class = CompiledInstanceName
 
     def __init__(self, evaluator, instance, klass):
@@ -367,8 +367,12 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         super(BoundMethod, self).__init__(function)
         self.instance = instance
 
+    def is_bound_method(self):
+        return True
+
     def py__class__(self):
-        return compiled.get_special_object(self.evaluator, u'BOUND_METHOD_CLASS')
+        c, = contexts_from_qualified_names(self.evaluator, u'types', u'MethodType')
+        return c
 
     def _get_arguments(self, arguments):
         if arguments is None:
@@ -393,21 +397,8 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         if isinstance(self._wrapped_context, OverloadedFunctionContext):
             return self._wrapped_context.py__call__(self._get_arguments(arguments))
 
-        # This might not be the most beautiful way, but prefer stub_contexts
-        # and execute those if possible.
-        stub_context = self._wrapped_context.stub_context
-        if stub_context is not None:
-            return stub_context.py__call__(arguments)
-
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
-
-    def get_matching_functions(self, arguments):
-        for func in self._wrapped_context.get_matching_functions(arguments):
-            if func is self:
-                yield self
-            else:
-                yield BoundMethod(self.instance, func)
 
     def get_signatures(self):
         return [sig.bind(self) for sig in self._wrapped_context.get_signatures()]
@@ -416,16 +407,15 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_context)
 
 
-class CompiledBoundMethod(compiled.CompiledObject):
-    def __init__(self, func):
-        super(CompiledBoundMethod, self).__init__(
-            func.evaluator, func.access_handle, func.parent_context)
+class CompiledBoundMethod(ContextWrapper):
+    def is_bound_method(self):
+        return True
 
-    def get_param_names(self):
-        return list(super(CompiledBoundMethod, self).get_param_names())[1:]
+    def get_signatures(self):
+        return [sig.bind(self) for sig in self._wrapped_context.get_signatures()]
 
 
-class SelfName(filters.TreeNameDefinition):
+class SelfName(TreeNameDefinition):
     """
     This name calculates the parent_context lazily.
     """
@@ -458,7 +448,7 @@ class LazyInstanceClassName(object):
         return '<%s: %s>' % (self.__class__.__name__, self._class_member_name)
 
 
-class InstanceClassFilter(filters.AbstractFilter):
+class InstanceClassFilter(AbstractFilter):
     """
     This filter is special in that it uses the class filter and wraps the
     resulting names in LazyINstanceClassName. The idea is that the class name

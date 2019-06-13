@@ -12,7 +12,7 @@ from parso import ParserSyntaxError, parse
 from jedi._compatibility import force_unicode
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
-from jedi.evaluate.gradual.typing import TypeVar, AnnotatedClass, \
+from jedi.evaluate.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
 from jedi.evaluate.helpers import is_string
 from jedi import debug
@@ -203,29 +203,9 @@ def infer_return_types(function_execution_context):
 
     type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
 
-    def remap_type_vars(context, type_var_dict):
-        """
-        The TypeVars in the resulting classes have sometimes different names
-        and we need to check for that, e.g. a signature can be:
-
-        def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
-
-        However, the iterator is defined as Iterator[_T_co], which means it has
-        a different type var name.
-        """
-        try:
-            func = context.list_type_vars
-        except AttributeError:
-            return type_var_dict
-        else:
-            return {
-                to.py__name__(): type_var_dict.get(from_.py__name__(), NO_CONTEXTS)
-                for from_, to in zip(unknown_type_vars, func())
-            }
-
-    return ContextSet(
+    return ContextSet.from_sets(
         ann.define_generics(type_var_dict)
-        if isinstance(ann, AbstractAnnotatedClass) else ann
+        if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ContextSet({ann})
         for ann in annotation_contexts
     ).execute_annotation()
 
@@ -294,10 +274,10 @@ def _infer_type_vars(annotation_context, context_set):
     type_var_dict = {}
     if isinstance(annotation_context, TypeVar):
         return {annotation_context.py__name__(): context_set.py__class__()}
-    elif isinstance(annotation_context, AnnotatedClass):
+    elif isinstance(annotation_context, LazyGenericClass):
         name = annotation_context.py__name__()
         if name == 'Iterable':
-            given = annotation_context.get_given_types()
+            given = annotation_context.get_generics()
             if given:
                 for nested_annotation_context in given[0]:
                     _merge_type_var_dicts(
@@ -308,7 +288,7 @@ def _infer_type_vars(annotation_context, context_set):
                         )
                     )
         elif name == 'Mapping':
-            given = annotation_context.get_given_types()
+            given = annotation_context.get_generics()
             if len(given) == 2:
                 for context in context_set:
                     try:

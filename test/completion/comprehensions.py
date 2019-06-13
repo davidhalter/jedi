@@ -27,6 +27,9 @@ a[0]
 a = [a for a,b in [(1,'')]]
 #? int()
 a[0]
+a = [a for (a,b) in [(1,'')]]
+#? int()
+a[0]
 
 arr = [1,'']
 a = [a for a in arr]
@@ -223,3 +226,33 @@ next(iter({a for a in range(10)}))
 [int(str(x.value) for x in list
 
 def reset_missing_bracket(): pass
+
+
+# -----------------
+# function calls
+# -----------------
+
+def foo(arg):
+    return arg
+
+
+x = foo(x for x in [1])
+
+#? int()
+next(x)
+#?
+x[0]
+
+# While it's illegal to have more than one argument, when a generator
+# expression is involved, it's still a valid parse tree and Jedi should still
+# work (and especially not raise Exceptions). It's debatable wheter inferring
+# values for invalid statements is a good idea, but not failing is a must.
+
+#? int()
+next(foo(x for x in [1], 1))
+
+def bar(x, y):
+    return y
+
+#? str()
+next(bar(x for x in [1], x for x in ['']))

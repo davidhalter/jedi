@@ -119,11 +119,7 @@ def test_goto_assignments_on_non_name(Script, environment):
     assert Script('for').goto_assignments() == []
 
     assert Script('assert').goto_assignments() == []
-    if environment.version_info.major == 2:
-        # In Python 2.7 True is still a name.
-        assert Script('True').goto_assignments()[0].description == 'instance True'
-    else:
-        assert Script('True').goto_assignments() == []
+    assert Script('True').goto_assignments() == []
 
 
 def test_goto_definitions_on_non_name(Script):
@@ -132,7 +128,7 @@ def test_goto_definitions_on_non_name(Script):
 
 def test_goto_definitions_on_generator(Script):
     def_, = Script('def x(): yield 1\ny=x()\ny').goto_definitions()
-    assert def_.name == 'generator'
+    assert def_.name == 'Generator'
 
 
 def test_goto_definition_not_multiple(Script):

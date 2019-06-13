@@ -1,6 +1,8 @@
 """
 Tests of ``jedi.api.Interpreter``.
 """
+import sys
+
 import pytest
 
 import jedi
@@ -165,6 +167,13 @@ def test_list():
     _assert_interpreter_complete('array[2].upper',
                                  locals(),
                                  ['upper'])
+
+
+def test_getattr():
+    class Foo1:
+        bar = []
+    baz = 'bar'
+    _assert_interpreter_complete('getattr(Foo1, baz).app', locals(), ['append'])
 
 
 def test_slice():
@@ -358,7 +367,59 @@ def test_name_not_findable():
     assert jedi.Interpreter("X.NOT_FINDA", [locals()]).completions()
 
 
+def test_stubs_working():
+    from multiprocessing import cpu_count
+    defs = jedi.Interpreter("cpu_count()", [locals()]).goto_definitions()
+    assert [d.name for d in defs] == ['int']
+
+
 def test_sys_path_docstring():  # Was an issue in #1298
     import jedi
     s = jedi.Interpreter("from sys import path\npath", line=2, column=4, namespaces=[locals()])
     s.completions()[0].docstring()
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize(
+    'code, completions', [
+        ('x[0].uppe', ['upper']),
+        ('x[1337].uppe', ['upper']),
+        ('x[""].uppe', ['upper']),
+        ('x.appen', ['append']),
+
+        ('y.add', ['add']),
+        ('y[0].', []),
+        ('list(y)[0].', []),  # TODO use stubs properly to improve this.
+
+        ('z[0].uppe', ['upper']),
+        ('z[0].append', ['append']),
+        ('z[1].uppe', ['upper']),
+        ('z[1].append', []),
+
+        ('collections.deque().app', ['append', 'appendleft']),
+        ('deq.app', ['append', 'appendleft']),
+        ('deq.pop', ['pop', 'popleft']),
+        ('deq.pop().', []),
+
+        ('collections.Counter("asdf").setdef', ['setdefault']),
+        ('collections.Counter("asdf").pop().imag', ['imag']),
+        ('list(collections.Counter("asdf").keys())[0].uppe', ['upper']),
+        ('counter.setdefa', ['setdefault']),
+        ('counter.pop().imag', []),  # TODO stubs could make this better
+        ('counter.keys())[0].uppe', []),
+
+        ('string.upper().uppe', ['upper']),
+        ('"".upper().uppe', ['upper']),
+    ]
+)
+def test_simple_completions(code, completions):
+    x = [str]
+    y = {1}
+    z = {1: str, 2: list}
+    import collections
+    deq = collections.deque([1])
+    counter = collections.Counter(['asdf'])
+    string = ''
+
+    defs = jedi.Interpreter(code, [locals()]).completions()
+    assert [d.name for d in defs] == completions

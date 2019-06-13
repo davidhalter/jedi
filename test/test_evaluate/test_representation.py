@@ -1,7 +1,5 @@
 from textwrap import dedent
 
-from jedi.evaluate.helpers import execute_evaluated
-
 
 def get_definition_and_evaluator(Script, source):
     first, = Script(dedent(source)).goto_definitions()
@@ -22,8 +20,8 @@ def test_function_execution(Script):
     # Now just use the internals of the result (easiest way to get a fully
     # usable function).
     # Should return the same result both times.
-    assert len(execute_evaluated(func)) == 1
-    assert len(execute_evaluated(func)) == 1
+    assert len(func.execute_evaluated()) == 1
+    assert len(func.execute_evaluated()) == 1
 
 
 def test_class_mro(Script):

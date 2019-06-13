@@ -14,11 +14,12 @@ import parso
 from jedi._compatibility import force_unicode
 from jedi.plugins.base import BasePlugin
 from jedi import debug
+from jedi.evaluate.helpers import get_str_or_none
 from jedi.evaluate.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
-from jedi.evaluate.context.instance import TreeInstance, \
+from jedi.evaluate.context.instance import \
     AbstractInstanceContext, BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper
@@ -28,6 +29,7 @@ from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
 from jedi.evaluate.syntax_tree import is_string
+from jedi.evaluate.filters import AttributeOverwrite, publish_method
 
 
 # Copied from Python 3.6's stdlib.
@@ -100,7 +102,6 @@ _NAMEDTUPLE_FIELD_TEMPLATE = '''\
 class StdlibPlugin(BasePlugin):
     def execute(self, callback):
         def wrapper(context, arguments):
-            debug.dbg('execute: %s %s', context, arguments)
             try:
                 obj_name = context.name.string_name
             except AttributeError:
@@ -108,8 +109,8 @@ class StdlibPlugin(BasePlugin):
             else:
                 if context.parent_context == self._evaluator.builtins_module:
                     module_name = 'builtins'
-                elif context.parent_context.is_module():
-                    module_name = context.parent_context.name.string_name
+                elif context.parent_context is not None and context.parent_context.is_module():
+                    module_name = context.parent_context.py__name__()
                 else:
                     return callback(context, arguments=arguments)
 
@@ -211,11 +212,12 @@ def builtins_getattr(objects, names, defaults=None):
     # follow the first param
     for obj in objects:
         for name in names:
-            if is_string(name):
-                return obj.py__getattribute__(force_unicode(name.get_safe_value()))
-            else:
+            string = get_str_or_none(name)
+            if string is None:
                 debug.warning('getattr called without str')
                 continue
+            else:
+                return obj.py__getattribute__(force_unicode(string))
     return NO_CONTEXTS
 
 
@@ -246,14 +248,10 @@ def builtins_super(types, objects, context):
     return NO_CONTEXTS
 
 
-from jedi.evaluate.filters import AbstractObjectOverwrite, publish_method
-class ReversedObject(AbstractObjectOverwrite, ContextWrapper):
+class ReversedObject(AttributeOverwrite):
     def __init__(self, reversed_obj, iter_list):
         super(ReversedObject, self).__init__(reversed_obj)
         self._iter_list = iter_list
-
-    def get_object(self):
-        return self._wrapped_context
 
     @publish_method('__iter__')
     def py__iter__(self, contextualized_node=None):
@@ -283,8 +281,8 @@ def builtins_reversed(sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    instance = TreeInstance(obj.evaluator, obj.parent_context, obj, ValuesArguments([]))
-    return ContextSet([ReversedObject(instance, list(reversed(ordered)))])
+    seq, = obj.evaluator.typing_module.py__getattribute__('Iterator').execute_evaluated()
+    return ContextSet([ReversedObject(seq, list(reversed(ordered)))])
 
 
 @argument_clinic('obj, type, /', want_arguments=True, want_evaluator=True)
@@ -329,7 +327,7 @@ def builtins_isinstance(objects, types, arguments, evaluator):
     )
 
 
-class StaticMethodObject(AbstractObjectOverwrite, ContextWrapper):
+class StaticMethodObject(AttributeOverwrite, ContextWrapper):
     def get_object(self):
         return self._wrapped_context
 
@@ -342,7 +340,7 @@ def builtins_staticmethod(functions):
     return ContextSet(StaticMethodObject(f) for f in functions)
 
 
-class ClassMethodObject(AbstractObjectOverwrite, ContextWrapper):
+class ClassMethodObject(AttributeOverwrite, ContextWrapper):
     def __init__(self, class_method_obj, function):
         super(ClassMethodObject, self).__init__(class_method_obj)
         self._function = function
@@ -357,7 +355,7 @@ class ClassMethodObject(AbstractObjectOverwrite, ContextWrapper):
         ])
 
 
-class ClassMethodGet(AbstractObjectOverwrite, ContextWrapper):
+class ClassMethodGet(AttributeOverwrite, ContextWrapper):
     def __init__(self, get_method, klass, function):
         super(ClassMethodGet, self).__init__(get_method)
         self._class = klass
@@ -401,10 +399,18 @@ def collections_namedtuple(obj, arguments):
     evaluator = obj.evaluator
 
     # Process arguments
+    name = u'jedi_unknown_namedtuple'
+    for c in _follow_param(evaluator, arguments, 0):
+        x = get_str_or_none(c)
+        if x is not None:
+            name = force_unicode(x)
+            break
+
     # TODO here we only use one of the types, we should use all.
-    # TODO this is buggy, doesn't need to be a string
-    name = force_unicode(list(_follow_param(evaluator, arguments, 0))[0].get_safe_value())
-    _fields = list(_follow_param(evaluator, arguments, 1))[0]
+    param_contexts = _follow_param(evaluator, arguments, 1)
+    if not param_contexts:
+        return NO_CONTEXTS
+    _fields = list(param_contexts)[0]
     if isinstance(_fields, compiled.CompiledValue):
         fields = force_unicode(_fields.get_safe_value()).replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
@@ -432,7 +438,7 @@ def collections_namedtuple(obj, arguments):
     generated_class = next(module.iter_classdefs())
     parent_context = ModuleContext(
         evaluator, module,
-        path=None,
+        file_io=None,
         string_names=None,
         code_lines=parso.split_lines(code, keepends=True),
     )
@@ -569,5 +575,11 @@ _implemented = {
         # Not sure if this is necessary, but it's used a lot in typeshed and
         # it's for now easier to just pass the function.
         'abstractmethod': _return_first_param,
-    }
+    },
+    'typing': {
+        # The _alias function just leads to some annoying type inference.
+        # Therefore, just make it return nothing, which leads to the stubs
+        # being used instead. This only matters for 3.7+.
+        '_alias': lambda obj, arguments: NO_CONTEXTS,
+    },
 }

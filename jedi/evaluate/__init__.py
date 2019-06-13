@@ -67,7 +67,7 @@ from functools import partial
 from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
-from parso.file_io import FileIO
+from jedi.file_io import FileIO
 
 from jedi import debug
 from jedi import parser_utils
@@ -76,7 +76,7 @@ from jedi.evaluate import imports
 from jedi.evaluate import recursion
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate import helpers
-from jedi.evaluate.filters import TreeNameDefinition, ParamName
+from jedi.evaluate.names import TreeNameDefinition, ParamName
 from jedi.evaluate.base_context import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
 from jedi.evaluate.context import ClassContext, FunctionContext, \
@@ -84,20 +84,14 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-from jedi.evaluate.gradual.stub_context import with_stub_context_if_possible, \
-    stub_to_actual_context_set
 
 
 def _execute(context, arguments):
-    try:
-        func = context.py__call__
-    except AttributeError:
-        debug.warning("no execution possible %s", context)
-        return NO_CONTEXTS
-    else:
-        context_set = func(arguments=arguments)
-        debug.dbg('execute result: %s in %s', context_set, context)
-        return context_set
+    debug.dbg('execute: %s %s', context, arguments)
+    with debug.increase_indent_cm():
+        context_set = context.py__call__(arguments=arguments)
+    debug.dbg('execute result: %s in %s', context_set, context)
+    return context_set
 
 
 class Evaluator(object):
@@ -109,9 +103,10 @@ class Evaluator(object):
         self.compiled_subprocess = environment.get_evaluator_subprocess(self)
         self.grammar = environment.get_grammar()
 
-        self.latest_grammar = parso.load_grammar(version='3.6')
+        self.latest_grammar = parso.load_grammar(version='3.7')
         self.memoize_cache = {}  # for memoize decorators
         self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
+        self.stub_module_cache = {}  # Dict[Tuple[str, ...], Optional[ModuleContext]]
         self.compiled_cache = {}  # see `evaluate.compiled.create()`
         self.inferred_element_counts = {}
         self.mixed_cache = {}  # see `evaluate.compiled.mixed._create()`
@@ -120,9 +115,6 @@ class Evaluator(object):
         self.is_analysis = False
         self.project = project
         self.access_cache = {}
-        # This setting is only temporary to limit the work we have to do with
-        # tensorflow and others.
-        self.infer_enabled = True
 
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
@@ -140,18 +132,11 @@ class Evaluator(object):
         )
 
     def import_module(self, import_names, parent_module_context=None,
-                      sys_path=None, load_stub=True):
+                      sys_path=None, prefer_stubs=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
-        try:
-            return self.module_cache.get(import_names)
-        except KeyError:
-            pass
-
-        context_set = self._import_module(import_names, parent_module_context,
-                                          sys_path, load_stub=load_stub)
-        self.module_cache.add(import_names, context_set)
-        return context_set
+        return self._import_module(import_names, parent_module_context,
+                                   sys_path, prefer_stubs=prefer_stubs)
 
     @property
     @evaluator_function_cache()
@@ -166,7 +151,7 @@ class Evaluator(object):
     @evaluator_function_cache()
     def typing_module(self):
         typing_module, = self.import_module((u'typing',))
-        return typing_module.stub_context or typing_module
+        return typing_module
 
     def reset_recursion_limitations(self):
         self.recursion_detector = recursion.RecursionDetector()
@@ -177,14 +162,9 @@ class Evaluator(object):
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
     def eval_element(self, context, element):
-        if not self.infer_enabled:
-            return NO_CONTEXTS
-
         if isinstance(context, CompForContext):
             return eval_node(context, element)
 
-        #import traceback, sys; traceback.print_stack(file=sys.stdout)
-        #print(element, id(context), context)
         if_stmt = element
         while if_stmt is not None:
             if_stmt = if_stmt.parent
@@ -278,10 +258,7 @@ class Evaluator(object):
                     c = ClassContext(self, context, name.parent)
                 else:
                     c = FunctionContext.from_context(context, name.parent)
-                if context.is_stub():
-                    return stub_to_actual_context_set(c)
-                else:
-                    return with_stub_context_if_possible(c)
+                return ContextSet([c])
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
@@ -389,10 +366,7 @@ class Evaluator(object):
 
         if node_type == 'trailer' and par.children[0] == '.':
             values = helpers.evaluate_call_of_leaf(context, name, cut_own_trailer=True)
-            return unite(
-                value.py__getattribute__(name, name_context=context, is_goto=True)
-                for value in values
-            )
+            return values.py__getattribute__(name, name_context=context, is_goto=True)
         else:
             stmt = tree.search_ancestor(
                 name, 'expr_stmt', 'lambdef'
@@ -413,43 +387,38 @@ class Evaluator(object):
                 if parser_utils.is_scope(node):
                     return node
                 elif node.type in ('argument', 'testlist_comp'):
-                    if node.children[1].type == 'comp_for':
+                    if node.children[1].type in ('comp_for', 'sync_comp_for'):
                         return node.children[1]
                 elif node.type == 'dictorsetmaker':
                     for n in node.children[1:4]:
                         # In dictionaries it can be pretty much anything.
-                        if n.type == 'comp_for':
+                        if n.type in ('comp_for', 'sync_comp_for'):
                             return n
 
-        def from_scope_node(scope_node, child_is_funcdef=None, is_nested=True, node_is_object=False):
+        def from_scope_node(scope_node, is_nested=True, node_is_object=False):
             if scope_node == base_node:
                 return base_context
 
             is_funcdef = scope_node.type in ('funcdef', 'lambdef')
             parent_scope = parser_utils.get_parent_scope(scope_node)
-            parent_context = from_scope_node(parent_scope, child_is_funcdef=is_funcdef)
+            parent_context = from_scope_node(parent_scope)
 
             if is_funcdef:
-                func = FunctionContext.from_context(
-                    parent_context,
-                    scope_node
-                )
-                if isinstance(parent_context, AnonymousInstance):
+                func = FunctionContext.from_context(parent_context, scope_node)
+                if parent_context.is_class():
+                    instance = AnonymousInstance(
+                        self, parent_context.parent_context, parent_context)
                     func = BoundMethod(
-                        instance=parent_context,
+                        instance=instance,
                         function=func
                     )
+
                 if is_nested and not node_is_object:
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                class_context = ClassContext(self, parent_context, scope_node)
-                if child_is_funcdef:
-                    # anonymous instance
-                    return AnonymousInstance(self, parent_context, class_context)
-                else:
-                    return class_context
-            elif scope_node.type == 'comp_for':
+                return ClassContext(self, parent_context, scope_node)
+            elif scope_node.type in ('comp_for', 'sync_comp_for'):
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
                 return CompForContext.from_comp_for(parent_context, scope_node)
@@ -460,11 +429,13 @@ class Evaluator(object):
         if node_is_context and parser_utils.is_scope(node):
             scope_node = node
         else:
-            if node.parent.type in ('funcdef', 'classdef') and node.parent.name == node:
-                # When we're on class/function names/leafs that define the
-                # object itself and not its contents.
-                node = node.parent
             scope_node = parent_scope(node)
+            if scope_node.type in ('funcdef', 'classdef'):
+                colon = scope_node.children[scope_node.children.index(':')]
+                if node.start_pos < colon.start_pos:
+                    parent = node.parent
+                    if not (parent.type == 'param' and parent.name == node):
+                        scope_node = parent_scope(scope_node)
         return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
 
     def parse_and_get_code(self, code=None, path=None, encoding='utf-8',

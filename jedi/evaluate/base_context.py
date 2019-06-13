@@ -6,28 +6,42 @@ A ContextSet is typically used to specify the return of a function or any other
 static analysis operation. In jedi there are always multiple returns and not
 just one.
 """
-from parso.python.tree import ExprStmt, CompFor
+from functools import reduce
+from operator import add
+from parso.python.tree import ExprStmt, SyncCompFor
 
 from jedi import debug
-from jedi._compatibility import Python3Method, zip_longest, unicode
-from jedi.parser_utils import clean_scope_docstring, get_doc_with_call_signature
+from jedi._compatibility import zip_longest, unicode
+from jedi.parser_utils import clean_scope_docstring
 from jedi.common import BaseContextSet, BaseContext
-from jedi.evaluate.helpers import SimpleGetItemNotFound, execute_evaluated
+from jedi.evaluate.helpers import SimpleGetItemNotFound
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.cache import evaluator_as_method_param_cache
+from jedi.cache import memoize_method
+
+_sentinel = object()
 
 
 class HelperContextMixin(object):
+    def get_root_context(self):
+        context = self
+        while True:
+            if context.parent_context is None:
+                return context
+            context = context.parent_context
+
     @classmethod
     @evaluator_as_method_param_cache()
     def create_cached(cls, *args, **kwargs):
         return cls(*args, **kwargs)
 
-    def execute(self, arguments=None):
+    def execute(self, arguments):
         return self.evaluator.execute(self, arguments=arguments)
 
     def execute_evaluated(self, *value_list):
-        return execute_evaluated(self, *value_list)
+        from jedi.evaluate.arguments import ValuesArguments
+        arguments = ValuesArguments([ContextSet([value]) for value in value_list])
+        return self.evaluator.execute(self, arguments)
 
     def execute_annotation(self):
         return self.execute_evaluated()
@@ -41,7 +55,6 @@ class HelperContextMixin(object):
             for lazy_context in self.iterate(contextualized_node, is_async)
         )
 
-    @Python3Method
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            search_global=False, is_goto=False,
                            analysis_errors=True):
@@ -57,6 +70,12 @@ class HelperContextMixin(object):
         if is_goto:
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)
+
+    def py__await__(self):
+        await_context_set = self.py__getattribute__(u"__await__")
+        if not await_context_set:
+            debug.warning('Tried to run __await__ on context %s', self)
+        return await_context_set.execute_evaluated()
 
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
@@ -102,10 +121,6 @@ class Context(HelperContextMixin, BaseContext):
     To be defined by subclasses.
     """
     tree_node = None
-    stub_context = None
-
-    def is_stub(self):
-        return False
 
     @property
     def api_type(self):
@@ -149,6 +164,15 @@ class Context(HelperContextMixin, BaseContext):
     def is_module(self):
         return False
 
+    def is_namespace(self):
+        return False
+
+    def is_compiled(self):
+        return False
+
+    def is_bound_method(self):
+        return False
+
     def py__bool__(self):
         """
         Since Wrapper is a super class for classes, functions and modules,
@@ -156,25 +180,35 @@ class Context(HelperContextMixin, BaseContext):
         """
         return True
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         try:
             self.tree_node.get_doc_node
         except AttributeError:
             return ''
         else:
-            if include_call_signature:
-                return get_doc_with_call_signature(self.tree_node)
-            else:
-                return clean_scope_docstring(self.tree_node)
+            return clean_scope_docstring(self.tree_node)
         return None
+
+    def get_safe_value(self, default=_sentinel):
+        if default is _sentinel:
+            raise ValueError("There exists no safe value for context %s" % self)
+        return default
+
+    def py__call__(self, arguments):
+        debug.warning("no execution possible %s", self)
+        return NO_CONTEXTS
 
     def py__stop_iteration_returns(self):
         debug.warning("Not possible to return the stop iterations of %s", self)
         return NO_CONTEXTS
 
     def get_qualified_names(self):
-        # Returns Optional[List[str]]
+        # Returns Optional[Tuple[str, ...]]
         return None
+
+    def is_stub(self):
+        # The root context knows if it's a stub or not.
+        return self.parent_context.is_stub()
 
 
 def iterate_contexts(contexts, contextualized_node=None, is_async=False):
@@ -188,15 +222,12 @@ def iterate_contexts(contexts, contextualized_node=None, is_async=False):
     )
 
 
-class ContextWrapper(HelperContextMixin, object):
-    py__getattribute__ = Context.py__getattribute__
-
-    def __init__(self, wrapped_context):
-        self._wrapped_context = wrapped_context
+class _ContextWrapperBase(HelperContextMixin):
+    predefined_names = {}
 
     @safe_property
     def name(self):
-        from jedi.evaluate.filters import ContextName
+        from jedi.evaluate.names import ContextName
         wrapped_name = self._wrapped_context.name
         if wrapped_name.tree_name is not None:
             return ContextName(self, wrapped_name.tree_name)
@@ -210,7 +241,27 @@ class ContextWrapper(HelperContextMixin, object):
         return cls(*args, **kwargs)
 
     def __getattr__(self, name):
+        assert name != '_wrapped_context'
         return getattr(self._wrapped_context, name)
+
+
+class LazyContextWrapper(_ContextWrapperBase):
+    @safe_property
+    @memoize_method
+    def _wrapped_context(self):
+        with debug.increase_indent_cm('Resolve lazy context wrapper'):
+            return self._get_wrapped_context()
+
+    def __repr__(self):
+        return '<%s>' % (self.__class__.__name__)
+
+    def _get_wrapped_context(self):
+        raise NotImplementedError
+
+
+class ContextWrapper(_ContextWrapperBase):
+    def __init__(self, wrapped_context):
+        self._wrapped_context = wrapped_context
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_context)
@@ -281,7 +332,7 @@ class ContextualizedName(ContextualizedNode):
                 is_star_expr = False
             elif node.type == 'star_expr':
                 is_star_expr = True
-            elif isinstance(node, (ExprStmt, CompFor)):
+            elif isinstance(node, (ExprStmt, SyncCompFor)):
                 break
 
             compare = node
@@ -347,7 +398,12 @@ class ContextSet(BaseContextSet):
         return ContextSet.from_sets(c.evaluator.execute(c, arguments) for c in self._set)
 
     def execute_evaluated(self, *args, **kwargs):
-        return ContextSet.from_sets(execute_evaluated(c, *args, **kwargs) for c in self._set)
+        return ContextSet.from_sets(c.execute_evaluated(*args, **kwargs) for c in self._set)
+
+    def py__getattribute__(self, *args, **kwargs):
+        if kwargs.get('is_goto'):
+            return reduce(add, [c.py__getattribute__(*args, **kwargs) for c in self._set], [])
+        return ContextSet.from_sets(c.py__getattribute__(*args, **kwargs) for c in self._set)
 
     def get_item(self, *args, **kwargs):
         return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)

@@ -1,14 +1,16 @@
 from jedi._compatibility import unicode
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
-    CompiledObjectFilter, CompiledContextName, create_from_access_path, \
-    create_from_name
+    CompiledObjectFilter, CompiledContextName, create_from_access_path
 from jedi.evaluate.base_context import ContextWrapper
-from jedi.evaluate.helpers import execute_evaluated
 
 
 def builtin_from_name(evaluator, string):
-    builtins = evaluator.builtins_module
-    filter_ = next(builtins.get_filters())
+    typing_builtins_module = evaluator.builtins_module
+    if string in ('None', 'True', 'False'):
+        builtins, = typing_builtins_module.non_stub_context_set
+        filter_ = next(builtins.get_filters())
+    else:
+        filter_ = next(typing_builtins_module.get_filters())
     name, = filter_.get(string)
     context, = name.infer()
     return context
@@ -21,7 +23,7 @@ class CompiledValue(ContextWrapper):
 
     def __getattribute__(self, name):
         if name in ('get_safe_value', 'execute_operation', 'access_handle',
-                    'negate', 'py__bool__'):
+                    'negate', 'py__bool__', 'is_compiled'):
             return getattr(self._compiled_obj, name)
         return super(CompiledValue, self).__getattribute__(name)
 
@@ -39,19 +41,12 @@ def create_simple_object(evaluator, obj):
         evaluator,
         evaluator.compiled_subprocess.create_simple_object(obj)
     )
-    instance, = builtin_from_name(evaluator, compiled_obj.name.string_name).execute()
+    instance, = builtin_from_name(evaluator, compiled_obj.name.string_name).execute_evaluated()
     return CompiledValue(instance, compiled_obj)
 
 
-def get_special_object(evaluator, identifier):
-    return create_from_access_path(
-        evaluator,
-        evaluator.compiled_subprocess.get_special_object(identifier)
-    )
-
-
 def get_string_context_set(evaluator):
-    return execute_evaluated(builtin_from_name(evaluator, u'str'))
+    return builtin_from_name(evaluator, u'str').execute_evaluated()
 
 
 def load_module(evaluator, dotted_name, **kwargs):

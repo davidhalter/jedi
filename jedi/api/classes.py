@@ -4,18 +4,21 @@ These classes are the much bigger part of the whole API, because they contain
 the interesting information about completion and goto operations.
 """
 import re
+import warnings
 
 from parso.python.tree import search_ancestor
 
 from jedi import settings
-from jedi.evaluate.utils import ignored, unite
+from jedi import debug
+from jedi.evaluate.utils import unite
 from jedi.cache import memoize_method
 from jedi.evaluate import imports
 from jedi.evaluate import compiled
 from jedi.evaluate.imports import ImportName
-from jedi.evaluate.filters import ParamName
 from jedi.evaluate.context import FunctionExecutionContext
-from jedi.evaluate.gradual.typeshed import StubOnlyModuleContext
+from jedi.evaluate.gradual.typeshed import StubModuleContext
+from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
+from jedi.evaluate.base_context import ContextSet
 from jedi.api.keywords import KeywordName
 
 
@@ -47,8 +50,7 @@ class BaseDefinition(object):
         '_io': 'io',
         '_functools': 'functools',
         '_sqlite3': 'sqlite3',
-        '__builtin__': '',
-        'builtins': '',
+        '__builtin__': 'builtins',
     }
 
     _tuple_mapping = dict((tuple(k.split('.')), v) for (k, v) in {
@@ -63,15 +65,22 @@ class BaseDefinition(object):
         """
         self.is_keyword = isinstance(self._name, KeywordName)
 
-        # generate a path to the definition
-        self._module = name.get_root_context()
+    @memoize_method
+    def _get_module(self):
+        # This can take a while to complete, because in the worst case of
+        # imports (consider `import a` completions), we need to load all
+        # modules starting with a first.
+        return self._name.get_root_context()
+
+    @property
+    def module_path(self):
+        """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
         try:
-            py__file__ = self._module.py__file__
+            py__file__ = self._get_module().py__file__
         except AttributeError:
-            self.module_path = None
+            return None
         else:
-            self.module_path = py__file__()
-            """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
+            return py__file__()
 
     @property
     def name(self):
@@ -94,6 +103,7 @@ class BaseDefinition(object):
         to Jedi, :meth:`jedi.Script.goto_definitions` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
+        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... import keyword
@@ -119,9 +129,11 @@ class BaseDefinition(object):
         so that it is easy to relate the result to the source code.
 
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> defs                           # doctest: +NORMALIZE_WHITESPACE
-        [<Definition module keyword>, <Definition class C>,
-         <Definition instance D>, <Definition def f>]
+        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        [<Definition full_name='keyword', description='module keyword'>,
+         <Definition full_name='__main__.C', description='class C'>,
+         <Definition full_name='__main__.D', description='instance D'>,
+         <Definition full_name='__main__.f', description='def f'>]
 
         Finally, here is what you can get from :attr:`type`:
 
@@ -150,46 +162,6 @@ class BaseDefinition(object):
                 return context.api_type
         return self._name.api_type
 
-    def _path(self):
-        """The path to a module/class/function definition."""
-        def to_reverse():
-            name = self._name
-            if name.api_type == 'module':
-                try:
-                    name = list(name.infer())[0].name
-                except IndexError:
-                    pass
-
-            if name.api_type in 'module':
-                module_contexts = name.infer()
-                if module_contexts:
-                    module_context, = module_contexts
-                    for n in reversed(module_context.py__name__().split('.')):
-                        yield n
-                else:
-                    # We don't really know anything about the path here. This
-                    # module is just an import that would lead in an
-                    # ImportError. So simply return the name.
-                    yield name.string_name
-                    return
-            else:
-                yield name.string_name
-
-            parent_context = name.parent_context
-            while parent_context is not None:
-                try:
-                    method = parent_context.py__name__
-                except AttributeError:
-                    try:
-                        yield parent_context.name.string_name
-                    except AttributeError:
-                        pass
-                else:
-                    for name in reversed(method().split('.')):
-                        yield name
-                parent_context = parent_context.parent_context
-        return reversed(list(to_reverse()))
-
     @property
     def module_name(self):
         """
@@ -199,17 +171,17 @@ class BaseDefinition(object):
         >>> source = 'import json'
         >>> script = Script(source, path='example.py')
         >>> d = script.goto_definitions()[0]
-        >>> print(d.module_name)                       # doctest: +ELLIPSIS
+        >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
-        return self._module.name.string_name
+        return self._get_module().name.string_name
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        if isinstance(self._module, StubOnlyModuleContext):
+        if isinstance(self._get_module(), StubModuleContext):
             return any(isinstance(context, compiled.CompiledObject)
-                       for context in self._module.non_stub_context_set)
-        return isinstance(self._module, compiled.CompiledObject)
+                       for context in self._get_module().non_stub_context_set)
+        return isinstance(self._get_module(), compiled.CompiledObject)
 
     @property
     def line(self):
@@ -289,48 +261,62 @@ class BaseDefinition(object):
         be ``<module 'posixpath' ...>```. However most users find the latter
         more practical.
         """
-        path = list(self._path())
-        # TODO add further checks, the mapping should only occur on stdlib.
-        if not path:
-            return None  # for keywords the path is empty
+        if not self._name.is_context_name:
+            return None
 
-        with ignored(KeyError):
-            path[0] = self._mapping[path[0]]
-        for key, repl in self._tuple_mapping.items():
-            if tuple(path[:len(key)]) == key:
-                path = [repl] + path[len(key):]
+        names = self._name.get_qualified_names(include_module_names=True)
+        if names is None:
+            return names
 
-        return '.'.join(path if path[0] else path[1:])
+        names = list(names)
+        try:
+            names[0] = self._mapping[names[0]]
+        except KeyError:
+            pass
+
+        return '.'.join(names)
 
     def is_stub(self):
+        if not self._name.is_context_name:
+            return False
         return all(c.is_stub() for c in self._name.infer())
 
-    def goto_stubs(self):
-        if self.is_stub():
-            return [self]
+    def goto_assignments(self, **kwargs):  # Python 2...
+        with debug.increase_indent_cm('goto for %s' % self._name):
+            return self._goto_assignments(**kwargs)
 
-        return [
-            Definition(self._evaluator, d.stub_context.name)
-            for d in self._name.infer() if d.stub_context is not None
-        ]
+    def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
+        assert not (only_stubs and prefer_stubs)
 
-    def goto_assignments(self):
-        if self._name.tree_name is None:
-            return self
+        if not self._name.is_context_name:
+            return []
 
-        names = self._evaluator.goto(self._name.parent_context, self._name.tree_name)
-        return [Definition(self._evaluator, n) for n in names]
+        names = convert_names(
+            self._name.goto(),
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
+        )
+        return [self if n == self._name else Definition(self._evaluator, n)
+                for n in names]
 
-    def infer(self):
-        tree_name = self._name.tree_name
-        parent_context = self._name.parent_context
-        # Param names are special because they are not handled by
-        # the evaluator method.
-        if tree_name is None or parent_context is None or isinstance(self._name, ParamName):
-            context_set = self._name.infer()
-        else:
-            context_set = self._evaluator.goto_definitions(parent_context, tree_name)
-        return [Definition(self._evaluator, d.name) for d in context_set]
+    def infer(self, **kwargs):  # Python 2...
+        with debug.increase_indent_cm('infer for %s' % self._name):
+            return self._infer(**kwargs)
+
+    def _infer(self, only_stubs=False, prefer_stubs=False):
+        assert not (only_stubs and prefer_stubs)
+
+        if not self._name.is_context_name:
+            return []
+
+        contexts = convert_contexts(
+            self._name.infer(),
+            only_stubs=only_stubs,
+            prefer_stubs=prefer_stubs,
+        )
+        names = [c.name for c in contexts]
+        return [self if n == self._name else Definition(self._evaluator, n)
+                for n in names]
 
     @property
     @memoize_method
@@ -345,9 +331,16 @@ class BaseDefinition(object):
             for signature in context.get_signatures():
                 return [Definition(self._evaluator, n) for n in signature.get_param_names()]
 
+        if self.type == 'function' or self.type == 'class':
+            # Fallback, if no signatures were defined (which is probably by
+            # itself a bug).
+            return []
         raise AttributeError('There are no params defined on this.')
 
     def parent(self):
+        if not self._name.is_context_name:
+            return None
+
         context = self._name.parent_context
         if context is None:
             return None
@@ -357,7 +350,11 @@ class BaseDefinition(object):
         return Definition(self._evaluator, context.name)
 
     def __repr__(self):
-        return "<%s %s>" % (type(self).__name__, self.description)
+        return "<%s full_name=%r, description=%r>" % (
+            self.__class__.__name__,
+            self.full_name,
+            self.description,
+        )
 
     def get_line_code(self, before=0, after=0):
         """
@@ -369,7 +366,7 @@ class BaseDefinition(object):
         :return str: Returns the line(s) of code or an empty string if it's a
                      builtin.
         """
-        if self.in_builtin_module():
+        if not self._name.is_context_name or self.in_builtin_module():
             return ''
 
         lines = self._name.get_root_context().code_lines
@@ -397,7 +394,7 @@ class Completion(BaseDefinition):
     def _complete(self, like_name):
         append = ''
         if settings.add_bracket_after_function \
-                and self.type == 'Function':
+                and self.type == 'function':
             append = '('
 
         if self._name.api_type == 'param' and self._stack is not None:
@@ -467,6 +464,8 @@ class Completion(BaseDefinition):
     @memoize_method
     def follow_definition(self):
         """
+        Deprecated!
+
         Return the original definitions. I strongly recommend not using it for
         your completions, because it might slow down |jedi|. If you want to
         read only a few objects (<=20), it might be useful, especially to get
@@ -474,8 +473,12 @@ class Completion(BaseDefinition):
         follows all results. This means with 1000 completions (e.g.  numpy),
         it's just PITA-slow.
         """
-        defs = self._name.infer()
-        return [Definition(self._evaluator, d.name) for d in defs]
+        warnings.warn(
+            "Deprecated since version 0.14.0. Use .infer.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.infer()
 
 
 class Definition(BaseDefinition):
@@ -494,6 +497,7 @@ class Definition(BaseDefinition):
 
         Example:
 
+        >>> from jedi._compatibility import no_unicode_pprint
         >>> from jedi import Script
         >>> source = '''
         ... def f():
@@ -506,8 +510,9 @@ class Definition(BaseDefinition):
         >>> script = Script(source, column=3)  # line is maximum by default
         >>> defs = script.goto_definitions()
         >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> defs
-        [<Definition def f>, <Definition class C>]
+        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        [<Definition full_name='__main__.f', description='def f'>,
+         <Definition full_name='__main__.C', description='class C'>]
         >>> str(defs[0].description)  # strip literals in python2
         'def f'
         >>> str(defs[1].description)
@@ -654,6 +659,13 @@ class CallSignature(Definition):
         )
 
 
+def _format_signatures(context):
+    return '\n'.join(
+        signature.to_string()
+        for signature in context.get_signatures()
+    )
+
+
 class _Help(object):
     """
     Temporary implementation, will be used as `Script.help() or something in
@@ -678,9 +690,29 @@ class _Help(object):
 
         See :attr:`doc` for example.
         """
-        # TODO: Use all of the followed objects as output. Possibly divinding
-        # them by a few dashes.
+        full_doc = ''
+        # Using the first docstring that we see.
         for context in self._get_contexts(fast=fast):
-            return context.py__doc__(include_call_signature=not raw)
+            if full_doc:
+                # In case we have multiple contexts, just return all of them
+                # separated by a few dashes.
+                full_doc += '\n' + '-' * 30 + '\n'
 
-        return ''
+            doc = context.py__doc__()
+
+            signature_text = ''
+            if self._name.is_context_name:
+                if not raw:
+                    signature_text = _format_signatures(context)
+                if not doc and context.is_stub():
+                    for c in convert_contexts(ContextSet({context}), ignore_compiled=False):
+                        doc = c.py__doc__()
+                        if doc:
+                            break
+
+            if signature_text and doc:
+                full_doc += signature_text + '\n\n' + doc
+            else:
+                full_doc += signature_text + doc
+
+        return full_doc

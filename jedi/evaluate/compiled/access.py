@@ -9,6 +9,7 @@ from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode
 from jedi.evaluate.compiled.getattr_static import getattr_static
 
+ALLOWED_GETITEM_TYPES = (str, list, tuple, unicode, bytes, bytearray, dict)
 
 MethodDescriptorType = type(str.replace)
 # These are not considered classes and access is granted even though they have
@@ -92,7 +93,7 @@ def safe_getattr(obj, name, default=_sentinel):
 
 SignatureParam = namedtuple(
     'SignatureParam',
-    'name has_default default has_annotation annotation kind_name'
+    'name has_default default default_string has_annotation annotation annotation_string kind_name'
 )
 
 
@@ -197,7 +198,7 @@ class DirectObjectAccess(object):
         except AttributeError:
             return None
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         return force_unicode(inspect.getdoc(self._obj)) or u''
 
     def py__name__(self):
@@ -226,7 +227,7 @@ class DirectObjectAccess(object):
         return self.py__iter__list()
 
     def py__simple_getitem__(self, index):
-        if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+        if type(self._obj) not in ALLOWED_GETITEM_TYPES:
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return None
 
@@ -236,7 +237,7 @@ class DirectObjectAccess(object):
         if not hasattr(self._obj, '__getitem__'):
             return None
 
-        if type(self._obj) not in (str, list, tuple, unicode, bytes, bytearray, dict):
+        if type(self._obj) not in ALLOWED_GETITEM_TYPES:
             # Get rid of side effects, we won't call custom `__getitem__`s.
             return []
 
@@ -279,8 +280,27 @@ class DirectObjectAccess(object):
     def is_class(self):
         return inspect.isclass(self._obj)
 
+    def is_module(self):
+        return inspect.ismodule(self._obj)
+
+    def is_instance(self):
+        return _is_class_instance(self._obj)
+
     def ismethoddescriptor(self):
         return inspect.ismethoddescriptor(self._obj)
+
+    def get_qualified_names(self):
+        def try_to_get_name(obj):
+            return getattr(obj, '__qualname__', getattr(obj, '__name__', None))
+
+        if self.is_module():
+            return ()
+        name = try_to_get_name(self._obj)
+        if name is None:
+            name = try_to_get_name(type(self._obj))
+            if name is None:
+                return ()
+        return tuple(name.split('.'))
 
     def dir(self):
         return list(map(force_unicode, dir(self._obj)))
@@ -305,16 +325,26 @@ class DirectObjectAccess(object):
                 return True, True
         return True, False
 
-    def getattr(self, name, default=_sentinel):
+    def getattr_paths(self, name, default=_sentinel):
         try:
-            return self._create_access(getattr(self._obj, name))
+            return_obj = getattr(self._obj, name)
         except AttributeError:
             # Happens e.g. in properties of
             # PyQt4.QtGui.QStyleOptionComboBox.currentText
             # -> just set it to None
             if default is _sentinel:
                 raise
-            return self._create_access(default)
+            return_obj = default
+        access = self._create_access(return_obj)
+        if inspect.ismodule(return_obj):
+            return [access]
+
+        module = inspect.getmodule(return_obj)
+        if module is None:
+            module = inspect.getmodule(type(return_obj))
+            if module is None:
+                module = builtins
+        return [self._create_access(module), access]
 
     def get_safe_value(self):
         if type(self._obj) in (bool, bytes, float, int, str, unicode, slice):
@@ -377,6 +407,20 @@ class DirectObjectAccess(object):
         return inspect.isclass(self._obj) and self._obj != type
 
     def get_signature_params(self):
+        return [
+            SignatureParam(
+                name=p.name,
+                has_default=p.default is not p.empty,
+                default=self._create_access_path(p.default),
+                default_string=str(p.default),
+                has_annotation=p.annotation is not p.empty,
+                annotation=self._create_access_path(p.annotation),
+                annotation_string=str(p.default),
+                kind_name=str(p.kind)
+            ) for p in self._get_signature().parameters.values()
+        ]
+
+    def _get_signature(self):
         obj = self._obj
         if py_version < 33:
             raise ValueError("inspect.signature was introduced in 3.3")
@@ -397,22 +441,12 @@ class DirectObjectAccess(object):
                 raise ValueError
 
         try:
-            signature = inspect.signature(obj)
+            return inspect.signature(obj)
         except (RuntimeError, TypeError):
             # Reading the code of the function in Python 3.6 implies there are
             # at least these errors that might occur if something is wrong with
             # the signature. In that case we just want a simple escape for now.
             raise ValueError
-        return [
-            SignatureParam(
-                name=p.name,
-                has_default=p.default is not p.empty,
-                default=self._create_access_path(p.default),
-                has_annotation=p.annotation is not p.empty,
-                annotation=self._create_access_path(p.annotation),
-                kind_name=str(p.kind)
-            ) for p in signature.parameters.values()
-        ]
 
     def negate(self):
         return self._create_access_path(-self._obj)
@@ -438,14 +472,3 @@ def _is_class_instance(obj):
         return False
     else:
         return cls != type and not issubclass(cls, NOT_CLASS_TYPES)
-
-
-class _SPECIAL_OBJECTS(object):
-    FUNCTION_CLASS = types.FunctionType
-    BOUND_METHOD_CLASS = type(DirectObjectAccess(None, None).py__bool__)
-    MODULE_CLASS = types.ModuleType
-
-
-def get_special_object(evaluator, identifier):
-    obj = getattr(_SPECIAL_OBJECTS, identifier)
-    return create_access_path(evaluator, obj)

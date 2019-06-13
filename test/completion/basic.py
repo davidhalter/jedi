@@ -79,6 +79,11 @@ for a3, b3 in (1,""), (1,""), (1,""):
     a3
     #? str()
     b3
+for (a3, b3) in (1,""), (1,""), (1,""):
+    #? int()
+    a3
+    #? str()
+    b3
 
 for a4, (b4, c4) in (1,("", list)), (1,("", list)):
     #? int()
@@ -148,6 +153,7 @@ ret()[0]
 # -----------------
 
 def global_define():
+    #? int()
     global global_var_in_func
     global_var_in_func = 3
 
@@ -163,6 +169,7 @@ def funct1():
     global global_dict_var
     global_dict_var = dict()
 def funct2():
+    #! ['global_dict_var', 'global_dict_var']
     global global_dict_var
     #? dict()
     global_dict_var
@@ -295,6 +302,11 @@ __file__
 #? ['__file__']
 __file__
 
+#? str()
+math.__file__
+# Should not lead to errors
+#?
+math()
 
 # -----------------
 # with statements

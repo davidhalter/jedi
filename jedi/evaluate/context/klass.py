@@ -32,8 +32,7 @@ py__package__() -> List[str]           Only on modules. For the import system.
 py__path__()                           Only on modules. For the import system.
 py__get__(call_object)                 Only on instances. Simulates
                                        descriptors.
-py__doc__(include_call_signature:      Returns the docstring for a context.
-          bool)
+py__doc__()                            Returns the docstring for a context.
 ====================================== ========================================
 
 """
@@ -44,12 +43,12 @@ from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass, \
     evaluator_method_generator_cache
 from jedi.evaluate import compiled
 from jedi.evaluate.lazy_context import LazyKnownContexts
-from jedi.evaluate.filters import ParserTreeFilter, TreeNameDefinition, \
-    ContextName
+from jedi.evaluate.filters import ParserTreeFilter
+from jedi.evaluate.names import TreeNameDefinition, ContextName
 from jedi.evaluate.arguments import unpack_arglist
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
-    TreeContext, NO_CONTEXTS
-from jedi.evaluate.context.function import FunctionAndClassMixin
+    NO_CONTEXTS
+from jedi.evaluate.context.function import FunctionAndClassBase
 
 
 def apply_py__get__(context, instance, class_context):
@@ -119,7 +118,7 @@ class ClassFilter(ParserTreeFilter):
         return [name for name in names if self._access_possible(name)]
 
 
-class ClassMixin(FunctionAndClassMixin):
+class ClassMixin(object):
     def is_class(self):
         return True
 
@@ -133,6 +132,9 @@ class ClassMixin(FunctionAndClassMixin):
     @property
     def name(self):
         return ContextName(self, self.tree_node.name)
+
+    def py__name__(self):
+        return self.name.string_name
 
     def get_param_names(self):
         for context_ in self.py__getattribute__(u'__init__'):
@@ -173,13 +175,6 @@ class ClassMixin(FunctionAndClassMixin):
                             mro.append(cls_new)
                             yield cls_new
 
-    def _create_class_filter(self, cls, origin_scope, is_instance):
-        return ClassFilter(
-            self.evaluator, self, node_context=cls,
-            origin_scope=origin_scope,
-            is_instance=is_instance
-        )
-
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, is_instance=False):
         if search_global:
@@ -195,20 +190,19 @@ class ClassMixin(FunctionAndClassMixin):
                     for filter in cls.get_filters(is_instance=is_instance):
                         yield filter
                 else:
-                    yield self._create_class_filter(cls, origin_scope, is_instance)
+                    yield ClassFilter(
+                        self.evaluator, self, node_context=cls,
+                        origin_scope=origin_scope,
+                        is_instance=is_instance
+                    )
         if not is_instance:
             from jedi.evaluate.compiled import builtin_from_name
             type_ = builtin_from_name(self.evaluator, u'type')
             if type_ != self:
-                # Return completions of the meta class.
-                yield ClassFilter(
-                    self.evaluator, self, node_context=type_,
-                    origin_scope=origin_scope,
-                    is_instance=is_instance
-                )
+                yield next(type_.get_filters())
 
 
-class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
+class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     """
     This class is not only important to extend `tree.Class`, it is also a
     important for descriptors (if the descriptor methods are evaluated or not).
@@ -249,11 +243,11 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
             )]
 
     def py__getitem__(self, index_context_set, contextualized_node):
-        from jedi.evaluate.gradual.typing import AnnotatedClass
+        from jedi.evaluate.gradual.typing import LazyGenericClass
         if not index_context_set:
             return ContextSet([self])
         return ContextSet(
-            AnnotatedClass(
+            LazyGenericClass(
                 self,
                 index_context,
                 context_of_index=contextualized_node.context,
@@ -262,18 +256,27 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, TreeContext)):
         )
 
     def define_generics(self, type_var_dict):
-        from jedi.evaluate.gradual.typing import AnnotatedSubClass
+        from jedi.evaluate.gradual.typing import GenericClass
 
         def remap_type_vars():
+            """
+            The TypeVars in the resulting classes have sometimes different names
+            and we need to check for that, e.g. a signature can be:
+
+            def iter(iterable: Iterable[_T]) -> Iterator[_T]: ...
+
+            However, the iterator is defined as Iterator[_T_co], which means it has
+            a different type var name.
+            """
             for type_var in self.list_type_vars():
                 yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
 
         if type_var_dict:
-            return AnnotatedSubClass(
+            return ContextSet([GenericClass(
                 self,
-                given_types=tuple(remap_type_vars())
-            )
-        return self
+                generics=tuple(remap_type_vars())
+            )])
+        return ContextSet({self})
 
     def get_signatures(self):
         init_funcs = self.py__getattribute__('__init__')

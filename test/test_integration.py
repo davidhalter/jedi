@@ -9,9 +9,9 @@ def assert_case_equal(case, actual, desired):
     """
     Assert ``actual == desired`` with formatted message.
 
-    This is not needed for typical py.test use case, but as we need
+    This is not needed for typical pytest use case, but as we need
     ``--assert=plain`` (see ../pytest.ini) to workaround some issue
-    due to py.test magic, let's format the message by hand.
+    due to pytest magic, let's format the message by hand.
     """
     assert actual == desired, """
 Test %r failed.

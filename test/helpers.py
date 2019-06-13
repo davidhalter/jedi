@@ -13,13 +13,19 @@ else:
 TestCase = unittest.TestCase
 
 import os
+import pytest
 from os.path import abspath, dirname, join
-import functools
+from functools import partial, wraps
 
 test_dir = dirname(abspath(__file__))
 root_dir = dirname(test_dir)
 
 sample_int = 1  # This is used in completion/imports.py
+
+skip_if_windows = partial(pytest.param,
+                          marks=pytest.mark.skipif("sys.platform=='win32'"))
+skip_if_not_windows = partial(pytest.param,
+                              marks=pytest.mark.skipif("sys.platform!='win32'"))
 
 
 def get_example_dir(name):
@@ -34,7 +40,7 @@ def cwd_at(path):
     :arg  path: relative path from repository root (e.g., ``'jedi'``).
     """
     def decorator(func):
-        @functools.wraps(func)
+        @wraps(func)
         def wrapper(Script, **kwargs):
             with set_cwd(path):
                 return func(Script, **kwargs)

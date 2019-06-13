@@ -1,51 +1,64 @@
+dist: xenial
 language: python
-sudo: true
 python:
   - 2.7
   - 3.4
   - 3.5
   - 3.6
+  - 3.7
 
 env:
   - JEDI_TEST_ENVIRONMENT=27
   - JEDI_TEST_ENVIRONMENT=34
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=36
-
-addons:
-  apt:
-    packages:
-     # Required to properly create a virtual environment with system Python 3.4.
-     - python3.4-venv
+  - JEDI_TEST_ENVIRONMENT=37
 
 matrix:
   allow_failures:
     - python: pypy
-    - env: TOXENV=sith
+    - python: 3.8-dev
   include:
     - python: 3.6
       env:
         - TOXENV=cov
         - JEDI_TEST_ENVIRONMENT=36
-    - python: 3.6
-      env: TOXENV=sith
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.
     #- python: pypy
-    - python: "nightly"
+    - python: 3.8-dev
       env:
-        - JEDI_TEST_ENVIRONMENT=36
-before_install:
-    - ./travis_install.sh
-    # Need to add the path to the Python versions in the end. This might add
-    # something twice, but it doesn't really matter, because they are appended.
-    - export PATH=$PATH:/opt/python/3.5/bin
-    # 3.6 was not installed manually, but already is on the system. However
-    # it's not on path (unless 3.6 is selected).
-    - export PATH=$PATH:/opt/python/3.6/bin
+        - JEDI_TEST_ENVIRONMENT=38
 install:
     - pip install --quiet tox-travis
 script:
+    - |
+      # Setup/install Python for $JEDI_TEST_ENVIRONMENT.
+      set -ex
+      test_env_version=${JEDI_TEST_ENVIRONMENT:0:1}.${JEDI_TEST_ENVIRONMENT:1:1}
+      if [ "$TRAVIS_PYTHON_VERSION" != "$test_env_version" ]; then
+        python_bin=python$test_env_version
+        python_path="$(which $python_bin || true)"
+        if [ -z "$python_path" ]; then
+          # Only required for JEDI_TEST_ENVIRONMENT=34.
+          download_name=python-$test_env_version
+          wget https://s3.amazonaws.com/travis-python-archives/binaries/ubuntu/16.04/x86_64/$download_name.tar.bz2
+          sudo tar xjf $download_name.tar.bz2 --directory / opt/python
+          ln -s "/opt/python/${test_env_version}/bin/python" /home/travis/bin/$python_bin
+        elif [ "${python_path#/opt/pyenv/shims}" != "$python_path" ]; then
+          # Activate pyenv version (required with JEDI_TEST_ENVIRONMENT=36).
+          pyenv_bin="$(pyenv whence --path "$python_bin" | head -n1)"
+          ln -s "$pyenv_bin" /home/travis/bin/$python_bin
+        fi
+        $python_bin --version
+        python_ver=$($python_bin -c 'import sys; print("%d%d" % sys.version_info[0:2])')
+        if [ "$JEDI_TEST_ENVIRONMENT" != "$python_ver" ]; then
+          echo "Unexpected Python version for $JEDI_TEST_ENVIRONMENT: $python_ver"
+          set +ex
+          exit 2
+        fi
+      fi
+      set +ex
     - tox
 after_script:
     - |

@@ -9,6 +9,7 @@ from . import run
 from . import refactor
 
 import jedi
+from jedi.api.environment import InterpreterEnvironment
 from jedi.evaluate.analysis import Warning
 
 
@@ -163,3 +164,8 @@ def cwd_tmpdir(monkeypatch, tmpdir):
 @pytest.fixture
 def evaluator(Script):
     return Script('')._evaluator
+
+
+@pytest.fixture
+def same_process_evaluator(Script):
+    return Script('', environment=InterpreterEnvironment())._evaluator

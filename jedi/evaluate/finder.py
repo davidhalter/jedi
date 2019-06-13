@@ -25,9 +25,11 @@ from jedi.evaluate import flow_analysis
 from jedi.evaluate.arguments import TreeArguments
 from jedi.evaluate import helpers
 from jedi.evaluate.context import iterable
-from jedi.evaluate.filters import get_global_filters, TreeNameDefinition
+from jedi.evaluate.filters import get_global_filters
+from jedi.evaluate.names import TreeNameDefinition
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.parser_utils import is_scope, get_parent_scope
+from jedi.evaluate.gradual.conversion import convert_contexts
 
 
 class NameFinder(object):
@@ -46,7 +48,6 @@ class NameFinder(object):
         self._found_predefined_types = None
         self._analysis_errors = analysis_errors
 
-    @debug.increase_indent
     def find(self, filters, attribute_lookup):
         """
         :params bool attribute_lookup: Tell to logic if we're accessing the
@@ -115,7 +116,16 @@ class NameFinder(object):
 
             return get_global_filters(self._evaluator, self._context, position, origin_scope)
         else:
-            return self._context.get_filters(search_global, self._position, origin_scope=origin_scope)
+            return self._get_context_filters(origin_scope)
+
+    def _get_context_filters(self, origin_scope):
+        for f in self._context.get_filters(False, self._position, origin_scope=origin_scope):
+            yield f
+        # This covers the case where a stub files are incomplete.
+        if self._context.is_stub():
+            for c in convert_contexts(ContextSet({self._context})):
+                for f in c.get_filters():
+                    yield f
 
     def filter_name(self, filters):
         """
@@ -123,11 +133,13 @@ class NameFinder(object):
         ``filters``), until a name fits.
         """
         names = []
+        # This paragraph is currently needed for proper branch evaluation
+        # (static analysis).
         if self._context.predefined_names and isinstance(self._name, tree.Name):
             node = self._name
             while node is not None and not is_scope(node):
                 node = node.parent
-                if node.type in ("if_stmt", "for_stmt", "comp_for"):
+                if node.type in ("if_stmt", "for_stmt", "comp_for", 'sync_comp_for'):
                     try:
                         name_dict = self._context.predefined_names[node]
                         types = name_dict[self._string_name]
@@ -149,7 +161,8 @@ class NameFinder(object):
                         # it's kind of hard, because for Jedi it's not clear
                         # that that name has not been defined, yet.
                         if n.tree_name == self._name:
-                            if self._name.get_definition().type == 'import_from':
+                            def_ = self._name.get_definition()
+                            if def_ is not None and def_.type == 'import_from':
                                 continue
                 break
 
@@ -177,23 +190,17 @@ class NameFinder(object):
         contexts = ContextSet.from_sets(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, contexts)
-        if not names and self._context.is_instance():
+        if not names and self._context.is_instance() and not self._context.is_compiled():
             # handling __getattr__ / __getattribute__
             return self._check_getattr(self._context)
 
         # Add isinstance and other if/assert knowledge.
         if not contexts and isinstance(self._name, tree.Name) and \
-                not self._name_context.is_instance():
+                not self._name_context.is_instance() and not self._context.is_compiled():
             flow_scope = self._name
             base_nodes = [self._name_context.tree_node]
-            try:
-                stub_node = self._name_context.stub_context.tree_node
-            except AttributeError:
-                pass
-            else:
-                base_nodes.append(stub_node)
 
-            if any(b.type == 'comp_for' for b in base_nodes):
+            if any(b.type in ('comp_for', 'sync_comp_for') for b in base_nodes):
                 return contexts
             while True:
                 flow_scope = get_parent_scope(flow_scope, include_flows=True)
@@ -277,7 +284,7 @@ def _check_isinstance_type(context, element, search_name):
     for cls_or_tup in lazy_context_cls.infer():
         if isinstance(cls_or_tup, iterable.Sequence) and cls_or_tup.array_type == 'tuple':
             for lazy_context in cls_or_tup.py__iter__():
-                context_set |= lazy_context.infer().execute_evaluated(context)
+                context_set |= lazy_context.infer().execute_evaluated()
         else:
-            context_set |= helpers.execute_evaluated(cls_or_tup)
+            context_set |= cls_or_tup.execute_evaluated()
     return context_set

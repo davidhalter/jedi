@@ -1,7 +1,7 @@
 import pydoc
 
 from jedi.evaluate.utils import ignored
-from jedi.evaluate.filters import AbstractNameDefinition
+from jedi.evaluate.names import AbstractNameDefinition
 
 try:
     from pydoc_data import topics as pydoc_topics
@@ -21,6 +21,7 @@ def get_operator(evaluator, string, pos):
 
 class KeywordName(AbstractNameDefinition):
     api_type = u'keyword'
+    is_context_name = False
 
     def __init__(self, evaluator, name):
         self.evaluator = evaluator
@@ -44,8 +45,14 @@ class Keyword(object):
         """ For a `parsing.Name` like comparision """
         return [self.name]
 
-    def py__doc__(self, include_call_signature=False):
+    def py__doc__(self):
         return imitate_pydoc(self.name.string_name)
+
+    def get_signatures(self):
+        # TODO this makes no sense, I think Keyword should somehow merge with
+        #   Context to make it easier for the api/classes.py to deal with all
+        #   of it.
+        return []
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self.name)

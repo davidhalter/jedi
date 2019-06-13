@@ -4,6 +4,7 @@ import sys
 import shutil
 
 import pytest
+from ..helpers import skip_if_windows, skip_if_not_windows
 
 from jedi.evaluate import sys_path
 from jedi.api.environment import create_environment
@@ -87,8 +88,12 @@ _s = ['/a', '/b', '/c/d/']
 
         (['/foo'], '/foo/bar/__init__.py', ('bar',), True),
         (['/foo'], '/foo/bar/baz/__init__.py', ('bar', 'baz'), True),
-        (['/foo'], '/foo/bar.so', ('bar',), False),
-        (['/foo'], '/foo/bar/__init__.so', ('bar',), True),
+
+        skip_if_windows(['/foo'], '/foo/bar.so', ('bar',), False),
+        skip_if_windows(['/foo'], '/foo/bar/__init__.so', ('bar',), True),
+        skip_if_not_windows(['/foo'], '/foo/bar.pyd', ('bar',), False),
+        skip_if_not_windows(['/foo'], '/foo/bar/__init__.pyd', ('bar',), True),
+
         (['/foo'], '/x/bar.py', None, False),
         (['/foo'], '/foo/bar.xyz', ('bar.xyz',), False),
 

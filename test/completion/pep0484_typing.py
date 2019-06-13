@@ -334,17 +334,21 @@ def union4(x: U[int, str]):
     #? int() str()
     x
 
+# -------------------------
+# Type Vars
+# -------------------------
 
-TYPE_VAR = typing.TypeVar('TYPE_VAR')
+TYPE_VARX = typing.TypeVar('TYPE_VARX')
+TYPE_VAR_CONSTRAINTSX = typing.TypeVar('TYPE_VAR_CONSTRAINTSX', str, int)
 # TODO there should at least be some results.
 #? []
-TYPE_VAR.
-#! ["TYPE_VAR = typing.TypeVar('TYPE_VAR')"]
-TYPE_VAR
+TYPE_VARX.
+#! ["TYPE_VARX = typing.TypeVar('TYPE_VARX')"]
+TYPE_VARX
 
 
-class WithTypeVar(typing.Generic[TYPE_VAR]):
-    def lala(self) -> TYPE_VAR:
+class WithTypeVar(typing.Generic[TYPE_VARX]):
+    def lala(self) -> TYPE_VARX:
         ...
 
 
@@ -352,6 +356,34 @@ def maaan(p: WithTypeVar[int]):
     #? int()
     p.lala()
 
+def in_out1(x: TYPE_VARX) -> TYPE_VARX: ...
+
+#? int()
+in_out1(1)
+#? str()
+in_out1("")
+#? str()
+in_out1(str())
+#?
+in_out1()
+
+def in_out2(x: TYPE_VAR_CONSTRAINTSX) -> TYPE_VAR_CONSTRAINTSX: ...
+
+#? int()
+in_out2(1)
+#? str()
+in_out2("")
+#? str()
+in_out2(str())
+#? str() int()
+in_out2()
+# TODO this should actually be str() int(), because of the constraints.
+#? float()
+in_out2(1.0)
+
+# -------------------------
+# TYPE_CHECKING
+# -------------------------
 
 if typing.TYPE_CHECKING:
     with_type_checking = 1
@@ -379,3 +411,18 @@ def foo(a: typing.List, b: typing.Dict, c: typing.MutableMapping) -> typing.Type
     c['asdf']
 #? int
 foo()
+
+# -------------------------
+# cast
+# -------------------------
+
+def cast_tests():
+    x = 3.0
+    y = typing.cast(int, x)
+    #? int()
+    y
+    return typing.cast(str, x)
+
+
+#? str()
+cast_tests()

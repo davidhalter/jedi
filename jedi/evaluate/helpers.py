@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from parso.python import tree
 
 from jedi._compatibility import unicode
-from jedi.parser_utils import get_parent_scope, is_name_of_func_or_class_def
+from jedi.parser_utils import get_parent_scope
 
 
 def is_stdlib_path(path):
@@ -175,20 +175,8 @@ def get_module_names(module, all_scopes):
 
         def is_module_scope_name(name):
             parent_scope = get_parent_scope(name)
-            if is_name_of_func_or_class_def(name, parent_scope):
-                # XXX: In syntax tree function- and class-name nodes are immediate children of
-                # their respective class-definition or function-definition nodes. Technically,
-                # get_parent_scope(...) for them should return the parent of the definition node,
-                # because
-                #
-                # def foo(...): pass
-                #
-                # is equivalent to
-                #
-                # foo = lambda(...): None
-                #
-                # but that would be a big change that could break type inference, whereas for now
-                # this discrepancy looks like only a problem for "get_module_names".
+            # async functions have an extra wrapper. Strip it.
+            if parent_scope and parent_scope.type == 'async_stmt':
                 parent_scope = parent_scope.parent
             return parent_scope in (module, None)
 
@@ -206,17 +194,12 @@ def predefine_names(context, flow_scope, dct):
         del predefined[flow_scope]
 
 
-def is_compiled(context):
-    from jedi.evaluate.compiled import CompiledObject, CompiledValue
-    return isinstance(context, (CompiledObject, CompiledValue))
-
-
 def is_string(context):
     if context.evaluator.environment.version_info.major == 2:
         str_classes = (unicode, bytes)
     else:
         str_classes = (unicode,)
-    return is_compiled(context) and isinstance(context.get_safe_value(default=None), str_classes)
+    return context.is_compiled() and isinstance(context.get_safe_value(default=None), str_classes)
 
 
 def is_literal(context):
@@ -224,14 +207,17 @@ def is_literal(context):
 
 
 def _get_safe_value_or_none(context, accept):
-    if is_compiled(context):
-        value = context.get_safe_value(default=None)
-        if isinstance(value, accept):
-            return value
+    value = context.get_safe_value(default=None)
+    if isinstance(value, accept):
+        return value
 
 
 def get_int_or_none(context):
     return _get_safe_value_or_none(context, int)
+
+
+def get_str_or_none(context):
+    return _get_safe_value_or_none(context, (bytes, unicode))
 
 
 def is_number(context):
@@ -248,17 +234,6 @@ def reraise_getitem_errors(*exception_classes):
         yield
     except exception_classes as e:
         raise SimpleGetItemNotFound(e)
-
-
-def execute_evaluated(context, *value_list):
-    """
-    Execute a function with already executed arguments.
-    """
-    # TODO move this out of here to the evaluator.
-    from jedi.evaluate.arguments import ValuesArguments
-    from jedi.evaluate.base_context import ContextSet
-    arguments = ValuesArguments([ContextSet([value]) for value in value_list])
-    return context.evaluator.execute(context, arguments)
 
 
 def parse_dotted_names(nodes, is_import_from, until_node=None):
@@ -288,3 +263,7 @@ def parse_dotted_names(nodes, is_import_from, until_node=None):
             # for names.
             break
     return level, names
+
+
+def contexts_from_qualified_names(evaluator, *names):
+    return evaluator.import_module(names[:-1]).py__getattribute__(names[-1])
