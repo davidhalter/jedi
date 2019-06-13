@@ -276,3 +276,17 @@ qsplit = shlex.split("foo, ferwerwerw werw werw e")
 for part in qsplit:
     #? str()
     part
+
+# -----------------
+# Unknown metaclass
+# -----------------
+
+# Github issue 1321
+class Meta(object):
+    pass
+
+class Test(metaclass=Meta):
+    def test_function(self):
+        result = super(Test, self).test_function()
+        #? []
+        result.
