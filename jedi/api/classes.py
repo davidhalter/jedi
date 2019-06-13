@@ -309,14 +309,18 @@ class BaseDefinition(object):
         if not self._name.is_context_name:
             return []
 
+        # First we need to make sure that we have stub names (if possible) that
+        # we can follow. If we don't do that, we can end up with the inferred
+        # results of Python objects instead of stubs.
+        names = convert_names([self._name], prefer_stubs=True)
         contexts = convert_contexts(
-            self._name.infer(),
+            ContextSet.from_sets(n.infer() for n in names),
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
-        names = [c.name for c in contexts]
+        resulting_names = [c.name for c in contexts]
         return [self if n == self._name else Definition(self._evaluator, n)
-                for n in names]
+                for n in resulting_names]
 
     @property
     @memoize_method

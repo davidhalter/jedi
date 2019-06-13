@@ -25,7 +25,7 @@ from test.helpers import root_dir
          'collections.Counter.most_common', True, True],
 
         ['from keyword import kwlist; kwlist', 'typing.Sequence', True, True],
-        #['from keyword import kwlist', 'typing.Sequence', True, True],
+        ['from keyword import kwlist', 'typing.Sequence', True, True],
 
         ['import with_stub', 'with_stub', True, True],
         ['import with_stub', 'with_stub', True, True],
@@ -35,14 +35,18 @@ from test.helpers import root_dir
 def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way, kwargs):
     project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
     s = Script(code, _project=project)
+    prefer_stubs = kwargs['prefer_stubs']
+    only_stubs = kwargs['only_stubs']
     if way == 'direct':
         defs = s.goto_definitions(**kwargs)
     else:
-        goto_defs = s.goto_assignments()
+        goto_defs = s.goto_assignments(
+            # Prefering stubs when we want to go to python and vice versa
+            prefer_stubs=not (prefer_stubs or only_stubs),
+            follow_imports=True,
+        )
         defs = [d for goto_def in goto_defs for d in goto_def.infer(**kwargs)]
 
-    only_stubs = kwargs['only_stubs']
-    prefer_stubs = kwargs['prefer_stubs']
     if not has_stub and only_stubs:
         assert not defs
     else:
