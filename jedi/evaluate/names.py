@@ -37,9 +37,9 @@ class AbstractNameDefinition(object):
             return None
         return module_names + qualified_names
 
-    @abstractmethod
     def _get_qualified_names(self):
-        raise NotImplementedError
+        # By default, a name has no qualified names.
+        return None
 
     def get_root_context(self):
         return self.parent_context.get_root_context()
