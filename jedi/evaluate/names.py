@@ -75,7 +75,7 @@ class AbstractTreeName(AbstractNameDefinition):
             if include_module_names and not import_node.level:
                 return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
             else:
-                return ()
+                return None
 
         return super(AbstractTreeName, self).get_qualified_names(include_module_names)
 

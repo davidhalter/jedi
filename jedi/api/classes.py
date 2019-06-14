@@ -277,9 +277,7 @@ class BaseDefinition(object):
         return '.'.join(names)
 
     def is_stub(self):
-        if not self._name.is_context_name:
-            return False
-        return all(c.is_stub() for c in self._name.infer())
+        return self._name.get_root_context().is_stub()
 
     def goto_assignments(self, **kwargs):  # Python 2...
         with debug.increase_indent_cm('goto for %s' % self._name):
