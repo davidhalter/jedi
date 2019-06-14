@@ -113,7 +113,6 @@ def _python_to_stub_names(names, fallback_to_python=False):
                 if fallback_to_python or new_name.is_stub():
                     yield new_name
             continue
-            print(name.goto())
 
         name_list = name.get_qualified_names()
         stubs = NO_CONTEXTS

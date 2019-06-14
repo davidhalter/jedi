@@ -227,6 +227,8 @@ def _load_from_typeshed(evaluator, python_context_set, parent_module_context, im
     map_ = None
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(evaluator.grammar.version_info)
+        if import_name == '_collections':
+            import_name = 'collections'
     elif isinstance(parent_module_context, StubModuleContext):
         if not parent_module_context.is_package:
             # Only if it's a package (= a folder) something can be

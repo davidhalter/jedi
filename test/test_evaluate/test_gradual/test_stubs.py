@@ -24,8 +24,7 @@ from test.helpers import root_dir
         ['from collections import Counter; Counter()', 'collections.Counter', True, True, {}],
         ['from collections import Counter; Counter.most_common',
          'collections.Counter.most_common', True, True, {}],
-        #['from collections import deque',
-         #('_collections.deque', 'collections.deque'), True, False, {}],
+        ['from collections import deque', 'collections.deque', True, False, {}],
 
         ['from keyword import kwlist; kwlist', 'typing.Sequence', True, True,
          {'full_name': 'keyword.kwlist'}],
@@ -43,10 +42,6 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
     s = Script(code, _project=project)
     prefer_stubs = kwargs['prefer_stubs']
     only_stubs = kwargs['only_stubs']
-    if isinstance(full_name, tuple):
-        # Small hack to make it possible to test some special cases.
-        should_land_on_stub = has_stub and (only_stubs or prefer_stubs)
-        full_name = full_name[should_land_on_stub]
 
     if type_ == 'goto':
         full_name = goto_changes.get('full_name', full_name)

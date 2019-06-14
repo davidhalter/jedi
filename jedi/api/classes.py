@@ -49,6 +49,7 @@ class BaseDefinition(object):
         'posix': 'os',
         '_io': 'io',
         '_functools': 'functools',
+        '_collections': 'collections',
         '_sqlite3': 'sqlite3',
         '__builtin__': 'builtins',
     }
