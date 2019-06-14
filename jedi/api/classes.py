@@ -277,6 +277,9 @@ class BaseDefinition(object):
         return '.'.join(names)
 
     def is_stub(self):
+        if not self._name.is_context_name:
+            return False
+
         return self._name.get_root_context().is_stub()
 
     def goto_assignments(self, **kwargs):  # Python 2...
