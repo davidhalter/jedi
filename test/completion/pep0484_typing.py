@@ -272,18 +272,15 @@ def testnewtype(y):
     y.u
 
 WrappingType2 = typing.NewType()
-# Judging by the behavior of normal functions, it is acceptable for this to try
-# to work, even though it won't work at runtime. Probably we'd want to default
-# it to object?
 
 def testnewtype2(y):
     """
     :type y: WrappingType2
     """
-    #? WrappingType2()
+    #?
     y
-    #? ["__reduce__", "__reduce_ex__", "__repr__"]
-    y.__r
+    #? []
+    y.
 # python >= 3.4
 
 class TestDefaultDict(typing.DefaultDict[str, int]):
