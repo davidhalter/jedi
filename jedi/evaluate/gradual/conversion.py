@@ -4,10 +4,6 @@ from jedi.evaluate.base_context import ContextSet, \
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.gradual.stub_context import StubModuleContext
 
-_QUALIFIED_NAME_CHANGES = dict(
-    _collections="collections",
-)
-
 
 def _stub_to_python_context_set(stub_context, ignore_compiled=False):
     stub_module = stub_context.get_root_context()
@@ -117,7 +113,6 @@ def _python_to_stub_names(names, fallback_to_python=False):
         name_list = name.get_qualified_names()
         stubs = NO_CONTEXTS
         if name_list is not None:
-            name_list = _apply_qualified_name_changes(name_list)
             stub_module = _load_stub_module(module)
             if stub_module is not None:
                 stubs = ContextSet({stub_module})
@@ -178,7 +173,6 @@ def to_stub(context):
     stub_module = _load_stub_module(context.get_root_context())
     if stub_module is None or qualified_names is None:
         return NO_CONTEXTS
-    qualified_names = _apply_qualified_name_changes(qualified_names)
 
     was_bound_method = context.is_bound_method()
     if was_bound_method:
@@ -202,19 +196,3 @@ def to_stub(context):
         # the method.
         stub_contexts = stub_contexts.py__getattribute__(method_name)
     return stub_contexts
-
-
-def _apply_qualified_name_changes(qualified_names):
-    """
-    Some x
-    """
-    print(qualified_names)
-    try:
-        new_first_name = _QUALIFIED_NAME_CHANGES[qualified_names[0]]
-    except (KeyError, IndexError):
-        pass
-    else:
-        qualified_names = list(qualified_names)
-        qualified_names[0] = new_first_name
-    print(qualified_names)
-    return qualified_names
