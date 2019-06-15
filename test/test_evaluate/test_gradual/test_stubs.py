@@ -31,6 +31,9 @@ from test.helpers import root_dir
         ['from keyword import kwlist', 'typing.Sequence', True, True,
          {'full_name': 'keyword.kwlist'}],
 
+        ['from socket import AF_INET', 'socket.AddressFamily', True, True,
+         {'full_name': 'socket.AF_INET'}],
+
         ['import with_stub', 'with_stub', True, True, {}],
         ['import with_stub', 'with_stub', True, True, {}],
         ['import with_stub_folder.python_only', 'with_stub_folder.python_only', False, True, {}],

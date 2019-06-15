@@ -50,6 +50,7 @@ class BaseDefinition(object):
         '_io': 'io',
         '_functools': 'functools',
         '_collections': 'collections',
+        '_socket': 'socket',
         '_sqlite3': 'sqlite3',
         '__builtin__': 'builtins',
     }

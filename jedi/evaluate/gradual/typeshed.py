@@ -10,6 +10,11 @@ from jedi.evaluate.gradual.stub_context import TypingModuleWrapper, StubModuleCo
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
 
+_IMPORT_MAP = dict(
+    _collections='collections',
+    _socket='socket',
+)
+
 
 def _merge_create_stub_map(directories):
     map_ = {}
@@ -227,8 +232,7 @@ def _load_from_typeshed(evaluator, python_context_set, parent_module_context, im
     map_ = None
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(evaluator.grammar.version_info)
-        if import_name == '_collections':
-            import_name = 'collections'
+        import_name = _IMPORT_MAP.get(import_name, import_name)
     elif isinstance(parent_module_context, StubModuleContext):
         if not parent_module_context.is_package:
             # Only if it's a package (= a folder) something can be
