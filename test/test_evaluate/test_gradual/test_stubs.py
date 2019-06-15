@@ -24,15 +24,16 @@ from test.helpers import root_dir
         ['from collections import Counter; Counter()', 'collections.Counter', True, True, {}],
         ['from collections import Counter; Counter.most_common',
          'collections.Counter.most_common', True, True, {}],
-        ['from collections import deque', 'collections.deque', True, False, {}],
+        ['from collections import deque', 'collections.deque', True, False, {'has_python': True}],
 
         ['from keyword import kwlist; kwlist', 'typing.Sequence', True, True,
          {'full_name': 'keyword.kwlist'}],
         ['from keyword import kwlist', 'typing.Sequence', True, True,
          {'full_name': 'keyword.kwlist'}],
 
-        ['from socket import AF_INET', 'socket.AddressFamily', True, True,
+        ['from socket import AF_INET', 'socket.AddressFamily', True, False,
          {'full_name': 'socket.AF_INET'}],
+        ['from socket import socket', 'socket.socket', True, True, {}],
 
         ['import with_stub', 'with_stub', True, True, {}],
         ['import with_stub', 'with_stub', True, True, {}],
@@ -48,6 +49,8 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
 
     if type_ == 'goto':
         full_name = goto_changes.get('full_name', full_name)
+        has_python = goto_changes.get('has_python', has_python)
+
     if way == 'direct':
         if type_ == 'goto':
             defs = s.goto_assignments(follow_imports=True, **kwargs)
@@ -72,8 +75,10 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
     for d in defs:
         if prefer_stubs and has_stub:
             assert d.is_stub()
-        if only_stubs:
+        elif only_stubs:
             assert d.is_stub()
+        else:
+            assert has_python == (not d.is_stub())
         assert d.full_name == full_name
 
         assert d.is_stub() == d.module_path.endswith('.pyi')
