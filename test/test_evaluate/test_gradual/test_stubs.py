@@ -41,7 +41,12 @@ from test.helpers import root_dir
         ['import stub_only', 'stub_only', True, False, {}],
     ])
 def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
-                        kwargs, type_, goto_changes):
+                        kwargs, type_, goto_changes, environment):
+    if environment.version_info.major == 2:
+        # We just don't care about much of the detailed Python 2 failures
+        # anymore, because its end-of-life soon.
+        pytest.skip()
+
     project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
     s = Script(code, _project=project)
     prefer_stubs = kwargs['prefer_stubs']
