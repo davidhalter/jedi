@@ -75,5 +75,5 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
         if only_stubs:
             assert d.is_stub()
         assert d.full_name == full_name
-        #if d.is_stub():
-            #assert d.module_path.endswith('.pyi')
+
+        assert d.is_stub() == d.module_path.endswith('.pyi')
