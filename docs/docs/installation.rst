@@ -57,18 +57,14 @@ Others
 We are in the discussion of adding |jedi| to the Fedora repositories.
 
 
-Manual installation from a downloaded package
+Manual installation from GitHub
 ---------------------------------------------
 
-If you prefer not to use an automated package installer, you can `download
-<https://github.com/davidhalter/jedi/archive/master.zip>`__ a current copy of
-|jedi| and install it manually.
+If you prefer not to use an automated package installer, you can clone the source from GitHub and install it manually. To install it, run these commands::
 
-To install it, navigate to the directory containing `setup.py` on your console
-and type::
-
+    git clone --recurse-submodules https://github.com/davidhalter/jedi
+    cd jedi
     sudo python setup.py install
-
 
 Inclusion as a submodule
 ------------------------

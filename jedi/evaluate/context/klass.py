@@ -233,14 +233,16 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         if arglist:
             from jedi.evaluate import arguments
             args = arguments.TreeArguments(self.evaluator, self.parent_context, arglist)
-            return [value for key, value in args.unpack() if key is None]
-        else:
-            if self.py__name__() == 'object' \
-                    and self.parent_context == self.evaluator.builtins_module:
-                return []
-            return [LazyKnownContexts(
-                self.evaluator.builtins_module.py__getattribute__('object')
-            )]
+            lst = [value for key, value in args.unpack() if key is None]
+            if lst:
+                return lst
+
+        if self.py__name__() == 'object' \
+                and self.parent_context == self.evaluator.builtins_module:
+            return []
+        return [LazyKnownContexts(
+            self.evaluator.builtins_module.py__getattribute__('object')
+        )]
 
     def py__getitem__(self, index_context_set, contextualized_node):
         from jedi.evaluate.gradual.typing import LazyGenericClass
