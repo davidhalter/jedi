@@ -11,12 +11,12 @@ from jedi._compatibility import use_metaclass
 from jedi.evaluate import flow_analysis
 from jedi.evaluate.base_context import ContextSet, Context, ContextWrapper, \
     LazyContextWrapper
-from jedi.parser_utils import get_parent_scope
+from jedi.parser_utils import get_cached_parent_scope
 from jedi.evaluate.utils import to_list
-from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.names import TreeNameDefinition, ParamName, AbstractNameDefinition
 
 _definition_name_cache = weakref.WeakKeyDictionary()
+
 
 class AbstractFilter(object):
     _until_position = None
@@ -75,8 +75,6 @@ class AbstractUsedNamesFilter(AbstractFilter):
         self.context = context
 
     def get(self, name):
-        #print(self, self.context, name, type(self).__name__)
-        #import traceback, sys; traceback.print_stack(file=sys.stdout)
         return self._convert_names(self._filter(
             _get_definition_names(self._used_names, name)
         ))
@@ -124,7 +122,7 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         if parent.type == 'trailer':
             return False
         base_node = parent if parent.type in ('classdef', 'funcdef') else name
-        return get_parent_scope(base_node) == self._parser_scope
+        return get_cached_parent_scope(self._used_names, base_node) == self._parser_scope
 
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):

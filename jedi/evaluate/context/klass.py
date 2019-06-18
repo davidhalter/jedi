@@ -38,7 +38,7 @@ py__doc__()                            Returns the docstring for a context.
 """
 from jedi import debug
 from jedi._compatibility import use_metaclass
-from jedi.parser_utils import get_parent_scope
+from jedi.parser_utils import get_cached_parent_scope
 from jedi.evaluate.cache import evaluator_method_cache, CachedMetaClass, \
     evaluator_method_generator_cache
 from jedi.evaluate import compiled
@@ -106,7 +106,7 @@ class ClassFilter(ParserTreeFilter):
         while node is not None:
             if node == self._parser_scope or node == self.context:
                 return True
-            node = get_parent_scope(node)
+            node = get_cached_parent_scope(self._used_names, node)
         return False
 
     def _access_possible(self, name):

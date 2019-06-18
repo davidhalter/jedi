@@ -1,6 +1,7 @@
 import re
 import textwrap
 from inspect import cleandoc
+from weakref import WeakKeyDictionary
 
 from parso.python import tree
 from parso.cache import parser_cache
@@ -226,6 +227,23 @@ def is_scope(node):
     return t in ('file_input', 'classdef', 'funcdef', 'lambdef', 'sync_comp_for')
 
 
+def _get_parent_scope_cache(func):
+    cache = WeakKeyDictionary()
+
+    def wrapper(used_names, node, include_flows=False):
+        try:
+            for_module = cache[used_names]
+        except KeyError:
+            for_module = cache[used_names] = {}
+
+        try:
+            return for_module[node]
+        except KeyError:
+            result = for_module[node] = func(node, include_flows)
+            return result
+    return wrapper
+
+
 def get_parent_scope(node, include_flows=False):
     """
     Returns the underlying scope.
@@ -249,6 +267,9 @@ def get_parent_scope(node, include_flows=False):
             return scope
         scope = scope.parent
     return scope
+
+
+get_cached_parent_scope = _get_parent_scope_cache(get_parent_scope)
 
 
 def get_cached_code_lines(grammar, path):
