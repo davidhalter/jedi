@@ -3,6 +3,7 @@ Filters are objects that you can use to filter names in different scopes. They
 are needed for name resolution.
 """
 from abc import abstractmethod
+import weakref
 
 from parso.tree import search_ancestor
 
@@ -15,6 +16,7 @@ from jedi.evaluate.utils import to_list
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.names import TreeNameDefinition, ParamName, AbstractNameDefinition
 
+_definition_name_cache = weakref.WeakKeyDictionary()
 
 class AbstractFilter(object):
     _until_position = None
@@ -49,13 +51,18 @@ class FilterWrapper(object):
         return self.wrap_names(self._wrapped_filter.values())
 
 
-@evaluator_function_cache()
-def _get_definition_names(evaluator, module_node, name_key):
+def _get_definition_names(used_names, name_key):
     try:
-        names = module_node.get_used_names()[name_key]
+        for_module = _definition_name_cache[used_names]
     except KeyError:
-        return []
-    return [name for name in names if name.is_definition()]
+        for_module = _definition_name_cache[used_names] = {}
+
+    try:
+        return for_module[name_key]
+    except KeyError:
+        names = used_names.get(name_key, ())
+        result = for_module[name_key] = tuple(name for name in names if name.is_definition())
+        return result
 
 
 class AbstractUsedNamesFilter(AbstractFilter):
@@ -71,20 +78,18 @@ class AbstractUsedNamesFilter(AbstractFilter):
         #print(self, self.context, name, type(self).__name__)
         #import traceback, sys; traceback.print_stack(file=sys.stdout)
         return self._convert_names(self._filter(
-            _get_definition_names(self.context.evaluator, self._module_node, name)
+            _get_definition_names(self._used_names, name)
         ))
 
     def _convert_names(self, names):
         return [self.name_class(self.context, name) for name in names]
 
     def values(self):
-        evaluator = self.context.evaluator
-        module_node = self._module_node
         return self._convert_names(
             name
             for name_key in self._used_names
             for name in self._filter(
-                _get_definition_names(evaluator, module_node, name_key)
+                _get_definition_names(self._used_names, name_key)
             )
         )
 
