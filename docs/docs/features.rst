@@ -23,6 +23,7 @@ General Features
 - Great Virtualenv support
 - Can infer function arguments from sphinx, epydoc and basic numpydoc docstrings,
   and PEP0484-style type hints (:ref:`type hinting <type-hinting>`)
+- Stub files
 
 
 Supported Python Features
