@@ -146,16 +146,11 @@ This means that in Python you can enable tab completion in a `REPL
 <https://jedi.readthedocs.org/en/latest/docs/usage.html#tab-completion-in-the-python-shell>`_.
 
 
-Static Analysis / Linter
+Static Analysis
 ------------------------
 
 To do all forms of static analysis, please try to use ``jedi.names``. It will
 return a list of names that you can use to infer types and so on.
-
-Linting is another thing that is going to be part of Jedi. For now you can try
-an alpha version ``python -m jedi linter``. The API might change though and
-it's still buggy. It's Jedi's goal to be smarter than classic linter and
-understand ``AttributeError`` and other code issues.
 
 
 Refactoring
