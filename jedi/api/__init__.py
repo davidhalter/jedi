@@ -226,7 +226,8 @@ class Script(object):
         an option you can have two different versions of a function.
 
         :param only_stubs: Only return stubs for this goto call.
-        :param prefer_stubs: Prefer stubs to Python obects for this goto call.
+        :param prefer_stubs: Prefer stubs to Python objects for this type
+            inference call.
         :rtype: list of :class:`classes.Definition`
         """
         with debug.increase_indent_cm('goto_definitions'):
@@ -268,7 +269,7 @@ class Script(object):
         :param follow_builtin_imports: If follow_imports is True will decide if
             it follow builtin imports.
         :param only_stubs: Only return stubs for this goto call.
-        :param prefer_stubs: Prefer stubs to Python obects for this goto call.
+        :param prefer_stubs: Prefer stubs to Python objects for this goto call.
         :rtype: list of :class:`classes.Definition`
         """
         with debug.increase_indent_cm('goto_assignments'):
