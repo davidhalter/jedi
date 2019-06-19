@@ -1,17 +1,16 @@
 """
 Jedi is a static analysis tool for Python that can be used in IDEs/editors.
 Jedi has a focus on autocompletion and goto functionality. Jedi is fast and is
-very well tested. It understands Python on a very deep level.
+very well tested. It understands Python and stubs on a deep level.
 
 Jedi has support for different goto functions. It's possible to search for
-usages and to list names in a Python file and get information about them. Jedi
-understands docstrings.
+usages and list names in a Python file to get information about them.
 
 Jedi uses a very simple API to connect with IDE's. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
 which uses Jedi's autocompletion.  We encourage you to use Jedi in your IDEs.
-There's also native support for Jedi within IPython and you can install it in
-your REPL if you want.
+Autocompletion in your REPL is also possible, IPython uses it natively and for
+the CPython REPL you have to install it.
 
 Here's a simple example of the autocompletion feature:
 
