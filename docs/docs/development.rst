@@ -8,6 +8,8 @@ Jedi Development
 .. note:: This documentation is for Jedi developers who want to improve Jedi
     itself, but have no idea how Jedi works. If you want to use Jedi for 
     your IDE, look at the `plugin api <api.html>`_.
+    It is also important to note that it's a pretty old version and some things
+    might not apply anymore.
 
 
 Introduction

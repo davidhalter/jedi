@@ -11,8 +11,16 @@ jedi-vim_ does by default), or you can install it systemwide.
     editor, refer to the corresponding documentation.
 
 
-The preferred way
------------------
+The normal way
+--------------
+
+Most people use Jedi with a :ref:`editor plugins<editor-plugins>`. Typically
+you install Jedi by installing an editor plugin. No necessary steps are needed.
+Just take a look at the instructions for the plugin.
+
+
+With pip
+--------
 
 On any system you can install |jedi| directly from the Python package index
 using pip::

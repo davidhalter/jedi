@@ -329,7 +329,7 @@ class BaseDefinition(object):
     @memoize_method
     def params(self):
         """
-        Raises an ``AttributeError``if the definition is not callable.
+        Raises an ``AttributeError`` if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
         # Only return the first one. There might be multiple one, especially
