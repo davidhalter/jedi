@@ -77,12 +77,13 @@ class BaseDefinition(object):
     @property
     def module_path(self):
         """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
-        try:
-            py__file__ = self._get_module().py__file__
-        except AttributeError:
-            return None
-        else:
-            return py__file__()
+        module = self._get_module()
+        if module.is_stub() or not module.is_compiled():
+            # Compiled modules should not return a module path even if they
+            # have one.
+            return self._get_module().py__file__()
+
+        return None
 
     @property
     def name(self):

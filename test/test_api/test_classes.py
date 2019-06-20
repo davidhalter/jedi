@@ -9,6 +9,7 @@ import pytest
 import jedi
 from jedi import __doc__ as jedi_doc, names
 from ..helpers import TestCase
+from jedi.evaluate.compiled import CompiledContextName
 
 
 def test_is_keyword(Script):
@@ -439,3 +440,18 @@ def test_added_equals_to_params(Script):
     assert run('    bar').complete == ''
     x = run('foo(bar=isins').name_with_symbols
     assert x == 'isinstance'
+
+
+def test_builtin_module_with_path(Script):
+    """
+    This test simply tests if a module from /usr/lib/python3.8/lib-dynload/ has
+    a path or not. It shouldn't have a module_path, because that is just
+    confusing.
+    """
+    semlock, = Script('from _multiprocessing import SemLock').goto_definitions()
+    assert isinstance(semlock._name, CompiledContextName)
+    assert semlock.module_path is None
+    assert semlock.in_builtin_module() is True
+    assert semlock.name == 'SemLock'
+    assert semlock.line is None
+    assert semlock.column is None
