@@ -276,6 +276,8 @@ class DictComprehension(ComprehensionMixin, Sequence):
         for keys, values in self._iterate():
             for k in keys:
                 if isinstance(k, compiled.CompiledObject):
+                    # Be careful in the future if refactoring, index could be a
+                    # slice.
                     if k.get_safe_value(default=object()) == index:
                         return values
         raise SimpleGetItemNotFound()
@@ -501,6 +503,9 @@ class FakeSequence(_FakeArray):
         self._lazy_context_list = lazy_context_list
 
     def py__simple_getitem__(self, index):
+        if isinstance(index, slice):
+            return ContextSet([self])
+
         with reraise_getitem_errors(IndexError, TypeError):
             lazy_context = self._lazy_context_list[index]
         return lazy_context.infer()
@@ -540,7 +545,7 @@ class FakeDict(_DictMixin, _FakeArray):
                 except KeyError:
                     pass
 
-        with reraise_getitem_errors(KeyError):
+        with reraise_getitem_errors(KeyError, TypeError):
             lazy_context = self._dct[index]
         return lazy_context.infer()
 
