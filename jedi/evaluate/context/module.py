@@ -55,7 +55,7 @@ def iter_module_names(evaluator, paths):
                 # pycache is obviously not an interestin namespace. Also the
                 # name must be a valid identifier.
                 # TODO use str.isidentifier, once Python 2 is removed
-                if name != '__pycache__' and not re.search('\W|^\d', name):
+                if name != '__pycache__' and not re.search(r'\W|^\d', name):
                     yield name
             # Stub files
             if name.endswith('.pyi'):
