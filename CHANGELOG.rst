@@ -3,13 +3,13 @@
 Changelog
 ---------
 
-0.14.0 (2019-06-24)
+0.14.0 (2019-06-20)
 +++++++++++++++++++
 
 - Added ``goto_*(prefer_stubs=True)`` as well as ``goto_*(prefer_stubs=True)``
 - Stubs are used now for type inference
 - Typeshed is used for better type inference
-- Reworked full_name, should have more correct return values
+- Reworked Definition.full_name, should have more correct return values
 
 0.13.3 (2019-02-24)
 +++++++++++++++++++
