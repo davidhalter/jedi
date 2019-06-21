@@ -262,7 +262,7 @@ def test_completion_params():
 def test_completion_param_annotations():
     # Need to define this function not directly in Python. Otherwise Jedi is to
     # clever and uses the Python code instead of the signature object.
-    code = 'def foo(a: 1, b: str, c: int = 1.0): pass'
+    code = 'def foo(a: 1, b: str, c: int = 1.0) -> bytes: pass'
     exec_(code, locals())
     script = jedi.Interpreter('foo', [locals()])
     c, = script.completions()
@@ -270,6 +270,9 @@ def test_completion_param_annotations():
     assert a.infer() == []
     assert [d.name for d in b.infer()] == ['str']
     assert {d.name for d in c.infer()} == {'int', 'float'}
+
+    d, = jedi.Interpreter('foo()', [locals()]).goto_definitions()
+    assert d.name == 'bytes'
 
 
 def test_keyword_argument():

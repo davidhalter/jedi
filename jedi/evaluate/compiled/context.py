@@ -46,6 +46,11 @@ class CompiledObject(Context):
         self.access_handle = access_handle
 
     def py__call__(self, arguments):
+        return_annotation = self.access_handle.get_return_annotation()
+        if return_annotation is not None:
+            # TODO the return annotation may also be a string.
+            return create_from_access_path(self.evaluator, return_annotation).execute_annotation()
+
         try:
             self.access_handle.getattr_paths(u'__call__')
         except AttributeError:

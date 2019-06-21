@@ -448,6 +448,17 @@ class DirectObjectAccess(object):
             # the signature. In that case we just want a simple escape for now.
             raise ValueError
 
+    def get_return_annotation(self):
+        try:
+            o = self._obj.__annotations__.get('return')
+        except AttributeError:
+            return None
+
+        if o is None:
+            return None
+
+        return self._create_access_path(o)
+
     def negate(self):
         return self._create_access_path(-self._obj)
 
