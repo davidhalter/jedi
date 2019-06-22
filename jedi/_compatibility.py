@@ -366,6 +366,11 @@ except NameError:
     NotADirectoryError = IOError
 
 try:
+    IsADirectoryError = IsADirectoryError
+except NameError:
+    IsADirectoryError = IOError
+
+try:
     PermissionError = PermissionError
 except NameError:
     PermissionError = IOError
