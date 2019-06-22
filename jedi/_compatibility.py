@@ -361,11 +361,6 @@ except NameError:
     FileNotFoundError = IOError
 
 try:
-    NotADirectoryError = NotADirectoryError
-except NameError:
-    NotADirectoryError = IOError
-
-try:
     IsADirectoryError = IsADirectoryError
 except NameError:
     IsADirectoryError = IOError
