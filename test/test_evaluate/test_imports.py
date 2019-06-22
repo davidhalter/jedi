@@ -462,3 +462,16 @@ def test_import_with_semicolon(Script):
     names = [c.name for c in Script('xzy; from abc import ').completions()]
     assert 'ABCMeta' in names
     assert 'abc' not in names
+
+
+def test_relative_import_star(Script):
+    # Coming from github #1235
+    import jedi
+
+    source = """
+    from . import *
+    furl.c
+    """
+    script = jedi.Script(source,3,len("furl.c"), 'export.py')
+
+    assert script.completions()

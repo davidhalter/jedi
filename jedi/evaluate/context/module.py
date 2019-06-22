@@ -145,13 +145,18 @@ class ModuleMixin(SubModuleDictMixin):
     # to push the star imports into Evaluator.module_cache, if we reenable this.
     @evaluator_method_cache([])
     def star_imports(self):
-        from jedi.evaluate.imports import infer_import
+        from jedi.evaluate.imports import Importer
 
         modules = []
         for i in self.tree_node.iter_imports():
             if i.is_star_import():
-                name = i.get_paths()[-1][-1]
-                new = infer_import(self, name)
+                new = Importer(
+                    self.evaluator,
+                    import_path=i.get_paths()[-1],
+                    module_context=self,
+                    level=i.level
+                ).follow()
+
                 for module in new:
                     if isinstance(module, ModuleContext):
                         modules += module.star_imports()
