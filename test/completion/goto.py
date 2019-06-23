@@ -203,9 +203,10 @@ for key, value in [(1,2)]:
     #! ['for key, value in [(1,2)]: key']
     key
 
-for i in []:
-    #! ['for i in []: i']
-    i
+#! 4 ['for y in [1]: y']
+for y in [1]:
+    #! ['for y in [1]: y']
+    y
 
 # -----------------
 # decorator

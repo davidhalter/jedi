@@ -318,11 +318,11 @@ class Evaluator(object):
                     return [TreeNameDefinition(context, name)]
             elif type_ == 'param':
                 return [ParamName(context, name)]
-            elif type_ in ('funcdef', 'classdef'):
-                return [TreeNameDefinition(context, name)]
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names
+            else:
+                return [TreeNameDefinition(context, name)]
         else:
             contexts = self._follow_error_node_imports_if_possible(context, name)
             if contexts is not None:
