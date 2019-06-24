@@ -19,10 +19,9 @@ from jedi.evaluate.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.evaluate import analysis
 from jedi.evaluate import compiled
-from jedi.evaluate.context.instance import \
-    AbstractInstanceContext, BoundMethod, InstanceArguments
+from jedi.evaluate.context.instance import BoundMethod, InstanceArguments
 from jedi.evaluate.base_context import ContextualizedNode, \
-    NO_CONTEXTS, ContextSet, ContextWrapper
+    NO_CONTEXTS, ContextSet, ContextWrapper, LazyContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
 from jedi.evaluate.context import iterable
@@ -230,20 +229,38 @@ def builtins_type(objects, bases, dicts):
         return objects.py__class__()
 
 
-class SuperInstance(AbstractInstanceContext):
+class SuperInstance(LazyContextWrapper):
     """To be used like the object ``super`` returns."""
-    def __init__(self, evaluator, cls):
-        su = cls.py_mro()[1]
-        super().__init__(evaluator, su and su[0] or self)
+    def __init__(self, evaluator, instance):
+        self.evaluator = evaluator
+        self._instance = instance  # Corresponds to super().__self__
+
+    def _get_bases(self):
+        return self._instance.py__class__().py__bases__()
+
+    def _get_wrapped_context(self):
+        objs = self._get_bases()[0].infer().execute_evaluated()
+        if not objs:
+            # This is just a fallback and will only be used, if it's not
+            # possible to find a class
+            return self._instance
+        return next(iter(objs))
+
+    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
+        for b in self._get_bases():
+            for obj in b.infer().execute_evaluated():
+                for f in obj.get_filters():
+                    yield f
 
 
 @argument_clinic('[type[, obj]], /', want_context=True)
 def builtins_super(types, objects, context):
-    # TODO make this able to detect multiple inheritance super
     if isinstance(context, FunctionExecutionContext):
         if isinstance(context.var_args, InstanceArguments):
-            su = context.var_args.instance.py__class__().py__bases__()
-            return su[0].infer().execute_evaluated()
+            instance = context.var_args.instance
+            # TODO if a class is given it doesn't have to be the direct super
+            #      class, it can be an anecestor from long ago.
+            return ContextSet({SuperInstance(instance.evaluator, instance)})
 
     return NO_CONTEXTS
 

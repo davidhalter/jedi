@@ -109,6 +109,23 @@ class X():
 #! 3 []
 X(foo=x)
 
+
+# Multiple inheritance
+class Foo:
+    def foo(self):
+        print("foo")
+class Bar:
+    def bar(self):
+        print("bar")
+class Baz(Foo, Bar):
+    def baz(self):
+        #! ['def foo']
+        super().foo
+        #! ['def bar']
+        super().bar
+        #! ['instance Foo']
+        super()
+
 # -----------------
 # imports
 # -----------------

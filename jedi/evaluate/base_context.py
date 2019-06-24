@@ -241,7 +241,7 @@ class _ContextWrapperBase(HelperContextMixin):
         return cls(*args, **kwargs)
 
     def __getattr__(self, name):
-        assert name != '_wrapped_context'
+        assert name != '_wrapped_context', 'Problem with _get_wrapped_context'
         return getattr(self._wrapped_context, name)
 
 
