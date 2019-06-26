@@ -295,7 +295,6 @@ import typing as t
 def union2(x: t.Union[int, str]):
     #? int() str()
     x
-
 from typing import Union
 def union3(x: Union[int, str]):
     #? int() str()
@@ -398,3 +397,43 @@ def cast_tests():
 
 #? str()
 cast_tests()
+
+# -------------------------
+# instance/class vars
+# -------------------------
+
+# python >= 3.6
+
+class VarClass:
+    var_instance1: int = 1
+    var_instance2: float
+    var_class1: typing.ClassVar[str] = 1
+    var_class2: typing.ClassVar[bytes]
+
+
+#? ['var_class1', 'var_class2']
+VarClass.var_
+#?
+VarClass.var_instance1
+#?
+VarClass.var_instance2
+#? str()
+VarClass.var_class1
+#? bytes()
+VarClass.var_class2
+#? []
+VarClass.int
+
+d = VarClass()
+#? ['var_class1', 'var_class2', 'var_instance1', 'var_instance2']
+d.var_
+#? int()
+d.var_instance1
+#? float()
+d.var_instance2
+#? str()
+d.var_class1
+#? bytes()
+d.var_class2
+#? []
+d.int

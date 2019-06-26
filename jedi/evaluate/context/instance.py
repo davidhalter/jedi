@@ -462,12 +462,13 @@ class InstanceClassFilter(AbstractFilter):
             origin_scope=origin_scope,
             is_instance=True,
         ))
+        assert isinstance(self._class_filter, ClassFilter), self._class_filter
 
     def get(self, name):
-        return self._convert(self._class_filter.get(name))
+        return self._convert(self._class_filter.get(name, from_instance=True))
 
     def values(self):
-        return self._convert(self._class_filter.values())
+        return self._convert(self._class_filter.values(from_instance=True))
 
     def _convert(self, names):
         return [LazyInstanceClassName(self._instance, self._class_context, n) for n in names]

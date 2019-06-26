@@ -109,13 +109,27 @@ class ClassFilter(ParserTreeFilter):
             node = get_cached_parent_scope(self._used_names, node)
         return False
 
-    def _access_possible(self, name):
+    def _access_possible(self, name, from_instance):
+        # Filter for ClassVar variables
+        # TODO this is not properly done, yet. It just checks for the string
+        # ClassVar in the annotation, which can be quite imprecise. If we
+        # wanted to do this correct, we would have to resolve the ClassVar.
+        if not from_instance:
+            expr_stmt = name.get_definition()
+            if expr_stmt is not None and expr_stmt.type == 'expr_stmt':
+                annassign = expr_stmt.children[1]
+                if annassign.type == 'annassign':
+                    # TODO this is not proper matching
+                    if 'ClassVar' not in annassign.children[1].get_code():
+                        return False
+
+        # Filter for name mangling of private variables like __foo
         return not name.value.startswith('__') or name.value.endswith('__') \
             or self._equals_origin_scope()
 
-    def _filter(self, names):
+    def _filter(self, names, from_instance=False):
         names = super(ClassFilter, self)._filter(names)
-        return [name for name in names if self._access_possible(name)]
+        return [name for name in names if self._access_possible(name, from_instance)]
 
 
 class ClassMixin(object):

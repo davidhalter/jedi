@@ -19,7 +19,7 @@ from jedi.evaluate.filters import FilterWrapper
 from jedi.evaluate.names import NameWrapper, AbstractTreeName, \
     AbstractNameDefinition, ContextName
 from jedi.evaluate.helpers import is_string
-from jedi.evaluate.context.klass import ClassMixin
+from jedi.evaluate.context.klass import ClassMixin, ClassFilter
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -54,12 +54,15 @@ class _BaseTypingContext(Context):
         return self._tree_name
 
     def get_filters(self, *args, **kwargs):
-        # TODO this is obviously wrong.
-        class EmptyFilter():
-            def get(self, name):
+        # TODO this is obviously wrong. Is it though?
+        class EmptyFilter(ClassFilter):
+            def __init__(self):
+                pass
+
+            def get(self, name, **kwargs):
                 return []
 
-            def values(self):
+            def values(self, **kwargs):
                 return []
 
         yield EmptyFilter()
