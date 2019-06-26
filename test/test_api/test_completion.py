@@ -119,7 +119,8 @@ def test_generator(Script):
 
 def test_in_comment(Script):
     assert Script(" # Comment").completions()
-    assert Script("max_attr_value = int(2) # Cast to int for spe").completions()
+    # TODO this is a bit ugly, that the behaviors in comments are different.
+    assert not Script("max_attr_value = int(2) # Cast to int for spe").completions()
 
 
 def test_async(Script, environment):
@@ -140,3 +141,18 @@ def test_async(Script, environment):
 
 def test_with_stmt_error_recovery(Script):
     assert Script('with open('') as foo: foo.\na', line=1).completions()
+
+
+@pytest.mark.parametrize(
+    'code, has_keywords', (
+        ('', True),
+        ('x;', True),
+        ('1', False),
+        ('1 ', True),
+        ('1\t', True),
+        ('1\n', True),
+        ('1\\\n', True),
+    )
+)
+def test_keyword_completion(Script, code, has_keywords):
+    assert has_keywords == any(x.is_keyword for x in Script(code).completions())

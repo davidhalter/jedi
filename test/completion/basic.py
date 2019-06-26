@@ -18,10 +18,12 @@ int(str)
 str..
 #? []
 a(0):.
-#? 2 ['and', 'or', 'if', 'is', 'in', 'not']
+#? 2 []
 0x0
-#? ['and', 'or', 'if', 'is', 'in', 'not']
+#? []
 1j
+#? ['and', 'or', 'if', 'is', 'in', 'not']
+1j 
 x = None()
 #?
 x

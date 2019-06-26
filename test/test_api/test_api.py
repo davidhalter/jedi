@@ -73,7 +73,7 @@ def _check_number(Script, source, result='float'):
 
 def test_completion_on_number_literals(Script):
     # No completions on an int literal (is a float).
-    assert [c.name for c in Script('1.').completions()] \
+    assert [c.name for c in Script('1. ').completions()] \
         == ['and', 'if', 'in', 'is', 'not', 'or']
 
     # Multiple points after an int literal basically mean that there's a float
@@ -109,9 +109,12 @@ def test_completion_on_complex_literals(Script):
     _check_number(Script, '1j.', 'complex')
     _check_number(Script, '44.j.', 'complex')
     _check_number(Script, '4.0j.', 'complex')
-    # No dot no completion - I thought, but 4j is actually a literall after
+    # No dot no completion - I thought, but 4j is actually a literal after
     # which a keyword like or is allowed. Good times, haha!
-    assert ({c.name for c in Script('4j').completions()} ==
+    # However this has been disabled again, because it apparently annoyed
+    # users. So no completion after j without a space :)
+    assert not Script('4j').completions()
+    assert ({c.name for c in Script('4j ').completions()} ==
             {'if', 'and', 'in', 'is', 'not', 'or'})
 
 

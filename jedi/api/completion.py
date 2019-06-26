@@ -171,7 +171,10 @@ class Completion:
                         elif type_ == 'for_stmt':
                             allowed_transitions.append('else')
 
-        completion_names = list(self._get_keyword_completion_names(allowed_transitions))
+        completion_names = []
+        current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
+        if not current_line or current_line[-1] in ' \t.;':
+            completion_names += self._get_keyword_completion_names(allowed_transitions)
 
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
