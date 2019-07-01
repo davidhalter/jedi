@@ -281,7 +281,11 @@ class CompiledName(AbstractNameDefinition):
 
     @property
     def api_type(self):
-        return next(iter(self.infer())).api_type
+        api = self.infer()
+        # If we can't find the type, assume it is an instance variable
+        if not api:
+            return "instance"
+        return next(iter(api)).api_type
 
     @underscore_memoization
     def infer(self):
