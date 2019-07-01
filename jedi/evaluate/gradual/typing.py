@@ -481,7 +481,7 @@ class NewType(Context):
         self.tree_node = tree_node
 
     def py__call__(self, arguments):
-        return self._type_context_set
+        return self._type_context_set.execute_annotation()
 
 
 class CastFunction(_BaseTypingContext):
