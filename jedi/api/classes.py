@@ -358,9 +358,10 @@ class BaseDefinition(object):
         return Definition(self._evaluator, context.name)
 
     def __repr__(self):
-        return "<%s full_name=%r, description=%r>" % (
+        return "<%s %sname=%r, description=%r>" % (
             self.__class__.__name__,
-            self.full_name,
+            'full_' if self.full_name else '',
+            self.full_name or self.name,
             self.description,
         )
 
