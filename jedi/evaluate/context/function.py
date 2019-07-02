@@ -64,9 +64,10 @@ class FunctionMixin(object):
                 origin_scope=origin_scope
             )
         else:
-            scope = self.py__class__()
-            for filter in scope.get_filters(search_global=False, origin_scope=origin_scope):
-                yield filter
+            cls = self.py__class__()
+            for instance in cls.execute_evaluated():
+                for filter in instance.get_filters(search_global=False, origin_scope=origin_scope):
+                    yield filter
 
     def py__get__(self, instance, class_context):
         from jedi.evaluate.context.instance import BoundMethod

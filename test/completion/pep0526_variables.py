@@ -38,12 +38,16 @@ for char in NOT_DEFINED:
     char
 
 
+# -------------------------
+# instance/class vars
+# -------------------------
+
 class Foo():
     bar: int
     baz: typing.ClassVar[str]
 
 
-#? int()
+#?
 Foo.bar
 #? int()
 Foo().bar
@@ -51,3 +55,37 @@ Foo().bar
 Foo.baz
 #? str()
 Foo().baz
+
+class VarClass:
+    var_instance1: int = 1
+    var_instance2: float
+    var_class1: typing.ClassVar[str] = 1
+    var_class2: typing.ClassVar[bytes]
+
+
+#? ['var_class1', 'var_class2']
+VarClass.var_
+#?
+VarClass.var_instance1
+#?
+VarClass.var_instance2
+#? str()
+VarClass.var_class1
+#? bytes()
+VarClass.var_class2
+#? []
+VarClass.int
+
+d = VarClass()
+#? ['var_class1', 'var_class2', 'var_instance1', 'var_instance2']
+d.var_
+#? int()
+d.var_instance1
+#? float()
+d.var_instance2
+#? str()
+d.var_class1
+#? bytes()
+d.var_class2
+#? []
+d.int

@@ -45,7 +45,7 @@ from jedi.evaluate import compiled
 from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.filters import ParserTreeFilter
 from jedi.evaluate.names import TreeNameDefinition, ContextName
-from jedi.evaluate.arguments import unpack_arglist
+from jedi.evaluate.arguments import unpack_arglist, ValuesArguments
 from jedi.evaluate.base_context import ContextSet, iterator_to_context_set, \
     NO_CONTEXTS
 from jedi.evaluate.context.function import FunctionAndClassBase
@@ -214,7 +214,12 @@ class ClassMixin(object):
             type_ = builtin_from_name(self.evaluator, u'type')
             assert isinstance(type_, ClassContext)
             if type_ != self:
-                yield next(type_.get_filters())
+                for instance in type_.py__call__(ValuesArguments([])):
+                    instance_filters = instance.get_filters()
+                    # Filter out self filters
+                    next(instance_filters)
+                    next(instance_filters)
+                    yield next(instance_filters)
 
 
 class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
