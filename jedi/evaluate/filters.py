@@ -77,7 +77,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
     def get(self, name, **filter_kwargs):
         return self._convert_names(self._filter(
             _get_definition_names(self._used_names, name),
-            **filter_kwargs,
+            **filter_kwargs
         ))
 
     def _convert_names(self, names):
@@ -89,7 +89,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
             for name_key in self._used_names
             for name in self._filter(
                 _get_definition_names(self._used_names, name_key),
-                **filter_kwargs,
+                **filter_kwargs
             )
         )
 

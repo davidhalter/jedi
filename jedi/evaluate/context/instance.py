@@ -504,7 +504,7 @@ class SelfAttributeFilter(ClassFilter):
             if trailer.type == 'trailer' \
                     and len(trailer.parent.children) == 2 \
                     and trailer.children[0] == '.':
-                if name.is_definition() and self._access_possible(name):
+                if name.is_definition() and self._access_possible(name, from_instance=True):
                     # TODO filter non-self assignments.
                     yield name
 

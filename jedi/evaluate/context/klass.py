@@ -109,7 +109,7 @@ class ClassFilter(ParserTreeFilter):
             node = get_cached_parent_scope(self._used_names, node)
         return False
 
-    def _access_possible(self, name, from_instance):
+    def _access_possible(self, name, from_instance=False):
         # Filter for ClassVar variables
         # TODO this is not properly done, yet. It just checks for the string
         # ClassVar in the annotation, which can be quite imprecise. If we
@@ -212,6 +212,7 @@ class ClassMixin(object):
         if not is_instance:
             from jedi.evaluate.compiled import builtin_from_name
             type_ = builtin_from_name(self.evaluator, u'type')
+            assert isinstance(type_, ClassContext)
             if type_ != self:
                 yield next(type_.get_filters())
 
