@@ -37,7 +37,8 @@ setup(name='jedi',
       install_requires=install_requires,
       extras_require={
           'testing': [
-              'pytest>=3.1.0',
+              # Pytest 5 doesn't support Python 2 and Python 3.4 anymore.
+              'pytest>=3.1.0,<5.0.0',
               # docopt for sith doctests
               'docopt',
               # coloroma for colored debug output
