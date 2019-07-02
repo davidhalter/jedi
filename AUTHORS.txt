@@ -51,5 +51,6 @@ Maksim Novikov (@m-novikov) <mnovikov.work@gmail.com>
 Tobias Rzepka (@TobiasRzepka)
 micbou (@micbou)
 Dima Gerasimov (@karlicoss) <karlicoss@gmail.com>
+Max Woerner Chase (@mwchase) <max.chase@gmail.com>
 
 Note: (@user) means a github user name.
