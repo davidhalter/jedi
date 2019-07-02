@@ -62,6 +62,20 @@ class VarClass:
     var_class1: typing.ClassVar[str] = 1
     var_class2: typing.ClassVar[bytes]
 
+    def __init__(self):
+        #? int()
+        d.var_instance1
+        #? float()
+        d.var_instance2
+        #? str()
+        d.var_class1
+        #? bytes()
+        d.var_class2
+        #? []
+        d.int
+        #? ['var_class1', 'var_class2', 'var_instance1', 'var_instance2']
+        self.var_
+
 
 #? ['var_class1', 'var_class2']
 VarClass.var_
