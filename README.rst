@@ -203,7 +203,7 @@ Acknowledgements
 
 
 .. _jedi-vim: https://github.com/davidhalter/jedi-vim
-.. _youcompleteme: https://valloric.github.io/YouCompleteMe/
+.. _youcompleteme: https://github.com/ycm-core/YouCompleteMe
 .. _deoplete-jedi: https://github.com/zchee/deoplete-jedi
 .. _completor.vim: https://github.com/maralla/completor.vim
 .. _Jedi.el: https://github.com/tkf/emacs-jedi
