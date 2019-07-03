@@ -599,4 +599,8 @@ _implemented = {
         # being used instead. This only matters for 3.7+.
         '_alias': lambda obj, arguments: NO_CONTEXTS,
     },
+    'dataclasses': {
+        # For now this works at least better than Jedi trying to understand it.
+        'dataclass': lambda obj, arguments: NO_CONTEXTS,
+    },
 }

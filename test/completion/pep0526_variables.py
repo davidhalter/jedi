@@ -103,3 +103,13 @@ d.var_class1
 d.var_class2
 #? []
 d.int
+
+
+
+import dataclasses
+@dataclasses.dataclass
+class DC:
+    name: int = 1
+
+#? int()
+DC().name
