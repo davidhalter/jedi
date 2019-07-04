@@ -1,12 +1,12 @@
 from textwrap import dedent
 import inspect
-import warnings
 
 import pytest
 
 from ..helpers import TestCase
 from jedi import cache
 from jedi.parser_utils import get_call_signature
+from jedi import Interpreter
 
 
 def assert_signature(Script, source, expected_name, expected_index=0, line=None, column=None):
@@ -394,9 +394,8 @@ def test_keyword_argument_index(Script, environment):
     assert get(both + 'foo(a, b, c').index == 0
 
 
-def test_kwarg_defaults(Script, environment):
-    from jedi import Interpreter
-
+@pytest.mark.parametrize('code', ['foo', 'instance.foo'])
+def test_kwarg_defaults(Script, environment, code):
     def foo(kwarg="bla", kwarg1=1):
         pass
 
@@ -404,49 +403,32 @@ def test_kwarg_defaults(Script, environment):
         def foo(self, kwarg="bla", kwarg1=1):
             pass
 
-    klass = Klass()
+    instance = Klass()
 
-    loc = dict()
-    loc['foo'] = foo
-    loc['klass'] = klass
+    src = dedent("""
+        def foo2(kwarg="bla", kwarg1=1):
+            pass
 
-    signatures = Interpreter('foo(', namespaces=[loc]).call_signatures()
-    assert signatures[0].params[0].description == 'param kwarg="bla"'
-    assert signatures[0].params[1].description == 'param kwarg1=1'
+        class Klass2:
+            def foo2(self, kwarg="bla", kwarg1=1):
+                pass
 
-    signatures = Interpreter('klass.foo(', namespaces=[loc]).call_signatures()
-    assert signatures[0].params[0].description == 'param kwarg="bla"'
-    assert signatures[0].params[1].description == 'param kwarg1=1'
+        instance = Klass2()
+        """)
 
-    src = """
-def foo(kwarg="bla", kwarg1=1):
-    pass
+    executed_locals = dict()
+    exec(src, None, executed_locals)
+    locals_ = locals()
 
-class Klass:
-    def foo(self, kwarg="bla", kwarg1=1):
-        pass
+    def iter_scripts():
+        yield Interpreter(code + '(', namespaces=[locals_])
+        yield Script(src + code + "2(")
+        yield Interpreter(code + '2(', namespaces=[executed_locals])
 
-klass = Klass()
-
-    """
-    signatures = Script(src+"foo(").call_signatures()
-    assert signatures[0].params[0].description == 'param kwarg="bla"'
-    assert signatures[0].params[1].description == 'param kwarg1=1'
-
-    signatures = Script(src+"klass.foo(").call_signatures()
-    assert signatures[0].params[0].description == 'param kwarg="bla"'
-    assert signatures[0].params[1].description == 'param kwarg1=1'
-
-    loc = dict()
-    exec(src, None, loc)
-
-    signatures = Interpreter('foo(', namespaces=[loc]).call_signatures()
-    assert signatures[0].params[0].description == 'param kwarg="bla"'
-    assert signatures[0].params[1].description == 'param kwarg1=1'
-
-    signatures = Interpreter('klass.foo(', namespaces=[loc]).call_signatures()
-    assert signatures[0].params[0].description == 'param kwarg="bla"'
-    assert signatures[0].params[1].description == 'param kwarg1=1'
+    for script in iter_scripts():
+        signatures = script.call_signatures()
+        assert signatures[0].params[0].description == 'param kwarg="bla"'
+        assert signatures[0].params[1].description == 'param kwarg1=1'
 
 
 def test_bracket_start(Script):
