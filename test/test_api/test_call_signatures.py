@@ -394,6 +394,61 @@ def test_keyword_argument_index(Script, environment):
     assert get(both + 'foo(a, b, c').index == 0
 
 
+def test_kwarg_defaults(Script, environment):
+    from jedi import Interpreter
+
+    def foo(kwarg="bla", kwarg1=1):
+        pass
+
+    class Klass:
+        def foo(self, kwarg="bla", kwarg1=1):
+            pass
+
+    klass = Klass()
+
+    loc = dict()
+    loc['foo'] = foo
+    loc['klass'] = klass
+
+    signatures = Interpreter('foo(', namespaces=[loc]).call_signatures()
+    assert signatures[0].params[0].description == 'param kwarg="bla"'
+    assert signatures[0].params[1].description == 'param kwarg1=1'
+
+    signatures = Interpreter('klass.foo(', namespaces=[loc]).call_signatures()
+    assert signatures[0].params[0].description == 'param kwarg="bla"'
+    assert signatures[0].params[1].description == 'param kwarg1=1'
+
+    src = """
+def foo(kwarg="bla", kwarg1=1):
+    pass
+
+class Klass:
+    def foo(self, kwarg="bla", kwarg1=1):
+        pass
+
+klass = Klass()
+
+    """
+    signatures = Script(src+"foo(").call_signatures()
+    assert signatures[0].params[0].description == 'param kwarg="bla"'
+    assert signatures[0].params[1].description == 'param kwarg1=1'
+
+    signatures = Script(src+"klass.foo(").call_signatures()
+    assert signatures[0].params[0].description == 'param kwarg="bla"'
+    assert signatures[0].params[1].description == 'param kwarg1=1'
+
+    loc = dict()
+    exec(src, None, loc)
+
+    signatures = Interpreter('foo(', namespaces=[loc]).call_signatures()
+    assert signatures[0].params[0].description == 'param kwarg="bla"'
+    assert signatures[0].params[1].description == 'param kwarg1=1'
+
+    signatures = Interpreter('klass.foo(', namespaces=[loc]).call_signatures()
+    assert signatures[0].params[0].description == 'param kwarg="bla"'
+    assert signatures[0].params[1].description == 'param kwarg1=1'
+
+
 def test_bracket_start(Script):
     def bracket_start(src):
         signatures = Script(src).call_signatures()
