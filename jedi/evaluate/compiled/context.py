@@ -294,9 +294,7 @@ class CompiledName(AbstractNameDefinition):
         )])
 
 
-class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
-    api_type = u'param'
-
+class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
     def __init__(self, compiled_obj, signature_param):
         self.parent_context = compiled_obj.parent_context
         self._signature_param = signature_param
@@ -306,7 +304,7 @@ class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
         return self._signature_param.name
 
     def to_string(self):
-        s = self.string_name
+        s = self._kind_string() + self.string_name
         if self._signature_param.has_annotation:
             s += ': ' + self._signature_param.annotation_string
         if self._signature_param.has_default:
@@ -331,9 +329,7 @@ class SignatureParamName(AbstractNameDefinition, ParamNameInterface):
         return contexts
 
 
-class UnresolvableParamName(AbstractNameDefinition, ParamNameInterface):
-    api_type = u'param'
-
+class UnresolvableParamName(ParamNameInterface, AbstractNameDefinition):
     def __init__(self, compiled_obj, name, default):
         self.parent_context = compiled_obj.parent_context
         self.string_name = name

@@ -412,7 +412,7 @@ class DirectObjectAccess(object):
                 name=p.name,
                 has_default=p.default is not p.empty,
                 default=self._create_access_path(p.default),
-                default_string=str(p.default),
+                default_string=repr(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
                 annotation_string=str(p.default),

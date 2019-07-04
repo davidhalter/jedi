@@ -395,22 +395,22 @@ def test_keyword_argument_index(Script, environment):
 
 
 @pytest.mark.parametrize('code', ['foo', 'instance.foo'])
-def test_kwarg_defaults(Script, environment, code):
-    def foo(kwarg="bla", kwarg1=1):
+def test_arg_defaults(Script, environment, code):
+    def foo(arg="bla", arg1=1):
         pass
 
     class Klass:
-        def foo(self, kwarg="bla", kwarg1=1):
+        def foo(self, arg="bla", arg1=1):
             pass
 
     instance = Klass()
 
     src = dedent("""
-        def foo2(kwarg="bla", kwarg1=1):
+        def foo2(arg="bla", arg1=1):
             pass
 
         class Klass2:
-            def foo2(self, kwarg="bla", kwarg1=1):
+            def foo2(self, arg="bla", arg1=1):
                 pass
 
         instance = Klass2()
@@ -427,8 +427,8 @@ def test_kwarg_defaults(Script, environment, code):
 
     for script in iter_scripts():
         signatures = script.call_signatures()
-        assert signatures[0].params[0].description == 'param kwarg="bla"'
-        assert signatures[0].params[1].description == 'param kwarg1=1'
+        assert signatures[0].params[0].description in ('param arg="bla"', "param arg='bla'")
+        assert signatures[0].params[1].description == 'param arg1=1'
 
 
 def test_bracket_start(Script):

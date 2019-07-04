@@ -26,7 +26,7 @@ class AbstractSignature(object):
                     is_positional = False
 
                 if kind == Parameter.KEYWORD_ONLY and not is_kw_only:
-                    yield '*'
+                    yield '*,'
                     is_kw_only = True
 
                 yield n.to_string()

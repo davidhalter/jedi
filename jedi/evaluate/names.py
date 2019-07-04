@@ -151,6 +151,16 @@ class TreeNameDefinition(AbstractTreeName):
 
 
 class ParamNameInterface(object):
+    api_type = u'param'
+
+    def _kind_string(self):
+        kind = self.get_kind()
+        if kind == Parameter.VAR_POSITIONAL:  # *args
+            return '*'
+        if kind == Parameter.VAR_KEYWORD:  # **kwargs
+            return '**'
+        return ''
+
     def get_kind(self):
         raise NotImplementedError
 
@@ -158,9 +168,7 @@ class ParamNameInterface(object):
         raise NotImplementedError
 
 
-class ParamName(AbstractTreeName, ParamNameInterface):
-    api_type = u'param'
-
+class ParamName(ParamNameInterface, AbstractTreeName):
     def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context
         self.tree_name = tree_name
@@ -185,7 +193,7 @@ class ParamName(AbstractTreeName, ParamNameInterface):
         return Parameter.POSITIONAL_OR_KEYWORD
 
     def to_string(self):
-        output = self.string_name
+        output = self._kind_string() + self.string_name
         param_node = self._get_param_node()
         if param_node.annotation is not None:
             output += ': ' + param_node.annotation.get_code(include_prefix=False)

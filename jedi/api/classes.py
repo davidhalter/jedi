@@ -530,17 +530,13 @@ class Definition(BaseDefinition):
         """
         typ = self.type
         tree_name = self._name.tree_name
+        if typ == 'param':
+            return typ + ' ' + self._name.to_string()
         if typ in ('function', 'class', 'module', 'instance') or tree_name is None:
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
             return typ + ' ' + self._name.string_name
-        elif typ == 'param':
-            code = search_ancestor(tree_name, 'param').get_code(
-                include_prefix=False,
-                include_comma=False
-            )
-            return typ + ' ' + code
 
         definition = tree_name.get_definition() or tree_name
         # Remove the prefix, because that's not what we want for get_code
