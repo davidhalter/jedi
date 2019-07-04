@@ -184,12 +184,19 @@ class ParamName(ParamNameInterface, AbstractTreeName):
             return Parameter.VAR_KEYWORD
 
         parent = tree_param.parent
+        param_appeared = False
         for p in parent.children:
-            if p.type == 'param':
-                if p.star_count:
+            if param_appeared:
+                if p == '/':
+                    return Parameter.POSITIONAL_ONLY
+            else:
+                if p == '*':
                     return Parameter.KEYWORD_ONLY
-                if p == tree_param:
-                    break
+                if p.type == 'param':
+                    if p.star_count:
+                        return Parameter.KEYWORD_ONLY
+                    if p == tree_param:
+                        param_appeared = True
         return Parameter.POSITIONAL_OR_KEYWORD
 
     def to_string(self):

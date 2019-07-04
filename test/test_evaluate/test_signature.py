@@ -32,3 +32,21 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
     signature, = compiled.get_signatures()
     assert signature.to_string() == sig
     assert [n.string_name for n in signature.get_param_names()] == names
+
+
+@pytest.mark.parametrize(
+    'code, expected', [
+        ('def f(a, * args, x): pass\n f(', 'f(a, *args, x)'),
+        ('def f(a, *, x): pass\n f(', 'f(a, *, x)'),
+        ('def f(*, x= 3,**kwargs): pass\n f(', 'f(*, x=3, **kwargs)'),
+        ('def f(x,/,y,* ,z): pass\n f(', 'f(x, /, y, *, z)'),
+        ('def f(a, /, *, x=3, **kwargs): pass\n f(', 'f(a, /, *, x=3, **kwargs)'),
+    ]
+)
+def test_tree_signature(Script, environment, code, expected):
+    # Only test this in the latest version, because of /
+    if environment.version_info < (3, 8):
+        pytest.skip()
+
+    sig, = Script(code).call_signatures()
+    assert expected == sig._signature.to_string()
