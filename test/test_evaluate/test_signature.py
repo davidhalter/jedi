@@ -50,3 +50,13 @@ def test_tree_signature(Script, environment, code, expected):
 
     sig, = Script(code).call_signatures()
     assert expected == sig._signature.to_string()
+
+
+def test_pow_signature(Script):
+    # See github #1357
+    sigs = Script('pow(').call_signatures()
+    strings = {sig._signature.to_string() for sig in sigs}
+    assert strings == {'pow(x: float, y: float, z: float, /) -> float',
+                       'pow(x: float, y: float, /) -> float',
+                       'pow(x: int, y: int, z: int, /) -> Any',
+                       'pow(x: int, y: int, /) -> Any'}

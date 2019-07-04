@@ -183,6 +183,11 @@ class ParamName(ParamNameInterface, AbstractTreeName):
         if tree_param.star_count == 2:  # **kwargs
             return Parameter.VAR_KEYWORD
 
+        # Params starting with __ are an equivalent to positional only
+        # variables in typeshed.
+        if tree_param.name.value.startswith('__'):
+            return Parameter.POSITIONAL_ONLY
+
         parent = tree_param.parent
         param_appeared = False
         for p in parent.children:
@@ -200,7 +205,12 @@ class ParamName(ParamNameInterface, AbstractTreeName):
         return Parameter.POSITIONAL_OR_KEYWORD
 
     def to_string(self):
-        output = self._kind_string() + self.string_name
+        name = self.string_name
+        if name.startswith('__'):
+            # Params starting with __ are an equivalent to positional only
+            # variables in typeshed.
+            name = name[2:]
+        output = self._kind_string() + name
         param_node = self._get_param_node()
         if param_node.annotation is not None:
             output += ': ' + param_node.annotation.get_code(include_prefix=False)
