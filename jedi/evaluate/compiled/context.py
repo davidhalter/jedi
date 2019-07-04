@@ -127,7 +127,10 @@ class CompiledObject(Context):
             signature_params = self.access_handle.get_signature_params()
         except ValueError:  # Has no signature
             params_str, ret = self._parse_function_doc()
-            tokens = params_str.split(',')
+            if not params_str:
+                tokens = []
+            else:
+                tokens = params_str.split(',')
             if self.access_handle.ismethoddescriptor():
                 tokens.insert(0, 'self')
             for p in tokens:

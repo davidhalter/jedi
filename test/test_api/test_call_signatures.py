@@ -1,3 +1,4 @@
+import sys
 from textwrap import dedent
 import inspect
 
@@ -394,6 +395,7 @@ def test_keyword_argument_index(Script, environment):
     assert get(both + 'foo(a, b, c').index == 0
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Python 2 doesn't support __signature__")
 @pytest.mark.parametrize('code', ['foo', 'instance.foo'])
 def test_arg_defaults(Script, environment, code):
     def foo(arg="bla", arg1=1):
