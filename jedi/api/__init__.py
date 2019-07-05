@@ -385,10 +385,7 @@ class Script(object):
 
         # TODO here we use stubs instead of the actual contexts. We should use
         # the signatures from stubs, but the actual contexts, probably?!
-        return [classes.CallSignature(self._evaluator, signature,
-                                      call_signature_details.bracket_leaf.start_pos,
-                                      call_signature_details.call_index,
-                                      call_signature_details.keyword_name_str)
+        return [classes.CallSignature(self._evaluator, signature, call_signature_details)
                 for signature in definitions.get_signatures()]
 
     def _analysis(self):

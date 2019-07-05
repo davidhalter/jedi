@@ -604,11 +604,9 @@ class CallSignature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, signature, bracket_start_pos, index, key_name_str):
+    def __init__(self, evaluator, signature, call_details):
         super(CallSignature, self).__init__(evaluator, signature.name)
-        self._index = index
-        self._key_name_str = key_name_str
-        self._bracket_start_pos = bracket_start_pos
+        self._call_details = call_details
         self._signature = signature
 
     @property
@@ -617,9 +615,9 @@ class CallSignature(Definition):
         The Param index of the current call.
         Returns None if the index cannot be found in the curent call.
         """
-        if self._key_name_str is not None:
+        if self._call_details.keyword_name_str is not None:
             for i, param in enumerate(self.params):
-                if self._key_name_str == param.name:
+                if self._call_details.keyword_name_str == param.name:
                     return i
             if self.params:
                 param_name = self.params[-1]._name
@@ -628,7 +626,7 @@ class CallSignature(Definition):
                         return i
             return None
 
-        if self._index >= len(self.params):
+        if self._call_details.call_index >= len(self.params):
             for i, param in enumerate(self.params):
                 tree_name = param._name.tree_name
                 if tree_name is not None:
@@ -636,7 +634,7 @@ class CallSignature(Definition):
                     if tree_name.get_definition().star_count == 1:
                         return i
             return None
-        return self._index
+        return self._call_details.call_index
 
     @property
     def params(self):
@@ -648,7 +646,7 @@ class CallSignature(Definition):
         The indent of the bracket that is responsible for the last function
         call.
         """
-        return self._bracket_start_pos
+        return self._call_details.bracket_leaf.start_pos
 
     @property
     def _params_str(self):
