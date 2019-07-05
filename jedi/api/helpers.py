@@ -159,8 +159,8 @@ def evaluate_goto_definition(evaluator, context, leaf):
     return definitions
 
 
-CallSignatureDetails = namedtuple(
-    'CallSignatureDetails',
+CallDetails = namedtuple(
+    'CallDetails',
     ['bracket_leaf', 'call_index', 'keyword_name_str']
 )
 
@@ -198,7 +198,7 @@ def _get_call_signature_details_from_error_node(node, position):
             if name is None:
                 continue
             if name.type == 'name' or name.parent.type in ('trailer', 'atom'):
-                return CallSignatureDetails(
+                return CallDetails(
                     element,
                     *_get_index_and_key(children, position)
                 )
@@ -235,7 +235,7 @@ def get_call_signature_details(module, position):
             leaf = node.get_previous_leaf()
             if leaf is None:
                 return None
-            return CallSignatureDetails(
+            return CallDetails(
                 node.children[0], *_get_index_and_key(node.children, position))
 
         node = node.parent

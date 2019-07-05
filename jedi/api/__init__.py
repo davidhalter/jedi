@@ -365,19 +365,19 @@ class Script(object):
 
         :rtype: list of :class:`classes.CallSignature`
         """
-        call_signature_details = \
+        call_details = \
             helpers.get_call_signature_details(self._module_node, self._pos)
-        if call_signature_details is None:
+        if call_details is None:
             return []
 
         context = self._evaluator.create_context(
             self._get_module(),
-            call_signature_details.bracket_leaf
+            call_details.bracket_leaf
         )
         definitions = helpers.cache_call_signatures(
             self._evaluator,
             context,
-            call_signature_details.bracket_leaf,
+            call_details.bracket_leaf,
             self._code_lines,
             self._pos
         )
@@ -385,7 +385,7 @@ class Script(object):
 
         # TODO here we use stubs instead of the actual contexts. We should use
         # the signatures from stubs, but the actual contexts, probably?!
-        return [classes.CallSignature(self._evaluator, signature, call_signature_details)
+        return [classes.CallSignature(self._evaluator, signature, call_details)
                 for signature in definitions.get_signatures()]
 
     def _analysis(self):
