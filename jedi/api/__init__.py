@@ -365,8 +365,7 @@ class Script(object):
 
         :rtype: list of :class:`classes.CallSignature`
         """
-        call_details = \
-            helpers.get_call_signature_details(self._module_node, self._pos)
+        call_details = helpers.get_call_signature_details(self._module_node, self._pos)
         if call_details is None:
             return []
 

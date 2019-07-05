@@ -159,10 +159,20 @@ def evaluate_goto_definition(evaluator, context, leaf):
     return definitions
 
 
-CallDetails = namedtuple(
-    'CallDetails',
-    ['bracket_leaf', 'call_index', 'keyword_name_str']
-)
+class CallDetails(object):
+    def __init__(self, bracket_leaf, children, position):
+        ['bracket_leaf', 'call_index', 'keyword_name_str']
+        self.bracket_leaf = bracket_leaf
+        self._children = children
+        self._position = position
+
+    @property
+    def index(self):
+        return _get_index_and_key(self._children, self._position)[0]
+
+    @property
+    def keyword_name_str(self):
+        return _get_index_and_key(self._children, self._position)[1]
 
 
 def _get_index_and_key(nodes, position):
@@ -198,10 +208,7 @@ def _get_call_signature_details_from_error_node(node, position):
             if name is None:
                 continue
             if name.type == 'name' or name.parent.type in ('trailer', 'atom'):
-                return CallDetails(
-                    element,
-                    *_get_index_and_key(children, position)
-                )
+                return CallDetails(element, children, position)
 
 
 def get_call_signature_details(module, position):
@@ -213,6 +220,7 @@ def get_call_signature_details(module, position):
             return None
 
     if leaf == ')':
+        # TODO is this ok?
         if leaf.end_pos == position:
             leaf = leaf.get_next_leaf()
 
@@ -235,8 +243,7 @@ def get_call_signature_details(module, position):
             leaf = node.get_previous_leaf()
             if leaf is None:
                 return None
-            return CallDetails(
-                node.children[0], *_get_index_and_key(node.children, position))
+            return CallDetails(node.children[0], node.children, position)
 
         node = node.parent
 

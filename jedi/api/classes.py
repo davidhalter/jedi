@@ -626,7 +626,7 @@ class CallSignature(Definition):
                         return i
             return None
 
-        if self._call_details.call_index >= len(self.params):
+        if self._call_details.index >= len(self.params):
             for i, param in enumerate(self.params):
                 tree_name = param._name.tree_name
                 if tree_name is not None:
@@ -634,7 +634,7 @@ class CallSignature(Definition):
                     if tree_name.get_definition().star_count == 1:
                         return i
             return None
-        return self._call_details.call_index
+        return self._call_details.index
 
     @property
     def params(self):
@@ -657,7 +657,7 @@ class CallSignature(Definition):
         return '<%s: %s index=%r params=[%s]>' % (
             type(self).__name__,
             self._name.string_name,
-            self._index,
+            self.index,
             self._params_str,
         )
 
