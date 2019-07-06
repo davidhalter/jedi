@@ -181,7 +181,7 @@ def _get_index_and_key(nodes, position):
     """
     nodes_before = [c for c in nodes if c.start_pos < position]
     if nodes_before[-1].type == 'arglist':
-        nodes_before = [c for c in nodes_before[-1].children if c.start_pos < position]
+        return _get_index_and_key(nodes_before[-1].children, position)
 
     key_str = None
 
