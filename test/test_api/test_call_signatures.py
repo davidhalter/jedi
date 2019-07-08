@@ -457,13 +457,13 @@ code4 = 'def i(u, /, v, *args, x=1, y, **kwargs): pass'
         (code4, 'i(a,b,c,d,e', 2),
         (code4, 'i(a,b,c,d,e=', 5),
         (code4, 'i(a,b,c,d,e=3', 5),
-        #(code4, 'i(a,b,c,d=,x=', 3),
+        (code4, 'i(a,b,c,d=,x=', 3),
         (code4, 'i(a,b,c,d=5,x=4', 3),
         (code4, 'i(a,b,c,d=5,x=4,y', 4),
         (code4, 'i(a,b,c,d=5,x=4,y=3,', 5),
         (code4, 'i(a,b,c,d=5,y=4,x=3,', 5),
         (code4, 'i(a,b,c,d=4,', 3),
-        (code4, 'i(a,b,c,x=1,d=2,', 4),
+        (code4, 'i(a,b,c,x=1,d=,', 4),
     ]
 )
 def test_signature_index(skip_pre_python38, Script, code, call, expected_index):

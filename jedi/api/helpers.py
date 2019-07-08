@@ -254,7 +254,7 @@ def _iter_arguments(nodes, position):
                     yield 0, remove_after_pos(first_leaf), False
                 else:
                     yield 0, None, False
-        elif node == ',':
+        elif isinstance(node, tree.PythonLeaf) and node.value == ',':
             if not previous_node_yielded:
                 yield 0, '', False
             previous_node_yielded = False
@@ -294,7 +294,7 @@ def _get_index_and_key(nodes, position):
     return nodes_before.count(','), key_str
 
 
-def _get_call_signature_details_from_error_node(node, position):
+def _get_call_signature_details_from_error_node(node, additional_children, position):
     for index, element in reversed(list(enumerate(node.children))):
         # `index > 0` means that it's a trailer and not an atom.
         if element == '(' and element.end_pos <= position and index > 0:
@@ -305,7 +305,7 @@ def _get_call_signature_details_from_error_node(node, position):
             if name is None:
                 continue
             if name.type == 'name' or name.parent.type in ('trailer', 'atom'):
-                return CallDetails(element, children, position)
+                return CallDetails(element, children + additional_children, position)
 
 
 def get_call_signature_details(module, position):
@@ -330,11 +330,16 @@ def get_call_signature_details(module, position):
             # makes it feel strange to have a call signature.
             return None
 
-        for n in node.children[::-1]:
-            if n.start_pos < position and n.type == 'error_node':
-                result = _get_call_signature_details_from_error_node(n, position)
-                if result is not None:
-                    return result
+        additional_children = []
+        for n in reversed(node.children):
+            if n.start_pos < position:
+                if n.type == 'error_node':
+                    result = _get_call_signature_details_from_error_node(
+                        n, additional_children, position
+                    )
+                    if result is not None:
+                        return result
+                additional_children.append(n)
 
         if node.type == 'trailer' and node.children[0] == '(':
             leaf = node.get_previous_leaf()
