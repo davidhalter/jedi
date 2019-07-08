@@ -616,26 +616,6 @@ class CallSignature(Definition):
         Returns None if the index cannot be found in the curent call.
         """
         return self._call_details.calculate_index(self._signature.get_param_names())
-        if self._call_details.keyword_name_str is not None:
-            for i, param in enumerate(self.params):
-                if self._call_details.keyword_name_str == param.name:
-                    return i
-            if self.params:
-                param_name = self.params[-1]._name
-                if param_name.tree_name is not None:
-                    if param_name.tree_name.get_definition().star_count == 2:
-                        return i
-            return None
-
-        if self._call_details.index >= len(self.params):
-            for i, param in enumerate(self.params):
-                tree_name = param._name.tree_name
-                if tree_name is not None:
-                    # *args case
-                    if tree_name.get_definition().star_count == 1:
-                        return i
-            return None
-        return self._call_details.index
 
     @property
     def params(self):
