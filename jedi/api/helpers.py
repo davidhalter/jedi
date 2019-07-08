@@ -8,7 +8,7 @@ from textwrap import dedent
 from parso.python.parser import Parser
 from parso.python import tree
 
-from jedi._compatibility import u
+from jedi._compatibility import u, Parameter
 from jedi.evaluate.base_context import NO_CONTEXTS
 from jedi.evaluate.syntax_tree import eval_atom
 from jedi.evaluate.helpers import evaluate_call_of_leaf
@@ -174,6 +174,104 @@ class CallDetails(object):
     def keyword_name_str(self):
         return _get_index_and_key(self._children, self._position)[1]
 
+    def calculate_index(self, param_names):
+        positional_count = 0
+        used_names = set()
+        star_count = -1
+        args = list(_iter_arguments(self._children, self._position))
+        if not args:
+            if param_names:
+                return 0
+            else:
+                return None
+
+        is_kwarg = False
+        for i, (star_count, key_start, had_equal) in enumerate(args):
+            is_kwarg |= had_equal | (star_count == 2)
+            if star_count:
+                pass  # For now do nothing, we don't know what's in there here.
+            elif had_equal:
+                if i + 1 != len(args):
+                    used_names.add(key_start)
+            else:
+                positional_count += 1
+
+        for i, param_name in enumerate(param_names):
+            kind = param_name.get_kind()
+
+            if not is_kwarg:
+                if kind == Parameter.VAR_POSITIONAL:
+                    return i
+                if kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY):
+                    if i + 1 == positional_count:
+                        return i
+
+            if key_start is not None:
+                if param_name.string_name not in used_names \
+                        and (kind == Parameter.KEYWORD_ONLY
+                             or kind == Parameter.POSITIONAL_OR_KEYWORD
+                             and positional_count < i + 1):
+                    if had_equal:
+                        if param_name.string_name == key_start:
+                            return i
+                    else:
+                        if param_name.string_name.startswith(key_start):
+                            return i
+
+                if kind == Parameter.VAR_KEYWORD:
+                    return i
+        return None
+
+
+def _iter_arguments(nodes, position):
+    def remove_after_pos(name):
+        return name.value[:position[1] - name.start_pos[1]]
+
+    # Returns Generator[Tuple[star_count, Optional[key_start: str], had_equal]]
+    nodes_before = [c for c in nodes if c.start_pos < position]
+    if nodes_before[-1].type == 'arglist':
+        for x in _iter_arguments(nodes_before[-1].children, position):
+            yield x  # Python 2 :(
+        return
+
+    previous_node_yielded = False
+    for i, node in enumerate(nodes_before):
+        if node.type == 'argument':
+            previous_node_yielded = True
+            first = node.children[0]
+            second = node.children[1]
+            if second == '=':
+                if second.start_pos < position:
+                    yield 0, first.value, True
+                else:
+                    yield 0, remove_after_pos(first), True
+            elif first in ('*', '**'):
+                yield len(first), remove_after_pos(second), ''
+            else:
+                # Must be a Comprehension
+                first_leaf = node.get_first_leaf()
+                if first_leaf.type == 'name' and first_leaf.start_pos >= position:
+                    yield 0, remove_after_pos(first_leaf), False
+                else:
+                    yield 0, None, False
+        elif node == ',':
+            if not previous_node_yielded:
+                yield 0, '', False
+            previous_node_yielded = False
+        elif node == '=' and nodes_before[-1]:
+            previous_node_yielded = True
+            before = nodes_before[i - 1]
+            if before.type == 'name':
+                yield 0, before.value, True
+            else:
+                yield 0, None, False
+
+    if not previous_node_yielded:
+        if nodes_before[-1].type == 'name':
+            yield 0, remove_after_pos(nodes_before[-1]), False
+        else:
+            yield 0, '', False
+
 
 def _get_index_and_key(nodes, position):
     """
@@ -185,14 +283,13 @@ def _get_index_and_key(nodes, position):
 
     key_str = None
 
-    if nodes_before:
-        last = nodes_before[-1]
-        if last.type == 'argument' and last.children[1] == '=' \
-                and last.children[1].end_pos <= position:
-            # Checked if the argument
-            key_str = last.children[0].value
-        elif last == '=':
-            key_str = nodes_before[-2].value
+    last = nodes_before[-1]
+    if last.type == 'argument' and last.children[1] == '=' \
+            and last.children[1].end_pos <= position:
+        # Checked if the argument
+        key_str = last.children[0].value
+    elif last == '=':
+        key_str = nodes_before[-2].value
 
     return nodes_before.count(','), key_str
 

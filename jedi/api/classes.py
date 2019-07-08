@@ -615,6 +615,7 @@ class CallSignature(Definition):
         The Param index of the current call.
         Returns None if the index cannot be found in the curent call.
         """
+        return self._call_details.calculate_index(self._signature.get_param_names())
         if self._call_details.keyword_name_str is not None:
             for i, param in enumerate(self.params):
                 if self._call_details.keyword_name_str == param.name:

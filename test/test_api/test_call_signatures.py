@@ -396,13 +396,13 @@ def test_keyword_argument_index(Script, environment):
 
 
 code1 = 'def f(u, /, v=3, *, abc, abd, xyz): pass'
-code2 = 'def f(u, /, v=3, *, abc, abd, xyz, **kwargs): pass'
-code3 = 'def f(u, /, v, *args, x=1, y): pass'
-code4 = 'def f(u, /, v, *args, x=1, y, **kwargs): pass'
+code2 = 'def g(u, /, v=3, *, abc, abd, xyz, **kwargs): pass'
+code3 = 'def h(u, /, v, *args, x=1, y): pass'
+code4 = 'def i(u, /, v, *args, x=1, y, **kwargs): pass'
 
 
 @pytest.mark.parametrize(
-    'code, call, index', [
+    'code, call, expected_index', [
         # No *args, **kwargs
         (code1, 'f(', 0),
         (code1, 'f(a', 0),
@@ -424,51 +424,52 @@ code4 = 'def f(u, /, v, *args, x=1, y, **kwargs): pass'
         (code1, 'f(v=', 1),
 
         # **kwargs
-        (code2, 'f(a,b,a', 2),
-        (code2, 'f(a,b,abd', 2),
-        (code2, 'f(a,b,arr', 5),
-        (code2, 'f(a,b,xy', 4),
-        (code2, 'f(a,b,xy=', 4),
-        (code2, 'f(a,b,abc=1,abd=4,', 5),
-        (code2, 'f(a,b,abc=1,abd=4,lala', 5),
-        (code2, 'f(a,b,abc=1,abd=4,lala=', 5),
-        (code2, 'f(a,b,kw', 5),
-        (code2, 'f(a,b,kwargs=', 5),
-        (code2, 'f(u=', 5),
-        (code2, 'f(v=', 1),
+        (code2, 'g(a,b,a', 2),
+        (code2, 'g(a,b,abc', 2),
+        (code2, 'g(a,b,abd', 3),
+        (code2, 'g(a,b,arr', 5),
+        (code2, 'g(a,b,xy', 4),
+        (code2, 'g(a,b,xyz=', 4),
+        (code2, 'g(a,b,xy=', 5),
+        (code2, 'g(a,b,abc=1,abd=4,', 4),
+        (code2, 'g(a,b,abc=1,xyz=3,abd=4,', 5),
+        (code2, 'g(a,b,abc=1,abd=4,lala', 5),
+        (code2, 'g(a,b,abc=1,abd=4,lala=', 5),
+        (code2, 'g(a,b,abc=1,abd=4,abd=', 5),
+        (code2, 'g(a,b,kw', 5),
+        (code2, 'g(a,b,kwargs=', 5),
+        (code2, 'g(u=', 5),
+        (code2, 'g(v=', 1),
 
         # *args
-        (code3, 'f(a,b,c', 2),
-        (code3, 'f(a,b,c,', 2),
-        (code3, 'f(a,b,c,d', 2),
-        (code3, 'f(a,b,c,d[', 2),
-        (code3, 'f(a,b,c,d(3,', 2),
-        (code3, 'f(a,b,c,(3,)', 2),
-        (code3, 'f(a,b,args=', None),
-        (code3, 'f(a,b=', 1),
-        (code3, 'f(a=', None),
+        (code3, 'h(a,b,c', 2),
+        (code3, 'h(a,b,c,', 2),
+        (code3, 'h(a,b,c,d', 2),
+        (code3, 'h(a,b,c,d[', 2),
+        (code3, 'h(a,b,c,(3,', 2),
+        (code3, 'h(a,b,c,(3,)', 2),
+        (code3, 'h(a,b,args=', None),
+        (code3, 'h(u,v=', 1),
+        (code3, 'h(u=', None),
 
         # *args, **kwargs
-        (code4, 'f(a,b,c,d', 2),
-        (code4, 'f(a,b,c,d,e', 2),
-        (code4, 'f(a,b,c,d,e=', 5),
-        (code4, 'f(a,b,c,d,e=3', 5),
-        (code4, 'f(a,b,c,d=,', 3),
-        (code4, 'f(a,b,c,d=,x=', 3),
-        (code4, 'f(a,b,c,d=5,x=4', 3),
-        (code4, 'f(a,b,c,d=5,x=4,y', 4),
-        (code4, 'f(a,b,c,d=5,x=4,y=3,', 5),
-        (code4, 'f(a,b,c,d=5,y=4,x=3', 4),
-        (code4, 'f(a,b,c,d=5,y=4,x=3,', 5),
-        (code4, 'f(a,b,c,d=4,', 5),
-        (code4, 'f(a,b,c,d=,', 5),
+        (code4, 'i(a,b,c,d', 2),
+        (code4, 'i(a,b,c,d,e', 2),
+        (code4, 'i(a,b,c,d,e=', 5),
+        (code4, 'i(a,b,c,d,e=3', 5),
+        #(code4, 'i(a,b,c,d=,x=', 3),
+        (code4, 'i(a,b,c,d=5,x=4', 3),
+        (code4, 'i(a,b,c,d=5,x=4,y', 4),
+        (code4, 'i(a,b,c,d=5,x=4,y=3,', 5),
+        (code4, 'i(a,b,c,d=5,y=4,x=3,', 5),
+        (code4, 'i(a,b,c,d=4,', 3),
+        (code4, 'i(a,b,c,x=1,d=2,', 4),
     ]
 )
-def test_signature_index(skip_pre_python38, Script, code, call, index):
+def test_signature_index(skip_pre_python38, Script, code, call, expected_index):
     sig, = Script(code + '\n' + call).call_signatures()
-    print(call)
-    print('index', index)
-    assert index == sig.index
+    index = sig.index
+    assert expected_index == index
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Python 2 doesn't support __signature__")
