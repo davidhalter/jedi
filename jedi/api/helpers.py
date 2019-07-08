@@ -185,6 +185,7 @@ class CallDetails(object):
             else:
                 return None
 
+        print(args)
         is_kwarg = False
         for i, (star_count, key_start, had_equal) in enumerate(args):
             is_kwarg |= had_equal | (star_count == 2)
@@ -225,6 +226,8 @@ class CallDetails(object):
 
 def _iter_arguments(nodes, position):
     def remove_after_pos(name):
+        if name.type != 'name':
+            return None
         return name.value[:position[1] - name.start_pos[1]]
 
     # Returns Generator[Tuple[star_count, Optional[key_start: str], had_equal]]
@@ -235,6 +238,7 @@ def _iter_arguments(nodes, position):
         return
 
     previous_node_yielded = False
+    print(nodes_before)
     for i, node in enumerate(nodes_before):
         if node.type == 'argument':
             previous_node_yielded = True
@@ -246,7 +250,7 @@ def _iter_arguments(nodes, position):
                 else:
                     yield 0, remove_after_pos(first), True
             elif first in ('*', '**'):
-                yield len(first), remove_after_pos(second), ''
+                yield len(first.value), remove_after_pos(second), False
             else:
                 # Must be a Comprehension
                 first_leaf = node.get_first_leaf()
@@ -254,6 +258,9 @@ def _iter_arguments(nodes, position):
                     yield 0, remove_after_pos(first_leaf), False
                 else:
                     yield 0, None, False
+        elif node.type in ('testlist', 'testlist_star_expr'):  # testlist is Python 2
+            for n in node.children[::2]:
+                yield 0, remove_after_pos(n), False
         elif isinstance(node, tree.PythonLeaf) and node.value == ',':
             if not previous_node_yielded:
                 yield 0, '', False
@@ -339,7 +346,7 @@ def get_call_signature_details(module, position):
                     )
                     if result is not None:
                         return result
-                additional_children.append(n)
+                additional_children.insert(0, n)
 
         if node.type == 'trailer' and node.children[0] == '(':
             leaf = node.get_previous_leaf()
