@@ -486,9 +486,10 @@ _calls = [
 ]
 
 
+@pytest.mark.parametrize('ending', ['', ')'])
 @pytest.mark.parametrize('code, call, expected_index', _calls)
-def test_signature_index(skip_pre_python38, Script, code, call, expected_index):
-    sig, = Script(code + '\n' + call).call_signatures()
+def test_signature_index(skip_pre_python38, Script, code, call, expected_index, ending):
+    sig, = Script(code + '\n' + call + ending, column=len(call)).call_signatures()
     index = sig.index
     assert expected_index == index
 
