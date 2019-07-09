@@ -478,7 +478,11 @@ _calls = [
     # Error nodes
     (code4, 'i(1, [a,b', 1),
     (code4, 'i(1, [a,b=,', 2),
-    (code4, 'i(1, [a!b,', 2),
+    (code4, 'i(1, [a?b,', 2),
+    (code4, 'i(1, [a?b,*', 2),
+    (code4, 'i(?b,*r,c', 1),
+    (code4, 'i(?*', 0),
+    (code4, 'i(?**', 1),
 ]
 
 

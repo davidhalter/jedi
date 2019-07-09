@@ -263,8 +263,13 @@ def _iter_arguments(nodes, position):
             stars_seen = 0
         elif node.type in ('testlist', 'testlist_star_expr'):  # testlist is Python 2
             for n in node.children[::2]:
+                if n.type == 'star_expr':
+                    stars_seen = 1
+                    n = n.children[1]
                 yield stars_seen, remove_after_pos(n), False
                 stars_seen = 0
+            # The count of children is even if there's a comma at the end.
+            previous_node_yielded = bool(len(node.children) % 2)
         elif isinstance(node, tree.PythonLeaf) and node.value == ',':
             if not previous_node_yielded:
                 yield stars_seen, '', False
