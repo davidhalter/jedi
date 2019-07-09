@@ -452,7 +452,16 @@ code4 = 'def i(u, /, v, *args, x=1, y, **kwargs): pass'
         (code3, 'h(u,v=', 1),
         (code3, 'h(u=', None),
         (code3, 'h(u,*xxx', 1),
+        (code3, 'h(u,*xxx,*yyy', 1),
         (code3, 'h(u,*[]', 1),
+        (code3, 'h(u,*', 1),
+        (code3, 'h(u,*, *', 1),
+        (code3, 'h(u,1,**', 3),
+        (code3, 'h(u,**y', 1),
+        (code3, 'h(u,x=2,**', 1),
+        (code3, 'h(u,x=2,**y', 1),
+        (code3, 'h(u,v=2,**y', 3),
+        (code3, 'h(u,x=2,**vv', 1),
 
         # *args, **kwargs
         (code4, 'i(a,b,c,d', 2),
@@ -476,7 +485,6 @@ code4 = 'def i(u, /, v, *args, x=1, y, **kwargs): pass'
 def test_signature_index(skip_pre_python38, Script, code, call, expected_index):
     sig, = Script(code + '\n' + call).call_signatures()
     index = sig.index
-    print(call)
     assert expected_index == index
 
 

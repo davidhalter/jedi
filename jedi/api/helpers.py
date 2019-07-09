@@ -207,11 +207,13 @@ class CallDetails(object):
                     if i == positional_count:
                         return i
 
-            if key_start is not None:
+            if key_start is not None and not star_count == 1 or star_count == 2:
                 if param_name.string_name not in used_names \
                         and (kind == Parameter.KEYWORD_ONLY
                              or kind == Parameter.POSITIONAL_OR_KEYWORD
                              and positional_count <= i):
+                    if star_count:
+                        return i
                     if had_equal:
                         if param_name.string_name == key_start:
                             return i
@@ -238,7 +240,7 @@ def _iter_arguments(nodes, position):
         return
 
     previous_node_yielded = False
-    print(nodes_before)
+    stars_seen = 0
     for i, node in enumerate(nodes_before):
         if node.type == 'argument':
             previous_node_yielded = True
@@ -258,13 +260,18 @@ def _iter_arguments(nodes, position):
                     yield 0, remove_after_pos(first_leaf), False
                 else:
                     yield 0, None, False
+            stars_seen = 0
         elif node.type in ('testlist', 'testlist_star_expr'):  # testlist is Python 2
             for n in node.children[::2]:
-                yield 0, remove_after_pos(n), False
+                yield stars_seen, remove_after_pos(n), False
+                stars_seen = 0
         elif isinstance(node, tree.PythonLeaf) and node.value == ',':
             if not previous_node_yielded:
-                yield 0, '', False
+                yield stars_seen, '', False
+                stars_seen = 0
             previous_node_yielded = False
+        elif isinstance(node, tree.PythonLeaf) and node.value in ('*', '**'):
+            stars_seen = len(node.value)
         elif node == '=' and nodes_before[-1]:
             previous_node_yielded = True
             before = nodes_before[i - 1]
@@ -272,12 +279,14 @@ def _iter_arguments(nodes, position):
                 yield 0, before.value, True
             else:
                 yield 0, None, False
+            # Just ignore the star that is probably a syntax error.
+            stars_seen = 0
 
     if not previous_node_yielded:
         if nodes_before[-1].type == 'name':
-            yield 0, remove_after_pos(nodes_before[-1]), False
+            yield stars_seen, remove_after_pos(nodes_before[-1]), False
         else:
-            yield 0, '', False
+            yield stars_seen, '', False
 
 
 def _get_index_and_key(nodes, position):
@@ -346,6 +355,9 @@ def get_call_signature_details(module, position):
                     )
                     if result is not None:
                         return result
+
+                    additional_children[0:0] = n.children
+                    continue
                 additional_children.insert(0, n)
 
         if node.type == 'trailer' and node.children[0] == '(':
