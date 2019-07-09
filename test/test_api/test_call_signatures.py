@@ -451,8 +451,8 @@ code4 = 'def i(u, /, v, *args, x=1, y, **kwargs): pass'
         (code3, 'h(a,b,args=', None),
         (code3, 'h(u,v=', 1),
         (code3, 'h(u=', None),
-        #(code3, 'h(u,*xxx', 1),
-        #(code3, 'h(u,*[]', 1),
+        (code3, 'h(u,*xxx', 1),
+        (code3, 'h(u,*[]', 1),
 
         # *args, **kwargs
         (code4, 'i(a,b,c,d', 2),

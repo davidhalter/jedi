@@ -185,17 +185,17 @@ class CallDetails(object):
             else:
                 return None
 
-        print(args)
         is_kwarg = False
         for i, (star_count, key_start, had_equal) in enumerate(args):
             is_kwarg |= had_equal | (star_count == 2)
             if star_count:
                 pass  # For now do nothing, we don't know what's in there here.
-            elif had_equal:
-                if i + 1 != len(args):
-                    used_names.add(key_start)
             else:
-                positional_count += 1
+                if i + 1 != len(args):  # Not last
+                    if had_equal:
+                        used_names.add(key_start)
+                    else:
+                        positional_count += 1
 
         for i, param_name in enumerate(param_names):
             kind = param_name.get_kind()
@@ -204,14 +204,14 @@ class CallDetails(object):
                 if kind == Parameter.VAR_POSITIONAL:
                     return i
                 if kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY):
-                    if i + 1 == positional_count:
+                    if i == positional_count:
                         return i
 
             if key_start is not None:
                 if param_name.string_name not in used_names \
                         and (kind == Parameter.KEYWORD_ONLY
                              or kind == Parameter.POSITIONAL_OR_KEYWORD
-                             and positional_count < i + 1):
+                             and positional_count <= i):
                     if had_equal:
                         if param_name.string_name == key_start:
                             return i
