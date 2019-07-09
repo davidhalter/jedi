@@ -250,7 +250,7 @@ def _iter_arguments(nodes, position):
                 if second.start_pos < position:
                     yield 0, first.value, True
                 else:
-                    yield 0, remove_after_pos(first), True
+                    yield 0, remove_after_pos(first), False
             elif first in ('*', '**'):
                 yield len(first.value), remove_after_pos(second), False
             else:

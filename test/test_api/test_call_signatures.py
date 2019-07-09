@@ -44,7 +44,7 @@ class TestCallSignatures(TestCase):
         run(s1, 'sorted', 0, 7)
         run(s1, 'sorted', 1, 9)
         run(s1, 'sorted', 1, 10)
-        run(s1, 'sorted', 1, 11)
+        run(s1, 'sorted', None, 11)
         run(s1, 'bool', 0, 15)
 
         s2 = "abs(), "
