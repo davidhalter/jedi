@@ -419,7 +419,7 @@ _calls = [
     (code1, 'f(a,b,xy', 4),
     (code1, 'f(a,b,xyz=', 4),
     (code1, 'f(a,b,xy=', None),
-    (code1, 'f(u=', None),
+    (code1, 'f(u=', (0, None)),
     (code1, 'f(v=', 1),
 
     # **kwargs
@@ -437,7 +437,7 @@ _calls = [
     (code2, 'g(a,b,abc=1,abd=4,abd=', 5),
     (code2, 'g(a,b,kw', 5),
     (code2, 'g(a,b,kwargs=', 5),
-    (code2, 'g(u=', 5),
+    (code2, 'g(u=', (0, 5)),
     (code2, 'g(v=', 1),
 
     # *args
@@ -449,7 +449,7 @@ _calls = [
     (code3, 'h(a,b,c,(3,)', 2),
     (code3, 'h(a,b,args=', None),
     (code3, 'h(u,v=', 1),
-    (code3, 'h(u=', None),
+    (code3, 'h(u=', (0, None)),
     (code3, 'h(u,*xxx', 1),
     (code3, 'h(u,*xxx,*yyy', 1),
     (code3, 'h(u,*[]', 1),
@@ -482,13 +482,18 @@ _calls = [
     (code4, 'i(1, [a?b,*', 2),
     (code4, 'i(?b,*r,c', 1),
     (code4, 'i(?*', 0),
-    (code4, 'i(?**', 1),
+    (code4, 'i(?**', (0, 1)),
 ]
 
 
 @pytest.mark.parametrize('ending', ['', ')'])
 @pytest.mark.parametrize('code, call, expected_index', _calls)
-def test_signature_index(skip_pre_python38, Script, code, call, expected_index, ending):
+def test_signature_index(skip_python2, Script, environment, code, call, expected_index, ending):
+    if isinstance(expected_index, tuple):
+        expected_index = expected_index[environment.version_info > (3, 8)]
+    if environment.version_info < (3, 8):
+        code = code.replace('/,', '')
+
     sig, = Script(code + '\n' + call + ending, column=len(call)).call_signatures()
     index = sig.index
     assert expected_index == index
