@@ -426,3 +426,16 @@ def test_simple_completions(code, completions):
 
     defs = jedi.Interpreter(code, [locals()]).completions()
     assert [d.name for d in defs] == completions
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Python 2 doesn't have lru_cache")
+def test__wrapped__():
+    from functools import lru_cache
+
+    @lru_cache(maxsize=128)
+    def syslogs_to_df():
+            pass
+
+    c, = jedi.Interpreter('syslogs_to_df', [locals()]).completions()
+    # Apparently the function starts on the line where the decorator starts.
+    assert c.line == syslogs_to_df.__wrapped__.__code__.co_firstlineno + 1

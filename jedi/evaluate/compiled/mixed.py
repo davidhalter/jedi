@@ -4,6 +4,7 @@ Used only for REPL Completion.
 
 import inspect
 import os
+import sys
 
 from jedi.parser_utils import get_cached_code_lines
 
@@ -131,6 +132,9 @@ def _load_module(evaluator, path):
 
 def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
+    if sys.version_info[0] > 2:
+        python_object = inspect.unwrap(python_object)
+
     if (inspect.ismodule(python_object) or
             inspect.isclass(python_object) or
             inspect.ismethod(python_object) or
