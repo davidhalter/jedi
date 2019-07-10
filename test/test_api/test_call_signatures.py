@@ -273,6 +273,13 @@ def test_int_params(Script):
     assert sig2.params[0].name == 'x'
 
 
+def test_pow_params(Script):
+    # See Github #1357.
+    for sig in Script('pow(').call_signatures():
+        param_names = [p.name for p in sig.params]
+        assert param_names in (['x', 'y'], ['x', 'y', 'z'])
+
+
 def test_param_name(Script):
     sigs = Script('open(something,').call_signatures()
     for sig in sigs:

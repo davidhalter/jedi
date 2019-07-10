@@ -176,6 +176,15 @@ class ParamName(ParamNameInterface, AbstractTreeName):
     def _get_param_node(self):
         return search_ancestor(self.tree_name, 'param')
 
+    @property
+    def string_name(self):
+        name = self.tree_name.value
+        if name.startswith('__'):
+            # Params starting with __ are an equivalent to positional only
+            # variables in typeshed.
+            name = name[2:]
+        return name
+
     def get_kind(self):
         tree_param = self._get_param_node()
         if tree_param.star_count == 1:  # *args
@@ -205,12 +214,7 @@ class ParamName(ParamNameInterface, AbstractTreeName):
         return Parameter.POSITIONAL_OR_KEYWORD
 
     def to_string(self):
-        name = self.string_name
-        if name.startswith('__'):
-            # Params starting with __ are an equivalent to positional only
-            # variables in typeshed.
-            name = name[2:]
-        output = self._kind_string() + name
+        output = self._kind_string() + self.string_name
         param_node = self._get_param_node()
         if param_node.annotation is not None:
             output += ': ' + param_node.annotation.get_code(include_prefix=False)
