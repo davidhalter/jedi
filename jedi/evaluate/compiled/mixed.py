@@ -146,10 +146,7 @@ def _get_object_to_check(python_object):
         raise TypeError  # Prevents computation of `repr` within inspect.
 
 
-def _find_syntax_node_name(evaluator, access_handle):
-    # TODO accessing this is bad, but it probably doesn't matter that much,
-    # because we're working with interpreteters only here.
-    python_object = access_handle.access._obj
+def _find_syntax_node_name(evaluator, python_object):
     try:
         python_object = _get_object_to_check(python_object)
         path = inspect.getsourcefile(python_object)
@@ -224,10 +221,12 @@ def _create(evaluator, access_handle, parent_context, *args):
         parent_context=parent_context and parent_context.compiled_object
     )
 
-    result = _find_syntax_node_name(evaluator, access_handle)
+    # TODO accessing this is bad, but it probably doesn't matter that much,
+    # because we're working with interpreteters only here.
+    python_object = access_handle.access._obj
+    result = _find_syntax_node_name(evaluator, python_object)
     if result is None:
         # TODO Care about generics from stuff like `[1]` and don't return like this.
-        python_object = access_handle.access._obj
         if type(python_object) in (dict, list, tuple):
             return ContextSet({compiled_object})
 
