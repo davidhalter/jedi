@@ -8,13 +8,10 @@ import pytest
 
 import jedi
 from jedi import __doc__ as jedi_doc, names
-from ..helpers import TestCase
 from jedi.evaluate.compiled import CompiledContextName
 
 
 def test_is_keyword(Script):
-    #results = Script('import ', 1, 1, None).goto_definitions()
-    #assert len(results) == 1 and results[0].is_keyword is True
     results = Script('str', 1, 1, None).goto_definitions()
     assert len(results) == 1 and results[0].is_keyword is False
 
@@ -140,28 +137,32 @@ def test_completion_docstring(Script, jedi_path):
 
     docstr('abcd=3;abcd', '')
     docstr('"hello"\nabcd=3\nabcd', '')
-    docstr(dedent('''
+    docstr(
+        dedent('''
         def x():
             "hello"
             0
         x'''),
         'hello'
     )
-    docstr(dedent('''
+    docstr(
+        dedent('''
         def x():
             "hello";0
         x'''),
         'hello'
     )
     # Shouldn't work with a tuple.
-    docstr(dedent('''
+    docstr(
+        dedent('''
         def x():
             "hello",0
         x'''),
         ''
     )
     # Should also not work if we rename something.
-    docstr(dedent('''
+    docstr(
+        dedent('''
         def x():
             "hello"
         y = x
