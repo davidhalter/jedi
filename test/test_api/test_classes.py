@@ -229,12 +229,6 @@ class TestIsDefinition(TestCase):
             environment=self.environment
         )[index]
 
-    def _bool_is_definitions(self, source):
-        ns = names(dedent(source), references=True, all_scopes=True)
-        # Assure that names are definitely sorted.
-        ns = sorted(ns, key=lambda name: (name.line, name.column))
-        return [name.is_definition() for name in ns]
-
     def test_name(self):
         d = self._def('name')
         assert d.name == 'name'
@@ -252,10 +246,19 @@ class TestIsDefinition(TestCase):
         assert d.name == 'x'
         assert not d.is_definition()
 
-    def test_import(self):
-        assert self._bool_is_definitions('import x as a') == [False, True]
-        assert self._bool_is_definitions('from x import y') == [False, True]
-        assert self._bool_is_definitions('from x.z import y') == [False, False, True]
+
+@pytest.mark.parametrize(
+    'code, expected', (
+        ('import x as a', [False, True]),
+        ('from x import y', [False, True]),
+        ('from x.z import y', [False, False, True]),
+    )
+)
+def test_is_definition_import(names, code, expected):
+    ns = names(dedent(code), references=True, all_scopes=True)
+    # Assure that names are definitely sorted.
+    ns = sorted(ns, key=lambda name: (name.line, name.column))
+    assert [name.is_definition() for name in ns] == expected
 
 
 class TestParent(TestCase):
