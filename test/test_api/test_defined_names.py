@@ -1,5 +1,5 @@
 """
-Tests for `api.defined_names`.
+Tests for `api.names`.
 """
 
 from textwrap import dedent
@@ -11,14 +11,14 @@ def _assert_definition_names(definitions, names_):
     assert [d.name for d in definitions] == names_
 
 
-def _check_defined_names(names, source, names_):
+def _check_names(names, source, names_):
     definitions = names(dedent(source))
     _assert_definition_names(definitions, names_)
     return definitions
 
 
 def test_get_definitions_flat(names):
-    _check_defined_names(names, """
+    _check_names(names, """
         import module
         class Class:
             pass
@@ -29,25 +29,25 @@ def test_get_definitions_flat(names):
 
 
 def test_dotted_assignment(names):
-    _check_defined_names(names, """
+    _check_names(names, """
     x = Class()
     x.y.z = None
     """, ['x', 'z'])  # TODO is this behavior what we want?
 
 
 def test_multiple_assignment(names):
-    _check_defined_names(names, "x = y = None", ['x', 'y'])
+    _check_names(names, "x = y = None", ['x', 'y'])
 
 
 def test_multiple_imports(names):
-    _check_defined_names(names, """
+    _check_names(names, """
     from module import a, b
     from another_module import *
     """, ['a', 'b'])
 
 
 def test_nested_definitions(names):
-    definitions = _check_defined_names(names, """
+    definitions = _check_names(names, """
     class Class:
         def f():
             pass
@@ -60,7 +60,7 @@ def test_nested_definitions(names):
 
 
 def test_nested_class(names):
-    definitions = _check_defined_names(names, """
+    definitions = _check_names(names, """
     class L1:
         class L2:
             class L3:
@@ -77,7 +77,7 @@ def test_nested_class(names):
 
 
 def test_class_fields_with_all_scopes_false(names):
-    definitions = _check_defined_names(names, """
+    definitions = _check_names(names, """
     from module import f
     g = f(f)
     class C:
@@ -94,7 +94,7 @@ def test_class_fields_with_all_scopes_false(names):
 
 
 def test_async_stmt_with_all_scopes_false(names):
-    definitions = _check_defined_names(names, """
+    definitions = _check_names(names, """
     from module import f
     import asyncio
 
