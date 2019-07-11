@@ -216,35 +216,22 @@ def test_param_endings(Script):
     assert [p.description for p in sig.params] == ['param a', 'param b=5', 'param c=""']
 
 
-class TestIsDefinition(TestCase):
-    @pytest.fixture(autouse=True)
-    def init(self, environment):
-        self.environment = environment
-
-    def _def(self, source, index=-1):
-        return names(
-            dedent(source),
-            references=True,
-            all_scopes=True,
-            environment=self.environment
-        )[index]
-
-    def test_name(self):
-        d = self._def('name')
-        assert d.name == 'name'
-        assert not d.is_definition()
-
-    def test_stmt(self):
-        src = 'a = f(x)'
-        d = self._def(src, 0)
-        assert d.name == 'a'
-        assert d.is_definition()
-        d = self._def(src, 1)
-        assert d.name == 'f'
-        assert not d.is_definition()
-        d = self._def(src)
-        assert d.name == 'x'
-        assert not d.is_definition()
+@pytest.mark.parametrize(
+    'code, index, name, is_definition', [
+        ('name', 0, 'name', False),
+        ('a = f(x)', 0, 'a', True),
+        ('a = f(x)', 1, 'f', False),
+        ('a = f(x)', 2, 'x', False),
+    ]
+)
+def test_is_definition(names, code, index, name, is_definition):
+    d = names(
+        dedent(code),
+        references=True,
+        all_scopes=True,
+    )[index]
+    assert d.name == name
+    assert d.is_definition() == is_definition
 
 
 @pytest.mark.parametrize(
