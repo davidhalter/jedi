@@ -7,7 +7,7 @@ from inspect import cleandoc
 import pytest
 
 import jedi
-from jedi import __doc__ as jedi_doc, names
+from jedi import __doc__ as jedi_doc
 from jedi.evaluate.compiled import CompiledContextName
 
 
@@ -390,7 +390,7 @@ def test_import(names):
     assert n.type == 'module'
 
 
-def test_import_alias(environment):
+def test_import_alias(names):
     nms = names('import json as foo', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
