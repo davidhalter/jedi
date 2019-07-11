@@ -261,33 +261,29 @@ def test_is_definition_import(names, code, expected):
     assert [name.is_definition() for name in ns] == expected
 
 
-class TestParent(TestCase):
-    @pytest.fixture(autouse=True)
-    def init(self, Script):
-        self.Script = Script
-
-    def _parent(self, source, line=None, column=None):
-        def_, = self.Script(dedent(source), line, column).goto_assignments()
+def test_parent(Script):
+    def _parent(source, line=None, column=None):
+        def_, = Script(dedent(source), line, column).goto_assignments()
         return def_.parent()
 
-    def test_parent(self):
-        parent = self._parent('foo=1\nfoo')
-        assert parent.type == 'module'
+    parent = _parent('foo=1\nfoo')
+    assert parent.type == 'module'
 
-        parent = self._parent('''
-            def spam():
-                if 1:
-                    y=1
-                    y''')
-        assert parent.name == 'spam'
-        assert parent.parent().type == 'module'
+    parent = _parent('''
+        def spam():
+            if 1:
+                y=1
+                y''')
+    assert parent.name == 'spam'
+    assert parent.parent().type == 'module'
 
-    def test_on_function(self):
-        parent = self._parent('''\
-            def spam():
-                pass''', 1, len('def spam'))
-        assert parent.name == ''
-        assert parent.type == 'module'
+
+def test_parent_on_function(Script):
+    code = 'def spam():\n pass'
+    def_, = Script(code, line=1, column=len('def spam')).goto_assignments()
+    parent = def_.parent()
+    assert parent.name == ''
+    assert parent.type == 'module'
 
 
 def test_parent_on_completion(Script):
