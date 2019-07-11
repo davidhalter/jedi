@@ -10,17 +10,18 @@ from jedi import names
 from ..helpers import TestCase
 
 
+def _assert_definition_names(definitions, names_):
+    assert [d.name for d in definitions] == names_
+
+
 class TestDefinedNames(TestCase):
     @pytest.fixture(autouse=True)
     def init(self, environment):
         self.environment = environment
 
-    def assert_definition_names(self, definitions, names_):
-        assert [d.name for d in definitions] == names_
-
     def check_defined_names(self, source, names_):
         definitions = names(dedent(source), environment=self.environment)
-        self.assert_definition_names(definitions, names_)
+        _assert_definition_names(definitions, names_)
         return definitions
 
     def test_get_definitions_flat(self):
@@ -59,7 +60,7 @@ class TestDefinedNames(TestCase):
                 pass
         """, ['Class'])
         subdefinitions = definitions[0].defined_names()
-        self.assert_definition_names(subdefinitions, ['f', 'g'])
+        _assert_definition_names(subdefinitions, ['f', 'g'])
         self.assertEqual([d.full_name for d in subdefinitions],
                          ['__main__.Class.f', '__main__.Class.g'])
 
@@ -75,9 +76,9 @@ class TestDefinedNames(TestCase):
         """, ['L1', 'f'])
         subdefs = definitions[0].defined_names()
         subsubdefs = subdefs[0].defined_names()
-        self.assert_definition_names(subdefs, ['L2', 'f'])
-        self.assert_definition_names(subsubdefs, ['L3', 'f'])
-        self.assert_definition_names(subsubdefs[0].defined_names(), ['f'])
+        _assert_definition_names(subdefs, ['L2', 'f'])
+        _assert_definition_names(subsubdefs, ['L3', 'f'])
+        _assert_definition_names(subsubdefs[0].defined_names(), ['f'])
 
     def test_class_fields_with_all_scopes_false(self):
         definitions = self.check_defined_names("""
@@ -92,8 +93,8 @@ class TestDefinedNames(TestCase):
         """, ['f', 'g', 'C', 'foo'])
         C_subdefs = definitions[-2].defined_names()
         foo_subdefs = definitions[-1].defined_names()
-        self.assert_definition_names(C_subdefs, ['h'])
-        self.assert_definition_names(foo_subdefs, ['x', 'bar'])
+        _assert_definition_names(C_subdefs, ['h'])
+        _assert_definition_names(foo_subdefs, ['x', 'bar'])
 
     def test_async_stmt_with_all_scopes_false(self):
         definitions = self.check_defined_names("""
@@ -127,11 +128,12 @@ class TestDefinedNames(TestCase):
         foo_subdefs = definitions[4].defined_names()
         async_foo_subdefs = definitions[5].defined_names()
         cinst_subdefs = definitions[6].defined_names()
-        self.assert_definition_names(C_subdefs, ['h', '__init__', '__aenter__'])
-        self.assert_definition_names(foo_subdefs, ['x', 'bar'])
-        self.assert_definition_names(async_foo_subdefs, ['duration', 'wait', 'i'])
+        _assert_definition_names(C_subdefs, ['h', '__init__', '__aenter__'])
+        _assert_definition_names(foo_subdefs, ['x', 'bar'])
+        _assert_definition_names(async_foo_subdefs, ['duration', 'wait', 'i'])
         # We treat d as a name outside `async with` block
-        self.assert_definition_names(cinst_subdefs, [])
+        _assert_definition_names(cinst_subdefs, [])
+
 
 def test_follow_imports(environment):
     # github issue #344
