@@ -19,7 +19,7 @@ def test_is_keyword(Script):
     assert len(results) == 1 and results[0].is_keyword is False
 
 
-def test_basedefinition_type(Script, environment):
+def test_basedefinition_type(Script, names):
     def make_definitions():
         """
         Return a list of definitions for parametrized tests.
@@ -44,7 +44,7 @@ def test_basedefinition_type(Script, environment):
         """)
 
         definitions = []
-        definitions += names(source, environment=environment)
+        definitions += names(source)
 
         source += dedent("""
         variable = sys or C or x or f or g or g() or h""")
@@ -102,8 +102,8 @@ def test_function_call_signature_in_doc(Script):
     assert "f(x, y=1, z='a')" in str(doc)
 
 
-def test_param_docstring():
-    param = jedi.names("def test(parameter): pass", all_scopes=True)[1]
+def test_param_docstring(names):
+    param = names("def test(parameter): pass", all_scopes=True)[1]
     assert param.name == 'parameter'
     assert param.docstring() == ''
 
@@ -331,8 +331,8 @@ different as an implementation.
 """
 
 
-def test_goto_assignment_repetition(environment):
-    defs = names('a = 1; a', references=True, definitions=False, environment=environment)
+def test_goto_assignment_repetition(names):
+    defs = names('a = 1; a', references=True, definitions=False)
     # Repeat on the same variable. Shouldn't change once we're on a
     # definition.
     for _ in range(3):
@@ -341,34 +341,34 @@ def test_goto_assignment_repetition(environment):
         assert ass[0].description == 'a = 1'
 
 
-def test_goto_assignments_named_params(environment):
+def test_goto_assignments_named_params(names):
     src = """\
             def foo(a=1, bar=2):
                 pass
             foo(bar=1)
           """
-    bar = names(dedent(src), references=True, environment=environment)[-1]
+    bar = names(dedent(src), references=True)[-1]
     param = bar.goto_assignments()[0]
     assert (param.line, param.column) == (1, 13)
     assert param.type == 'param'
 
 
-def test_class_call(environment):
+def test_class_call(names):
     src = 'from threading import Thread; Thread(group=1)'
-    n = names(src, references=True, environment=environment)[-1]
+    n = names(src, references=True)[-1]
     assert n.name == 'group'
     param_def = n.goto_assignments()[0]
     assert param_def.name == 'group'
     assert param_def.type == 'param'
 
 
-def test_parentheses(environment):
-    n = names('("").upper', references=True, environment=environment)[-1]
+def test_parentheses(names):
+    n = names('("").upper', references=True)[-1]
     assert n.goto_assignments()[0].name == 'upper'
 
 
-def test_import(environment):
-    nms = names('from json import load', references=True, environment=environment)
+def test_import(names):
+    nms = names('from json import load', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
     n = nms[0].goto_assignments()[0]
@@ -381,7 +381,7 @@ def test_import(environment):
     assert n.name == 'load'
     assert n.type == 'function'
 
-    nms = names('import os; os.path', references=True, environment=environment)
+    nms = names('import os; os.path', references=True)
     assert nms[0].name == 'os'
     assert nms[0].type == 'module'
     n = nms[0].goto_assignments()[0]
@@ -392,7 +392,7 @@ def test_import(environment):
     assert n.name == 'path'
     assert n.type == 'module'
 
-    nms = names('import os.path', references=True, environment=environment)
+    nms = names('import os.path', references=True)
     n = nms[0].goto_assignments()[0]
     assert n.name == 'os'
     assert n.type == 'module'
@@ -404,7 +404,7 @@ def test_import(environment):
 
 
 def test_import_alias(environment):
-    nms = names('import json as foo', references=True, environment=environment)
+    nms = names('import json as foo', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
     assert nms[0]._name.tree_name.parent.type == 'dotted_as_name'
