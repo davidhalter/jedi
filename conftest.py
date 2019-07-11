@@ -106,6 +106,11 @@ def Script(environment):
 
 
 @pytest.fixture(scope='session')
+def names(environment):
+    return partial(jedi.names, environment=environment)
+
+
+@pytest.fixture(scope='session')
 def has_typing(environment):
     if environment.version_info >= (3, 5, 0):
         # This if is just needed to avoid that tests ever skip way more than
