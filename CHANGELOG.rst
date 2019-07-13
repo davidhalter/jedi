@@ -3,6 +3,12 @@
 Changelog
 ---------
 
+0.14.1 (2019-07-13)
++++++++++++++++++++
+
+- CallSignature.index should now be working a lot better
+- A couple of smaller bugfixes
+
 0.14.0 (2019-06-20)
 +++++++++++++++++++
 
