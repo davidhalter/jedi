@@ -52,5 +52,6 @@ Tobias Rzepka (@TobiasRzepka)
 micbou (@micbou)
 Dima Gerasimov (@karlicoss) <karlicoss@gmail.com>
 Max Woerner Chase (@mwchase) <max.chase@gmail.com>
+Johannes Maria Frank (@jmfrank63) <jmfrank63@gmail.com>
 
 Note: (@user) means a github user name.
