@@ -544,6 +544,50 @@ def test_arg_defaults(Script, environment, code):
         assert signatures[0].params[1].description == 'param arg1=1'
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Python 2 doesn't support __signature__")
+@pytest.mark.parametrize('code', ['instance.foo', 'instance.bar'])
+def test_functools_partial(Script, environment, code):
+
+    class Klass:
+        def __init__(self):
+            import functools
+            self.bar = functools.partial(self.foo, arg1=17)
+
+        def foo(self, arg, arg1):
+            pass
+
+    instance = Klass()
+
+    src = dedent("""
+        class Klass2:
+            def __init__(self):
+                import functools
+                self.bar2 = functools.partial(self.foo2, arg1=17)
+
+            def foo2(self, arg, arg1):
+                pass
+
+        instance = Klass2()
+        """)
+
+    executed_locals = dict()
+    exec(src, None, executed_locals)
+    locals_ = locals()
+
+    def iter_scripts():
+        yield Interpreter(code + '(', namespaces=[locals_])
+        yield Script(src + code + "2(")
+        yield Interpreter(code + '2(', namespaces=[executed_locals])
+
+    for script in iter_scripts():
+        signatures = script.call_signatures()
+        assert signatures[0].params[0].description == ('param arg')
+        if 'bar' in signatures[0].name:
+            assert signatures[0].params[1].description == 'param arg1=17'
+        else:
+            assert signatures[0].params[1].description == 'param arg1'
+
+
 def test_bracket_start(Script):
     def bracket_start(src):
         signatures = Script(src).call_signatures()
