@@ -20,6 +20,13 @@ from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
 
         ('bytes().partition', 'partition(sep, /) -> (head, sep, tail)', ['sep'], lt, (3, 5)),
         ('bytes().partition', 'partition(sep, /)', ['sep'], ge, (3, 5)),
+
+        ('f = lambda arg1,arg2,kwarg1="test",kwarg2=1 : (arg1,arg2,kwarg1,kwarg2);f',
+         '<lambda>(arg1, arg2, kwarg1="test", kwarg2=1)', ['arg1', 'arg2', 'kwarg1', 'kwarg2'], ge, (3, 5)),
+        ('f = lambda arg1,arg2,kwarg1="test",kwarg2=1 : (arg1,arg2,kwarg1,kwarg2);g=f;g',
+         '<lambda>(arg1, arg2, kwarg1="test", kwarg2=1)', ['arg1', 'arg2', 'kwarg1', 'kwarg2'], ge, (3, 5)),
+        ('import functools; f = lambda arg1,arg2,kwarg1="test",kwarg2=1 : (arg1,arg2,kwarg1,kwarg2);g=functools.partial(f,11);g',
+         '<lambda>(arg2, kwarg1="test", kwarg2=1)', ['arg2', 'kwarg1', 'kwarg2'], ge, (3, 5)),
     ]
 )
 def test_compiled_signature(Script, environment, code, sig, names, op, version):
