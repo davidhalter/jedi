@@ -1,39 +1,47 @@
-from jedi.plugins import stdlib
-from jedi.plugins import flask
+from functools import wraps
 
 
 class _PluginManager(object):
-    def __init__(self, registered_plugin_classes=()):
-        self._registered_plugin_classes = list(registered_plugin_classes)
+    def __init__(self):
+        self._registered_plugins = []
+        self._cached_base_callbacks = {}
+        self._built_functions = {}
 
-    def register(self, plugin_class):
+    def register(self, *plugins):
         """
         Makes it possible to register your plugin.
         """
-        self._registered_plugins.append(plugin_class)
+        self._registered_plugins.extend(plugins)
+        self._build_functions()
 
-    def _build_chain(self):
-        for plugin_class in self._registered_plugin_classes:
-            yield plugin_class
+    def decorate(self):
+        def decorator(callback):
+            @wraps(callback)
+            def wrapper(*args, **kwargs):
+                return built_functions[name](*args, **kwargs)
 
-    def get_callbacks(self):
-        return _PluginCallbacks(self._build_chain())
+            name = callback.__name__
+
+            assert name not in self._built_functions
+            built_functions = self._built_functions
+            built_functions[name] = callback
+            self._cached_base_callbacks[name] = callback
+
+            return wrapper
+
+        return decorator
+
+    def _build_functions(self):
+        for name, callback in self._cached_base_callbacks.items():
+            for plugin in reversed(self._registered_plugins):
+                # Need to reverse so the first plugin is run first.
+                try:
+                    func = getattr(plugin, name)
+                except AttributeError:
+                    pass
+                else:
+                    callback = func(callback)
+            self._built_functions[name] = callback
 
 
-class _PluginCallbacks(object):
-    def __init__(self, plugins):
-        self._plugins = list(plugins)
-
-    def decorate(self, name, callback):
-        for plugin in reversed(self._plugins):
-            # Need to reverse so the first plugin is run first.
-            try:
-                func = getattr(plugin, name)
-            except AttributeError:
-                pass
-            else:
-                callback = func(callback)
-        return callback
-
-
-plugin_manager = _PluginManager([stdlib, flask])
+plugin_manager = _PluginManager()
