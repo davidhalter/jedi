@@ -121,7 +121,7 @@ class Evaluator(object):
 
         # Plugin API
         from jedi.plugins import plugin_manager
-        plugin_callbacks = plugin_manager.get_callbacks(self)
+        plugin_callbacks = plugin_manager.get_callbacks()
         self.execute = plugin_callbacks.decorate('execute', callback=_execute)
         self._import_module = partial(
             plugin_callbacks.decorate(

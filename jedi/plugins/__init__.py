@@ -1,5 +1,5 @@
-from jedi.plugins.stdlib import StdlibPlugin
-from jedi.plugins.flask import FlaskPlugin
+from jedi.plugins import stdlib
+from jedi.plugins import flask
 
 
 class _PluginManager(object):
@@ -12,12 +12,12 @@ class _PluginManager(object):
         """
         self._registered_plugins.append(plugin_class)
 
-    def _build_chain(self, evaluator):
+    def _build_chain(self):
         for plugin_class in self._registered_plugin_classes:
-            yield plugin_class(evaluator)
+            yield plugin_class
 
-    def get_callbacks(self, evaluator):
-        return _PluginCallbacks(self._build_chain(evaluator))
+    def get_callbacks(self):
+        return _PluginCallbacks(self._build_chain())
 
 
 class _PluginCallbacks(object):
@@ -27,11 +27,13 @@ class _PluginCallbacks(object):
     def decorate(self, name, callback):
         for plugin in reversed(self._plugins):
             # Need to reverse so the first plugin is run first.
-            callback = getattr(plugin, name)(callback)
+            try:
+                func = getattr(plugin, name)
+            except AttributeError:
+                pass
+            else:
+                callback = func(callback)
         return callback
 
 
-plugin_manager = _PluginManager([
-    StdlibPlugin,
-    FlaskPlugin,
-])
+plugin_manager = _PluginManager([stdlib, flask])

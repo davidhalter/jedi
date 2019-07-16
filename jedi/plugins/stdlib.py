@@ -12,7 +12,6 @@ compiled module that returns the types for C-builtins.
 import parso
 
 from jedi._compatibility import force_unicode
-from jedi.plugins.base import BasePlugin
 from jedi import debug
 from jedi.evaluate.helpers import get_str_or_none
 from jedi.evaluate.arguments import ValuesArguments, \
@@ -98,45 +97,44 @@ _NAMEDTUPLE_FIELD_TEMPLATE = '''\
 '''
 
 
-class StdlibPlugin(BasePlugin):
-    def execute(self, callback):
-        def wrapper(context, arguments):
+def execute(callback):
+    def wrapper(context, arguments):
+        try:
+            obj_name = context.name.string_name
+        except AttributeError:
+            pass
+        else:
+            if context.parent_context == context.evaluator.builtins_module:
+                module_name = 'builtins'
+            elif context.parent_context is not None and context.parent_context.is_module():
+                module_name = context.parent_context.py__name__()
+            else:
+                return callback(context, arguments=arguments)
+
+            if isinstance(context, BoundMethod):
+                if module_name == 'builtins':
+                    if context.py__name__() == '__get__':
+                        if context.class_context.py__name__() == 'property':
+                            return builtins_property(
+                                context,
+                                arguments=arguments
+                            )
+                    elif context.py__name__() in ('deleter', 'getter', 'setter'):
+                        if context.class_context.py__name__() == 'property':
+                            return ContextSet([context.instance])
+
+                return callback(context, arguments=arguments)
+
+            # for now we just support builtin functions.
             try:
-                obj_name = context.name.string_name
-            except AttributeError:
+                func = _implemented[module_name][obj_name]
+            except KeyError:
                 pass
             else:
-                if context.parent_context == self._evaluator.builtins_module:
-                    module_name = 'builtins'
-                elif context.parent_context is not None and context.parent_context.is_module():
-                    module_name = context.parent_context.py__name__()
-                else:
-                    return callback(context, arguments=arguments)
+                return func(context, arguments=arguments)
+        return callback(context, arguments=arguments)
 
-                if isinstance(context, BoundMethod):
-                    if module_name == 'builtins':
-                        if context.py__name__() == '__get__':
-                            if context.class_context.py__name__() == 'property':
-                                return builtins_property(
-                                    context,
-                                    arguments=arguments
-                                )
-                        elif context.py__name__() in ('deleter', 'getter', 'setter'):
-                            if context.class_context.py__name__() == 'property':
-                                return ContextSet([context.instance])
-
-                    return callback(context, arguments=arguments)
-
-                # for now we just support builtin functions.
-                try:
-                    func = _implemented[module_name][obj_name]
-                except KeyError:
-                    pass
-                else:
-                    return func(context, arguments=arguments)
-            return callback(context, arguments=arguments)
-
-        return wrapper
+    return wrapper
 
 
 def _follow_param(evaluator, arguments, index):
