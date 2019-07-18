@@ -320,9 +320,6 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
     def get_kind(self):
         return getattr(Parameter, self._signature_param.kind_name)
 
-    def is_keyword_param(self):
-        return self._signature_param
-
     def infer(self):
         p = self._signature_param
         evaluator = self.parent_context.evaluator
