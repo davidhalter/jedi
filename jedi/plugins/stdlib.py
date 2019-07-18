@@ -13,6 +13,7 @@ import parso
 
 from jedi._compatibility import force_unicode
 from jedi import debug
+from jedi.evaluate.utils import safe_property
 from jedi.evaluate.helpers import get_str_or_none
 from jedi.evaluate.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
@@ -26,8 +27,10 @@ from jedi.evaluate.context import ClassContext, ModuleContext, \
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
+from jedi.evaluate.names import ContextName
 from jedi.evaluate.syntax_tree import is_string
-from jedi.evaluate.filters import AttributeOverwrite, publish_method
+from jedi.evaluate.filters import AttributeOverwrite, publish_method, \
+    ParserTreeFilter, DictFilter
 
 
 # Copied from Python 3.6's stdlib.
@@ -602,3 +605,41 @@ _implemented = {
         'dataclass': lambda obj, arguments: NO_CONTEXTS,
     },
 }
+
+
+def get_metaclass_filters(func):
+    def wrapper(cls, metaclasses):
+        for metaclass in metaclasses:
+            if metaclass.py__name__() == 'EnumMeta' \
+                    and metaclass.get_root_context().py__name__() == 'enum':
+                print('cont', cls)
+                filter_ = ParserTreeFilter(cls.evaluator, context=cls)
+                return [DictFilter({
+                    name.string_name: EnumInstance(cls, name).name for name in filter_.values()
+                })]
+        return func(cls, metaclasses)
+    return wrapper
+
+
+class EnumInstance(LazyContextWrapper):
+    def __init__(self, cls, name):
+        self.evaluator = cls.evaluator
+        self._cls = cls  # Corresponds to super().__self__
+        self._name = name
+        self.tree_node = self._name.tree_name
+
+    @safe_property
+    def name(self):
+        return ContextName(self, self._name.tree_name)
+
+    def _get_wrapped_context(self):
+        obj, = self._cls.execute_evaluated()
+        return obj
+
+    def get_filters(self, search_global=False, position=None, origin_scope=None):
+        yield DictFilter(dict(
+            name=self._name.string_name,
+            value=self._name,
+        ))
+        for f in self._get_wrapped_context().get_filters():
+            yield f

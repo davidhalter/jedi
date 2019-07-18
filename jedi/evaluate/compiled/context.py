@@ -264,6 +264,9 @@ class CompiledObject(Context):
     def negate(self):
         return create_from_access_path(self.evaluator, self.access_handle.negate())
 
+    def get_metaclasses(self):
+        return NO_CONTEXTS
+
 
 class CompiledName(AbstractNameDefinition):
     def __init__(self, evaluator, parent_context, name):

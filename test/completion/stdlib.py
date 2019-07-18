@@ -290,3 +290,31 @@ class Test(metaclass=Meta):
         result = super(Test, self).test_function()
         #? []
         result.
+
+# -----------------
+# Enum
+# -----------------
+
+# python >= 3.4
+import enum
+
+class X(enum.Enum):
+    attr_x = 3
+    attr_y = 2.0
+
+#? ['mro']
+X.mro
+#? ['attr_x', 'attr_y']
+X.attr_
+#? str()
+X.attr_x.name
+#? int()
+X.attr_x.value
+#? str()
+X.attr_y.name
+#? float()
+X.attr_y.value
+#? str()
+X().name
+#? float()
+X().attr_x.attr_y.value
