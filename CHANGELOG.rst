@@ -3,6 +3,12 @@
 Changelog
 ---------
 
+0.14.2 (XXXX-XX-XX)
++++++++++++++++++++
+
+- Better support for enum completions
+
+
 0.14.1 (2019-07-13)
 +++++++++++++++++++
 
