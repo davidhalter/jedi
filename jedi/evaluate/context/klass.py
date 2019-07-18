@@ -320,6 +320,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         debug.dbg('Unprocessed metaclass %s', metaclass)
         return []
 
+    @evaluator_method_cache(default=NO_CONTEXTS)
     def get_metaclasses(self):
         args = self._get_bases_arguments()
         if args is not None:
