@@ -612,7 +612,6 @@ def get_metaclass_filters(func):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'EnumMeta' \
                     and metaclass.get_root_context().py__name__() == 'enum':
-                print('cont', cls)
                 filter_ = ParserTreeFilter(cls.evaluator, context=cls)
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
@@ -638,7 +637,7 @@ class EnumInstance(LazyContextWrapper):
 
     def get_filters(self, search_global=False, position=None, origin_scope=None):
         yield DictFilter(dict(
-            name=self._name.string_name,
+            name=compiled.create_simple_object(self.evaluator, self._name.string_name).name,
             value=self._name,
         ))
         for f in self._get_wrapped_context().get_filters():

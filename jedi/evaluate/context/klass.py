@@ -331,7 +331,8 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
 
         for lazy_base in self.py__bases__():
             for context in lazy_base.infer():
-                contexts = context.get_metaclasses()
-                if contexts:
-                    return contexts
+                if context.is_class():
+                    contexts = context.get_metaclasses()
+                    if contexts:
+                        return contexts
         return NO_CONTEXTS
