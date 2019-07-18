@@ -1,5 +1,7 @@
-import pytest
+from textwrap import dedent
 from operator import ge, lt
+
+import pytest
 
 from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
 
@@ -60,3 +62,20 @@ def test_pow_signature(Script):
                        'pow(x: float, y: float, /) -> float',
                        'pow(x: int, y: int, z: int, /) -> Any',
                        'pow(x: int, y: int, /) -> Any'}
+
+
+@pytest.mark.parametrize('decorator', ['@dataclass', '@dataclass(eq=True)'])
+def test_dataclass_signature(Script, skip_pre_python37, decorator):
+    code = dedent('''
+        class InventoryItem:
+            name: str
+            foo = 3
+            unit_price: float
+            quantity_on_hand: int = 0
+
+        InventoryItem(''')
+
+    code = 'from dataclasses import dataclass\n' + decorator + code
+
+    sig, = Script(code).call_signatures()
+    assert [p.name for p in sig.params] == ['name', 'unit_price', 'quantity_on_hand']

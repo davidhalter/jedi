@@ -198,12 +198,7 @@ class ClassMixin(object):
                 yield f
 
         if search_global:
-            yield ParserTreeFilter(
-                self.evaluator,
-                context=self,
-                until_position=until_position,
-                origin_scope=origin_scope
-            )
+            yield self.get_global_filter(until_position, origin_scope)
         else:
             for cls in self.py__mro__():
                 if isinstance(cls, compiled.CompiledObject):
@@ -226,6 +221,14 @@ class ClassMixin(object):
                     next(instance_filters)
                     next(instance_filters)
                     yield next(instance_filters)
+
+    def get_global_filter(self, until_position=None, origin_scope=None):
+        return ParserTreeFilter(
+            self.evaluator,
+            context=self,
+            until_position=until_position,
+            origin_scope=origin_scope
+        )
 
 
 class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
