@@ -537,7 +537,10 @@ class DataclassWrapper(ContextWrapper, ClassMixin):
         for cls in reversed(list(self.py__mro__())):
             if isinstance(cls, DataclassWrapper):
                 filter_ = cls.get_global_filter()
-                for name in filter_.values():
+                # .values ordering is not guaranteed, at least not in
+                # Python < 3.6, when dicts where not ordered, which is an
+                # implementation detail anyway.
+                for name in sorted(filter_.values(), key=lambda name: name.start_pos):
                     d = name.tree_name.get_definition()
                     annassign = d.children[1]
                     if d.type == 'expr_stmt' and annassign.type == 'annassign':
