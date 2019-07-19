@@ -11,7 +11,7 @@ compiled module that returns the types for C-builtins.
 """
 import parso
 
-from jedi._compatibility import force_unicode
+from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
 from jedi.evaluate.utils import safe_property
 from jedi.evaluate.helpers import get_str_or_none
@@ -27,10 +27,11 @@ from jedi.evaluate.context import ClassContext, ModuleContext, \
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
-from jedi.evaluate.names import ContextName
+from jedi.evaluate.names import ContextName, BaseTreeParamName
 from jedi.evaluate.syntax_tree import is_string
 from jedi.evaluate.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
+from jedi.evaluate.signature import AbstractSignature
 
 
 # Copied from Python 3.6's stdlib.
@@ -531,24 +532,54 @@ def _dataclass(obj, arguments):
 
 class DataclassWrapper(ContextWrapper):
     def get_signatures(self):
-        params = []
-        for cls in reversed(self._wrapped_context.py__mro__()):
+        param_names = []
+        for cls in reversed(list(self._wrapped_context.py__mro__())):
             if isinstance(cls, ClassContext) and not cls.is_stub():
                 filter_ = cls.get_global_filter()
-                print(filter_)
                 for name in filter_.values():
                     d = name.tree_name.get_definition()
-                    if d.type == 'expr_stmt' and d.children[1].type == 'annassign':
-                        params.append()
-        return [DataclassSignature(cls, params)]
+                    annassign = d.children[1]
+                    if d.type == 'expr_stmt' and annassign.type == 'annassign':
+                        if len(annassign.children) < 4:
+                            default = None
+                        else:
+                            default = annassign.children[3]
+                        param_names.append(DataclassParamName(
+                            parent_context=cls.parent_context,
+                            tree_name=name.tree_name,
+                            annotation_node=annassign.children[1],
+                            default_node=default,
+                        ))
+        return [DataclassSignature(cls, param_names)]
 
 
 class DataclassSignature(AbstractSignature):
-    def __init__(self, context, params):
+    def __init__(self, context, param_names):
         super(DataclassSignature, self).__init__(context)
-        self._params = params
+        self._param_names = param_names
 
     def get_param_names(self):
+        return self._param_names
+
+
+class DataclassParamName(BaseTreeParamName):
+    def __init__(self, parent_context, tree_name, annotation_node, default_node):
+        super(DataclassParamName, self).__init__(parent_context, tree_name)
+        self._annotation_node = annotation_node
+        self._default_node = default_node
+
+    def get_kind(self):
+        return Parameter.POSITIONAL_OR_KEYWORD
+    #TODO get_param?
+
+    def get_annotation_node(self):
+        return self._annotation_node
+
+    def get_default_node(self):
+        return self._default_node
+
+    def infer(self):
+        return NO_CONTEXTS  # TODO implement
 
 
 class ItemGetterCallable(ContextWrapper):
