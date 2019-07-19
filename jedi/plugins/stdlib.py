@@ -571,7 +571,6 @@ class DataclassParamName(BaseTreeParamName):
 
     def get_kind(self):
         return Parameter.POSITIONAL_OR_KEYWORD
-    #TODO get_param?
 
     def infer(self):
         if self.annotation_node is None:

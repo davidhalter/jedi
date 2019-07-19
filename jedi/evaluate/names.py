@@ -167,6 +167,12 @@ class ParamNameInterface(object):
     def to_string(self):
         raise NotImplementedError
 
+    def get_param(self):
+        # TODO document better where this is used and when. Currently it has
+        #      very limited use, but is still in use. It's currently not even
+        #      clear what values would be allowed.
+        return None
+
 
 class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
     annotation_node = None
