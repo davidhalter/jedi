@@ -1,5 +1,6 @@
 import os
 import re
+from functools import wraps
 
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
@@ -87,6 +88,7 @@ def _cache_stub_file_map(version_info):
 
 
 def import_module_decorator(func):
+    @wraps(func)
     def wrapper(evaluator, import_names, parent_module_context, sys_path, prefer_stubs):
         try:
             python_context_set = evaluator.module_cache.get(import_names)

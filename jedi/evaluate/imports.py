@@ -21,7 +21,7 @@ from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
                                  force_unicode, unicode)
 from jedi import debug
 from jedi import settings
-from jedi.file_io import KnownContentFileIO, FolderIO, FileIO
+from jedi.file_io import KnownContentFileIO, FileIO
 from jedi.parser_utils import get_cached_code_lines
 from jedi.evaluate import sys_path
 from jedi.evaluate import helpers
@@ -33,6 +33,7 @@ from jedi.evaluate.names import ImportName, SubModuleName
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.evaluate.gradual.typeshed import import_module_decorator
 from jedi.evaluate.context.module import iter_module_names
+from jedi.plugins import plugin_manager
 
 
 class ModuleCache(object):
@@ -371,6 +372,7 @@ class Importer(object):
         return names
 
 
+@plugin_manager.decorate()
 @import_module_decorator
 def import_module(evaluator, import_names, parent_module_context, sys_path):
     """

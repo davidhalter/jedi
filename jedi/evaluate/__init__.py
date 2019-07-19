@@ -62,8 +62,6 @@ I need to mention now that lazy evaluation is really good because it
 only *evaluates* what needs to be *evaluated*. All the statements and modules
 that are not used are just being ignored.
 """
-from functools import partial
-
 from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
@@ -84,14 +82,7 @@ from jedi.evaluate.context import ClassContext, FunctionContext, \
 from jedi.evaluate.context.iterable import CompForContext
 from jedi.evaluate.syntax_tree import eval_trailer, eval_expr_stmt, \
     eval_node, check_tuple_assignments
-
-
-def _execute(context, arguments):
-    debug.dbg('execute: %s %s', context, arguments)
-    with debug.increase_indent_cm():
-        context_set = context.py__call__(arguments=arguments)
-    debug.dbg('execute result: %s in %s', context_set, context)
-    return context_set
+from jedi.plugins import plugin_manager
 
 
 class Evaluator(object):
@@ -119,24 +110,21 @@ class Evaluator(object):
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
 
-        # Plugin API
-        from jedi.plugins import plugin_manager
-        plugin_callbacks = plugin_manager.get_callbacks(self)
-        self.execute = plugin_callbacks.decorate('execute', callback=_execute)
-        self._import_module = partial(
-            plugin_callbacks.decorate(
-                'import_module',
-                callback=imports.import_module
-            ),
-            self,
-        )
-
     def import_module(self, import_names, parent_module_context=None,
                       sys_path=None, prefer_stubs=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
-        return self._import_module(import_names, parent_module_context,
-                                   sys_path, prefer_stubs=prefer_stubs)
+        return imports.import_module(self, import_names, parent_module_context,
+                                     sys_path, prefer_stubs=prefer_stubs)
+
+    @staticmethod
+    @plugin_manager.decorate()
+    def execute(context, arguments):
+        debug.dbg('execute: %s %s', context, arguments)
+        with debug.increase_indent_cm():
+            context_set = context.py__call__(arguments=arguments)
+        debug.dbg('execute result: %s in %s', context_set, context)
+        return context_set
 
     @property
     @evaluator_function_cache()

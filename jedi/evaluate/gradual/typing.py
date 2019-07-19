@@ -209,6 +209,9 @@ class _TypingClassMixin(object):
             self.evaluator.builtins_module.py__getattribute__('object')
         )]
 
+    def get_metaclasses(self):
+        return []
+
 
 class TypingClassContextWithIndex(_TypingClassMixin, TypingContextWithIndex, ClassMixin):
     pass

@@ -167,14 +167,39 @@ class ParamNameInterface(object):
     def to_string(self):
         raise NotImplementedError
 
+    def get_param(self):
+        # TODO document better where this is used and when. Currently it has
+        #      very limited use, but is still in use. It's currently not even
+        #      clear what values would be allowed.
+        return None
 
-class ParamName(ParamNameInterface, AbstractTreeName):
-    def __init__(self, parent_context, tree_name):
-        self.parent_context = parent_context
-        self.tree_name = tree_name
 
+class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
+    annotation_node = None
+    default_node = None
+
+    def to_string(self):
+        output = self._kind_string() + self.string_name
+        annotation = self.annotation_node
+        default = self.default_node
+        if annotation is not None:
+            output += ': ' + annotation.get_code(include_prefix=False)
+        if default is not None:
+            output += '=' + default.get_code(include_prefix=False)
+        return output
+
+
+class ParamName(BaseTreeParamName):
     def _get_param_node(self):
         return search_ancestor(self.tree_name, 'param')
+
+    @property
+    def annotation_node(self):
+        return self._get_param_node().annotation
+
+    @property
+    def default_node(self):
+        return self._get_param_node().default
 
     @property
     def string_name(self):
@@ -212,15 +237,6 @@ class ParamName(ParamNameInterface, AbstractTreeName):
                     if p == tree_param:
                         param_appeared = True
         return Parameter.POSITIONAL_OR_KEYWORD
-
-    def to_string(self):
-        output = self._kind_string() + self.string_name
-        param_node = self._get_param_node()
-        if param_node.annotation is not None:
-            output += ': ' + param_node.annotation.get_code(include_prefix=False)
-        if param_node.default is not None:
-            output += '=' + param_node.default.get_code(include_prefix=False)
-        return output
 
     def infer(self):
         return self.get_param().infer()

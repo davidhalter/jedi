@@ -1,5 +1,7 @@
-import pytest
+from textwrap import dedent
 from operator import ge, lt
+
+import pytest
 
 from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
 
@@ -60,3 +62,40 @@ def test_pow_signature(Script):
                        'pow(x: float, y: float, /) -> float',
                        'pow(x: int, y: int, z: int, /) -> Any',
                        'pow(x: int, y: int, /) -> Any'}
+
+
+@pytest.mark.parametrize(
+    'start, start_params', [
+        ['@dataclass\nclass X:', []],
+        ['@dataclass(eq=True)\nclass X:', []],
+        [dedent('''
+         class Y():
+             y: int
+         @dataclass
+         class X(Y):'''), []],
+        [dedent('''
+         @dataclass
+         class Y():
+             y: int
+             z = 5
+         @dataclass
+         class X(Y):'''), ['y']],
+    ]
+)
+def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
+    code = dedent('''
+            name: str
+            foo = 3
+            price: float
+            quantity: int = 0.0
+
+        X(''')
+
+    code = 'from dataclasses import dataclass\n' + start + code
+
+    sig, = Script(code).call_signatures()
+    assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
+    quantity, = sig.params[-1].infer()
+    assert quantity.name == 'int'
+    price, = sig.params[-2].infer()
+    assert price.name == 'float'

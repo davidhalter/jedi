@@ -472,6 +472,6 @@ def test_relative_import_star(Script):
     from . import *
     furl.c
     """
-    script = jedi.Script(source,3,len("furl.c"), 'export.py')
+    script = jedi.Script(source, 3, len("furl.c"), 'export.py')
 
     assert script.completions()

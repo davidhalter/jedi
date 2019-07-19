@@ -11,9 +11,9 @@ compiled module that returns the types for C-builtins.
 """
 import parso
 
-from jedi._compatibility import force_unicode
-from jedi.plugins.base import BasePlugin
+from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
+from jedi.evaluate.utils import safe_property
 from jedi.evaluate.helpers import get_str_or_none
 from jedi.evaluate.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
@@ -24,11 +24,15 @@ from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper, LazyContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
+from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
+from jedi.evaluate.names import ContextName, BaseTreeParamName
 from jedi.evaluate.syntax_tree import is_string
-from jedi.evaluate.filters import AttributeOverwrite, publish_method
+from jedi.evaluate.filters import AttributeOverwrite, publish_method, \
+    ParserTreeFilter, DictFilter
+from jedi.evaluate.signature import AbstractSignature
 
 
 # Copied from Python 3.6's stdlib.
@@ -98,45 +102,44 @@ _NAMEDTUPLE_FIELD_TEMPLATE = '''\
 '''
 
 
-class StdlibPlugin(BasePlugin):
-    def execute(self, callback):
-        def wrapper(context, arguments):
+def execute(callback):
+    def wrapper(context, arguments):
+        try:
+            obj_name = context.name.string_name
+        except AttributeError:
+            pass
+        else:
+            if context.parent_context == context.evaluator.builtins_module:
+                module_name = 'builtins'
+            elif context.parent_context is not None and context.parent_context.is_module():
+                module_name = context.parent_context.py__name__()
+            else:
+                return callback(context, arguments=arguments)
+
+            if isinstance(context, BoundMethod):
+                if module_name == 'builtins':
+                    if context.py__name__() == '__get__':
+                        if context.class_context.py__name__() == 'property':
+                            return builtins_property(
+                                context,
+                                arguments=arguments
+                            )
+                    elif context.py__name__() in ('deleter', 'getter', 'setter'):
+                        if context.class_context.py__name__() == 'property':
+                            return ContextSet([context.instance])
+
+                return callback(context, arguments=arguments)
+
+            # for now we just support builtin functions.
             try:
-                obj_name = context.name.string_name
-            except AttributeError:
+                func = _implemented[module_name][obj_name]
+            except KeyError:
                 pass
             else:
-                if context.parent_context == self._evaluator.builtins_module:
-                    module_name = 'builtins'
-                elif context.parent_context is not None and context.parent_context.is_module():
-                    module_name = context.parent_context.py__name__()
-                else:
-                    return callback(context, arguments=arguments)
+                return func(context, arguments=arguments)
+        return callback(context, arguments=arguments)
 
-                if isinstance(context, BoundMethod):
-                    if module_name == 'builtins':
-                        if context.py__name__() == '__get__':
-                            if context.class_context.py__name__() == 'property':
-                                return builtins_property(
-                                    context,
-                                    arguments=arguments
-                                )
-                        elif context.py__name__() in ('deleter', 'getter', 'setter'):
-                            if context.class_context.py__name__() == 'property':
-                                return ContextSet([context.instance])
-
-                    return callback(context, arguments=arguments)
-
-                # for now we just support builtin functions.
-                try:
-                    func = _implemented[module_name][obj_name]
-                except KeyError:
-                    pass
-                else:
-                    return func(context, arguments=arguments)
-            return callback(context, arguments=arguments)
-
-        return wrapper
+    return wrapper
 
 
 def _follow_param(evaluator, arguments, index):
@@ -519,6 +522,66 @@ def _random_choice(sequences):
     )
 
 
+def _dataclass(obj, arguments):
+    for c in _follow_param(obj.evaluator, arguments, 0):
+        if c.is_class():
+            return ContextSet([DataclassWrapper(c)])
+        else:
+            return ContextSet([obj])
+    return NO_CONTEXTS
+
+
+class DataclassWrapper(ContextWrapper, ClassMixin):
+    def get_signatures(self):
+        param_names = []
+        for cls in reversed(list(self.py__mro__())):
+            if isinstance(cls, DataclassWrapper):
+                filter_ = cls.get_global_filter()
+                # .values ordering is not guaranteed, at least not in
+                # Python < 3.6, when dicts where not ordered, which is an
+                # implementation detail anyway.
+                for name in sorted(filter_.values(), key=lambda name: name.start_pos):
+                    d = name.tree_name.get_definition()
+                    annassign = d.children[1]
+                    if d.type == 'expr_stmt' and annassign.type == 'annassign':
+                        if len(annassign.children) < 4:
+                            default = None
+                        else:
+                            default = annassign.children[3]
+                        param_names.append(DataclassParamName(
+                            parent_context=cls.parent_context,
+                            tree_name=name.tree_name,
+                            annotation_node=annassign.children[1],
+                            default_node=default,
+                        ))
+        return [DataclassSignature(cls, param_names)]
+
+
+class DataclassSignature(AbstractSignature):
+    def __init__(self, context, param_names):
+        super(DataclassSignature, self).__init__(context)
+        self._param_names = param_names
+
+    def get_param_names(self):
+        return self._param_names
+
+
+class DataclassParamName(BaseTreeParamName):
+    def __init__(self, parent_context, tree_name, annotation_node, default_node):
+        super(DataclassParamName, self).__init__(parent_context, tree_name)
+        self.annotation_node = annotation_node
+        self.default_node = default_node
+
+    def get_kind(self):
+        return Parameter.POSITIONAL_OR_KEYWORD
+
+    def infer(self):
+        if self.annotation_node is None:
+            return NO_CONTEXTS
+        else:
+            return self.parent_context.eval_node(self.annotation_node)
+
+
 class ItemGetterCallable(ContextWrapper):
     def __init__(self, instance, args_context_set):
         super(ItemGetterCallable, self).__init__(instance)
@@ -601,6 +664,43 @@ _implemented = {
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
-        'dataclass': lambda obj, arguments: NO_CONTEXTS,
+        'dataclass': _dataclass
     },
 }
+
+
+def get_metaclass_filters(func):
+    def wrapper(cls, metaclasses):
+        for metaclass in metaclasses:
+            if metaclass.py__name__() == 'EnumMeta' \
+                    and metaclass.get_root_context().py__name__() == 'enum':
+                filter_ = ParserTreeFilter(cls.evaluator, context=cls)
+                return [DictFilter({
+                    name.string_name: EnumInstance(cls, name).name for name in filter_.values()
+                })]
+        return func(cls, metaclasses)
+    return wrapper
+
+
+class EnumInstance(LazyContextWrapper):
+    def __init__(self, cls, name):
+        self.evaluator = cls.evaluator
+        self._cls = cls  # Corresponds to super().__self__
+        self._name = name
+        self.tree_node = self._name.tree_name
+
+    @safe_property
+    def name(self):
+        return ContextName(self, self._name.tree_name)
+
+    def _get_wrapped_context(self):
+        obj, = self._cls.execute_evaluated()
+        return obj
+
+    def get_filters(self, search_global=False, position=None, origin_scope=None):
+        yield DictFilter(dict(
+            name=compiled.create_simple_object(self.evaluator, self._name.string_name).name,
+            value=self._name,
+        ))
+        for f in self._get_wrapped_context().get_filters():
+            yield f

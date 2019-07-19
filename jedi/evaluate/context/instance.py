@@ -3,6 +3,7 @@ from abc import abstractproperty
 from jedi import debug
 from jedi import settings
 from jedi.evaluate import compiled
+from jedi.evaluate.compiled.context import CompiledObjectFilter
 from jedi.evaluate.helpers import contexts_from_qualified_names
 from jedi.evaluate.filters import AbstractFilter
 from jedi.evaluate.names import ContextName, TreeNameDefinition
@@ -136,11 +137,19 @@ class AbstractInstanceContext(Context):
                     # compiled objects to search for self variables.
                     yield SelfAttributeFilter(self.evaluator, self, cls, origin_scope)
 
-        for cls in class_context.py__mro__():
-            if isinstance(cls, compiled.CompiledObject):
-                yield CompiledInstanceClassFilter(self.evaluator, self, cls)
+        class_filters = class_context.get_filters(
+            search_global=False,
+            origin_scope=origin_scope,
+            is_instance=True,
+        )
+        for f in class_filters:
+            if isinstance(f, ClassFilter):
+                yield InstanceClassFilter(self.evaluator, self, f)
+            elif isinstance(f, CompiledObjectFilter):
+                yield CompiledInstanceClassFilter(self.evaluator, self, f)
             else:
-                yield InstanceClassFilter(self.evaluator, self, cls, origin_scope)
+                # Propably from the metaclass.
+                yield f
 
     def py__getitem__(self, index_context_set, contextualized_node):
         names = self.get_function_slot_names(u'__getitem__')
@@ -328,7 +337,6 @@ class CompiledInstanceName(compiled.CompiledName):
             name.string_name
         )
         self._instance = instance
-        self._class = klass
         self._class_member_name = name
 
     @iterator_to_context_set
@@ -343,11 +351,10 @@ class CompiledInstanceName(compiled.CompiledName):
 class CompiledInstanceClassFilter(AbstractFilter):
     name_class = CompiledInstanceName
 
-    def __init__(self, evaluator, instance, klass):
+    def __init__(self, evaluator, instance, f):
         self._evaluator = evaluator
         self._instance = instance
-        self._class = klass
-        self._class_filter = next(klass.get_filters(is_instance=True))
+        self._class_filter = f
 
     def get(self, name):
         return self._convert(self._class_filter.get(name))
@@ -356,8 +363,9 @@ class CompiledInstanceClassFilter(AbstractFilter):
         return self._convert(self._class_filter.values())
 
     def _convert(self, names):
+        klass = self._class_filter.compiled_object
         return [
-            CompiledInstanceName(self._evaluator, self._instance, self._class, n)
+            CompiledInstanceName(self._evaluator, self._instance, klass, n)
             for n in names
         ]
 
@@ -454,15 +462,9 @@ class InstanceClassFilter(AbstractFilter):
     resulting names in LazyINstanceClassName. The idea is that the class name
     filtering can be very flexible and always be reflected in instances.
     """
-    def __init__(self, evaluator, context, class_context, origin_scope):
-        self._instance = context
-        self._class_context = class_context
-        self._class_filter = next(class_context.get_filters(
-            search_global=False,
-            origin_scope=origin_scope,
-            is_instance=True,
-        ))
-        assert isinstance(self._class_filter, ClassFilter), self._class_filter
+    def __init__(self, evaluator, instance, class_filter):
+        self._instance = instance
+        self._class_filter = class_filter
 
     def get(self, name):
         return self._convert(self._class_filter.get(name, from_instance=True))
@@ -471,10 +473,10 @@ class InstanceClassFilter(AbstractFilter):
         return self._convert(self._class_filter.values(from_instance=True))
 
     def _convert(self, names):
-        return [LazyInstanceClassName(self._instance, self._class_context, n) for n in names]
+        return [LazyInstanceClassName(self._instance, self._class_filter.context, n) for n in names]
 
     def __repr__(self):
-        return '<%s for %s>' % (self.__class__.__name__, self._class_context)
+        return '<%s for %s>' % (self.__class__.__name__, self._class_filter.context)
 
 
 class SelfAttributeFilter(ClassFilter):
