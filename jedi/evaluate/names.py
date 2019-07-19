@@ -169,16 +169,13 @@ class ParamNameInterface(object):
 
 
 class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
-    def get_default_node(self):
-        return None
-
-    def get_annotation_node(self):
-        return None
+    annotation_node = None
+    default_node = None
 
     def to_string(self):
         output = self._kind_string() + self.string_name
-        annotation = self.get_annotation_node()
-        default = self.get_default_node()
+        annotation = self.annotation_node
+        default = self.default_node
         if annotation is not None:
             output += ': ' + annotation.get_code(include_prefix=False)
         if default is not None:
@@ -190,10 +187,12 @@ class ParamName(BaseTreeParamName):
     def _get_param_node(self):
         return search_ancestor(self.tree_name, 'param')
 
-    def get_annotation_node(self):
+    @property
+    def annotation_node(self):
         return self._get_param_node().annotation
 
-    def get_default_node(self):
+    @property
+    def default_node(self):
         return self._get_param_node().default
 
     @property

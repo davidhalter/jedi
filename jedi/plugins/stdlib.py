@@ -566,24 +566,18 @@ class DataclassSignature(AbstractSignature):
 class DataclassParamName(BaseTreeParamName):
     def __init__(self, parent_context, tree_name, annotation_node, default_node):
         super(DataclassParamName, self).__init__(parent_context, tree_name)
-        self._annotation_node = annotation_node
-        self._default_node = default_node
+        self.annotation_node = annotation_node
+        self.default_node = default_node
 
     def get_kind(self):
         return Parameter.POSITIONAL_OR_KEYWORD
     #TODO get_param?
 
-    def get_annotation_node(self):
-        return self._annotation_node
-
-    def get_default_node(self):
-        return self._default_node
-
     def infer(self):
-        if self._annotation_node is None:
-            return NO_CONTEXTS  # TODO implement
+        if self.annotation_node is None:
+            return NO_CONTEXTS
         else:
-            return self.parent_context.eval_node(self._annotation_node)
+            return self.parent_context.eval_node(self.annotation_node)
 
 
 class ItemGetterCallable(ContextWrapper):
