@@ -440,5 +440,10 @@ def test__wrapped__():
     # Apparently the function starts on the line where the decorator starts.
     assert c.line == syslogs_to_df.__wrapped__.__code__.co_firstlineno + 1
 
-def test_infer_from_stub():
-    assert True
+def test_core_module_completes():
+    import sys
+    import importlib
+    for module_name in sys.builtin_module_names:
+        module = importlib.import_module(module_name)
+        assert jedi.Interpreter(module_name + '.\n', [locals()]).completions()
+
