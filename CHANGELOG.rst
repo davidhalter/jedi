@@ -6,7 +6,7 @@ Changelog
 0.14.2 (XXXX-XX-XX)
 +++++++++++++++++++
 
-- Better support for enum completions
+- Better support for enums/dataclasses
 
 
 0.14.1 (2019-07-13)

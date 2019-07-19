@@ -64,18 +64,34 @@ def test_pow_signature(Script):
                        'pow(x: int, y: int, /) -> Any'}
 
 
-@pytest.mark.parametrize('decorator', ['@dataclass', '@dataclass(eq=True)'])
-def test_dataclass_signature(Script, skip_pre_python37, decorator):
+@pytest.mark.parametrize(
+    'start, start_params', [
+        ['@dataclass\nclass X:', []],
+        ['@dataclass(eq=True)\nclass X:', []],
+        [dedent('''
+         class Y():
+             y: int
+         @dataclass
+         class X(Y):'''), []],
+        [dedent('''
+         @dataclass
+         class Y():
+             y: int
+             z = 5
+         @dataclass
+         class X(Y):'''), ['y']],
+    ]
+)
+def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     code = dedent('''
-        class InventoryItem:
             name: str
             foo = 3
             unit_price: float
             quantity_on_hand: int = 0
 
-        InventoryItem(''')
+        X(''')
 
-    code = 'from dataclasses import dataclass\n' + decorator + code
+    code = 'from dataclasses import dataclass\n' + start + code
 
     sig, = Script(code).call_signatures()
-    assert [p.name for p in sig.params] == ['name', 'unit_price', 'quantity_on_hand']
+    assert [p.name for p in sig.params] == start_params + ['name', 'unit_price', 'quantity_on_hand']

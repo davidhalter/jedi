@@ -24,6 +24,7 @@ from jedi.evaluate.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper, LazyContextWrapper
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
+from jedi.evaluate.context.klass import ClassMixin
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
@@ -530,11 +531,11 @@ def _dataclass(obj, arguments):
     return NO_CONTEXTS
 
 
-class DataclassWrapper(ContextWrapper):
+class DataclassWrapper(ContextWrapper, ClassMixin):
     def get_signatures(self):
         param_names = []
-        for cls in reversed(list(self._wrapped_context.py__mro__())):
-            if isinstance(cls, ClassContext) and not cls.is_stub():
+        for cls in reversed(list(self.py__mro__())):
+            if isinstance(cls, DataclassWrapper):
                 filter_ = cls.get_global_filter()
                 for name in filter_.values():
                     d = name.tree_name.get_definition()
