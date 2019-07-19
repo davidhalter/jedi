@@ -86,12 +86,16 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     code = dedent('''
             name: str
             foo = 3
-            unit_price: float
-            quantity_on_hand: int = 0
+            price: float
+            quantity: int = 0.0
 
         X(''')
 
     code = 'from dataclasses import dataclass\n' + start + code
 
     sig, = Script(code).call_signatures()
-    assert [p.name for p in sig.params] == start_params + ['name', 'unit_price', 'quantity_on_hand']
+    assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
+    quantity, = sig.params[-1].infer()
+    assert quantity.name == 'int'
+    price, = sig.params[-2].infer()
+    assert price.name == 'float'

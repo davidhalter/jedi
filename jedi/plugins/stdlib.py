@@ -580,7 +580,10 @@ class DataclassParamName(BaseTreeParamName):
         return self._default_node
 
     def infer(self):
-        return NO_CONTEXTS  # TODO implement
+        if self._annotation_node is None:
+            return NO_CONTEXTS  # TODO implement
+        else:
+            return self.parent_context.eval_node(self._annotation_node)
 
 
 class ItemGetterCallable(ContextWrapper):
