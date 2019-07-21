@@ -6,6 +6,7 @@ from textwrap import dedent
 import jedi
 import pytest
 from ..helpers import unittest
+import sys
 
 try:
     import numpydoc  # NOQA
@@ -20,6 +21,11 @@ except ImportError:
     numpy_unavailable = True
 else:
     numpy_unavailable = False
+
+if sys.version_info.major == 2:
+    # In Python 2 there's an issue with tox/docutils that makes the tests fail,
+    # Python 2 is soon end-of-life, so just don't support numpydoc for it anymore.
+    numpydoc_unavailable = True
 
 
 def test_function_doc(Script):
