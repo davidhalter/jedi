@@ -385,3 +385,26 @@ def test_numpy_comp_returns():
     )
     names = [c.name for c in jedi.Script(s).completions()]
     assert 'diagonal' in names
+
+
+def test_decorator(Script):
+    code = dedent('''
+        def decorator(name=None):
+            def _decorate(func):
+                @wraps(func)
+                def wrapper(*args, **kwargs):
+                    """wrapper docstring"""
+                    return func(*args, **kwargs)
+                return wrapper
+            return _decorate
+
+
+        @decorator('testing')
+        def check_user(f):
+            """Nice docstring"""
+            pass
+
+        check_user''')
+
+    d, = Script(code).goto_definitions()
+    assert d.docstring(raw=True) == 'Nice docstring'

@@ -26,6 +26,7 @@ from jedi.evaluate.compiled.access import COMPARISON_OPERATORS
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.gradual.stub_context import VersionInfo
 from jedi.evaluate.gradual import annotation
+from jedi.evaluate.context.decorator import Decoratee
 
 
 def _limit_context_infers(func):
@@ -666,6 +667,8 @@ def _apply_decorators(context, node):
                 return initial
 
         debug.dbg('decorator end %s', values, color="MAGENTA")
+    if values != initial:
+        return ContextSet([Decoratee(c, decoratee_context) for c in values])
     return values
 
 
