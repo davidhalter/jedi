@@ -14,7 +14,9 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.evaluate.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
+from jedi.evaluate.gradual.typing import GenericClass
 from jedi.evaluate.helpers import is_string
+from jedi.evaluate.compiled import builtin_from_name
 from jedi import debug
 from jedi import parser_utils
 
@@ -106,6 +108,25 @@ def _split_comment_param_declaration(decl_text):
 
 @evaluator_method_cache()
 def infer_param(execution_context, param):
+    contexts = _infer_param(execution_context, param)
+    evaluator = execution_context.evaluator
+    if param.star_count == 1:
+        tuple_ = builtin_from_name(evaluator, 'tuple')
+        return ContextSet([GenericClass(
+            tuple_,
+            generics=(contexts,),
+        ) for c in contexts])
+    elif param.star_count == 2:
+        dct = builtin_from_name(evaluator, 'dict')
+        return ContextSet([GenericClass(
+            dct,
+            generics=(ContextSet([builtin_from_name(evaluator, 'str')]), contexts),
+        ) for c in contexts])
+        pass
+    return contexts
+
+
+def _infer_param(execution_context, param):
     """
     Infers the type of a function parameter, using type annotations.
     """

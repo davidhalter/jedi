@@ -165,3 +165,19 @@ def keyword_only(a: str, *, b: str):
     a.startswi
     #? ['startswith']
     b.startswi
+
+
+def argskwargs(*args: int, **kwargs: float):
+    """
+    This might be a bit confusing, but is part of the standard.
+    args is changed to Tuple[int] in this case and kwargs to Dict[str, float],
+    which makes sense if you think about it a bit.
+    """
+    #? tuple()
+    args
+    #? int()
+    args[0]
+    #? str()
+    next(iter(kwargs.keys()))
+    #? float()
+    kwargs['']
