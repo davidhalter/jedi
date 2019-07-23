@@ -3,7 +3,6 @@ from jedi.evaluate.base_context import ContextSet, \
     NO_CONTEXTS
 from jedi.evaluate.utils import to_list
 from jedi.evaluate.gradual.stub_context import StubModuleContext
-from jedi import evaluate
 
 
 def _stub_to_python_context_set(stub_context, ignore_compiled=False):
@@ -41,6 +40,7 @@ def _stub_to_python_context_set(stub_context, ignore_compiled=False):
 
 
 def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
+    from jedi import evaluate
     assert isinstance(stub_module, StubModuleContext) or \
            isinstance(stub_module, evaluate.compiled.mixed.MixedObject) ,\
            stub_module
