@@ -40,7 +40,9 @@ def _stub_to_python_context_set(stub_context, ignore_compiled=False):
 
 
 def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
-    assert isinstance(stub_module, StubModuleContext), stub_module
+    from jedi.evaluate.compiled.mixed import MixedObject
+    assert isinstance(stub_module, StubModuleContext) or \
+           isinstance(stub_module, MixedObject), stub_module
     non_stubs = stub_module.non_stub_context_set
     if ignore_compiled:
         non_stubs = non_stubs.filter(lambda c: not c.is_compiled())
