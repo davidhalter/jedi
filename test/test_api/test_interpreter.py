@@ -8,7 +8,7 @@ import pytest
 import jedi
 from jedi._compatibility import is_py3, py_version
 from jedi.evaluate.compiled import mixed
-
+from importlib import import_module
 
 if py_version > 30:
     def exec_(source, global_map):
@@ -442,8 +442,6 @@ def test__wrapped__():
 
 @pytest.mark.parametrize('module_name', ['sys', 'time'])
 def test_core_module_completes(module_name):
-    import sys
-    import importlib
-    module = importlib.import_module(module_name)
+    module = import_module(module_name)
     assert jedi.Interpreter(module_name + '.\n', [locals()]).completions()
 
