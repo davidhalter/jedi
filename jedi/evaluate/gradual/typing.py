@@ -10,7 +10,7 @@ from jedi import debug
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.compiled import builtin_from_name
 from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS, Context, \
-    iterator_to_context_set, HelperContextMixin, ContextWrapper
+    iterator_to_context_set, ContextWrapper, LazyContextWrapper
 from jedi.evaluate.lazy_context import LazyKnownContexts
 from jedi.evaluate.context.iterable import SequenceLiteralContext
 from jedi.evaluate.arguments import repack_with_argument_clinic
@@ -244,9 +244,9 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
         yield ContextSet(resolve_forward_references(context_set))
 
 
-class TypeAlias(HelperContextMixin):
-    def __init__(self, evaluator, parent_context, origin_tree_name, actual):
-        self.evaluator = evaluator
+class TypeAlias(LazyContextWrapper):
+    def __init__(self, parent_context, origin_tree_name, actual):
+        self.evaluator = parent_context.evaluator
         self.parent_context = parent_context
         self._origin_tree_name = origin_tree_name
         self._actual = actual  # e.g. builtins.list
@@ -258,14 +258,10 @@ class TypeAlias(HelperContextMixin):
     def py__name__(self):
         return self.name.string_name
 
-    def __getattr__(self, name):
-        return getattr(self._get_type_alias_class(), name)
-
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._actual)
 
-    @evaluator_method_cache()
-    def _get_type_alias_class(self):
+    def _get_wrapped_context(self):
         module_name, class_name = self._actual.split('.')
         if self.evaluator.environment.version_info.major == 2 and module_name == 'builtins':
             module_name = '__builtin__'
