@@ -444,4 +444,3 @@ def test__wrapped__():
 def test_core_module_completes(module_name):
     module = import_module(module_name)
     assert jedi.Interpreter(module_name + '.\n', [locals()]).completions()
-
