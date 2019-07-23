@@ -381,6 +381,9 @@ class ClassMethodGet(AttributeOverwrite, ContextWrapper):
         self._class = klass
         self._function = function
 
+    def get_signatures(self):
+        return self._function.get_signatures()
+
     def get_object(self):
         return self._wrapped_context
 

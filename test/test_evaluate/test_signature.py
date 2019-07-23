@@ -36,6 +36,13 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
     assert [n.string_name for n in signature.get_param_names()] == names
 
 
+class_method_code = '''
+class X:
+    @classmethod
+    def x(cls, a, b):
+        pass
+'''
+
 @pytest.mark.parametrize(
     'code, expected', [
         ('def f(a, * args, x): pass\n f(', 'f(a, *args, x)'),
@@ -43,6 +50,9 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
         ('def f(*, x= 3,**kwargs): pass\n f(', 'f(*, x=3, **kwargs)'),
         ('def f(x,/,y,* ,z): pass\n f(', 'f(x, /, y, *, z)'),
         ('def f(a, /, *, x=3, **kwargs): pass\n f(', 'f(a, /, *, x=3, **kwargs)'),
+
+        (class_method_code + 'X.x(', 'x(cls, a, b)'),
+        (class_method_code + 'X().x(', 'x(cls, a, b)'),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):
