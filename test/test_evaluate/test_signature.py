@@ -36,10 +36,14 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
     assert [n.string_name for n in signature.get_param_names()] == names
 
 
-class_method_code = '''
+classmethod_code = '''
 class X:
     @classmethod
     def x(cls, a, b):
+        pass
+
+    @staticmethod
+    def static(a, b):
         pass
 '''
 
@@ -51,8 +55,10 @@ class X:
         ('def f(x,/,y,* ,z): pass\n f(', 'f(x, /, y, *, z)'),
         ('def f(a, /, *, x=3, **kwargs): pass\n f(', 'f(a, /, *, x=3, **kwargs)'),
 
-        (class_method_code + 'X.x(', 'x(cls, a, b)'),
-        (class_method_code + 'X().x(', 'x(cls, a, b)'),
+        (classmethod_code + 'X.x(', 'x(cls, a, b)'),
+        (classmethod_code + 'X().x(', 'x(cls, a, b)'),
+        (classmethod_code + 'X.static(', 'static(a, b)'),
+        (classmethod_code + 'X().static(', 'static(a, b)'),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):
