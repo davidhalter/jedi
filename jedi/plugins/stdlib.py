@@ -32,7 +32,7 @@ from jedi.evaluate.names import ContextName, BaseTreeParamName
 from jedi.evaluate.syntax_tree import is_string
 from jedi.evaluate.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
-from jedi.evaluate.signature import AbstractSignature
+from jedi.evaluate.signature import AbstractSignature, SignatureWrapper
 
 
 # Copied from Python 3.6's stdlib.
@@ -477,15 +477,47 @@ class PartialObject(object):
     def __getattr__(self, name):
         return getattr(self._actual_context, name)
 
-    def py__call__(self, arguments):
-        key, lazy_context = next(self._arguments.unpack(), (None, None))
+    def _get_function(self, unpacked_arguments):
+        key, lazy_context = next(unpacked_arguments, (None, None))
         if key is not None or lazy_context is None:
             debug.warning("Partial should have a proper function %s", self._arguments)
+            return None
+        return lazy_context.infer()
+
+    def get_signatures(self):
+        unpacked_arguments = self._arguments.unpack()
+        func = self._get_function(unpacked_arguments)
+        if func is None:
+            return []
+
+        arg_count = 0
+        keys = set()
+        for key, _ in unpacked_arguments:
+            if key is None:
+                arg_count += 1
+            else:
+                keys.add(key)
+        return [PartialSignature(s, arg_count, keys) for s in func.get_signatures()]
+
+    def py__call__(self, arguments):
+        func = self._get_function(self._arguments.unpack())
+        if func is None:
             return NO_CONTEXTS
 
-        return lazy_context.infer().execute(
+        return func.execute(
             MergedPartialArguments(self._arguments, arguments)
         )
+
+
+class PartialSignature(SignatureWrapper):
+    def __init__(self, wrapped_signature, skipped_arg_count, skipped_arg_set):
+        super(PartialSignature, self).__init__(wrapped_signature)
+        self._skipped_arg_count = skipped_arg_count
+        self._skipped_arg_set = skipped_arg_set
+
+    def get_param_names(self):
+        names = self._wrapped_signature.get_param_names()[self._skipped_arg_count:]
+        return [n for n in names if n.string_name not in self._skipped_arg_set]
 
 
 class MergedPartialArguments(AbstractArguments):

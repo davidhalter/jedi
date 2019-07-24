@@ -47,6 +47,19 @@ class X:
         pass
 '''
 
+
+partial_code = '''
+import functools
+
+def func(a, b, c):
+    pass
+
+a = functools.partial(func)
+b = functools.partial(func, 1)
+c = functools.partial(func, 1, c=2)
+d = functools.partial()
+'''
+
 @pytest.mark.parametrize(
     'code, expected', [
         ('def f(a, * args, x): pass\n f(', 'f(a, *args, x)'),
@@ -59,6 +72,11 @@ class X:
         (classmethod_code + 'X().x(', 'x(cls, a, b)'),
         (classmethod_code + 'X.static(', 'static(a, b)'),
         (classmethod_code + 'X().static(', 'static(a, b)'),
+
+        (partial_code + 'a(', 'func(a, b, c)'),
+        (partial_code + 'b(', 'func(b, c)'),
+        (partial_code + 'c(', 'func(b)'),
+        (partial_code + 'd(', None),
     ]
 )
 def test_tree_signature(Script, environment, code, expected):
@@ -66,8 +84,11 @@ def test_tree_signature(Script, environment, code, expected):
     if environment.version_info < (3, 8):
         pytest.skip()
 
-    sig, = Script(code).call_signatures()
-    assert expected == sig._signature.to_string()
+    if expected is None:
+        assert not Script(code).call_signatures()
+    else:
+        sig, = Script(code).call_signatures()
+        assert expected == sig._signature.to_string()
 
 
 def test_pow_signature(Script):

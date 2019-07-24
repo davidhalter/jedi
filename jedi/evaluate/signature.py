@@ -1,19 +1,7 @@
 from jedi._compatibility import Parameter
 
 
-class AbstractSignature(object):
-    def __init__(self, context, is_bound=False):
-        self.context = context
-        self.is_bound = is_bound
-
-    @property
-    def name(self):
-        return self.context.name
-
-    @property
-    def annotation_string(self):
-        return ''
-
+class _SignatureMixin(object):
     def to_string(self):
         def param_strings():
             is_positional = False
@@ -42,14 +30,28 @@ class AbstractSignature(object):
             s += ' -> ' + annotation
         return s
 
-    def bind(self, context):
-        raise NotImplementedError
-
     def get_param_names(self):
         param_names = self._function_context.get_param_names()
         if self.is_bound:
             return param_names[1:]
         return param_names
+
+
+class AbstractSignature(_SignatureMixin):
+    def __init__(self, context, is_bound=False):
+        self.context = context
+        self.is_bound = is_bound
+
+    @property
+    def name(self):
+        return self.context.name
+
+    @property
+    def annotation_string(self):
+        return ''
+
+    def bind(self, context):
+        raise NotImplementedError
 
 
 class TreeSignature(AbstractSignature):
@@ -92,3 +94,11 @@ class BuiltinSignature(AbstractSignature):
     def bind(self, context):
         assert not self.is_bound
         return BuiltinSignature(context, self._return_string, is_bound=True)
+
+
+class SignatureWrapper(_SignatureMixin):
+    def __init__(self, wrapped_signature):
+        self._wrapped_signature = wrapped_signature
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped_signature, name)
