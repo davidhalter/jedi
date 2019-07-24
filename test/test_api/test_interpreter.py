@@ -229,7 +229,7 @@ def test_property_error_newstyle():
     assert lst == []
 
 
-def test_param_completion():
+def test_param_completion(skip_python2):
     def foo(bar):
         pass
 
@@ -275,7 +275,7 @@ def test_completion_param_annotations():
     assert d.name == 'bytes'
 
 
-def test_keyword_argument():
+def test_keyword_argument(skip_python2):
     def f(some_keyword_argument):
         pass
 
@@ -440,7 +440,33 @@ def test__wrapped__():
     # Apparently the function starts on the line where the decorator starts.
     assert c.line == syslogs_to_df.__wrapped__.__code__.co_firstlineno + 1
 
+
 @pytest.mark.parametrize('module_name', ['sys', 'time'])
 def test_core_module_completes(module_name):
     module = import_module(module_name)
     assert jedi.Interpreter(module_name + '.\n', [locals()]).completions()
+
+
+@pytest.mark.parametrize(
+    'code, expected, index', [
+        ('a(', ['a', 'b', 'c'], 0),
+        ('b(', ['b', 'c'], 0),
+        # Might or might not be correct, because c is given as a keyword
+        # argument as well, but that is just what inspect.signature returns.
+        ('c(', ['b', 'c'], 0),
+    ]
+)
+def test_partial_signatures(code, expected, index, skip_python2):
+    import functools
+
+    def func(a, b, c):
+        pass
+
+    a = functools.partial(func)
+    b = functools.partial(func, 1)
+    c = functools.partial(func, 1, c=2)
+
+    sig, = jedi.Interpreter(code, [locals()]).call_signatures()
+    assert sig.name == 'partial'
+    assert [p.name for p in sig.params] == expected
+    assert index == sig.index

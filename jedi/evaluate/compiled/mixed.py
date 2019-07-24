@@ -18,7 +18,7 @@ from jedi.evaluate.context import ModuleContext
 from jedi.evaluate.cache import evaluator_function_cache
 from jedi.evaluate.compiled.getattr_static import getattr_static
 from jedi.evaluate.compiled.access import compiled_objects_cache, \
-    ALLOWED_GETITEM_TYPES
+    ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.evaluate.compiled.context import create_cached_compiled_object
 from jedi.evaluate.gradual.conversion import to_stub
 
@@ -49,6 +49,11 @@ class MixedObject(ContextWrapper):
 
     def get_filters(self, *args, **kwargs):
         yield MixedObjectFilter(self.evaluator, self)
+
+    def get_signatures(self):
+        # Prefer `inspect.signature` over somehow analyzing Python code. It
+        # should be very precise, especially for stuff like `partial`.
+        return self.compiled_object.get_signatures()
 
     def py__call__(self, arguments):
         return (to_stub(self._wrapped_context) or self._wrapped_context).py__call__(arguments)
@@ -151,6 +156,7 @@ def _get_object_to_check(python_object):
 
 
 def _find_syntax_node_name(evaluator, python_object):
+    original_object = python_object
     try:
         python_object = _get_object_to_check(python_object)
         path = inspect.getsourcefile(python_object)
@@ -214,7 +220,13 @@ def _find_syntax_node_name(evaluator, python_object):
     # completions at some points but will lead to mostly correct type
     # inference, because people tend to define a public name in a module only
     # once.
-    return module_node, names[-1].parent, file_io, code_lines
+    tree_node = names[-1].parent
+    if tree_node.type == 'funcdef' and get_api_type(original_object) == 'instance':
+        # If an instance is given and we're landing on a function (e.g.
+        # partial in 3.5), something is completely wrong and we should not
+        # return that.
+        return None
+    return module_node, tree_node, file_io, code_lines
 
 
 @compiled_objects_cache('mixed_cache')

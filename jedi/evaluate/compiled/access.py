@@ -175,6 +175,18 @@ def _force_unicode_decorator(func):
     return lambda *args, **kwargs: force_unicode(func(*args, **kwargs))
 
 
+def get_api_type(obj):
+    if inspect.isclass(obj):
+        return u'class'
+    elif inspect.ismodule(obj):
+        return u'module'
+    elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
+            or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
+        return u'function'
+    # Everything else...
+    return u'instance'
+
+
 class DirectObjectAccess(object):
     def __init__(self, evaluator, obj):
         self._evaluator = evaluator
@@ -352,16 +364,7 @@ class DirectObjectAccess(object):
         raise ValueError("Object is type %s and not simple" % type(self._obj))
 
     def get_api_type(self):
-        obj = self._obj
-        if self.is_class():
-            return u'class'
-        elif inspect.ismodule(obj):
-            return u'module'
-        elif inspect.isbuiltin(obj) or inspect.ismethod(obj) \
-                or inspect.ismethoddescriptor(obj) or inspect.isfunction(obj):
-            return u'function'
-        # Everything else...
-        return u'instance'
+        return get_api_type(self._obj)
 
     def get_access_path_tuples(self):
         accesses = [create_access(self._evaluator, o) for o in self._get_objects_path()]
