@@ -140,15 +140,8 @@ Most of the features in PEP-0484 are supported including the typing module
 (for Python < 3.5 you have to do ``pip install typing`` to use these),
 and forward references.
 
-Things that are missing (and this is not an exhaustive list; some of these
-are planned, others might be hard to implement and provide little worth):
+You can also use stub files.
 
-- annotating functions with comments: https://www.python.org/dev/peps/pep-0484/#suggested-syntax-for-python-2-7-and-straddling-code
-- understanding ``typing.cast()``
-- stub files: https://www.python.org/dev/peps/pep-0484/#stub-files
-- ``typing.Callable``
-- ``typing.TypeVar``
-- User defined generic types: https://www.python.org/dev/peps/pep-0484/#user-defined-generic-types
 
 **Sphinx style**
 
