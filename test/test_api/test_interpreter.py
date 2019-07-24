@@ -229,7 +229,8 @@ def test_property_error_newstyle():
     assert lst == []
 
 
-def test_param_completion(skip_python2):
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+def test_param_completion():
     def foo(bar):
         pass
 
@@ -275,7 +276,8 @@ def test_completion_param_annotations():
     assert d.name == 'bytes'
 
 
-def test_keyword_argument(skip_python2):
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+def test_keyword_argument():
     def f(some_keyword_argument):
         pass
 
@@ -447,6 +449,7 @@ def test_core_module_completes(module_name):
     assert jedi.Interpreter(module_name + '.\n', [locals()]).completions()
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'code, expected, index', [
         ('a(', ['a', 'b', 'c'], 0),
@@ -456,7 +459,7 @@ def test_core_module_completes(module_name):
         ('c(', ['b', 'c'], 0),
     ]
 )
-def test_partial_signatures(code, expected, index, skip_python2):
+def test_partial_signatures(code, expected, index):
     import functools
 
     def func(a, b, c):
