@@ -17,7 +17,6 @@ It works as follows:
 - execute these calls and check the input.
 """
 
-from parso.python import tree
 from jedi import settings
 from jedi import debug
 from jedi.evaluate.cache import evaluator_function_cache
