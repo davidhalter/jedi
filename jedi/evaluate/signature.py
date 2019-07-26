@@ -102,10 +102,9 @@ class TreeSignature(AbstractSignature):
         for param_name in kwarg_params:
             for param_names in _iter_nodes_for_param(param_name, star_count=2):
                 for p in param_names:
-                    if p.string_name not in used_names:
-                        used_names.add(param_name.string_name)
+                    if p.string_name not in used_names or p.get_kind() == Parameter.VAR_KEYWORD:
+                        used_names.add(p.string_name)
                         yield p
-                        print(p)
 
 
 def _iter_nodes_for_param(param_name, star_count):
@@ -148,10 +147,10 @@ def _iter_nodes_for_param(param_name, star_count):
                             trailer=trailer,
                         )
                         for c in contexts:
-                            yield _process_params(
+                            yield list(_process_params(
                                 _remove_given_params(args, c.get_param_names()),
                                 star_count,
-                            )
+                            ))
                     else:
                         assert False
 
@@ -174,13 +173,32 @@ def _remove_given_params(arguments, param_names):
         yield p
 
 
-def _process_params(param_names, star_count):
+def _process_params(param_names, star_count=3):  # default means both * and **
+    used_names = set()
+    param_names = list(param_names)
     for p in param_names:
-        # TODO recurse on *args/**kwargs
         if star_count == 1 and p.maybe_positional_argument():
-            yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)
+            if p.get_kind() == Parameter.VAR_POSITIONAL:
+                yield p
+            else:
+                yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)
         elif star_count == 2 and p.maybe_keyword_argument():
-            yield ParamNameFixedKind(p, Parameter.KEYWORD_ONLY)
+            if p.get_kind() == Parameter.VAR_KEYWORD:
+                yield p
+                continue
+                itered = list(_iter_nodes_for_param(p, star_count=2))
+                if not itered:
+                    # We were not able to resolve kwargs.
+                    yield p
+                for param_names in itered:
+                    for p in param_names:
+                        if p.string_name not in used_names:
+                            used_names.add(p.string_name)
+                            yield p
+            else:
+                yield ParamNameFixedKind(p, Parameter.KEYWORD_ONLY)
+        elif star_count == 3:
+            yield p
 
 
 class ParamNameFixedKind(ParamNameWrapper):

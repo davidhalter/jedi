@@ -100,10 +100,10 @@ def test_tree_signature(Script, environment, code, expected):
         ('combined_redirect(simple3, simple)', 'a, x: int, /, *, a, b, c'),
 
         ('combined_redirect(simple, kw)', 'a, b, /, *, a, b, c, **kwargs'),
-        ('combined_redirect(kw, simple)', 'a, b, /, *, a, b, c, **kwargs'),
+        ('combined_redirect(kw, simple)', 'a, b, /, *, a, b, c'),
 
         ('combined_lot_of_args(kw, simple4)', '*, b'),
-        ('combined_lot_of_args(simple4, kw)', '*, b, c'),
+        ('combined_lot_of_args(simple4, kw)', '*, b, c, **kwargs'),
     ]
 )
 def test_nested_signatures(Script, environment, combination, expected):
