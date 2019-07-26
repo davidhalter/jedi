@@ -100,7 +100,11 @@ class TreeSignature(AbstractSignature):
                 yield param_name
 
         for param_name in kwarg_params:
-            for param_names in _iter_nodes_for_param(param_name, star_count=2):
+            itered = list(_iter_nodes_for_param(param_name, star_count=2))
+            if not itered:
+                yield param_name
+
+            for param_names in itered:
                 for p in param_names:
                     if p.string_name not in used_names or p.get_kind() == Parameter.VAR_KEYWORD:
                         used_names.add(p.string_name)
