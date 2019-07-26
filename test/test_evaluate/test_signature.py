@@ -60,6 +60,7 @@ c = functools.partial(func, 1, c=2)
 d = functools.partial()
 '''
 
+
 @pytest.mark.parametrize(
     'code, expected', [
         ('def f(a, * args, x): pass\n f(', 'f(a, *args, x)'),
@@ -89,6 +90,38 @@ def test_tree_signature(Script, environment, code, expected):
     else:
         sig, = Script(code).call_signatures()
         assert expected == sig._signature.to_string()
+
+
+@pytest.mark.parametrize(
+    'combination, expected', [
+        ('combined_redirect(simple, simple2)', 'a, b, /, *, x'),
+        ('combined_redirect(simple, simple3)', 'a, b, /, *, a, x: int'),
+        ('combined_redirect(simple2, simple)', 'x, /, *, a, b, c'),
+        ('combined_redirect(simple3, simple)', 'a, x: int, /, *, a, b, c'),
+    ]
+)
+def test_nested_signatures(Script, environment, combination, expected):
+    code = dedent('''
+        def simple(a, b, *, c): ...
+        def simple2(x): ...
+        def simple3(a, x: int): ...
+        def a(a, b, *args): ...
+        def kw(a, b, *, c, **kwargs): ...
+        def akw(a, b, *args, **kwargs): ...
+
+        def no_redirect(func):
+            return lambda *args, **kwargs: func(1)
+        def full_redirect(func):
+            return lambda *args, **kwargs: func(1, *args, **kwargs)
+        def full_redirect(func):
+            return lambda *args, **kwargs: func(, *args, **kwargs)
+        def combined_redirect(func1, func2):
+            return lambda *args, **kwargs: func1(*args) + func2(**kwargs)
+    ''')
+    code += 'z = ' + combination + '\nz('
+    sig, = Script(code).call_signatures()
+    computed = sig._signature.to_string()
+    assert '<lambda>(' + expected + ')' == computed
 
 
 def test_pow_signature(Script):

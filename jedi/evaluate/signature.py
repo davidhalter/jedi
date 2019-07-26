@@ -1,4 +1,6 @@
 from jedi._compatibility import Parameter
+from jedi.evaluate.utils import to_list
+from jedi.evaluate.names import ParamNameWrapper
 
 
 class _SignatureMixin(object):
@@ -76,6 +78,113 @@ class TreeSignature(AbstractSignature):
         if a is None:
             return ''
         return a.get_code(include_prefix=False)
+
+    @to_list
+    def get_param_names(self):
+        used_names = set()
+        kwarg_params = []
+        for param_name in super(TreeSignature, self).get_param_names():
+            kind = param_name.get_kind()
+            if kind == Parameter.VAR_POSITIONAL:
+                for param_names in _iter_nodes_for_param(param_name, star_count=1):
+                    for p in param_names:
+                        yield p
+                    break
+                else:
+                    yield param_name
+            elif kind == Parameter.VAR_KEYWORD:
+                kwarg_params.append(param_name)
+            else:
+                if param_name.maybe_keyword_argument():
+                    used_names.add(param_name.string_name)
+                yield param_name
+
+        for param_name in kwarg_params:
+            for param_names in _iter_nodes_for_param(param_name, star_count=2):
+                for p in param_names:
+                    if p.string_name not in used_names:
+                        used_names.add(param_name.string_name)
+                        yield p
+                        print(p)
+
+
+def _iter_nodes_for_param(param_name, star_count):
+    from jedi.evaluate.syntax_tree import eval_trailer
+    from jedi.evaluate.names import TreeNameDefinition
+    from parso.python.tree import search_ancestor
+    from jedi.evaluate.arguments import TreeArguments
+
+    execution_context = param_name.parent_context
+    function_node = execution_context.tree_node
+    module_node = function_node.get_root_node()
+    start = function_node.children[-1].start_pos
+    end = function_node.children[-1].end_pos
+    for name in module_node.get_used_names().get(param_name.string_name):
+        if start <= name.start_pos < end:
+            # Is used in the function.
+            argument = name.parent
+            if argument.type == 'argument' and argument.children[0] == '*' * star_count:
+                # No support for Python <= 3.4 here, but they are end-of-life
+                # anyway.
+                trailer = search_ancestor(argument, 'trailer')
+                if trailer is not None:
+                    atom_expr = trailer.parent
+                    context = execution_context.create_context(atom_expr)
+                    found = TreeNameDefinition(context, name).goto()
+                    if any(param_name.parent_context == p.parent_context
+                           and param_name.start_pos == p.start_pos
+                           for p in found):
+                        index = atom_expr.children[0] == 'await'
+                        # Eval atom first
+                        contexts = context.eval_node(atom_expr.children[index])
+                        for trailer2 in atom_expr.children[index + 1:]:
+                            if trailer == trailer2:
+                                break
+                            contexts = eval_trailer(context, contexts, trailer2)
+                        args = TreeArguments(
+                            evaluator=execution_context.evaluator,
+                            context=context,
+                            argument_node=trailer.children[1],
+                            trailer=trailer,
+                        )
+                        for c in contexts:
+                            yield _remove_given_params(args, c.get_param_names(), star_count)
+                    else:
+                        assert False
+
+
+def _remove_given_params(arguments, param_names, star_count):
+    count = 0
+    used_keys = set()
+    for key, _ in arguments.unpack():
+        if key is None:
+            count += 1
+        else:
+            used_keys.add(key)
+
+    for p in param_names:
+        kind = p.get_kind()
+        if count and kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY):
+            count -= 1
+            continue
+        if p.string_name in used_keys \
+                and kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY):
+            continue
+
+        # TODO recurse on *args/**kwargs
+        if star_count == 1 and p.maybe_positional_argument():
+            yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)
+        elif star_count == 2 and p.maybe_keyword_argument():
+            yield ParamNameFixedKind(p, Parameter.KEYWORD_ONLY)
+
+
+class ParamNameFixedKind(ParamNameWrapper):
+    def __init__(self, param_name, new_kind):
+        super(ParamNameFixedKind, self).__init__(param_name)
+        self._new_kind = new_kind
+
+    def get_kind(self):
+        return self._new_kind
 
 
 class BuiltinSignature(AbstractSignature):
