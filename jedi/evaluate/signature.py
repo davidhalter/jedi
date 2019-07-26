@@ -179,13 +179,16 @@ def _process_params(param_names, star_count=3):  # default means both * and **
     for p in param_names:
         if star_count == 1 and p.maybe_positional_argument():
             if p.get_kind() == Parameter.VAR_POSITIONAL:
-                yield p
+                for param_names in _iter_nodes_for_param(p, star_count=1):
+                    for p in param_names:
+                        yield p
+                    break
+                else:
+                    yield p
             else:
                 yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)
         elif star_count == 2 and p.maybe_keyword_argument():
             if p.get_kind() == Parameter.VAR_KEYWORD:
-                yield p
-                continue
                 itered = list(_iter_nodes_for_param(p, star_count=2))
                 if not itered:
                     # We were not able to resolve kwargs.
