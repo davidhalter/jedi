@@ -148,12 +148,15 @@ def _iter_nodes_for_param(param_name, star_count):
                             trailer=trailer,
                         )
                         for c in contexts:
-                            yield _remove_given_params(args, c.get_param_names(), star_count)
+                            yield _process_params(
+                                _remove_given_params(args, c.get_param_names()),
+                                star_count,
+                            )
                     else:
                         assert False
 
 
-def _remove_given_params(arguments, param_names, star_count):
+def _remove_given_params(arguments, param_names):
     count = 0
     used_keys = set()
     for key, _ in arguments.unpack():
@@ -163,14 +166,16 @@ def _remove_given_params(arguments, param_names, star_count):
             used_keys.add(key)
 
     for p in param_names:
-        kind = p.get_kind()
-        if count and kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.POSITIONAL_ONLY):
+        if count and p.maybe_positional_argument():
             count -= 1
             continue
-        if p.string_name in used_keys \
-                and kind in (Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY):
+        if p.string_name in used_keys and p.maybe_keyword_argument():
             continue
+        yield p
 
+
+def _process_params(param_names, star_count):
+    for p in param_names:
         # TODO recurse on *args/**kwargs
         if star_count == 1 and p.maybe_positional_argument():
             yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)

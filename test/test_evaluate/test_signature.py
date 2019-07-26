@@ -98,6 +98,12 @@ def test_tree_signature(Script, environment, code, expected):
         ('combined_redirect(simple, simple3)', 'a, b, /, *, a, x: int'),
         ('combined_redirect(simple2, simple)', 'x, /, *, a, b, c'),
         ('combined_redirect(simple3, simple)', 'a, x: int, /, *, a, b, c'),
+
+        ('combined_redirect(simple, kw)', 'a, b, /, *, a, b, c, **kwargs'),
+        ('combined_redirect(kw, simple)', 'a, b, /, *, a, b, c, **kwargs'),
+
+        ('combined_lot_of_args(kw, simple4)', '*, b'),
+        ('combined_lot_of_args(simple4, kw)', '*, b, c'),
     ]
 )
 def test_nested_signatures(Script, environment, combination, expected):
@@ -105,6 +111,7 @@ def test_nested_signatures(Script, environment, combination, expected):
         def simple(a, b, *, c): ...
         def simple2(x): ...
         def simple3(a, x: int): ...
+        def simple4(a, b, x: int): ...
         def a(a, b, *args): ...
         def kw(a, b, *, c, **kwargs): ...
         def akw(a, b, *args, **kwargs): ...
@@ -113,10 +120,10 @@ def test_nested_signatures(Script, environment, combination, expected):
             return lambda *args, **kwargs: func(1)
         def full_redirect(func):
             return lambda *args, **kwargs: func(1, *args, **kwargs)
-        def full_redirect(func):
-            return lambda *args, **kwargs: func(, *args, **kwargs)
         def combined_redirect(func1, func2):
             return lambda *args, **kwargs: func1(*args) + func2(**kwargs)
+        def combined_lot_of_args(func1, func2):
+            return lambda *args, **kwargs: func1(1, 2, 3, 4, *args) + func2(a=3, x=1, y=1, **kwargs)
     ''')
     code += 'z = ' + combination + '\nz('
     sig, = Script(code).call_signatures()
