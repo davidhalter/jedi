@@ -648,6 +648,9 @@ def _functools_wraps(funcs):
 
 
 class WrapsCallable(ContextWrapper):
+    # XXX this is not the correct wrapped context, it should be a weird
+    #     partials object, but it doesn't matter, because it's always used as a
+    #     decorator anyway.
     @repack_with_argument_clinic('func, /')
     def py__call__(self, funcs):
         return ContextSet({Wrapped(func, self._wrapped_context) for func in funcs})
