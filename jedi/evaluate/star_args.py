@@ -94,8 +94,8 @@ def _remove_given_params(arguments, param_names):
 
 def process_params(param_names, star_count=3):  # default means both * and **
     used_names = set()
-    arg_funcs = []
-    kwarg_funcs = []
+    arg_callables = []
+    kwarg_callables = []
 
     kw_only_names = []
     kwarg_names = []
@@ -104,13 +104,13 @@ def process_params(param_names, star_count=3):  # default means both * and **
         kind = p.get_kind()
         if kind == Parameter.VAR_POSITIONAL:
             if star_count & 1:
-                arg_funcs = list(_iter_nodes_for_param(p))
-                if not arg_funcs:
+                arg_callables = list(_iter_nodes_for_param(p))
+                if not arg_callables:
                     arg_names.append(p)
         elif p.get_kind() == Parameter.VAR_KEYWORD:
             if star_count & 2:
-                kwarg_funcs = list(_iter_nodes_for_param(p))
-                if not kwarg_funcs:
+                kwarg_callables = list(_iter_nodes_for_param(p))
+                if not kwarg_callables:
                     kwarg_names.append(p)
         elif kind == Parameter.KEYWORD_ONLY:
             if star_count & 2:
@@ -128,30 +128,31 @@ def process_params(param_names, star_count=3):  # default means both * and **
                 yield p
 
     longest_param_names = ()
-    for func_and_argument in arg_funcs:
+    for func_and_argument in arg_callables:
         func, arguments = func_and_argument
         new_star_count = star_count
-        if func_and_argument in kwarg_funcs:
-            kwarg_funcs.remove(func_and_argument)
+        if func_and_argument in kwarg_callables:
+            kwarg_callables.remove(func_and_argument)
         else:
             new_star_count = 1
 
-        args_for_this_func = []
-        for p in process_params(
-                list(_remove_given_params(
-                    arguments,
-                    func.get_param_names()
-                )), new_star_count):
-            if p.get_kind() == Parameter.VAR_KEYWORD:
-                kwarg_names.append(p)
-            elif p.get_kind() == Parameter.VAR_POSITIONAL:
-                arg_names.append(p)
-            elif p.get_kind() == Parameter.KEYWORD_ONLY:
-                kw_only_names.append(p)
-            else:
-                args_for_this_func.append(p)
-        if len(args_for_this_func) > len(longest_param_names):
-            longest_param_names = args_for_this_func
+        for signature in func.get_signatures():
+            args_for_this_func = []
+            for p in process_params(
+                    list(_remove_given_params(
+                        arguments,
+                        signature.get_param_names(resolve_stars=False)
+                    )), new_star_count):
+                if p.get_kind() == Parameter.VAR_KEYWORD:
+                    kwarg_names.append(p)
+                elif p.get_kind() == Parameter.VAR_POSITIONAL:
+                    arg_names.append(p)
+                elif p.get_kind() == Parameter.KEYWORD_ONLY:
+                    kw_only_names.append(p)
+                else:
+                    args_for_this_func.append(p)
+            if len(args_for_this_func) > len(longest_param_names):
+                longest_param_names = args_for_this_func
 
     for p in longest_param_names:
         if star_count == 1 and p.get_kind() != Parameter.VAR_POSITIONAL:
@@ -170,14 +171,15 @@ def process_params(param_names, star_count=3):  # default means both * and **
         yield p
         used_names.add(p.string_name)
 
-    for func, arguments in kwarg_funcs:
-        for p in process_params(
-                list(_remove_given_params(
-                    arguments,
-                    func.get_param_names()
-                )), star_count=2):
-            if p.get_kind() != Parameter.KEYWORD_ONLY or not kwarg_names:
-                yield p
+    for func, arguments in kwarg_callables:
+        for signature in func.get_signatures():
+            for p in process_params(
+                    list(_remove_given_params(
+                        arguments,
+                        signature.get_param_names(resolve_stars=False)
+                    )), star_count=2):
+                if p.get_kind() != Parameter.KEYWORD_ONLY or not kwarg_names:
+                    yield p
 
     if kwarg_names:
         yield kwarg_names[0]

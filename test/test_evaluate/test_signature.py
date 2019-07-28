@@ -94,8 +94,21 @@ def test_tree_signature(Script, environment, code, expected):
 
 @pytest.mark.parametrize(
     'combination, expected', [
+        # Functions
         ('full_redirect(simple)', 'b, *, c'),
+        ('full_redirect(simple4)', 'b, x: int'),
+        ('full_redirect(a)', 'b, *args'),
+        ('full_redirect(kw)', 'b, *, c, **kwargs'),
+        ('full_redirect(akw)', 'c, *args, **kwargs'),
 
+        # Non functions
+        ('full_redirect(lambda x, y: ...)', 'y'),
+        ('full_redirect(C)', 'z, *c'),
+        ('full_redirect(C())', 'y'),
+        ('full_redirect()', '*args, **kwargs'),
+        ('full_redirect(1)', '*args, **kwargs'),
+
+        # Merging
         ('two_redirects(simple, simple)', 'a, b, *, c'),
         ('two_redirects(simple2, simple2)', 'x'),
         ('two_redirects(akw, kw)', 'a, c, *args, **kwargs'),
@@ -145,6 +158,10 @@ def test_nested_signatures(Script, environment, combination, expected):
             return lambda *args, **kwargs: func1(*args) + func2(**kwargs)
         def combined_lot_of_args(func1, func2):
             return lambda *args, **kwargs: func1(1, 2, 3, 4, *args) + func2(a=3, x=1, y=1, **kwargs)
+
+        class C:
+            def __init__(self, a, z, *c): ...
+            def __call__(self, x, y): ...
     ''')
     code += 'z = ' + combination + '\nz('
     sig, = Script(code).call_signatures()

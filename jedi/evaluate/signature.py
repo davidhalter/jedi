@@ -30,7 +30,7 @@ class _SignatureMixin(object):
             s += ' -> ' + annotation
         return s
 
-    def get_param_names(self):
+    def get_param_names(self, resolve_stars=True):
         param_names = self._function_context.get_param_names()
         if self.is_bound:
             return param_names[1:]
@@ -77,9 +77,12 @@ class TreeSignature(AbstractSignature):
             return ''
         return a.get_code(include_prefix=False)
 
-    def get_param_names(self):
-        from jedi.evaluate.star_args import process_params
-        return process_params(super(TreeSignature, self).get_param_names())
+    def get_param_names(self, resolve_stars=True):
+        params = super(TreeSignature, self).get_param_names()
+        if resolve_stars:
+            from jedi.evaluate.star_args import process_params
+            params = process_params(params)
+        return params
 
 
 class BuiltinSignature(AbstractSignature):
