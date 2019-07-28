@@ -11,6 +11,7 @@ from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts, \
 from jedi.evaluate.names import ParamName, TreeNameDefinition
 from jedi.evaluate.base_context import NO_CONTEXTS, ContextSet, ContextualizedNode
 from jedi.evaluate.context import iterable
+from jedi.evaluate.cache import evaluator_as_method_param_cache
 from jedi.evaluate.param import get_executed_params_and_issues, ExecutedParam
 
 
@@ -207,6 +208,11 @@ class TreeArguments(AbstractArguments):
         self.context = context
         self._evaluator = evaluator
         self.trailer = trailer  # Can be None, e.g. in a class definition.
+
+    @classmethod
+    @evaluator_as_method_param_cache()
+    def create_cached(cls, *args, **kwargs):
+        return cls(*args, **kwargs)
 
     def unpack(self, funcdef=None):
         named_args = []

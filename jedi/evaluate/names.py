@@ -187,6 +187,15 @@ class ParamNameInterface(_ParamMixin):
         #      clear what values would be allowed.
         return None
 
+    @property
+    def star_count(self):
+        kind = self.get_kind()
+        if kind == Parameter.VAR_POSITIONAL:
+            return 1
+        if kind == Parameter.VAR_KEYWORD:
+            return 2
+        return 0
+
 
 class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
     annotation_node = None

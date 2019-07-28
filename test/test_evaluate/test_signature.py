@@ -94,6 +94,8 @@ def test_tree_signature(Script, environment, code, expected):
 
 @pytest.mark.parametrize(
     'combination, expected', [
+        ('full_redirect(simple)', 'b, *, c'),
+
         ('combined_redirect(simple, simple2)', 'a, b, /, *, x'),
         ('combined_redirect(simple, simple3)', 'a, b, /, *, a, x: int'),
         ('combined_redirect(simple2, simple)', 'x, /, *, a, b, c'),
