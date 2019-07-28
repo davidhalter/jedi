@@ -150,8 +150,18 @@ class TreeNameDefinition(AbstractTreeName):
         return self._API_TYPES.get(definition.type, 'statement')
 
 
-class ParamNameInterface(object):
-    api_type = u'param'
+class _ParamMixin(object):
+    def maybe_positional_argument(self, include_star=True):
+        options = [Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD]
+        if include_star:
+            options.append(Parameter.VAR_POSITIONAL)
+        return self.get_kind() in options
+
+    def maybe_keyword_argument(self, include_stars=True):
+        options = [Parameter.KEYWORD_ONLY, Parameter.POSITIONAL_OR_KEYWORD]
+        if include_stars:
+            options.append(Parameter.VAR_KEYWORD)
+        return self.get_kind() in options
 
     def _kind_string(self):
         kind = self.get_kind()
@@ -160,6 +170,10 @@ class ParamNameInterface(object):
         if kind == Parameter.VAR_KEYWORD:  # **kwargs
             return '**'
         return ''
+
+
+class ParamNameInterface(_ParamMixin):
+    api_type = u'param'
 
     def get_kind(self):
         raise NotImplementedError
@@ -172,6 +186,15 @@ class ParamNameInterface(object):
         #      very limited use, but is still in use. It's currently not even
         #      clear what values would be allowed.
         return None
+
+    @property
+    def star_count(self):
+        kind = self.get_kind()
+        if kind == Parameter.VAR_POSITIONAL:
+            return 1
+        if kind == Parameter.VAR_KEYWORD:
+            return 2
+        return 0
 
 
 class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
@@ -245,6 +268,17 @@ class ParamName(BaseTreeParamName):
         params, _ = self.parent_context.get_executed_params_and_issues()
         param_node = search_ancestor(self.tree_name, 'param')
         return params[param_node.position_index]
+
+
+class ParamNameWrapper(_ParamMixin):
+    def __init__(self, param_name):
+        self._wrapped_param_name = param_name
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped_param_name, name)
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._wrapped_param_name)
 
 
 class ImportName(AbstractNameDefinition):

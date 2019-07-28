@@ -60,6 +60,7 @@ c = functools.partial(func, 1, c=2)
 d = functools.partial()
 '''
 
+
 @pytest.mark.parametrize(
     'code, expected', [
         ('def f(a, * args, x): pass\n f(', 'f(a, *args, x)'),
@@ -91,6 +92,83 @@ def test_tree_signature(Script, environment, code, expected):
         assert expected == sig._signature.to_string()
 
 
+@pytest.mark.parametrize(
+    'combination, expected', [
+        # Functions
+        ('full_redirect(simple)', 'b, *, c'),
+        ('full_redirect(simple4)', 'b, x: int'),
+        ('full_redirect(a)', 'b, *args'),
+        ('full_redirect(kw)', 'b, *, c, **kwargs'),
+        ('full_redirect(akw)', 'c, *args, **kwargs'),
+
+        # Non functions
+        ('full_redirect(lambda x, y: ...)', 'y'),
+        ('full_redirect(C)', 'z, *c'),
+        ('full_redirect(C())', 'y'),
+        ('full_redirect()', '*args, **kwargs'),
+        ('full_redirect(1)', '*args, **kwargs'),
+
+        # Merging
+        ('two_redirects(simple, simple)', 'a, b, *, c'),
+        ('two_redirects(simple2, simple2)', 'x'),
+        ('two_redirects(akw, kw)', 'a, c, *args, **kwargs'),
+        ('two_redirects(kw, akw)', 'a, b, *args, c, **kwargs'),
+
+        ('combined_redirect(simple, simple2)', 'a, b, /, *, x'),
+        ('combined_redirect(simple, simple3)', 'a, b, /, *, a, x: int'),
+        ('combined_redirect(simple2, simple)', 'x, /, *, a, b, c'),
+        ('combined_redirect(simple3, simple)', 'a, x: int, /, *, a, b, c'),
+
+        ('combined_redirect(simple, kw)', 'a, b, /, *, a, b, c, **kwargs'),
+        ('combined_redirect(kw, simple)', 'a, b, /, *, a, b, c'),
+
+        ('combined_lot_of_args(kw, simple4)', '*, b'),
+        ('combined_lot_of_args(simple4, kw)', '*, b, c, **kwargs'),
+
+        ('combined_redirect(combined_redirect(simple2, simple4), combined_redirect(kw, simple5))',
+         'x, /, *, y'),
+        ('combined_redirect(combined_redirect(simple4, simple2), combined_redirect(simple5, kw))',
+         'a, b, x: int, /, *, a, b, c, **kwargs'),
+        ('combined_redirect(combined_redirect(a, kw), combined_redirect(kw, simple5))',
+         'a, b, /, *args, y'),
+
+        ('no_redirect(kw)', '*args, **kwargs'),
+        ('no_redirect(akw)', '*args, **kwargs'),
+        ('no_redirect(simple)', '*args, **kwargs'),
+    ]
+)
+def test_nested_signatures(Script, environment, combination, expected, skip_pre_python35):
+    code = dedent('''
+        def simple(a, b, *, c): ...
+        def simple2(x): ...
+        def simple3(a, x: int): ...
+        def simple4(a, b, x: int): ...
+        def simple5(y): ...
+        def a(a, b, *args): ...
+        def kw(a, b, *, c, **kwargs): ...
+        def akw(a, c, *args, **kwargs): ...
+
+        def no_redirect(func):
+            return lambda *args, **kwargs: func(1)
+        def full_redirect(func):
+            return lambda *args, **kwargs: func(1, *args, **kwargs)
+        def two_redirects(func1, func2):
+            return lambda *args, **kwargs: func1(*args, **kwargs) + func2(1, *args, **kwargs)
+        def combined_redirect(func1, func2):
+            return lambda *args, **kwargs: func1(*args) + func2(**kwargs)
+        def combined_lot_of_args(func1, func2):
+            return lambda *args, **kwargs: func1(1, 2, 3, 4, *args) + func2(a=3, x=1, y=1, **kwargs)
+
+        class C:
+            def __init__(self, a, z, *c): ...
+            def __call__(self, x, y): ...
+    ''')
+    code += 'z = ' + combination + '\nz('
+    sig, = Script(code).call_signatures()
+    computed = sig._signature.to_string()
+    assert '<lambda>(' + expected + ')' == computed
+
+
 def test_pow_signature(Script):
     # See github #1357
     sigs = Script('pow(').call_signatures()
@@ -99,6 +177,41 @@ def test_pow_signature(Script):
                        'pow(x: float, y: float, /) -> float',
                        'pow(x: int, y: int, z: int, /) -> Any',
                        'pow(x: int, y: int, /) -> Any'}
+
+
+@pytest.mark.parametrize(
+    'code, signature', [
+        [dedent('''
+            import functools
+            def f(x):
+                pass
+            def x(f):
+                @functools.wraps(f)
+                def wrapper(*args):
+                    # Have no arguments here, but because of wraps, the signature
+                    # should still be f's.
+                    return f(*args)
+                return wrapper
+
+            x(f)('''), 'f(x, /)'],
+        [dedent('''
+            import functools
+            def f(x):
+                pass
+            def x(f):
+                @functools.wraps(f)
+                def wrapper():
+                    # Have no arguments here, but because of wraps, the signature
+                    # should still be f's.
+                    return 1
+                return wrapper
+
+            x(f)('''), 'f()'],
+    ]
+)
+def test_wraps_signature(Script, code, signature, skip_pre_python35):
+    sigs = Script(code).call_signatures()
+    assert {sig._signature.to_string() for sig in sigs} == {signature}
 
 
 @pytest.mark.parametrize(

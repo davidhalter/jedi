@@ -30,12 +30,6 @@ class _SignatureMixin(object):
             s += ' -> ' + annotation
         return s
 
-    def get_param_names(self):
-        param_names = self._function_context.get_param_names()
-        if self.is_bound:
-            return param_names[1:]
-        return param_names
-
 
 class AbstractSignature(_SignatureMixin):
     def __init__(self, context, is_bound=False):
@@ -49,6 +43,12 @@ class AbstractSignature(_SignatureMixin):
     @property
     def annotation_string(self):
         return ''
+
+    def get_param_names(self, resolve_stars=True):
+        param_names = self._function_context.get_param_names()
+        if self.is_bound:
+            return param_names[1:]
+        return param_names
 
     def bind(self, context):
         raise NotImplementedError
@@ -76,6 +76,13 @@ class TreeSignature(AbstractSignature):
         if a is None:
             return ''
         return a.get_code(include_prefix=False)
+
+    def get_param_names(self, resolve_stars=True):
+        params = super(TreeSignature, self).get_param_names()
+        if resolve_stars:
+            from jedi.evaluate.star_args import process_params
+            params = process_params(params)
+        return params
 
 
 class BuiltinSignature(AbstractSignature):
