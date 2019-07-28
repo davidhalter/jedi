@@ -642,6 +642,43 @@ class ItemGetterCallable(ContextWrapper):
         return context_set
 
 
+@argument_clinic('func, /')
+def _functools_wraps(funcs):
+    return ContextSet(WrapsCallable(func) for func in funcs)
+
+
+class WrapsCallable(ContextWrapper):
+    @repack_with_argument_clinic('func, /')
+    def py__call__(self, funcs):
+        return ContextSet({Wrapped(func, self._wrapped_context) for func in funcs})
+
+
+class Wrapped(ContextWrapper):
+    def __init__(self, func, original_function):
+        super(Wrapped, self).__init__(func)
+        self._original_function = original_function
+
+    @property
+    def name(self):
+        return self._original_function.name
+
+    def get_signatures(self):
+        return [
+            ReplacedNameSignature(sig, self._original_function.name)
+            for sig in self._wrapped_context.get_signatures()
+        ]
+
+
+class ReplacedNameSignature(SignatureWrapper):
+    def __init__(self, signature, name):
+        super(ReplacedNameSignature, self).__init__(signature)
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
+
+
 @argument_clinic('*args, /', want_obj=True, want_arguments=True)
 def _operator_itemgetter(args_context_set, obj, arguments):
     return ContextSet([
@@ -675,7 +712,8 @@ _implemented = {
     },
     'functools': {
         'partial': functools_partial,
-        'wraps': _return_first_param,
+        'wraps': _functools_wraps,
+        #'wraps': _return_first_param,
     },
     '_weakref': {
         'proxy': _return_first_param,

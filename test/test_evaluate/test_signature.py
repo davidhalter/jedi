@@ -180,6 +180,41 @@ def test_pow_signature(Script):
 
 
 @pytest.mark.parametrize(
+    'code, signature', [
+        [dedent('''
+            import functools
+            def f(x):
+                pass
+            def x(f):
+                @functools.wraps(f)
+                def wrapper(*args):
+                    # Have no arguments here, but because of wraps, the signature
+                    # should still be f's.
+                    return f(*args)
+                return wrapper
+
+            x(f)('''), 'f(x, /)'],
+        [dedent('''
+            import functools
+            def f(x):
+                pass
+            def x(f):
+                @functools.wraps(f)
+                def wrapper():
+                    # Have no arguments here, but because of wraps, the signature
+                    # should still be f's.
+                    return 1
+                return wrapper
+
+            x(f)('''), 'f()'],
+    ]
+)
+def test_wraps_signature(Script, code, signature, skip_pre_python35):
+    sigs = Script(code).call_signatures()
+    assert {sig._signature.to_string() for sig in sigs} == {signature}
+
+
+@pytest.mark.parametrize(
     'start, start_params', [
         ['@dataclass\nclass X:', []],
         ['@dataclass(eq=True)\nclass X:', []],
