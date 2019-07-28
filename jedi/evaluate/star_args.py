@@ -121,8 +121,9 @@ def process_params(param_names, star_count=3):  # default means both * and **
             if star_count == 1:
                 yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)
             elif star_count == 2:
-                yield ParamNameFixedKind(p, Parameter.KEYWORD_ONLY)
+                kw_only_params.append(ParamNameFixedKind(p, Parameter.KEYWORD_ONLY))
             else:
+                used_names.add(p.string_name)
                 yield p
 
     for func_and_argument in arg_funcs:
@@ -152,10 +153,15 @@ def process_params(param_names, star_count=3):  # default means both * and **
         if star_count == 1 and p.get_kind() != Parameter.VAR_POSITIONAL:
             yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)
         else:
+            if p.get_kind() == Parameter.POSITIONAL_OR_KEYWORD:
+                used_names.add(p.string_name)
             yield p
 
     for p in kw_only_params:
+        if p.string_name in used_names:
+            continue
         yield p
+        used_names.add(p.string_name)
 
     for func, arguments in kwarg_funcs:
         for p in process_params(
@@ -168,7 +174,6 @@ def process_params(param_names, star_count=3):  # default means both * and **
 
     if kwarg_names:
         yield kwarg_names[0]
-    return
 
 
 class ParamNameFixedKind(ParamNameWrapper):
@@ -178,4 +183,3 @@ class ParamNameFixedKind(ParamNameWrapper):
 
     def get_kind(self):
         return self._new_kind
-
