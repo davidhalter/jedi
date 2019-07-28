@@ -137,7 +137,7 @@ def test_tree_signature(Script, environment, code, expected):
         ('no_redirect(simple)', '*args, **kwargs'),
     ]
 )
-def test_nested_signatures(Script, environment, combination, expected):
+def test_nested_signatures(Script, environment, combination, expected, skip_pre_python35):
     code = dedent('''
         def simple(a, b, *, c): ...
         def simple2(x): ...
