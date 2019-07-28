@@ -94,18 +94,19 @@ def _remove_given_params(arguments, param_names):
 
 def process_params(param_names, star_count=3):  # default means both * and **
     used_names = set()
-    kw_only_params = []
     arg_funcs = []
     kwarg_funcs = []
+
+    kw_only_names = []
     kwarg_names = []
-    longest_param_names = ()
+    arg_names = []
     for p in param_names:
         kind = p.get_kind()
         if kind == Parameter.VAR_POSITIONAL:
             if star_count & 1:
                 arg_funcs = list(_iter_nodes_for_param(p))
                 if not arg_funcs:
-                    yield p
+                    arg_names.append(p)
         elif p.get_kind() == Parameter.VAR_KEYWORD:
             if star_count & 2:
                 kwarg_funcs = list(_iter_nodes_for_param(p))
@@ -113,7 +114,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
                     kwarg_names.append(p)
         elif kind == Parameter.KEYWORD_ONLY:
             if star_count & 2:
-                kw_only_params.append(p)
+                kw_only_names.append(p)
         elif kind == Parameter.POSITIONAL_ONLY:
             if star_count & 1:
                 yield p
@@ -121,11 +122,12 @@ def process_params(param_names, star_count=3):  # default means both * and **
             if star_count == 1:
                 yield ParamNameFixedKind(p, Parameter.POSITIONAL_ONLY)
             elif star_count == 2:
-                kw_only_params.append(ParamNameFixedKind(p, Parameter.KEYWORD_ONLY))
+                kw_only_names.append(ParamNameFixedKind(p, Parameter.KEYWORD_ONLY))
             else:
                 used_names.add(p.string_name)
                 yield p
 
+    longest_param_names = ()
     for func_and_argument in arg_funcs:
         func, arguments = func_and_argument
         new_star_count = star_count
@@ -142,8 +144,10 @@ def process_params(param_names, star_count=3):  # default means both * and **
                 )), new_star_count):
             if p.get_kind() == Parameter.VAR_KEYWORD:
                 kwarg_names.append(p)
+            elif p.get_kind() == Parameter.VAR_POSITIONAL:
+                arg_names.append(p)
             elif p.get_kind() == Parameter.KEYWORD_ONLY:
-                kw_only_params.append(p)
+                kw_only_names.append(p)
             else:
                 args_for_this_func.append(p)
         if len(args_for_this_func) > len(longest_param_names):
@@ -157,7 +161,10 @@ def process_params(param_names, star_count=3):  # default means both * and **
                 used_names.add(p.string_name)
             yield p
 
-    for p in kw_only_params:
+    if arg_names:
+        yield arg_names[0]
+
+    for p in kw_only_names:
         if p.string_name in used_names:
             continue
         yield p

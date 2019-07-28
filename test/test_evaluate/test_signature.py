@@ -97,6 +97,9 @@ def test_tree_signature(Script, environment, code, expected):
         ('full_redirect(simple)', 'b, *, c'),
 
         ('two_redirects(simple, simple)', 'a, b, *, c'),
+        ('two_redirects(simple2, simple2)', 'x'),
+        ('two_redirects(akw, kw)', 'a, c, *args, **kwargs'),
+        ('two_redirects(kw, akw)', 'a, b, *args, c, **kwargs'),
 
         ('combined_redirect(simple, simple2)', 'a, b, /, *, x'),
         ('combined_redirect(simple, simple3)', 'a, b, /, *, a, x: int'),
@@ -130,7 +133,7 @@ def test_nested_signatures(Script, environment, combination, expected):
         def simple5(y): ...
         def a(a, b, *args): ...
         def kw(a, b, *, c, **kwargs): ...
-        def akw(a, b, *args, **kwargs): ...
+        def akw(a, c, *args, **kwargs): ...
 
         def no_redirect(func):
             return lambda *args, **kwargs: func(1)
