@@ -25,6 +25,7 @@ from jedi.evaluate.base_context import ContextualizedNode, \
 from jedi.evaluate.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
 from jedi.evaluate.context.klass import ClassMixin
+from jedi.evaluate.context.function import FunctionMixin
 from jedi.evaluate.context import iterable
 from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
@@ -656,7 +657,7 @@ class WrapsCallable(ContextWrapper):
         return ContextSet({Wrapped(func, self._wrapped_context) for func in funcs})
 
 
-class Wrapped(ContextWrapper):
+class Wrapped(ContextWrapper, FunctionMixin):
     def __init__(self, func, original_function):
         super(Wrapped, self).__init__(func)
         self._original_function = original_function
@@ -664,12 +665,6 @@ class Wrapped(ContextWrapper):
     @property
     def name(self):
         return self._original_function.name
-
-    def get_signatures(self):
-        return [
-            ReplacedNameSignature(sig, self._original_function.name)
-            for sig in self._wrapped_context.get_signatures()
-        ]
 
 
 class ReplacedNameSignature(SignatureWrapper):

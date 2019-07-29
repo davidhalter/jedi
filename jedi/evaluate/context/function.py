@@ -100,6 +100,9 @@ class FunctionMixin(object):
 
         return FunctionExecutionContext(self.evaluator, self.parent_context, self, arguments)
 
+    def get_signatures(self):
+        return [TreeSignature(self)]
+
 
 class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
     """
@@ -146,9 +149,6 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndC
 
     def get_default_param_context(self):
         return self.parent_context
-
-    def get_signatures(self):
-        return [TreeSignature(self)]
 
 
 class MethodContext(FunctionContext):
@@ -394,7 +394,7 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
         return ContextSet.from_sets(fe.infer() for fe in function_executions)
 
     def get_signatures(self):
-        return [TreeSignature(f) for f in self.overloaded_functions]
+        return [s for f in self.overloaded_functions for s in f.get_signatures()]
 
 
 def signature_matches(function_context, arguments):
