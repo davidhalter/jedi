@@ -1,5 +1,6 @@
 from textwrap import dedent
 from operator import ge, lt
+import re
 
 import pytest
 
@@ -103,10 +104,15 @@ def test_tree_signature(Script, environment, code, expected):
 
         # Non functions
         ('full_redirect(lambda x, y: ...)', 'y'),
-        ('full_redirect(C)', 'z, *c'),
-        ('full_redirect(C())', 'y'),
         ('full_redirect()', '*args, **kwargs'),
         ('full_redirect(1)', '*args, **kwargs'),
+
+        # Classes / inheritance
+        ('full_redirect(C)', 'z, *c'),
+        ('full_redirect(C())', 'y'),
+        ('D', 'D(x, ly)'),
+        ('D()', 'D(x, y)'),
+        ('D().foo', 'foo(a, *, bar, z, **kwargs)'),
 
         # Merging
         ('two_redirects(simple, simple)', 'a, b, *, c'),
@@ -162,11 +168,22 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
         class C:
             def __init__(self, a, z, *c): ...
             def __call__(self, x, y): ...
+
+            def foo(self, bar, z, **kwargs): ...
+
+        class D(C):
+            def __init__(self, *args):
+                super().foo(*args)
+
+            def foo(self, a, **kwargs):
+                super().foo(**kwargs)
     ''')
     code += 'z = ' + combination + '\nz('
     sig, = Script(code).call_signatures()
     computed = sig._signature.to_string()
-    assert '<lambda>(' + expected + ')' == computed
+    if not re.match('\w+\(', expected):
+        expected = '<lambda>(' + expected + ')'
+    assert expected == computed
 
 
 def test_pow_signature(Script):
