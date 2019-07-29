@@ -108,9 +108,9 @@ def test_tree_signature(Script, environment, code, expected):
         ('full_redirect(1)', '*args, **kwargs'),
 
         # Classes / inheritance
-        ('full_redirect(C)', 'z, *c'),
+        ('full_redirect(C)', 'z, *, c'),
         ('full_redirect(C())', 'y'),
-        ('D', 'D(x, ly)'),
+        ('D', 'D(a, z, /)'),
         ('D()', 'D(x, y)'),
         ('D().foo', 'foo(a, *, bar, z, **kwargs)'),
 
@@ -166,14 +166,14 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
             return lambda *args, **kwargs: func1(1, 2, 3, 4, *args) + func2(a=3, x=1, y=1, **kwargs)
 
         class C:
-            def __init__(self, a, z, *c): ...
+            def __init__(self, a, z, *, c): ...
             def __call__(self, x, y): ...
 
             def foo(self, bar, z, **kwargs): ...
 
         class D(C):
             def __init__(self, *args):
-                super().foo(*args)
+                super().__init__(*args)
 
             def foo(self, a, **kwargs):
                 super().foo(**kwargs)

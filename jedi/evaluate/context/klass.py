@@ -222,6 +222,10 @@ class ClassMixin(object):
                     next(instance_filters)
                     yield next(instance_filters)
 
+    def get_signatures(self):
+        init_funcs = self.execute_evaluated().py__getattribute__('__init__')
+        return [sig.bind(self) for sig in init_funcs.get_signatures()]
+
     def get_global_filter(self, until_position=None, origin_scope=None):
         return ParserTreeFilter(
             self.evaluator,
@@ -313,10 +317,6 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                 generics=tuple(remap_type_vars())
             )])
         return ContextSet({self})
-
-    def get_signatures(self):
-        init_funcs = self.py__getattribute__('__init__')
-        return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
     @plugin_manager.decorate()
     def get_metaclass_filters(self, metaclass):
