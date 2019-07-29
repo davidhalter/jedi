@@ -13,7 +13,7 @@ from jedi.evaluate.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.arguments import AnonymousArguments, \
     ValuesArguments, TreeArgumentsWrapper
-from jedi.evaluate.context.function import FunctionExecutionContext, \
+from jedi.evaluate.context.function import \
     FunctionContext, FunctionMixin, OverloadedFunctionContext
 from jedi.evaluate.context.klass import ClassContext, apply_py__get__, \
     ClassFilter
@@ -390,15 +390,6 @@ class BoundMethod(FunctionMixin, ContextWrapper):
 
     def get_function_execution(self, arguments=None):
         arguments = self._get_arguments(arguments)
-
-        if isinstance(self._wrapped_context, compiled.CompiledObject):
-            # This is kind of weird, because it's coming from a compiled object
-            # and we're not sure if we want that in the future.
-            # TODO remove?!
-            return FunctionExecutionContext(
-                self.evaluator, self.parent_context, self, arguments
-            )
-
         return super(BoundMethod, self).get_function_execution(arguments)
 
     def py__call__(self, arguments):
