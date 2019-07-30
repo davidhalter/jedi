@@ -531,7 +531,7 @@ class Definition(BaseDefinition):
         typ = self.type
         tree_name = self._name.tree_name
         if typ == 'param':
-            return typ + ' ' + self._name.to_string()
+            return typ + ' ' + str(self._name)
         if typ in ('function', 'class', 'module', 'instance') or tree_name is None:
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
@@ -633,14 +633,13 @@ class CallSignature(Definition):
         return '<%s: index=%r %s>' % (
             type(self).__name__,
             self.index,
-            self._signature.to_string(),
+            self._signature,
         )
 
 
 def _format_signatures(context):
     return '\n'.join(
-        signature.to_string()
-        for signature in context.get_signatures()
+        str(signature) for signature in context.get_signatures()
     )
 
 

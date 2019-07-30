@@ -178,7 +178,7 @@ class ParamNameInterface(_ParamMixin):
     def get_kind(self):
         raise NotImplementedError
 
-    def to_string(self):
+    def __str__(self):
         raise NotImplementedError
 
     def get_param(self):
@@ -201,7 +201,7 @@ class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
     annotation_node = None
     default_node = None
 
-    def to_string(self):
+    def __str__(self):
         output = self._kind_string() + self.string_name
         annotation = self.annotation_node
         default = self.default_node
@@ -276,6 +276,9 @@ class ParamNameWrapper(_ParamMixin):
 
     def __getattr__(self, name):
         return getattr(self._wrapped_param_name, name)
+
+    def __str__(self):
+        return str(self._wrapped_param_name)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_param_name)

@@ -309,7 +309,7 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
     def string_name(self):
         return self._signature_param.name
 
-    def to_string(self):
+    def __str__(self):
         s = self._kind_string() + self.string_name
         if self._signature_param.has_annotation:
             s += ': ' + self._signature_param.annotation_string
@@ -341,7 +341,7 @@ class UnresolvableParamName(ParamNameInterface, AbstractNameDefinition):
     def get_kind(self):
         return Parameter.POSITIONAL_ONLY
 
-    def to_string(self):
+    def __str__(self):
         string = self.string_name
         if self._default:
             string += '=' + self._default
