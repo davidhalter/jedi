@@ -629,17 +629,11 @@ class CallSignature(Definition):
         """
         return self._call_details.bracket_leaf.start_pos
 
-    @property
-    def _params_str(self):
-        return ', '.join([p.description[6:]
-                          for p in self.params])
-
     def __repr__(self):
-        return '<%s: %s index=%r params=[%s]>' % (
+        return '<%s: index=%r %s>' % (
             type(self).__name__,
-            self._name.string_name,
             self.index,
-            self._params_str,
+            self._signature.to_string(),
         )
 
 
