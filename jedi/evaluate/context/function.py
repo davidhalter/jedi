@@ -397,37 +397,6 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
         return [s for f in self.overloaded_functions for s in f.get_signatures()]
 
 
-def signature_matches(function_context, arguments):
-    unpacked_arguments = arguments.unpack()
-    key_args = {}
-    for param_node in function_context.tree_node.get_params():
-        while True:
-            key, argument = next(unpacked_arguments, (None, None))
-            if key is None or argument is None:
-                break
-            key_args[key] = argument
-        if argument is None:
-            argument = key_args.pop(param_node.name.value, None)
-            if argument is None:
-                # This signature has an parameter more than arguments were given.
-                return bool(param_node.star_count == 1)
-
-        if param_node.annotation is not None:
-            if param_node.star_count == 2:
-                return False  # TODO allow this
-
-            annotation_contexts = function_context.evaluator.eval_element(
-                function_context.get_default_param_context(),
-                param_node.annotation
-            )
-            argument_contexts = argument.infer().py__class__()
-            if not any(c1.is_sub_class_of(c2)
-                       for c1 in argument_contexts
-                       for c2 in annotation_contexts):
-                return False
-    return True
-
-
 def _find_overload_functions(context, tree_node):
     def _is_overload_decorated(funcdef):
         if funcdef.parent.type == 'decorated':
