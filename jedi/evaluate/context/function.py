@@ -371,14 +371,14 @@ class FunctionExecutionContext(TreeContext):
 class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
     def __init__(self, function, overloaded_functions):
         super(OverloadedFunctionContext, self).__init__(function)
-        self.overloaded_functions = overloaded_functions
+        self._overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):
         debug.dbg("Execute overloaded function %s", self._wrapped_context, color='BLUE')
         function_executions = []
         context_set = NO_CONTEXTS
         matched = False
-        for f in self.overloaded_functions:
+        for f in self._overloaded_functions:
             function_execution = f.get_function_execution(arguments)
             function_executions.append(function_execution)
             if function_execution.matches_signature():
@@ -394,7 +394,7 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
         return ContextSet.from_sets(fe.infer() for fe in function_executions)
 
     def get_signatures(self):
-        return [s for f in self.overloaded_functions for s in f.get_signatures()]
+        return [s for f in self._overloaded_functions for s in f.get_signatures()]
 
 
 def _find_overload_functions(context, tree_node):
