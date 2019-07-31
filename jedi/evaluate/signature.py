@@ -2,7 +2,7 @@ from jedi._compatibility import Parameter
 
 
 class _SignatureMixin(object):
-    def __str__(self):
+    def to_string(self):
         def param_strings():
             is_positional = False
             is_kw_only = False
@@ -19,7 +19,7 @@ class _SignatureMixin(object):
                     yield '*'
                     is_kw_only = True
 
-                yield str(n)
+                yield n.to_string()
 
             if is_positional:
                 yield '/'
