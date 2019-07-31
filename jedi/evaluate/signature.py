@@ -7,7 +7,7 @@ class _SignatureMixin(object):
         def param_strings():
             is_positional = False
             is_kw_only = False
-            for n in self.get_param_names():
+            for n in self.get_param_names(resolve_stars=True):
                 kind = n.get_kind()
                 is_positional |= kind == Parameter.POSITIONAL_ONLY
                 if is_positional and kind != Parameter.POSITIONAL_ONLY:
@@ -83,7 +83,7 @@ class TreeSignature(AbstractSignature):
 
     @memoize_method
     def get_param_names(self, resolve_stars=False):
-        params = super(TreeSignature, self).get_param_names()
+        params = super(TreeSignature, self).get_param_names(resolve_stars=False)
         if resolve_stars:
             from jedi.evaluate.star_args import process_params
             params = process_params(params)
