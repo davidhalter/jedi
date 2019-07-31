@@ -337,7 +337,10 @@ class BaseDefinition(object):
         # with overloading.
         for context in self._name.infer():
             for signature in context.get_signatures():
-                return [Definition(self._evaluator, n) for n in signature.get_param_names()]
+                return [
+                    Definition(self._evaluator, n)
+                    for n in signature.get_param_names(resolve_stars=True)
+                ]
 
         if self.type == 'function' or self.type == 'class':
             # Fallback, if no signatures were defined (which is probably by
@@ -615,11 +618,14 @@ class CallSignature(Definition):
         The Param index of the current call.
         Returns None if the index cannot be found in the curent call.
         """
-        return self._call_details.calculate_index(self._signature.get_param_names())
+        return self._call_details.calculate_index(
+            self._signature.get_param_names(resolve_stars=True)
+        )
 
     @property
     def params(self):
-        return [Definition(self._evaluator, n) for n in self._signature.get_param_names()]
+        return [Definition(self._evaluator, n)
+                for n in self._signature.get_param_names(resolve_stars=True)]
 
     @property
     def bracket_start(self):
