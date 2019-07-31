@@ -516,7 +516,7 @@ class PartialSignature(SignatureWrapper):
         self._skipped_arg_count = skipped_arg_count
         self._skipped_arg_set = skipped_arg_set
 
-    def get_param_names(self):
+    def get_param_names(self, resolve_stars=False):
         names = self._wrapped_signature.get_param_names()[self._skipped_arg_count:]
         return [n for n in names if n.string_name not in self._skipped_arg_set]
 
@@ -598,7 +598,7 @@ class DataclassSignature(AbstractSignature):
         super(DataclassSignature, self).__init__(context)
         self._param_names = param_names
 
-    def get_param_names(self):
+    def get_param_names(self, resolve_stars=False):
         return self._param_names
 
 

@@ -181,7 +181,7 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
     code += 'z = ' + combination + '\nz('
     sig, = Script(code).call_signatures()
     computed = sig._signature.to_string()
-    if not re.match('\w+\(', expected):
+    if not re.match(r'\w+\(', expected):
         expected = '<lambda>(' + expected + ')'
     assert expected == computed
 

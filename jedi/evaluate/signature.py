@@ -1,4 +1,5 @@
 from jedi._compatibility import Parameter
+from jedi.cache import memoize_method
 
 
 class _SignatureMixin(object):
@@ -80,6 +81,7 @@ class TreeSignature(AbstractSignature):
             return ''
         return a.get_code(include_prefix=False)
 
+    @memoize_method
     def get_param_names(self, resolve_stars=False):
         params = super(TreeSignature, self).get_param_names()
         if resolve_stars:
