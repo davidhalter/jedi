@@ -670,16 +670,6 @@ class Wrapped(ContextWrapper, FunctionMixin):
         return [self]
 
 
-class ReplacedNameSignature(SignatureWrapper):
-    def __init__(self, signature, name):
-        super(ReplacedNameSignature, self).__init__(signature)
-        self._name = name
-
-    @property
-    def name(self):
-        return self._name
-
-
 @argument_clinic('*args, /', want_obj=True, want_arguments=True)
 def _operator_itemgetter(args_context_set, obj, arguments):
     return ContextSet([
@@ -714,7 +704,6 @@ _implemented = {
     'functools': {
         'partial': functools_partial,
         'wraps': _functools_wraps,
-        #'wraps': _return_first_param,
     },
     '_weakref': {
         'proxy': _return_first_param,
