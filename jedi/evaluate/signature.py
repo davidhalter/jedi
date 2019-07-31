@@ -50,7 +50,7 @@ class AbstractSignature(_SignatureMixin):
             return param_names[1:]
         return param_names
 
-    def bind(self, context, function_context=None):
+    def bind(self, context):
         raise NotImplementedError
 
     def __repr__(self):
@@ -62,8 +62,8 @@ class TreeSignature(AbstractSignature):
         super(TreeSignature, self).__init__(context, is_bound)
         self._function_context = function_context or context
 
-    def bind(self, context, function_context=None):
-        return TreeSignature(context, function_context or self._function_context, is_bound=True)
+    def bind(self, context):
+        return TreeSignature(context, self._function_context, is_bound=True)
 
     @property
     def _annotation(self):
@@ -101,7 +101,7 @@ class BuiltinSignature(AbstractSignature):
     def _function_context(self):
         return self.context
 
-    def bind(self, context, function_context=None):
+    def bind(self, context):
         assert not self.is_bound
         return BuiltinSignature(context, self._return_string, is_bound=True)
 

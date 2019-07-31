@@ -399,8 +399,14 @@ class BoundMethod(FunctionMixin, ContextWrapper):
         function_execution = self.get_function_execution(arguments)
         return function_execution.infer()
 
+    def get_signature_functions(self):
+        return [
+            BoundMethod(self.instance, f)
+            for f in self._wrapped_context.get_signature_functions()
+        ]
+
     def get_signatures(self):
-        return [sig.bind(self, self) for sig in self._wrapped_context.get_signatures()]
+        return [sig.bind(self) for sig in super(BoundMethod, self).get_signatures()]
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_context)

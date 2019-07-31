@@ -666,6 +666,9 @@ class Wrapped(ContextWrapper, FunctionMixin):
     def name(self):
         return self._original_function.name
 
+    def get_signature_functions(self):
+        return [self]
+
 
 class ReplacedNameSignature(SignatureWrapper):
     def __init__(self, signature, name):
