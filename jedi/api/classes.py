@@ -618,7 +618,7 @@ class Signature(Definition):
 
     @property
     def params(self):
-        return [Definition(self._evaluator, n)
+        return [ParamDefinition(self._evaluator, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]
 
 
@@ -658,6 +658,14 @@ class CallSignature(Signature):
             self.index,
             self._signature.to_string(),
         )
+
+
+class ParamDefinition(Definition):
+    def infer_default(self):
+        return [Definition(self._evaluator, d.name) for d in self._name.infer_default()]
+
+    def infer_annotation(self):
+        return [Definition(self._evaluator, d.name) for d in self._name.infer_annotation()]
 
 
 def _format_signatures(context):

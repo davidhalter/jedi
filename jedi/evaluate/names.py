@@ -3,7 +3,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
-from jedi.evaluate.base_context import ContextSet
+from jedi.evaluate.base_context import ContextSet, NO_CONTEXTS
 from jedi.cache import memoize_method
 
 
@@ -219,6 +219,18 @@ class ParamName(BaseTreeParamName):
     @property
     def annotation_node(self):
         return self._get_param_node().annotation
+
+    def infer_annotation(self):
+        node = self.annotation_node
+        if node is None:
+            return NO_CONTEXTS
+        return self.parent_context.parent_context.eval_node(node)
+
+    def infer_default(self):
+        node = self.default_node
+        if node is None:
+            return NO_CONTEXTS
+        return self.parent_context.parent_context.eval_node(node)
 
     @property
     def default_node(self):
