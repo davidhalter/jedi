@@ -330,6 +330,8 @@ class BaseDefinition(object):
     @memoize_method
     def params(self):
         """
+        Deprecated! Will raise a warning soon. Use get_signatures()[...].params.
+
         Raises an ``AttributeError`` if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
@@ -386,6 +388,9 @@ class BaseDefinition(object):
         index = self._name.start_pos[0] - 1
         start_index = max(index - before, 0)
         return ''.join(lines[start_index:index + after + 1])
+
+    def get_signatures(self):
+        return [Signature(self._evaluator, s) for s in self._name.infer().get_signatures()]
 
 
 class Completion(BaseDefinition):
@@ -601,14 +606,31 @@ class Definition(BaseDefinition):
         return hash((self._name.start_pos, self.module_path, self.name, self._evaluator))
 
 
-class CallSignature(Definition):
+class Signature(Definition):
     """
-    `CallSignature` objects is the return value of `Script.function_definition`.
+    `Signature` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, signature, call_details):
+    def __init__(self, evaluator, signature):
         super(CallSignature, self).__init__(evaluator, signature.name)
+        self._signature = signature
+
+    @property
+    def params(self):
+        return [Definition(self._evaluator, n)
+                for n in self._signature.get_param_names(resolve_stars=True)]
+
+
+class CallSignature(Signature):
+    """
+    `CallSignature` objects is the return value of `Script.call_signatures`.
+    It knows what functions you are currently in. e.g. `isinstance(` would
+    return the `isinstance` function with its params. Without `(` it would
+    return nothing.
+    """
+    def __init__(self, evaluator, signature, call_details):
+        super(CallSignature, self).__init__(evaluator, signature)
         self._call_details = call_details
         self._signature = signature
 
@@ -623,15 +645,10 @@ class CallSignature(Definition):
         )
 
     @property
-    def params(self):
-        return [Definition(self._evaluator, n)
-                for n in self._signature.get_param_names(resolve_stars=True)]
-
-    @property
     def bracket_start(self):
         """
-        The indent of the bracket that is responsible for the last function
-        call.
+        The line/column of the bracket that is responsible for the last
+        function call.
         """
         return self._call_details.bracket_leaf.start_pos
 
