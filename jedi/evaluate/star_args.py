@@ -12,6 +12,7 @@ The signature here for bar should be `bar(b, c)` instead of bar(*args).
 """
 
 from jedi._compatibility import Parameter
+from jedi.evaluate.utils import to_list
 from jedi.evaluate.names import ParamNameWrapper
 
 
@@ -92,6 +93,7 @@ def _remove_given_params(arguments, param_names):
         yield p
 
 
+@to_list
 def process_params(param_names, star_count=3):  # default means both * and **
     used_names = set()
     arg_callables = []
