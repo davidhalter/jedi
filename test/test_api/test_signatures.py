@@ -47,3 +47,16 @@ def test_param_default(Script, code, expected_params):
         else:
             annotation, = annotations
             assert annotation.description == expected
+
+
+@pytest.mark.parametrize(
+    'code, index, param_code, kind', [
+        ('def f(x=1): ...\nf', 0, 'x=1', ...),
+        ('def f(*args:int): ...\nf', 0, '*args: int', ...),
+    ]
+)
+def test_param_kind_and_name(code, index, param_code, kind, Script, skip_python2):
+    func, = Script(code).goto_assignments()
+    sig, = func.get_signatures()
+    param = sig.params[index]
+    assert param.to_string() == param_code
