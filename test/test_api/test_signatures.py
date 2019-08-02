@@ -51,14 +51,14 @@ def test_param_default(Script, code, expected_params):
             assert annotation.description == expected
 
 
-@pytest.mark.skipif(sys.version_info < (3, 4), reason="Python <3.5 doesn't support __signature__")
+@pytest.mark.skipif(sys.version_info < (3, 5), reason="Python <3.5 doesn't support __signature__")
 @pytest.mark.parametrize(
     'code, index, param_code, kind', [
-        ('def f(x=1): ...\nf', 0, 'x=1', 'POSITIONAL_OR_KEYWORD'),
-        ('def f(*args:int): ...\nf', 0, '*args: int', 'VAR_POSITIONAL'),
-        ('def f(**kwargs: List[x]): ...\nf', 0, '**kwargs: List[x]', 'VAR_KEYWORD'),
-        ('def f(*, x:int=5): ...\nf', 0, 'x: int=5', 'KEYWORD_ONLY'),
-        ('def f(*args, x): ...\nf', 1, 'x', 'KEYWORD_ONLY'),
+        ('def f(x=1): pass\nf', 0, 'x=1', 'POSITIONAL_OR_KEYWORD'),
+        ('def f(*args:int): pass\nf', 0, '*args: int', 'VAR_POSITIONAL'),
+        ('def f(**kwargs: List[x]): pass\nf', 0, '**kwargs: List[x]', 'VAR_KEYWORD'),
+        ('def f(*, x:int=5): pass\nf', 0, 'x: int=5', 'KEYWORD_ONLY'),
+        ('def f(*args, x): pass\nf', 1, 'x', 'KEYWORD_ONLY'),
     ]
 )
 def test_param_kind_and_name(code, index, param_code, kind, Script):
