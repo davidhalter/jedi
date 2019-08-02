@@ -4,9 +4,8 @@ These classes are the much bigger part of the whole API, because they contain
 the interesting information about completion and goto operations.
 """
 import re
+import sys
 import warnings
-
-from parso.python.tree import search_ancestor
 
 from jedi import settings
 from jedi import debug
@@ -680,6 +679,20 @@ class ParamDefinition(Definition):
 
     def to_string(self):
         return self._name.to_string()
+
+    @property
+    def kind(self):
+        """
+        Returns an enum instance. Returns the same values as the builtin
+        :py:attr:`inspect.Parameter.kind`.
+
+        No support for Python 2 anymore.
+        """
+        if sys.version_info[0] < 3:
+            raise NotImplementedError(
+                'Python 2 is end-of-life, the new feature is not available for it'
+            )
+        return self._name.get_kind()
 
 
 def _format_signatures(context):

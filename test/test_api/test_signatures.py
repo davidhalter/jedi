@@ -51,8 +51,11 @@ def test_param_default(Script, code, expected_params):
 
 @pytest.mark.parametrize(
     'code, index, param_code, kind', [
-        ('def f(x=1): ...\nf', 0, 'x=1', ...),
-        ('def f(*args:int): ...\nf', 0, '*args: int', ...),
+        ('def f(x=1): ...\nf', 0, 'x=1', 'POSITIONAL_OR_KEYWORD'),
+        ('def f(*args:int): ...\nf', 0, '*args: int', 'VAR_POSITIONAL'),
+        ('def f(**kwargs: List[x]): ...\nf', 0, '**kwargs: List[x]', 'VAR_KEYWORD'),
+        ('def f(*, x:int=5): ...\nf', 0, 'x: int=5', 'KEYWORD_ONLY'),
+        ('def f(*args, x): ...\nf', 1, 'x', 'KEYWORD_ONLY'),
     ]
 )
 def test_param_kind_and_name(code, index, param_code, kind, Script, skip_python2):
@@ -60,3 +63,4 @@ def test_param_kind_and_name(code, index, param_code, kind, Script, skip_python2
     sig, = func.get_signatures()
     param = sig.params[index]
     assert param.to_string() == param_code
+    assert param.kind.name == kind
