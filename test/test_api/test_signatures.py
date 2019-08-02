@@ -13,6 +13,9 @@ _tuple_code = 'from typing import Tuple\ndef f(x: Tuple[int]): ...\nf'
         (_tuple_code, ['Tuple: _SpecialForm = ...'], True),
         (_tuple_code, ['Tuple: _SpecialForm = ...'], False),
         ('x=str\ndef f(p: x): ...\nx=int\nf', ['instance int'], True),
+
+        ('def f(*args, **kwargs): ...\nf', [None, None], False),
+        ('def f(*args: int, **kwargs: str): ...\nf', ['class int', 'class str'], False),
     ]
 )
 def test_param_annotation(Script, code, expected_params, execute_annotation):
