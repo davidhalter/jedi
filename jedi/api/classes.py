@@ -625,6 +625,9 @@ class Signature(Definition):
         return [ParamDefinition(self._evaluator, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]
 
+    def to_string(self):
+        return self._signature.to_string()
+
 
 class CallSignature(Signature):
     """

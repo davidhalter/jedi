@@ -90,7 +90,7 @@ def test_tree_signature(Script, environment, code, expected):
         assert not Script(code).call_signatures()
     else:
         sig, = Script(code).call_signatures()
-        assert expected == sig._signature.to_string()
+        assert expected == sig.to_string()
 
 
 @pytest.mark.parametrize(
@@ -180,7 +180,7 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
     ''')
     code += 'z = ' + combination + '\nz('
     sig, = Script(code).call_signatures()
-    computed = sig._signature.to_string()
+    computed = sig.to_string()
     if not re.match(r'\w+\(', expected):
         expected = '<lambda>(' + expected + ')'
     assert expected == computed
@@ -189,7 +189,7 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
 def test_pow_signature(Script):
     # See github #1357
     sigs = Script('pow(').call_signatures()
-    strings = {sig._signature.to_string() for sig in sigs}
+    strings = {sig.to_string() for sig in sigs}
     assert strings == {'pow(x: float, y: float, z: float, /) -> float',
                        'pow(x: float, y: float, /) -> float',
                        'pow(x: int, y: int, z: int, /) -> Any',
@@ -228,7 +228,7 @@ def test_pow_signature(Script):
 )
 def test_wraps_signature(Script, code, signature, skip_pre_python35):
     sigs = Script(code).call_signatures()
-    assert {sig._signature.to_string() for sig in sigs} == {signature}
+    assert {sig.to_string() for sig in sigs} == {signature}
 
 
 @pytest.mark.parametrize(
