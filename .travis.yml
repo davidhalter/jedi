@@ -15,9 +15,6 @@ env:
   - JEDI_TEST_ENVIRONMENT=37
 
 matrix:
-  allow_failures:
-    - python: pypy
-    - python: 3.8-dev
   include:
     - python: 3.6
       env:
