@@ -38,6 +38,10 @@ def defined_names(evaluator, context):
     return [Definition(evaluator, n) for n in _sort_names_by_start_pos(names)]
 
 
+def _contexts_to_definitions(contexts):
+    return [Definition(c.evaluator, c.name) for c in contexts]
+
+
 class BaseDefinition(object):
     _mapping = {
         'posixpath': 'os.path',
@@ -662,15 +666,14 @@ class CallSignature(Signature):
 
 class ParamDefinition(Definition):
     def infer_default(self):
-        return [Definition(self._evaluator, d.name) for d in self._name.infer_default()]
+        return _contexts_to_definitions(self._name.infer_default())
 
     def infer_annotation(self, **kwargs):
         """
         :param execute_annotation: If False, the values are not executed and
             you get classes instead of instances.
         """
-        return [Definition(self._evaluator, d.name)
-                for d in self._name.infer_annotation(**kwargs)]
+        return _contexts_to_definitions(self._name.infer_annotation(**kwargs))
 
     def to_string(self):
         return self._name.to_string()
