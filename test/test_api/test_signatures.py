@@ -25,3 +25,22 @@ def test_param_annotation(Script, code, expected_params, execute_annotation):
         else:
             annotation, = annotations
             assert annotation.description == expected
+
+
+@pytest.mark.parametrize(
+    'code, expected_params', [
+        ('def f(x=1, y=int, z): ...\nf', ['instance int', 'class int', None]),
+        ('def f(*args, **kwargs): ...\nf', [None, None]),
+        ('x=1\ndef f(p=x): ...\nx=""\nf', ['instance int']),
+    ]
+)
+def test_param_default(Script, code, expected_params):
+    func, = Script(code).goto_assignments()
+    sig, = func.get_signatures()
+    for p, expected in zip(sig.params, expected_params):
+        annotations = p.infer_default()
+        if expected is None:
+            assert not annotations
+        else:
+            annotation, = annotations
+            assert annotation.description == expected
