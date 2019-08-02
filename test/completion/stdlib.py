@@ -67,6 +67,18 @@ class X(): pass
 #? type
 type(X)
 
+# -----------------
+# type() calls with multiple parameters
+# -----------------
+
+X = type('X', (object,), dict(a=1))
+
+# Doesn't work yet.
+#?
+X.a
+#?
+X
+
 if os.path.isfile():
     #? ['abspath']
     fails = os.path.abspath
