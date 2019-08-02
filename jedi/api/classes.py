@@ -153,6 +153,9 @@ class BaseDefinition(object):
         >>> defs[3]
         'function'
 
+        Valid values for are ``module``, ``class``, ``instance``, ``function``,
+        ``param`` and ``keyword``.
+
         """
         tree_name = self._name.tree_name
         resolve = False
