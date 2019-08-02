@@ -621,6 +621,9 @@ class Signature(Definition):
 
     @property
     def params(self):
+        """
+        :return list of ParamDefinition:
+        """
         return [ParamDefinition(self._evaluator, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]
 
@@ -668,10 +671,15 @@ class CallSignature(Signature):
 
 class ParamDefinition(Definition):
     def infer_default(self):
+        """
+        :return list of Definition:
+        """
         return _contexts_to_definitions(self._name.infer_default())
 
     def infer_annotation(self, **kwargs):
         """
+        :return list of Definition:
+
         :param execute_annotation: If False, the values are not executed and
             you get classes instead of instances.
         """
