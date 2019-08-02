@@ -61,7 +61,7 @@ def test_param_default(Script, code, expected_params):
         ('def f(*args, x): pass\nf', 1, 'x', 'KEYWORD_ONLY'),
     ]
 )
-def test_param_kind_and_name(code, index, param_code, kind, Script):
+def test_param_kind_and_name(code, index, param_code, kind, Script, skip_python2):
     func, = Script(code).goto_assignments()
     sig, = func.get_signatures()
     param = sig.params[index]
