@@ -220,11 +220,14 @@ class ParamName(BaseTreeParamName):
     def annotation_node(self):
         return self._get_param_node().annotation
 
-    def infer_annotation(self):
+    def infer_annotation(self, execute_annotation=True):
         node = self.annotation_node
         if node is None:
             return NO_CONTEXTS
-        return self.parent_context.parent_context.eval_node(node)
+        contexts = self.parent_context.parent_context.eval_node(node)
+        if execute_annotation:
+            contexts = contexts.execute_annotation()
+        return contexts
 
     def infer_default(self):
         node = self.default_node

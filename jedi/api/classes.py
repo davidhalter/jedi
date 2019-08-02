@@ -664,9 +664,13 @@ class ParamDefinition(Definition):
     def infer_default(self):
         return [Definition(self._evaluator, d.name) for d in self._name.infer_default()]
 
-    def infer_annotation(self):
+    def infer_annotation(self, **kwargs):
+        """
+        :param execute_annotation: If False, the values are not executed and
+            you get classes instead of instances.
+        """
         return [Definition(self._evaluator, d.name)
-                for d in self._name.infer_annotation().execute_annotation()]
+                for d in self._name.infer_annotation(**kwargs)]
 
     def to_string(self):
         return self._name.to_string()
