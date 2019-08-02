@@ -18,7 +18,7 @@ _tuple_code = 'from typing import Tuple\ndef f(x: Tuple[int]): ...\nf'
         ('def f(*args: int, **kwargs: str): ...\nf', ['class int', 'class str'], False),
     ]
 )
-def test_param_annotation(Script, code, expected_params, execute_annotation):
+def test_param_annotation(Script, code, expected_params, execute_annotation, skip_python2):
     func, = Script(code).goto_assignments()
     sig, = func.get_signatures()
     for p, expected in zip(sig.params, expected_params):
@@ -32,9 +32,9 @@ def test_param_annotation(Script, code, expected_params, execute_annotation):
 
 @pytest.mark.parametrize(
     'code, expected_params', [
-        ('def f(x=1, y=int, z): ...\nf', ['instance int', 'class int', None]),
-        ('def f(*args, **kwargs): ...\nf', [None, None]),
-        ('x=1\ndef f(p=x): ...\nx=""\nf', ['instance int']),
+        ('def f(x=1, y=int, z): pass\nf', ['instance int', 'class int', None]),
+        ('def f(*args, **kwargs): pass\nf', [None, None]),
+        ('x=1\ndef f(p=x): pass\nx=""\nf', ['instance int']),
     ]
 )
 def test_param_default(Script, code, expected_params):
