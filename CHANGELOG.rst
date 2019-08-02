@@ -3,10 +3,21 @@
 Changelog
 ---------
 
-0.14.2 (XXXX-XX-XX)
+0.15.0 (XXXX-XX-XX)
 +++++++++++++++++++
 
+- ``*args``/``**kwargs`` resolving. If possible Jedi replaces the parameters
+  with the actual alternatives.
 - Better support for enums/dataclasses
+
+New APIs:
+
+- ``Definition.get_signatures() -> List[Signature]``. Signatures are similar to
+  ``CallSignature``. ``Definition.params`` is therefore deprecated.
+- ``Signature.to_string()`` to format call signatures.
+- ``Signature.params -> List[ParamDefinition]``, ParamDefinition has the
+  following attributes ``infer_default()``, ``infer_annotation()``,
+  ``to_string()``, and ``kind``.
 
 
 0.14.1 (2019-07-13)
