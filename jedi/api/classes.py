@@ -694,9 +694,9 @@ class ParamDefinition(Definition):
         Returns an enum instance. Returns the same values as the builtin
         :py:attr:`inspect.Parameter.kind`.
 
-        No support for Python 2 anymore.
+        No support for Python < 3.4 anymore.
         """
-        if sys.version_info[0] < 3:
+        if sys.version_info < (3, 5):
             raise NotImplementedError(
                 'Python 2 is end-of-life, the new feature is not available for it'
             )
