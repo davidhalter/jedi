@@ -613,7 +613,7 @@ class Signature(Definition):
     return the `isinstance` function. without `(` it would return nothing.
     """
     def __init__(self, evaluator, signature):
-        super(CallSignature, self).__init__(evaluator, signature.name)
+        super(Signature, self).__init__(evaluator, signature.name)
         self._signature = signature
 
     @property
@@ -665,7 +665,11 @@ class ParamDefinition(Definition):
         return [Definition(self._evaluator, d.name) for d in self._name.infer_default()]
 
     def infer_annotation(self):
-        return [Definition(self._evaluator, d.name) for d in self._name.infer_annotation()]
+        return [Definition(self._evaluator, d.name)
+                for d in self._name.infer_annotation().execute_annotation()]
+
+    def to_string(self):
+        return self._name.to_string()
 
 
 def _format_signatures(context):
