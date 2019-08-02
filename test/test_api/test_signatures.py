@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 _tuple_code = 'from typing import Tuple\ndef f(x: Tuple[int]): ...\nf'
@@ -49,6 +51,7 @@ def test_param_default(Script, code, expected_params):
             assert annotation.description == expected
 
 
+@pytest.mark.skipif(sys.version_info < (3, 4), reason="Python <3.5 doesn't support __signature__")
 @pytest.mark.parametrize(
     'code, index, param_code, kind', [
         ('def f(x=1): ...\nf', 0, 'x=1', 'POSITIONAL_OR_KEYWORD'),
@@ -58,7 +61,7 @@ def test_param_default(Script, code, expected_params):
         ('def f(*args, x): ...\nf', 1, 'x', 'KEYWORD_ONLY'),
     ]
 )
-def test_param_kind_and_name(code, index, param_code, kind, Script, skip_pre_python35):
+def test_param_kind_and_name(code, index, param_code, kind, Script):
     func, = Script(code).goto_assignments()
     sig, = func.get_signatures()
     param = sig.params[index]
