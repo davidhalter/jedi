@@ -398,6 +398,9 @@ class BaseDefinition(object):
     def get_signatures(self):
         return [Signature(self._evaluator, s) for s in self._name.infer().get_signatures()]
 
+    def execute(self):
+        return _contexts_to_definitions(self._name.infer().execute_evaluated())
+
 
 class Completion(BaseDefinition):
     """

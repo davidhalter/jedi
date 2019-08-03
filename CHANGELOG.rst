@@ -18,6 +18,8 @@ New APIs:
 - ``Signature.params -> List[ParamDefinition]``, ParamDefinition has the
   following attributes ``infer_default()``, ``infer_annotation()``,
   ``to_string()``, and ``kind``.
+- ``Definition.execute() -> List[Definition]``, makes it possible to infer
+    return values of functions.
 
 
 0.14.1 (2019-07-13)

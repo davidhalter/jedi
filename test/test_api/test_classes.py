@@ -442,3 +442,20 @@ def test_builtin_module_with_path(Script):
     assert semlock.name == 'SemLock'
     assert semlock.line is None
     assert semlock.column is None
+
+
+@pytest.mark.parametrize(
+    'code, description', [
+        ('int', 'instance int'),
+        ('str.index', 'instance int'),
+        ('1', None),
+    ]
+)
+def test_execute(Script, code, description):
+    definition, = Script(code).goto_assignments()
+    definitions = definition.execute()
+    if description is None:
+        assert not definitions
+    else:
+        d, = definitions
+        assert d.description == description
