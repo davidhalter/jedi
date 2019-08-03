@@ -316,7 +316,7 @@ def test_signature_is_definition(Script):
     # Now compare all the attributes that a CallSignature must also have.
     for attr_name in dir(definition):
         dont_scan = ['defined_names', 'parent', 'goto_assignments', 'infer',
-                     'params', 'get_signatures']
+                     'params', 'get_signatures', 'execute']
         if attr_name.startswith('_') or attr_name in dont_scan:
             continue
 
