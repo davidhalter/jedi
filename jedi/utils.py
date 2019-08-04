@@ -11,10 +11,7 @@ import re
 import os
 import sys
 
-from parso import split_lines
-
 from jedi import Interpreter
-from jedi.api.helpers import get_on_completion_name
 
 
 READLINE_DEBUG = False
@@ -86,23 +83,18 @@ def setup_readline(namespace_module=__main__):
                     logging.debug("Start REPL completion: " + repr(text))
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                    lines = split_lines(text)
-                    position = (len(lines), len(lines[-1]))
-                    name = get_on_completion_name(
-                        interpreter._module_node,
-                        lines,
-                        position
-                    )
-                    before = text[:len(text) - len(name)]
                     completions = interpreter.completions()
                     logging.debug("REPL completions: %s", completions)
+
+                    self.matches = [
+                        text[:len(text) - c._like_name_length] + c.name_with_symbols
+                        for c in completions
+                    ]
                 except:
                     logging.error("REPL Completion error:\n" + traceback.format_exc())
                     raise
                 finally:
                     sys.path.pop(0)
-
-                self.matches = [before + c.name_with_symbols for c in completions]
             try:
                 return self.matches[state]
             except IndexError:
