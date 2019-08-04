@@ -61,8 +61,8 @@ class AbstractNameDefinition(object):
 class AbstractArbitraryName(AbstractNameDefinition):
     """
     When you e.g. want to complete dicts keys, you probably want to complete
-    string literals, which is not really a name, but for Jedi it works the same
-    way
+    string literals, which is not really a name, but for Jedi we use this
+    concept of Name for completions as well.
     """
     is_context_name = False
 

@@ -99,7 +99,14 @@ class Completion:
         self._call_signatures_method = call_signatures_method
 
     def completions(self):
-        completion_names = self._get_context_completions()
+        leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
+        string = _extract_string_while_in_string(leaf, self._position)
+        if string is not None:
+            completions = list(file_name_completions(self._evaluator, string, self._like_name))
+            if completions:
+                return completions
+
+        completion_names = self._get_context_completions(leaf)
 
         completions = filter_names(self._evaluator, completion_names,
                                    self.stack, self._like_name)
@@ -108,7 +115,7 @@ class Completion:
                                                   x.name.startswith('_'),
                                                   x.name.lower()))
 
-    def _get_context_completions(self):
+    def _get_context_completions(self, leaf):
         """
         Analyzes the context that a completion is made in and decides what to
         return.
@@ -125,13 +132,6 @@ class Completion:
 
         grammar = self._evaluator.grammar
         self.stack = stack = None
-
-        leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
-        string = _extract_string_while_in_string(leaf, self._position)
-        if string is not None:
-            completions = list(file_name_completions(self._evaluator, string, self._like_name))
-            if completions:
-                return completions
 
         try:
             self.stack = stack = helpers.get_stack_at_position(

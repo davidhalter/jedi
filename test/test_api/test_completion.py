@@ -169,19 +169,29 @@ def test_keyword_completion(Script, code, has_keywords):
         ('example.py', 'r"comp"', None, ...),
         ('example.py', 'r"tes"', None, ...),
         ('example.py', 'r"tes"', 5, ['t' + s]),
+        ('example.py', 'r" tes"', 6, []),
         ('test%sexample.py' % s, 'r"tes"', 5, ['t' + s]),
         ('test%sexample.py' % s, 'r"test%scomp"' % s, 5, ['t' + s]),
         ('test%sexample.py' % s, 'r"test%scomp"' % s, 11, ['letion' + s]),
-        ('test%sexample.py' % s, 'r"%s"' % join('test', 'completion', 'basi'), 22, ['c.py']),
+        ('test%sexample.py' % s, '"%s"' % join('test', 'completion', 'basi'), 21, ['c.py']),
         ('example.py', 'rb"' + join('..', 'jedi', 'tes'), None, ['t' + s]),
 
         # Absolute paths
         (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py']),
         (None, '"%s"' % join(root_dir, 'test', 'test_ca'), len(root_dir) + 14, ['che.py']),
+
+        # Longer quotes
+        ('example.py', 'r"""test', None, [s]),
+        ('example.py', 'r"""\ntest', None, []),
+        ('example.py', 'u"""tes\n', (1, 7), ['t' + s]),
+        ('example.py', '"""test%stest_cache.p"""' % s, 20, ['y']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):
-    comps = Script(code, path=file, column=column).completions()
+    line = None
+    if isinstance(column, tuple):
+        line, column = column
+    comps = Script(code, path=file, line=line, column=column).completions()
     if expected == ...:
         assert len(comps) > 100  # This is basically global completions.
     else:
