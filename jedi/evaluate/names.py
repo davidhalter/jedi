@@ -58,6 +58,23 @@ class AbstractNameDefinition(object):
         return self.parent_context.api_type
 
 
+class AbstractArbitraryName(AbstractNameDefinition):
+    """
+    When you e.g. want to complete dicts keys, you probably want to complete
+    string literals, which is not really a name, but for Jedi it works the same
+    way
+    """
+    is_context_name = False
+
+    def __init__(self, evaluator, string):
+        self.evaluator = evaluator
+        self.string_name = string
+        self.parent_context = evaluator.builtins_module
+
+    def infer(self):
+        return NO_CONTEXTS
+
+
 class AbstractTreeName(AbstractNameDefinition):
     def __init__(self, parent_context, tree_name):
         self.parent_context = parent_context

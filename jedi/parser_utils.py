@@ -5,6 +5,7 @@ from weakref import WeakKeyDictionary
 
 from parso.python import tree
 from parso.cache import parser_cache
+from parso import split_lines
 
 from jedi._compatibility import literal_eval, force_unicode
 
@@ -278,3 +279,15 @@ def get_cached_code_lines(grammar, path):
     to do this, but we avoid splitting all the lines again.
     """
     return parser_cache[grammar._hashed][path].lines
+
+
+def cut_value_at_position(leaf, position):
+    """
+    Cuts of the value of the leaf at position
+    """
+    lines = split_lines(leaf.value, keepends=True)[:position[0] - leaf.line + 1]
+    column = position[1]
+    if leaf.line == position[0]:
+        column -= leaf.column
+    lines[-1] = lines[-1][:column]
+    return ''.join(lines)

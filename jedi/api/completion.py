@@ -1,3 +1,5 @@
+import re
+
 from parso.python.token import PythonTokenTypes
 from parso.python import tree
 from parso.tree import search_ancestor, Leaf
@@ -7,12 +9,13 @@ from jedi import debug
 from jedi import settings
 from jedi.api import classes
 from jedi.api import helpers
-from jedi.evaluate import imports
 from jedi.api import keywords
+from jedi.api.file_name import file_name_completions
+from jedi.evaluate import imports
 from jedi.evaluate.helpers import evaluate_call_of_leaf, parse_dotted_names
 from jedi.evaluate.filters import get_global_filters
 from jedi.evaluate.gradual.conversion import convert_contexts
-from jedi.parser_utils import get_statement_of_position
+from jedi.parser_utils import get_statement_of_position, cut_value_at_position
 
 
 def get_call_signature_param_names(call_signatures):
@@ -121,19 +124,27 @@ class Completion:
         """
 
         grammar = self._evaluator.grammar
+        self.stack = stack = None
+
+        leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
+        string = _extract_string_while_in_string(leaf, self._position)
+        if string is not None:
+            completions = list(file_name_completions(self._evaluator, string, self._like_name))
+            if completions:
+                return completions
 
         try:
             self.stack = stack = helpers.get_stack_at_position(
-                grammar, self._code_lines, self._module_node, self._position
+                grammar, self._code_lines, leaf, self._position
             )
         except helpers.OnErrorLeaf as e:
-            self.stack = stack = None
-            if e.error_leaf.value == '.':
+            value = e.error_leaf.value
+            if value == '.':
                 # After ErrorLeaf's that are dots, we will not do any
                 # completions since this probably just confuses the user.
                 return []
-            # If we don't have a context, just use global completion.
 
+            # If we don't have a context, just use global completion.
             return self._global_completions()
 
         allowed_transitions = \
@@ -289,3 +300,22 @@ class Completion:
                 # TODO we should probably check here for properties
                 if (name.api_type == 'function') == is_function:
                     yield name
+
+
+def _extract_string_while_in_string(leaf, position):
+    if leaf.type == 'string':
+        match = re.match(r'^\w*(\'{3}|"{3}|\'|")', leaf.value)
+        quote = match.group(1)
+        if leaf.line == position[0] and position[1] < leaf.column + match.end():
+            return None
+        if leaf.end_pos[0] == position[0] and position[1] > leaf.end_pos[1] - len(quote):
+            return None
+        return cut_value_at_position(leaf, position)[match.end():]
+
+    leaves = []
+    while leaf is not None and leaf.line == position[0]:
+        if leaf.type == 'error_leaf' and ('"' in leaf.value or "'" in leaf.value):
+            return ''.join(l.get_code() for l in leaves)
+        leaves.insert(0, leaf)
+        leaf = leaf.get_previous_leaf()
+    return None

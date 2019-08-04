@@ -21,12 +21,6 @@ def get_operator(evaluator, string, pos):
 
 class KeywordName(AbstractNameDefinition):
     api_type = u'keyword'
-    is_context_name = False
-
-    def __init__(self, evaluator, name):
-        self.evaluator = evaluator
-        self.string_name = name
-        self.parent_context = evaluator.builtins_module
 
     def infer(self):
         return [Keyword(self.evaluator, self.string_name, (0, 0))]

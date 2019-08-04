@@ -54,8 +54,7 @@ class OnErrorLeaf(Exception):
         return self.args[0]
 
 
-def _get_code_for_stack(code_lines, module_node, position):
-    leaf = module_node.get_leaf_for_position(position, include_prefixes=True)
+def _get_code_for_stack(code_lines, leaf, position):
     # It might happen that we're on whitespace or on a comment. This means
     # that we would not get the right leaf.
     if leaf.start_pos >= position:
@@ -95,7 +94,7 @@ def _get_code_for_stack(code_lines, module_node, position):
         return _get_code(code_lines, user_stmt.get_start_pos_of_prefix(), position)
 
 
-def get_stack_at_position(grammar, code_lines, module_node, pos):
+def get_stack_at_position(grammar, code_lines, leaf, pos):
     """
     Returns the possible node names (e.g. import_from, xor_test or yield_stmt).
     """
@@ -119,7 +118,7 @@ def get_stack_at_position(grammar, code_lines, module_node, pos):
                 yield token
 
     # The code might be indedented, just remove it.
-    code = dedent(_get_code_for_stack(code_lines, module_node, pos))
+    code = dedent(_get_code_for_stack(code_lines, leaf, pos))
     # We use a word to tell Jedi when we have reached the start of the
     # completion.
     # Use Z as a prefix because it's not part of a number suffix.

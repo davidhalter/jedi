@@ -1,8 +1,9 @@
-import os
+from os.path import join, sep as s
 import sys
 from textwrap import dedent
 
 import pytest
+from ..helpers import root_dir
 
 
 def test_in_whitespace(Script):
@@ -69,8 +70,8 @@ def test_points_in_completion(Script):
 
 def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpdir):
     dirname = str(tmpdir.mkdir('jedi-test'))
-    filename1 = os.path.join(dirname, 'test1.py')
-    filename2 = os.path.join(dirname, 'test2.py')
+    filename1 = join(dirname, 'test1.py')
+    filename2 = join(dirname, 'test2.py')
     if sys.version_info < (3, 0):
         data = "# coding: latin-1\nfoo = 'm\xf6p'\n"
     else:
@@ -156,3 +157,32 @@ def test_with_stmt_error_recovery(Script):
 )
 def test_keyword_completion(Script, code, has_keywords):
     assert has_keywords == any(x.is_keyword for x in Script(code).completions())
+
+
+@pytest.mark.parametrize(
+    'file, code, column, expected', [
+        # General tests / relative paths
+        (None, '"comp', None, ['ile', 'lex']),  # No files like comp
+        (None, '"test', None, [s]),
+        (None, '"test', 4, ['t' + s]),
+        ('example.py', '"test%scomp' % s, None, ['letion' + s]),
+        ('example.py', 'r"comp"', None, ...),
+        ('example.py', 'r"tes"', None, ...),
+        ('example.py', 'r"tes"', 5, ['t' + s]),
+        ('test%sexample.py' % s, 'r"tes"', 5, ['t' + s]),
+        ('test%sexample.py' % s, 'r"test%scomp"' % s, 5, ['t' + s]),
+        ('test%sexample.py' % s, 'r"test%scomp"' % s, 11, ['letion' + s]),
+        ('test%sexample.py' % s, 'r"%s"' % join('test', 'completion', 'basi'), 22, ['c.py']),
+        ('example.py', 'rb"' + join('..', 'jedi', 'tes'), None, ['t' + s]),
+
+        # Absolute paths
+        (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py']),
+        (None, '"%s"' % join(root_dir, 'test', 'test_ca'), len(root_dir) + 14, ['che.py']),
+    ]
+)
+def test_file_path_completions(Script, file, code, column, expected):
+    comps = Script(code, path=file, column=column).completions()
+    if expected == ...:
+        assert len(comps) > 100  # This is basically global completions.
+    else:
+        assert [c.complete for c in comps] == expected

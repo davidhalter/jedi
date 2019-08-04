@@ -144,7 +144,6 @@ class Script(object):
                              '(0-%d) for line %d (%r).' % (
                                  column, line_len, line, line_string))
         self._pos = line, column
-        self._path = path
 
         cache.clear_time_caches()
         debug.reset_time()
