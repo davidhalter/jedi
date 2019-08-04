@@ -185,6 +185,11 @@ def test_keyword_completion(Script, code, has_keywords):
         ('example.py', 'r"""\ntest', None, []),
         ('example.py', 'u"""tes\n', (1, 7), ['t' + s]),
         ('example.py', '"""test%stest_cache.p"""' % s, 20, ['y']),
+
+        # Adding
+        ('example.py', '"test" + "%stest_cac' % s, None, ['he.py']),
+        ('example.py', '"test" + "%s" + "test_cac' % s, None, ['he.py']),
+        ('example.py', 'x = 1 + "test', None, [s]),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):

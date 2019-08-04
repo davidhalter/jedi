@@ -100,9 +100,11 @@ class Completion:
 
     def completions(self):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
-        string = _extract_string_while_in_string(leaf, self._position)
+        string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
-            completions = list(file_name_completions(self._evaluator, string, self._like_name))
+            completions = list(file_name_completions(
+                self._evaluator, self._module_context, start_leaf, string, self._like_name
+            ))
             if completions:
                 return completions
 
@@ -307,15 +309,15 @@ def _extract_string_while_in_string(leaf, position):
         match = re.match(r'^\w*(\'{3}|"{3}|\'|")', leaf.value)
         quote = match.group(1)
         if leaf.line == position[0] and position[1] < leaf.column + match.end():
-            return None
+            return None, None
         if leaf.end_pos[0] == position[0] and position[1] > leaf.end_pos[1] - len(quote):
-            return None
-        return cut_value_at_position(leaf, position)[match.end():]
+            return None, None
+        return cut_value_at_position(leaf, position)[match.end():], leaf
 
     leaves = []
     while leaf is not None and leaf.line == position[0]:
         if leaf.type == 'error_leaf' and ('"' in leaf.value or "'" in leaf.value):
-            return ''.join(l.get_code() for l in leaves)
+            return ''.join(l.get_code() for l in leaves), leaf
         leaves.insert(0, leaf)
         leaf = leaf.get_previous_leaf()
-    return None
+    return None, None
