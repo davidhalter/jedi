@@ -6,6 +6,8 @@ Changelog
 0.15.0 (XXXX-XX-XX)
 +++++++++++++++++++
 
+- Added file path completions, there's a **new ``Completion.type``** ``path``,
+  now.
 - ``*args``/``**kwargs`` resolving. If possible Jedi replaces the parameters
   with the actual alternatives.
 - Better support for enums/dataclasses

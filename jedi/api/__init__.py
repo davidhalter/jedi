@@ -27,7 +27,7 @@ from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.api.environment import InterpreterEnvironment
-from jedi.api.project import get_default_project
+from jedi.api.project import get_default_project, Project
 from jedi.evaluate import Evaluator
 from jedi.evaluate import imports
 from jedi.evaluate import usages
@@ -463,7 +463,8 @@ class Interpreter(Script):
             if not isinstance(environment, InterpreterEnvironment):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
 
-        super(Interpreter, self).__init__(source, environment=environment, **kwds)
+        super(Interpreter, self).__init__(source, environment=environment,
+                                          _project=Project(os.getcwd()), **kwds)
         self.namespaces = namespaces
 
     def _get_module(self):

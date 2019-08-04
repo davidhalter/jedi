@@ -154,7 +154,7 @@ class BaseDefinition(object):
         'function'
 
         Valid values for are ``module``, ``class``, ``instance``, ``function``,
-        ``param`` and ``keyword``.
+        ``param``, ``path`` and ``keyword``.
 
         """
         tree_name = self._name.tree_name
