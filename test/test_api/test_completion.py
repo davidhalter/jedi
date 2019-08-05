@@ -195,6 +195,9 @@ def test_keyword_completion(Script, code, has_keywords):
         ('example.py', 'x = f("te" + "st"', 16, [s]),
         ('example.py', 'x = f("te" + "st")', 16, [s]),
         ('example.py', 'x = f("t" + "est")', 16, [s]),
+        # This is actually not correct, but for now leave it here, because of
+        # Python 2.
+        ('example.py', 'x = f(b"t" + "est")', 17, [s]),
         ('example.py', '"test" + "', None, [s]),
     ]
 )

@@ -1,6 +1,6 @@
 import os
 
-from jedi._compatibility import FileNotFoundError
+from jedi._compatibility import FileNotFoundError, force_unicode
 from jedi.evaluate.names import AbstractArbitraryName
 from jedi.api import classes
 from jedi.evaluate.helpers import get_str_or_none
@@ -54,7 +54,7 @@ def _get_string_additions(module_context, start_leaf):
             s = get_str_or_none(c)
             if s is None:
                 return string
-            string = s + string
+            string = force_unicode(s) + string
             continue
 
         if child_node != '+':
