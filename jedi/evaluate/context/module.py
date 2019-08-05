@@ -26,8 +26,11 @@ class _ModuleAttributeName(AbstractNameDefinition):
 
     def infer(self):
         if self._string_value is not None:
+            s = self._string_value
+            if self.parent_context.evaluator.environment.version_info.major == 2:
+                s = bytes(s)
             return ContextSet([
-                create_simple_object(self.parent_context.evaluator, self._string_value)
+                create_simple_object(self.parent_context.evaluator, s)
             ])
         return compiled.get_string_context_set(self.parent_context.evaluator)
 

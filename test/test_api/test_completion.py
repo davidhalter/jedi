@@ -166,8 +166,8 @@ def test_keyword_completion(Script, code, has_keywords):
         (None, '"test', None, [s]),
         (None, '"test', 4, ['t' + s]),
         ('example.py', '"test%scomp' % s, None, ['letion' + s]),
-        ('example.py', 'r"comp"', None, ...),
-        ('example.py', 'r"tes"', None, ...),
+        ('example.py', 'r"comp"', None, "A LOT"),
+        ('example.py', 'r"tes"', None, "A LOT"),
         ('example.py', 'r"tes"', 5, ['t' + s]),
         ('example.py', 'r" tes"', 6, []),
         ('test%sexample.py' % s, 'r"tes"', 5, ['t' + s]),
@@ -203,7 +203,7 @@ def test_file_path_completions(Script, file, code, column, expected):
     if isinstance(column, tuple):
         line, column = column
     comps = Script(code, path=file, line=line, column=column).completions()
-    if expected == ...:
+    if expected == "A LOT":
         assert len(comps) > 100  # This is basically global completions.
     else:
         assert [c.complete for c in comps] == expected
