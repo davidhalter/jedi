@@ -9,6 +9,8 @@ from jedi.evaluate import compiled
 from jedi.evaluate.base_context import TreeContext
 from jedi.evaluate.names import SubModuleName
 from jedi.evaluate.helpers import contexts_from_qualified_names
+from jedi.evaluate.compiled import create_simple_object
+from jedi.evaluate.base_context import ContextSet
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -17,11 +19,16 @@ class _ModuleAttributeName(AbstractNameDefinition):
     """
     api_type = u'instance'
 
-    def __init__(self, parent_module, string_name):
+    def __init__(self, parent_module, string_name, string_value=None):
         self.parent_context = parent_module
         self.string_name = string_name
+        self._string_value = string_value
 
     def infer(self):
+        if self._string_value is not None:
+            return ContextSet([
+                create_simple_object(self.parent_context.evaluator, self._string_value)
+            ])
         return compiled.get_string_context_set(self.parent_context.evaluator)
 
 
@@ -132,9 +139,13 @@ class ModuleMixin(SubModuleDictMixin):
 
     @evaluator_method_cache()
     def _module_attributes_dict(self):
-        names = ['__file__', '__package__', '__doc__', '__name__']
+        names = ['__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
-        return dict((n, _ModuleAttributeName(self, n)) for n in names)
+        dct = dict((n, _ModuleAttributeName(self, n)) for n in names)
+        file = self.py__file__()
+        if file is not None:
+            dct['__file__'] = _ModuleAttributeName(self, '__file__', file)
+        return dct
 
     def iter_star_filters(self, search_global=False):
         for star_module in self.star_imports():

@@ -409,5 +409,4 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
         context = context.parent_context
 
     # Add builtins to the global scope.
-    for filter in evaluator.builtins_module.get_filters():
-        yield filter
+    yield next(evaluator.builtins_module.get_filters())
