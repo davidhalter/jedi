@@ -20,7 +20,7 @@ def file_name_completions(evaluator, module_context, start_leaf, string, like_na
     must_start_with = os.path.basename(string) + like_name
     string = os.path.dirname(string)
 
-    string = _maybe_add_os_path_join(module_context, start_leaf, string)
+    string, is_in_os_path_join = _maybe_add_os_path_join(module_context, start_leaf, string)
     base_path = os.path.join(evaluator.project._path, string)
     try:
         listed = os.listdir(base_path)
@@ -29,7 +29,7 @@ def file_name_completions(evaluator, module_context, start_leaf, string, like_na
     for name in listed:
         if name.startswith(must_start_with):
             path_for_name = os.path.join(base_path, name)
-            if os.path.isdir(path_for_name):
+            if os.path.isdir(path_for_name) and not is_in_os_path_join:
                 name += os.path.sep
 
             yield classes.Completion(
@@ -97,8 +97,8 @@ def _maybe_add_os_path_join(module_context, start_leaf, string):
                 contexts = context.eval_node(atom)
                 if any([c.name.get_qualified_names(include_module_names=True)
                         != ('os', 'path', 'join') for c in contexts]):
-                    return string
+                    return string, False
                 nodes = arglist.children[:arglist.children.index(start_leaf):2]
-                return _add_strings(module_context, nodes, add_slash=True)
+                return _add_strings(module_context, nodes, add_slash=True), True
 
-    return string
+    return string, False
