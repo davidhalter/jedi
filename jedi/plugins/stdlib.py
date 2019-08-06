@@ -106,6 +106,9 @@ _NAMEDTUPLE_FIELD_TEMPLATE = '''\
 
 def execute(callback):
     def wrapper(context, arguments):
+        def call():
+            return callback(context, arguments=arguments)
+
         try:
             obj_name = context.name.string_name
         except AttributeError:
@@ -116,7 +119,7 @@ def execute(callback):
             elif context.parent_context is not None and context.parent_context.is_module():
                 module_name = context.parent_context.py__name__()
             else:
-                return callback(context, arguments=arguments)
+                return call()
 
             if isinstance(context, BoundMethod):
                 if module_name == 'builtins':
@@ -130,7 +133,7 @@ def execute(callback):
                         if context.class_context.py__name__() == 'property':
                             return ContextSet([context.instance])
 
-                return callback(context, arguments=arguments)
+                return call()
 
             # for now we just support builtin functions.
             try:
@@ -138,8 +141,8 @@ def execute(callback):
             except KeyError:
                 pass
             else:
-                return func(context, arguments=arguments)
-        return callback(context, arguments=arguments)
+                return func(context, arguments=arguments, callback=call)
+        return call()
 
     return wrapper
 
@@ -154,15 +157,18 @@ def _follow_param(evaluator, arguments, index):
 
 
 def argument_clinic(string, want_obj=False, want_context=False,
-                    want_arguments=False, want_evaluator=False):
+                    want_arguments=False, want_evaluator=False,
+                    want_callback=False):
     """
     Works like Argument Clinic (PEP 436), to validate function params.
     """
 
     def f(func):
-        @repack_with_argument_clinic(string, keep_arguments_param=True)
+        @repack_with_argument_clinic(string, keep_arguments_param=True,
+                                     keep_callback_param=True)
         def wrapper(obj, *args, **kwargs):
             arguments = kwargs.pop('arguments')
+            callback = kwargs.pop('callback')
             assert not kwargs  # Python 2...
             debug.dbg('builtin start %s' % obj, color='MAGENTA')
             result = NO_CONTEXTS
@@ -174,6 +180,8 @@ def argument_clinic(string, want_obj=False, want_context=False,
                 kwargs['evaluator'] = obj.evaluator
             if want_arguments:
                 kwargs['arguments'] = arguments
+            if want_callback:
+                kwargs['callback'] = callback
             result = func(*args, **kwargs)
             debug.dbg('builtin end: %s', result, color='MAGENTA')
             return result
@@ -413,7 +421,7 @@ def builtins_classmethod(functions, obj, arguments):
     )
 
 
-def collections_namedtuple(obj, arguments):
+def collections_namedtuple(obj, arguments, callback):
     """
     Implementation of the namedtuple function.
 
@@ -538,7 +546,7 @@ class MergedPartialArguments(AbstractArguments):
             yield key_lazy_context
 
 
-def functools_partial(obj, arguments):
+def functools_partial(obj, arguments, callback):
     return ContextSet(
         PartialObject(instance, arguments)
         for instance in obj.py__call__(arguments)
@@ -559,7 +567,7 @@ def _random_choice(sequences):
     )
 
 
-def _dataclass(obj, arguments):
+def _dataclass(obj, arguments, callback):
     for c in _follow_param(obj.evaluator, arguments, 0):
         if c.is_class():
             return ContextSet([DataclassWrapper(c)])
@@ -695,6 +703,24 @@ def _create_string_input_function(func):
     return wrapper
 
 
+@argument_clinic('*args, /', want_callback=True)
+def _os_path_join(args_set, callback):
+    if len(args_set) == 1:
+        string = u''
+        sequence, = args_set
+        for lazy_context in sequence.py__iter__():
+            string_contexts = lazy_context.infer()
+            if len(string_contexts) != 1:
+                break
+            s = get_str_or_none(next(iter(string_contexts)))
+            if string is None:
+                break
+            string += os.path.sep + force_unicode(s)
+        else:
+            return ContextSet([compiled.create_simple_object(sequence.evaluator, string)])
+    return callback()
+
+
 _implemented = {
     'builtins': {
         'getattr': builtins_getattr,
@@ -750,6 +776,7 @@ _implemented = {
         'dirname': _create_string_input_function(os.path.dirname),
         'abspath': _create_string_input_function(os.path.abspath),
         'relpath': _create_string_input_function(os.path.relpath),
+        'join': _os_path_join,
     }
 }
 

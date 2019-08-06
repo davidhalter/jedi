@@ -36,7 +36,7 @@ class ParamIssue(Exception):
     pass
 
 
-def repack_with_argument_clinic(string, keep_arguments_param=False):
+def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callback_param=False):
     """
     Transforms a function or method with arguments to the signature that is
     given as an argument clinic notation.
@@ -55,6 +55,8 @@ def repack_with_argument_clinic(string, keep_arguments_param=False):
                 arguments = kwargs['arguments']
             else:
                 arguments = kwargs.pop('arguments')
+            if not keep_arguments_param:
+                kwargs.pop('callback', None)
             try:
                 args += tuple(_iterate_argument_clinic(
                     context.evaluator,

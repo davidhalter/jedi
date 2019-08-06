@@ -209,6 +209,7 @@ os_path = 'from os.path import *\n'
         (f1, os_path + 'dirname(__file__) + "%stest' % s, None, [s]),
         (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py']),
         (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py']),
+        (f2, os_path + 'join(dirname(__file__), "completion") + sep + "basi', None, ['c.py']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):
