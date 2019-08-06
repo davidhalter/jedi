@@ -10,6 +10,7 @@ the standard library. The usual way to understand the standard library is the
 compiled module that returns the types for C-builtins.
 """
 import parso
+import os
 
 from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
@@ -678,6 +679,22 @@ def _operator_itemgetter(args_context_set, obj, arguments):
     ])
 
 
+def _create_string_input_function(func):
+    @argument_clinic('string, /', want_obj=True, want_arguments=True)
+    def wrapper(strings, obj, arguments):
+        def iterate():
+            for context in strings:
+                s = get_str_or_none(context)
+                if s is not None:
+                    s = func(s)
+                    yield compiled.create_simple_object(context.evaluator, s)
+        contexts = ContextSet(iterate())
+        if contexts:
+            return contexts
+        return obj.py__call__(arguments)
+    return wrapper
+
+
 _implemented = {
     'builtins': {
         'getattr': builtins_getattr,
@@ -729,6 +746,11 @@ _implemented = {
         # For now this works at least better than Jedi trying to understand it.
         'dataclass': _dataclass
     },
+    'os.path': {
+        'dirname': _create_string_input_function(os.path.dirname),
+        'abspath': _create_string_input_function(os.path.abspath),
+        'relpath': _create_string_input_function(os.path.relpath),
+    }
 }
 
 

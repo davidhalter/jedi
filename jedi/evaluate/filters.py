@@ -386,7 +386,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     >>> list(filters[1].values())  # package modules -> Also empty.
     []
     >>> sorted(name.string_name for name in filters[2].values())  # Module attributes
-    ['__doc__', '__file__', '__name__', '__package__']
+    ['__doc__', '__name__', '__package__']
 
     Finally, it yields the builtin filter, if `include_builtin` is
     true (default).

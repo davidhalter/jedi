@@ -159,6 +159,10 @@ def test_keyword_completion(Script, code, has_keywords):
     assert has_keywords == any(x.is_keyword for x in Script(code).completions())
 
 
+f1 = join(root_dir, 'example.py')
+f2 = join(root_dir, 'test', 'example.py')
+
+
 @pytest.mark.parametrize(
     'file, code, column, expected', [
         # General tests / relative paths
@@ -199,6 +203,12 @@ def test_keyword_completion(Script, code, has_keywords):
         # Python 2.
         ('example.py', 'x = f(b"t" + "est")', 17, [s]),
         ('example.py', '"test" + "', None, [s]),
+
+        # __file__
+        (f1, 'from os.path import *\ndirname(__file__) + "%stest' % s, None, [s]),
+        (f2, 'from os.path import *\ndirname(__file__) + "%stest_ca' % s, None, ['che.py']),
+        (f2, 'from os.path import *\ndirname(abspath(__file__)) + "%stest_ca' % s,
+         None, ['che.py']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):

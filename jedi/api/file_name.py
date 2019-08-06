@@ -8,8 +8,7 @@ from jedi.evaluate.helpers import get_str_or_none
 
 def file_name_completions(evaluator, module_context, start_leaf, string, like_name):
     # First we want to find out what can actually be changed as a name.
-    base_name = os.path.basename(string)
-    like_name_length = len(base_name + like_name)
+    like_name_length = len(os.path.basename(string) + like_name)
 
     string = _get_string_additions(module_context, start_leaf) + string
     # Here we use basename again, because if strings are added like
