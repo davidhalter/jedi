@@ -194,7 +194,7 @@ os_path = 'from os.path import *\n'
         # Adding
         ('example.py', '"test" + "%stest_cac' % s, None, ['he.py']),
         ('example.py', '"test" + "%s" + "test_cac' % s, None, ['he.py']),
-        ('example.py', 'x = 1 + "test', None, [s]),
+        ('example.py', 'x = 1 + "test', None, []),
         ('example.py', 'x = f("te" + "st)', 16, [s]),
         ('example.py', 'x = f("te" + "st', 16, [s]),
         ('example.py', 'x = f("te" + "st"', 16, [s]),
@@ -210,6 +210,11 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py']),
         (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py']),
         (f2, os_path + 'join(dirname(__file__), "completion") + sep + "basi', None, ['c.py']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi', None, ['c.py']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 43, ['c.py']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 43, ['c.py']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 35, []),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):

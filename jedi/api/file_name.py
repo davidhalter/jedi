@@ -10,12 +10,17 @@ def file_name_completions(evaluator, module_context, start_leaf, string, like_na
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
-    string = _get_string_additions(module_context, start_leaf) + string
+    addition = _get_string_additions(module_context, start_leaf)
+    if addition is None:
+        return
+    string = addition + string
+
     # Here we use basename again, because if strings are added like
     # `'foo' + 'bar`, it should complete to `foobar/`.
     must_start_with = os.path.basename(string) + like_name
     string = os.path.dirname(string)
 
+    string = _maybe_add_os_path_join(module_context, start_leaf, string)
     base_path = os.path.join(evaluator.project._path, string)
     try:
         listed = os.listdir(base_path)
@@ -36,32 +41,64 @@ def file_name_completions(evaluator, module_context, start_leaf, string, like_na
 
 
 def _get_string_additions(module_context, start_leaf):
+    def iterate_nodes():
+        node = addition.parent
+        was_addition = True
+        for child_node in reversed(node.children[:node.children.index(addition)]):
+            if was_addition:
+                was_addition = False
+                yield child_node
+                continue
+
+            if child_node != '+':
+                break
+            was_addition = True
+
     addition = start_leaf.get_previous_leaf()
     if addition != '+':
         return ''
-    node = addition.parent
-    string = ''
-    was_addition = True
-    for child_node in reversed(node.children[:node.children.index(addition)]):
-        if was_addition:
-            was_addition = False
-            context = module_context.create_context(node)
-            contexts = context.eval_node(child_node)
-            if len(contexts) != 1:
-                return string
-            c, = contexts
-            s = get_str_or_none(c)
-            if s is None:
-                return string
-            string = force_unicode(s) + string
-            continue
+    return _add_strings(module_context, reversed(list(iterate_nodes())))
 
-        if child_node != '+':
-            break
-        was_addition = True
+
+def _add_strings(module_context, nodes, add_slash=False):
+    string = ''
+    context = None
+    first = True
+    for child_node in nodes:
+        if context is None:
+            context = module_context.create_context(child_node)
+        contexts = context.eval_node(child_node)
+        if len(contexts) != 1:
+            return None
+        c, = contexts
+        s = get_str_or_none(c)
+        if s is None:
+            return None
+        if not first and add_slash:
+            string += os.path.sep
+        string += force_unicode(s)
+        first = False
     return string
 
 
 class FileName(AbstractArbitraryName):
     api_type = u'path'
     is_context_name = False
+
+
+def _maybe_add_os_path_join(module_context, start_leaf, string):
+    arglist = start_leaf.parent
+    if arglist.type == 'arglist':
+        trailer = arglist.parent
+        if trailer.type == 'trailer':
+            atom = trailer.get_previous_sibling()
+            if atom.type != 'trailer':
+                context = module_context.create_context(atom)
+                contexts = context.eval_node(atom)
+                if any([c.name.get_qualified_names(include_module_names=True)
+                        != ('os', 'path', 'join') for c in contexts]):
+                    return string
+                nodes = arglist.children[:arglist.children.index(start_leaf):2]
+                return _add_strings(module_context, nodes, add_slash=True)
+
+    return string
