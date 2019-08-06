@@ -7,7 +7,7 @@ Changelog
 +++++++++++++++++++
 
 - Added file path completions, there's a **new ``Completion.type``** ``path``,
-  now.
+  now. Example: ``'/ho`` -> ``'/home/``
 - ``*args``/``**kwargs`` resolving. If possible Jedi replaces the parameters
   with the actual alternatives.
 - Better support for enums/dataclasses

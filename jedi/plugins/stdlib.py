@@ -789,3 +789,13 @@ class EnumInstance(LazyContextWrapper):
         ))
         for f in self._get_wrapped_context().get_filters():
             yield f
+
+
+def tree_name_to_contexts(func):
+    def wrapper(evaluator, context, tree_name):
+        if tree_name.value == 'sep' and context.is_module() and context.py__name__() == 'os.path':
+            return ContextSet({
+                compiled.create_simple_object(evaluator, os.path.sep),
+            })
+        return func(evaluator, context, tree_name)
+    return wrapper

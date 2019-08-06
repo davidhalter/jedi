@@ -161,6 +161,7 @@ def test_keyword_completion(Script, code, has_keywords):
 
 f1 = join(root_dir, 'example.py')
 f2 = join(root_dir, 'test', 'example.py')
+os_path = 'from os.path import *\n'
 
 
 @pytest.mark.parametrize(
@@ -205,10 +206,9 @@ f2 = join(root_dir, 'test', 'example.py')
         ('example.py', '"test" + "', None, [s]),
 
         # __file__
-        (f1, 'from os.path import *\ndirname(__file__) + "%stest' % s, None, [s]),
-        (f2, 'from os.path import *\ndirname(__file__) + "%stest_ca' % s, None, ['che.py']),
-        (f2, 'from os.path import *\ndirname(abspath(__file__)) + "%stest_ca' % s,
-         None, ['che.py']),
+        (f1, os_path + 'dirname(__file__) + "%stest' % s, None, [s]),
+        (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py']),
+        (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):

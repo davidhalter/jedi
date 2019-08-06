@@ -27,6 +27,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.gradual.stub_context import VersionInfo
 from jedi.evaluate.gradual import annotation
 from jedi.evaluate.context.decorator import Decoratee
+from jedi.plugins import plugin_manager
 
 
 def _limit_context_infers(func):
@@ -545,6 +546,7 @@ def _remove_statements(evaluator, context, stmt, name):
     return eval_expr_stmt(context, stmt, seek_name=name)
 
 
+@plugin_manager.decorate()
 def tree_name_to_contexts(evaluator, context, tree_name):
     context_set = NO_CONTEXTS
     module_node = context.get_root_context().tree_node
