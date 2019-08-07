@@ -217,11 +217,13 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 33, ['on']),
 
-        # join with one argument
-        #(f2, os_path + 'join("tes', 10, ['t']),
-        #(f2, os_path + 'join("tes)', 10, ['t']),
-        #(f2, os_path + 'join("tes"', 10, ['t']),
-        #(f2, os_path + 'join("tes")', 10, ['t']),
+        # join with one argument. join will not get evaluated and the result is
+        # that directories and in a slash. This is unfortunate, but doesn't
+        # really matter.
+        (f2, os_path + 'join("tes', 9, ['t']),
+        (f2, os_path + 'join("tes)', 9, ['t']),
+        (f2, os_path + 'join("tes"', 9, ['t']),
+        (f2, os_path + 'join("tes")', 9, ['t']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):

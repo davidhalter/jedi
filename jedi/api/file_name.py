@@ -93,34 +93,51 @@ def _maybe_add_os_path_join(module_context, start_leaf, string):
             return string, False
         return _add_strings(context, nodes, add_slash=True), True
 
+    def check_trailer(trailer, arglist_nodes):
+        atom = trailer.get_previous_sibling()
+        if atom.type != 'trailer':
+            return check_for_power(atom, arglist_nodes)
+        return string, False
+
+    # Maybe an arglist or some weird error case. Therefore checked below.
     arglist = start_leaf.parent
+    index = arglist.children.index(start_leaf)
+    arglist_nodes = arglist.children[:index]
+    print(arglist, arglist_nodes)
     if start_leaf.type == 'error_leaf':
-        index = arglist.children.index(start_leaf)
+        # Unfinished string literal, like `join('`
         if index > 0:
-            error_node = arglist.children[index - 1]
-            if error_node.type == 'error_node' and len(error_node.children) >= 3:
-                atom = error_node.children[-3]
-                arglist = error_node.children[-1]
-                if atom.type in ('atom_expr', 'power', 'name') and arglist.type == 'arglist':
-                    return check_for_power(atom, arglist.children[::2])
+            error_node = arglist_nodes[-1]
+            if error_node.type == 'error_node' and len(error_node.children) >= 2:
+                index = -2
+                if error_node.children[-1].type == 'arglist':
+                    arglist_nodes = error_node.children[-1].children
+                    index -= 1
+                else:
+                    arglist_nodes = []
+
+                if error_node.children[index + 1] == '(':
+                    atom = error_node.children[index]
+                    if atom.type in ('atom_expr', 'power', 'name'):
+                        return check_for_power(atom, arglist_nodes[::2])
     elif arglist.type == 'arglist':
         trailer = arglist.parent
         if trailer.type == 'error_node':
-            index = trailer.children.index(arglist)
-            assert index >= 2
-            assert trailer.children[index - 1] == '('
-            name = trailer.children[index - 2]
+            trailer_index = trailer.children.index(arglist)
+            assert trailer_index >= 2
+            assert trailer.children[trailer_index - 1] == '('
+            name = trailer.children[trailer_index - 2]
             if name.type in ('atom_expr', 'power', 'name'):
-                nodes = arglist.children[:arglist.children.index(start_leaf):2]
-                return check_for_power(name, nodes)
-
-        elif False:
-            for node in reversed(trailer.children[:trailer.children.index(arglist)]):
-                print(node)
+                return check_for_power(name, arglist_nodes[::2])
         elif trailer.type == 'trailer':
-            atom = trailer.get_previous_sibling()
-            if atom.type != 'trailer':
-                nodes = arglist.children[:arglist.children.index(start_leaf):2]
-                return check_for_power(atom, nodes)
+            return check_trailer(trailer, arglist_nodes[::2])
+    elif arglist.type == 'trailer':
+        return check_trailer(arglist, [])
+    elif arglist.type == 'error_node':
+        # Stuff like `join(""`
+        if len(arglist_nodes) >= 2 and arglist_nodes[-1] == '(':
+            name = arglist_nodes[-2]
+            if name.type in ('atom_expr', 'power', 'name'):
+                return check_for_power(name, [])
 
     return string, False
