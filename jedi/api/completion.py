@@ -85,7 +85,7 @@ def get_flow_scope_node(module_node, position):
 
 
 class Completion:
-    def __init__(self, evaluator, module, code_lines, position, call_signatures_method):
+    def __init__(self, evaluator, module, code_lines, position, call_signatures_callback):
         self._evaluator = evaluator
         self._module_context = module
         self._module_node = module.tree_node
@@ -96,14 +96,15 @@ class Completion:
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._position = position[0], position[1] - len(self._like_name)
-        self._call_signatures_method = call_signatures_method
+        self._call_signatures_callback = call_signatures_callback
 
     def completions(self):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
             completions = list(file_name_completions(
-                self._evaluator, self._module_context, start_leaf, string, self._like_name
+                self._evaluator, self._module_context, start_leaf, string,
+                self._like_name, self._call_signatures_callback
             ))
             if completions:
                 return completions
@@ -223,7 +224,7 @@ class Completion:
                 completion_names += self._get_class_context_completions(is_function=False)
 
             if 'trailer' in nonterminals:
-                call_signatures = self._call_signatures_method()
+                call_signatures = self._call_signatures_callback()
                 completion_names += get_call_signature_param_names(call_signatures)
 
         return completion_names

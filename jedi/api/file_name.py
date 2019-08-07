@@ -5,10 +5,10 @@ from jedi.evaluate.names import AbstractArbitraryName
 from jedi.api import classes
 from jedi.evaluate.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
-from jedi.evaluate.syntax_tree import eval_trailer
 
 
-def file_name_completions(evaluator, module_context, start_leaf, string, like_name):
+def file_name_completions(evaluator, module_context, start_leaf, string,
+                          like_name, call_signatures_callback):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
@@ -22,7 +22,14 @@ def file_name_completions(evaluator, module_context, start_leaf, string, like_na
     must_start_with = os.path.basename(string) + like_name
     string = os.path.dirname(string)
 
-    string, is_in_os_path_join = _maybe_add_os_path_join(module_context, start_leaf, string)
+    sigs = call_signatures_callback()
+    is_in_os_path_join = sigs and all(s.full_name == 'os.path.join' for s in sigs)
+    if is_in_os_path_join:
+        to_be_added = _add_os_path_join(module_context, start_leaf, sigs[0].bracket_start)
+        if to_be_added is None:
+            is_in_os_path_join = False
+        else:
+            string = to_be_added + string
     base_path = os.path.join(evaluator.project._path, string)
     try:
         listed = os.listdir(base_path)
@@ -92,29 +99,15 @@ class FileName(AbstractArbitraryName):
     is_context_name = False
 
 
-def _maybe_add_os_path_join(module_context, start_leaf, string):
-    def check_for_power(atom_or_trailer, nodes):
-        trailers = []
-        if atom_or_trailer.type not in ('name', 'atom', 'trailer'):
-            return string, False
-        while atom_or_trailer.type == 'trailer':
-            trailers.insert(0, atom_or_trailer)
-            atom_or_trailer = atom_or_trailer.get_previous_sibling()
+def _add_os_path_join(module_context, start_leaf, bracket_start):
+    def check(maybe_bracket, nodes):
+        if maybe_bracket.start_pos != bracket_start:
+            return None
 
-        context = module_context.create_context(atom_or_trailer)
-        contexts = context.eval_node(atom_or_trailer)
-        for trailer in trailers:
-            contexts = eval_trailer(context, contexts, trailer)
-        if any([c.name.get_qualified_names(include_module_names=True)
-                != ('os', 'path', 'join') for c in contexts]):
-            return string, False
-        return _add_strings(context, nodes, add_slash=True) or string, True
-
-    def check_trailer(trailer, arglist_nodes):
-        if trailer.children[0] == '(':
-            atom_or_trailer = trailer.get_previous_sibling()
-            return check_for_power(atom_or_trailer, arglist_nodes)
-        return string, False
+        if not nodes:
+            return ''
+        context = module_context.create_context(nodes[0])
+        return _add_strings(context, nodes, add_slash=True) or ''
 
     # Maybe an arglist or some weird error case. Therefore checked below.
     arglist = start_leaf.parent
@@ -132,25 +125,20 @@ def _maybe_add_os_path_join(module_context, start_leaf, string):
                 else:
                     arglist_nodes = []
 
-                if error_node.children[index + 1] == '(':
-                    atom_or_trailer = error_node.children[index]
-                    return check_for_power(atom_or_trailer, arglist_nodes[::2])
+                return check(error_node.children[index + 1], arglist_nodes[::2])
     elif arglist.type == 'arglist':
         trailer = arglist.parent
         if trailer.type == 'error_node':
             trailer_index = trailer.children.index(arglist)
             assert trailer_index >= 2
             assert trailer.children[trailer_index - 1] == '('
-            atom_or_trailer = trailer.children[trailer_index - 2]
-            return check_for_power(atom_or_trailer, arglist_nodes[::2])
+            return check(trailer.children[trailer_index - 1], arglist_nodes[::2])
         elif trailer.type == 'trailer':
-            return check_trailer(trailer, arglist_nodes[::2])
+            return check(trailer.children[0], arglist_nodes[::2])
     elif arglist.type == 'trailer':
-        return check_trailer(arglist, [])
+        return check(arglist.children[0], [])
     elif arglist.type == 'error_node':
         # Stuff like `join(""`
-        if len(arglist_nodes) >= 2 and arglist_nodes[-1] == '(':
-            atom_or_trailer = arglist_nodes[-2]
-            return check_for_power(atom_or_trailer, [])
+        return check(arglist_nodes[-1], [])
 
-    return string, False
+    return None
