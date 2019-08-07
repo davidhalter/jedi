@@ -247,6 +247,7 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'join(["tes', 10, ['t' + s]),
         (f2, os_path + 'join(["tes"]', 10, ['t' + s]),
         (f2, os_path + 'join(["tes"])', 10, ['t' + s]),
+        (f2, os_path + 'join("test", "test_cac" + x,', 22, ['he.py"']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):
