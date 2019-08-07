@@ -225,12 +225,23 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'join(r"tes"', 10, ['t"']),
         (f2, os_path + 'join("""tes""")', 11, ['t"""']),
 
+        # Almost like join but not really
         (f2, os_path + 'join["tes', 9, ['t' + s]),
         (f2, os_path + 'join["tes"', 9, ['t' + s]),
         (f2, os_path + 'join["tes"]', 9, ['t' + s]),
         (f2, os_path + 'join[dirname(__file__), "completi', 33, []),
         (f2, os_path + 'join[dirname(__file__), "completi"', 33, []),
         (f2, os_path + 'join[dirname(__file__), "completi"]', 33, []),
+
+        # With full paths
+        (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi', 49, ['on"']),
+        (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi"', 49, ['on"']),
+        (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi")', 49, ['on"']),
+
+        # With alias
+        (f2, 'import os.path as p as p\np.join(p.dirname(__file__), "completi', None, ['on"']),
+        (f2, 'from os.path import dirname, join as j\nj(dirname(__file__), "completi',
+         None, ['on"']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):
