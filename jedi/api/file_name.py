@@ -4,6 +4,7 @@ from jedi._compatibility import FileNotFoundError, force_unicode
 from jedi.evaluate.names import AbstractArbitraryName
 from jedi.api import classes
 from jedi.evaluate.helpers import get_str_or_none
+from jedi.parser_utils import get_string_quote
 
 
 def file_name_completions(evaluator, module_context, start_leaf, string, like_name):
@@ -29,7 +30,13 @@ def file_name_completions(evaluator, module_context, start_leaf, string, like_na
     for name in listed:
         if name.startswith(must_start_with):
             path_for_name = os.path.join(base_path, name)
-            if os.path.isdir(path_for_name) and not is_in_os_path_join:
+            if is_in_os_path_join:
+                if start_leaf.type == 'string':
+                    name += get_string_quote(start_leaf)
+                else:
+                    assert start_leaf.type == 'error_leaf'
+                    name += start_leaf.value
+            elif os.path.isdir(path_for_name):
                 name += os.path.sep
 
             yield classes.Completion(
@@ -103,7 +110,6 @@ def _maybe_add_os_path_join(module_context, start_leaf, string):
     arglist = start_leaf.parent
     index = arglist.children.index(start_leaf)
     arglist_nodes = arglist.children[:index]
-    print(arglist, arglist_nodes)
     if start_leaf.type == 'error_leaf':
         # Unfinished string literal, like `join('`
         if index > 0:

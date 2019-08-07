@@ -210,20 +210,20 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py']),
         (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py']),
         (f2, os_path + 'join(dirname(__file__), "completion") + sep + "basi', None, ['c.py']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi', None, ['c.py']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 43, ['c.py']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 43, ['c.py']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 35, ['']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 33, ['on']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi', None, ['c.py"']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 43, ['c.py"']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 43, ['c.py"']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 35, ['"']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on"']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 33, ['on"']),
 
         # join with one argument. join will not get evaluated and the result is
         # that directories and in a slash. This is unfortunate, but doesn't
         # really matter.
-        (f2, os_path + 'join("tes', 9, ['t']),
-        (f2, os_path + 'join("tes)', 9, ['t']),
-        (f2, os_path + 'join("tes"', 9, ['t']),
-        (f2, os_path + 'join("tes")', 9, ['t']),
+        (f2, os_path + 'join("tes', 9, ['t"']),
+        (f2, os_path + 'join(\'tes)', 9, ["t'"]),
+        (f2, os_path + 'join(r"tes"', 10, ['t"']),
+        (f2, os_path + 'join("""tes""")', 11, ['t"""']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):

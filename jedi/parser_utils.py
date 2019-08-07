@@ -291,3 +291,7 @@ def cut_value_at_position(leaf, position):
         column -= leaf.column
     lines[-1] = lines[-1][:column]
     return ''.join(lines)
+
+
+def get_string_quote(leaf):
+    return re.match('\w*("""|\'{3}|"|\')', leaf.value).group(1)
