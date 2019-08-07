@@ -213,9 +213,15 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'join(dirname(__file__), "completion", "basi', None, ['c.py']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 43, ['c.py']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 43, ['c.py']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 35, []),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 35, ['']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 33, ['on']),
+
+        # join with one argument
+        #(f2, os_path + 'join("tes', 10, ['t']),
+        #(f2, os_path + 'join("tes)', 10, ['t']),
+        #(f2, os_path + 'join("tes"', 10, ['t']),
+        #(f2, os_path + 'join("tes")', 10, ['t']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):
