@@ -224,6 +224,13 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'join(\'tes)', 9, ["t'"]),
         (f2, os_path + 'join(r"tes"', 10, ['t"']),
         (f2, os_path + 'join("""tes""")', 11, ['t"""']),
+
+        (f2, os_path + 'join["tes', 9, ['t' + s]),
+        (f2, os_path + 'join["tes"', 9, ['t' + s]),
+        (f2, os_path + 'join["tes"]', 9, ['t' + s]),
+        (f2, os_path + 'join[dirname(__file__), "completi', 33, []),
+        (f2, os_path + 'join[dirname(__file__), "completi"', 33, []),
+        (f2, os_path + 'join[dirname(__file__), "completi"]', 33, []),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):

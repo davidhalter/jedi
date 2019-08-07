@@ -102,7 +102,7 @@ def _maybe_add_os_path_join(module_context, start_leaf, string):
 
     def check_trailer(trailer, arglist_nodes):
         atom = trailer.get_previous_sibling()
-        if atom.type != 'trailer':
+        if atom.type != 'trailer' and trailer.children[0] == '(':
             return check_for_power(atom, arglist_nodes)
         return string, False
 
