@@ -210,6 +210,9 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py']),
         (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py']),
         (f2, os_path + 'join(dirname(__file__), "completion") + sep + "basi', None, ['c.py']),
+        (f2, os_path + 'join("test", "completion") + sep + "basi', None, ['c.py']),
+
+        # inside join
         (f2, os_path + 'join(dirname(__file__), "completion", "basi', None, ['c.py"']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 43, ['c.py"']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 43, ['c.py"']),

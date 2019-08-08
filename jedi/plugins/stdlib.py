@@ -708,14 +708,18 @@ def _os_path_join(args_set, callback):
     if len(args_set) == 1:
         string = u''
         sequence, = args_set
+        is_first = True
         for lazy_context in sequence.py__iter__():
             string_contexts = lazy_context.infer()
             if len(string_contexts) != 1:
                 break
             s = get_str_or_none(next(iter(string_contexts)))
-            if string is None:
+            if s is None:
                 break
-            string += os.path.sep + force_unicode(s)
+            if not is_first:
+                string += os.path.sep
+            string += force_unicode(s)
+            is_first = False
         else:
             return ContextSet([compiled.create_simple_object(sequence.evaluator, string)])
     return callback()
