@@ -29,7 +29,7 @@ class _ModuleAttributeName(AbstractNameDefinition):
             s = self._string_value
             if self.parent_context.evaluator.environment.version_info.major == 2 \
                     and not isinstance(s, bytes):
-                s = bytes(s, 'utf-8')
+                s = s.encode('utf-8')
             return ContextSet([
                 create_simple_object(self.parent_context.evaluator, s)
             ])
