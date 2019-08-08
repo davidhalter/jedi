@@ -127,7 +127,8 @@ def execute(callback):
                         if context.class_context.py__name__() == 'property':
                             return builtins_property(
                                 context,
-                                arguments=arguments
+                                arguments=arguments,
+                                callback=call,
                             )
                     elif context.py__name__() in ('deleter', 'getter', 'setter'):
                         if context.class_context.py__name__() == 'property':
@@ -742,8 +743,8 @@ _implemented = {
         'deepcopy': _return_first_param,
     },
     'json': {
-        'load': lambda obj, arguments: NO_CONTEXTS,
-        'loads': lambda obj, arguments: NO_CONTEXTS,
+        'load': lambda obj, arguments, callback: NO_CONTEXTS,
+        'loads': lambda obj, arguments, callback: NO_CONTEXTS,
     },
     'collections': {
         'namedtuple': collections_namedtuple,
@@ -770,7 +771,7 @@ _implemented = {
         # The _alias function just leads to some annoying type inference.
         # Therefore, just make it return nothing, which leads to the stubs
         # being used instead. This only matters for 3.7+.
-        '_alias': lambda obj, arguments: NO_CONTEXTS,
+        '_alias': lambda obj, arguments, callback: NO_CONTEXTS,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
