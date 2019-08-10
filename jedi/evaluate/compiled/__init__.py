@@ -1,7 +1,7 @@
 from jedi._compatibility import unicode
 from jedi.evaluate.compiled.context import CompiledObject, CompiledName, \
     CompiledObjectFilter, CompiledContextName, create_from_access_path
-from jedi.evaluate.base_context import ContextWrapper
+from jedi.evaluate.base_context import ContextWrapper, LazyContextWrapper
 
 
 def builtin_from_name(evaluator, string):
@@ -16,9 +16,9 @@ def builtin_from_name(evaluator, string):
     return context
 
 
-class CompiledValue(ContextWrapper):
-    def __init__(self, instance, compiled_obj):
-        super(CompiledValue, self).__init__(instance)
+class CompiledValue(LazyContextWrapper):
+    def __init__(self, compiled_obj):
+        self.evaluator = compiled_obj.evaluator
         self._compiled_obj = compiled_obj
 
     def __getattribute__(self, name):
@@ -26,6 +26,11 @@ class CompiledValue(ContextWrapper):
                     'negate', 'py__bool__', 'is_compiled'):
             return getattr(self._compiled_obj, name)
         return super(CompiledValue, self).__getattribute__(name)
+
+    def _get_wrapped_context(self):
+        instance, = builtin_from_name(
+            self.evaluator, self._compiled_obj.name.string_name).execute_evaluated()
+        return instance
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._compiled_obj)
@@ -41,8 +46,7 @@ def create_simple_object(evaluator, obj):
         evaluator,
         evaluator.compiled_subprocess.create_simple_object(obj)
     )
-    instance, = builtin_from_name(evaluator, compiled_obj.name.string_name).execute_evaluated()
-    return CompiledValue(instance, compiled_obj)
+    return CompiledValue(compiled_obj)
 
 
 def get_string_context_set(evaluator):
