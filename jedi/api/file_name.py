@@ -1,7 +1,5 @@
 import os
 
-from parso.tree import search_ancestor
-
 from jedi._compatibility import FileNotFoundError, force_unicode
 from jedi.evaluate.names import AbstractArbitraryName
 from jedi.api import classes
@@ -10,7 +8,7 @@ from jedi.parser_utils import get_string_quote
 
 
 def file_name_completions(evaluator, module_context, start_leaf, string,
-                          like_name, call_signatures_callback):
+                          like_name, call_signatures_callback, code_lines, position):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
@@ -40,13 +38,19 @@ def file_name_completions(evaluator, module_context, start_leaf, string,
     for name in listed:
         if name.startswith(must_start_with):
             path_for_name = os.path.join(base_path, name)
-            if is_in_os_path_join:
+            if is_in_os_path_join or not os.path.isdir(path_for_name):
                 if start_leaf.type == 'string':
-                    name += get_string_quote(start_leaf)
+                    quote = get_string_quote(start_leaf)
                 else:
                     assert start_leaf.type == 'error_leaf'
-                    name += start_leaf.value
-            elif os.path.isdir(path_for_name):
+                    quote = start_leaf.value
+                potential_other_quote = \
+                    code_lines[position[0] - 1][position[1]:position[1] + len(quote)]
+                # Add a quote if it's not already there.
+                print(repr(quote), repr(potential_other_quote), position)
+                if quote != potential_other_quote:
+                    name += quote
+            else:
                 name += os.path.sep
 
             yield classes.Completion(

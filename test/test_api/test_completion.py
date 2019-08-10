@@ -182,7 +182,7 @@ os_path = 'from os.path import *\n'
         ('example.py', 'rb"' + join('..', 'jedi', 'tes'), None, ['t' + s]),
 
         # Absolute paths
-        (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py']),
+        (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py"']),
         (None, '"%s"' % join(root_dir, 'test', 'test_ca'), len(root_dir) + 14, ['che.py']),
 
         # Longer quotes
@@ -190,10 +190,11 @@ os_path = 'from os.path import *\n'
         ('example.py', 'r"""\ntest', None, []),
         ('example.py', 'u"""tes\n', (1, 7), ['t' + s]),
         ('example.py', '"""test%stest_cache.p"""' % s, 20, ['y']),
+        ('example.py', '"""test%stest_cache.p"""' % s, 19, ['py"""']),
 
         # Adding
-        ('example.py', '"test" + "%stest_cac' % s, None, ['he.py']),
-        ('example.py', '"test" + "%s" + "test_cac' % s, None, ['he.py']),
+        ('example.py', '"test" + "%stest_cac' % s, None, ['he.py"']),
+        ('example.py', '"test" + "%s" + "test_cac' % s, None, ['he.py"']),
         ('example.py', 'x = 1 + "test', None, []),
         ('example.py', 'x = f("te" + "st)', 16, [s]),
         ('example.py', 'x = f("te" + "st', 16, [s]),
@@ -207,16 +208,16 @@ os_path = 'from os.path import *\n'
 
         # __file__
         (f1, os_path + 'dirname(__file__) + "%stest' % s, None, [s]),
-        (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py']),
-        (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py']),
-        (f2, os_path + 'join(dirname(__file__), "completion") + sep + "basi', None, ['c.py']),
-        (f2, os_path + 'join("test", "completion") + sep + "basi', None, ['c.py']),
+        (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py"']),
+        (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py"']),
+        (f2, os_path + 'join(dirname(__file__), "completion") + sep + "basi', None, ['c.py"']),
+        (f2, os_path + 'join("test", "completion") + sep + "basi', None, ['c.py"']),
 
         # inside join
         (f2, os_path + 'join(dirname(__file__), "completion", "basi', None, ['c.py"']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 43, ['c.py"']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 43, ['c.py"']),
-        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 35, ['"']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 43, ['c.py']),
+        (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 35, ['']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on"']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 33, ['on"']),
 
@@ -225,8 +226,8 @@ os_path = 'from os.path import *\n'
         # really matter.
         (f2, os_path + 'join("tes', 9, ['t"']),
         (f2, os_path + 'join(\'tes)', 9, ["t'"]),
-        (f2, os_path + 'join(r"tes"', 10, ['t"']),
-        (f2, os_path + 'join("""tes""")', 11, ['t"""']),
+        (f2, os_path + 'join(r"tes"', 10, ['t']),
+        (f2, os_path + 'join("""tes""")', 11, ['t']),
 
         # Almost like join but not really
         (f2, os_path + 'join["tes', 9, ['t' + s]),
@@ -238,8 +239,8 @@ os_path = 'from os.path import *\n'
 
         # With full paths
         (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi', 49, ['on"']),
-        (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi"', 49, ['on"']),
-        (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi")', 49, ['on"']),
+        (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi"', 49, ['on']),
+        (f2, 'import os\nos.path.join(os.path.dirname(__file__), "completi")', 49, ['on']),
 
         # With alias
         (f2, 'import os.path as p as p\np.join(p.dirname(__file__), "completi', None, ['on"']),
@@ -250,7 +251,7 @@ os_path = 'from os.path import *\n'
         (f2, os_path + 'join(["tes', 10, ['t' + s]),
         (f2, os_path + 'join(["tes"]', 10, ['t' + s]),
         (f2, os_path + 'join(["tes"])', 10, ['t' + s]),
-        (f2, os_path + 'join("test", "test_cac" + x,', 22, ['he.py"']),
+        (f2, os_path + 'join("test", "test_cac" + x,', 22, ['he.py']),
     ]
 )
 def test_file_path_completions(Script, file, code, column, expected):
