@@ -445,14 +445,16 @@ def collections_namedtuple(obj, arguments, callback):
     if not param_contexts:
         return NO_CONTEXTS
     _fields = list(param_contexts)[0]
-    if isinstance(_fields, compiled.CompiledValue):
-        fields = force_unicode(_fields.get_safe_value()).replace(',', ' ').split()
+    string = get_str_or_none(_fields)
+    if string is not None:
+        fields = force_unicode(string).replace(',', ' ').split()
     elif isinstance(_fields, iterable.Sequence):
         fields = [
-            force_unicode(v.get_safe_value())
+            force_unicode(get_str_or_none(v))
             for lazy_context in _fields.py__iter__()
-            for v in lazy_context.infer() if is_string(v)
+            for v in lazy_context.infer()
         ]
+        fields = [f for f in fields if f is not None]
     else:
         return NO_CONTEXTS
 
