@@ -20,6 +20,8 @@ It is important to note that:
 1. Array modfications work only in the current module.
 2. Jedi only checks Array additions; ``list.pop``, etc are ignored.
 """
+import sys
+
 from jedi import debug
 from jedi import settings
 from jedi._compatibility import force_unicode, is_py3
@@ -36,7 +38,7 @@ from jedi.evaluate.cache import evaluator_method_cache
 from jedi.evaluate.filters import ParserTreeFilter, LazyAttributeOverwrite, \
     publish_method
 from jedi.evaluate.base_context import ContextSet, Context, NO_CONTEXTS, \
-    TreeContext, ContextualizedNode, iterate_contexts, HelperContextMixin
+    TreeContext, ContextualizedNode, iterate_contexts, HelperContextMixin, _sentinel
 from jedi.parser_utils import get_sync_comp_fors
 
 
@@ -50,7 +52,14 @@ class IterableMixin(object):
     # doing this in the end as well.
     # This mostly speeds up patterns like `sys.version_info >= (3, 0)` in
     # typeshed.
-    get_safe_value = Context.get_safe_value
+    if sys.version_info[0] == 2:
+        # Python 2...........
+        def get_safe_value(self, default=_sentinel):
+            if default is _sentinel:
+                raise ValueError("There exists no safe value for context %s" % self)
+            return default
+    else:
+        get_safe_value = Context.get_safe_value
 
 
 class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
