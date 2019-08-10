@@ -473,3 +473,12 @@ def test_partial_signatures(code, expected, index):
     assert sig.name == 'partial'
     assert [p.name for p in sig.params] == expected
     assert index == sig.index
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+def test_type_var():
+    """This was an issue before, see Github #1369"""
+    import typing
+    x = typing.TypeVar('myvar')
+    def_, = jedi.Interpreter('x', [locals()]).goto_definitions()
+    assert def_.name == 'TypeVar'

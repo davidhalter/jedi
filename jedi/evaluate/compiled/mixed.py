@@ -266,7 +266,11 @@ def _create(evaluator, access_handle, parent_context, *args):
             if name is not None:
                 evaluator.module_cache.add(string_names, ContextSet([module_context]))
         else:
-            assert parent_context.tree_node.get_root_node() == module_node
+            if parent_context.tree_node.get_root_node() != module_node:
+                # This happens e.g. when __module__ is wrong, or when using
+                # TypeVar('foo'), where Jedi uses 'foo' as the name and
+                # Python's TypeVar('foo').__module__ will be typing.
+                return ContextSet({compiled_object})
             module_context = parent_context.get_root_context()
 
         tree_contexts = ContextSet({
