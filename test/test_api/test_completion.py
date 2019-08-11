@@ -178,8 +178,8 @@ se = s * 2 if s == '\\' else s
         ('example.py', 'r"tes"', 5, ['t' + s]),
         ('example.py', 'r" tes"', 6, []),
         ('test%sexample.py' % se, 'r"tes"', 5, ['t' + s]),
-        ('test%sexample.py' % se, 'r"test%scomp"' % se, 5, ['t' + s]),
-        ('test%sexample.py' % se, 'r"test%scomp"' % se, 11, ['letion' + s]),
+        ('test%sexample.py' % se, 'r"test%scomp"' % s, 5, ['t' + s]),
+        ('test%sexample.py' % se, 'r"test%scomp"' % s, 11, ['letion' + s]),
         ('test%sexample.py' % se, '"%s"' % join('test', 'completion', 'basi'), 21, ['c.py']),
         ('example.py', 'rb"' + join('..', 'jedi', 'tes'), None, ['t' + s]),
 
