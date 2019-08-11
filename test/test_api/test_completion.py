@@ -162,6 +162,8 @@ def test_keyword_completion(Script, code, has_keywords):
 f1 = join(root_dir, 'example.py')
 f2 = join(root_dir, 'test', 'example.py')
 os_path = 'from os.path import *\n'
+# os.path.sep escaped
+se = s ** 2 if s == '\\' else s
 
 
 @pytest.mark.parametrize(
@@ -175,10 +177,10 @@ os_path = 'from os.path import *\n'
         ('example.py', 'r"tes"', None, "A LOT"),
         ('example.py', 'r"tes"', 5, ['t' + s]),
         ('example.py', 'r" tes"', 6, []),
-        ('test%sexample.py' % s, 'r"tes"', 5, ['t' + s]),
-        ('test%sexample.py' % s, 'r"test%scomp"' % s, 5, ['t' + s]),
-        ('test%sexample.py' % s, 'r"test%scomp"' % s, 11, ['letion' + s]),
-        ('test%sexample.py' % s, '"%s"' % join('test', 'completion', 'basi'), 21, ['c.py']),
+        ('test%sexample.py' % se, 'r"tes"', 5, ['t' + s]),
+        ('test%sexample.py' % se, 'r"test%scomp"' % se, 5, ['t' + s]),
+        ('test%sexample.py' % se, 'r"test%scomp"' % se, 11, ['letion' + s]),
+        ('test%sexample.py' % se, '"%s"' % join('test', 'completion', 'basi'), 21, ['c.py']),
         ('example.py', 'rb"' + join('..', 'jedi', 'tes'), None, ['t' + s]),
 
         # Absolute paths
@@ -193,8 +195,8 @@ os_path = 'from os.path import *\n'
         ('example.py', '"""test%stest_cache.p"""' % s, 19, ['py"""']),
 
         # Adding
-        ('example.py', '"test" + "%stest_cac' % s, None, ['he.py"']),
-        ('example.py', '"test" + "%s" + "test_cac' % s, None, ['he.py"']),
+        ('example.py', '"test" + "%stest_cac' % se, None, ['he.py"']),
+        ('example.py', '"test" + "%s" + "test_cac' % se, None, ['he.py"']),
         ('example.py', 'x = 1 + "test', None, []),
         ('example.py', 'x = f("te" + "st)', 16, [s]),
         ('example.py', 'x = f("te" + "st', 16, [s]),
@@ -208,7 +210,7 @@ os_path = 'from os.path import *\n'
 
         # __file__
         (f1, os_path + 'dirname(__file__) + "%stest' % s, None, [s]),
-        (f2, os_path + 'dirname(__file__) + "%stest_ca' % s, None, ['che.py"']),
+        (f2, os_path + 'dirname(__file__) + "%stest_ca' % se, None, ['che.py"']),
         (f2, os_path + 'dirname(abspath(__file__)) + sep + "test_ca', None, ['che.py"']),
         (f2, os_path + 'join(dirname(__file__), "completion") + sep + "basi', None, ['c.py"']),
         (f2, os_path + 'join("test", "completion") + sep + "basi', None, ['c.py"']),
