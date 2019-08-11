@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-0.15.0 (XXXX-XX-XX)
+0.15.0 (2019-08-11)
 +++++++++++++++++++
 
 - Added file path completions, there's a **new ``Completion.type``** ``path``,
@@ -12,7 +12,7 @@ Changelog
   with the actual alternatives.
 - Better support for enums/dataclasses
 - When using Interpreter, properties are now executed, since a lot of people
-  have complained about this. Discussion in #1299.
+  have complained about this. Discussion in #1299, #1347.
 
 New APIs:
 
