@@ -163,7 +163,7 @@ f1 = join(root_dir, 'example.py')
 f2 = join(root_dir, 'test', 'example.py')
 os_path = 'from os.path import *\n'
 # os.path.sep escaped
-se = s ** 2 if s == '\\' else s
+se = s * 2 if s == '\\' else s
 
 
 @pytest.mark.parametrize(
