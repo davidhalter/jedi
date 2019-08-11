@@ -20,7 +20,7 @@ New APIs:
   ``CallSignature``. ``Definition.params`` is therefore deprecated.
 - ``Signature.to_string()`` to format call signatures.
 - ``Signature.params -> List[ParamDefinition]``, ParamDefinition has the
-  following attributes ``infer_default()``, ``infer_annotation()``,
+  following additional attributes ``infer_default()``, ``infer_annotation()``,
   ``to_string()``, and ``kind``.
 - ``Definition.execute() -> List[Definition]``, makes it possible to infer
     return values of functions.
