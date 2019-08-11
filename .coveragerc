@@ -3,8 +3,6 @@ omit =
     jedi/_compatibility.py
     jedi/evaluate/compiled/subprocess/__main__.py
     jedi/__main__.py
-    # Is statically analyzed and not actually executed.
-    jedi/evaluate/jedi_typing.py
     # For now this is not being used.
     jedi/refactoring.py
 
