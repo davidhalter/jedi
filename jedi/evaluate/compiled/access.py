@@ -84,9 +84,14 @@ def safe_getattr(obj, name, default=_sentinel):
             raise
         return default
     else:
-        if type(attr) in ALLOWED_DESCRIPTOR_ACCESS:
+        if isinstance(attr, ALLOWED_DESCRIPTOR_ACCESS):
             # In case of descriptors that have get methods we cannot return
             # it's value, because that would mean code execution.
+            # Since it's an isinstance call, code execution is still possible,
+            # but this is not really a security feature, but much more of a
+            # safety feature. Code execution is basically always possible when
+            # a module is imported. This is here so people don't shoot
+            # themselves in the foot.
             return getattr(obj, name)
     return attr
 
