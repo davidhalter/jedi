@@ -106,6 +106,7 @@ class Evaluator(object):
         self.is_analysis = False
         self.project = project
         self.access_cache = {}
+        self.allow_descriptor_getattr = False
 
         self.reset_recursion_limitations()
         self.allow_different_encoding = True

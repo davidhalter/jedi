@@ -11,6 +11,8 @@ Changelog
 - ``*args``/``**kwargs`` resolving. If possible Jedi replaces the parameters
   with the actual alternatives.
 - Better support for enums/dataclasses
+- When using Interpreter, properties are now executed, since a lot of people
+  have complained about this. Discussion in #1299.
 
 New APIs:
 

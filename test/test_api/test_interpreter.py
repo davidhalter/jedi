@@ -7,7 +7,7 @@ import pytest
 
 import jedi
 from jedi._compatibility import is_py3, py_version
-from jedi.evaluate.compiled import mixed
+from jedi.evaluate.compiled import mixed, context
 from importlib import import_module
 
 if py_version > 30:
@@ -197,7 +197,13 @@ def test_getitem_side_effects():
     _assert_interpreter_complete('foo["asdf"].upper', locals(), ['upper'])
 
 
-def test_property_error_oldstyle():
+@pytest.fixture(params=[False, True])
+def allow_descriptor_access_or_not(request, monkeypatch):
+    monkeypatch.setattr(jedi.Interpreter, '_allow_descriptor_getattr_default', request.param)
+    return request.param
+
+
+def test_property_error_oldstyle(allow_descriptor_access_or_not):
     lst = []
     class Foo3:
         @property
@@ -209,11 +215,14 @@ def test_property_error_oldstyle():
     _assert_interpreter_complete('foo.bar', locals(), ['bar'])
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
 
-    # There should not be side effects
-    assert lst == []
+    if allow_descriptor_access_or_not:
+        assert lst == [1, 1]
+    else:
+        # There should not be side effects
+        assert lst == []
 
 
-def test_property_error_newstyle():
+def test_property_error_newstyle(allow_descriptor_access_or_not):
     lst = []
     class Foo3(object):
         @property
@@ -225,8 +234,22 @@ def test_property_error_newstyle():
     _assert_interpreter_complete('foo.bar', locals(), ['bar'])
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
 
-    # There should not be side effects
-    assert lst == []
+    if allow_descriptor_access_or_not:
+        assert lst == [1, 1]
+    else:
+        # There should not be side effects
+        assert lst == []
+
+
+def test_property_content():
+    class Foo3(object):
+        @property
+        def bar(self):
+            return 1
+
+    foo = Foo3()
+    def_, = jedi.Interpreter('foo.bar', [locals()]).goto_definitions()
+    assert def_.name == 'int'
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")

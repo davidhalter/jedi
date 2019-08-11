@@ -436,6 +436,7 @@ class Interpreter(Script):
     >>> print(script.completions()[0].name)
     upper
     """
+    _allow_descriptor_getattr_default = True
 
     def __init__(self, source, namespaces, **kwds):
         """
@@ -466,6 +467,7 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(source, environment=environment,
                                           _project=Project(os.getcwd()), **kwds)
         self.namespaces = namespaces
+        self._evaluator.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
     def _get_module(self):
         return interpreter.MixedModuleContext(

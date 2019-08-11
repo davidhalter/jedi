@@ -340,12 +340,16 @@ class DirectObjectAccess(object):
     def getattr_paths(self, name, default=_sentinel):
         try:
             return_obj = getattr(self._obj, name)
-        except AttributeError:
-            # Happens e.g. in properties of
-            # PyQt4.QtGui.QStyleOptionComboBox.currentText
-            # -> just set it to None
+        except Exception as e:
             if default is _sentinel:
-                raise
+                if isinstance(e, AttributeError):
+                    # Happens e.g. in properties of
+                    # PyQt4.QtGui.QStyleOptionComboBox.currentText
+                    # -> just set it to None
+                    raise
+                # Just in case anything happens, return an AttributeError. It
+                # should not crash.
+                raise AttributeError
             return_obj = default
         access = self._create_access(return_obj)
         if inspect.ismodule(return_obj):

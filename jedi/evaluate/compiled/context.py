@@ -399,7 +399,7 @@ class CompiledObjectFilter(AbstractFilter):
         # Always use unicode objects in Python 2 from here.
         name = force_unicode(name)
 
-        if is_descriptor or not has_attribute:
+        if (is_descriptor and not self._evaluator.allow_descriptor_getattr) or not has_attribute:
             return [self._get_cached_name(name, is_empty=True)]
 
         if self.is_instance and name not in dir_callback():
