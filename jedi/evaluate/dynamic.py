@@ -137,7 +137,7 @@ def _search_function_executions(evaluator, module_context, funcdef, string_name)
 
             # This is a simple way to stop Jedi's dynamic param recursion
             # from going wild: The deeper Jedi's in the recursion, the less
-            # code should be evaluated.
+            # code should be inferred.
             if i * evaluator.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 

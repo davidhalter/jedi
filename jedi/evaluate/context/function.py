@@ -105,9 +105,6 @@ class FunctionMixin(object):
 
 
 class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
-    """
-    Needed because of decorators. Decorators are evaluated here.
-    """
     def is_function(self):
         return True
 
@@ -178,7 +175,7 @@ class FunctionExecutionContext(TreeContext):
     This is the most complicated class, because it contains the logic to
     transfer parameters. It is even more complicated, because there may be
     multiple calls to functions and recursion has to be avoided. But this is
-    responsibility of the decorators.
+    responsibility of the recursion module.
     """
     function_execution_filter = FunctionExecutionFilter
 

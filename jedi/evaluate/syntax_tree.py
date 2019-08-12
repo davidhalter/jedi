@@ -116,7 +116,7 @@ def eval_node(context, element):
         return (context.eval_node(element.children[0]) |
                 context.eval_node(element.children[-1]))
     elif typ == 'operator':
-        # Must be an ellipsis, other operators are not evaluated.
+        # Must be an ellipsis, other operators are not inferred.
         # In Python 2 ellipsis is coded as three single dot tokens, not
         # as one token 3 dot token.
         if element.value not in ('.', '...'):
@@ -209,7 +209,7 @@ def eval_atom(context, atom):
         if atom.value in ('False', 'True', 'None'):
             return ContextSet([compiled.builtin_from_name(context.evaluator, atom.value)])
         elif atom.value == 'print':
-            # print e.g. could be evaluated like this in Python 2.7
+            # print e.g. could be inferred like this in Python 2.7
             return NO_CONTEXTS
         elif atom.value == 'yield':
             # Contrary to yield from, yield can just appear alone to return a
@@ -347,7 +347,7 @@ def eval_or_test(context, or_test):
         if operator.type == 'comp_op':  # not in / is not
             operator = ' '.join(c.value for c in operator.children)
 
-        # handle lazy evaluation of and/or here.
+        # handle type inference of and/or here.
         if operator in ('and', 'or'):
             left_bools = set(left.py__bool__() for left in types)
             if left_bools == {True}:
@@ -535,8 +535,8 @@ def _remove_statements(evaluator, context, stmt, name):
     """
     This is the part where statements are being stripped.
 
-    Due to lazy evaluation, statements like a = func; b = a; b() have to be
-    evaluated.
+    Due to lazy type inference, statements like a = func; b = a; b() have to be
+    inferred.
     """
     pep0484_contexts = \
         annotation.find_type_from_comment_hint_assign(context, stmt, name)

@@ -47,10 +47,10 @@ The Jedi Core
 The core of Jedi consists of three parts:
 
 - :ref:`Parser <parser>`
-- :ref:`Python code evaluation <evaluate>`
+- :ref:`Python type inference <evaluate>`
 - :ref:`API <dev-api>`
 
-Most people are probably interested in :ref:`code evaluation <evaluate>`,
+Most people are probably interested in :ref:`type inference <evaluate>`,
 because that's where all the magic happens. I need to introduce the :ref:`parser
 <parser>` first, because :mod:`jedi.evaluate` uses it extensively.
 
@@ -68,12 +68,12 @@ The grammar that this parsers uses is very similar to the official Python
 
 .. _evaluate:
 
-Evaluation of python code (evaluate/__init__.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Type inference of python code (evaluate/__init__.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.evaluate
 
-Evaluation Contexts (evaluate/base_context.py)
+Inference Contexts (evaluate/base_context.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. automodule:: jedi.evaluate.base_context

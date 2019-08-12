@@ -223,7 +223,7 @@ se = s * 2 if s == '\\' else s
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on"']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 33, ['on"']),
 
-        # join with one argument. join will not get evaluated and the result is
+        # join with one argument. join will not get inferred and the result is
         # that directories and in a slash. This is unfortunate, but doesn't
         # really matter.
         (f2, os_path + 'join("tes', 9, ['t"']),

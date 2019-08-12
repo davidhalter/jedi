@@ -253,10 +253,10 @@ class Completion:
 
     def _trailer_completions(self, previous_leaf):
         user_context = get_user_scope(self._module_context, self._position)
-        evaluation_context = self._evaluator.create_context(
+        inferred_context = self._evaluator.create_context(
             self._module_context, previous_leaf
         )
-        contexts = evaluate_call_of_leaf(evaluation_context, previous_leaf)
+        contexts = evaluate_call_of_leaf(inferred_context, previous_leaf)
         completion_names = []
         debug.dbg('trailer completion contexts: %s', contexts, color='MAGENTA')
         for context in contexts:

@@ -67,7 +67,6 @@ Will probably never be implemented:
 - metaclasses (how could an auto-completion ever support this)
 - ``setattr()``, ``__import__()``
 - writing to some dicts: ``globals()``, ``locals()``, ``object.__dict__``
-- evaluating ``if`` / ``while`` / ``del``
 
 
 Caveats
@@ -84,7 +83,7 @@ etc.
 **Security**
 
 Security is an important issue for |jedi|. Therefore no Python code is
-executed.  As long as you write pure Python, everything is evaluated
+executed.  As long as you write pure Python, everything is inferred
 statically. But: If you use builtin modules (``c_builtin``) there is no other
 option than to execute those modules. However: Execute isn't that critical (as
 e.g. in pythoncomplete, which used to execute *every* import!), because it

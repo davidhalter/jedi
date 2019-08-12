@@ -238,10 +238,6 @@ class ClassMixin(object):
 
 
 class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
-    """
-    This class is not only important to extend `tree.Class`, it is also a
-    important for descriptors (if the descriptor methods are evaluated or not).
-    """
     api_type = u'class'
 
     @evaluator_method_cache()

@@ -103,7 +103,7 @@ def _iterate_argument_clinic(evaluator, arguments, parameters):
         if not context_set and not optional:
             # For the stdlib we always want values. If we don't get them,
             # that's ok, maybe something is too hard to resolve, however,
-            # we will not proceed with the evaluation of that function.
+            # we will not proceed with the type inference of that function.
             debug.warning('argument_clinic "%s" not resolvable.', name)
             raise ParamIssue
         yield context_set
@@ -200,10 +200,6 @@ def unpack_arglist(arglist):
 class TreeArguments(AbstractArguments):
     def __init__(self, evaluator, context, argument_node, trailer=None):
         """
-        The argument_node is either a parser node or a list of evaluated
-        objects. Those evaluated objects may be lists of evaluated objects
-        themselves (one list for the first argument, one for the second, etc).
-
         :param argument_node: May be an argument_node or a list of nodes.
         """
         self.argument_node = argument_node

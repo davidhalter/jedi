@@ -105,9 +105,9 @@ class AbstractInstanceContext(Context):
                 return names
         return []
 
-    def execute_function_slots(self, names, *evaluated_args):
+    def execute_function_slots(self, names, *inferred_args):
         return ContextSet.from_sets(
-            name.infer().execute_with_values(*evaluated_args)
+            name.infer().execute_with_values(*inferred_args)
             for name in names
         )
 

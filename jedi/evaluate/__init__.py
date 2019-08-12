@@ -1,5 +1,5 @@
 """
-Evaluation of Python code in |jedi| is based on three assumptions:
+Type inference of Python code in |jedi| is based on three assumptions:
 
 * The code uses as least side effects as possible. Jedi understands certain
   list/tuple/set modifications, but there's no guarantee that Jedi detects
@@ -12,7 +12,7 @@ Evaluation of Python code in |jedi| is based on three assumptions:
 * The programmer is not a total dick, e.g. like `this
   <https://github.com/davidhalter/jedi/issues/24>`_ :-)
 
-The actual algorithm is based on a principle called lazy evaluation.  That
+The actual algorithm is based on a principle I call lazy type inference.  That
 said, the typical entry point for static analysis is calling
 ``eval_expr_stmt``. There's separate logic for autocompletion in the API, the
 evaluator is all about evaluating an expression.
@@ -58,8 +58,8 @@ Jedi has been tested very well, so you can just start modifying code. It's best
 to write your own test first for your "new" feature. Don't be scared of
 breaking stuff. As long as the tests pass, you're most likely to be fine.
 
-I need to mention now that lazy evaluation is really good because it
-only *evaluates* what needs to be *evaluated*. All the statements and modules
+I need to mention now that lazy type inference is really good because it
+only *inferes* what needs to be *inferred*. All the statements and modules
 that are not used are just being ignored.
 """
 from parso.python import tree
@@ -188,7 +188,7 @@ class Evaluator(object):
                         # never fall below 1.
                         if len(definitions) > 1:
                             if len(name_dicts) * len(definitions) > 16:
-                                debug.dbg('Too many options for if branch evaluation %s.', if_stmt)
+                                debug.dbg('Too many options for if branch inference %s.', if_stmt)
                                 # There's only a certain amount of branches
                                 # Jedi can evaluate, otherwise it will take to
                                 # long.
@@ -214,14 +214,14 @@ class Evaluator(object):
                         result |= eval_node(context, element)
                 return result
             else:
-                return self._eval_element_if_evaluated(context, element)
+                return self._eval_element_if_inferred(context, element)
         else:
             if predefined_if_name_dict:
                 return eval_node(context, element)
             else:
-                return self._eval_element_if_evaluated(context, element)
+                return self._eval_element_if_inferred(context, element)
 
-    def _eval_element_if_evaluated(self, context, element):
+    def _eval_element_if_inferred(self, context, element):
         """
         TODO This function is temporary: Merge with eval_element.
         """

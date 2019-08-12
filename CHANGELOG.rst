@@ -135,8 +135,8 @@ New APIs:
 - Integrated the parser of 2to3. This will make refactoring possible. It will
   also be possible to check for error messages (like compiling an AST would give)
   in the future.
-- With the new parser, the evaluation also completely changed. It's now simpler
-  and more readable.
+- With the new parser, the type inference also completely changed. It's now
+  simpler and more readable.
 - Completely rewritten REPL completion.
 - Added ``jedi.names``, a command to do static analysis. Thanks to that
   sourcegraph guys for sponsoring this!

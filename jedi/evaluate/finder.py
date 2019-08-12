@@ -98,14 +98,14 @@ class NameFinder(object):
             position = self._position
 
             # For functions and classes the defaults don't belong to the
-            # function and get evaluated in the context before the function. So
+            # function and get inferred in the context before the function. So
             # make sure to exclude the function/class name.
             if origin_scope is not None:
                 ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef', 'lambdef')
                 lambdef = None
                 if ancestor == 'lambdef':
                     # For lambdas it's even more complicated since parts will
-                    # be evaluated later.
+                    # be inferred later.
                     lambdef = ancestor
                     ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef')
                 if ancestor is not None:
@@ -133,7 +133,7 @@ class NameFinder(object):
         ``filters``), until a name fits.
         """
         names = []
-        # This paragraph is currently needed for proper branch evaluation
+        # This paragraph is currently needed for proper branch type inference
         # (static analysis).
         if self._context.predefined_names and isinstance(self._name, tree.Name):
             node = self._name

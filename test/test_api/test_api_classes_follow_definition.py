@@ -21,7 +21,7 @@ def check_follow_definition_types(Script, source):
 def test_follow_import_incomplete(Script, environment):
     """
     Completion on incomplete imports should always take the full completion
-    to do any evaluation.
+    to do any type inference.
     """
     datetime = check_follow_definition_types(Script, "import itertool")
     assert datetime == ['module']
