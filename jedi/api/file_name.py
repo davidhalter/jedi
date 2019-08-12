@@ -47,7 +47,6 @@ def file_name_completions(evaluator, module_context, start_leaf, string,
                 potential_other_quote = \
                     code_lines[position[0] - 1][position[1]:position[1] + len(quote)]
                 # Add a quote if it's not already there.
-                print(repr(quote), repr(potential_other_quote), position)
                 if quote != potential_other_quote:
                     name += quote
             else:
