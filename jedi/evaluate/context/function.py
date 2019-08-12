@@ -65,7 +65,7 @@ class FunctionMixin(object):
             )
         else:
             cls = self.py__class__()
-            for instance in cls.execute_evaluated():
+            for instance in cls.execute_with_values():
                 for filter in instance.get_filters(search_global=False, origin_scope=origin_scope):
                     yield filter
 

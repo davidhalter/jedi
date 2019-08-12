@@ -139,7 +139,7 @@ def eval_node(context, element):
             # Implies that it's a yield from.
             element = element.children[1].children[1]
             generators = context.eval_node(element) \
-                .py__getattribute__('__iter__').execute_evaluated()
+                .py__getattribute__('__iter__').execute_with_values()
             return generators.py__stop_iteration_returns()
 
         # Generator.send() is not implemented.
@@ -391,7 +391,7 @@ def _literals_to_types(evaluator, result):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
             cls = compiled.builtin_from_name(evaluator, typ.name.string_name)
-            new_result |= cls.execute_evaluated()
+            new_result |= cls.execute_with_values()
         else:
             new_result |= ContextSet([typ])
     return new_result
@@ -608,7 +608,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
     elif typ == 'with_stmt':
         context_managers = context.eval_node(node.get_test_node_from_name(tree_name))
         enter_methods = context_managers.py__getattribute__(u'__enter__')
-        return enter_methods.execute_evaluated()
+        return enter_methods.execute_with_values()
     elif typ in ('import_from', 'import_name'):
         types = imports.infer_import(context, tree_name)
     elif typ in ('funcdef', 'classdef'):
@@ -618,7 +618,7 @@ def tree_name_to_contexts(evaluator, context, tree_name):
         # TODO check for types that are not classes and add it to
         # the static analysis report.
         exceptions = context.eval_node(tree_name.get_previous_sibling().get_previous_sibling())
-        types = exceptions.execute_evaluated()
+        types = exceptions.execute_with_values()
     elif node.type == 'param':
         types = NO_CONTEXTS
     else:

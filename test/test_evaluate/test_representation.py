@@ -20,8 +20,8 @@ def test_function_execution(Script):
     # Now just use the internals of the result (easiest way to get a fully
     # usable function).
     # Should return the same result both times.
-    assert len(func.execute_evaluated()) == 1
-    assert len(func.execute_evaluated()) == 1
+    assert len(func.execute_with_values()) == 1
+    assert len(func.execute_with_values()) == 1
 
 
 def test_class_mro(Script):

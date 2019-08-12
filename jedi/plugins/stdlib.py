@@ -211,13 +211,13 @@ def builtins_next(iterators, defaults, evaluator):
 
     # TODO theoretically we have to check here if something is an iterator.
     # That is probably done by checking if it's not a class.
-    return defaults | iterators.py__getattribute__(name).execute_evaluated()
+    return defaults | iterators.py__getattribute__(name).execute_with_values()
 
 
 @argument_clinic('iterator[, default], /')
 def builtins_iter(iterators_or_callables, defaults):
     # TODO implement this if it's a callable.
-    return iterators_or_callables.py__getattribute__('__iter__').execute_evaluated()
+    return iterators_or_callables.py__getattribute__('__iter__').execute_with_values()
 
 
 @argument_clinic('object, name[, default], /')
@@ -253,7 +253,7 @@ class SuperInstance(LazyContextWrapper):
         return self._instance.py__class__().py__bases__()
 
     def _get_wrapped_context(self):
-        objs = self._get_bases()[0].infer().execute_evaluated()
+        objs = self._get_bases()[0].infer().execute_with_values()
         if not objs:
             # This is just a fallback and will only be used, if it's not
             # possible to find a class
@@ -262,7 +262,7 @@ class SuperInstance(LazyContextWrapper):
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         for b in self._get_bases():
-            for obj in b.infer().execute_evaluated():
+            for obj in b.infer().execute_with_values():
                 for f in obj.get_filters():
                     yield f
 
@@ -312,7 +312,7 @@ def builtins_reversed(sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    seq, = obj.evaluator.typing_module.py__getattribute__('Iterator').execute_evaluated()
+    seq, = obj.evaluator.typing_module.py__getattribute__('Iterator').execute_with_values()
     return ContextSet([ReversedObject(seq, list(reversed(ordered)))])
 
 
@@ -813,7 +813,7 @@ class EnumInstance(LazyContextWrapper):
         return ContextName(self, self._name.tree_name)
 
     def _get_wrapped_context(self):
-        obj, = self._cls.execute_evaluated()
+        obj, = self._cls.execute_with_values()
         return obj
 
     def get_filters(self, search_global=False, position=None, origin_scope=None):

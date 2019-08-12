@@ -284,7 +284,7 @@ def _check_isinstance_type(context, element, search_name):
     for cls_or_tup in lazy_context_cls.infer():
         if isinstance(cls_or_tup, iterable.Sequence) and cls_or_tup.array_type == 'tuple':
             for lazy_context in cls_or_tup.py__iter__():
-                context_set |= lazy_context.infer().execute_evaluated()
+                context_set |= lazy_context.infer().execute_with_values()
         else:
-            context_set |= cls_or_tup.execute_evaluated()
+            context_set |= cls_or_tup.execute_with_values()
     return context_set

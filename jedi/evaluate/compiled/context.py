@@ -328,7 +328,7 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
             contexts = ContextSet([create_from_access_path(evaluator, p.default)])
         if p.has_annotation:
             annotation = create_from_access_path(evaluator, p.annotation)
-            contexts |= annotation.execute_evaluated()
+            contexts |= annotation.execute_with_values()
         return contexts
 
 

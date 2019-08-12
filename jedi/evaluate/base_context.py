@@ -38,13 +38,13 @@ class HelperContextMixin(object):
     def execute(self, arguments):
         return self.evaluator.execute(self, arguments=arguments)
 
-    def execute_evaluated(self, *value_list):
+    def execute_with_values(self, *value_list):
         from jedi.evaluate.arguments import ValuesArguments
         arguments = ValuesArguments([ContextSet([value]) for value in value_list])
         return self.evaluator.execute(self, arguments)
 
     def execute_annotation(self):
-        return self.execute_evaluated()
+        return self.execute_with_values()
 
     def gather_annotation_classes(self):
         return ContextSet([self])
@@ -75,7 +75,7 @@ class HelperContextMixin(object):
         await_context_set = self.py__getattribute__(u"__await__")
         if not await_context_set:
             debug.warning('Tried to run __await__ on context %s', self)
-        return await_context_set.execute_evaluated()
+        return await_context_set.execute_with_values()
 
     def eval_node(self, node):
         return self.evaluator.eval_element(self, node)
@@ -91,9 +91,9 @@ class HelperContextMixin(object):
             # TypeError: 'async for' requires an object with __aiter__ method, got int
             return iter([
                 LazyKnownContexts(
-                    self.py__getattribute__('__aiter__').execute_evaluated()
-                        .py__getattribute__('__anext__').execute_evaluated()
-                        .py__getattribute__('__await__').execute_evaluated()
+                    self.py__getattribute__('__aiter__').execute_with_values()
+                        .py__getattribute__('__anext__').execute_with_values()
+                        .py__getattribute__('__await__').execute_with_values()
                         .py__stop_iteration_returns()
                 )  # noqa
             ])
@@ -397,8 +397,8 @@ class ContextSet(BaseContextSet):
     def execute(self, arguments):
         return ContextSet.from_sets(c.evaluator.execute(c, arguments) for c in self._set)
 
-    def execute_evaluated(self, *args, **kwargs):
-        return ContextSet.from_sets(c.execute_evaluated(*args, **kwargs) for c in self._set)
+    def execute_with_values(self, *args, **kwargs):
+        return ContextSet.from_sets(c.execute_with_values(*args, **kwargs) for c in self._set)
 
     def py__getattribute__(self, *args, **kwargs):
         if kwargs.get('is_goto'):

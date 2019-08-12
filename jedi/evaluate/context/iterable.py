@@ -793,7 +793,7 @@ class Slice(object):
     def __getattr__(self, name):
         if self._slice_object is None:
             context = compiled.builtin_from_name(self._context.evaluator, 'slice')
-            self._slice_object, = context.execute_evaluated()
+            self._slice_object, = context.execute_with_values()
         return getattr(self._slice_object, name)
 
     @property

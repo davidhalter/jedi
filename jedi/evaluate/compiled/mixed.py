@@ -283,7 +283,7 @@ def _create(evaluator, access_handle, parent_context, *args):
         if tree_node.type == 'classdef':
             if not access_handle.is_class():
                 # Is an instance, not a class.
-                tree_contexts = tree_contexts.execute_evaluated()
+                tree_contexts = tree_contexts.execute_with_values()
 
     return ContextSet(
         MixedObject(compiled_object, tree_context=tree_context)

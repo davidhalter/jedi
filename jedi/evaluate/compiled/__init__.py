@@ -29,7 +29,7 @@ class CompiledValue(LazyContextWrapper):
 
     def _get_wrapped_context(self):
         instance, = builtin_from_name(
-            self.evaluator, self._compiled_obj.name.string_name).execute_evaluated()
+            self.evaluator, self._compiled_obj.name.string_name).execute_with_values()
         return instance
 
     def __repr__(self):
@@ -50,7 +50,7 @@ def create_simple_object(evaluator, obj):
 
 
 def get_string_context_set(evaluator):
-    return builtin_from_name(evaluator, u'str').execute_evaluated()
+    return builtin_from_name(evaluator, u'str').execute_with_values()
 
 
 def load_module(evaluator, dotted_name, **kwargs):

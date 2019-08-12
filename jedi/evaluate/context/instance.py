@@ -107,7 +107,7 @@ class AbstractInstanceContext(Context):
 
     def execute_function_slots(self, names, *evaluated_args):
         return ContextSet.from_sets(
-            name.infer().execute_evaluated(*evaluated_args)
+            name.infer().execute_with_values(*evaluated_args)
             for name in names
         )
 

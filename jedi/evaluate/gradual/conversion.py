@@ -28,7 +28,7 @@ def _stub_to_python_context_set(stub_context, ignore_compiled=False):
     contexts = _infer_from_stub(stub_module, qualified_names, ignore_compiled)
     if was_instance:
         contexts = ContextSet.from_sets(
-            c.execute_evaluated()
+            c.execute_with_values()
             for c in contexts
             if c.is_class()
         )
@@ -188,7 +188,7 @@ def to_stub(context):
 
     if was_instance:
         stub_contexts = ContextSet.from_sets(
-            c.execute_evaluated()
+            c.execute_with_values()
             for c in stub_contexts
             if c.is_class()
         )
