@@ -1,5 +1,5 @@
 """
-This module is responsible for evaluating *args and **kwargs for signatures.
+This module is responsible for inferring *args and **kwargs for signatures.
 
 This means for example in this case::
 

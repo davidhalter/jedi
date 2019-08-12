@@ -15,7 +15,7 @@ Type inference of Python code in |jedi| is based on three assumptions:
 The actual algorithm is based on a principle I call lazy type inference.  That
 said, the typical entry point for static analysis is calling
 ``eval_expr_stmt``. There's separate logic for autocompletion in the API, the
-evaluator is all about evaluating an expression.
+evaluator is all about inferring an expression.
 
 TODO this paragraph is not what jedi does anymore, it's similar, but not the
 same.

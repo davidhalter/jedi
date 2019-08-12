@@ -30,7 +30,7 @@ def get_executable_nodes(node, last_added=False):
         if last_added is False and node.parent.type != 'param' and next_leaf != '=':
             result.append(node)
     elif typ == 'expr_stmt':
-        # I think evaluating the statement (and possibly returned arrays),
+        # I think inferring the statement (and possibly returned arrays),
         # should be enough for static analysis.
         result.append(node)
         for child in node.children:

@@ -427,7 +427,7 @@ def collections_namedtuple(obj, arguments, callback):
     Implementation of the namedtuple function.
 
     This has to be done by processing the namedtuple class template and
-    evaluating the result.
+    inferring the result.
 
     """
     evaluator = obj.evaluator

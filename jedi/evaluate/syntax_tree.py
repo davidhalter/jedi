@@ -1,5 +1,5 @@
 """
-Functions evaluating the syntax tree.
+Functions inferring the syntax tree.
 """
 import copy
 
