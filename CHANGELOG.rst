@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.15.1 (2019-08-13)
++++++++++++++++++++
+
+- Small bugfix and removal of a print statement
+
 0.15.0 (2019-08-11)
 +++++++++++++++++++
 
