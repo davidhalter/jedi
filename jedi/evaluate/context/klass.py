@@ -137,8 +137,10 @@ class ClassMixin(object):
     def is_class(self):
         return True
 
-    def py__call__(self, arguments):
+    def py__call__(self, arguments=None):
         from jedi.evaluate.context import TreeInstance
+        if arguments is None:
+            arguments = ValuesArguments([])
         return ContextSet([TreeInstance(self.evaluator, self.parent_context, self, arguments)])
 
     def py__class__(self):
@@ -215,7 +217,7 @@ class ClassMixin(object):
             type_ = builtin_from_name(self.evaluator, u'type')
             assert isinstance(type_, ClassContext)
             if type_ != self:
-                for instance in type_.py__call__(ValuesArguments([])):
+                for instance in type_.py__call__():
                     instance_filters = instance.get_filters()
                     # Filter out self filters
                     next(instance_filters)
@@ -223,7 +225,7 @@ class ClassMixin(object):
                     yield next(instance_filters)
 
     def get_signatures(self):
-        init_funcs = self.execute_evaluated().py__getattribute__('__init__')
+        init_funcs = self.py__call__().py__getattribute__('__init__')
         return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
     def get_global_filter(self, until_position=None, origin_scope=None):

@@ -67,3 +67,8 @@ def test_param_kind_and_name(code, index, param_code, kind, Script, skip_python2
     param = sig.params[index]
     assert param.to_string() == param_code
     assert param.kind.name == kind
+
+
+def test_staticmethod(Script):
+    s, = Script('staticmethod(').call_signatures()
+    assert s.to_string() == 'staticmethod(f: Callable)'
