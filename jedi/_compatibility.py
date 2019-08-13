@@ -27,7 +27,7 @@ is_py35 = is_py3 and sys.version_info[1] >= 5
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
-if is_py35:
+if sys.version_info[:2] < (3, 5):
     """
     A super-minimal shim around listdir that behave like
     scandir for the information we need.
