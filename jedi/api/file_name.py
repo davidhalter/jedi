@@ -37,6 +37,8 @@ def file_name_completions(evaluator, module_context, start_leaf, string,
     like_name_length = len(os.path.basename(string) + like_name)
 
     addition = _get_string_additions(module_context, start_leaf)
+    if string.startswith('~'):
+        string = os.path.expanduser(string)
     if addition is None:
         return
     string = addition + string
