@@ -5,7 +5,7 @@ Python 2.X)
 from .. import helpers
 
 
-@helpers.cwd_at("test/test_evaluate/absolute_import")
+@helpers.cwd_at("test/test_inference/absolute_import")
 def test_can_complete_when_shadowing(Script):
     script = Script(path="unittest.py")
     assert script.completions()

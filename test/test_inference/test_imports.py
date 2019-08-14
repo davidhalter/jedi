@@ -111,7 +111,7 @@ def test_find_module_not_package_zipped(Script, evaluator, environment):
     assert is_package is False
 
 
-@cwd_at('test/test_evaluate/not_in_sys_path/pkg')
+@cwd_at('test/test_inference/not_in_sys_path/pkg')
 def test_import_not_in_sys_path(Script):
     """
     non-direct imports (not in sys.path)
@@ -147,7 +147,7 @@ def test_flask_ext(Script, code, name):
     assert name in [c.name for c in completions]
 
 
-@cwd_at('test/test_evaluate/')
+@cwd_at('test/test_inference/')
 def test_not_importable_file(Script):
     src = 'import not_importable_file as x; x.'
     assert not Script(src, path='example.py').completions()

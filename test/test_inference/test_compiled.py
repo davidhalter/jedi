@@ -119,7 +119,7 @@ def _return_int():
         ('cos', 'cos', 'math'),
         ('dec', 'Decimal', 'decimal'),
         ('dt', 'datetime', 'datetime'),
-        ('ret_int', '_return_int', 'test.test_evaluate.test_compiled'),
+        ('ret_int', '_return_int', 'test.test_inference.test_compiled'),
     ]
 )
 def test_parent_context(same_process_evaluator, attribute, expected_name, expected_parent):
