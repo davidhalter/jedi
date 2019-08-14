@@ -3,7 +3,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_VALUES
 from jedi.cache import memoize_method
 
 
@@ -72,7 +72,7 @@ class AbstractArbitraryName(AbstractNameDefinition):
         self.parent_value = infer_state.builtins_module
 
     def infer(self):
-        return NO_CONTEXTS
+        return NO_VALUES
 
 
 class AbstractTreeName(AbstractNameDefinition):
@@ -240,7 +240,7 @@ class ParamName(BaseTreeParamName):
     def infer_annotation(self, execute_annotation=True):
         node = self.annotation_node
         if node is None:
-            return NO_CONTEXTS
+            return NO_VALUES
         values = self.parent_value.parent_value.infer_node(node)
         if execute_annotation:
             values = values.execute_annotation()
@@ -249,7 +249,7 @@ class ParamName(BaseTreeParamName):
     def infer_default(self):
         node = self.default_node
         if node is None:
-            return NO_CONTEXTS
+            return NO_VALUES
         return self.parent_value.parent_value.infer_node(node)
 
     @property

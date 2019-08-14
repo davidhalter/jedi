@@ -22,7 +22,7 @@ from jedi.inference import analysis
 from jedi.inference import compiled
 from jedi.inference.value.instance import BoundMethod, InstanceArguments
 from jedi.inference.base_value import ContextualizedNode, \
-    NO_CONTEXTS, ContextSet, ContextWrapper, LazyContextWrapper
+    NO_VALUES, ContextSet, ContextWrapper, LazyContextWrapper
 from jedi.inference.value import ClassContext, ModuleContext, \
     FunctionExecutionContext
 from jedi.inference.value.klass import ClassMixin
@@ -152,7 +152,7 @@ def _follow_param(infer_state, arguments, index):
     try:
         key, lazy_value = list(arguments.unpack())[index]
     except IndexError:
-        return NO_CONTEXTS
+        return NO_VALUES
     else:
         return lazy_value.infer()
 
@@ -172,7 +172,7 @@ def argument_clinic(string, want_obj=False, want_value=False,
             callback = kwargs.pop('callback')
             assert not kwargs  # Python 2...
             debug.dbg('builtin start %s' % obj, color='MAGENTA')
-            result = NO_CONTEXTS
+            result = NO_VALUES
             if want_value:
                 kwargs['value'] = arguments.value
             if want_obj:
@@ -197,7 +197,7 @@ def builtins_property(objects, types, obj, arguments):
     key, lazy_value = next(property_args, (None, None))
     if key is not None or lazy_value is None:
         debug.warning('property expected a first param, not %s', arguments)
-        return NO_CONTEXTS
+        return NO_VALUES
 
     return lazy_value.infer().py__call__(arguments=ValuesArguments([objects]))
 
@@ -231,14 +231,14 @@ def builtins_getattr(objects, names, defaults=None):
                 continue
             else:
                 return obj.py__getattribute__(force_unicode(string))
-    return NO_CONTEXTS
+    return NO_VALUES
 
 
 @argument_clinic('object[, bases, dict], /')
 def builtins_type(objects, bases, dicts):
     if bases or dicts:
         # It's a type creation... maybe someday...
-        return NO_CONTEXTS
+        return NO_VALUES
     else:
         return objects.py__class__()
 
@@ -276,7 +276,7 @@ def builtins_super(types, objects, value):
             #      class, it can be an anecestor from long ago.
             return ContextSet({SuperInstance(instance.infer_state, instance)})
 
-    return NO_CONTEXTS
+    return NO_VALUES
 
 
 class ReversedObject(AttributeOverwrite):
@@ -443,7 +443,7 @@ def collections_namedtuple(obj, arguments, callback):
     # TODO here we only use one of the types, we should use all.
     param_values = _follow_param(infer_state, arguments, 1)
     if not param_values:
-        return NO_CONTEXTS
+        return NO_VALUES
     _fields = list(param_values)[0]
     string = get_str_or_none(_fields)
     if string is not None:
@@ -456,7 +456,7 @@ def collections_namedtuple(obj, arguments, callback):
         ]
         fields = [f for f in fields if f is not None]
     else:
-        return NO_CONTEXTS
+        return NO_VALUES
 
     # Build source code
     code = _NAMEDTUPLE_CLASS_TEMPLATE.format(
@@ -515,7 +515,7 @@ class PartialObject(object):
     def py__call__(self, arguments):
         func = self._get_function(self._arguments.unpack())
         if func is None:
-            return NO_CONTEXTS
+            return NO_VALUES
 
         return func.execute(
             MergedPartialArguments(self._arguments, arguments)
@@ -576,7 +576,7 @@ def _dataclass(obj, arguments, callback):
             return ContextSet([DataclassWrapper(c)])
         else:
             return ContextSet([obj])
-    return NO_CONTEXTS
+    return NO_VALUES
 
 
 class DataclassWrapper(ContextWrapper, ClassMixin):
@@ -625,7 +625,7 @@ class DataclassParamName(BaseTreeParamName):
 
     def infer(self):
         if self.annotation_node is None:
-            return NO_CONTEXTS
+            return NO_VALUES
         else:
             return self.parent_value.infer_node(self.annotation_node)
 
@@ -637,7 +637,7 @@ class ItemGetterCallable(ContextWrapper):
 
     @repack_with_argument_clinic('item, /')
     def py__call__(self, item_value_set):
-        value_set = NO_CONTEXTS
+        value_set = NO_VALUES
         for args_value in self._args_value_set:
             lazy_values = list(args_value.py__iter__())
             if len(lazy_values) == 1:
@@ -745,8 +745,8 @@ _implemented = {
         'deepcopy': _return_first_param,
     },
     'json': {
-        'load': lambda obj, arguments, callback: NO_CONTEXTS,
-        'loads': lambda obj, arguments, callback: NO_CONTEXTS,
+        'load': lambda obj, arguments, callback: NO_VALUES,
+        'loads': lambda obj, arguments, callback: NO_VALUES,
     },
     'collections': {
         'namedtuple': collections_namedtuple,
@@ -773,7 +773,7 @@ _implemented = {
         # The _alias function just leads to some annoying type inference.
         # Therefore, just make it return nothing, which leads to the stubs
         # being used instead. This only matters for 3.7+.
-        '_alias': lambda obj, arguments, callback: NO_CONTEXTS,
+        '_alias': lambda obj, arguments, callback: NO_VALUES,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.

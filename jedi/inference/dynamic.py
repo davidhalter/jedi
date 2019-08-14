@@ -27,7 +27,7 @@ from jedi.inference.helpers import is_stdlib_path
 from jedi.inference.utils import to_list
 from jedi.parser_utils import get_parent_scope
 from jedi.inference.value import ModuleContext, instance
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_VALUES
 from jedi.inference import recursion
 
 
@@ -50,7 +50,7 @@ class DynamicExecutedParams(object):
             # more or less self referencing.
             if allowed:
                 return ContextSet.from_sets(p.infer() for p in self._executed_params)
-            return NO_CONTEXTS
+            return NO_VALUES
 
 
 @debug.increase_indent

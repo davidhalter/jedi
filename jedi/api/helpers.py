@@ -9,7 +9,7 @@ from parso.python.parser import Parser
 from parso.python import tree
 
 from jedi._compatibility import u, Parameter
-from jedi.inference.base_value import NO_CONTEXTS
+from jedi.inference.base_value import NO_VALUES
 from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf
 from jedi.inference.compiled import get_string_value_set
@@ -143,7 +143,7 @@ def infer_goto_definition(infer_state, value, leaf):
         return infer_state.goto_definitions(value, leaf)
 
     parent = leaf.parent
-    definitions = NO_CONTEXTS
+    definitions = NO_VALUES
     if parent.type == 'atom':
         # e.g. `(a + b)`
         definitions = value.infer_node(leaf.parent)

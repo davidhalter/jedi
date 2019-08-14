@@ -11,7 +11,7 @@ from jedi.cache import underscore_memoization, memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ContextNameMixin, \
     ParamNameInterface
-from jedi.inference.base_value import Context, ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import Context, ContextSet, NO_VALUES
 from jedi.inference.lazy_value import LazyKnownContext
 from jedi.inference.compiled.access import _sentinel
 from jedi.inference.cache import infer_state_function_cache
@@ -185,7 +185,7 @@ class CompiledObject(Context):
         with reraise_getitem_errors(IndexError, KeyError, TypeError):
             access = self.access_handle.py__simple_getitem__(index)
         if access is None:
-            return NO_CONTEXTS
+            return NO_VALUES
 
         return ContextSet([create_from_access_path(self.infer_state, access)])
 
@@ -265,7 +265,7 @@ class CompiledObject(Context):
         return create_from_access_path(self.infer_state, self.access_handle.negate())
 
     def get_metaclasses(self):
-        return NO_CONTEXTS
+        return NO_VALUES
 
 
 class CompiledName(AbstractNameDefinition):
@@ -323,7 +323,7 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
     def infer(self):
         p = self._signature_param
         infer_state = self.parent_value.infer_state
-        values = NO_CONTEXTS
+        values = NO_VALUES
         if p.has_default:
             values = ContextSet([create_from_access_path(infer_state, p.default)])
         if p.has_annotation:
@@ -348,7 +348,7 @@ class UnresolvableParamName(ParamNameInterface, AbstractNameDefinition):
         return string
 
     def infer(self):
-        return NO_CONTEXTS
+        return NO_VALUES
 
 
 class CompiledContextName(ContextNameMixin, AbstractNameDefinition):
@@ -369,7 +369,7 @@ class EmptyCompiledName(AbstractNameDefinition):
         self.string_name = name
 
     def infer(self):
-        return NO_CONTEXTS
+        return NO_VALUES
 
 
 class CompiledObjectFilter(AbstractFilter):

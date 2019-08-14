@@ -5,7 +5,7 @@ from functools import wraps
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_VALUES
 from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -150,7 +150,7 @@ def _try_to_load_stub(infer_state, import_names, python_value_set,
     if parent_module_value is None and len(import_names) > 1:
         try:
             parent_module_value = _try_to_load_stub_cached(
-                infer_state, import_names[:-1], NO_CONTEXTS,
+                infer_state, import_names[:-1], NO_VALUES,
                 parent_module_value=None, sys_path=sys_path)
         except KeyError:
             pass

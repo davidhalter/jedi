@@ -37,7 +37,7 @@ from jedi.inference.utils import safe_property, to_list
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.filters import ParserTreeFilter, LazyAttributeOverwrite, \
     publish_method
-from jedi.inference.base_value import ContextSet, Context, NO_CONTEXTS, \
+from jedi.inference.base_value import ContextSet, Context, NO_VALUES, \
     TreeContext, ContextualizedNode, iterate_values, HelperContextMixin, _sentinel
 from jedi.parser_utils import get_sync_comp_fors
 
@@ -381,7 +381,7 @@ class SequenceLiteralContext(Sequence):
         """
         if self.array_type == u'dict':
             # Get keys.
-            types = NO_CONTEXTS
+            types = NO_VALUES
             for k, _ in self.get_tree_entries():
                 types |= self._defining_value.infer_node(k)
             # We don't know which dict index comes first, therefore always
@@ -652,12 +652,12 @@ def check_array_additions(value, sequence):
     """ Just a mapper function for the internal _check_array_additions """
     if sequence.array_type not in ('list', 'set'):
         # TODO also check for dict updates
-        return NO_CONTEXTS
+        return NO_VALUES
 
     return _check_array_additions(value, sequence)
 
 
-@infer_state_method_cache(default=NO_CONTEXTS)
+@infer_state_method_cache(default=NO_VALUES)
 @debug.increase_indent
 def _check_array_additions(value, sequence):
     """
@@ -672,7 +672,7 @@ def _check_array_additions(value, sequence):
     module_value = value.get_root_value()
     if not settings.dynamic_array_additions or isinstance(module_value, compiled.CompiledObject):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
-        return NO_CONTEXTS
+        return NO_VALUES
 
     def find_additions(value, arglist, add_name):
         params = list(arguments.TreeArguments(value.infer_state, value, arglist).unpack())

@@ -8,7 +8,7 @@ from parso.python import tree
 from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS, ContextualizedNode, \
+from jedi.inference.base_value import ContextSet, NO_VALUES, ContextualizedNode, \
     ContextualizedName, iterator_to_value_set, iterate_values
 from jedi.inference.lazy_value import LazyTreeContext
 from jedi.inference import compiled
@@ -46,7 +46,7 @@ def _limit_value_infers(func):
             infer_state.inferred_element_counts[n] += 1
             if infer_state.inferred_element_counts[n] > 300:
                 debug.warning('In value %s there were too many inferences.', n)
-                return NO_CONTEXTS
+                return NO_VALUES
         except KeyError:
             infer_state.inferred_element_counts[n] = 1
         return func(value, *args, **kwargs)
@@ -55,7 +55,7 @@ def _limit_value_infers(func):
 
 
 def _py__stop_iteration_returns(generators):
-    results = NO_CONTEXTS
+    results = NO_VALUES
     for generator in generators:
         try:
             method = generator.py__stop_iteration_returns
@@ -143,7 +143,7 @@ def infer_node(value, element):
             return generators.py__stop_iteration_returns()
 
         # Generator.send() is not implemented.
-        return NO_CONTEXTS
+        return NO_VALUES
     elif typ == 'namedexpr_test':
         return infer_node(value, element.children[2])
     else:
@@ -210,11 +210,11 @@ def infer_atom(value, atom):
             return ContextSet([compiled.builtin_from_name(value.infer_state, atom.value)])
         elif atom.value == 'print':
             # print e.g. could be inferred like this in Python 2.7
-            return NO_CONTEXTS
+            return NO_VALUES
         elif atom.value == 'yield':
             # Contrary to yield from, yield can just appear alone to return a
             # value when used with `.send()`.
-            return NO_CONTEXTS
+            return NO_VALUES
         assert False, 'Cannot infer the keyword %s' % atom
 
     elif isinstance(atom, tree.Literal):
@@ -287,7 +287,7 @@ def infer_expr_stmt(value, stmt, seek_name=None):
 
         if allowed:
             return _infer_expr_stmt(value, stmt, seek_name)
-    return NO_CONTEXTS
+    return NO_VALUES
 
 
 @debug.increase_indent
@@ -385,7 +385,7 @@ def infer_factor(value_set, operator):
 def _literals_to_types(infer_state, result):
     # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
     # int(), float(), etc).
-    new_result = NO_CONTEXTS
+    new_result = NO_VALUES
     for typ in result:
         if is_literal(typ):
             # Literals are only valid as long as the operations are
@@ -400,7 +400,7 @@ def _literals_to_types(infer_state, result):
 def _infer_comparison(infer_state, value, left_values, operator, right_values):
     if not left_values or not right_values:
         # illegal slices e.g. cause left/right_result to be None
-        result = (left_values or NO_CONTEXTS) | (right_values or NO_CONTEXTS)
+        result = (left_values or NO_VALUES) | (right_values or NO_VALUES)
         return _literals_to_types(infer_state, result)
     else:
         # I don't think there's a reasonable chance that a string
@@ -512,7 +512,7 @@ def _infer_comparison_part(infer_state, value, left, operator, right):
 
         return ContextSet([_bool_to_value(infer_state, True), _bool_to_value(infer_state, False)])
     elif str_operator == 'in':
-        return NO_CONTEXTS
+        return NO_VALUES
 
     def check(obj):
         """Checks if a Jedi object is either a float or an int."""
@@ -548,7 +548,7 @@ def _remove_statements(infer_state, value, stmt, name):
 
 @plugin_manager.decorate()
 def tree_name_to_values(infer_state, value, tree_name):
-    value_set = NO_CONTEXTS
+    value_set = NO_VALUES
     module_node = value.get_root_value().tree_node
     # First check for annotations, like: `foo: int = 3`
     if module_node is not None:
@@ -620,7 +620,7 @@ def tree_name_to_values(infer_state, value, tree_name):
         exceptions = value.infer_node(tree_name.get_previous_sibling().get_previous_sibling())
         types = exceptions.execute_with_values()
     elif node.type == 'param':
-        types = NO_CONTEXTS
+        types = NO_VALUES
     else:
         raise ValueError("Should not happen. type: %s" % typ)
     return types
@@ -684,7 +684,7 @@ def check_tuple_assignments(infer_state, valueualized_name, value_set):
         iterated = value_set.iterate(cn)
         if isinstance(index, slice):
             # For no star unpacking is not possible.
-            return NO_CONTEXTS
+            return NO_VALUES
         for _ in range(index + 1):
             try:
                 lazy_value = next(iterated)
@@ -693,7 +693,7 @@ def check_tuple_assignments(infer_state, valueualized_name, value_set):
                 # would allow this loop to run for a very long time if the
                 # index number is high. Therefore break if the loop is
                 # finished.
-                return NO_CONTEXTS
+                return NO_VALUES
         value_set = lazy_value.infer()
     return value_set
 

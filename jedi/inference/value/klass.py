@@ -47,7 +47,7 @@ from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.names import TreeNameDefinition, ContextName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
 from jedi.inference.base_value import ContextSet, iterator_to_value_set, \
-    NO_CONTEXTS
+    NO_VALUES
 from jedi.inference.value.function import FunctionAndClassBase
 from jedi.plugins import plugin_manager
 
@@ -307,7 +307,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
             a different type var name.
             """
             for type_var in self.list_type_vars():
-                yield type_var_dict.get(type_var.py__name__(), NO_CONTEXTS)
+                yield type_var_dict.get(type_var.py__name__(), NO_VALUES)
 
         if type_var_dict:
             return ContextSet([GenericClass(
@@ -321,7 +321,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         debug.dbg('Unprocessed metaclass %s', metaclass)
         return []
 
-    @infer_state_method_cache(default=NO_CONTEXTS)
+    @infer_state_method_cache(default=NO_VALUES)
     def get_metaclasses(self):
         args = self._get_bases_arguments()
         if args is not None:
@@ -337,4 +337,4 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                     values = value.get_metaclasses()
                     if values:
                         return values
-        return NO_CONTEXTS
+        return NO_VALUES

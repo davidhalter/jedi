@@ -27,7 +27,7 @@ from jedi.inference import helpers
 from jedi.inference.value import iterable
 from jedi.inference.filters import get_global_filters
 from jedi.inference.names import TreeNameDefinition
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_VALUES
 from jedi.parser_utils import is_scope, get_parent_scope
 from jedi.inference.gradual.conversion import convert_values
 
@@ -61,7 +61,7 @@ class NameFinder(object):
                 node=self._name,
             )
             if check is flow_analysis.UNREACHABLE:
-                return NO_CONTEXTS
+                return NO_VALUES
             return self._found_predefined_types
 
         types = self._names_to_types(names, attribute_lookup)
@@ -280,7 +280,7 @@ def _check_isinstance_type(value, element, search_name):
     except AssertionError:
         return None
 
-    value_set = NO_CONTEXTS
+    value_set = NO_VALUES
     for cls_or_tup in lazy_value_cls.infer():
         if isinstance(cls_or_tup, iterable.Sequence) and cls_or_tup.array_type == 'tuple':
             for lazy_value in cls_or_tup.py__iter__():

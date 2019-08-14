@@ -11,7 +11,7 @@ from parso import ParserSyntaxError, parse
 
 from jedi._compatibility import force_unicode
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_VALUES
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
 from jedi.inference.gradual.typing import GenericClass
@@ -47,7 +47,7 @@ def infer_annotation(value, annotation):
 def _infer_annotation_string(value, string, index=None):
     node = _get_forward_reference_node(value, string)
     if node is None:
-        return NO_CONTEXTS
+        return NO_VALUES
 
     value_set = value.infer_node(node)
     if index is not None:
@@ -142,11 +142,11 @@ def _infer_param(execution_value, param):
         node = param.parent.parent
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:
-            return NO_CONTEXTS
+            return NO_VALUES
 
         match = re.match(r"^#\s*type:\s*\(([^#]*)\)\s*->", comment)
         if not match:
-            return NO_CONTEXTS
+            return NO_VALUES
         params_comments = _split_comment_param_declaration(match.group(1))
 
         # Find the specific param being investigated
@@ -162,10 +162,10 @@ def _infer_param(execution_value, param):
         if isinstance(execution_value.var_args, InstanceArguments):
             if index == 0:
                 # Assume it's self, which is already handled
-                return NO_CONTEXTS
+                return NO_VALUES
             index -= 1
         if index >= len(params_comments):
-            return NO_CONTEXTS
+            return NO_VALUES
 
         param_comment = params_comments[index]
         return _infer_annotation_string(
@@ -203,18 +203,18 @@ def infer_return_types(function_execution_value):
         node = function_execution_value.tree_node
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:
-            return NO_CONTEXTS
+            return NO_VALUES
 
         match = re.match(r"^#\s*type:\s*\([^#]*\)\s*->\s*([^#]*)", comment)
         if not match:
-            return NO_CONTEXTS
+            return NO_VALUES
 
         return _infer_annotation_string(
             function_execution_value.function_value.get_default_param_value(),
             match.group(1).strip()
         ).execute_annotation()
         if annotation is None:
-            return NO_CONTEXTS
+            return NO_VALUES
 
     value = function_execution_value.function_value.get_default_param_value()
     unknown_type_vars = list(find_unknown_type_vars(value, annotation))

@@ -76,7 +76,7 @@ from jedi.inference.cache import infer_state_function_cache
 from jedi.inference import helpers
 from jedi.inference.names import TreeNameDefinition, ParamName
 from jedi.inference.base_value import ContextualizedName, ContextualizedNode, \
-    ContextSet, NO_CONTEXTS, iterate_values
+    ContextSet, NO_VALUES, iterate_values
 from jedi.inference.value import ClassContext, FunctionContext, \
     AnonymousInstance, BoundMethod
 from jedi.inference.value.iterable import CompForContext
@@ -208,7 +208,7 @@ class InferState(object):
                             for name_dict in name_dicts:
                                 name_dict[if_name.value] = definitions
             if len(name_dicts) > 1:
-                result = NO_CONTEXTS
+                result = NO_VALUES
                 for name_dict in name_dicts:
                     with helpers.predefine_names(value, if_stmt, name_dict):
                         result |= infer_node(value, element)
@@ -233,7 +233,7 @@ class InferState(object):
                 return infer_node(value, element)
         return self._infer_element_cached(value, element)
 
-    @infer_state_function_cache(default=NO_CONTEXTS)
+    @infer_state_function_cache(default=NO_VALUES)
     def _infer_element_cached(self, value, element):
         return infer_node(value, element)
 

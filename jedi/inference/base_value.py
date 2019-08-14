@@ -137,7 +137,7 @@ class Context(HelperContextMixin, BaseContext):
             valueualized_node.node,
             message="TypeError: '%s' object is not subscriptable" % self
         )
-        return NO_CONTEXTS
+        return NO_VALUES
 
     def py__iter__(self, valueualized_node=None):
         if valueualized_node is not None:
@@ -196,11 +196,11 @@ class Context(HelperContextMixin, BaseContext):
 
     def py__call__(self, arguments):
         debug.warning("no execution possible %s", self)
-        return NO_CONTEXTS
+        return NO_VALUES
 
     def py__stop_iteration_returns(self):
         debug.warning("Not possible to return the stop iterations of %s", self)
-        return NO_CONTEXTS
+        return NO_VALUES
 
     def get_qualified_names(self):
         # Returns Optional[Tuple[str, ...]]
@@ -346,7 +346,7 @@ def _getitem(value, index_values, valueualized_node):
     # The actual getitem call.
     simple_getitem = getattr(value, 'py__simple_getitem__', None)
 
-    result = NO_CONTEXTS
+    result = NO_VALUES
     unused_values = set()
     for index_value in index_values:
         if simple_getitem is not None:
@@ -426,7 +426,7 @@ class ContextSet(BaseContextSet):
         return [sig for c in self._set for sig in c.get_signatures()]
 
 
-NO_CONTEXTS = ContextSet([])
+NO_VALUES = ContextSet([])
 
 
 def iterator_to_value_set(func):

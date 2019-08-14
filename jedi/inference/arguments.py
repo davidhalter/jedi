@@ -9,7 +9,7 @@ from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext, get_merged_lazy_value
 from jedi.inference.names import ParamName, TreeNameDefinition
-from jedi.inference.base_value import NO_CONTEXTS, ContextSet, ContextualizedNode
+from jedi.inference.base_value import NO_VALUES, ContextSet, ContextualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import infer_state_as_method_param_cache
 from jedi.inference.param import get_executed_params_and_issues, ExecutedParam
@@ -64,7 +64,7 @@ def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callbac
                     clinic_args
                 ))
             except ParamIssue:
-                return NO_CONTEXTS
+                return NO_VALUES
             else:
                 return func(value, *args, **kwargs)
 
@@ -98,7 +98,7 @@ def _iterate_argument_clinic(infer_state, arguments, parameters):
                           name, len(parameters), i)
             raise ParamIssue
 
-        value_set = NO_CONTEXTS if argument is None else argument.infer()
+        value_set = NO_VALUES if argument is None else argument.infer()
 
         if not value_set and not optional:
             # For the stdlib we always want values. If we don't get them,

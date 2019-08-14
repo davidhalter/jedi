@@ -1,4 +1,4 @@
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_VALUES
 from jedi.common.utils import monkeypatch
 
 
@@ -30,7 +30,7 @@ class LazyUnknownContext(AbstractLazyContext):
         super(LazyUnknownContext, self).__init__(None)
 
     def infer(self):
-        return NO_CONTEXTS
+        return NO_VALUES
 
 
 class LazyTreeContext(AbstractLazyContext):

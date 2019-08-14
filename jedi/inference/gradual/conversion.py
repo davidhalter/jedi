@@ -1,6 +1,6 @@
 from jedi import debug
 from jedi.inference.base_value import ContextSet, \
-    NO_CONTEXTS
+    NO_VALUES
 from jedi.inference.utils import to_list
 from jedi.inference.gradual.stub_value import StubModuleContext
 
@@ -16,7 +16,7 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
 
     qualified_names = stub_value.get_qualified_names()
     if qualified_names is None:
-        return NO_CONTEXTS
+        return NO_VALUES
 
     was_bound_method = stub_value.is_bound_method()
     if was_bound_method:
@@ -60,7 +60,7 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
 
         name_list = name.get_qualified_names()
         if name_list is None:
-            values = NO_CONTEXTS
+            values = NO_VALUES
         else:
             values = _infer_from_stub(
                 module,
@@ -112,7 +112,7 @@ def _python_to_stub_names(names, fallback_to_python=False):
             continue
 
         name_list = name.get_qualified_names()
-        stubs = NO_CONTEXTS
+        stubs = NO_VALUES
         if name_list is not None:
             stub_module = _load_stub_module(module)
             if stub_module is not None:
@@ -150,7 +150,7 @@ def convert_values(values, only_stubs=False, prefer_stubs=False, ignore_compiled
         if only_stubs or prefer_stubs:
             return ContextSet.from_sets(
                 to_stub(value)
-                or (ContextSet({value}) if prefer_stubs else NO_CONTEXTS)
+                or (ContextSet({value}) if prefer_stubs else NO_VALUES)
                 for value in values
             )
         else:
@@ -173,7 +173,7 @@ def to_stub(value):
     qualified_names = value.get_qualified_names()
     stub_module = _load_stub_module(value.get_root_value())
     if stub_module is None or qualified_names is None:
-        return NO_CONTEXTS
+        return NO_VALUES
 
     was_bound_method = value.is_bound_method()
     if was_bound_method:

@@ -12,7 +12,7 @@ from jedi.inference.signature import TreeSignature
 from jedi.inference.arguments import AnonymousArguments
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
 from jedi.inference.names import ContextName, AbstractNameDefinition, ParamName
-from jedi.inference.base_value import ContextualizedNode, NO_CONTEXTS, \
+from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ContextSet, TreeContext, ContextWrapper
 from jedi.inference.lazy_value import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
@@ -180,7 +180,7 @@ class FunctionExecutionContext(TreeContext):
         self.function_value = function_value
         self.var_args = var_args
 
-    @infer_state_method_cache(default=NO_CONTEXTS)
+    @infer_state_method_cache(default=NO_VALUES)
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
@@ -188,7 +188,7 @@ class FunctionExecutionContext(TreeContext):
             return self.infer_node(funcdef.children[-1])
 
         if check_yields:
-            value_set = NO_CONTEXTS
+            value_set = NO_VALUES
             returns = get_yield_exprs(self.infer_state, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
@@ -331,13 +331,13 @@ class FunctionExecutionContext(TreeContext):
         if is_coroutine:
             if is_generator:
                 if infer_state.environment.version_info < (3, 6):
-                    return NO_CONTEXTS
+                    return NO_VALUES
                 async_generator_classes = infer_state.typing_module \
                     .py__getattribute__('AsyncGenerator')
 
                 yield_values = self.merge_yield_values(is_async=True)
                 # The contravariant doesn't seem to be defined.
-                generics = (yield_values.py__class__(), NO_CONTEXTS)
+                generics = (yield_values.py__class__(), NO_VALUES)
                 return ContextSet(
                     # In Python 3.6 AsyncGenerator is still a class.
                     GenericClass(c, generics)
@@ -345,11 +345,11 @@ class FunctionExecutionContext(TreeContext):
                 ).execute_annotation()
             else:
                 if infer_state.environment.version_info < (3, 5):
-                    return NO_CONTEXTS
+                    return NO_VALUES
                 async_classes = infer_state.typing_module.py__getattribute__('Coroutine')
                 return_values = self.get_return_values()
                 # Only the first generic is relevant.
-                generics = (return_values.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
+                generics = (return_values.py__class__(), NO_VALUES, NO_VALUES)
                 return ContextSet(
                     GenericClass(c, generics) for c in async_classes
                 ).execute_annotation()
@@ -368,7 +368,7 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
     def py__call__(self, arguments):
         debug.dbg("Execute overloaded function %s", self._wrapped_value, color='BLUE')
         function_executions = []
-        value_set = NO_CONTEXTS
+        value_set = NO_VALUES
         matched = False
         for f in self._overloaded_functions:
             function_execution = f.get_function_execution(arguments)
@@ -382,7 +382,7 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
 
         if self.infer_state.is_analysis:
             # In this case we want precision.
-            return NO_CONTEXTS
+            return NO_VALUES
         return ContextSet.from_sets(fe.infer() for fe in function_executions)
 
     def get_signature_functions(self):

@@ -7,7 +7,7 @@ from jedi.inference.compiled.value import CompiledObjectFilter
 from jedi.inference.helpers import values_from_qualified_names
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import ContextName, TreeNameDefinition
-from jedi.inference.base_value import Context, NO_CONTEXTS, ContextSet, \
+from jedi.inference.base_value import Context, NO_VALUES, ContextSet, \
     iterator_to_value_set, ContextWrapper
 from jedi.inference.lazy_value import LazyKnownContext, LazyKnownContexts
 from jedi.inference.cache import infer_state_method_cache
@@ -249,7 +249,7 @@ class CompiledInstance(AbstractInstanceContext):
     def get_first_non_keyword_argument_values(self):
         key, lazy_value = next(self._original_var_args.unpack(), ('', None))
         if key is not None:
-            return NO_CONTEXTS
+            return NO_VALUES
 
         return lazy_value.infer()
 

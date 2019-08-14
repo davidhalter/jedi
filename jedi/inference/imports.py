@@ -30,7 +30,7 @@ from jedi.inference import analysis
 from jedi.inference.utils import unite
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_VALUES
 from jedi.inference.gradual.typeshed import import_module_decorator
 from jedi.inference.value.module import iter_module_names
 from jedi.plugins import plugin_manager
@@ -56,7 +56,7 @@ class ModuleCache(object):
 
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
-@infer_state_method_cache(default=NO_CONTEXTS)
+@infer_state_method_cache(default=NO_VALUES)
 def infer_import(value, tree_name, is_goto=False):
     module_value = value.get_root_value()
     import_node = search_ancestor(tree_name, 'import_name', 'import_from')
@@ -84,7 +84,7 @@ def infer_import(value, tree_name, is_goto=False):
     #    scopes = [NestedImportModule(module, import_node)]
 
     if not types:
-        return NO_CONTEXTS
+        return NO_VALUES
 
     if from_import_name is not None:
         types = unite(
@@ -279,7 +279,7 @@ class Importer(object):
 
     def follow(self):
         if not self.import_path or not self._infer_possible:
-            return NO_CONTEXTS
+            return NO_VALUES
 
         import_names = tuple(
             force_unicode(i.value if isinstance(i, tree.Name) else i)
@@ -299,7 +299,7 @@ class Importer(object):
             if not value_set:
                 message = 'No module named ' + '.'.join(import_names)
                 _add_error(self.module_value, name, message)
-                return NO_CONTEXTS
+                return NO_VALUES
         return value_set
 
     def _get_module_names(self, search_path=None, in_module=None):
@@ -381,7 +381,7 @@ def import_module(infer_state, import_names, parent_module_value, sys_path):
     if import_names[0] in settings.auto_import_modules:
         module = _load_builtin_module(infer_state, import_names, sys_path)
         if module is None:
-            return NO_CONTEXTS
+            return NO_VALUES
         return ContextSet([module])
 
     module_name = '.'.join(import_names)
@@ -395,13 +395,13 @@ def import_module(infer_state, import_names, parent_module_value, sys_path):
             is_global_search=True,
         )
         if is_pkg is None:
-            return NO_CONTEXTS
+            return NO_VALUES
     else:
         try:
             method = parent_module_value.py__path__
         except AttributeError:
             # The module is not a package.
-            return NO_CONTEXTS
+            return NO_VALUES
         else:
             paths = method()
             for path in paths:
@@ -418,7 +418,7 @@ def import_module(infer_state, import_names, parent_module_value, sys_path):
                 if is_pkg is not None:
                     break
             else:
-                return NO_CONTEXTS
+                return NO_VALUES
 
     if isinstance(file_io_or_ns, ImplicitNSInfo):
         from jedi.inference.value.namespace import ImplicitNamespaceContext
@@ -430,7 +430,7 @@ def import_module(infer_state, import_names, parent_module_value, sys_path):
     elif file_io_or_ns is None:
         module = _load_builtin_module(infer_state, import_names, sys_path)
         if module is None:
-            return NO_CONTEXTS
+            return NO_VALUES
     else:
         module = _load_python_module(
             infer_state, file_io_or_ns, sys_path,

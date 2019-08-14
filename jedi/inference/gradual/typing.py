@@ -9,7 +9,7 @@ from jedi._compatibility import unicode, force_unicode
 from jedi import debug
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.compiled import builtin_from_name
-from jedi.inference.base_value import ContextSet, NO_CONTEXTS, Context, \
+from jedi.inference.base_value import ContextSet, NO_VALUES, Context, \
     iterator_to_value_set, ContextWrapper, LazyContextWrapper
 from jedi.inference.lazy_value import LazyKnownContexts
 from jedi.inference.value.iterable import SequenceLiteralContext
@@ -286,7 +286,7 @@ class _ContainerBase(_WithIndexBase):
                 return values
 
         debug.warning('No param #%s found for annotation %s', index, self._index_value)
-        return NO_CONTEXTS
+        return NO_VALUES
 
 
 class Callable(_ContainerBase):
@@ -313,7 +313,7 @@ class Tuple(_ContainerBase):
                 return self._get_getitem_values(index).execute_annotation()
 
             debug.dbg('The getitem type on Tuple was %s' % index)
-            return NO_CONTEXTS
+            return NO_VALUES
 
     def py__iter__(self, valueualized_node=None):
         if self._is_homogenous():
@@ -343,7 +343,7 @@ class Protocol(_ContainerBase):
 class Any(_BaseTypingContext):
     def execute_annotation(self):
         debug.warning('Used Any - returned no results')
-        return NO_CONTEXTS
+        return NO_VALUES
 
 
 class TypeVarClass(_BaseTypingContext):
@@ -355,7 +355,7 @@ class TypeVarClass(_BaseTypingContext):
         # The name must be given, otherwise it's useless.
         if var_name is None or key is not None:
             debug.warning('Found a variable without a name %s', arguments)
-            return NO_CONTEXTS
+            return NO_VALUES
 
         return ContextSet([TypeVar.create_cached(
             self.infer_state,
@@ -424,7 +424,7 @@ class TypeVar(_BaseTypingContext):
         if self._constraints_lazy_values:
             return self.constraints
         debug.warning('Tried to infer the TypeVar %s without a given type', self._var_name)
-        return NO_CONTEXTS
+        return NO_VALUES
 
     def is_same_class(self, other):
         # Everything can match an undefined type var.
@@ -466,7 +466,7 @@ class NewTypeFunction(_BaseTypingContext):
         next(ordered_args, (None, None))
         _, second_arg = next(ordered_args, (None, None))
         if second_arg is None:
-            return NO_CONTEXTS
+            return NO_VALUES
         return ContextSet(
             NewType(
                 self.infer_state,
@@ -602,7 +602,7 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
         changed = False
         new_generics = []
         for generic_set in self.get_generics():
-            values = NO_CONTEXTS
+            values = NO_VALUES
             for generic in generic_set:
                 if isinstance(generic, (AbstractAnnotatedClass, TypeVar)):
                     result = generic.define_generics(type_var_dict)
@@ -678,7 +678,7 @@ class LazyAnnotatedBaseClass(object):
     def _remap_type_vars(self, base):
         filter = self._class_value.get_type_var_filter()
         for type_var_set in base.get_generics():
-            new = NO_CONTEXTS
+            new = NO_VALUES
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar):
                     names = filter.get(type_var.py__name__())

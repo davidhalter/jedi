@@ -26,7 +26,7 @@ from jedi import debug
 from jedi.inference.utils import indent_block
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.base_value import iterator_to_value_set, ContextSet, \
-    NO_CONTEXTS
+    NO_VALUES
 from jedi.inference.lazy_value import LazyKnownContexts
 
 
@@ -281,7 +281,7 @@ def infer_param(execution_value, param):
     module_value = execution_value.get_root_value()
     func = param.get_parent_function()
     if func.type == 'lambdef':
-        return NO_CONTEXTS
+        return NO_VALUES
 
     types = infer_docstring(execution_value.py__doc__())
     if isinstance(execution_value, FunctionExecutionContext) \
