@@ -3,14 +3,14 @@ from collections import defaultdict
 from jedi import debug
 from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
-from jedi.inference.lazy_value import LazyKnownContext, \
-    LazyTreeContext, LazyUnknownContext
+from jedi.inference.lazy_value import LazyKnownValue, \
+    LazyTreeValue, LazyUnknownValue
 from jedi.inference import docstrings
 from jedi.inference.value import iterable
 
 
 def _add_argument_issue(error_name, lazy_value, message):
-    if isinstance(lazy_value, LazyTreeContext):
+    if isinstance(lazy_value, LazyTreeValue):
         node = lazy_value.data
         if node.parent.type == 'argument':
             node = node.parent
@@ -146,20 +146,20 @@ def get_executed_params_and_issues(execution_value, arguments):
                         break
                     lazy_value_list.append(argument)
             seq = iterable.FakeSequence(execution_value.infer_state, u'tuple', lazy_value_list)
-            result_arg = LazyKnownContext(seq)
+            result_arg = LazyKnownValue(seq)
         elif param.star_count == 2:
             if argument is not None:
                 too_many_args(argument)
             # **kwargs param
             dct = iterable.FakeDict(execution_value.infer_state, dict(non_matching_keys))
-            result_arg = LazyKnownContext(dct)
+            result_arg = LazyKnownValue(dct)
             non_matching_keys = {}
         else:
             # normal param
             if argument is None:
                 # No value: Return an empty container
                 if param.default is None:
-                    result_arg = LazyUnknownContext()
+                    result_arg = LazyUnknownValue()
                     if not keys_only:
                         for valueualized_node in arguments.get_calling_nodes():
                             m = _error_argument_count(funcdef, len(unpacked_va))
@@ -172,7 +172,7 @@ def get_executed_params_and_issues(execution_value, arguments):
                                 )
                             )
                 else:
-                    result_arg = LazyTreeContext(default_param_value, param.default)
+                    result_arg = LazyTreeValue(default_param_value, param.default)
                     is_default = True
             else:
                 result_arg = argument
@@ -181,7 +181,7 @@ def get_executed_params_and_issues(execution_value, arguments):
             execution_value, param, result_arg,
             is_default=is_default
         ))
-        if not isinstance(result_arg, LazyUnknownContext):
+        if not isinstance(result_arg, LazyUnknownValue):
             keys_used[param.name.value] = result_params[-1]
 
     if keys_only:
@@ -234,17 +234,17 @@ def _error_argument_count(funcdef, actual_count):
 
 def _create_default_param(execution_value, param):
     if param.star_count == 1:
-        result_arg = LazyKnownContext(
+        result_arg = LazyKnownValue(
             iterable.FakeSequence(execution_value.infer_state, u'tuple', [])
         )
     elif param.star_count == 2:
-        result_arg = LazyKnownContext(
+        result_arg = LazyKnownValue(
             iterable.FakeDict(execution_value.infer_state, {})
         )
     elif param.default is None:
-        result_arg = LazyUnknownContext()
+        result_arg = LazyUnknownValue()
     else:
-        result_arg = LazyTreeContext(execution_value.parent_value, param.default)
+        result_arg = LazyTreeValue(execution_value.parent_value, param.default)
     return ExecutedParam(execution_value, param, result_arg)
 
 

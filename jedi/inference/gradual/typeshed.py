@@ -5,8 +5,8 @@ from functools import wraps
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
-from jedi.inference.base_value import ContextSet, NO_VALUES
-from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleContext
+from jedi.inference.base_value import ValueSet, NO_VALUES
+from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleValue
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
@@ -107,7 +107,7 @@ def import_module_decorator(func):
                     python_parent, = infer_state.import_module(('os',), prefer_stubs=False)
                 python_value_set = python_parent.py__getattribute__('path')
             else:
-                python_value_set = ContextSet.from_sets(
+                python_value_set = ValueSet.from_sets(
                     func(infer_state, import_names, p, sys_path,)
                     for p in parent_module_values
                 )
@@ -119,7 +119,7 @@ def import_module_decorator(func):
         stub = _try_to_load_stub_cached(infer_state, import_names, python_value_set,
                                         parent_module_value, sys_path)
         if stub is not None:
-            return ContextSet([stub])
+            return ValueSet([stub])
         return python_value_set
 
     return wrapper
@@ -235,7 +235,7 @@ def _load_from_typeshed(infer_state, python_value_set, parent_module_value, impo
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(infer_state.grammar.version_info)
         import_name = _IMPORT_MAP.get(import_name, import_name)
-    elif isinstance(parent_module_value, StubModuleContext):
+    elif isinstance(parent_module_value, StubModuleValue):
         if not parent_module_value.is_package:
             # Only if it's a package (= a folder) something can be
             # imported.
@@ -275,7 +275,7 @@ def create_stub_module(infer_state, python_value_set, stub_module_node, file_io,
     if import_names == ('typing',):
         module_cls = TypingModuleWrapper
     else:
-        module_cls = StubModuleContext
+        module_cls = StubModuleValue
     file_name = os.path.basename(file_io.path)
     stub_module_value = module_cls(
         python_value_set, infer_state, stub_module_node,

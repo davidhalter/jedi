@@ -14,10 +14,10 @@ from jedi.cache import memoize_method
 from jedi.inference import imports
 from jedi.inference import compiled
 from jedi.inference.imports import ImportName
-from jedi.inference.value import FunctionExecutionContext
-from jedi.inference.gradual.typeshed import StubModuleContext
+from jedi.inference.value import FunctionExecutionValue
+from jedi.inference.gradual.typeshed import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
-from jedi.inference.base_value import ContextSet
+from jedi.inference.base_value import ValueSet
 from jedi.api.keywords import KeywordName
 
 
@@ -187,7 +187,7 @@ class BaseDefinition(object):
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        if isinstance(self._get_module(), StubModuleContext):
+        if isinstance(self._get_module(), StubModuleValue):
             return any(isinstance(value, compiled.CompiledObject)
                        for value in self._get_module().non_stub_value_set)
         return isinstance(self._get_module(), compiled.CompiledObject)
@@ -324,7 +324,7 @@ class BaseDefinition(object):
         # results of Python objects instead of stubs.
         names = convert_names([self._name], prefer_stubs=True)
         values = convert_values(
-            ContextSet.from_sets(n.infer() for n in names),
+            ValueSet.from_sets(n.infer() for n in names),
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
@@ -364,7 +364,7 @@ class BaseDefinition(object):
         if value is None:
             return None
 
-        if isinstance(value, FunctionExecutionContext):
+        if isinstance(value, FunctionExecutionValue):
             value = value.function_value
         return Definition(self._infer_state, value.name)
 
@@ -755,7 +755,7 @@ class _Help(object):
                 if not raw:
                     signature_text = _format_signatures(value)
                 if not doc and value.is_stub():
-                    for c in convert_values(ContextSet({value}), ignore_compiled=False):
+                    for c in convert_values(ValueSet({value}), ignore_compiled=False):
                         doc = c.py__doc__()
                         if doc:
                             break

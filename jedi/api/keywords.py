@@ -44,7 +44,7 @@ class Keyword(object):
 
     def get_signatures(self):
         # TODO this makes no sense, I think Keyword should somehow merge with
-        #   Context to make it easier for the api/classes.py to deal with all
+        #   Value to make it easier for the api/classes.py to deal with all
         #   of it.
         return []
 

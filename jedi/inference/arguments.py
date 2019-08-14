@@ -6,10 +6,10 @@ from jedi._compatibility import zip_longest
 from jedi import debug
 from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
-from jedi.inference.lazy_value import LazyKnownContext, LazyKnownContexts, \
-    LazyTreeContext, get_merged_lazy_value
+from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
+    LazyTreeValue, get_merged_lazy_value
 from jedi.inference.names import ParamName, TreeNameDefinition
-from jedi.inference.base_value import NO_VALUES, ContextSet, ContextualizedNode
+from jedi.inference.base_value import NO_VALUES, ValueSet, ValueualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import infer_state_as_method_param_cache
 from jedi.inference.param import get_executed_params_and_issues, ExecutedParam
@@ -84,7 +84,7 @@ def _iterate_argument_clinic(infer_state, arguments, parameters):
                     break
 
                 lazy_values.append(argument)
-            yield ContextSet([iterable.FakeSequence(infer_state, u'tuple', lazy_values)])
+            yield ValueSet([iterable.FakeSequence(infer_state, u'tuple', lazy_values)])
             lazy_values
             continue
         elif stars == 2:
@@ -234,7 +234,7 @@ class TreeArguments(AbstractArguments):
                 if el.type == 'argument':
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
-                        named_args.append((c[0].value, LazyTreeContext(self.value, c[2]),))
+                        named_args.append((c[0].value, LazyTreeValue(self.value, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         sync_comp_for = el.children[1]
@@ -246,9 +246,9 @@ class TreeArguments(AbstractArguments):
                             sync_comp_for_node=sync_comp_for,
                             entry_node=el.children[0],
                         )
-                        yield None, LazyKnownContext(comp)
+                        yield None, LazyKnownValue(comp)
                 else:
-                    yield None, LazyTreeContext(self.value, el)
+                    yield None, LazyTreeValue(self.value, el)
 
         # Reordering arguments is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
@@ -302,9 +302,9 @@ class TreeArguments(AbstractArguments):
                 break
 
         if arguments.argument_node is not None:
-            return [ContextualizedNode(arguments.value, arguments.argument_node)]
+            return [ValueualizedNode(arguments.value, arguments.argument_node)]
         if arguments.trailer is not None:
-            return [ContextualizedNode(arguments.value, arguments.trailer)]
+            return [ValueualizedNode(arguments.value, arguments.trailer)]
         return []
 
 
@@ -314,7 +314,7 @@ class ValuesArguments(AbstractArguments):
 
     def unpack(self, funcdef=None):
         for values in self._values_list:
-            yield None, LazyKnownContexts(values)
+            yield None, LazyKnownValues(values)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._values_list)

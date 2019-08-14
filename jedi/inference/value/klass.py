@@ -25,7 +25,7 @@ py__iter__()                           Returns a generator of a set of types.
 py__class__()                          Returns the class of an instance.
 py__simple_getitem__(index: int/str)   Returns a a set of types of the index.
                                        Can raise an IndexError/KeyError.
-py__getitem__(indexes: ContextSet)     Returns a a set of types of the index.
+py__getitem__(indexes: ValueSet)     Returns a a set of types of the index.
 py__file__()                           Only on modules. Returns None if does
                                        not exist.
 py__package__() -> List[str]           Only on modules. For the import system.
@@ -42,11 +42,11 @@ from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.cache import infer_state_method_cache, CachedMetaClass, \
     infer_state_method_generator_cache
 from jedi.inference import compiled
-from jedi.inference.lazy_value import LazyKnownContexts
+from jedi.inference.lazy_value import LazyKnownValues
 from jedi.inference.filters import ParserTreeFilter
-from jedi.inference.names import TreeNameDefinition, ContextName
+from jedi.inference.names import TreeNameDefinition, ValueName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
-from jedi.inference.base_value import ContextSet, iterator_to_value_set, \
+from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
     NO_VALUES
 from jedi.inference.value.function import FunctionAndClassBase
 from jedi.plugins import plugin_manager
@@ -141,14 +141,14 @@ class ClassMixin(object):
         from jedi.inference.value import TreeInstance
         if arguments is None:
             arguments = ValuesArguments([])
-        return ContextSet([TreeInstance(self.infer_state, self.parent_value, self, arguments)])
+        return ValueSet([TreeInstance(self.infer_state, self.parent_value, self, arguments)])
 
     def py__class__(self):
         return compiled.builtin_from_name(self.infer_state, u'type')
 
     @property
     def name(self):
-        return ContextName(self, self.tree_node.name)
+        return ValueName(self, self.tree_node.name)
 
     def py__name__(self):
         return self.name.string_name
@@ -215,7 +215,7 @@ class ClassMixin(object):
         if not is_instance:
             from jedi.inference.compiled import builtin_from_name
             type_ = builtin_from_name(self.infer_state, u'type')
-            assert isinstance(type_, ClassContext)
+            assert isinstance(type_, ClassValue)
             if type_ != self:
                 for instance in type_.py__call__():
                     instance_filters = instance.get_filters()
@@ -237,7 +237,7 @@ class ClassMixin(object):
         )
 
 
-class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
+class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     api_type = u'class'
 
     @infer_state_method_cache()
@@ -276,15 +276,15 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         if self.py__name__() == 'object' \
                 and self.parent_value == self.infer_state.builtins_module:
             return []
-        return [LazyKnownContexts(
+        return [LazyKnownValues(
             self.infer_state.builtins_module.py__getattribute__('object')
         )]
 
     def py__getitem__(self, index_value_set, valueualized_node):
         from jedi.inference.gradual.typing import LazyGenericClass
         if not index_value_set:
-            return ContextSet([self])
-        return ContextSet(
+            return ValueSet([self])
+        return ValueSet(
             LazyGenericClass(
                 self,
                 index_value,
@@ -310,11 +310,11 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                 yield type_var_dict.get(type_var.py__name__(), NO_VALUES)
 
         if type_var_dict:
-            return ContextSet([GenericClass(
+            return ValueSet([GenericClass(
                 self,
                 generics=tuple(remap_type_vars())
             )])
-        return ContextSet({self})
+        return ValueSet({self})
 
     @plugin_manager.decorate()
     def get_metaclass_filters(self, metaclass):
@@ -326,8 +326,8 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         args = self._get_bases_arguments()
         if args is not None:
             m = [value for key, value in args.unpack() if key == 'metaclass']
-            metaclasses = ContextSet.from_sets(lazy_value.infer() for lazy_value in m)
-            metaclasses = ContextSet(m for m in metaclasses if m.is_class())
+            metaclasses = ValueSet.from_sets(lazy_value.infer() for lazy_value in m)
+            metaclasses = ValueSet(m for m in metaclasses if m.is_class())
             if metaclasses:
                 return metaclasses
 

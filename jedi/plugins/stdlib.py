@@ -21,16 +21,16 @@ from jedi.inference.arguments import ValuesArguments, \
 from jedi.inference import analysis
 from jedi.inference import compiled
 from jedi.inference.value.instance import BoundMethod, InstanceArguments
-from jedi.inference.base_value import ContextualizedNode, \
-    NO_VALUES, ContextSet, ContextWrapper, LazyContextWrapper
-from jedi.inference.value import ClassContext, ModuleContext, \
-    FunctionExecutionContext
+from jedi.inference.base_value import ValueualizedNode, \
+    NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
+from jedi.inference.value import ClassValue, ModuleValue, \
+    FunctionExecutionValue
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
-from jedi.inference.lazy_value import LazyTreeContext, LazyKnownContext, \
-    LazyKnownContexts
-from jedi.inference.names import ContextName, BaseTreeParamName
+from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
+    LazyKnownValues
+from jedi.inference.names import ValueName, BaseTreeParamName
 from jedi.inference.syntax_tree import is_string
 from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
@@ -132,7 +132,7 @@ def execute(callback):
                             )
                     elif value.py__name__() in ('deleter', 'getter', 'setter'):
                         if value.class_value.py__name__() == 'property':
-                            return ContextSet([value.instance])
+                            return ValueSet([value.instance])
 
                 return call()
 
@@ -243,7 +243,7 @@ def builtins_type(objects, bases, dicts):
         return objects.py__class__()
 
 
-class SuperInstance(LazyContextWrapper):
+class SuperInstance(LazyValueWrapper):
     """To be used like the object ``super`` returns."""
     def __init__(self, infer_state, instance):
         self.infer_state = infer_state
@@ -269,12 +269,12 @@ class SuperInstance(LazyContextWrapper):
 
 @argument_clinic('[type[, obj]], /', want_value=True)
 def builtins_super(types, objects, value):
-    if isinstance(value, FunctionExecutionContext):
+    if isinstance(value, FunctionExecutionValue):
         if isinstance(value.var_args, InstanceArguments):
             instance = value.var_args.instance
             # TODO if a class is given it doesn't have to be the direct super
             #      class, it can be an anecestor from long ago.
-            return ContextSet({SuperInstance(instance.infer_state, instance)})
+            return ValueSet({SuperInstance(instance.infer_state, instance)})
 
     return NO_VALUES
 
@@ -291,7 +291,7 @@ class ReversedObject(AttributeOverwrite):
     @publish_method('next', python_version_match=2)
     @publish_method('__next__', python_version_match=3)
     def py__next__(self):
-        return ContextSet.from_sets(
+        return ValueSet.from_sets(
             lazy_value.infer() for lazy_value in self._iter_list
         )
 
@@ -303,9 +303,9 @@ def builtins_reversed(sequences, obj, arguments):
     # values again.
     key, lazy_value = next(arguments.unpack())
     cn = None
-    if isinstance(lazy_value, LazyTreeContext):
+    if isinstance(lazy_value, LazyTreeValue):
         # TODO access private
-        cn = ContextualizedNode(lazy_value.value, lazy_value.data)
+        cn = ValueualizedNode(lazy_value.value, lazy_value.data)
     ordered = list(sequences.iterate(cn))
 
     # Repack iterator values and then run it the normal way. This is
@@ -313,7 +313,7 @@ def builtins_reversed(sequences, obj, arguments):
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
     seq, = obj.infer_state.typing_module.py__getattribute__('Iterator').execute_with_values()
-    return ContextSet([ReversedObject(seq, list(reversed(ordered)))])
+    return ValueSet([ReversedObject(seq, list(reversed(ordered)))])
 
 
 @argument_clinic('obj, type, /', want_arguments=True, want_infer_state=True)
@@ -338,40 +338,40 @@ def builtins_isinstance(objects, types, arguments, infer_state):
             elif cls_or_tup.name.string_name == 'tuple' \
                     and cls_or_tup.get_root_value() == infer_state.builtins_module:
                 # Check for tuples.
-                classes = ContextSet.from_sets(
+                classes = ValueSet.from_sets(
                     lazy_value.infer()
                     for lazy_value in cls_or_tup.iterate()
                 )
                 bool_results.add(any(cls in mro for cls in classes))
             else:
                 _, lazy_value = list(arguments.unpack())[1]
-                if isinstance(lazy_value, LazyTreeContext):
+                if isinstance(lazy_value, LazyTreeValue):
                     node = lazy_value.data
                     message = 'TypeError: isinstance() arg 2 must be a ' \
                               'class, type, or tuple of classes and types, ' \
                               'not %s.' % cls_or_tup
                     analysis.add(lazy_value.value, 'type-error-isinstance', node, message)
 
-    return ContextSet(
+    return ValueSet(
         compiled.builtin_from_name(infer_state, force_unicode(str(b)))
         for b in bool_results
     )
 
 
-class StaticMethodObject(AttributeOverwrite, ContextWrapper):
+class StaticMethodObject(AttributeOverwrite, ValueWrapper):
     def get_object(self):
         return self._wrapped_value
 
     def py__get__(self, instance, klass):
-        return ContextSet([self._wrapped_value])
+        return ValueSet([self._wrapped_value])
 
 
 @argument_clinic('sequence, /')
 def builtins_staticmethod(functions):
-    return ContextSet(StaticMethodObject(f) for f in functions)
+    return ValueSet(StaticMethodObject(f) for f in functions)
 
 
-class ClassMethodObject(AttributeOverwrite, ContextWrapper):
+class ClassMethodObject(AttributeOverwrite, ValueWrapper):
     def __init__(self, class_method_obj, function):
         super(ClassMethodObject, self).__init__(class_method_obj)
         self._function = function
@@ -380,13 +380,13 @@ class ClassMethodObject(AttributeOverwrite, ContextWrapper):
         return self._wrapped_value
 
     def py__get__(self, obj, class_value):
-        return ContextSet([
+        return ValueSet([
             ClassMethodGet(__get__, class_value, self._function)
             for __get__ in self._wrapped_value.py__getattribute__('__get__')
         ])
 
 
-class ClassMethodGet(AttributeOverwrite, ContextWrapper):
+class ClassMethodGet(AttributeOverwrite, ValueWrapper):
     def __init__(self, get_method, klass, function):
         super(ClassMethodGet, self).__init__(get_method)
         self._class = klass
@@ -408,14 +408,14 @@ class ClassMethodArguments(TreeArgumentsWrapper):
         self._class = klass
 
     def unpack(self, func=None):
-        yield None, LazyKnownContext(self._class)
+        yield None, LazyKnownValue(self._class)
         for values in self._wrapped_arguments.unpack(func):
             yield values
 
 
 @argument_clinic('sequence, /', want_obj=True, want_arguments=True)
 def builtins_classmethod(functions, obj, arguments):
-    return ContextSet(
+    return ValueSet(
         ClassMethodObject(class_method_object, function)
         for class_method_object in obj.py__call__(arguments=arguments)
         for function in functions
@@ -472,14 +472,14 @@ def collections_namedtuple(obj, arguments, callback):
     # Parse source code
     module = infer_state.grammar.parse(code)
     generated_class = next(module.iter_classdefs())
-    parent_value = ModuleContext(
+    parent_value = ModuleValue(
         infer_state, module,
         file_io=None,
         string_names=None,
         code_lines=parso.split_lines(code, keepends=True),
     )
 
-    return ContextSet([ClassContext(infer_state, parent_value, generated_class)])
+    return ValueSet([ClassValue(infer_state, parent_value, generated_class)])
 
 
 class PartialObject(object):
@@ -550,7 +550,7 @@ class MergedPartialArguments(AbstractArguments):
 
 
 def functools_partial(obj, arguments, callback):
-    return ContextSet(
+    return ValueSet(
         PartialObject(instance, arguments)
         for instance in obj.py__call__(arguments)
     )
@@ -563,7 +563,7 @@ def _return_first_param(firsts):
 
 @argument_clinic('seq')
 def _random_choice(sequences):
-    return ContextSet.from_sets(
+    return ValueSet.from_sets(
         lazy_value.infer()
         for sequence in sequences
         for lazy_value in sequence.py__iter__()
@@ -573,13 +573,13 @@ def _random_choice(sequences):
 def _dataclass(obj, arguments, callback):
     for c in _follow_param(obj.infer_state, arguments, 0):
         if c.is_class():
-            return ContextSet([DataclassWrapper(c)])
+            return ValueSet([DataclassWrapper(c)])
         else:
-            return ContextSet([obj])
+            return ValueSet([obj])
     return NO_VALUES
 
 
-class DataclassWrapper(ContextWrapper, ClassMixin):
+class DataclassWrapper(ValueWrapper, ClassMixin):
     def get_signatures(self):
         param_names = []
         for cls in reversed(list(self.py__mro__())):
@@ -630,7 +630,7 @@ class DataclassParamName(BaseTreeParamName):
             return self.parent_value.infer_node(self.annotation_node)
 
 
-class ItemGetterCallable(ContextWrapper):
+class ItemGetterCallable(ValueWrapper):
     def __init__(self, instance, args_value_set):
         super(ItemGetterCallable, self).__init__(instance)
         self._args_value_set = args_value_set
@@ -644,11 +644,11 @@ class ItemGetterCallable(ContextWrapper):
                 # TODO we need to add the valueualized value.
                 value_set |= item_value_set.get_item(lazy_values[0].infer(), None)
             else:
-                value_set |= ContextSet([iterable.FakeSequence(
+                value_set |= ValueSet([iterable.FakeSequence(
                     self._wrapped_value.infer_state,
                     'list',
                     [
-                        LazyKnownContexts(item_value_set.get_item(lazy_value.infer(), None))
+                        LazyKnownValues(item_value_set.get_item(lazy_value.infer(), None))
                         for lazy_value in lazy_values
                     ],
                 )])
@@ -657,19 +657,19 @@ class ItemGetterCallable(ContextWrapper):
 
 @argument_clinic('func, /')
 def _functools_wraps(funcs):
-    return ContextSet(WrapsCallable(func) for func in funcs)
+    return ValueSet(WrapsCallable(func) for func in funcs)
 
 
-class WrapsCallable(ContextWrapper):
+class WrapsCallable(ValueWrapper):
     # XXX this is not the correct wrapped value, it should be a weird
     #     partials object, but it doesn't matter, because it's always used as a
     #     decorator anyway.
     @repack_with_argument_clinic('func, /')
     def py__call__(self, funcs):
-        return ContextSet({Wrapped(func, self._wrapped_value) for func in funcs})
+        return ValueSet({Wrapped(func, self._wrapped_value) for func in funcs})
 
 
-class Wrapped(ContextWrapper, FunctionMixin):
+class Wrapped(ValueWrapper, FunctionMixin):
     def __init__(self, func, original_function):
         super(Wrapped, self).__init__(func)
         self._original_function = original_function
@@ -684,7 +684,7 @@ class Wrapped(ContextWrapper, FunctionMixin):
 
 @argument_clinic('*args, /', want_obj=True, want_arguments=True)
 def _operator_itemgetter(args_value_set, obj, arguments):
-    return ContextSet([
+    return ValueSet([
         ItemGetterCallable(instance, args_value_set)
         for instance in obj.py__call__(arguments)
     ])
@@ -699,7 +699,7 @@ def _create_string_input_function(func):
                 if s is not None:
                     s = func(s)
                     yield compiled.create_simple_object(value.infer_state, s)
-        values = ContextSet(iterate())
+        values = ValueSet(iterate())
         if values:
             return values
         return obj.py__call__(arguments)
@@ -724,7 +724,7 @@ def _os_path_join(args_set, callback):
             string += force_unicode(s)
             is_first = False
         else:
-            return ContextSet([compiled.create_simple_object(sequence.infer_state, string)])
+            return ValueSet([compiled.create_simple_object(sequence.infer_state, string)])
     return callback()
 
 
@@ -801,7 +801,7 @@ def get_metaclass_filters(func):
     return wrapper
 
 
-class EnumInstance(LazyContextWrapper):
+class EnumInstance(LazyValueWrapper):
     def __init__(self, cls, name):
         self.infer_state = cls.infer_state
         self._cls = cls  # Corresponds to super().__self__
@@ -810,7 +810,7 @@ class EnumInstance(LazyContextWrapper):
 
     @safe_property
     def name(self):
-        return ContextName(self, self._name.tree_name)
+        return ValueName(self, self._name.tree_name)
 
     def _get_wrapped_value(self):
         obj, = self._cls.execute_with_values()
@@ -828,7 +828,7 @@ class EnumInstance(LazyContextWrapper):
 def tree_name_to_values(func):
     def wrapper(infer_state, value, tree_name):
         if tree_name.value == 'sep' and value.is_module() and value.py__name__() == 'os.path':
-            return ContextSet({
+            return ValueSet({
                 compiled.create_simple_object(infer_state, os.path.sep),
             })
         return func(infer_state, value, tree_name)

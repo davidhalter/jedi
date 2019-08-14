@@ -1,9 +1,9 @@
 import pytest
 
 from jedi import settings
-from jedi.inference.names import ContextName
-from jedi.inference.compiled import CompiledContextName
-from jedi.inference.gradual.typeshed import StubModuleContext
+from jedi.inference.names import ValueName
+from jedi.inference.compiled import CompiledValueName
+from jedi.inference.gradual.typeshed import StubModuleValue
 
 
 @pytest.fixture()
@@ -13,14 +13,14 @@ def auto_import_json(monkeypatch):
 
 def test_base_auto_import_modules(auto_import_json, Script):
     loads, = Script('import json; json.loads').goto_definitions()
-    assert isinstance(loads._name, ContextName)
+    assert isinstance(loads._name, ValueName)
     value, = loads._name.infer()
-    assert isinstance(value.parent_value, StubModuleContext)
+    assert isinstance(value.parent_value, StubModuleValue)
 
 
 def test_auto_import_modules_imports(auto_import_json, Script):
     main, = Script('from json import tool; tool.main').goto_definitions()
-    assert isinstance(main._name, CompiledContextName)
+    assert isinstance(main._name, CompiledValueName)
 
 
 def test_additional_dynamic_modules(monkeypatch, Script):

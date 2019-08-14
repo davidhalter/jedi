@@ -30,7 +30,7 @@ from jedi.inference import analysis
 from jedi.inference.utils import unite
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
-from jedi.inference.base_value import ContextSet, NO_VALUES
+from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typeshed import import_module_decorator
 from jedi.inference.value.module import iter_module_names
 from jedi.plugins import plugin_manager
@@ -97,7 +97,7 @@ def infer_import(value, tree_name, is_goto=False):
             for t in types
         )
         if not is_goto:
-            types = ContextSet(types)
+            types = ValueSet(types)
 
         if not types:
             path = import_path + [from_import_name]
@@ -289,7 +289,7 @@ class Importer(object):
 
         value_set = [None]
         for i, name in enumerate(self.import_path):
-            value_set = ContextSet.from_sets([
+            value_set = ValueSet.from_sets([
                 self._infer_state.import_module(
                     import_names[:i+1],
                     parent_module_value,
@@ -382,7 +382,7 @@ def import_module(infer_state, import_names, parent_module_value, sys_path):
         module = _load_builtin_module(infer_state, import_names, sys_path)
         if module is None:
             return NO_VALUES
-        return ContextSet([module])
+        return ValueSet([module])
 
     module_name = '.'.join(import_names)
     if parent_module_value is None:
@@ -421,8 +421,8 @@ def import_module(infer_state, import_names, parent_module_value, sys_path):
                 return NO_VALUES
 
     if isinstance(file_io_or_ns, ImplicitNSInfo):
-        from jedi.inference.value.namespace import ImplicitNamespaceContext
-        module = ImplicitNamespaceContext(
+        from jedi.inference.value.namespace import ImplicitNamespaceValue
+        module = ImplicitNamespaceValue(
             infer_state,
             fullname=file_io_or_ns.name,
             paths=file_io_or_ns.paths,
@@ -442,7 +442,7 @@ def import_module(infer_state, import_names, parent_module_value, sys_path):
         debug.dbg('global search_module %s: %s', import_names[-1], module)
     else:
         debug.dbg('search_module %s in paths %s: %s', module_name, paths, module)
-    return ContextSet([module])
+    return ValueSet([module])
 
 
 def _load_python_module(infer_state, file_io, sys_path=None,
@@ -459,8 +459,8 @@ def _load_python_module(infer_state, file_io, sys_path=None,
         cache_path=settings.cache_directory
     )
 
-    from jedi.inference.value import ModuleContext
-    return ModuleContext(
+    from jedi.inference.value import ModuleValue
+    return ModuleValue(
         infer_state, module_node,
         file_io=file_io,
         string_names=import_names,
@@ -508,7 +508,7 @@ def _load_module_from_path(infer_state, file_io, base_names):
         import_names=import_names,
         is_package=is_package,
     )
-    infer_state.module_cache.add(import_names, ContextSet([module]))
+    infer_state.module_cache.add(import_names, ValueSet([module]))
     return module
 
 

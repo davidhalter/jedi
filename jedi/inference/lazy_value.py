@@ -1,8 +1,8 @@
-from jedi.inference.base_value import ContextSet, NO_VALUES
+from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.common.utils import monkeypatch
 
 
-class AbstractLazyContext(object):
+class AbstractLazyValue(object):
     def __init__(self, data):
         self.data = data
 
@@ -13,29 +13,29 @@ class AbstractLazyContext(object):
         raise NotImplementedError
 
 
-class LazyKnownContext(AbstractLazyContext):
+class LazyKnownValue(AbstractLazyValue):
     """data is a value."""
     def infer(self):
-        return ContextSet([self.data])
+        return ValueSet([self.data])
 
 
-class LazyKnownContexts(AbstractLazyContext):
-    """data is a ContextSet."""
+class LazyKnownValues(AbstractLazyValue):
+    """data is a ValueSet."""
     def infer(self):
         return self.data
 
 
-class LazyUnknownContext(AbstractLazyContext):
+class LazyUnknownValue(AbstractLazyValue):
     def __init__(self):
-        super(LazyUnknownContext, self).__init__(None)
+        super(LazyUnknownValue, self).__init__(None)
 
     def infer(self):
         return NO_VALUES
 
 
-class LazyTreeContext(AbstractLazyContext):
+class LazyTreeValue(AbstractLazyValue):
     def __init__(self, value, node):
-        super(LazyTreeContext, self).__init__(node)
+        super(LazyTreeValue, self).__init__(node)
         self.value = value
         # We need to save the predefined names. It's an unfortunate side effect
         # that needs to be tracked otherwise results will be wrong.
@@ -48,12 +48,12 @@ class LazyTreeContext(AbstractLazyContext):
 
 def get_merged_lazy_value(lazy_values):
     if len(lazy_values) > 1:
-        return MergedLazyContexts(lazy_values)
+        return MergedLazyValues(lazy_values)
     else:
         return lazy_values[0]
 
 
-class MergedLazyContexts(AbstractLazyContext):
+class MergedLazyValues(AbstractLazyValue):
     """data is a list of lazy values."""
     def infer(self):
-        return ContextSet.from_sets(l.infer() for l in self.data)
+        return ValueSet.from_sets(l.infer() for l in self.data)

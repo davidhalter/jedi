@@ -81,8 +81,8 @@ Inference Values (inference/base_value.py)
 .. inheritance-diagram::
    jedi.inference.value.instance.TreeInstance
    jedi.inference.value.klass.Classvalue
-   jedi.inference.value.function.FunctionContext
-   jedi.inference.value.function.FunctionExecutionContext
+   jedi.inference.value.function.FunctionValue
+   jedi.inference.value.function.FunctionExecutionValue
    :parts: 1
 
 

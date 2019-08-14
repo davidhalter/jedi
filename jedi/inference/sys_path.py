@@ -2,7 +2,7 @@ import os
 
 from jedi._compatibility import unicode, force_unicode, all_suffixes
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_value import ContextualizedNode
+from jedi.inference.base_value import ValueualizedNode
 from jedi.inference.helpers import is_string
 from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
@@ -60,7 +60,7 @@ def _paths_from_assignment(module_value, expr_stmt):
         except AssertionError:
             continue
 
-        cn = ContextualizedNode(module_value.create_value(expr_stmt), expr_stmt)
+        cn = ValueualizedNode(module_value.create_value(expr_stmt), expr_stmt)
         for lazy_value in cn.infer().iterate(cn):
             for value in lazy_value.infer():
                 if is_string(value):
@@ -152,8 +152,8 @@ def _get_paths_from_buildout_script(infer_state, buildout_script_path):
         debug.warning('Error trying to read buildout_script: %s', buildout_script_path)
         return
 
-    from jedi.inference.value import ModuleContext
-    module = ModuleContext(
+    from jedi.inference.value import ModuleValue
+    module = ModuleValue(
         infer_state, module_node, file_io,
         string_names=None,
         code_lines=get_cached_code_lines(infer_state.grammar, buildout_script_path),

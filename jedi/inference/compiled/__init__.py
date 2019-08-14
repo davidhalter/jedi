@@ -1,7 +1,7 @@
 from jedi._compatibility import unicode
 from jedi.inference.compiled.value import CompiledObject, CompiledName, \
-    CompiledObjectFilter, CompiledContextName, create_from_access_path
-from jedi.inference.base_value import ContextWrapper, LazyContextWrapper
+    CompiledObjectFilter, CompiledValueName, create_from_access_path
+from jedi.inference.base_value import ValueWrapper, LazyValueWrapper
 
 
 def builtin_from_name(infer_state, string):
@@ -16,7 +16,7 @@ def builtin_from_name(infer_state, string):
     return value
 
 
-class CompiledValue(LazyContextWrapper):
+class CompiledValue(LazyValueWrapper):
     def __init__(self, compiled_obj):
         self.infer_state = compiled_obj.infer_state
         self._compiled_obj = compiled_obj

@@ -8,7 +8,7 @@ import pytest
 
 import jedi
 from jedi import __doc__ as jedi_doc
-from jedi.inference.compiled import CompiledContextName
+from jedi.inference.compiled import CompiledValueName
 
 
 def test_is_keyword(Script):
@@ -436,7 +436,7 @@ def test_builtin_module_with_path(Script):
     confusing.
     """
     semlock, = Script('from _multiprocessing import SemLock').goto_definitions()
-    assert isinstance(semlock._name, CompiledContextName)
+    assert isinstance(semlock._name, CompiledValueName)
     assert semlock.module_path is None
     assert semlock.in_builtin_module() is True
     assert semlock.name == 'SemLock'

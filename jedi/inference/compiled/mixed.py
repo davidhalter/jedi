@@ -12,9 +12,9 @@ from jedi import settings
 from jedi.inference import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
-from jedi.inference.base_value import ContextSet, ContextWrapper
+from jedi.inference.base_value import ValueSet, ValueWrapper
 from jedi.inference.helpers import SimpleGetItemNotFound
-from jedi.inference.value import ModuleContext
+from jedi.inference.value import ModuleValue
 from jedi.inference.cache import infer_state_function_cache
 from jedi.inference.compiled.getattr_static import getattr_static
 from jedi.inference.compiled.access import compiled_objects_cache, \
@@ -25,7 +25,7 @@ from jedi.inference.gradual.conversion import to_stub
 _sentinel = object()
 
 
-class MixedObject(ContextWrapper):
+class MixedObject(ValueWrapper):
     """
     A ``MixedObject`` is used in two ways:
 
@@ -104,10 +104,10 @@ class MixedName(compiled.CompiledName):
         assert len(access_paths)
         values = [None]
         for access in access_paths:
-            values = ContextSet.from_sets(
+            values = ValueSet.from_sets(
                 _create(self._infer_state, access, parent_value=c)
                 if c is None or isinstance(c, MixedObject)
-                else ContextSet({create_cached_compiled_object(c.infer_state, access, c)})
+                else ValueSet({create_cached_compiled_object(c.infer_state, access, c)})
                 for c in values
             )
         return values
@@ -244,11 +244,11 @@ def _create(infer_state, access_handle, parent_value, *args):
     if result is None:
         # TODO Care about generics from stuff like `[1]` and don't return like this.
         if type(python_object) in (dict, list, tuple):
-            return ContextSet({compiled_object})
+            return ValueSet({compiled_object})
 
         tree_values = to_stub(compiled_object)
         if not tree_values:
-            return ContextSet({compiled_object})
+            return ValueSet({compiled_object})
     else:
         module_node, tree_node, file_io, code_lines = result
 
@@ -256,7 +256,7 @@ def _create(infer_state, access_handle, parent_value, *args):
             # TODO this __name__ is probably wrong.
             name = compiled_object.get_root_value().py__name__()
             string_names = tuple(name.split('.'))
-            module_value = ModuleContext(
+            module_value = ModuleValue(
                 infer_state, module_node,
                 file_io=file_io,
                 string_names=string_names,
@@ -264,16 +264,16 @@ def _create(infer_state, access_handle, parent_value, *args):
                 is_package=hasattr(compiled_object, 'py__path__'),
             )
             if name is not None:
-                infer_state.module_cache.add(string_names, ContextSet([module_value]))
+                infer_state.module_cache.add(string_names, ValueSet([module_value]))
         else:
             if parent_value.tree_node.get_root_node() != module_node:
                 # This happens e.g. when __module__ is wrong, or when using
                 # TypeVar('foo'), where Jedi uses 'foo' as the name and
                 # Python's TypeVar('foo').__module__ will be typing.
-                return ContextSet({compiled_object})
+                return ValueSet({compiled_object})
             module_value = parent_value.get_root_value()
 
-        tree_values = ContextSet({
+        tree_values = ValueSet({
             module_value.create_value(
                 tree_node,
                 node_is_value=True,
@@ -285,7 +285,7 @@ def _create(infer_state, access_handle, parent_value, *args):
                 # Is an instance, not a class.
                 tree_values = tree_values.execute_with_values()
 
-    return ContextSet(
+    return ValueSet(
         MixedObject(compiled_object, tree_value=tree_value)
         for tree_value in tree_values
     )

@@ -4,8 +4,8 @@ import pytest
 from parso.utils import PythonVersionInfo
 
 from jedi.inference.gradual import typeshed, stub_value
-from jedi.inference.value import TreeInstance, BoundMethod, FunctionContext, \
-    MethodContext, ClassContext
+from jedi.inference.value import TreeInstance, BoundMethod, FunctionValue, \
+    MethodValue, ClassValue
 
 TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
 
@@ -48,14 +48,14 @@ def test_function(Script, environment):
     code = 'import threading; threading.current_thread'
     def_, = Script(code).goto_definitions()
     value = def_._name._value
-    assert isinstance(value, FunctionContext), value
+    assert isinstance(value, FunctionValue), value
 
     def_, = Script(code + '()').goto_definitions()
     value = def_._name._value
     assert isinstance(value, TreeInstance)
 
     def_, = Script('import threading; threading.Thread').goto_definitions()
-    assert isinstance(def_._name._value, ClassContext), def_
+    assert isinstance(def_._name._value, ClassValue), def_
 
 
 def test_keywords_variable(Script):
@@ -70,7 +70,7 @@ def test_keywords_variable(Script):
 def test_class(Script):
     def_, = Script('import threading; threading.Thread').goto_definitions()
     value = def_._name._value
-    assert isinstance(value, ClassContext), value
+    assert isinstance(value, ClassValue), value
 
 
 def test_instance(Script):
@@ -82,7 +82,7 @@ def test_instance(Script):
 def test_class_function(Script):
     def_, = Script('import threading; threading.Thread.getName').goto_definitions()
     value = def_._name._value
-    assert isinstance(value, MethodContext), value
+    assert isinstance(value, MethodValue), value
 
 
 def test_method(Script):
@@ -90,7 +90,7 @@ def test_method(Script):
     def_, = Script(code).goto_definitions()
     value = def_._name._value
     assert isinstance(value, BoundMethod), value
-    assert isinstance(value._wrapped_value, MethodContext), value
+    assert isinstance(value._wrapped_value, MethodValue), value
 
     def_, = Script(code + '()').goto_definitions()
     value = def_._name._value

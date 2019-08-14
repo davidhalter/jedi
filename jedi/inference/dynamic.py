@@ -26,8 +26,8 @@ from jedi.inference.param import create_default_params
 from jedi.inference.helpers import is_stdlib_path
 from jedi.inference.utils import to_list
 from jedi.parser_utils import get_parent_scope
-from jedi.inference.value import ModuleContext, instance
-from jedi.inference.base_value import ContextSet, NO_VALUES
+from jedi.inference.value import ModuleValue, instance
+from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import recursion
 
 
@@ -49,7 +49,7 @@ class DynamicExecutedParams(object):
             # anonymous functions can create an anonymous parameter that is
             # more or less self referencing.
             if allowed:
-                return ContextSet.from_sets(p.infer() for p in self._executed_params)
+                return ValueSet.from_sets(p.infer() for p in self._executed_params)
             return NO_VALUES
 
 
@@ -130,7 +130,7 @@ def _search_function_executions(infer_state, module_value, funcdef, string_name)
     i = 0
     for for_mod_value in imports.get_modules_containing_name(
             infer_state, [module_value], string_name):
-        if not isinstance(module_value, ModuleContext):
+        if not isinstance(module_value, ModuleValue):
             return
         for name, trailer in _get_possible_nodes(for_mod_value, string_name):
             i += 1
@@ -179,7 +179,7 @@ def _get_possible_nodes(module_value, func_string_name):
 
 
 def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
-    from jedi.inference.value.function import FunctionExecutionContext
+    from jedi.inference.value.function import FunctionExecutionValue
 
     def create_func_excs():
         arglist = trailer.children[1]
@@ -203,7 +203,7 @@ def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
         if compare_node == value_node:
             for func_execution in create_func_excs():
                 yield func_execution
-        elif isinstance(v.parent_value, FunctionExecutionContext) and \
+        elif isinstance(v.parent_value, FunctionExecutionValue) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better

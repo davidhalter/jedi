@@ -9,10 +9,10 @@ from jedi.inference.utils import to_list
 from jedi._compatibility import force_unicode, Parameter, cast_path
 from jedi.cache import underscore_memoization, memoize_method
 from jedi.inference.filters import AbstractFilter
-from jedi.inference.names import AbstractNameDefinition, ContextNameMixin, \
+from jedi.inference.names import AbstractNameDefinition, ValueNameMixin, \
     ParamNameInterface
-from jedi.inference.base_value import Context, ContextSet, NO_VALUES
-from jedi.inference.lazy_value import LazyKnownContext
+from jedi.inference.base_value import Value, ValueSet, NO_VALUES
+from jedi.inference.lazy_value import LazyKnownValue
 from jedi.inference.compiled.access import _sentinel
 from jedi.inference.cache import infer_state_function_cache
 from jedi.inference.helpers import reraise_getitem_errors
@@ -40,7 +40,7 @@ class CheckAttribute(object):
         return partial(self.func, instance)
 
 
-class CompiledObject(Context):
+class CompiledObject(Value):
     def __init__(self, infer_state, access_handle, parent_value=None):
         super(CompiledObject, self).__init__(infer_state, parent_value)
         self.access_handle = access_handle
@@ -58,11 +58,11 @@ class CompiledObject(Context):
         else:
             if self.access_handle.is_class():
                 from jedi.inference.value import CompiledInstance
-                return ContextSet([
+                return ValueSet([
                     CompiledInstance(self.infer_state, self.parent_value, self, arguments)
                 ])
             else:
-                return ContextSet(self._execute_function(arguments))
+                return ValueSet(self._execute_function(arguments))
 
     @CheckAttribute()
     def py__class__(self):
@@ -187,7 +187,7 @@ class CompiledObject(Context):
         if access is None:
             return NO_VALUES
 
-        return ContextSet([create_from_access_path(self.infer_state, access)])
+        return ValueSet([create_from_access_path(self.infer_state, access)])
 
     def py__getitem__(self, index_value_set, valueualized_node):
         all_access_paths = self.access_handle.py__getitem__all_values()
@@ -195,7 +195,7 @@ class CompiledObject(Context):
             # This means basically that no __getitem__ has been defined on this
             # object.
             return super(CompiledObject, self).py__getitem__(index_value_set, valueualized_node)
-        return ContextSet(
+        return ValueSet(
             create_from_access_path(self.infer_state, access)
             for access in all_access_paths
         )
@@ -215,7 +215,7 @@ class CompiledObject(Context):
             return
 
         for access in access_path_list:
-            yield LazyKnownContext(create_from_access_path(self.infer_state, access))
+            yield LazyKnownValue(create_from_access_path(self.infer_state, access))
 
     def py__name__(self):
         return self.access_handle.py__name__()
@@ -225,7 +225,7 @@ class CompiledObject(Context):
         name = self.py__name__()
         if name is None:
             name = self.access_handle.get_repr()
-        return CompiledContextName(self, name)
+        return CompiledValueName(self, name)
 
     def _execute_function(self, params):
         from jedi.inference import docstrings
@@ -295,7 +295,7 @@ class CompiledName(AbstractNameDefinition):
 
     @underscore_memoization
     def infer(self):
-        return ContextSet([_create_from_name(
+        return ValueSet([_create_from_name(
             self._infer_state, self.parent_value, self.string_name
         )])
 
@@ -325,7 +325,7 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
         infer_state = self.parent_value.infer_state
         values = NO_VALUES
         if p.has_default:
-            values = ContextSet([create_from_access_path(infer_state, p.default)])
+            values = ValueSet([create_from_access_path(infer_state, p.default)])
         if p.has_annotation:
             annotation = create_from_access_path(infer_state, p.annotation)
             values |= annotation.execute_with_values()
@@ -351,7 +351,7 @@ class UnresolvableParamName(ParamNameInterface, AbstractNameDefinition):
         return NO_VALUES
 
 
-class CompiledContextName(ContextNameMixin, AbstractNameDefinition):
+class CompiledValueName(ValueNameMixin, AbstractNameDefinition):
     def __init__(self, value, name):
         self.string_name = name
         self._value = value

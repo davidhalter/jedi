@@ -27,7 +27,7 @@ from jedi.inference import helpers
 from jedi.inference.value import iterable
 from jedi.inference.filters import get_global_filters
 from jedi.inference.names import TreeNameDefinition
-from jedi.inference.base_value import ContextSet, NO_VALUES
+from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.parser_utils import is_scope, get_parent_scope
 from jedi.inference.gradual.conversion import convert_values
 
@@ -123,7 +123,7 @@ class NameFinder(object):
             yield f
         # This covers the case where a stub files are incomplete.
         if self._value.is_stub():
-            for c in convert_values(ContextSet({self._value})):
+            for c in convert_values(ValueSet({self._value})):
                 for f in c.get_filters():
                     yield f
 
@@ -187,7 +187,7 @@ class NameFinder(object):
         return inst.execute_function_slots(names, name)
 
     def _names_to_types(self, names, attribute_lookup):
-        values = ContextSet.from_sets(name.infer() for name in names)
+        values = ValueSet.from_sets(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, values)
         if not names and self._value.is_instance() and not self._value.is_compiled():

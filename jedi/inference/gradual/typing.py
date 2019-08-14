@@ -9,15 +9,15 @@ from jedi._compatibility import unicode, force_unicode
 from jedi import debug
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.compiled import builtin_from_name
-from jedi.inference.base_value import ContextSet, NO_VALUES, Context, \
-    iterator_to_value_set, ContextWrapper, LazyContextWrapper
-from jedi.inference.lazy_value import LazyKnownContexts
-from jedi.inference.value.iterable import SequenceLiteralContext
+from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
+    iterator_to_value_set, ValueWrapper, LazyValueWrapper
+from jedi.inference.lazy_value import LazyKnownValues
+from jedi.inference.value.iterable import SequenceLiteralValue
 from jedi.inference.arguments import repack_with_argument_clinic
 from jedi.inference.utils import to_list
 from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, AbstractTreeName, \
-    AbstractNameDefinition, ContextName
+    AbstractNameDefinition, ValueName
 from jedi.inference.helpers import is_string
 from jedi.inference.value.klass import ClassMixin, ClassFilter
 
@@ -41,12 +41,12 @@ class TypingName(AbstractTreeName):
         self._value = value
 
     def infer(self):
-        return ContextSet([self._value])
+        return ValueSet([self._value])
 
 
-class _BaseTypingContext(Context):
+class _BaseTypingValue(Value):
     def __init__(self, infer_state, parent_value, tree_name):
-        super(_BaseTypingContext, self).__init__(infer_state, parent_value)
+        super(_BaseTypingValue, self).__init__(infer_state, parent_value)
         self._tree_name = tree_name
 
     @property
@@ -75,7 +75,7 @@ class _BaseTypingContext(Context):
 
     @property
     def name(self):
-        return ContextName(self, self._tree_name)
+        return ValueName(self, self._tree_name)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
@@ -83,7 +83,7 @@ class _BaseTypingContext(Context):
 
 class TypingModuleName(NameWrapper):
     def infer(self):
-        return ContextSet(self._remap())
+        return ValueSet(self._remap())
 
     def _remap(self):
         name = self.string_name
@@ -97,9 +97,9 @@ class TypingModuleName(NameWrapper):
             return
 
         if name in _PROXY_CLASS_TYPES:
-            yield TypingClassContext.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield TypingClassValue.create_cached(infer_state, self.parent_value, self.tree_name)
         elif name in _PROXY_TYPES:
-            yield TypingContext.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield TypingValue.create_cached(infer_state, self.parent_value, self.tree_name)
         elif name == 'runtime':
             # We don't want anything here, not sure what this function is
             # supposed to do, since it just appears in the stubs and shouldn't
@@ -138,7 +138,7 @@ class TypingModuleFilterWrapper(FilterWrapper):
     name_wrapper_class = TypingModuleName
 
 
-class _WithIndexBase(_BaseTypingContext):
+class _WithIndexBase(_BaseTypingValue):
     def __init__(self, infer_state, parent_value, name, index_value, value_of_index):
         super(_WithIndexBase, self).__init__(infer_state, parent_value, name)
         self._index_value = index_value
@@ -152,28 +152,28 @@ class _WithIndexBase(_BaseTypingContext):
         )
 
 
-class TypingContextWithIndex(_WithIndexBase):
+class TypingValueWithIndex(_WithIndexBase):
     def execute_annotation(self):
         string_name = self._tree_name.value
 
         if string_name == 'Union':
             # This is kind of a special case, because we have Unions (in Jedi
-            # ContextSets).
+            # ValueSets).
             return self.gather_annotation_classes().execute_annotation()
         elif string_name == 'Optional':
             # Optional is basically just saying it's either None or the actual
             # type.
             return self.gather_annotation_classes().execute_annotation() \
-                | ContextSet([builtin_from_name(self.infer_state, u'None')])
+                | ValueSet([builtin_from_name(self.infer_state, u'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_value
-            return ContextSet([self._index_value])
+            return ValueSet([self._index_value])
         elif string_name == 'ClassVar':
             # For now don't do anything here, ClassVars are always used.
             return self._index_value.execute_annotation()
 
         cls = globals()[string_name]
-        return ContextSet([cls(
+        return ValueSet([cls(
             self.infer_state,
             self.parent_value,
             self._tree_name,
@@ -182,17 +182,17 @@ class TypingContextWithIndex(_WithIndexBase):
         )])
 
     def gather_annotation_classes(self):
-        return ContextSet.from_sets(
+        return ValueSet.from_sets(
             _iter_over_arguments(self._index_value, self._value_of_index)
         )
 
 
-class TypingContext(_BaseTypingContext):
-    index_class = TypingContextWithIndex
+class TypingValue(_BaseTypingValue):
+    index_class = TypingValueWithIndex
     py__simple_getitem__ = None
 
     def py__getitem__(self, index_value_set, valueualized_node):
-        return ContextSet(
+        return ValueSet(
             self.index_class.create_cached(
                 self.infer_state,
                 self.parent_value,
@@ -205,7 +205,7 @@ class TypingContext(_BaseTypingContext):
 
 class _TypingClassMixin(object):
     def py__bases__(self):
-        return [LazyKnownContexts(
+        return [LazyKnownValues(
             self.infer_state.builtins_module.py__getattribute__('object')
         )]
 
@@ -213,21 +213,21 @@ class _TypingClassMixin(object):
         return []
 
 
-class TypingClassContextWithIndex(_TypingClassMixin, TypingContextWithIndex, ClassMixin):
+class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex, ClassMixin):
     pass
 
 
-class TypingClassContext(_TypingClassMixin, TypingContext, ClassMixin):
-    index_class = TypingClassContextWithIndex
+class TypingClassValue(_TypingClassMixin, TypingValue, ClassMixin):
+    index_class = TypingClassValueWithIndex
 
 
 def _iter_over_arguments(maybe_tuple_value, defining_value):
     def iterate():
-        if isinstance(maybe_tuple_value, SequenceLiteralContext):
+        if isinstance(maybe_tuple_value, SequenceLiteralValue):
             for lazy_value in maybe_tuple_value.py__iter__(valueualized_node=None):
                 yield lazy_value.infer()
         else:
-            yield ContextSet([maybe_tuple_value])
+            yield ValueSet([maybe_tuple_value])
 
     def resolve_forward_references(value_set):
         for value in value_set:
@@ -241,10 +241,10 @@ def _iter_over_arguments(maybe_tuple_value, defining_value):
                 yield value
 
     for value_set in iterate():
-        yield ContextSet(resolve_forward_references(value_set))
+        yield ValueSet(resolve_forward_references(value_set))
 
 
-class TypeAlias(LazyContextWrapper):
+class TypeAlias(LazyValueWrapper):
     def __init__(self, parent_value, origin_tree_name, actual):
         self.infer_state = parent_value.infer_state
         self.parent_value = parent_value
@@ -253,7 +253,7 @@ class TypeAlias(LazyContextWrapper):
 
     @property
     def name(self):
-        return ContextName(self, self._origin_tree_name)
+        return ValueName(self, self._origin_tree_name)
 
     def py__name__(self):
         return self.name.string_name
@@ -299,7 +299,7 @@ class Tuple(_ContainerBase):
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
-        if isinstance(self._index_value, SequenceLiteralContext):
+        if isinstance(self._index_value, SequenceLiteralValue):
             entries = self._index_value.get_tree_entries()
             if len(entries) == 2 and entries[1] == '...':
                 return True
@@ -317,17 +317,17 @@ class Tuple(_ContainerBase):
 
     def py__iter__(self, valueualized_node=None):
         if self._is_homogenous():
-            yield LazyKnownContexts(self._get_getitem_values(0).execute_annotation())
+            yield LazyKnownValues(self._get_getitem_values(0).execute_annotation())
         else:
-            if isinstance(self._index_value, SequenceLiteralContext):
+            if isinstance(self._index_value, SequenceLiteralValue):
                 for i in range(self._index_value.py__len__()):
-                    yield LazyKnownContexts(self._get_getitem_values(i).execute_annotation())
+                    yield LazyKnownValues(self._get_getitem_values(i).execute_annotation())
 
     def py__getitem__(self, index_value_set, valueualized_node):
         if self._is_homogenous():
             return self._get_getitem_values(0).execute_annotation()
 
-        return ContextSet.from_sets(
+        return ValueSet.from_sets(
             _iter_over_arguments(self._index_value, self._value_of_index)
         ).execute_annotation()
 
@@ -340,13 +340,13 @@ class Protocol(_ContainerBase):
     pass
 
 
-class Any(_BaseTypingContext):
+class Any(_BaseTypingValue):
     def execute_annotation(self):
         debug.warning('Used Any - returned no results')
         return NO_VALUES
 
 
-class TypeVarClass(_BaseTypingContext):
+class TypeVarClass(_BaseTypingValue):
     def py__call__(self, arguments):
         unpacked = arguments.unpack()
 
@@ -357,7 +357,7 @@ class TypeVarClass(_BaseTypingContext):
             debug.warning('Found a variable without a name %s', arguments)
             return NO_VALUES
 
-        return ContextSet([TypeVar.create_cached(
+        return ValueSet([TypeVar.create_cached(
             self.infer_state,
             self.parent_value,
             self._tree_name,
@@ -390,7 +390,7 @@ class TypeVarClass(_BaseTypingContext):
             return None
 
 
-class TypeVar(_BaseTypingContext):
+class TypeVar(_BaseTypingValue):
     def __init__(self, infer_state, parent_value, tree_name, var_name, unpacked_args):
         super(TypeVar, self).__init__(infer_state, parent_value, tree_name)
         self._var_name = var_name
@@ -432,7 +432,7 @@ class TypeVar(_BaseTypingContext):
 
     @property
     def constraints(self):
-        return ContextSet.from_sets(
+        return ValueSet.from_sets(
             lazy.infer() for lazy in self._constraints_lazy_values
         )
 
@@ -444,7 +444,7 @@ class TypeVar(_BaseTypingContext):
         else:
             if found:
                 return found
-        return self._get_classes() or ContextSet({self})
+        return self._get_classes() or ValueSet({self})
 
     def execute_annotation(self):
         return self._get_classes().execute_annotation()
@@ -453,21 +453,21 @@ class TypeVar(_BaseTypingContext):
         return '<%s: %s>' % (self.__class__.__name__, self.py__name__())
 
 
-class OverloadFunction(_BaseTypingContext):
+class OverloadFunction(_BaseTypingValue):
     @repack_with_argument_clinic('func, /')
     def py__call__(self, func_value_set):
         # Just pass arguments through.
         return func_value_set
 
 
-class NewTypeFunction(_BaseTypingContext):
+class NewTypeFunction(_BaseTypingValue):
     def py__call__(self, arguments):
         ordered_args = arguments.unpack()
         next(ordered_args, (None, None))
         _, second_arg = next(ordered_args, (None, None))
         if second_arg is None:
             return NO_VALUES
-        return ContextSet(
+        return ValueSet(
             NewType(
                 self.infer_state,
                 valueualized_node.value,
@@ -476,7 +476,7 @@ class NewTypeFunction(_BaseTypingContext):
             ) for valueualized_node in arguments.get_calling_nodes())
 
 
-class NewType(Context):
+class NewType(Value):
     def __init__(self, infer_state, parent_value, tree_node, type_value_set):
         super(NewType, self).__init__(infer_state, parent_value)
         self._type_value_set = type_value_set
@@ -486,7 +486,7 @@ class NewType(Context):
         return self._type_value_set.execute_annotation()
 
 
-class CastFunction(_BaseTypingContext):
+class CastFunction(_BaseTypingValue):
     @repack_with_argument_clinic('type, object, /')
     def py__call__(self, type_value_set, object_value_set):
         return type_value_set.execute_annotation()
@@ -510,7 +510,7 @@ class BoundTypeVarName(AbstractNameDefinition):
                         yield constraint
                 else:
                     yield value
-        return ContextSet(iter_())
+        return ValueSet(iter_())
 
     def py__name__(self):
         return self._type_var.py__name__()
@@ -549,7 +549,7 @@ class TypeVarFilter(object):
         return []
 
 
-class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
+class AbstractAnnotatedClass(ClassMixin, ValueWrapper):
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_generics(), self.list_type_vars())
 
@@ -593,7 +593,7 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
 
     def py__call__(self, arguments):
         instance, = super(AbstractAnnotatedClass, self).py__call__(arguments)
-        return ContextSet([InstanceWrapper(instance)])
+        return ValueSet([InstanceWrapper(instance)])
 
     def get_generics(self):
         raise NotImplementedError
@@ -607,19 +607,19 @@ class AbstractAnnotatedClass(ClassMixin, ContextWrapper):
                 if isinstance(generic, (AbstractAnnotatedClass, TypeVar)):
                     result = generic.define_generics(type_var_dict)
                     values |= result
-                    if result != ContextSet({generic}):
+                    if result != ValueSet({generic}):
                         changed = True
                 else:
-                    values |= ContextSet([generic])
+                    values |= ValueSet([generic])
             new_generics.append(values)
 
         if not changed:
             # There might not be any type vars that change. In that case just
             # return itself, because it does not make sense to potentially lose
             # cached results.
-            return ContextSet([self])
+            return ValueSet([self])
 
-        return ContextSet([GenericClass(
+        return ValueSet([GenericClass(
             self._wrapped_value,
             generics=tuple(new_generics)
         )])
@@ -682,18 +682,18 @@ class LazyAnnotatedBaseClass(object):
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar):
                     names = filter.get(type_var.py__name__())
-                    new |= ContextSet.from_sets(
+                    new |= ValueSet.from_sets(
                         name.infer() for name in names
                     )
                 else:
                     # Mostly will be type vars, except if in some cases
                     # a concrete type will already be there. In that
                     # case just add it to the value set.
-                    new |= ContextSet([type_var])
+                    new |= ValueSet([type_var])
             yield new
 
 
-class InstanceWrapper(ContextWrapper):
+class InstanceWrapper(ValueWrapper):
     def py__stop_iteration_returns(self):
         for cls in self._wrapped_value.class_value.py__mro__():
             if cls.py__name__() == 'Generator':
@@ -703,5 +703,5 @@ class InstanceWrapper(ContextWrapper):
                 except IndexError:
                     pass
             elif cls.py__name__() == 'Iterator':
-                return ContextSet([builtin_from_name(self.infer_state, u'None')])
+                return ValueSet([builtin_from_name(self.infer_state, u'None')])
         return self._wrapped_value.py__stop_iteration_returns()

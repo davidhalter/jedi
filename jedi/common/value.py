@@ -1,4 +1,4 @@
-class BaseContext(object):
+class BaseValue(object):
     def __init__(self, infer_state, parent_value=None):
         self.infer_state = infer_state
         self.parent_value = parent_value
@@ -11,11 +11,11 @@ class BaseContext(object):
             value = value.parent_value
 
 
-class BaseContextSet(object):
+class BaseValueSet(object):
     def __init__(self, iterable):
         self._set = frozenset(iterable)
         for value in iterable:
-            assert not isinstance(value, BaseContextSet)
+            assert not isinstance(value, BaseValueSet)
 
     @classmethod
     def _from_frozen_set(cls, frozenset_):
@@ -30,7 +30,7 @@ class BaseContextSet(object):
         """
         aggregated = set()
         for set_ in sets:
-            if isinstance(set_, BaseContextSet):
+            if isinstance(set_, BaseValueSet):
                 aggregated |= set_._set
             else:
                 aggregated |= frozenset(set_)

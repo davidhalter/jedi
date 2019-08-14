@@ -1,8 +1,8 @@
 """
-Contexts are the "values" that Python would return. However Contexts are at the
+Values are the "values" that Python would return. However Values are at the
 same time also the "values" that a user is currently sitting in.
 
-A ContextSet is typically used to specify the return of a function or any other
+A ValueSet is typically used to specify the return of a function or any other
 static analysis operation. In jedi there are always multiple returns and not
 just one.
 """
@@ -13,7 +13,7 @@ from parso.python.tree import ExprStmt, SyncCompFor
 from jedi import debug
 from jedi._compatibility import zip_longest, unicode
 from jedi.parser_utils import clean_scope_docstring
-from jedi.common import BaseContextSet, BaseContext
+from jedi.common import BaseValueSet, BaseValue
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.utils import safe_property
 from jedi.inference.cache import infer_state_as_method_param_cache
@@ -22,7 +22,7 @@ from jedi.cache import memoize_method
 _sentinel = object()
 
 
-class HelperContextMixin(object):
+class HelperValueMixin(object):
     def get_root_value(self):
         value = self
         while True:
@@ -40,17 +40,17 @@ class HelperContextMixin(object):
 
     def execute_with_values(self, *value_list):
         from jedi.inference.arguments import ValuesArguments
-        arguments = ValuesArguments([ContextSet([value]) for value in value_list])
+        arguments = ValuesArguments([ValueSet([value]) for value in value_list])
         return self.infer_state.execute(self, arguments)
 
     def execute_annotation(self):
         return self.execute_with_values()
 
     def gather_annotation_classes(self):
-        return ContextSet([self])
+        return ValueSet([self])
 
     def merge_types_of_iterate(self, valueualized_node=None, is_async=False):
-        return ContextSet.from_sets(
+        return ValueSet.from_sets(
             lazy_value.infer()
             for lazy_value in self.iterate(valueualized_node, is_async)
         )
@@ -86,11 +86,11 @@ class HelperContextMixin(object):
     def iterate(self, valueualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
         if is_async:
-            from jedi.inference.lazy_value import LazyKnownContexts
+            from jedi.inference.lazy_value import LazyKnownValues
             # TODO if no __aiter__ values are there, error should be:
             # TypeError: 'async for' requires an object with __aiter__ method, got int
             return iter([
-                LazyKnownContexts(
+                LazyKnownValues(
                     self.py__getattribute__('__aiter__').execute_with_values()
                         .py__getattribute__('__anext__').execute_with_values()
                         .py__getattribute__('__await__').execute_with_values()
@@ -107,12 +107,12 @@ class HelperContextMixin(object):
 
     def is_same_class(self, class2):
         # Class matching should prefer comparisons that are not this function.
-        if type(class2).is_same_class != HelperContextMixin.is_same_class:
+        if type(class2).is_same_class != HelperValueMixin.is_same_class:
             return class2.is_same_class(self)
         return self == class2
 
 
-class Context(HelperContextMixin, BaseContext):
+class Value(HelperValueMixin, BaseValue):
     """
     Should be defined, otherwise the API returns empty types.
     """
@@ -216,24 +216,24 @@ def iterate_values(values, valueualized_node=None, is_async=False):
     Calls `iterate`, on all values but ignores the ordering and just returns
     all values that the iterate functions yield.
     """
-    return ContextSet.from_sets(
+    return ValueSet.from_sets(
         lazy_value.infer()
         for lazy_value in values.iterate(valueualized_node, is_async=is_async)
     )
 
 
-class _ContextWrapperBase(HelperContextMixin):
+class _ValueWrapperBase(HelperValueMixin):
     predefined_names = {}
 
     @safe_property
     def name(self):
-        from jedi.inference.names import ContextName
+        from jedi.inference.names import ValueName
         wrapped_name = self._wrapped_value.name
         if wrapped_name.tree_name is not None:
-            return ContextName(self, wrapped_name.tree_name)
+            return ValueName(self, wrapped_name.tree_name)
         else:
-            from jedi.inference.compiled import CompiledContextName
-            return CompiledContextName(self, wrapped_name.string_name)
+            from jedi.inference.compiled import CompiledValueName
+            return CompiledValueName(self, wrapped_name.string_name)
 
     @classmethod
     @infer_state_as_method_param_cache()
@@ -245,7 +245,7 @@ class _ContextWrapperBase(HelperContextMixin):
         return getattr(self._wrapped_value, name)
 
 
-class LazyContextWrapper(_ContextWrapperBase):
+class LazyValueWrapper(_ValueWrapperBase):
     @safe_property
     @memoize_method
     def _wrapped_value(self):
@@ -259,7 +259,7 @@ class LazyContextWrapper(_ContextWrapperBase):
         raise NotImplementedError
 
 
-class ContextWrapper(_ContextWrapperBase):
+class ValueWrapper(_ValueWrapperBase):
     def __init__(self, wrapped_value):
         self._wrapped_value = wrapped_value
 
@@ -267,9 +267,9 @@ class ContextWrapper(_ContextWrapperBase):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_value)
 
 
-class TreeContext(Context):
+class TreeValue(Value):
     def __init__(self, infer_state, parent_value, tree_node):
-        super(TreeContext, self).__init__(infer_state, parent_value)
+        super(TreeValue, self).__init__(infer_state, parent_value)
         self.predefined_names = {}
         self.tree_node = tree_node
 
@@ -277,7 +277,7 @@ class TreeContext(Context):
         return '<%s: %s>' % (self.__class__.__name__, self.tree_node)
 
 
-class ContextualizedNode(object):
+class ValueualizedNode(object):
     def __init__(self, value, node):
         self.value = value
         self.node = node
@@ -292,7 +292,7 @@ class ContextualizedNode(object):
         return '<%s: %s in %s>' % (self.__class__.__name__, self.node, self.value)
 
 
-class ContextualizedName(ContextualizedNode):
+class ValueualizedName(ValueualizedNode):
     # TODO merge with TreeNameDefinition?!
     @property
     def name(self):
@@ -375,16 +375,16 @@ def _getitem(value, index_values, valueualized_node):
     # all results.
     if unused_values or not index_values:
         result |= value.py__getitem__(
-            ContextSet(unused_values),
+            ValueSet(unused_values),
             valueualized_node
         )
     debug.dbg('py__getitem__ result: %s', result)
     return result
 
 
-class ContextSet(BaseContextSet):
+class ValueSet(BaseValueSet):
     def py__class__(self):
-        return ContextSet(c.py__class__() for c in self._set)
+        return ValueSet(c.py__class__() for c in self._set)
 
     def iterate(self, valueualized_node=None, is_async=False):
         from jedi.inference.lazy_value import get_merged_lazy_value
@@ -395,18 +395,18 @@ class ContextSet(BaseContextSet):
             )
 
     def execute(self, arguments):
-        return ContextSet.from_sets(c.infer_state.execute(c, arguments) for c in self._set)
+        return ValueSet.from_sets(c.infer_state.execute(c, arguments) for c in self._set)
 
     def execute_with_values(self, *args, **kwargs):
-        return ContextSet.from_sets(c.execute_with_values(*args, **kwargs) for c in self._set)
+        return ValueSet.from_sets(c.execute_with_values(*args, **kwargs) for c in self._set)
 
     def py__getattribute__(self, *args, **kwargs):
         if kwargs.get('is_goto'):
             return reduce(add, [c.py__getattribute__(*args, **kwargs) for c in self._set], [])
-        return ContextSet.from_sets(c.py__getattribute__(*args, **kwargs) for c in self._set)
+        return ValueSet.from_sets(c.py__getattribute__(*args, **kwargs) for c in self._set)
 
     def get_item(self, *args, **kwargs):
-        return ContextSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
+        return ValueSet.from_sets(_getitem(c, *args, **kwargs) for c in self._set)
 
     def try_merge(self, function_name):
         value_set = self.__class__([])
@@ -420,17 +420,17 @@ class ContextSet(BaseContextSet):
         return value_set
 
     def gather_annotation_classes(self):
-        return ContextSet.from_sets([c.gather_annotation_classes() for c in self._set])
+        return ValueSet.from_sets([c.gather_annotation_classes() for c in self._set])
 
     def get_signatures(self):
         return [sig for c in self._set for sig in c.get_signatures()]
 
 
-NO_VALUES = ContextSet([])
+NO_VALUES = ValueSet([])
 
 
 def iterator_to_value_set(func):
     def wrapper(*args, **kwargs):
-        return ContextSet(func(*args, **kwargs))
+        return ValueSet(func(*args, **kwargs))
 
     return wrapper

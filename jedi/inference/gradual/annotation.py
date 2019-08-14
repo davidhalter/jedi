@@ -11,7 +11,7 @@ from parso import ParserSyntaxError, parse
 
 from jedi._compatibility import force_unicode
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_value import ContextSet, NO_VALUES
+from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
 from jedi.inference.gradual.typing import GenericClass
@@ -112,15 +112,15 @@ def infer_param(execution_value, param):
     infer_state = execution_value.infer_state
     if param.star_count == 1:
         tuple_ = builtin_from_name(infer_state, 'tuple')
-        return ContextSet([GenericClass(
+        return ValueSet([GenericClass(
             tuple_,
             generics=(values,),
         ) for c in values])
     elif param.star_count == 2:
         dct = builtin_from_name(infer_state, 'dict')
-        return ContextSet([GenericClass(
+        return ValueSet([GenericClass(
             dct,
-            generics=(ContextSet([builtin_from_name(infer_state, 'str')]), values),
+            generics=(ValueSet([builtin_from_name(infer_state, 'str')]), values),
         ) for c in values])
         pass
     return values
@@ -224,9 +224,9 @@ def infer_return_types(function_execution_value):
 
     type_var_dict = infer_type_vars_for_execution(function_execution_value, all_annotations)
 
-    return ContextSet.from_sets(
+    return ValueSet.from_sets(
         ann.define_generics(type_var_dict)
-        if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ContextSet({ann})
+        if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ValueSet({ann})
         for ann in annotation_values
     ).execute_annotation()
 

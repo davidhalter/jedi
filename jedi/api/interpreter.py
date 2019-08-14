@@ -2,11 +2,11 @@
 TODO Some parts of this module are still not well documented.
 """
 
-from jedi.inference.value import ModuleContext
+from jedi.inference.value import ModuleValue
 from jedi.inference import compiled
 from jedi.inference.compiled import mixed
 from jedi.inference.compiled.access import create_access_path
-from jedi.inference.base_value import ContextWrapper
+from jedi.inference.base_value import ValueWrapper
 
 
 def _create(infer_state, obj):
@@ -20,17 +20,17 @@ class NamespaceObject(object):
         self.__dict__ = dct
 
 
-class MixedModuleContext(ContextWrapper):
+class MixedModuleValue(ValueWrapper):
     type = 'mixed_module'
 
     def __init__(self, infer_state, tree_module, namespaces, file_io, code_lines):
-        module_value = ModuleContext(
+        module_value = ModuleValue(
             infer_state, tree_module,
             file_io=file_io,
             string_names=('__main__',),
             code_lines=code_lines
         )
-        super(MixedModuleContext, self).__init__(module_value)
+        super(MixedModuleValue, self).__init__(module_value)
         self._namespace_objects = [NamespaceObject(n) for n in namespaces]
 
     def get_filters(self, *args, **kwargs):

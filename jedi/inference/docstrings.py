@@ -25,9 +25,9 @@ from jedi._compatibility import u
 from jedi import debug
 from jedi.inference.utils import indent_block
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_value import iterator_to_value_set, ContextSet, \
+from jedi.inference.base_value import iterator_to_value_set, ValueSet, \
     NO_VALUES
-from jedi.inference.lazy_value import LazyKnownContexts
+from jedi.inference.lazy_value import LazyKnownValues
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -221,8 +221,8 @@ def _infer_for_statement_string(module_value, string):
     if stmt.type not in ('name', 'atom', 'atom_expr'):
         return []
 
-    from jedi.inference.value import FunctionContext
-    function_value = FunctionContext(
+    from jedi.inference.value import FunctionValue
+    function_value = FunctionValue(
         module_value.infer_state,
         module_value,
         funcdef
@@ -242,7 +242,7 @@ def _execute_types_in_stmt(module_value, stmt):
     contain is executed. (Used as type information).
     """
     definitions = module_value.infer_node(stmt)
-    return ContextSet.from_sets(
+    return ValueSet.from_sets(
         _execute_array_values(module_value.infer_state, d)
         for d in definitions
     )
@@ -253,15 +253,15 @@ def _execute_array_values(infer_state, array):
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
     """
-    from jedi.inference.value.iterable import SequenceLiteralContext, FakeSequence
-    if isinstance(array, SequenceLiteralContext):
+    from jedi.inference.value.iterable import SequenceLiteralValue, FakeSequence
+    if isinstance(array, SequenceLiteralValue):
         values = []
         for lazy_value in array.py__iter__():
-            objects = ContextSet.from_sets(
+            objects = ValueSet.from_sets(
                 _execute_array_values(infer_state, typ)
                 for typ in lazy_value.infer()
             )
-            values.append(LazyKnownContexts(objects))
+            values.append(LazyKnownValues(objects))
         return {FakeSequence(infer_state, array.array_type, values)}
     else:
         return array.execute_annotation()
@@ -270,10 +270,10 @@ def _execute_array_values(infer_state, array):
 @infer_state_method_cache()
 def infer_param(execution_value, param):
     from jedi.inference.value.instance import InstanceArguments
-    from jedi.inference.value import FunctionExecutionContext
+    from jedi.inference.value import FunctionExecutionValue
 
     def infer_docstring(docstring):
-        return ContextSet(
+        return ValueSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _infer_for_statement_string(module_value, param_str)
@@ -284,7 +284,7 @@ def infer_param(execution_value, param):
         return NO_VALUES
 
     types = infer_docstring(execution_value.py__doc__())
-    if isinstance(execution_value, FunctionExecutionContext) \
+    if isinstance(execution_value, FunctionExecutionValue) \
             and isinstance(execution_value.var_args, InstanceArguments) \
             and execution_value.function_value.py__name__() == '__init__':
         class_value = execution_value.var_args.instance.class_value

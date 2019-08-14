@@ -1,14 +1,14 @@
 from jedi import debug
-from jedi.inference.base_value import ContextSet, \
+from jedi.inference.base_value import ValueSet, \
     NO_VALUES
 from jedi.inference.utils import to_list
-from jedi.inference.gradual.stub_value import StubModuleContext
+from jedi.inference.gradual.stub_value import StubModuleValue
 
 
 def _stub_to_python_value_set(stub_value, ignore_compiled=False):
     stub_module = stub_value.get_root_value()
     if not stub_module.is_stub():
-        return ContextSet([stub_value])
+        return ValueSet([stub_value])
 
     was_instance = stub_value.is_instance()
     if was_instance:
@@ -27,7 +27,7 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
 
     values = _infer_from_stub(stub_module, qualified_names, ignore_compiled)
     if was_instance:
-        values = ContextSet.from_sets(
+        values = ValueSet.from_sets(
             c.execute_with_values()
             for c in values
             if c.is_class()
@@ -41,7 +41,7 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
 
 def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
     from jedi.inference.compiled.mixed import MixedObject
-    assert isinstance(stub_module, (StubModuleContext, MixedObject)), stub_module
+    assert isinstance(stub_module, (StubModuleValue, MixedObject)), stub_module
     non_stubs = stub_module.non_stub_value_set
     if ignore_compiled:
         non_stubs = non_stubs.filter(lambda c: not c.is_compiled())
@@ -89,7 +89,7 @@ def _load_stub_module(module):
     return _try_to_load_stub_cached(
         module.infer_state,
         import_names=module.string_names,
-        python_value_set=ContextSet([module]),
+        python_value_set=ValueSet([module]),
         parent_module_value=None,
         sys_path=module.infer_state.get_sys_path(),
     )
@@ -116,7 +116,7 @@ def _python_to_stub_names(names, fallback_to_python=False):
         if name_list is not None:
             stub_module = _load_stub_module(module)
             if stub_module is not None:
-                stubs = ContextSet({stub_module})
+                stubs = ValueSet({stub_module})
                 for name in name_list[:-1]:
                     stubs = stubs.py__getattribute__(name)
         if stubs and name_list:
@@ -148,15 +148,15 @@ def convert_values(values, only_stubs=False, prefer_stubs=False, ignore_compiled
     assert not (only_stubs and prefer_stubs)
     with debug.increase_indent_cm('convert values'):
         if only_stubs or prefer_stubs:
-            return ContextSet.from_sets(
+            return ValueSet.from_sets(
                 to_stub(value)
-                or (ContextSet({value}) if prefer_stubs else NO_VALUES)
+                or (ValueSet({value}) if prefer_stubs else NO_VALUES)
                 for value in values
             )
         else:
-            return ContextSet.from_sets(
+            return ValueSet.from_sets(
                 _stub_to_python_value_set(stub_value, ignore_compiled=ignore_compiled)
-                or ContextSet({stub_value})
+                or ValueSet({stub_value})
                 for stub_value in values
             )
 
@@ -164,7 +164,7 @@ def convert_values(values, only_stubs=False, prefer_stubs=False, ignore_compiled
 # TODO merge with _python_to_stub_names?
 def to_stub(value):
     if value.is_stub():
-        return ContextSet([value])
+        return ValueSet([value])
 
     was_instance = value.is_instance()
     if was_instance:
@@ -182,12 +182,12 @@ def to_stub(value):
         qualified_names = qualified_names[:-1]
         was_instance = True
 
-    stub_values = ContextSet([stub_module])
+    stub_values = ValueSet([stub_module])
     for name in qualified_names:
         stub_values = stub_values.py__getattribute__(name)
 
     if was_instance:
-        stub_values = ContextSet.from_sets(
+        stub_values = ValueSet.from_sets(
             c.execute_with_values()
             for c in stub_values
             if c.is_class()

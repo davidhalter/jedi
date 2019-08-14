@@ -36,8 +36,8 @@ from jedi.inference.helpers import get_module_names, infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
 from jedi.inference.names import TreeNameDefinition, ParamName
 from jedi.inference.syntax_tree import tree_name_to_values
-from jedi.inference.value import ModuleContext
-from jedi.inference.base_value import ContextSet
+from jedi.inference.value import ModuleValue
+from jedi.inference.base_value import ValueSet
 from jedi.inference.value.iterable import unpack_tuple_to_dict
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.gradual.utils import load_proper_stub_module
@@ -181,7 +181,7 @@ class Script(object):
         if names is None:
             names = ('__main__',)
 
-        module = ModuleContext(
+        module = ModuleValue(
             self._infer_state, self._module_node, file_io,
             string_names=names,
             code_lines=self._code_lines,
@@ -189,7 +189,7 @@ class Script(object):
         )
         if names[0] not in ('builtins', '__builtin__', 'typing'):
             # These modules are essential for Jedi, so don't overwrite them.
-            self._infer_state.module_cache.add(names, ContextSet([module]))
+            self._infer_state.module_cache.add(names, ValueSet([module]))
         return module
 
     def __repr__(self):
@@ -470,7 +470,7 @@ class Interpreter(Script):
         self._infer_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
     def _get_module(self):
-        return interpreter.MixedModuleContext(
+        return interpreter.MixedModuleValue(
             self._infer_state,
             self._module_node,
             self.namespaces,

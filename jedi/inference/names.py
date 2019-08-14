@@ -3,7 +3,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
-from jedi.inference.base_value import ContextSet, NO_VALUES
+from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.cache import memoize_method
 
 
@@ -118,9 +118,9 @@ class AbstractTreeName(AbstractNameDefinition):
         return self.tree_name.start_pos
 
 
-class ContextNameMixin(object):
+class ValueNameMixin(object):
     def infer(self):
-        return ContextSet([self._value])
+        return ValueSet([self._value])
 
     def _get_qualified_names(self):
         return self._value.get_qualified_names()
@@ -128,20 +128,20 @@ class ContextNameMixin(object):
     def get_root_value(self):
         if self.parent_value is None:  # A module
             return self._value
-        return super(ContextNameMixin, self).get_root_value()
+        return super(ValueNameMixin, self).get_root_value()
 
     @property
     def api_type(self):
         return self._value.api_type
 
 
-class ContextName(ContextNameMixin, AbstractTreeName):
+class ValueName(ValueNameMixin, AbstractTreeName):
     def __init__(self, value, tree_name):
-        super(ContextName, self).__init__(value.parent_value, tree_name)
+        super(ValueName, self).__init__(value.parent_value, tree_name)
         self._value = value
 
     def goto(self):
-        return ContextSet([self._value.name])
+        return ValueSet([self._value.name])
 
 
 class TreeNameDefinition(AbstractTreeName):

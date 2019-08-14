@@ -9,8 +9,8 @@ from parso.tree import search_ancestor
 
 from jedi._compatibility import use_metaclass
 from jedi.inference import flow_analysis
-from jedi.inference.base_value import ContextSet, Context, ContextWrapper, \
-    LazyContextWrapper
+from jedi.inference.base_value import ValueSet, Value, ValueWrapper, \
+    LazyValueWrapper
 from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.utils import to_list
 from jedi.inference.names import TreeNameDefinition, ParamName, AbstractNameDefinition
@@ -231,7 +231,7 @@ class MergedFilter(object):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(f) for f in self._filters))
 
 
-class _BuiltinMappedMethod(Context):
+class _BuiltinMappedMethod(Value):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
     api_type = u'function'
 
@@ -281,7 +281,7 @@ class SpecialMethodFilter(DictFilter):
                 else:
                     continue
                 break
-            return ContextSet([
+            return ValueSet([
                 _BuiltinMappedMethod(self.parent_value, self._callable, builtin_func)
             ])
 
@@ -328,13 +328,13 @@ class _AttributeOverwriteMixin(object):
 
 
 class LazyAttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
-                                           LazyContextWrapper)):
+                                           LazyValueWrapper)):
     def __init__(self, infer_state):
         self.infer_state = infer_state
 
 
 class AttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
-                                       ContextWrapper)):
+                                       ValueWrapper)):
     pass
 
 
@@ -394,7 +394,7 @@ def get_global_filters(infer_state, value, until_position, origin_scope):
     >>> list(filters[3].values())  # doctest: +ELLIPSIS
     [...]
     """
-    from jedi.inference.value.function import FunctionExecutionContext
+    from jedi.inference.value.function import FunctionExecutionValue
     while value is not None:
         # Names in methods cannot be resolved within the class.
         for filter in value.get_filters(
@@ -402,7 +402,7 @@ def get_global_filters(infer_state, value, until_position, origin_scope):
                 until_position=until_position,
                 origin_scope=origin_scope):
             yield filter
-        if isinstance(value, FunctionExecutionContext):
+        if isinstance(value, FunctionExecutionValue):
             # The position should be reset if the current scope is a function.
             until_position = None
 

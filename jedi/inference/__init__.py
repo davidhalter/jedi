@@ -33,7 +33,7 @@ return the ``date`` class.
 To *visualize* this (simplified):
 
 - ``InferState.infer_expr_stmt`` doesn't do much, because there's no assignment.
-- ``Context.infer_node`` cares for resolving the dotted path
+- ``Value.infer_node`` cares for resolving the dotted path
 - ``InferState.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
 - Using the import logic, the datetime module is found.
@@ -75,11 +75,11 @@ from jedi.inference import recursion
 from jedi.inference.cache import infer_state_function_cache
 from jedi.inference import helpers
 from jedi.inference.names import TreeNameDefinition, ParamName
-from jedi.inference.base_value import ContextualizedName, ContextualizedNode, \
-    ContextSet, NO_VALUES, iterate_values
-from jedi.inference.value import ClassContext, FunctionContext, \
+from jedi.inference.base_value import ValueualizedName, ValueualizedNode, \
+    ValueSet, NO_VALUES, iterate_values
+from jedi.inference.value import ClassValue, FunctionValue, \
     AnonymousInstance, BoundMethod
-from jedi.inference.value.iterable import CompForContext
+from jedi.inference.value.iterable import CompForValue
 from jedi.inference.syntax_tree import infer_trailer, infer_expr_stmt, \
     infer_node, check_tuple_assignments
 from jedi.plugins import plugin_manager
@@ -97,7 +97,7 @@ class InferState(object):
         self.latest_grammar = parso.load_grammar(version='3.7')
         self.memoize_cache = {}  # for memoize decorators
         self.module_cache = imports.ModuleCache()  # does the job of `sys.modules`.
-        self.stub_module_cache = {}  # Dict[Tuple[str, ...], Optional[ModuleContext]]
+        self.stub_module_cache = {}  # Dict[Tuple[str, ...], Optional[ModuleValue]]
         self.compiled_cache = {}  # see `inference.compiled.create()`
         self.inferred_element_counts = {}
         self.mixed_cache = {}  # see `inference.compiled.mixed._create()`
@@ -151,7 +151,7 @@ class InferState(object):
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
     def infer_element(self, value, element):
-        if isinstance(value, CompForContext):
+        if isinstance(value, CompForValue):
             return infer_node(value, element)
 
         if_stmt = element
@@ -201,7 +201,7 @@ class InferState(object):
                                 new_name_dicts = list(original_name_dicts)
                                 for i, name_dict in enumerate(new_name_dicts):
                                     new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][if_name.value] = ContextSet([definition])
+                                    new_name_dicts[i][if_name.value] = ValueSet([definition])
 
                                 name_dicts += new_name_dicts
                         else:
@@ -244,10 +244,10 @@ class InferState(object):
             is_classdef = type_ == 'classdef'
             if is_classdef or type_ == 'funcdef':
                 if is_classdef:
-                    c = ClassContext(self, value, name.parent)
+                    c = ClassValue(self, value, name.parent)
                 else:
-                    c = FunctionContext.from_value(value, name.parent)
-                return ContextSet([c])
+                    c = FunctionValue.from_value(value, name.parent)
+                return ValueSet([c])
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
@@ -255,9 +255,9 @@ class InferState(object):
                     return infer_expr_stmt(value, def_, name)
             if type_ == 'for_stmt':
                 container_types = value.infer_node(def_.children[3])
-                cn = ContextualizedNode(value, def_.children[3])
+                cn = ValueualizedNode(value, def_.children[3])
                 for_types = iterate_values(container_types, cn)
-                c_node = ContextualizedName(value, name)
+                c_node = ValueualizedName(value, name)
                 return check_tuple_assignments(self, c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(value, name)
@@ -393,7 +393,7 @@ class InferState(object):
             parent_value = from_scope_node(parent_scope)
 
             if is_funcdef:
-                func = FunctionContext.from_value(parent_value, scope_node)
+                func = FunctionValue.from_value(parent_value, scope_node)
                 if parent_value.is_class():
                     instance = AnonymousInstance(
                         self, parent_value.parent_value, parent_value)
@@ -406,11 +406,11 @@ class InferState(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                return ClassContext(self, parent_value, scope_node)
+                return ClassValue(self, parent_value, scope_node)
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_value
-                return CompForContext.from_comp_for(parent_value, scope_node)
+                return CompForValue.from_comp_for(parent_value, scope_node)
             raise Exception("There's a scope that was not managed.")
 
         base_node = base_value.tree_node

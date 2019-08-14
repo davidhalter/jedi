@@ -1,13 +1,13 @@
-from jedi.inference.base_value import ContextWrapper
-from jedi.inference.value.module import ModuleContext
+from jedi.inference.base_value import ValueWrapper
+from jedi.inference.value.module import ModuleValue
 from jedi.inference.filters import ParserTreeFilter, \
     TreeNameDefinition
 from jedi.inference.gradual.typing import TypingModuleFilterWrapper
 
 
-class StubModuleContext(ModuleContext):
+class StubModuleValue(ModuleValue):
     def __init__(self, non_stub_value_set, *args, **kwargs):
-        super(StubModuleContext, self).__init__(*args, **kwargs)
+        super(StubModuleValue, self).__init__(*args, **kwargs)
         self.non_stub_value_set = non_stub_value_set
 
     def is_stub(self):
@@ -27,7 +27,7 @@ class StubModuleContext(ModuleContext):
                 pass
             else:
                 names.update(method())
-        names.update(super(StubModuleContext, self).sub_modules_dict())
+        names.update(super(StubModuleValue, self).sub_modules_dict())
         return names
 
     def _get_first_non_stub_filters(self):
@@ -44,7 +44,7 @@ class StubModuleContext(ModuleContext):
 
     def get_filters(self, search_global=False, until_position=None,
                     origin_scope=None, **kwargs):
-        filters = super(StubModuleContext, self).get_filters(
+        filters = super(StubModuleValue, self).get_filters(
             search_global, until_position, origin_scope, **kwargs
         )
         next(filters)  # Ignore the first filter and replace it with our own
@@ -60,7 +60,7 @@ class StubModuleContext(ModuleContext):
             yield f
 
 
-class TypingModuleWrapper(StubModuleContext):
+class TypingModuleWrapper(StubModuleValue):
     def get_filters(self, *args, **kwargs):
         filters = super(TypingModuleWrapper, self).get_filters(*args, **kwargs)
         yield TypingModuleFilterWrapper(next(filters))
@@ -101,5 +101,5 @@ class StubFilter(ParserTreeFilter):
         return True
 
 
-class VersionInfo(ContextWrapper):
+class VersionInfo(ValueWrapper):
     pass

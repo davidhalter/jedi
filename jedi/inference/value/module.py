@@ -3,14 +3,14 @@ import os
 
 from jedi import debug
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.names import ContextNameMixin, AbstractNameDefinition
+from jedi.inference.names import ValueNameMixin, AbstractNameDefinition
 from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.inference import compiled
-from jedi.inference.base_value import TreeContext
+from jedi.inference.base_value import TreeValue
 from jedi.inference.names import SubModuleName
 from jedi.inference.helpers import values_from_qualified_names
 from jedi.inference.compiled import create_simple_object
-from jedi.inference.base_value import ContextSet
+from jedi.inference.base_value import ValueSet
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -30,13 +30,13 @@ class _ModuleAttributeName(AbstractNameDefinition):
             if self.parent_value.infer_state.environment.version_info.major == 2 \
                     and not isinstance(s, bytes):
                 s = s.encode('utf-8')
-            return ContextSet([
+            return ValueSet([
                 create_simple_object(self.parent_value.infer_state, s)
             ])
         return compiled.get_string_value_set(self.parent_value.infer_state)
 
 
-class ModuleName(ContextNameMixin, AbstractNameDefinition):
+class ModuleName(ValueNameMixin, AbstractNameDefinition):
     start_pos = 1, 0
 
     def __init__(self, value, name):
@@ -132,7 +132,7 @@ class ModuleMixin(SubModuleDictMixin):
     def _string_name(self):
         """ This is used for the goto functions. """
         # TODO It's ugly that we even use this, the name is usually well known
-        # ahead so just pass it when create a ModuleContext.
+        # ahead so just pass it when create a ModuleValue.
         if self._path is None:
             return ''  # no path -> empty name
         else:
@@ -173,7 +173,7 @@ class ModuleMixin(SubModuleDictMixin):
                 ).follow()
 
                 for module in new:
-                    if isinstance(module, ModuleContext):
+                    if isinstance(module, ModuleValue):
                         modules += module.star_imports()
                 modules += new
         return modules
@@ -187,12 +187,12 @@ class ModuleMixin(SubModuleDictMixin):
         return ()
 
 
-class ModuleContext(ModuleMixin, TreeContext):
+class ModuleValue(ModuleMixin, TreeValue):
     api_type = u'module'
     parent_value = None
 
     def __init__(self, infer_state, module_node, file_io, string_names, code_lines, is_package=False):
-        super(ModuleContext, self).__init__(
+        super(ModuleValue, self).__init__(
             infer_state,
             parent_value=None,
             tree_node=module_node
@@ -210,9 +210,9 @@ class ModuleContext(ModuleMixin, TreeContext):
         if self._path is not None and self._path.endswith('.pyi'):
             # Currently this is the way how we identify stubs when e.g. goto is
             # used in them. This could be changed if stubs would be identified
-            # sooner and used as StubModuleContext.
+            # sooner and used as StubModuleValue.
             return True
-        return super(ModuleContext, self).is_stub()
+        return super(ModuleValue, self).is_stub()
 
     def py__name__(self):
         if self.string_names is None:

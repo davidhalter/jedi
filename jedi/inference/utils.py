@@ -100,7 +100,7 @@ class PushBackIterator(object):
 @contextlib.contextmanager
 def ignored(*exceptions):
     """
-    Context manager that ignores all of the specified exceptions. This will
+    Value manager that ignores all of the specified exceptions. This will
     be in the standard library starting with Python 3.4.
     """
     try:
