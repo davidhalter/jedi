@@ -183,7 +183,7 @@ def _strip_rst_role(type_str):
         return type_str
 
 
-def _evaluate_for_statement_string(module_context, string):
+def _infer_for_statement_string(module_context, string):
     code = dedent(u("""
     def pseudo_docstring_stuff():
         '''
@@ -276,7 +276,7 @@ def infer_param(execution_context, param):
         return ContextSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
-            for p in _evaluate_for_statement_string(module_context, param_str)
+            for p in _infer_for_statement_string(module_context, param_str)
         )
     module_context = execution_context.get_root_context()
     func = param.get_parent_function()
@@ -307,5 +307,5 @@ def infer_return_types(function_context):
             yield type_
 
     for type_str in search_return_in_docstr(function_context.py__doc__()):
-        for type_eval in _evaluate_for_statement_string(function_context.get_root_context(), type_str):
+        for type_eval in _infer_for_statement_string(function_context.get_root_context(), type_str):
             yield type_eval

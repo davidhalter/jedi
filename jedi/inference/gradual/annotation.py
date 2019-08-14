@@ -44,7 +44,7 @@ def eval_annotation(context, annotation):
     return context_set
 
 
-def _evaluate_annotation_string(context, string, index=None):
+def _infer_annotation_string(context, string, index=None):
     node = _get_forward_reference_node(context, string)
     if node is None:
         return NO_CONTEXTS
@@ -168,7 +168,7 @@ def _infer_param(execution_context, param):
             return NO_CONTEXTS
 
         param_comment = params_comments[index]
-        return _evaluate_annotation_string(
+        return _infer_annotation_string(
             execution_context.function_context.get_default_param_context(),
             param_comment
         )
@@ -209,7 +209,7 @@ def infer_return_types(function_execution_context):
         if not match:
             return NO_CONTEXTS
 
-        return _evaluate_annotation_string(
+        return _infer_annotation_string(
             function_execution_context.function_context.get_default_param_context(),
             match.group(1).strip()
         ).execute_annotation()
@@ -372,7 +372,7 @@ def _find_type_from_comment_hint(context, node, varlist, name):
     match = re.match(r"^#\s*type:\s*([^#]*)", comment)
     if match is None:
         return []
-    return _evaluate_annotation_string(
+    return _infer_annotation_string(
         context, match.group(1).strip(), index
     ).execute_annotation()
 
