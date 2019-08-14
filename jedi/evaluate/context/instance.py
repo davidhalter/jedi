@@ -59,9 +59,6 @@ class AnonymousInstanceArguments(AnonymousArguments):
 
 
 class AbstractInstanceContext(Context):
-    """
-    This class is used to evaluate instances.
-    """
     api_type = u'instance'
 
     def __init__(self, evaluator, parent_context, class_context, var_args):

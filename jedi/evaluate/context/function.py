@@ -169,14 +169,6 @@ class MethodContext(FunctionContext):
 
 
 class FunctionExecutionContext(TreeContext):
-    """
-    This class is used to evaluate functions and their returns.
-
-    This is the most complicated class, because it contains the logic to
-    transfer parameters. It is even more complicated, because there may be
-    multiple calls to functions and recursion has to be avoided. But this is
-    responsibility of the recursion module.
-    """
     function_execution_filter = FunctionExecutionFilter
 
     def __init__(self, evaluator, parent_context, function_context, var_args):
