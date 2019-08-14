@@ -10,7 +10,7 @@ from collections import namedtuple
 
 from jedi._compatibility import highest_pickle_protocol, which
 from jedi.cache import memoize_method, time_cache
-from jedi.evaluate.compiled.subprocess import CompiledSubprocess, \
+from jedi.inference.compiled.subprocess import CompiledSubprocess, \
     EvaluatorSameProcess, EvaluatorSubprocess
 
 import parso

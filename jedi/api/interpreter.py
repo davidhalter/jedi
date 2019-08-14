@@ -2,11 +2,11 @@
 TODO Some parts of this module are still not well documented.
 """
 
-from jedi.evaluate.context import ModuleContext
-from jedi.evaluate import compiled
-from jedi.evaluate.compiled import mixed
-from jedi.evaluate.compiled.access import create_access_path
-from jedi.evaluate.base_context import ContextWrapper
+from jedi.inference.context import ModuleContext
+from jedi.inference import compiled
+from jedi.inference.compiled import mixed
+from jedi.inference.compiled.access import create_access_path
+from jedi.inference.base_context import ContextWrapper
 
 
 def _create(evaluator, obj):

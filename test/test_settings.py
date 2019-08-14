@@ -1,9 +1,9 @@
 import pytest
 
 from jedi import settings
-from jedi.evaluate.names import ContextName
-from jedi.evaluate.compiled import CompiledContextName
-from jedi.evaluate.gradual.typeshed import StubModuleContext
+from jedi.inference.names import ContextName
+from jedi.inference.compiled import CompiledContextName
+from jedi.inference.gradual.typeshed import StubModuleContext
 
 
 @pytest.fixture()

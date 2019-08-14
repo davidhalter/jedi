@@ -6,7 +6,7 @@ import shutil
 import pytest
 from ..helpers import skip_if_windows, skip_if_not_windows
 
-from jedi.evaluate import sys_path
+from jedi.inference import sys_path
 from jedi.api.environment import create_environment
 
 

@@ -3,7 +3,7 @@ import os
 import pytest
 
 from jedi import api
-from jedi.evaluate import imports
+from jedi.inference import imports
 from ..helpers import cwd_at
 
 

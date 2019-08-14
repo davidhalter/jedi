@@ -9,10 +9,10 @@ from parso.python.parser import Parser
 from parso.python import tree
 
 from jedi._compatibility import u, Parameter
-from jedi.evaluate.base_context import NO_CONTEXTS
-from jedi.evaluate.syntax_tree import eval_atom
-from jedi.evaluate.helpers import evaluate_call_of_leaf
-from jedi.evaluate.compiled import get_string_context_set
+from jedi.inference.base_context import NO_CONTEXTS
+from jedi.inference.syntax_tree import eval_atom
+from jedi.inference.helpers import infer_call_of_leaf
+from jedi.inference.compiled import get_string_context_set
 from jedi.cache import call_signature_time_cache
 
 
@@ -136,7 +136,7 @@ def get_stack_at_position(grammar, code_lines, leaf, pos):
     )
 
 
-def evaluate_goto_definition(evaluator, context, leaf):
+def infer_goto_definition(evaluator, context, leaf):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
@@ -149,7 +149,7 @@ def evaluate_goto_definition(evaluator, context, leaf):
         definitions = context.eval_node(leaf.parent)
     elif parent.type == 'trailer':
         # e.g. `a()`
-        definitions = evaluate_call_of_leaf(context, leaf)
+        definitions = infer_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         # e.g. `"foo"` or `1.0`
         return eval_atom(context, leaf)
@@ -390,7 +390,7 @@ def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos
         yield None  # Don't cache!
     else:
         yield (module_path, before_bracket, bracket_leaf.start_pos)
-    yield evaluate_goto_definition(
+    yield infer_goto_definition(
         evaluator,
         context,
         bracket_leaf.get_previous_leaf(),

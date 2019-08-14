@@ -10,7 +10,7 @@ from . import refactor
 
 import jedi
 from jedi.api.environment import InterpreterEnvironment
-from jedi.evaluate.analysis import Warning
+from jedi.inference.analysis import Warning
 
 
 def pytest_addoption(parser):

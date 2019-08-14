@@ -11,10 +11,10 @@ from jedi.api import classes
 from jedi.api import helpers
 from jedi.api import keywords
 from jedi.api.file_name import file_name_completions
-from jedi.evaluate import imports
-from jedi.evaluate.helpers import evaluate_call_of_leaf, parse_dotted_names
-from jedi.evaluate.filters import get_global_filters
-from jedi.evaluate.gradual.conversion import convert_contexts
+from jedi.inference import imports
+from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
+from jedi.inference.filters import get_global_filters
+from jedi.inference.gradual.conversion import convert_contexts
 from jedi.parser_utils import get_statement_of_position, cut_value_at_position
 
 
@@ -256,7 +256,7 @@ class Completion:
         inferred_context = self._evaluator.create_context(
             self._module_context, previous_leaf
         )
-        contexts = evaluate_call_of_leaf(inferred_context, previous_leaf)
+        contexts = infer_call_of_leaf(inferred_context, previous_leaf)
         completion_names = []
         debug.dbg('trailer completion contexts: %s', contexts, color='MAGENTA')
         for context in contexts:

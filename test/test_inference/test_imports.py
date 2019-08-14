@@ -9,10 +9,10 @@ import pytest
 from jedi.file_io import FileIO, KnownContentFileIO
 
 from jedi._compatibility import find_module_py33, find_module
-from jedi.evaluate import compiled
-from jedi.evaluate import imports
+from jedi.inference import compiled
+from jedi.inference import imports
 from jedi.api.project import Project
-from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
+from jedi.inference.gradual.conversion import _stub_to_python_context_set
 from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
 
 THIS_DIR = os.path.dirname(__file__)

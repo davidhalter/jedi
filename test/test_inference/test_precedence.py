@@ -1,4 +1,4 @@
-from jedi.evaluate.compiled import CompiledObject
+from jedi.inference.compiled import CompiledObject
 
 import pytest
 

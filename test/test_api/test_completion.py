@@ -89,7 +89,7 @@ def test_fake_subnodes(Script):
     Test the number of subnodes of a fake object.
 
     There was a bug where the number of child nodes would grow on every
-    call to :func:``jedi.evaluate.compiled.fake.get_faked``.
+    call to :func:``jedi.inference.compiled.fake.get_faked``.
 
     See Github PR#649 and isseu #591.
     """

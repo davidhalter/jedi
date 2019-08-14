@@ -1,9 +1,9 @@
 import os
 
 from jedi._compatibility import FileNotFoundError, force_unicode
-from jedi.evaluate.names import AbstractArbitraryName
+from jedi.inference.names import AbstractArbitraryName
 from jedi.api import classes
-from jedi.evaluate.helpers import get_str_or_none
+from jedi.inference.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
 
 

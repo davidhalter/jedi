@@ -8,7 +8,7 @@ import pytest
 
 import jedi
 from jedi import __doc__ as jedi_doc
-from jedi.evaluate.compiled import CompiledContextName
+from jedi.inference.compiled import CompiledContextName
 
 
 def test_is_keyword(Script):

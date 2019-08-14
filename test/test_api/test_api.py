@@ -9,7 +9,7 @@ from pytest import raises
 from parso import cache
 
 from jedi import preload_module
-from jedi.evaluate.gradual import typeshed
+from jedi.inference.gradual import typeshed
 
 
 def test_preload_modules():

@@ -1,5 +1,5 @@
 import pytest
-from jedi.evaluate.context import TreeInstance
+from jedi.inference.context import TreeInstance
 
 
 def _eval_literal(Script, code, is_fstring=False):

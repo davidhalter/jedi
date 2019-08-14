@@ -1,5 +1,5 @@
 
-from jedi import functions, evaluate, parsing
+from jedi import functions, inference, parsing
 
 el = functions.completions()[0]
 #? ['description']
@@ -18,17 +18,17 @@ el = scopes
 
 # get_names_for_scope is also recursion stuff
 #? tuple()
-el = list(evaluate.get_names_for_scope())[0]
+el = list(inference.get_names_for_scope())[0]
 
 #? int() parsing.Module()
-el = list(evaluate.get_names_for_scope(1))[0][0]
+el = list(inference.get_names_for_scope(1))[0][0]
 #? parsing.Module()
-el = list(evaluate.get_names_for_scope())[0][0]
+el = list(inference.get_names_for_scope())[0][0]
 
 #? list()
-el = list(evaluate.get_names_for_scope(1))[0][1]
+el = list(inference.get_names_for_scope(1))[0][1]
 #? list()
-el = list(evaluate.get_names_for_scope())[0][1]
+el = list(inference.get_names_for_scope())[0][1]
 
 #? list()
 parsing.Scope((0,0)).get_set_vars()
@@ -39,14 +39,14 @@ parsing.Scope((0,0)).get_set_vars()[0]
 parsing.Scope((0,0)).get_set_vars()[0].parent
 
 #? parsing.Import() parsing.Name()
-el = list(evaluate.get_names_for_scope())[0][1][0]
+el = list(inference.get_names_for_scope())[0][1][0]
 
-#? evaluate.Array() evaluate.Class() evaluate.Function() evaluate.Instance()
-list(evaluate.follow_call())[0]
+#? inference.Array() inference.Class() inference.Function() inference.Instance()
+list(inference.follow_call())[0]
 
 # With the right recursion settings, this should be possible (and maybe more):
 # Array Class Function Generator Instance Module
 # However, this was produced with the recursion settings 10/350/10000, and
 # lasted 18.5 seconds. So we just have to be content with the results.
-#? evaluate.Class() evaluate.Function()
-evaluate.get_scopes_for_name()[0]
+#? inference.Class() inference.Function()
+inference.get_scopes_for_name()[0]

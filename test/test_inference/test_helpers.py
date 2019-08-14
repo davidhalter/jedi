@@ -1,7 +1,7 @@
 from textwrap import dedent
 
 from jedi import names
-from jedi.evaluate import helpers
+from jedi.inference import helpers
 
 
 def test_call_of_leaf_in_brackets(environment):

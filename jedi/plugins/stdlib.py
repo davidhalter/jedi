@@ -14,27 +14,27 @@ import os
 
 from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
-from jedi.evaluate.utils import safe_property
-from jedi.evaluate.helpers import get_str_or_none
-from jedi.evaluate.arguments import ValuesArguments, \
+from jedi.inference.utils import safe_property
+from jedi.inference.helpers import get_str_or_none
+from jedi.inference.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
-from jedi.evaluate import analysis
-from jedi.evaluate import compiled
-from jedi.evaluate.context.instance import BoundMethod, InstanceArguments
-from jedi.evaluate.base_context import ContextualizedNode, \
+from jedi.inference import analysis
+from jedi.inference import compiled
+from jedi.inference.context.instance import BoundMethod, InstanceArguments
+from jedi.inference.base_context import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper, LazyContextWrapper
-from jedi.evaluate.context import ClassContext, ModuleContext, \
+from jedi.inference.context import ClassContext, ModuleContext, \
     FunctionExecutionContext
-from jedi.evaluate.context.klass import ClassMixin
-from jedi.evaluate.context.function import FunctionMixin
-from jedi.evaluate.context import iterable
-from jedi.evaluate.lazy_context import LazyTreeContext, LazyKnownContext, \
+from jedi.inference.context.klass import ClassMixin
+from jedi.inference.context.function import FunctionMixin
+from jedi.inference.context import iterable
+from jedi.inference.lazy_context import LazyTreeContext, LazyKnownContext, \
     LazyKnownContexts
-from jedi.evaluate.names import ContextName, BaseTreeParamName
-from jedi.evaluate.syntax_tree import is_string
-from jedi.evaluate.filters import AttributeOverwrite, publish_method, \
+from jedi.inference.names import ContextName, BaseTreeParamName
+from jedi.inference.syntax_tree import is_string
+from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
-from jedi.evaluate.signature import AbstractSignature, SignatureWrapper
+from jedi.inference.signature import AbstractSignature, SignatureWrapper
 
 
 # Copied from Python 3.6's stdlib.

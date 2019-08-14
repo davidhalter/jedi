@@ -18,7 +18,7 @@ following functions (sometimes bug-prone):
 import difflib
 
 from parso import python_bytes_to_unicode, split_lines
-from jedi.evaluate import helpers
+from jedi.inference import helpers
 
 
 class Refactoring(object):

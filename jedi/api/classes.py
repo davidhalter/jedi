@@ -9,15 +9,15 @@ import warnings
 
 from jedi import settings
 from jedi import debug
-from jedi.evaluate.utils import unite
+from jedi.inference.utils import unite
 from jedi.cache import memoize_method
-from jedi.evaluate import imports
-from jedi.evaluate import compiled
-from jedi.evaluate.imports import ImportName
-from jedi.evaluate.context import FunctionExecutionContext
-from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
-from jedi.evaluate.base_context import ContextSet
+from jedi.inference import imports
+from jedi.inference import compiled
+from jedi.inference.imports import ImportName
+from jedi.inference.context import FunctionExecutionContext
+from jedi.inference.gradual.typeshed import StubModuleContext
+from jedi.inference.gradual.conversion import convert_names, convert_contexts
+from jedi.inference.base_context import ContextSet
 from jedi.api.keywords import KeywordName
 
 

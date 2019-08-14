@@ -6,9 +6,9 @@ from datetime import datetime
 
 import pytest
 
-from jedi.evaluate import compiled
-from jedi.evaluate.compiled.access import DirectObjectAccess
-from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
+from jedi.inference import compiled
+from jedi.inference.compiled.access import DirectObjectAccess
+from jedi.inference.gradual.conversion import _stub_to_python_context_set
 
 
 def test_simple(evaluator, environment):

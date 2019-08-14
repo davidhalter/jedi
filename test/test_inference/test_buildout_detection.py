@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 
 from jedi._compatibility import force_unicode
-from jedi.evaluate.sys_path import (_get_parent_dir_with_file,
+from jedi.inference.sys_path import (_get_parent_dir_with_file,
                                     _get_buildout_script_paths,
                                     check_sys_path_modifications)
 

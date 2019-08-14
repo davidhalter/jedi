@@ -1,7 +1,7 @@
 import pydoc
 
-from jedi.evaluate.utils import ignored
-from jedi.evaluate.names import AbstractArbitraryName
+from jedi.inference.utils import ignored
+from jedi.inference.names import AbstractArbitraryName
 
 try:
     from pydoc_data import topics as pydoc_topics

@@ -28,19 +28,19 @@ from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
-from jedi.evaluate import Evaluator
-from jedi.evaluate import imports
-from jedi.evaluate import usages
-from jedi.evaluate.arguments import try_iter_content
-from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
-from jedi.evaluate.sys_path import transform_path_to_dotted
-from jedi.evaluate.names import TreeNameDefinition, ParamName
-from jedi.evaluate.syntax_tree import tree_name_to_contexts
-from jedi.evaluate.context import ModuleContext
-from jedi.evaluate.base_context import ContextSet
-from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
-from jedi.evaluate.gradual.utils import load_proper_stub_module
+from jedi.inference import Evaluator
+from jedi.inference import imports
+from jedi.inference import usages
+from jedi.inference.arguments import try_iter_content
+from jedi.inference.helpers import get_module_names, infer_call_of_leaf
+from jedi.inference.sys_path import transform_path_to_dotted
+from jedi.inference.names import TreeNameDefinition, ParamName
+from jedi.inference.syntax_tree import tree_name_to_contexts
+from jedi.inference.context import ModuleContext
+from jedi.inference.base_context import ContextSet
+from jedi.inference.context.iterable import unpack_tuple_to_dict
+from jedi.inference.gradual.conversion import convert_names, convert_contexts
+from jedi.inference.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -62,7 +62,7 @@ class Script(object):
 
     - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
       variable is defined, ``sys.path`` for the specified environment will be
-      guessed (see :func:`jedi.evaluate.sys_path.get_venv_path`) and used for
+      guessed (see :func:`jedi.inference.sys_path.get_venv_path`) and used for
       the script;
 
     - otherwise ``sys.path`` will match that of |jedi|.
@@ -241,7 +241,7 @@ class Script(object):
 
         context = self._evaluator.create_context(self._get_module(), leaf)
 
-        contexts = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
+        contexts = helpers.infer_goto_definition(self._evaluator, context, leaf)
         contexts = convert_contexts(
             contexts,
             only_stubs=only_stubs,
@@ -411,7 +411,7 @@ class Script(object):
                     if node.type == 'name':
                         defs = self._evaluator.goto_definitions(context, node)
                     else:
-                        defs = evaluate_call_of_leaf(context, node)
+                        defs = infer_call_of_leaf(context, node)
                     try_iter_content(defs)
                 self._evaluator.reset_recursion_limitations()
 

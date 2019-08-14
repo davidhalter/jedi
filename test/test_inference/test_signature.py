@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from jedi.evaluate.gradual.conversion import _stub_to_python_context_set
+from jedi.inference.gradual.conversion import _stub_to_python_context_set
 
 
 @pytest.mark.parametrize(

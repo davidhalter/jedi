@@ -6,8 +6,8 @@ from jedi.api.environment import SameEnvironment, \
     get_cached_default_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
-from jedi.evaluate.sys_path import discover_buildout_paths
-from jedi.evaluate.cache import evaluator_as_method_param_cache
+from jedi.inference.sys_path import discover_buildout_paths
+from jedi.inference.cache import evaluator_as_method_param_cache
 from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'

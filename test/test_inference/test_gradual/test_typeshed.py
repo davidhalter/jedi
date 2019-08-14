@@ -3,8 +3,8 @@ import os
 import pytest
 from parso.utils import PythonVersionInfo
 
-from jedi.evaluate.gradual import typeshed, stub_context
-from jedi.evaluate.context import TreeInstance, BoundMethod, FunctionContext, \
+from jedi.inference.gradual import typeshed, stub_context
+from jedi.inference.context import TreeInstance, BoundMethod, FunctionContext, \
     MethodContext, ClassContext
 
 TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')

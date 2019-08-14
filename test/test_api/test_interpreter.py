@@ -7,7 +7,7 @@ import pytest
 
 import jedi
 from jedi._compatibility import is_py3, py_version
-from jedi.evaluate.compiled import mixed, context
+from jedi.inference.compiled import mixed, context
 from importlib import import_module
 
 if py_version > 30:

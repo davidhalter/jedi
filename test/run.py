@@ -126,7 +126,7 @@ from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
-from jedi.evaluate.gradual.conversion import convert_contexts
+from jedi.inference.gradual.conversion import convert_contexts
 
 
 TEST_COMPLETIONS = 0
