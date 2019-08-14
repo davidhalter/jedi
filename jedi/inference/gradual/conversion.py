@@ -2,47 +2,47 @@ from jedi import debug
 from jedi.inference.base_value import ContextSet, \
     NO_CONTEXTS
 from jedi.inference.utils import to_list
-from jedi.inference.gradual.stub_context import StubModuleContext
+from jedi.inference.gradual.stub_value import StubModuleContext
 
 
-def _stub_to_python_context_set(stub_context, ignore_compiled=False):
-    stub_module = stub_context.get_root_context()
+def _stub_to_python_value_set(stub_value, ignore_compiled=False):
+    stub_module = stub_value.get_root_value()
     if not stub_module.is_stub():
-        return ContextSet([stub_context])
+        return ContextSet([stub_value])
 
-    was_instance = stub_context.is_instance()
+    was_instance = stub_value.is_instance()
     if was_instance:
-        stub_context = stub_context.py__class__()
+        stub_value = stub_value.py__class__()
 
-    qualified_names = stub_context.get_qualified_names()
+    qualified_names = stub_value.get_qualified_names()
     if qualified_names is None:
         return NO_CONTEXTS
 
-    was_bound_method = stub_context.is_bound_method()
+    was_bound_method = stub_value.is_bound_method()
     if was_bound_method:
         # Infer the object first. We can infer the method later.
         method_name = qualified_names[-1]
         qualified_names = qualified_names[:-1]
         was_instance = True
 
-    contexts = _infer_from_stub(stub_module, qualified_names, ignore_compiled)
+    values = _infer_from_stub(stub_module, qualified_names, ignore_compiled)
     if was_instance:
-        contexts = ContextSet.from_sets(
+        values = ContextSet.from_sets(
             c.execute_with_values()
-            for c in contexts
+            for c in values
             if c.is_class()
         )
     if was_bound_method:
         # Now that the instance has been properly created, we can simply get
         # the method.
-        contexts = contexts.py__getattribute__(method_name)
-    return contexts
+        values = values.py__getattribute__(method_name)
+    return values
 
 
 def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
     from jedi.inference.compiled.mixed import MixedObject
     assert isinstance(stub_module, (StubModuleContext, MixedObject)), stub_module
-    non_stubs = stub_module.non_stub_context_set
+    non_stubs = stub_module.non_stub_value_set
     if ignore_compiled:
         non_stubs = non_stubs.filter(lambda c: not c.is_compiled())
     for name in qualified_names:
@@ -53,28 +53,28 @@ def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
 @to_list
 def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
     for name in names:
-        module = name.get_root_context()
+        module = name.get_root_value()
         if not module.is_stub():
             yield name
             continue
 
         name_list = name.get_qualified_names()
         if name_list is None:
-            contexts = NO_CONTEXTS
+            values = NO_CONTEXTS
         else:
-            contexts = _infer_from_stub(
+            values = _infer_from_stub(
                 module,
                 name_list[:-1],
                 ignore_compiled=prefer_stub_to_compiled,
             )
-        if contexts and name_list:
-            new_names = contexts.py__getattribute__(name_list[-1], is_goto=True)
+        if values and name_list:
+            new_names = values.py__getattribute__(name_list[-1], is_goto=True)
             for new_name in new_names:
                 yield new_name
             if new_names:
                 continue
-        elif contexts:
-            for c in contexts:
+        elif values:
+            for c in values:
                 yield c.name
             continue
         # This is the part where if we haven't found anything, just return the
@@ -89,8 +89,8 @@ def _load_stub_module(module):
     return _try_to_load_stub_cached(
         module.infer_state,
         import_names=module.string_names,
-        python_context_set=ContextSet([module]),
-        parent_module_context=None,
+        python_value_set=ContextSet([module]),
+        parent_module_value=None,
         sys_path=module.infer_state.get_sys_path(),
     )
 
@@ -98,7 +98,7 @@ def _load_stub_module(module):
 @to_list
 def _python_to_stub_names(names, fallback_to_python=False):
     for name in names:
-        module = name.get_root_context()
+        module = name.get_root_value()
         if module.is_stub():
             yield name
             continue
@@ -144,56 +144,56 @@ def convert_names(names, only_stubs=False, prefer_stubs=False):
             return _try_stub_to_python_names(names, prefer_stub_to_compiled=True)
 
 
-def convert_contexts(contexts, only_stubs=False, prefer_stubs=False, ignore_compiled=True):
+def convert_values(values, only_stubs=False, prefer_stubs=False, ignore_compiled=True):
     assert not (only_stubs and prefer_stubs)
-    with debug.increase_indent_cm('convert contexts'):
+    with debug.increase_indent_cm('convert values'):
         if only_stubs or prefer_stubs:
             return ContextSet.from_sets(
-                to_stub(context)
-                or (ContextSet({context}) if prefer_stubs else NO_CONTEXTS)
-                for context in contexts
+                to_stub(value)
+                or (ContextSet({value}) if prefer_stubs else NO_CONTEXTS)
+                for value in values
             )
         else:
             return ContextSet.from_sets(
-                _stub_to_python_context_set(stub_context, ignore_compiled=ignore_compiled)
-                or ContextSet({stub_context})
-                for stub_context in contexts
+                _stub_to_python_value_set(stub_value, ignore_compiled=ignore_compiled)
+                or ContextSet({stub_value})
+                for stub_value in values
             )
 
 
 # TODO merge with _python_to_stub_names?
-def to_stub(context):
-    if context.is_stub():
-        return ContextSet([context])
+def to_stub(value):
+    if value.is_stub():
+        return ContextSet([value])
 
-    was_instance = context.is_instance()
+    was_instance = value.is_instance()
     if was_instance:
-        context = context.py__class__()
+        value = value.py__class__()
 
-    qualified_names = context.get_qualified_names()
-    stub_module = _load_stub_module(context.get_root_context())
+    qualified_names = value.get_qualified_names()
+    stub_module = _load_stub_module(value.get_root_value())
     if stub_module is None or qualified_names is None:
         return NO_CONTEXTS
 
-    was_bound_method = context.is_bound_method()
+    was_bound_method = value.is_bound_method()
     if was_bound_method:
         # Infer the object first. We can infer the method later.
         method_name = qualified_names[-1]
         qualified_names = qualified_names[:-1]
         was_instance = True
 
-    stub_contexts = ContextSet([stub_module])
+    stub_values = ContextSet([stub_module])
     for name in qualified_names:
-        stub_contexts = stub_contexts.py__getattribute__(name)
+        stub_values = stub_values.py__getattribute__(name)
 
     if was_instance:
-        stub_contexts = ContextSet.from_sets(
+        stub_values = ContextSet.from_sets(
             c.execute_with_values()
-            for c in stub_contexts
+            for c in stub_values
             if c.is_class()
         )
     if was_bound_method:
         # Now that the instance has been properly created, we can simply get
         # the method.
-        stub_contexts = stub_contexts.py__getattribute__(method_name)
-    return stub_contexts
+        stub_values = stub_values.py__getattribute__(method_name)
+    return stub_values

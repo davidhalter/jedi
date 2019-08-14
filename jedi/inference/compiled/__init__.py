@@ -1,5 +1,5 @@
 from jedi._compatibility import unicode
-from jedi.inference.compiled.context import CompiledObject, CompiledName, \
+from jedi.inference.compiled.value import CompiledObject, CompiledName, \
     CompiledObjectFilter, CompiledContextName, create_from_access_path
 from jedi.inference.base_value import ContextWrapper, LazyContextWrapper
 
@@ -7,13 +7,13 @@ from jedi.inference.base_value import ContextWrapper, LazyContextWrapper
 def builtin_from_name(infer_state, string):
     typing_builtins_module = infer_state.builtins_module
     if string in ('None', 'True', 'False'):
-        builtins, = typing_builtins_module.non_stub_context_set
+        builtins, = typing_builtins_module.non_stub_value_set
         filter_ = next(builtins.get_filters())
     else:
         filter_ = next(typing_builtins_module.get_filters())
     name, = filter_.get(string)
-    context, = name.infer()
-    return context
+    value, = name.infer()
+    return value
 
 
 class CompiledValue(LazyContextWrapper):
@@ -27,7 +27,7 @@ class CompiledValue(LazyContextWrapper):
             return getattr(self._compiled_obj, name)
         return super(CompiledValue, self).__getattribute__(name)
 
-    def _get_wrapped_context(self):
+    def _get_wrapped_value(self):
         instance, = builtin_from_name(
             self.infer_state, self._compiled_obj.name.string_name).execute_with_values()
         return instance
@@ -49,7 +49,7 @@ def create_simple_object(infer_state, obj):
     return CompiledValue(compiled_obj)
 
 
-def get_string_context_set(infer_state):
+def get_string_value_set(infer_state):
     return builtin_from_name(infer_state, u'str').execute_with_values()
 
 

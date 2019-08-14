@@ -35,11 +35,11 @@ from jedi.inference.arguments import try_iter_content
 from jedi.inference.helpers import get_module_names, infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
 from jedi.inference.names import TreeNameDefinition, ParamName
-from jedi.inference.syntax_tree import tree_name_to_contexts
-from jedi.inference.context import ModuleContext
+from jedi.inference.syntax_tree import tree_name_to_values
+from jedi.inference.value import ModuleContext
 from jedi.inference.base_value import ContextSet
-from jedi.inference.context.iterable import unpack_tuple_to_dict
-from jedi.inference.gradual.conversion import convert_names, convert_contexts
+from jedi.inference.value.iterable import unpack_tuple_to_dict
+from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
@@ -239,16 +239,16 @@ class Script(object):
             if leaf is None:
                 return []
 
-        context = self._infer_state.create_context(self._get_module(), leaf)
+        value = self._infer_state.create_value(self._get_module(), leaf)
 
-        contexts = helpers.infer_goto_definition(self._infer_state, context, leaf)
-        contexts = convert_contexts(
-            contexts,
+        values = helpers.infer_goto_definition(self._infer_state, value, leaf)
+        values = convert_values(
+            values,
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._infer_state, c.name) for c in contexts]
+        defs = [classes.Definition(self._infer_state, c.name) for c in values]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
@@ -299,8 +299,8 @@ class Script(object):
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
             return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
-        context = self._infer_state.create_context(self._get_module(), tree_name)
-        names = list(self._infer_state.goto(context, tree_name))
+        value = self._infer_state.create_value(self._get_module(), tree_name)
+        names = list(self._infer_state.goto(value, tree_name))
 
         if follow_imports:
             names = filter_follow_imports(names, lambda name: name.is_import())
@@ -368,21 +368,21 @@ class Script(object):
         if call_details is None:
             return []
 
-        context = self._infer_state.create_context(
+        value = self._infer_state.create_value(
             self._get_module(),
             call_details.bracket_leaf
         )
         definitions = helpers.cache_call_signatures(
             self._infer_state,
-            context,
+            value,
             call_details.bracket_leaf,
             self._code_lines,
             self._pos
         )
         debug.speed('func_call followed')
 
-        # TODO here we use stubs instead of the actual contexts. We should use
-        # the signatures from stubs, but the actual contexts, probably?!
+        # TODO here we use stubs instead of the actual values. We should use
+        # the signatures from stubs, but the actual values, probably?!
         return [classes.CallSignature(self._infer_state, signature, call_details)
                 for signature in definitions.get_signatures()]
 
@@ -392,26 +392,26 @@ class Script(object):
         module = self._get_module()
         try:
             for node in get_executable_nodes(self._module_node):
-                context = module.create_context(node)
+                value = module.create_value(node)
                 if node.type in ('funcdef', 'classdef'):
                     # Resolve the decorators.
-                    tree_name_to_contexts(self._infer_state, context, node.children[1])
+                    tree_name_to_values(self._infer_state, value, node.children[1])
                 elif isinstance(node, tree.Import):
                     import_names = set(node.get_defined_names())
                     if node.is_nested():
                         import_names |= set(path[-1] for path in node.get_paths())
                     for n in import_names:
-                        imports.infer_import(context, n)
+                        imports.infer_import(value, n)
                 elif node.type == 'expr_stmt':
-                    types = context.infer_node(node)
+                    types = value.infer_node(node)
                     for testlist in node.children[:-1:2]:
                         # Iterate tuples.
-                        unpack_tuple_to_dict(context, types, testlist)
+                        unpack_tuple_to_dict(value, types, testlist)
                 else:
                     if node.type == 'name':
-                        defs = self._infer_state.goto_definitions(context, node)
+                        defs = self._infer_state.goto_definitions(value, node)
                     else:
-                        defs = infer_call_of_leaf(context, node)
+                        defs = infer_call_of_leaf(value, node)
                     try_iter_content(defs)
                 self._infer_state.reset_recursion_limitations()
 
@@ -505,13 +505,13 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         else:
             cls = TreeNameDefinition
         return cls(
-            module_context.create_context(name),
+            module_value.create_value(name),
             name
         )
 
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
-    module_context = script._get_module()
+    module_value = script._get_module()
     defs = [
         classes.Definition(
             script._infer_state,

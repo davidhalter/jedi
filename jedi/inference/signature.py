@@ -33,46 +33,46 @@ class _SignatureMixin(object):
 
 
 class AbstractSignature(_SignatureMixin):
-    def __init__(self, context, is_bound=False):
-        self.context = context
+    def __init__(self, value, is_bound=False):
+        self.value = value
         self.is_bound = is_bound
 
     @property
     def name(self):
-        return self.context.name
+        return self.value.name
 
     @property
     def annotation_string(self):
         return ''
 
     def get_param_names(self, resolve_stars=False):
-        param_names = self._function_context.get_param_names()
+        param_names = self._function_value.get_param_names()
         if self.is_bound:
             return param_names[1:]
         return param_names
 
-    def bind(self, context):
+    def bind(self, value):
         raise NotImplementedError
 
     def __repr__(self):
-        return '<%s: %s, %s>' % (self.__class__.__name__, self.context, self._function_context)
+        return '<%s: %s, %s>' % (self.__class__.__name__, self.value, self._function_value)
 
 
 class TreeSignature(AbstractSignature):
-    def __init__(self, context, function_context=None, is_bound=False):
-        super(TreeSignature, self).__init__(context, is_bound)
-        self._function_context = function_context or context
+    def __init__(self, value, function_value=None, is_bound=False):
+        super(TreeSignature, self).__init__(value, is_bound)
+        self._function_value = function_value or value
 
-    def bind(self, context):
-        return TreeSignature(context, self._function_context, is_bound=True)
+    def bind(self, value):
+        return TreeSignature(value, self._function_value, is_bound=True)
 
     @property
     def _annotation(self):
         # Classes don't need annotations, even if __init__ has one. They always
         # return themselves.
-        if self.context.is_class():
+        if self.value.is_class():
             return None
-        return self._function_context.tree_node.annotation
+        return self._function_value.tree_node.annotation
 
     @property
     def annotation_string(self):
@@ -91,8 +91,8 @@ class TreeSignature(AbstractSignature):
 
 
 class BuiltinSignature(AbstractSignature):
-    def __init__(self, context, return_string, is_bound=False):
-        super(BuiltinSignature, self).__init__(context, is_bound)
+    def __init__(self, value, return_string, is_bound=False):
+        super(BuiltinSignature, self).__init__(value, is_bound)
         self._return_string = return_string
 
     @property
@@ -100,12 +100,12 @@ class BuiltinSignature(AbstractSignature):
         return self._return_string
 
     @property
-    def _function_context(self):
-        return self.context
+    def _function_value(self):
+        return self.value
 
-    def bind(self, context):
+    def bind(self, value):
         assert not self.is_bound
-        return BuiltinSignature(context, self._return_string, is_bound=True)
+        return BuiltinSignature(value, self._return_string, is_bound=True)
 
 
 class SignatureWrapper(_SignatureMixin):

@@ -9,28 +9,28 @@ from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.inference.base_value import ContextSet, NO_CONTEXTS, ContextualizedNode, \
-    ContextualizedName, iterator_to_context_set, iterate_contexts
-from jedi.inference.lazy_context import LazyTreeContext
+    ContextualizedName, iterator_to_value_set, iterate_values
+from jedi.inference.lazy_value import LazyTreeContext
 from jedi.inference import compiled
 from jedi.inference import recursion
 from jedi.inference import helpers
 from jedi.inference import analysis
 from jedi.inference import imports
 from jedi.inference import arguments
-from jedi.inference.context import ClassContext, FunctionContext
-from jedi.inference.context import iterable
-from jedi.inference.context import TreeInstance
+from jedi.inference.value import ClassContext, FunctionContext
+from jedi.inference.value import iterable
+from jedi.inference.value import TreeInstance
 from jedi.inference.finder import NameFinder
 from jedi.inference.helpers import is_string, is_literal, is_number
 from jedi.inference.compiled.access import COMPARISON_OPERATORS
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.gradual.stub_context import VersionInfo
+from jedi.inference.gradual.stub_value import VersionInfo
 from jedi.inference.gradual import annotation
-from jedi.inference.context.decorator import Decoratee
+from jedi.inference.value.decorator import Decoratee
 from jedi.plugins import plugin_manager
 
 
-def _limit_context_infers(func):
+def _limit_value_infers(func):
     """
     This is for now the way how we limit type inference going wild. There are
     other ways to ensure recursion limits as well. This is mostly necessary
@@ -39,17 +39,17 @@ def _limit_context_infers(func):
     I'm still not sure this is the way to go, but it looks okay for now and we
     can still go anther way in the future. Tests are there. ~ dave
     """
-    def wrapper(context, *args, **kwargs):
-        n = context.tree_node
-        infer_state = context.infer_state
+    def wrapper(value, *args, **kwargs):
+        n = value.tree_node
+        infer_state = value.infer_state
         try:
             infer_state.inferred_element_counts[n] += 1
             if infer_state.inferred_element_counts[n] > 300:
-                debug.warning('In context %s there were too many inferences.', n)
+                debug.warning('In value %s there were too many inferences.', n)
                 return NO_CONTEXTS
         except KeyError:
             infer_state.inferred_element_counts[n] = 1
-        return func(context, *args, **kwargs)
+        return func(value, *args, **kwargs)
 
     return wrapper
 
@@ -67,17 +67,17 @@ def _py__stop_iteration_returns(generators):
 
 
 @debug.increase_indent
-@_limit_context_infers
-def infer_node(context, element):
-    debug.dbg('infer_node %s@%s in %s', element, element.start_pos, context)
-    infer_state = context.infer_state
+@_limit_value_infers
+def infer_node(value, element):
+    debug.dbg('infer_node %s@%s in %s', element, element.start_pos, value)
+    infer_state = value.infer_state
     typ = element.type
     if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword', 'fstring'):
-        return infer_atom(context, element)
+        return infer_atom(value, element)
     elif typ == 'lambdef':
-        return ContextSet([FunctionContext.from_context(context, element)])
+        return ContextSet([FunctionContext.from_value(value, element)])
     elif typ == 'expr_stmt':
-        return infer_expr_stmt(context, element)
+        return infer_expr_stmt(value, element)
     elif typ in ('power', 'atom_expr'):
         first_child = element.children[0]
         children = element.children[1:]
@@ -86,35 +86,35 @@ def infer_node(context, element):
             had_await = True
             first_child = children.pop(0)
 
-        context_set = context.infer_node(first_child)
+        value_set = value.infer_node(first_child)
         for (i, trailer) in enumerate(children):
             if trailer == '**':  # has a power operation.
-                right = context.infer_node(children[i + 1])
-                context_set = _infer_comparison(
+                right = value.infer_node(children[i + 1])
+                value_set = _infer_comparison(
                     infer_state,
-                    context,
-                    context_set,
+                    value,
+                    value_set,
                     trailer,
                     right
                 )
                 break
-            context_set = infer_trailer(context, context_set, trailer)
+            value_set = infer_trailer(value, value_set, trailer)
 
         if had_await:
-            return context_set.py__await__().py__stop_iteration_returns()
-        return context_set
+            return value_set.py__await__().py__stop_iteration_returns()
+        return value_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
-        return ContextSet([iterable.SequenceLiteralContext(infer_state, context, element)])
+        return ContextSet([iterable.SequenceLiteralContext(infer_state, value, element)])
     elif typ in ('not_test', 'factor'):
-        context_set = context.infer_node(element.children[-1])
+        value_set = value.infer_node(element.children[-1])
         for operator in element.children[:-1]:
-            context_set = infer_factor(context_set, operator)
-        return context_set
+            value_set = infer_factor(value_set, operator)
+        return value_set
     elif typ == 'test':
         # `x if foo else y` case.
-        return (context.infer_node(element.children[0]) |
-                context.infer_node(element.children[-1]))
+        return (value.infer_node(element.children[0]) |
+                value.infer_node(element.children[-1]))
     elif typ == 'operator':
         # Must be an ellipsis, other operators are not inferred.
         # In Python 2 ellipsis is coded as three single dot tokens, not
@@ -124,57 +124,57 @@ def infer_node(context, element):
             raise AssertionError("unhandled operator %s in %s " % (repr(element.value), origin))
         return ContextSet([compiled.builtin_from_name(infer_state, u'Ellipsis')])
     elif typ == 'dotted_name':
-        context_set = infer_atom(context, element.children[0])
+        value_set = infer_atom(value, element.children[0])
         for next_name in element.children[2::2]:
             # TODO add search_global=True?
-            context_set = context_set.py__getattribute__(next_name, name_context=context)
-        return context_set
+            value_set = value_set.py__getattribute__(next_name, name_value=value)
+        return value_set
     elif typ == 'eval_input':
-        return infer_node(context, element.children[0])
+        return infer_node(value, element.children[0])
     elif typ == 'annassign':
-        return annotation.infer_annotation(context, element.children[1]) \
+        return annotation.infer_annotation(value, element.children[1]) \
             .execute_annotation()
     elif typ == 'yield_expr':
         if len(element.children) and element.children[1].type == 'yield_arg':
             # Implies that it's a yield from.
             element = element.children[1].children[1]
-            generators = context.infer_node(element) \
+            generators = value.infer_node(element) \
                 .py__getattribute__('__iter__').execute_with_values()
             return generators.py__stop_iteration_returns()
 
         # Generator.send() is not implemented.
         return NO_CONTEXTS
     elif typ == 'namedexpr_test':
-        return infer_node(context, element.children[2])
+        return infer_node(value, element.children[2])
     else:
-        return infer_or_test(context, element)
+        return infer_or_test(value, element)
 
 
-def infer_trailer(context, atom_contexts, trailer):
+def infer_trailer(value, atom_values, trailer):
     trailer_op, node = trailer.children[:2]
     if node == ')':  # `arglist` is optional.
         node = None
 
     if trailer_op == '[':
         trailer_op, node, _ = trailer.children
-        return atom_contexts.get_item(
-            infer_subscript_list(context.infer_state, context, node),
-            ContextualizedNode(context, trailer)
+        return atom_values.get_item(
+            infer_subscript_list(value.infer_state, value, node),
+            ContextualizedNode(value, trailer)
         )
     else:
-        debug.dbg('infer_trailer: %s in %s', trailer, atom_contexts)
+        debug.dbg('infer_trailer: %s in %s', trailer, atom_values)
         if trailer_op == '.':
-            return atom_contexts.py__getattribute__(
-                name_context=context,
+            return atom_values.py__getattribute__(
+                name_value=value,
                 name_or_str=node
             )
         else:
             assert trailer_op == '(', 'trailer_op is actually %s' % trailer_op
-            args = arguments.TreeArguments(context.infer_state, context, node, trailer)
-            return atom_contexts.execute(args)
+            args = arguments.TreeArguments(value.infer_state, value, node, trailer)
+            return atom_values.execute(args)
 
 
-def infer_atom(context, atom):
+def infer_atom(value, atom):
     """
     Basically to process ``atom`` nodes. The parser sometimes doesn't
     generate the node (because it has just one child). In that case an atom
@@ -183,7 +183,7 @@ def infer_atom(context, atom):
     if atom.type == 'name':
         if atom.value in ('True', 'False', 'None'):
             # Python 2...
-            return ContextSet([compiled.builtin_from_name(context.infer_state, atom.value)])
+            return ContextSet([compiled.builtin_from_name(value.infer_state, atom.value)])
 
         # This is the first global lookup.
         stmt = tree.search_ancestor(
@@ -199,7 +199,7 @@ def infer_atom(context, atom):
             # position to None, so the finder will not try to stop at a certain
             # position in the module.
             position = None
-        return context.py__getattribute__(
+        return value.py__getattribute__(
             name_or_str=atom,
             position=position,
             search_global=True
@@ -207,7 +207,7 @@ def infer_atom(context, atom):
     elif atom.type == 'keyword':
         # For False/True/None
         if atom.value in ('False', 'True', 'None'):
-            return ContextSet([compiled.builtin_from_name(context.infer_state, atom.value)])
+            return ContextSet([compiled.builtin_from_name(value.infer_state, atom.value)])
         elif atom.value == 'print':
             # print e.g. could be inferred like this in Python 2.7
             return NO_CONTEXTS
@@ -218,24 +218,24 @@ def infer_atom(context, atom):
         assert False, 'Cannot infer the keyword %s' % atom
 
     elif isinstance(atom, tree.Literal):
-        string = context.infer_state.compiled_subprocess.safe_literal_eval(atom.value)
-        return ContextSet([compiled.create_simple_object(context.infer_state, string)])
+        string = value.infer_state.compiled_subprocess.safe_literal_eval(atom.value)
+        return ContextSet([compiled.create_simple_object(value.infer_state, string)])
     elif atom.type == 'strings':
         # Will be multiple string.
-        context_set = infer_atom(context, atom.children[0])
+        value_set = infer_atom(value, atom.children[0])
         for string in atom.children[1:]:
-            right = infer_atom(context, string)
-            context_set = _infer_comparison(context.infer_state, context, context_set, u'+', right)
-        return context_set
+            right = infer_atom(value, string)
+            value_set = _infer_comparison(value.infer_state, value, value_set, u'+', right)
+        return value_set
     elif atom.type == 'fstring':
-        return compiled.get_string_context_set(context.infer_state)
+        return compiled.get_string_value_set(value.infer_state)
     else:
         c = atom.children
         # Parentheses without commas are not tuples.
         if c[0] == '(' and not len(c) == 2 \
                 and not(c[1].type == 'testlist_comp' and
                         len(c[1].children) > 1):
-            return context.infer_node(c[1])
+            return value.infer_node(c[1])
 
         try:
             comp_for = c[1].children[1]
@@ -251,7 +251,7 @@ def infer_atom(context, atom):
 
             if comp_for.type in ('comp_for', 'sync_comp_for'):
                 return ContextSet([iterable.comprehension_from_atom(
-                    context.infer_state, context, atom
+                    value.infer_state, value, atom
                 )])
 
         # It's a dict/list/tuple literal.
@@ -262,36 +262,36 @@ def infer_atom(context, atom):
             array_node_c = []
         if c[0] == '{' and (array_node == '}' or ':' in array_node_c or
                             '**' in array_node_c):
-            context = iterable.DictLiteralContext(context.infer_state, context, atom)
+            new_value = iterable.DictLiteralContext(value.infer_state, value, atom)
         else:
-            context = iterable.SequenceLiteralContext(context.infer_state, context, atom)
-        return ContextSet([context])
+            new_value = iterable.SequenceLiteralContext(value.infer_state, value, atom)
+        return ContextSet([new_value])
 
 
-@_limit_context_infers
-def infer_expr_stmt(context, stmt, seek_name=None):
-    with recursion.execution_allowed(context.infer_state, stmt) as allowed:
+@_limit_value_infers
+def infer_expr_stmt(value, stmt, seek_name=None):
+    with recursion.execution_allowed(value.infer_state, stmt) as allowed:
         # Here we allow list/set to recurse under certain conditions. To make
         # it possible to resolve stuff like list(set(list(x))), this is
         # necessary.
-        if not allowed and context.get_root_context() == context.infer_state.builtins_module:
+        if not allowed and value.get_root_value() == value.infer_state.builtins_module:
             try:
-                instance = context.var_args.instance
+                instance = value.var_args.instance
             except AttributeError:
                 pass
             else:
                 if instance.name.string_name in ('list', 'set'):
-                    c = instance.get_first_non_keyword_argument_contexts()
+                    c = instance.get_first_non_keyword_argument_values()
                     if instance not in c:
                         allowed = True
 
         if allowed:
-            return _infer_expr_stmt(context, stmt, seek_name)
+            return _infer_expr_stmt(value, stmt, seek_name)
     return NO_CONTEXTS
 
 
 @debug.increase_indent
-def _infer_expr_stmt(context, stmt, seek_name=None):
+def _infer_expr_stmt(value, stmt, seek_name=None):
     """
     The starting point of the completion. A statement always owns a call
     list, which are the calls, that a statement does. In case multiple
@@ -302,11 +302,11 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
     """
     debug.dbg('infer_expr_stmt %s (%s)', stmt, seek_name)
     rhs = stmt.get_rhs()
-    context_set = context.infer_node(rhs)
+    value_set = value.infer_node(rhs)
 
     if seek_name:
-        c_node = ContextualizedName(context, seek_name)
-        context_set = check_tuple_assignments(context.infer_state, c_node, context_set)
+        c_node = ContextualizedName(value, seek_name)
+        value_set = check_tuple_assignments(value.infer_state, c_node, value_set)
 
     first_operator = next(stmt.yield_operators(), None)
     if first_operator not in ('=', None) and first_operator.type == 'operator':
@@ -314,34 +314,34 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
         operator = copy.copy(first_operator)
         operator.value = operator.value[:-1]
         name = stmt.get_defined_names()[0].value
-        left = context.py__getattribute__(
+        left = value.py__getattribute__(
             name, position=stmt.start_pos, search_global=True)
 
         for_stmt = tree.search_ancestor(stmt, 'for_stmt')
-        if for_stmt is not None and for_stmt.type == 'for_stmt' and context_set \
+        if for_stmt is not None and for_stmt.type == 'for_stmt' and value_set \
                 and parser_utils.for_stmt_defines_one_name(for_stmt):
             # Iterate through result and add the values, that's possible
             # only in for loops without clutter, because they are
             # predictable. Also only do it, if the variable is not a tuple.
             node = for_stmt.get_testlist()
-            cn = ContextualizedNode(context, node)
+            cn = ContextualizedNode(value, node)
             ordered = list(cn.infer().iterate(cn))
 
-            for lazy_context in ordered:
-                dct = {for_stmt.children[1].value: lazy_context.infer()}
-                with helpers.predefine_names(context, for_stmt, dct):
-                    t = context.infer_node(rhs)
-                    left = _infer_comparison(context.infer_state, context, left, operator, t)
-            context_set = left
+            for lazy_value in ordered:
+                dct = {for_stmt.children[1].value: lazy_value.infer()}
+                with helpers.predefine_names(value, for_stmt, dct):
+                    t = value.infer_node(rhs)
+                    left = _infer_comparison(value.infer_state, value, left, operator, t)
+            value_set = left
         else:
-            context_set = _infer_comparison(context.infer_state, context, left, operator, context_set)
-    debug.dbg('infer_expr_stmt result %s', context_set)
-    return context_set
+            value_set = _infer_comparison(value.infer_state, value, left, operator, value_set)
+    debug.dbg('infer_expr_stmt result %s', value_set)
+    return value_set
 
 
-def infer_or_test(context, or_test):
+def infer_or_test(value, or_test):
     iterator = iter(or_test.children)
-    types = context.infer_node(next(iterator))
+    types = value.infer_node(next(iterator))
     for operator in iterator:
         right = next(iterator)
         if operator.type == 'comp_op':  # not in / is not
@@ -352,34 +352,34 @@ def infer_or_test(context, or_test):
             left_bools = set(left.py__bool__() for left in types)
             if left_bools == {True}:
                 if operator == 'and':
-                    types = context.infer_node(right)
+                    types = value.infer_node(right)
             elif left_bools == {False}:
                 if operator != 'and':
-                    types = context.infer_node(right)
+                    types = value.infer_node(right)
             # Otherwise continue, because of uncertainty.
         else:
-            types = _infer_comparison(context.infer_state, context, types, operator,
-                                     context.infer_node(right))
+            types = _infer_comparison(value.infer_state, value, types, operator,
+                                     value.infer_node(right))
     debug.dbg('infer_or_test types %s', types)
     return types
 
 
-@iterator_to_context_set
-def infer_factor(context_set, operator):
+@iterator_to_value_set
+def infer_factor(value_set, operator):
     """
     Calculates `+`, `-`, `~` and `not` prefixes.
     """
-    for context in context_set:
+    for value in value_set:
         if operator == '-':
-            if is_number(context):
-                yield context.negate()
+            if is_number(value):
+                yield value.negate()
         elif operator == 'not':
-            value = context.py__bool__()
-            if value is None:  # Uncertainty.
+            b = value.py__bool__()
+            if b is None:  # Uncertainty.
                 return
-            yield compiled.create_simple_object(context.infer_state, not value)
+            yield compiled.create_simple_object(value.infer_state, not b)
         else:
-            yield context
+            yield value
 
 
 def _literals_to_types(infer_state, result):
@@ -397,22 +397,22 @@ def _literals_to_types(infer_state, result):
     return new_result
 
 
-def _infer_comparison(infer_state, context, left_contexts, operator, right_contexts):
-    if not left_contexts or not right_contexts:
+def _infer_comparison(infer_state, value, left_values, operator, right_values):
+    if not left_values or not right_values:
         # illegal slices e.g. cause left/right_result to be None
-        result = (left_contexts or NO_CONTEXTS) | (right_contexts or NO_CONTEXTS)
+        result = (left_values or NO_CONTEXTS) | (right_values or NO_CONTEXTS)
         return _literals_to_types(infer_state, result)
     else:
         # I don't think there's a reasonable chance that a string
         # operation is still correct, once we pass something like six
         # objects.
-        if len(left_contexts) * len(right_contexts) > 6:
-            return _literals_to_types(infer_state, left_contexts | right_contexts)
+        if len(left_values) * len(right_values) > 6:
+            return _literals_to_types(infer_state, left_values | right_values)
         else:
             return ContextSet.from_sets(
-                _infer_comparison_part(infer_state, context, left, operator, right)
-                for left in left_contexts
-                for right in right_contexts
+                _infer_comparison_part(infer_state, value, left, operator, right)
+                for left in left_values
+                for right in right_values
             )
 
 
@@ -432,26 +432,26 @@ def _is_annotation_name(name):
     return False
 
 
-def _is_tuple(context):
-    return isinstance(context, iterable.Sequence) and context.array_type == 'tuple'
+def _is_tuple(value):
+    return isinstance(value, iterable.Sequence) and value.array_type == 'tuple'
 
 
-def _is_list(context):
-    return isinstance(context, iterable.Sequence) and context.array_type == 'list'
+def _is_list(value):
+    return isinstance(value, iterable.Sequence) and value.array_type == 'list'
 
 
-def _bool_to_context(infer_state, bool_):
+def _bool_to_value(infer_state, bool_):
     return compiled.builtin_from_name(infer_state, force_unicode(str(bool_)))
 
 
-def _get_tuple_ints(context):
-    if not isinstance(context, iterable.SequenceLiteralContext):
+def _get_tuple_ints(value):
+    if not isinstance(value, iterable.SequenceLiteralContext):
         return None
     numbers = []
-    for lazy_context in context.py__iter__():
-        if not isinstance(lazy_context, LazyTreeContext):
+    for lazy_value in value.py__iter__():
+        if not isinstance(lazy_value, LazyTreeContext):
             return None
-        node = lazy_context.data
+        node = lazy_value.data
         if node.type != 'number':
             return None
         try:
@@ -461,7 +461,7 @@ def _get_tuple_ints(context):
     return numbers
 
 
-def _infer_comparison_part(infer_state, context, left, operator, right):
+def _infer_comparison_part(infer_state, value, left, operator, right):
     l_is_num = is_number(left)
     r_is_num = is_number(right)
     if isinstance(operator, unicode):
@@ -499,7 +499,7 @@ def _infer_comparison_part(infer_state, context, left, operator, right):
             if str_operator in ('is', '!=', '==', 'is not'):
                 operation = COMPARISON_OPERATORS[str_operator]
                 bool_ = operation(left, right)
-                return ContextSet([_bool_to_context(infer_state, bool_)])
+                return ContextSet([_bool_to_value(infer_state, bool_)])
 
             if isinstance(left, VersionInfo):
                 version_info = _get_tuple_ints(right)
@@ -508,9 +508,9 @@ def _infer_comparison_part(infer_state, context, left, operator, right):
                         infer_state.environment.version_info,
                         tuple(version_info)
                     )
-                    return ContextSet([_bool_to_context(infer_state, bool_result)])
+                    return ContextSet([_bool_to_value(infer_state, bool_result)])
 
-        return ContextSet([_bool_to_context(infer_state, True), _bool_to_context(infer_state, False)])
+        return ContextSet([_bool_to_value(infer_state, True), _bool_to_value(infer_state, False)])
     elif str_operator == 'in':
         return NO_CONTEXTS
 
@@ -523,7 +523,7 @@ def _infer_comparison_part(infer_state, context, left, operator, right):
     if str_operator in ('+', '-') and l_is_num != r_is_num \
             and not (check(left) or check(right)):
         message = "TypeError: unsupported operand type(s) for +: %s and %s"
-        analysis.add(context, 'type-error-operation', operator,
+        analysis.add(value, 'type-error-operation', operator,
                      message % (left, right))
 
     result = ContextSet([left, right])
@@ -531,25 +531,25 @@ def _infer_comparison_part(infer_state, context, left, operator, right):
     return result
 
 
-def _remove_statements(infer_state, context, stmt, name):
+def _remove_statements(infer_state, value, stmt, name):
     """
     This is the part where statements are being stripped.
 
     Due to lazy type inference, statements like a = func; b = a; b() have to be
     inferred.
     """
-    pep0484_contexts = \
-        annotation.find_type_from_comment_hint_assign(context, stmt, name)
-    if pep0484_contexts:
-        return pep0484_contexts
+    pep0484_values = \
+        annotation.find_type_from_comment_hint_assign(value, stmt, name)
+    if pep0484_values:
+        return pep0484_values
 
-    return infer_expr_stmt(context, stmt, seek_name=name)
+    return infer_expr_stmt(value, stmt, seek_name=name)
 
 
 @plugin_manager.decorate()
-def tree_name_to_contexts(infer_state, context, tree_name):
-    context_set = NO_CONTEXTS
-    module_node = context.get_root_context().tree_node
+def tree_name_to_values(infer_state, value, tree_name):
+    value_set = NO_CONTEXTS
+    module_node = value.get_root_value().tree_node
     # First check for annotations, like: `foo: int = 3`
     if module_node is not None:
         names = module_node.get_used_names().get(tree_name.value, [])
@@ -557,67 +557,67 @@ def tree_name_to_contexts(infer_state, context, tree_name):
             expr_stmt = name.parent
 
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
-                correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
+                correct_scope = parser_utils.get_parent_scope(name) == value.tree_node
                 if correct_scope:
-                    context_set |= annotation.infer_annotation(
-                        context, expr_stmt.children[1].children[1]
+                    value_set |= annotation.infer_annotation(
+                        value, expr_stmt.children[1].children[1]
                     ).execute_annotation()
-        if context_set:
-            return context_set
+        if value_set:
+            return value_set
 
     types = []
     node = tree_name.get_definition(import_name_always=True)
     if node is None:
         node = tree_name.parent
         if node.type == 'global_stmt':
-            context = infer_state.create_context(context, tree_name)
-            finder = NameFinder(infer_state, context, context, tree_name.value)
+            value = infer_state.create_value(value, tree_name)
+            finder = NameFinder(infer_state, value, value, tree_name.value)
             filters = finder.get_filters(search_global=True)
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             filters = [next(filters)]
             return finder.find(filters, attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
-            context = infer_state.create_context(context, tree_name)
-            return infer_atom(context, tree_name)
+            value = infer_state.create_value(value, tree_name)
+            return infer_atom(value, tree_name)
 
     typ = node.type
     if typ == 'for_stmt':
-        types = annotation.find_type_from_comment_hint_for(context, node, tree_name)
+        types = annotation.find_type_from_comment_hint_for(value, node, tree_name)
         if types:
             return types
     if typ == 'with_stmt':
-        types = annotation.find_type_from_comment_hint_with(context, node, tree_name)
+        types = annotation.find_type_from_comment_hint_with(value, node, tree_name)
         if types:
             return types
 
     if typ in ('for_stmt', 'comp_for', 'sync_comp_for'):
         try:
-            types = context.predefined_names[node][tree_name.value]
+            types = value.predefined_names[node][tree_name.value]
         except KeyError:
-            cn = ContextualizedNode(context, node.children[3])
-            for_types = iterate_contexts(
+            cn = ContextualizedNode(value, node.children[3])
+            for_types = iterate_values(
                 cn.infer(),
-                contextualized_node=cn,
+                valueualized_node=cn,
                 is_async=node.parent.type == 'async_stmt',
             )
-            c_node = ContextualizedName(context, tree_name)
+            c_node = ContextualizedName(value, tree_name)
             types = check_tuple_assignments(infer_state, c_node, for_types)
     elif typ == 'expr_stmt':
-        types = _remove_statements(infer_state, context, node, tree_name)
+        types = _remove_statements(infer_state, value, node, tree_name)
     elif typ == 'with_stmt':
-        context_managers = context.infer_node(node.get_test_node_from_name(tree_name))
-        enter_methods = context_managers.py__getattribute__(u'__enter__')
+        value_managers = value.infer_node(node.get_test_node_from_name(tree_name))
+        enter_methods = value_managers.py__getattribute__(u'__enter__')
         return enter_methods.execute_with_values()
     elif typ in ('import_from', 'import_name'):
-        types = imports.infer_import(context, tree_name)
+        types = imports.infer_import(value, tree_name)
     elif typ in ('funcdef', 'classdef'):
-        types = _apply_decorators(context, node)
+        types = _apply_decorators(value, node)
     elif typ == 'try_stmt':
         # TODO an exception can also be a tuple. Check for those.
         # TODO check for types that are not classes and add it to
         # the static analysis report.
-        exceptions = context.infer_node(tree_name.get_previous_sibling().get_previous_sibling())
+        exceptions = value.infer_node(tree_name.get_previous_sibling().get_previous_sibling())
         types = exceptions.execute_with_values()
     elif node.type == 'param':
         types = NO_CONTEXTS
@@ -629,30 +629,30 @@ def tree_name_to_contexts(infer_state, context, tree_name):
 # We don't want to have functions/classes that are created by the same
 # tree_node.
 @infer_state_method_cache()
-def _apply_decorators(context, node):
+def _apply_decorators(value, node):
     """
     Returns the function, that should to be executed in the end.
     This is also the places where the decorators are processed.
     """
     if node.type == 'classdef':
-        decoratee_context = ClassContext(
-            context.infer_state,
-            parent_context=context,
+        decoratee_value = ClassContext(
+            value.infer_state,
+            parent_value=value,
             tree_node=node
         )
     else:
-        decoratee_context = FunctionContext.from_context(context, node)
-    initial = values = ContextSet([decoratee_context])
+        decoratee_value = FunctionContext.from_value(value, node)
+    initial = values = ContextSet([decoratee_value])
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values, color="MAGENTA")
         with debug.increase_indent_cm():
-            dec_values = context.infer_node(dec.children[1])
+            dec_values = value.infer_node(dec.children[1])
             trailer_nodes = dec.children[2:-1]
             if trailer_nodes:
                 # Create a trailer and infer it.
                 trailer = tree.PythonNode('trailer', trailer_nodes)
                 trailer.parent = dec
-                dec_values = infer_trailer(context, dec_values, trailer)
+                dec_values = infer_trailer(value, dec_values, trailer)
 
             if not len(dec_values):
                 code = dec.get_code(include_prefix=False)
@@ -670,41 +670,41 @@ def _apply_decorators(context, node):
 
         debug.dbg('decorator end %s', values, color="MAGENTA")
     if values != initial:
-        return ContextSet([Decoratee(c, decoratee_context) for c in values])
+        return ContextSet([Decoratee(c, decoratee_value) for c in values])
     return values
 
 
-def check_tuple_assignments(infer_state, contextualized_name, context_set):
+def check_tuple_assignments(infer_state, valueualized_name, value_set):
     """
     Checks if tuples are assigned.
     """
-    lazy_context = None
-    for index, node in contextualized_name.assignment_indexes():
-        cn = ContextualizedNode(contextualized_name.context, node)
-        iterated = context_set.iterate(cn)
+    lazy_value = None
+    for index, node in valueualized_name.assignment_indexes():
+        cn = ContextualizedNode(valueualized_name.value, node)
+        iterated = value_set.iterate(cn)
         if isinstance(index, slice):
             # For no star unpacking is not possible.
             return NO_CONTEXTS
         for _ in range(index + 1):
             try:
-                lazy_context = next(iterated)
+                lazy_value = next(iterated)
             except StopIteration:
                 # We could do this with the default param in next. But this
                 # would allow this loop to run for a very long time if the
                 # index number is high. Therefore break if the loop is
                 # finished.
                 return NO_CONTEXTS
-        context_set = lazy_context.infer()
-    return context_set
+        value_set = lazy_value.infer()
+    return value_set
 
 
-def infer_subscript_list(infer_state, context, index):
+def infer_subscript_list(infer_state, value, index):
     """
     Handles slices in subscript nodes.
     """
     if index == ':':
         # Like array[:]
-        return ContextSet([iterable.Slice(context, None, None, None)])
+        return ContextSet([iterable.Slice(value, None, None, None)])
 
     elif index.type == 'subscript' and not index.children[0] == '.':
         # subscript basically implies a slice operation, except for Python 2's
@@ -722,9 +722,9 @@ def infer_subscript_list(infer_state, context, index):
                 result.append(el)
         result += [None] * (3 - len(result))
 
-        return ContextSet([iterable.Slice(context, *result)])
+        return ContextSet([iterable.Slice(value, *result)])
     elif index.type == 'subscriptlist':
-        return ContextSet([iterable.SequenceLiteralContext(infer_state, context, index)])
+        return ContextSet([iterable.SequenceLiteralContext(infer_state, value, index)])
 
     # No slices
-    return context.infer_node(index)
+    return value.infer_node(index)

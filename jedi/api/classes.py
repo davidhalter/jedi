@@ -14,9 +14,9 @@ from jedi.cache import memoize_method
 from jedi.inference import imports
 from jedi.inference import compiled
 from jedi.inference.imports import ImportName
-from jedi.inference.context import FunctionExecutionContext
+from jedi.inference.value import FunctionExecutionContext
 from jedi.inference.gradual.typeshed import StubModuleContext
-from jedi.inference.gradual.conversion import convert_names, convert_contexts
+from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ContextSet
 from jedi.api.keywords import KeywordName
 
@@ -25,20 +25,20 @@ def _sort_names_by_start_pos(names):
     return sorted(names, key=lambda s: s.start_pos or (0, 0))
 
 
-def defined_names(infer_state, context):
+def defined_names(infer_state, value):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Definition
     """
-    filter = next(context.get_filters(search_global=True))
+    filter = next(value.get_filters(search_global=True))
     names = [name for name in filter.values()]
     return [Definition(infer_state, n) for n in _sort_names_by_start_pos(names)]
 
 
-def _contexts_to_definitions(contexts):
-    return [Definition(c.infer_state, c.name) for c in contexts]
+def _values_to_definitions(values):
+    return [Definition(c.infer_state, c.name) for c in values]
 
 
 class BaseDefinition(object):
@@ -75,7 +75,7 @@ class BaseDefinition(object):
         # This can take a while to complete, because in the worst case of
         # imports (consider `import a` completions), we need to load all
         # modules starting with a first.
-        return self._name.get_root_context()
+        return self._name.get_root_value()
 
     @property
     def module_path(self):
@@ -167,8 +167,8 @@ class BaseDefinition(object):
                 resolve = True
 
         if isinstance(self._name, imports.SubModuleName) or resolve:
-            for context in self._name.infer():
-                return context.api_type
+            for value in self._name.infer():
+                return value.api_type
         return self._name.api_type
 
     @property
@@ -188,8 +188,8 @@ class BaseDefinition(object):
     def in_builtin_module(self):
         """Whether this is a builtin module."""
         if isinstance(self._get_module(), StubModuleContext):
-            return any(isinstance(context, compiled.CompiledObject)
-                       for context in self._get_module().non_stub_context_set)
+            return any(isinstance(value, compiled.CompiledObject)
+                       for value in self._get_module().non_stub_value_set)
         return isinstance(self._get_module(), compiled.CompiledObject)
 
     @property
@@ -270,7 +270,7 @@ class BaseDefinition(object):
         be ``<module 'posixpath' ...>```. However most users find the latter
         more practical.
         """
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return None
 
         names = self._name.get_qualified_names(include_module_names=True)
@@ -286,10 +286,10 @@ class BaseDefinition(object):
         return '.'.join(names)
 
     def is_stub(self):
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return False
 
-        return self._name.get_root_context().is_stub()
+        return self._name.get_root_value().is_stub()
 
     def goto_assignments(self, **kwargs):  # Python 2...
         with debug.increase_indent_cm('goto for %s' % self._name):
@@ -298,7 +298,7 @@ class BaseDefinition(object):
     def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return []
 
         names = convert_names(
@@ -316,19 +316,19 @@ class BaseDefinition(object):
     def _infer(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return []
 
         # First we need to make sure that we have stub names (if possible) that
         # we can follow. If we don't do that, we can end up with the inferred
         # results of Python objects instead of stubs.
         names = convert_names([self._name], prefer_stubs=True)
-        contexts = convert_contexts(
+        values = convert_values(
             ContextSet.from_sets(n.infer() for n in names),
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
-        resulting_names = [c.name for c in contexts]
+        resulting_names = [c.name for c in values]
         return [self if n == self._name else Definition(self._infer_state, n)
                 for n in resulting_names]
 
@@ -343,8 +343,8 @@ class BaseDefinition(object):
         """
         # Only return the first one. There might be multiple one, especially
         # with overloading.
-        for context in self._name.infer():
-            for signature in context.get_signatures():
+        for value in self._name.infer():
+            for signature in value.get_signatures():
                 return [
                     Definition(self._infer_state, n)
                     for n in signature.get_param_names(resolve_stars=True)
@@ -357,16 +357,16 @@ class BaseDefinition(object):
         raise AttributeError('There are no params defined on this.')
 
     def parent(self):
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return None
 
-        context = self._name.parent_context
-        if context is None:
+        value = self._name.parent_value
+        if value is None:
             return None
 
-        if isinstance(context, FunctionExecutionContext):
-            context = context.function_context
-        return Definition(self._infer_state, context.name)
+        if isinstance(value, FunctionExecutionContext):
+            value = value.function_value
+        return Definition(self._infer_state, value.name)
 
     def __repr__(self):
         return "<%s %sname=%r, description=%r>" % (
@@ -386,10 +386,10 @@ class BaseDefinition(object):
         :return str: Returns the line(s) of code or an empty string if it's a
                      builtin.
         """
-        if not self._name.is_context_name or self.in_builtin_module():
+        if not self._name.is_value_name or self.in_builtin_module():
             return ''
 
-        lines = self._name.get_root_context().code_lines
+        lines = self._name.get_root_value().code_lines
 
         index = self._name.start_pos[0] - 1
         start_index = max(index - before, 0)
@@ -399,7 +399,7 @@ class BaseDefinition(object):
         return [Signature(self._infer_state, s) for s in self._name.infer().get_signatures()]
 
     def execute(self):
-        return _contexts_to_definitions(self._name.infer().execute_with_values())
+        return _values_to_definitions(self._name.infer().execute_with_values())
 
 
 class Completion(BaseDefinition):
@@ -680,7 +680,7 @@ class ParamDefinition(Definition):
         """
         :return list of Definition:
         """
-        return _contexts_to_definitions(self._name.infer_default())
+        return _values_to_definitions(self._name.infer_default())
 
     def infer_annotation(self, **kwargs):
         """
@@ -689,7 +689,7 @@ class ParamDefinition(Definition):
         :param execute_annotation: If False, the values are not executed and
             you get classes instead of instances.
         """
-        return _contexts_to_definitions(self._name.infer_annotation(**kwargs))
+        return _values_to_definitions(self._name.infer_annotation(**kwargs))
 
     def to_string(self):
         return self._name.to_string()
@@ -709,10 +709,10 @@ class ParamDefinition(Definition):
         return self._name.get_kind()
 
 
-def _format_signatures(context):
+def _format_signatures(value):
     return '\n'.join(
         signature.to_string()
-        for signature in context.get_signatures()
+        for signature in value.get_signatures()
     )
 
 
@@ -725,7 +725,7 @@ class _Help(object):
         self._name = definition
 
     @memoize_method
-    def _get_contexts(self, fast):
+    def _get_values(self, fast):
         if isinstance(self._name, ImportName) and fast:
             return {}
 
@@ -742,20 +742,20 @@ class _Help(object):
         """
         full_doc = ''
         # Using the first docstring that we see.
-        for context in self._get_contexts(fast=fast):
+        for value in self._get_values(fast=fast):
             if full_doc:
-                # In case we have multiple contexts, just return all of them
+                # In case we have multiple values, just return all of them
                 # separated by a few dashes.
                 full_doc += '\n' + '-' * 30 + '\n'
 
-            doc = context.py__doc__()
+            doc = value.py__doc__()
 
             signature_text = ''
-            if self._name.is_context_name:
+            if self._name.is_value_name:
                 if not raw:
-                    signature_text = _format_signatures(context)
-                if not doc and context.is_stub():
-                    for c in convert_contexts(ContextSet({context}), ignore_compiled=False):
+                    signature_text = _format_signatures(value)
+                if not doc and value.is_stub():
+                    for c in convert_values(ContextSet({value}), ignore_compiled=False):
                         doc = c.py__doc__()
                         if doc:
                             break

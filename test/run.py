@@ -126,7 +126,7 @@ from jedi.api.classes import Definition
 from jedi.api.completion import get_user_scope
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
-from jedi.inference.gradual.conversion import convert_contexts
+from jedi.inference.gradual.conversion import convert_values
 
 
 TEST_COMPLETIONS = 0
@@ -225,14 +225,14 @@ class IntegrationTestCase(object):
                 parser = grammar36.parse(string, start_symbol='eval_input', error_recovery=False)
                 parser_utils.move(parser.get_root_node(), self.line_nr)
                 element = parser.get_root_node()
-                module_context = script._get_module()
-                # The context shouldn't matter for the test results.
-                user_context = get_user_scope(module_context, (self.line_nr, 0))
-                if user_context.api_type == 'function':
-                    user_context = user_context.get_function_execution()
-                element.parent = user_context.tree_node
-                results = convert_contexts(
-                    infer_state.infer_element(user_context, element),
+                module_value = script._get_module()
+                # The value shouldn't matter for the test results.
+                user_value = get_user_scope(module_value, (self.line_nr, 0))
+                if user_value.api_type == 'function':
+                    user_value = user_value.get_function_execution()
+                element.parent = user_value.tree_node
+                results = convert_values(
+                    infer_state.infer_element(user_value, element),
                 )
                 if not results:
                     raise Exception('Could not resolve %s on line %s'

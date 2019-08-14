@@ -14,8 +14,8 @@ def auto_import_json(monkeypatch):
 def test_base_auto_import_modules(auto_import_json, Script):
     loads, = Script('import json; json.loads').goto_definitions()
     assert isinstance(loads._name, ContextName)
-    context, = loads._name.infer()
-    assert isinstance(context.parent_context, StubModuleContext)
+    value, = loads._name.infer()
+    assert isinstance(value.parent_value, StubModuleContext)
 
 
 def test_auto_import_modules_imports(auto_import_json, Script):

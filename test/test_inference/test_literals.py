@@ -1,15 +1,15 @@
 import pytest
-from jedi.inference.context import TreeInstance
+from jedi.inference.value import TreeInstance
 
 
 def _infer_literal(Script, code, is_fstring=False):
     def_, = Script(code).goto_definitions()
     if is_fstring:
         assert def_.name == 'str'
-        assert isinstance(def_._name._context, TreeInstance)
+        assert isinstance(def_._name._value, TreeInstance)
         return ''
     else:
-        return def_._name._context.get_safe_value()
+        return def_._name._value.get_safe_value()
 
 
 def test_f_strings(Script, environment):

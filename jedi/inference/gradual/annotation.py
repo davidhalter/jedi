@@ -21,7 +21,7 @@ from jedi import debug
 from jedi import parser_utils
 
 
-def infer_annotation(context, annotation):
+def infer_annotation(value, annotation):
     """
     Inferes an annotation node. This means that it inferes the part of
     `int` here:
@@ -30,37 +30,37 @@ def infer_annotation(context, annotation):
 
     Also checks for forward references (strings)
     """
-    context_set = context.infer_node(annotation)
-    if len(context_set) != 1:
+    value_set = value.infer_node(annotation)
+    if len(value_set) != 1:
         debug.warning("Inferred typing index %s should lead to 1 object, "
-                      " not %s" % (annotation, context_set))
-        return context_set
+                      " not %s" % (annotation, value_set))
+        return value_set
 
-    inferred_context = list(context_set)[0]
-    if is_string(inferred_context):
-        result = _get_forward_reference_node(context, inferred_context.get_safe_value())
+    inferred_value = list(value_set)[0]
+    if is_string(inferred_value):
+        result = _get_forward_reference_node(value, inferred_value.get_safe_value())
         if result is not None:
-            return context.infer_node(result)
-    return context_set
+            return value.infer_node(result)
+    return value_set
 
 
-def _infer_annotation_string(context, string, index=None):
-    node = _get_forward_reference_node(context, string)
+def _infer_annotation_string(value, string, index=None):
+    node = _get_forward_reference_node(value, string)
     if node is None:
         return NO_CONTEXTS
 
-    context_set = context.infer_node(node)
+    value_set = value.infer_node(node)
     if index is not None:
-        context_set = context_set.filter(
-            lambda context: context.array_type == u'tuple'  # noqa
-                            and len(list(context.py__iter__())) >= index
+        value_set = value_set.filter(
+            lambda value: value.array_type == u'tuple'  # noqa
+                            and len(list(value.py__iter__())) >= index
         ).py__simple_getitem__(index)
-    return context_set
+    return value_set
 
 
-def _get_forward_reference_node(context, string):
+def _get_forward_reference_node(value, string):
     try:
-        new_node = context.infer_state.grammar.parse(
+        new_node = value.infer_state.grammar.parse(
             force_unicode(string),
             start_symbol='eval_input',
             error_recovery=False
@@ -69,9 +69,9 @@ def _get_forward_reference_node(context, string):
         debug.warning('Annotation not parsed: %s' % string)
         return None
     else:
-        module = context.tree_node.get_root_node()
+        module = value.tree_node.get_root_node()
         parser_utils.move(new_node, module.end_pos[0])
-        new_node.parent = context.tree_node
+        new_node.parent = value.tree_node
         return new_node
 
 
@@ -107,26 +107,26 @@ def _split_comment_param_declaration(decl_text):
 
 
 @infer_state_method_cache()
-def infer_param(execution_context, param):
-    contexts = _infer_param(execution_context, param)
-    infer_state = execution_context.infer_state
+def infer_param(execution_value, param):
+    values = _infer_param(execution_value, param)
+    infer_state = execution_value.infer_state
     if param.star_count == 1:
         tuple_ = builtin_from_name(infer_state, 'tuple')
         return ContextSet([GenericClass(
             tuple_,
-            generics=(contexts,),
-        ) for c in contexts])
+            generics=(values,),
+        ) for c in values])
     elif param.star_count == 2:
         dct = builtin_from_name(infer_state, 'dict')
         return ContextSet([GenericClass(
             dct,
-            generics=(ContextSet([builtin_from_name(infer_state, 'str')]), contexts),
-        ) for c in contexts])
+            generics=(ContextSet([builtin_from_name(infer_state, 'str')]), values),
+        ) for c in values])
         pass
-    return contexts
+    return values
 
 
-def _infer_param(execution_context, param):
+def _infer_param(execution_value, param):
     """
     Infers the type of a function parameter, using type annotations.
     """
@@ -158,8 +158,8 @@ def _infer_param(execution_context, param):
                 "Comments length != Params length %s %s",
                 params_comments, all_params
             )
-        from jedi.inference.context.instance import InstanceArguments
-        if isinstance(execution_context.var_args, InstanceArguments):
+        from jedi.inference.value.instance import InstanceArguments
+        if isinstance(execution_value.var_args, InstanceArguments):
             if index == 0:
                 # Assume it's self, which is already handled
                 return NO_CONTEXTS
@@ -169,12 +169,12 @@ def _infer_param(execution_context, param):
 
         param_comment = params_comments[index]
         return _infer_annotation_string(
-            execution_context.function_context.get_default_param_context(),
+            execution_value.function_value.get_default_param_value(),
             param_comment
         )
     # Annotations are like default params and resolve in the same way.
-    context = execution_context.function_context.get_default_param_context()
-    return infer_annotation(context, annotation)
+    value = execution_value.function_value.get_default_param_value()
+    return infer_annotation(value, annotation)
 
 
 def py__annotations__(funcdef):
@@ -191,16 +191,16 @@ def py__annotations__(funcdef):
 
 
 @infer_state_method_cache()
-def infer_return_types(function_execution_context):
+def infer_return_types(function_execution_value):
     """
     Infers the type of a function's return value,
     according to type annotations.
     """
-    all_annotations = py__annotations__(function_execution_context.tree_node)
+    all_annotations = py__annotations__(function_execution_value.tree_node)
     annotation = all_annotations.get("return", None)
     if annotation is None:
         # If there is no Python 3-type annotation, look for a Python 2-type annotation
-        node = function_execution_context.tree_node
+        node = function_execution_value.tree_node
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:
             return NO_CONTEXTS
@@ -210,28 +210,28 @@ def infer_return_types(function_execution_context):
             return NO_CONTEXTS
 
         return _infer_annotation_string(
-            function_execution_context.function_context.get_default_param_context(),
+            function_execution_value.function_value.get_default_param_value(),
             match.group(1).strip()
         ).execute_annotation()
         if annotation is None:
             return NO_CONTEXTS
 
-    context = function_execution_context.function_context.get_default_param_context()
-    unknown_type_vars = list(find_unknown_type_vars(context, annotation))
-    annotation_contexts = infer_annotation(context, annotation)
+    value = function_execution_value.function_value.get_default_param_value()
+    unknown_type_vars = list(find_unknown_type_vars(value, annotation))
+    annotation_values = infer_annotation(value, annotation)
     if not unknown_type_vars:
-        return annotation_contexts.execute_annotation()
+        return annotation_values.execute_annotation()
 
-    type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
+    type_var_dict = infer_type_vars_for_execution(function_execution_value, all_annotations)
 
     return ContextSet.from_sets(
         ann.define_generics(type_var_dict)
         if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ContextSet({ann})
-        for ann in annotation_contexts
+        for ann in annotation_values
     ).execute_annotation()
 
 
-def infer_type_vars_for_execution(execution_context, annotation_dict):
+def infer_type_vars_for_execution(execution_value, annotation_dict):
     """
     Some functions use type vars that are not defined by the class, but rather
     only defined in the function. See for example `iter`. In those cases we
@@ -241,48 +241,48 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
     2. Infer type vars with the execution state we have.
     3. Return the union of all type vars that have been found.
     """
-    context = execution_context.function_context.get_default_param_context()
+    value = execution_value.function_value.get_default_param_value()
 
     annotation_variable_results = {}
-    executed_params, _ = execution_context.get_executed_params_and_issues()
+    executed_params, _ = execution_value.get_executed_params_and_issues()
     for executed_param in executed_params:
         try:
             annotation_node = annotation_dict[executed_param.string_name]
         except KeyError:
             continue
 
-        annotation_variables = find_unknown_type_vars(context, annotation_node)
+        annotation_variables = find_unknown_type_vars(value, annotation_node)
         if annotation_variables:
             # Infer unknown type var
-            annotation_context_set = context.infer_node(annotation_node)
+            annotation_value_set = value.infer_node(annotation_node)
             star_count = executed_param._param_node.star_count
-            actual_context_set = executed_param.infer(use_hints=False)
+            actual_value_set = executed_param.infer(use_hints=False)
             if star_count == 1:
-                actual_context_set = actual_context_set.merge_types_of_iterate()
+                actual_value_set = actual_value_set.merge_types_of_iterate()
             elif star_count == 2:
                 # TODO _dict_values is not public.
-                actual_context_set = actual_context_set.try_merge('_dict_values')
-            for ann in annotation_context_set:
+                actual_value_set = actual_value_set.try_merge('_dict_values')
+            for ann in annotation_value_set:
                 _merge_type_var_dicts(
                     annotation_variable_results,
-                    _infer_type_vars(ann, actual_context_set),
+                    _infer_type_vars(ann, actual_value_set),
                 )
 
     return annotation_variable_results
 
 
 def _merge_type_var_dicts(base_dict, new_dict):
-    for type_var_name, contexts in new_dict.items():
+    for type_var_name, values in new_dict.items():
         try:
-            base_dict[type_var_name] |= contexts
+            base_dict[type_var_name] |= values
         except KeyError:
-            base_dict[type_var_name] = contexts
+            base_dict[type_var_name] = values
 
 
-def _infer_type_vars(annotation_context, context_set):
+def _infer_type_vars(annotation_value, value_set):
     """
     This function tries to find information about undefined type vars and
-    returns a dict from type var name to context set.
+    returns a dict from type var name to value set.
 
     This is for example important to understand what `iter([1])` returns.
     According to typeshed, `iter` returns an `Iterator[_T]`:
@@ -293,66 +293,66 @@ def _infer_type_vars(annotation_context, context_set):
     unpacks the `Iterable`.
     """
     type_var_dict = {}
-    if isinstance(annotation_context, TypeVar):
-        return {annotation_context.py__name__(): context_set.py__class__()}
-    elif isinstance(annotation_context, LazyGenericClass):
-        name = annotation_context.py__name__()
+    if isinstance(annotation_value, TypeVar):
+        return {annotation_value.py__name__(): value_set.py__class__()}
+    elif isinstance(annotation_value, LazyGenericClass):
+        name = annotation_value.py__name__()
         if name == 'Iterable':
-            given = annotation_context.get_generics()
+            given = annotation_value.get_generics()
             if given:
-                for nested_annotation_context in given[0]:
+                for nested_annotation_value in given[0]:
                     _merge_type_var_dicts(
                         type_var_dict,
                         _infer_type_vars(
-                            nested_annotation_context,
-                            context_set.merge_types_of_iterate()
+                            nested_annotation_value,
+                            value_set.merge_types_of_iterate()
                         )
                     )
         elif name == 'Mapping':
-            given = annotation_context.get_generics()
+            given = annotation_value.get_generics()
             if len(given) == 2:
-                for context in context_set:
+                for value in value_set:
                     try:
-                        method = context.get_mapping_item_contexts
+                        method = value.get_mapping_item_values
                     except AttributeError:
                         continue
-                    key_contexts, value_contexts = method()
+                    key_values, value_values = method()
 
-                    for nested_annotation_context in given[0]:
+                    for nested_annotation_value in given[0]:
                         _merge_type_var_dicts(
                             type_var_dict,
                             _infer_type_vars(
-                                nested_annotation_context,
-                                key_contexts,
+                                nested_annotation_value,
+                                key_values,
                             )
                         )
-                    for nested_annotation_context in given[1]:
+                    for nested_annotation_value in given[1]:
                         _merge_type_var_dicts(
                             type_var_dict,
                             _infer_type_vars(
-                                nested_annotation_context,
-                                value_contexts,
+                                nested_annotation_value,
+                                value_values,
                             )
                         )
     return type_var_dict
 
 
-def find_type_from_comment_hint_for(context, node, name):
-    return _find_type_from_comment_hint(context, node, node.children[1], name)
+def find_type_from_comment_hint_for(value, node, name):
+    return _find_type_from_comment_hint(value, node, node.children[1], name)
 
 
-def find_type_from_comment_hint_with(context, node, name):
+def find_type_from_comment_hint_with(value, node, name):
     assert len(node.children[1].children) == 3, \
         "Can only be here when children[1] is 'foo() as f'"
     varlist = node.children[1].children[2]
-    return _find_type_from_comment_hint(context, node, varlist, name)
+    return _find_type_from_comment_hint(value, node, varlist, name)
 
 
-def find_type_from_comment_hint_assign(context, node, name):
-    return _find_type_from_comment_hint(context, node, node.children[0], name)
+def find_type_from_comment_hint_assign(value, node, name):
+    return _find_type_from_comment_hint(value, node, node.children[0], name)
 
 
-def _find_type_from_comment_hint(context, node, varlist, name):
+def _find_type_from_comment_hint(value, node, varlist, name):
     index = None
     if varlist.type in ("testlist_star_expr", "exprlist", "testlist"):
         # something like "a, b = 1, 2"
@@ -373,11 +373,11 @@ def _find_type_from_comment_hint(context, node, varlist, name):
     if match is None:
         return []
     return _infer_annotation_string(
-        context, match.group(1).strip(), index
+        value, match.group(1).strip(), index
     ).execute_annotation()
 
 
-def find_unknown_type_vars(context, node):
+def find_unknown_type_vars(value, node):
     def check_node(node):
         if node.type in ('atom_expr', 'power'):
             trailer = node.children[-1]
@@ -385,7 +385,7 @@ def find_unknown_type_vars(context, node):
                 for subscript_node in _unpack_subscriptlist(trailer.children[1]):
                     check_node(subscript_node)
         else:
-            type_var_set = context.infer_node(node)
+            type_var_set = value.infer_node(node)
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar) and type_var not in found:
                     found.append(type_var)

@@ -3,8 +3,8 @@ import os
 import pytest
 from parso.utils import PythonVersionInfo
 
-from jedi.inference.gradual import typeshed, stub_context
-from jedi.inference.context import TreeInstance, BoundMethod, FunctionContext, \
+from jedi.inference.gradual import typeshed, stub_value
+from jedi.inference.value import TreeInstance, BoundMethod, FunctionContext, \
     MethodContext, ClassContext
 
 TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
@@ -47,15 +47,15 @@ def test_get_stub_files():
 def test_function(Script, environment):
     code = 'import threading; threading.current_thread'
     def_, = Script(code).goto_definitions()
-    context = def_._name._context
-    assert isinstance(context, FunctionContext), context
+    value = def_._name._value
+    assert isinstance(value, FunctionContext), value
 
     def_, = Script(code + '()').goto_definitions()
-    context = def_._name._context
-    assert isinstance(context, TreeInstance)
+    value = def_._name._value
+    assert isinstance(value, TreeInstance)
 
     def_, = Script('import threading; threading.Thread').goto_definitions()
-    assert isinstance(def_._name._context, ClassContext), def_
+    assert isinstance(def_._name._value, ClassContext), def_
 
 
 def test_keywords_variable(Script):
@@ -69,33 +69,33 @@ def test_keywords_variable(Script):
 
 def test_class(Script):
     def_, = Script('import threading; threading.Thread').goto_definitions()
-    context = def_._name._context
-    assert isinstance(context, ClassContext), context
+    value = def_._name._value
+    assert isinstance(value, ClassContext), value
 
 
 def test_instance(Script):
     def_, = Script('import threading; threading.Thread()').goto_definitions()
-    context = def_._name._context
-    assert isinstance(context, TreeInstance)
+    value = def_._name._value
+    assert isinstance(value, TreeInstance)
 
 
 def test_class_function(Script):
     def_, = Script('import threading; threading.Thread.getName').goto_definitions()
-    context = def_._name._context
-    assert isinstance(context, MethodContext), context
+    value = def_._name._value
+    assert isinstance(value, MethodContext), value
 
 
 def test_method(Script):
     code = 'import threading; threading.Thread().getName'
     def_, = Script(code).goto_definitions()
-    context = def_._name._context
-    assert isinstance(context, BoundMethod), context
-    assert isinstance(context._wrapped_context, MethodContext), context
+    value = def_._name._value
+    assert isinstance(value, BoundMethod), value
+    assert isinstance(value._wrapped_value, MethodContext), value
 
     def_, = Script(code + '()').goto_definitions()
-    context = def_._name._context
-    assert isinstance(context, TreeInstance)
-    assert context.class_context.py__name__() == 'str'
+    value = def_._name._value
+    assert isinstance(value, TreeInstance)
+    assert value.class_value.py__name__() == 'str'
 
 
 def test_sys_exc_info(Script):
@@ -125,7 +125,7 @@ def test_sys_getwindowsversion(Script, environment):
 def test_sys_hexversion(Script):
     script = Script('import sys; sys.hexversion')
     def_, = script.completions()
-    assert isinstance(def_._name, stub_context._StubName), def_._name
+    assert isinstance(def_._name, stub_value._StubName), def_._name
     assert typeshed.TYPESHED_PATH in def_.module_path
     def_, = script.goto_definitions()
     assert def_.name == 'int'
@@ -134,8 +134,8 @@ def test_sys_hexversion(Script):
 def test_math(Script):
     def_, = Script('import math; math.acos()').goto_definitions()
     assert def_.name == 'float'
-    context = def_._name._context
-    assert context
+    value = def_._name._value
+    assert value
 
 
 def test_type_var(Script):

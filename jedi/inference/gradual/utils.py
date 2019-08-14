@@ -20,12 +20,12 @@ def load_proper_stub_module(infer_state, file_io, import_names, module_node):
             import_names = import_names[:-1]
 
     if import_names is not None:
-        actual_context_set = infer_state.import_module(import_names, prefer_stubs=False)
-        if not actual_context_set:
+        actual_value_set = infer_state.import_module(import_names, prefer_stubs=False)
+        if not actual_value_set:
             return None
 
         stub = create_stub_module(
-            infer_state, actual_context_set, module_node, file_io, import_names
+            infer_state, actual_value_set, module_node, file_io, import_names
         )
         infer_state.stub_module_cache[import_names] = stub
         return stub

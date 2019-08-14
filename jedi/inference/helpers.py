@@ -44,7 +44,7 @@ def deep_ast_copy(obj):
     return new_obj
 
 
-def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
+def infer_call_of_leaf(value, leaf, cut_own_trailer=False):
     """
     Creates a "call" node that consist of all ``trailer`` and ``power``
     objects.  E.g. if you call it with ``append``::
@@ -66,15 +66,15 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
     trailer = leaf.parent
     if trailer.type == 'fstring':
         from jedi.inference import compiled
-        return compiled.get_string_context_set(context.infer_state)
+        return compiled.get_string_value_set(value.infer_state)
 
     # The leaf may not be the last or first child, because there exist three
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
         if trailer.type == 'atom':
-            return context.infer_node(trailer)
-        return context.infer_node(leaf)
+            return value.infer_node(trailer)
+        return value.infer_node(leaf)
 
     power = trailer.parent
     index = power.children.index(trailer)
@@ -99,10 +99,10 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
         base = trailers[0]
         trailers = trailers[1:]
 
-    values = context.infer_node(base)
+    values = value.infer_node(base)
     from jedi.inference.syntax_tree import infer_trailer
     for trailer in trailers:
-        values = infer_trailer(context, values, trailer)
+        values = infer_trailer(value, values, trailer)
     return values
 
 
@@ -185,8 +185,8 @@ def get_module_names(module, all_scopes):
 
 
 @contextmanager
-def predefine_names(context, flow_scope, dct):
-    predefined = context.predefined_names
+def predefine_names(value, flow_scope, dct):
+    predefined = value.predefined_names
     predefined[flow_scope] = dct
     try:
         yield
@@ -194,34 +194,34 @@ def predefine_names(context, flow_scope, dct):
         del predefined[flow_scope]
 
 
-def is_string(context):
-    if context.infer_state.environment.version_info.major == 2:
+def is_string(value):
+    if value.infer_state.environment.version_info.major == 2:
         str_classes = (unicode, bytes)
     else:
         str_classes = (unicode,)
-    return context.is_compiled() and isinstance(context.get_safe_value(default=None), str_classes)
+    return value.is_compiled() and isinstance(value.get_safe_value(default=None), str_classes)
 
 
-def is_literal(context):
-    return is_number(context) or is_string(context)
+def is_literal(value):
+    return is_number(value) or is_string(value)
 
 
-def _get_safe_value_or_none(context, accept):
-    value = context.get_safe_value(default=None)
+def _get_safe_value_or_none(value, accept):
+    value = value.get_safe_value(default=None)
     if isinstance(value, accept):
         return value
 
 
-def get_int_or_none(context):
-    return _get_safe_value_or_none(context, int)
+def get_int_or_none(value):
+    return _get_safe_value_or_none(value, int)
 
 
-def get_str_or_none(context):
-    return _get_safe_value_or_none(context, (bytes, unicode))
+def get_str_or_none(value):
+    return _get_safe_value_or_none(value, (bytes, unicode))
 
 
-def is_number(context):
-    return _get_safe_value_or_none(context, (int, float)) is not None
+def is_number(value):
+    return _get_safe_value_or_none(value, (int, float)) is not None
 
 
 class SimpleGetItemNotFound(Exception):
@@ -265,5 +265,5 @@ def parse_dotted_names(nodes, is_import_from, until_node=None):
     return level, names
 
 
-def contexts_from_qualified_names(infer_state, *names):
+def values_from_qualified_names(infer_state, *names):
     return infer_state.import_module(names[:-1]).py__getattribute__(names[-1])

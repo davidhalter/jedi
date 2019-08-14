@@ -109,7 +109,7 @@ def compiled_objects_cache(attribute_name):
         Caching the id has the advantage that an object doesn't need to be
         hashable.
         """
-        def wrapper(infer_state, obj, parent_context=None):
+        def wrapper(infer_state, obj, parent_value=None):
             cache = getattr(infer_state, attribute_name)
             # Do a very cheap form of caching here.
             key = id(obj)
@@ -119,11 +119,11 @@ def compiled_objects_cache(attribute_name):
             except KeyError:
                 # TODO wuaaaarrghhhhhhhh
                 if attribute_name == 'mixed_cache':
-                    result = func(infer_state, obj, parent_context)
+                    result = func(infer_state, obj, parent_value)
                 else:
                     result = func(infer_state, obj)
                 # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent_context
+                cache[key] = result, obj, parent_value
                 return result
         return wrapper
 

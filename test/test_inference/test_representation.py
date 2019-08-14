@@ -3,7 +3,7 @@ from textwrap import dedent
 
 def get_definition_and_infer_state(Script, source):
     first, = Script(dedent(source)).goto_definitions()
-    return first._name._context, first._infer_state
+    return first._name._value, first._infer_state
 
 
 def test_function_execution(Script):

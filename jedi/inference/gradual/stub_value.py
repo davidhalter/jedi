@@ -1,14 +1,14 @@
 from jedi.inference.base_value import ContextWrapper
-from jedi.inference.context.module import ModuleContext
+from jedi.inference.value.module import ModuleContext
 from jedi.inference.filters import ParserTreeFilter, \
     TreeNameDefinition
 from jedi.inference.gradual.typing import TypingModuleFilterWrapper
 
 
 class StubModuleContext(ModuleContext):
-    def __init__(self, non_stub_context_set, *args, **kwargs):
+    def __init__(self, non_stub_value_set, *args, **kwargs):
         super(StubModuleContext, self).__init__(*args, **kwargs)
-        self.non_stub_context_set = non_stub_context_set
+        self.non_stub_value_set = non_stub_value_set
 
     def is_stub(self):
         return True
@@ -20,9 +20,9 @@ class StubModuleContext(ModuleContext):
         there are for example no stubs for `json.tool`.
         """
         names = {}
-        for context in self.non_stub_context_set:
+        for value in self.non_stub_value_set:
             try:
-                method = context.sub_modules_dict
+                method = value.sub_modules_dict
             except AttributeError:
                 pass
             else:
@@ -31,13 +31,13 @@ class StubModuleContext(ModuleContext):
         return names
 
     def _get_first_non_stub_filters(self):
-        for context in self.non_stub_context_set:
-            yield next(context.get_filters(search_global=False))
+        for value in self.non_stub_value_set:
+            yield next(value.get_filters(search_global=False))
 
     def _get_stub_filters(self, search_global, **filter_kwargs):
         return [StubFilter(
             self.infer_state,
-            context=self,
+            value=self,
             search_global=search_global,
             **filter_kwargs
         )] + list(self.iter_star_filters(search_global=search_global))
@@ -72,7 +72,7 @@ class TypingModuleWrapper(StubModuleContext):
 class _StubName(TreeNameDefinition):
     def infer(self):
         inferred = super(_StubName, self).infer()
-        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
+        if self.string_name == 'version_info' and self.get_root_value().py__name__() == 'sys':
             return [VersionInfo(c) for c in inferred]
         return inferred
 

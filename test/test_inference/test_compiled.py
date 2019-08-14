@@ -8,7 +8,7 @@ import pytest
 
 from jedi.inference import compiled
 from jedi.inference.compiled.access import DirectObjectAccess
-from jedi.inference.gradual.conversion import _stub_to_python_context_set
+from jedi.inference.gradual.conversion import _stub_to_python_value_set
 
 
 def test_simple(infer_state, environment):
@@ -34,7 +34,7 @@ def test_next_docstr(infer_state):
     next_ = compiled.builtin_from_name(infer_state, u'next')
     assert next_.tree_node is not None
     assert next_.py__doc__() == ''  # It's a stub
-    for non_stub in _stub_to_python_context_set(next_):
+    for non_stub in _stub_to_python_value_set(next_):
         assert non_stub.py__doc__() == next.__doc__
 
 
@@ -44,7 +44,7 @@ def test_parse_function_doc_illegal_docstr():
 
     doesn't have a closing bracket.
     """
-    assert ('', '') == compiled.context._parse_function_doc(docstr)
+    assert ('', '') == compiled.value._parse_function_doc(docstr)
 
 
 def test_doc(infer_state):
@@ -122,7 +122,7 @@ def _return_int():
         ('ret_int', '_return_int', 'test.test_inference.test_compiled'),
     ]
 )
-def test_parent_context(same_process_infer_state, attribute, expected_name, expected_parent):
+def test_parent_value(same_process_infer_state, attribute, expected_name, expected_parent):
     import decimal
 
     class C:
@@ -140,11 +140,11 @@ def test_parent_context(same_process_infer_state, attribute, expected_name, expe
     )
     x, = o.py__getattribute__(attribute)
     assert x.py__name__() == expected_name
-    module_name = x.parent_context.py__name__()
+    module_name = x.parent_value.py__name__()
     if module_name == '__builtin__':
         module_name = 'builtins'  # Python 2
     assert module_name == expected_parent
-    assert x.parent_context.parent_context is None
+    assert x.parent_value.parent_value is None
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")

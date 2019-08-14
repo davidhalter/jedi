@@ -14,39 +14,39 @@ from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
 from jedi.inference.names import ContextName, AbstractNameDefinition, ParamName
 from jedi.inference.base_value import ContextualizedNode, NO_CONTEXTS, \
     ContextSet, TreeContext, ContextWrapper
-from jedi.inference.lazy_context import LazyKnownContexts, LazyKnownContext, \
+from jedi.inference.lazy_value import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext
-from jedi.inference.context import iterable
+from jedi.inference.value import iterable
 from jedi import parser_utils
 from jedi.inference.parser_cache import get_yield_exprs
-from jedi.inference.helpers import contexts_from_qualified_names
+from jedi.inference.helpers import values_from_qualified_names
 
 
 class LambdaName(AbstractNameDefinition):
     string_name = '<lambda>'
     api_type = u'function'
 
-    def __init__(self, lambda_context):
-        self._lambda_context = lambda_context
-        self.parent_context = lambda_context.parent_context
+    def __init__(self, lambda_value):
+        self._lambda_value = lambda_value
+        self.parent_value = lambda_value.parent_value
 
     @property
     def start_pos(self):
-        return self._lambda_context.tree_node.start_pos
+        return self._lambda_value.tree_node.start_pos
 
     def infer(self):
-        return ContextSet([self._lambda_context])
+        return ContextSet([self._lambda_value])
 
 
 class FunctionAndClassBase(TreeContext):
     def get_qualified_names(self):
-        if self.parent_context.is_class():
-            n = self.parent_context.get_qualified_names()
+        if self.parent_value.is_class():
+            n = self.parent_value.get_qualified_names()
             if n is None:
                 # This means that the parent class lives within a function.
                 return None
             return n + (self.py__name__(),)
-        elif self.parent_context.is_module():
+        elif self.parent_value.is_module():
             return (self.py__name__(),)
         else:
             return None
@@ -59,7 +59,7 @@ class FunctionMixin(object):
         if search_global:
             yield ParserTreeFilter(
                 self.infer_state,
-                context=self,
+                value=self,
                 until_position=until_position,
                 origin_scope=origin_scope
             )
@@ -69,8 +69,8 @@ class FunctionMixin(object):
                 for filter in instance.get_filters(search_global=False, origin_scope=origin_scope):
                     yield filter
 
-    def py__get__(self, instance, class_context):
-        from jedi.inference.context.instance import BoundMethod
+    def py__get__(self, instance, class_value):
+        from jedi.inference.value.instance import BoundMethod
         if instance is None:
             # Calling the Foo.bar results in the original bar function.
             return ContextSet([self])
@@ -98,7 +98,7 @@ class FunctionMixin(object):
         if arguments is None:
             arguments = AnonymousArguments()
 
-        return FunctionExecutionContext(self.infer_state, self.parent_context, self, arguments)
+        return FunctionExecutionContext(self.infer_state, self.parent_value, self, arguments)
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.get_signature_functions()]
@@ -109,27 +109,27 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndC
         return True
 
     @classmethod
-    def from_context(cls, context, tree_node):
+    def from_value(cls, value, tree_node):
         def create(tree_node):
-            if context.is_class():
+            if value.is_class():
                 return MethodContext(
-                    context.infer_state,
-                    context,
-                    parent_context=parent_context,
+                    value.infer_state,
+                    value,
+                    parent_value=parent_value,
                     tree_node=tree_node
                 )
             else:
                 return cls(
-                    context.infer_state,
-                    parent_context=parent_context,
+                    value.infer_state,
+                    parent_value=parent_value,
                     tree_node=tree_node
                 )
 
-        overloaded_funcs = list(_find_overload_functions(context, tree_node))
+        overloaded_funcs = list(_find_overload_functions(value, tree_node))
 
-        parent_context = context
-        while parent_context.is_class() or parent_context.is_instance():
-            parent_context = parent_context.parent_context
+        parent_value = value
+        while parent_value.is_class() or parent_value.is_instance():
+            parent_value = parent_value.parent_value
 
         function = create(tree_node)
 
@@ -141,28 +141,28 @@ class FunctionContext(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndC
         return function
 
     def py__class__(self):
-        c, = contexts_from_qualified_names(self.infer_state, u'types', u'FunctionType')
+        c, = values_from_qualified_names(self.infer_state, u'types', u'FunctionType')
         return c
 
-    def get_default_param_context(self):
-        return self.parent_context
+    def get_default_param_value(self):
+        return self.parent_value
 
     def get_signature_functions(self):
         return [self]
 
 
 class MethodContext(FunctionContext):
-    def __init__(self, infer_state, class_context, *args, **kwargs):
+    def __init__(self, infer_state, class_value, *args, **kwargs):
         super(MethodContext, self).__init__(infer_state, *args, **kwargs)
-        self.class_context = class_context
+        self.class_value = class_value
 
-    def get_default_param_context(self):
-        return self.class_context
+    def get_default_param_value(self):
+        return self.class_value
 
     def get_qualified_names(self):
-        # Need to implement this, because the parent context of a method
-        # context is not the class context but the module.
-        names = self.class_context.get_qualified_names()
+        # Need to implement this, because the parent value of a method
+        # value is not the class value but the module.
+        names = self.class_value.get_qualified_names()
         if names is None:
             return None
         return names + (self.py__name__(),)
@@ -171,13 +171,13 @@ class MethodContext(FunctionContext):
 class FunctionExecutionContext(TreeContext):
     function_execution_filter = FunctionExecutionFilter
 
-    def __init__(self, infer_state, parent_context, function_context, var_args):
+    def __init__(self, infer_state, parent_value, function_value, var_args):
         super(FunctionExecutionContext, self).__init__(
             infer_state,
-            parent_context,
-            function_context.tree_node,
+            parent_value,
+            function_value.tree_node,
         )
-        self.function_context = function_context
+        self.function_value = function_value
         self.var_args = var_args
 
     @infer_state_method_cache(default=NO_CONTEXTS)
@@ -188,17 +188,17 @@ class FunctionExecutionContext(TreeContext):
             return self.infer_node(funcdef.children[-1])
 
         if check_yields:
-            context_set = NO_CONTEXTS
+            value_set = NO_CONTEXTS
             returns = get_yield_exprs(self.infer_state, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
             from jedi.inference.gradual.annotation import infer_return_types
-            context_set = infer_return_types(self)
-            if context_set:
+            value_set = infer_return_types(self)
+            if value_set:
                 # If there are annotations, prefer them over anything else.
                 # This will make it faster.
-                return context_set
-            context_set |= docstrings.infer_return_types(self.function_context)
+                return value_set
+            value_set |= docstrings.infer_return_types(self.function_value)
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)
@@ -206,24 +206,24 @@ class FunctionExecutionContext(TreeContext):
                 debug.dbg('Return unreachable: %s', r)
             else:
                 if check_yields:
-                    context_set |= ContextSet.from_sets(
-                        lazy_context.infer()
-                        for lazy_context in self._get_yield_lazy_context(r)
+                    value_set |= ContextSet.from_sets(
+                        lazy_value.infer()
+                        for lazy_value in self._get_yield_lazy_value(r)
                     )
                 else:
                     try:
                         children = r.children
                     except AttributeError:
                         ctx = compiled.builtin_from_name(self.infer_state, u'None')
-                        context_set |= ContextSet([ctx])
+                        value_set |= ContextSet([ctx])
                     else:
-                        context_set |= self.infer_node(children[1])
+                        value_set |= self.infer_node(children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
-        return context_set
+        return value_set
 
-    def _get_yield_lazy_context(self, yield_expr):
+    def _get_yield_lazy_value(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
             ctx = compiled.builtin_from_name(self.infer_state, u'None')
@@ -233,13 +233,13 @@ class FunctionExecutionContext(TreeContext):
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
             cn = ContextualizedNode(self, node.children[1])
-            for lazy_context in cn.infer().iterate(cn):
-                yield lazy_context
+            for lazy_value in cn.infer().iterate(cn):
+                yield lazy_value
         else:
             yield LazyTreeContext(self, node)
 
     @recursion.execution_recursion_decorator(default=iter([]))
-    def get_yield_lazy_contexts(self, is_async=False):
+    def get_yield_lazy_values(self, is_async=False):
         # TODO: if is_async, wrap yield statements in Awaitable/async_generator_asend
         for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
                                                 'while_stmt', 'if_stmt'))
@@ -273,24 +273,24 @@ class FunctionExecutionContext(TreeContext):
             if for_stmt is None:
                 # No for_stmt, just normal yields.
                 for yield_ in yields:
-                    for result in self._get_yield_lazy_context(yield_):
+                    for result in self._get_yield_lazy_value(yield_):
                         yield result
             else:
                 input_node = for_stmt.get_testlist()
                 cn = ContextualizedNode(self, input_node)
                 ordered = cn.infer().iterate(cn)
                 ordered = list(ordered)
-                for lazy_context in ordered:
-                    dct = {str(for_stmt.children[1].value): lazy_context.infer()}
+                for lazy_value in ordered:
+                    dct = {str(for_stmt.children[1].value): lazy_value.infer()}
                     with helpers.predefine_names(self, for_stmt, dct):
                         for yield_in_same_for_stmt in yields:
-                            for result in self._get_yield_lazy_context(yield_in_same_for_stmt):
+                            for result in self._get_yield_lazy_value(yield_in_same_for_stmt):
                                 yield result
 
-    def merge_yield_contexts(self, is_async=False):
+    def merge_yield_values(self, is_async=False):
         return ContextSet.from_sets(
-            lazy_context.infer()
-            for lazy_context in self.get_yield_lazy_contexts()
+            lazy_value.infer()
+            for lazy_value in self.get_yield_lazy_values()
         )
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
@@ -335,9 +335,9 @@ class FunctionExecutionContext(TreeContext):
                 async_generator_classes = infer_state.typing_module \
                     .py__getattribute__('AsyncGenerator')
 
-                yield_contexts = self.merge_yield_contexts(is_async=True)
+                yield_values = self.merge_yield_values(is_async=True)
                 # The contravariant doesn't seem to be defined.
-                generics = (yield_contexts.py__class__(), NO_CONTEXTS)
+                generics = (yield_values.py__class__(), NO_CONTEXTS)
                 return ContextSet(
                     # In Python 3.6 AsyncGenerator is still a class.
                     GenericClass(c, generics)
@@ -347,9 +347,9 @@ class FunctionExecutionContext(TreeContext):
                 if infer_state.environment.version_info < (3, 5):
                     return NO_CONTEXTS
                 async_classes = infer_state.typing_module.py__getattribute__('Coroutine')
-                return_contexts = self.get_return_values()
+                return_values = self.get_return_values()
                 # Only the first generic is relevant.
-                generics = (return_contexts.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
+                generics = (return_values.py__class__(), NO_CONTEXTS, NO_CONTEXTS)
                 return ContextSet(
                     GenericClass(c, generics) for c in async_classes
                 ).execute_annotation()
@@ -366,9 +366,9 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
         self._overloaded_functions = overloaded_functions
 
     def py__call__(self, arguments):
-        debug.dbg("Execute overloaded function %s", self._wrapped_context, color='BLUE')
+        debug.dbg("Execute overloaded function %s", self._wrapped_value, color='BLUE')
         function_executions = []
-        context_set = NO_CONTEXTS
+        value_set = NO_CONTEXTS
         matched = False
         for f in self._overloaded_functions:
             function_execution = f.get_function_execution(arguments)
@@ -378,7 +378,7 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
                 return function_execution.infer()
 
         if matched:
-            return context_set
+            return value_set
 
         if self.infer_state.is_analysis:
             # In this case we want precision.
@@ -389,7 +389,7 @@ class OverloadedFunctionContext(FunctionMixin, ContextWrapper):
         return self._overloaded_functions
 
 
-def _find_overload_functions(context, tree_node):
+def _find_overload_functions(value, tree_node):
     def _is_overload_decorated(funcdef):
         if funcdef.parent.type == 'decorated':
             decorators = funcdef.parent.children[0]
@@ -400,7 +400,7 @@ def _find_overload_functions(context, tree_node):
             for decorator in decorators:
                 dotted_name = decorator.children[1]
                 if dotted_name.type == 'name' and dotted_name.value == 'overload':
-                    # TODO check with contexts if it's the right overload
+                    # TODO check with values if it's the right overload
                     return True
         return False
 
@@ -412,8 +412,8 @@ def _find_overload_functions(context, tree_node):
 
     while True:
         filter = ParserTreeFilter(
-            context.infer_state,
-            context,
+            value.infer_state,
+            value,
             until_position=tree_node.start_pos
         )
         names = filter.get(tree_node.name.value)

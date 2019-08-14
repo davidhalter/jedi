@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from jedi.inference.gradual.conversion import _stub_to_python_context_set
+from jedi.inference.gradual.conversion import _stub_to_python_value_set
 
 
 @pytest.mark.parametrize(
@@ -30,8 +30,8 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
         return  # The test right next to it should take over.
 
     d, = Script(code).goto_definitions()
-    context, = d._name.infer()
-    compiled, = _stub_to_python_context_set(context)
+    value, = d._name.infer()
+    compiled, = _stub_to_python_value_set(value)
     signature, = compiled.get_signatures()
     assert signature.to_string() == sig
     assert [n.string_name for n in signature.get_param_names()] == names

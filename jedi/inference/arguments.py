@@ -6,11 +6,11 @@ from jedi._compatibility import zip_longest
 from jedi import debug
 from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
-from jedi.inference.lazy_context import LazyKnownContext, LazyKnownContexts, \
-    LazyTreeContext, get_merged_lazy_context
+from jedi.inference.lazy_value import LazyKnownContext, LazyKnownContexts, \
+    LazyTreeContext, get_merged_lazy_value
 from jedi.inference.names import ParamName, TreeNameDefinition
 from jedi.inference.base_value import NO_CONTEXTS, ContextSet, ContextualizedNode
-from jedi.inference.context import iterable
+from jedi.inference.value import iterable
 from jedi.inference.cache import infer_state_as_method_param_cache
 from jedi.inference.param import get_executed_params_and_issues, ExecutedParam
 
@@ -28,8 +28,8 @@ def try_iter_content(types, depth=0):
         except AttributeError:
             pass
         else:
-            for lazy_context in f():
-                try_iter_content(lazy_context.infer(), depth + 1)
+            for lazy_value in f():
+                try_iter_content(lazy_value.infer(), depth + 1)
 
 
 class ParamIssue(Exception):
@@ -50,7 +50,7 @@ def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callbac
     clinic_args = list(_parse_argument_clinic(string))
 
     def decorator(func):
-        def wrapper(context, *args, **kwargs):
+        def wrapper(value, *args, **kwargs):
             if keep_arguments_param:
                 arguments = kwargs['arguments']
             else:
@@ -59,14 +59,14 @@ def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callbac
                 kwargs.pop('callback', None)
             try:
                 args += tuple(_iterate_argument_clinic(
-                    context.infer_state,
+                    value.infer_state,
                     arguments,
                     clinic_args
                 ))
             except ParamIssue:
                 return NO_CONTEXTS
             else:
-                return func(context, *args, **kwargs)
+                return func(value, *args, **kwargs)
 
         return wrapper
     return decorator
@@ -77,15 +77,15 @@ def _iterate_argument_clinic(infer_state, arguments, parameters):
     iterator = PushBackIterator(arguments.unpack())
     for i, (name, optional, allow_kwargs, stars) in enumerate(parameters):
         if stars == 1:
-            lazy_contexts = []
+            lazy_values = []
             for key, argument in iterator:
                 if key is not None:
                     iterator.push_back((key, argument))
                     break
 
-                lazy_contexts.append(argument)
-            yield ContextSet([iterable.FakeSequence(infer_state, u'tuple', lazy_contexts)])
-            lazy_contexts
+                lazy_values.append(argument)
+            yield ContextSet([iterable.FakeSequence(infer_state, u'tuple', lazy_values)])
+            lazy_values
             continue
         elif stars == 2:
             raise NotImplementedError()
@@ -98,15 +98,15 @@ def _iterate_argument_clinic(infer_state, arguments, parameters):
                           name, len(parameters), i)
             raise ParamIssue
 
-        context_set = NO_CONTEXTS if argument is None else argument.infer()
+        value_set = NO_CONTEXTS if argument is None else argument.infer()
 
-        if not context_set and not optional:
+        if not value_set and not optional:
             # For the stdlib we always want values. If we don't get them,
             # that's ok, maybe something is too hard to resolve, however,
             # we will not proceed with the type inference of that function.
             debug.warning('argument_clinic "%s" not resolvable.', name)
             raise ParamIssue
-        yield context_set
+        yield value_set
 
 
 def _parse_argument_clinic(string):
@@ -137,33 +137,33 @@ class _AbstractArgumentsMixin(object):
         Inferes all arguments as a support for static analysis
         (normally Jedi).
         """
-        for key, lazy_context in self.unpack():
-            types = lazy_context.infer()
+        for key, lazy_value in self.unpack():
+            types = lazy_value.infer()
             try_iter_content(types)
 
     def unpack(self, funcdef=None):
         raise NotImplementedError
 
-    def get_executed_params_and_issues(self, execution_context):
-        return get_executed_params_and_issues(execution_context, self)
+    def get_executed_params_and_issues(self, execution_value):
+        return get_executed_params_and_issues(execution_value, self)
 
     def get_calling_nodes(self):
         return []
 
 
 class AbstractArguments(_AbstractArgumentsMixin):
-    context = None
+    value = None
     argument_node = None
     trailer = None
 
 
 class AnonymousArguments(AbstractArguments):
-    def get_executed_params_and_issues(self, execution_context):
+    def get_executed_params_and_issues(self, execution_value):
         from jedi.inference.dynamic import search_params
         return search_params(
-            execution_context.infer_state,
-            execution_context,
-            execution_context.tree_node
+            execution_value.infer_state,
+            execution_value,
+            execution_value.tree_node
         ), []
 
     def __repr__(self):
@@ -198,12 +198,12 @@ def unpack_arglist(arglist):
 
 
 class TreeArguments(AbstractArguments):
-    def __init__(self, infer_state, context, argument_node, trailer=None):
+    def __init__(self, infer_state, value, argument_node, trailer=None):
         """
         :param argument_node: May be an argument_node or a list of nodes.
         """
         self.argument_node = argument_node
-        self.context = context
+        self.value = value
         self._infer_state = infer_state
         self.trailer = trailer  # Can be None, e.g. in a class definition.
 
@@ -216,25 +216,25 @@ class TreeArguments(AbstractArguments):
         named_args = []
         for star_count, el in unpack_arglist(self.argument_node):
             if star_count == 1:
-                arrays = self.context.infer_node(el)
-                iterators = [_iterate_star_args(self.context, a, el, funcdef)
+                arrays = self.value.infer_node(el)
+                iterators = [_iterate_star_args(self.value, a, el, funcdef)
                              for a in arrays]
                 for values in list(zip_longest(*iterators)):
                     # TODO zip_longest yields None, that means this would raise
                     # an exception?
-                    yield None, get_merged_lazy_context(
+                    yield None, get_merged_lazy_value(
                         [v for v in values if v is not None]
                     )
             elif star_count == 2:
-                arrays = self.context.infer_node(el)
+                arrays = self.value.infer_node(el)
                 for dct in arrays:
-                    for key, values in _star_star_dict(self.context, dct, el, funcdef):
+                    for key, values in _star_star_dict(self.value, dct, el, funcdef):
                         yield key, values
             else:
                 if el.type == 'argument':
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
-                        named_args.append((c[0].value, LazyTreeContext(self.context, c[2]),))
+                        named_args.append((c[0].value, LazyTreeContext(self.value, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         sync_comp_for = el.children[1]
@@ -242,13 +242,13 @@ class TreeArguments(AbstractArguments):
                             sync_comp_for = sync_comp_for.children[1]
                         comp = iterable.GeneratorComprehension(
                             self._infer_state,
-                            defining_context=self.context,
+                            defining_value=self.value,
                             sync_comp_for_node=sync_comp_for,
                             entry_node=el.children[0],
                         )
                         yield None, LazyKnownContext(comp)
                 else:
-                    yield None, LazyTreeContext(self.context, el)
+                    yield None, LazyTreeContext(self.value, el)
 
         # Reordering arguments is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
@@ -269,7 +269,7 @@ class TreeArguments(AbstractArguments):
             if not star_count or not isinstance(name, tree.Name):
                 continue
 
-            yield TreeNameDefinition(self.context, name)
+            yield TreeNameDefinition(self.value, name)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
@@ -302,9 +302,9 @@ class TreeArguments(AbstractArguments):
                 break
 
         if arguments.argument_node is not None:
-            return [ContextualizedNode(arguments.context, arguments.argument_node)]
+            return [ContextualizedNode(arguments.value, arguments.argument_node)]
         if arguments.trailer is not None:
-            return [ContextualizedNode(arguments.context, arguments.trailer)]
+            return [ContextualizedNode(arguments.value, arguments.trailer)]
         return []
 
 
@@ -325,8 +325,8 @@ class TreeArgumentsWrapper(_AbstractArgumentsMixin):
         self._wrapped_arguments = arguments
 
     @property
-    def context(self):
-        return self._wrapped_arguments.context
+    def value(self):
+        return self._wrapped_arguments.value
 
     @property
     def argument_node(self):
@@ -346,24 +346,24 @@ class TreeArgumentsWrapper(_AbstractArgumentsMixin):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_arguments)
 
 
-def _iterate_star_args(context, array, input_node, funcdef=None):
+def _iterate_star_args(value, array, input_node, funcdef=None):
     if not array.py__getattribute__('__iter__'):
         if funcdef is not None:
             # TODO this funcdef should not be needed.
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
                 % (funcdef.name.value, array)
-            analysis.add(context, 'type-error-star', input_node, message=m)
+            analysis.add(value, 'type-error-star', input_node, message=m)
     try:
         iter_ = array.py__iter__
     except AttributeError:
         pass
     else:
-        for lazy_context in iter_():
-            yield lazy_context
+        for lazy_value in iter_():
+            yield lazy_value
 
 
-def _star_star_dict(context, array, input_node, funcdef):
-    from jedi.inference.context.instance import CompiledInstance
+def _star_star_dict(value, array, input_node, funcdef):
+    from jedi.inference.value.instance import CompiledInstance
     if isinstance(array, CompiledInstance) and array.name.string_name == 'dict':
         # For now ignore this case. In the future add proper iterators and just
         # make one call without crazy isinstance checks.
@@ -374,5 +374,5 @@ def _star_star_dict(context, array, input_node, funcdef):
         if funcdef is not None:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
                 % (funcdef.name.value, array)
-            analysis.add(context, 'type-error-star-star', input_node, message=m)
+            analysis.add(value, 'type-error-star-star', input_node, message=m)
         return {}

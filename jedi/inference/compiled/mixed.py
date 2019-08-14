@@ -14,12 +14,12 @@ from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
 from jedi.inference.base_value import ContextSet, ContextWrapper
 from jedi.inference.helpers import SimpleGetItemNotFound
-from jedi.inference.context import ModuleContext
+from jedi.inference.value import ModuleContext
 from jedi.inference.cache import infer_state_function_cache
 from jedi.inference.compiled.getattr_static import getattr_static
 from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
-from jedi.inference.compiled.context import create_cached_compiled_object
+from jedi.inference.compiled.value import create_cached_compiled_object
 from jedi.inference.gradual.conversion import to_stub
 
 _sentinel = object()
@@ -42,8 +42,8 @@ class MixedObject(ContextWrapper):
     fewer special cases, because we in Python you don't have the same freedoms
     to modify the runtime.
     """
-    def __init__(self, compiled_object, tree_context):
-        super(MixedObject, self).__init__(tree_context)
+    def __init__(self, compiled_object, tree_value):
+        super(MixedObject, self).__init__(tree_value)
         self.compiled_object = compiled_object
         self.access_handle = compiled_object.access_handle
 
@@ -56,7 +56,7 @@ class MixedObject(ContextWrapper):
         return self.compiled_object.get_signatures()
 
     def py__call__(self, arguments):
-        return (to_stub(self._wrapped_context) or self._wrapped_context).py__call__(arguments)
+        return (to_stub(self._wrapped_value) or self._wrapped_value).py__call__(arguments)
 
     def get_safe_value(self, default=_sentinel):
         if default is _sentinel:
@@ -83,11 +83,11 @@ class MixedName(compiled.CompiledName):
     """
     @property
     def start_pos(self):
-        contexts = list(self.infer())
-        if not contexts:
+        values = list(self.infer())
+        if not values:
             # This means a start_pos that doesn't exist (compiled objects).
             return 0, 0
-        return contexts[0].name.start_pos
+        return values[0].name.start_pos
 
     @start_pos.setter
     def start_pos(self, value):
@@ -97,20 +97,20 @@ class MixedName(compiled.CompiledName):
     @underscore_memoization
     def infer(self):
         # TODO use logic from compiled.CompiledObjectFilter
-        access_paths = self.parent_context.access_handle.getattr_paths(
+        access_paths = self.parent_value.access_handle.getattr_paths(
             self.string_name,
             default=None
         )
         assert len(access_paths)
-        contexts = [None]
+        values = [None]
         for access in access_paths:
-            contexts = ContextSet.from_sets(
-                _create(self._infer_state, access, parent_context=c)
+            values = ContextSet.from_sets(
+                _create(self._infer_state, access, parent_value=c)
                 if c is None or isinstance(c, MixedObject)
                 else ContextSet({create_cached_compiled_object(c.infer_state, access, c)})
-                for c in contexts
+                for c in values
             )
-        return contexts
+        return values
 
     @property
     def api_type(self):
@@ -230,11 +230,11 @@ def _find_syntax_node_name(infer_state, python_object):
 
 
 @compiled_objects_cache('mixed_cache')
-def _create(infer_state, access_handle, parent_context, *args):
+def _create(infer_state, access_handle, parent_value, *args):
     compiled_object = create_cached_compiled_object(
         infer_state,
         access_handle,
-        parent_context=parent_context and parent_context.compiled_object
+        parent_value=parent_value and parent_value.compiled_object
     )
 
     # TODO accessing this is bad, but it probably doesn't matter that much,
@@ -246,17 +246,17 @@ def _create(infer_state, access_handle, parent_context, *args):
         if type(python_object) in (dict, list, tuple):
             return ContextSet({compiled_object})
 
-        tree_contexts = to_stub(compiled_object)
-        if not tree_contexts:
+        tree_values = to_stub(compiled_object)
+        if not tree_values:
             return ContextSet({compiled_object})
     else:
         module_node, tree_node, file_io, code_lines = result
 
-        if parent_context is None:
+        if parent_value is None:
             # TODO this __name__ is probably wrong.
-            name = compiled_object.get_root_context().py__name__()
+            name = compiled_object.get_root_value().py__name__()
             string_names = tuple(name.split('.'))
-            module_context = ModuleContext(
+            module_value = ModuleContext(
                 infer_state, module_node,
                 file_io=file_io,
                 string_names=string_names,
@@ -264,28 +264,28 @@ def _create(infer_state, access_handle, parent_context, *args):
                 is_package=hasattr(compiled_object, 'py__path__'),
             )
             if name is not None:
-                infer_state.module_cache.add(string_names, ContextSet([module_context]))
+                infer_state.module_cache.add(string_names, ContextSet([module_value]))
         else:
-            if parent_context.tree_node.get_root_node() != module_node:
+            if parent_value.tree_node.get_root_node() != module_node:
                 # This happens e.g. when __module__ is wrong, or when using
                 # TypeVar('foo'), where Jedi uses 'foo' as the name and
                 # Python's TypeVar('foo').__module__ will be typing.
                 return ContextSet({compiled_object})
-            module_context = parent_context.get_root_context()
+            module_value = parent_value.get_root_value()
 
-        tree_contexts = ContextSet({
-            module_context.create_context(
+        tree_values = ContextSet({
+            module_value.create_value(
                 tree_node,
-                node_is_context=True,
+                node_is_value=True,
                 node_is_object=True
             )
         })
         if tree_node.type == 'classdef':
             if not access_handle.is_class():
                 # Is an instance, not a class.
-                tree_contexts = tree_contexts.execute_with_values()
+                tree_values = tree_values.execute_with_values()
 
     return ContextSet(
-        MixedObject(compiled_object, tree_context=tree_context)
-        for tree_context in tree_contexts
+        MixedObject(compiled_object, tree_value=tree_value)
+        for tree_value in tree_values
     )

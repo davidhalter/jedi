@@ -73,16 +73,16 @@ Type inference of python code (inference/__init__.py)
 
 .. automodule:: jedi.inference
 
-Inference Contexts (inference/base_value.py)
+Inference Values (inference/base_value.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. automodule:: jedi.inference.base_value
 
 .. inheritance-diagram::
-   jedi.inference.context.instance.TreeInstance
-   jedi.inference.context.klass.ClassContext
-   jedi.inference.context.function.FunctionContext
-   jedi.inference.context.function.FunctionExecutionContext
+   jedi.inference.value.instance.TreeInstance
+   jedi.inference.value.klass.Classvalue
+   jedi.inference.value.function.FunctionContext
+   jedi.inference.value.function.FunctionExecutionContext
    :parts: 1
 
 
@@ -124,13 +124,13 @@ without some features.
 
 .. _iterables:
 
-Iterables & Dynamic Arrays (inference/context/iterable.py)
+Iterables & Dynamic Arrays (inference/value/iterable.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To understand Python on a deeper level, |jedi| needs to understand some of the
 dynamic features of Python like lists that are filled after creation:
 
-.. automodule:: jedi.inference.context.iterable
+.. automodule:: jedi.inference.value.iterable
 
 
 .. _dynamic:

@@ -26,7 +26,7 @@ from jedi.inference.param import create_default_params
 from jedi.inference.helpers import is_stdlib_path
 from jedi.inference.utils import to_list
 from jedi.parser_utils import get_parent_scope
-from jedi.inference.context import ModuleContext, instance
+from jedi.inference.value import ModuleContext, instance
 from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.inference import recursion
 
@@ -54,7 +54,7 @@ class DynamicExecutedParams(object):
 
 
 @debug.increase_indent
-def search_params(infer_state, execution_context, funcdef):
+def search_params(infer_state, execution_value, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -68,31 +68,31 @@ def search_params(infer_state, execution_context, funcdef):
     is.
     """
     if not settings.dynamic_params:
-        return create_default_params(execution_context, funcdef)
+        return create_default_params(execution_value, funcdef)
 
     infer_state.dynamic_params_depth += 1
     try:
-        path = execution_context.get_root_context().py__file__()
+        path = execution_value.get_root_value().py__file__()
         if path is not None and is_stdlib_path(path):
             # We don't want to search for usages in the stdlib. Usually people
             # don't work with it (except if you are a core maintainer, sorry).
             # This makes everything slower. Just disable it and run the tests,
             # you will see the slowdown, especially in 3.6.
-            return create_default_params(execution_context, funcdef)
+            return create_default_params(execution_value, funcdef)
 
         if funcdef.type == 'lambdef':
             string_name = _get_lambda_name(funcdef)
             if string_name is None:
-                return create_default_params(execution_context, funcdef)
+                return create_default_params(execution_value, funcdef)
         else:
             string_name = funcdef.name.value
         debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
 
         try:
-            module_context = execution_context.get_root_context()
+            module_value = execution_value.get_root_value()
             function_executions = _search_function_executions(
                 infer_state,
-                module_context,
+                module_value,
                 funcdef,
                 string_name=string_name,
             )
@@ -105,7 +105,7 @@ def search_params(infer_state, execution_context, funcdef):
                           for executed_params in zipped_params]
                 # Inferes the ExecutedParams to types.
             else:
-                return create_default_params(execution_context, funcdef)
+                return create_default_params(execution_value, funcdef)
         finally:
             debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
@@ -115,7 +115,7 @@ def search_params(infer_state, execution_context, funcdef):
 
 @infer_state_function_cache(default=None)
 @to_list
-def _search_function_executions(infer_state, module_context, funcdef, string_name):
+def _search_function_executions(infer_state, module_value, funcdef, string_name):
     """
     Returns a list of param names.
     """
@@ -128,11 +128,11 @@ def _search_function_executions(infer_state, module_context, funcdef, string_nam
 
     found_executions = False
     i = 0
-    for for_mod_context in imports.get_modules_containing_name(
-            infer_state, [module_context], string_name):
-        if not isinstance(module_context, ModuleContext):
+    for for_mod_value in imports.get_modules_containing_name(
+            infer_state, [module_value], string_name):
+        if not isinstance(module_value, ModuleContext):
             return
-        for name, trailer in _get_possible_nodes(for_mod_context, string_name):
+        for name, trailer in _get_possible_nodes(for_mod_value, string_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion
@@ -141,9 +141,9 @@ def _search_function_executions(infer_state, module_context, funcdef, string_nam
             if i * infer_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 
-            random_context = infer_state.create_context(for_mod_context, name)
+            random_value = infer_state.create_value(for_mod_value, name)
             for function_execution in _check_name_for_execution(
-                    infer_state, random_context, compare_node, name, trailer):
+                    infer_state, random_value, compare_node, name, trailer):
                 found_executions = True
                 yield function_execution
 
@@ -165,9 +165,9 @@ def _get_lambda_name(node):
     return None
 
 
-def _get_possible_nodes(module_context, func_string_name):
+def _get_possible_nodes(module_value, func_string_name):
     try:
-        names = module_context.tree_node.get_used_names()[func_string_name]
+        names = module_value.tree_node.get_used_names()[func_string_name]
     except KeyError:
         return
 
@@ -178,51 +178,51 @@ def _get_possible_nodes(module_context, func_string_name):
             yield name, trailer
 
 
-def _check_name_for_execution(infer_state, context, compare_node, name, trailer):
-    from jedi.inference.context.function import FunctionExecutionContext
+def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
+    from jedi.inference.value.function import FunctionExecutionContext
 
     def create_func_excs():
         arglist = trailer.children[1]
         if arglist == ')':
             arglist = None
-        args = TreeArguments(infer_state, context, arglist, trailer)
+        args = TreeArguments(infer_state, value, arglist, trailer)
         if value_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 infer_state,
-                value.parent_context,
-                value,
+                v.parent_value,
+                v,
                 args
             )
             for execution in created_instance.create_init_executions():
                 yield execution
         else:
-            yield value.get_function_execution(args)
+            yield v.get_function_execution(args)
 
-    for value in infer_state.goto_definitions(context, name):
-        value_node = value.tree_node
+    for v in infer_state.goto_definitions(value, name):
+        value_node = v.tree_node
         if compare_node == value_node:
             for func_execution in create_func_excs():
                 yield func_execution
-        elif isinstance(value.parent_context, FunctionExecutionContext) and \
+        elif isinstance(v.parent_value, FunctionExecutionContext) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
-            params, _ = value.parent_context.get_executed_params_and_issues()
+            params, _ = v.parent_value.get_executed_params_and_issues()
             if len(params) != 1:
                 continue
             values = params[0].infer()
             nodes = [v.tree_node for v in values]
             if nodes == [compare_node]:
                 # Found a decorator.
-                module_context = context.get_root_context()
-                execution_context = next(create_func_excs())
-                for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
+                module_value = value.get_root_value()
+                execution_value = next(create_func_excs())
+                for name, trailer in _get_possible_nodes(module_value, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
-                        random_context = infer_state.create_context(execution_context, name)
+                        random_value = infer_state.create_value(execution_value, name)
                         iterator = _check_name_for_execution(
                             infer_state,
-                            random_context,
+                            random_value,
                             compare_node,
                             name,
                             trailer

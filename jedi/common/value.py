@@ -1,21 +1,21 @@
 class BaseContext(object):
-    def __init__(self, infer_state, parent_context=None):
+    def __init__(self, infer_state, parent_value=None):
         self.infer_state = infer_state
-        self.parent_context = parent_context
+        self.parent_value = parent_value
 
-    def get_root_context(self):
-        context = self
+    def get_root_value(self):
+        value = self
         while True:
-            if context.parent_context is None:
-                return context
-            context = context.parent_context
+            if value.parent_value is None:
+                return value
+            value = value.parent_value
 
 
 class BaseContextSet(object):
     def __init__(self, iterable):
         self._set = frozenset(iterable)
-        for context in iterable:
-            assert not isinstance(context, BaseContextSet)
+        for value in iterable:
+            assert not isinstance(value, BaseContextSet)
 
     @classmethod
     def _from_frozen_set(cls, frozenset_):
@@ -61,8 +61,8 @@ class BaseContextSet(object):
     def __getattr__(self, name):
         def mapper(*args, **kwargs):
             return self.from_sets(
-                getattr(context, name)(*args, **kwargs)
-                for context in self._set
+                getattr(value, name)(*args, **kwargs)
+                for value in self._set
             )
         return mapper
 

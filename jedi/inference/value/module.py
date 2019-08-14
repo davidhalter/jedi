@@ -8,7 +8,7 @@ from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilte
 from jedi.inference import compiled
 from jedi.inference.base_value import TreeContext
 from jedi.inference.names import SubModuleName
-from jedi.inference.helpers import contexts_from_qualified_names
+from jedi.inference.helpers import values_from_qualified_names
 from jedi.inference.compiled import create_simple_object
 from jedi.inference.base_value import ContextSet
 
@@ -20,27 +20,27 @@ class _ModuleAttributeName(AbstractNameDefinition):
     api_type = u'instance'
 
     def __init__(self, parent_module, string_name, string_value=None):
-        self.parent_context = parent_module
+        self.parent_value = parent_module
         self.string_name = string_name
         self._string_value = string_value
 
     def infer(self):
         if self._string_value is not None:
             s = self._string_value
-            if self.parent_context.infer_state.environment.version_info.major == 2 \
+            if self.parent_value.infer_state.environment.version_info.major == 2 \
                     and not isinstance(s, bytes):
                 s = s.encode('utf-8')
             return ContextSet([
-                create_simple_object(self.parent_context.infer_state, s)
+                create_simple_object(self.parent_value.infer_state, s)
             ])
-        return compiled.get_string_context_set(self.parent_context.infer_state)
+        return compiled.get_string_value_set(self.parent_value.infer_state)
 
 
 class ModuleName(ContextNameMixin, AbstractNameDefinition):
     start_pos = 1, 0
 
-    def __init__(self, context, name):
-        self._context = context
+    def __init__(self, value, name):
+        self._value = value
         self._name = name
 
     @property
@@ -102,7 +102,7 @@ class ModuleMixin(SubModuleDictMixin):
         yield MergedFilter(
             ParserTreeFilter(
                 self.infer_state,
-                context=self,
+                value=self,
                 until_position=until_position,
                 origin_scope=origin_scope
             ),
@@ -114,7 +114,7 @@ class ModuleMixin(SubModuleDictMixin):
             yield star_filter
 
     def py__class__(self):
-        c, = contexts_from_qualified_names(self.infer_state, u'types', u'ModuleType')
+        c, = values_from_qualified_names(self.infer_state, u'types', u'ModuleType')
         return c
 
     def is_module(self):
@@ -168,7 +168,7 @@ class ModuleMixin(SubModuleDictMixin):
                 new = Importer(
                     self.infer_state,
                     import_path=i.get_paths()[-1],
-                    module_context=self,
+                    module_value=self,
                     level=i.level
                 ).follow()
 
@@ -182,19 +182,19 @@ class ModuleMixin(SubModuleDictMixin):
         """
         A module doesn't have a qualified name, but it's important to note that
         it's reachable and not `None`. With this information we can add
-        qualified names on top for all context children.
+        qualified names on top for all value children.
         """
         return ()
 
 
 class ModuleContext(ModuleMixin, TreeContext):
     api_type = u'module'
-    parent_context = None
+    parent_value = None
 
     def __init__(self, infer_state, module_node, file_io, string_names, code_lines, is_package=False):
         super(ModuleContext, self).__init__(
             infer_state,
-            parent_context=None,
+            parent_value=None,
             tree_node=module_node
         )
         self.file_io = file_io

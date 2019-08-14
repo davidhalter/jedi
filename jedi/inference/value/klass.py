@@ -32,7 +32,7 @@ py__package__() -> List[str]           Only on modules. For the import system.
 py__path__()                           Only on modules. For the import system.
 py__get__(call_object)                 Only on instances. Simulates
                                        descriptors.
-py__doc__()                            Returns the docstring for a context.
+py__doc__()                            Returns the docstring for a value.
 ====================================== ========================================
 
 """
@@ -42,47 +42,47 @@ from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.cache import infer_state_method_cache, CachedMetaClass, \
     infer_state_method_generator_cache
 from jedi.inference import compiled
-from jedi.inference.lazy_context import LazyKnownContexts
+from jedi.inference.lazy_value import LazyKnownContexts
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.names import TreeNameDefinition, ContextName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
-from jedi.inference.base_value import ContextSet, iterator_to_context_set, \
+from jedi.inference.base_value import ContextSet, iterator_to_value_set, \
     NO_CONTEXTS
-from jedi.inference.context.function import FunctionAndClassBase
+from jedi.inference.value.function import FunctionAndClassBase
 from jedi.plugins import plugin_manager
 
 
-def apply_py__get__(context, instance, class_context):
+def apply_py__get__(value, instance, class_value):
     try:
-        method = context.py__get__
+        method = value.py__get__
     except AttributeError:
-        yield context
+        yield value
     else:
-        for descriptor_context in method(instance, class_context):
-            yield descriptor_context
+        for descriptor_value in method(instance, class_value):
+            yield descriptor_value
 
 
 class ClassName(TreeNameDefinition):
-    def __init__(self, parent_context, tree_name, name_context, apply_decorators):
-        super(ClassName, self).__init__(parent_context, tree_name)
-        self._name_context = name_context
+    def __init__(self, parent_value, tree_name, name_value, apply_decorators):
+        super(ClassName, self).__init__(parent_value, tree_name)
+        self._name_value = name_value
         self._apply_decorators = apply_decorators
 
-    @iterator_to_context_set
+    @iterator_to_value_set
     def infer(self):
-        # We're using a different context to infer, so we cannot call super().
-        from jedi.inference.syntax_tree import tree_name_to_contexts
-        inferred = tree_name_to_contexts(
-            self.parent_context.infer_state, self._name_context, self.tree_name)
+        # We're using a different value to infer, so we cannot call super().
+        from jedi.inference.syntax_tree import tree_name_to_values
+        inferred = tree_name_to_values(
+            self.parent_value.infer_state, self._name_value, self.tree_name)
 
-        for result_context in inferred:
+        for result_value in inferred:
             if self._apply_decorators:
-                for c in apply_py__get__(result_context,
+                for c in apply_py__get__(result_value,
                                          instance=None,
-                                         class_context=self.parent_context):
+                                         class_value=self.parent_value):
                     yield c
             else:
-                yield result_context
+                yield result_value
 
 
 class ClassFilter(ParserTreeFilter):
@@ -95,9 +95,9 @@ class ClassFilter(ParserTreeFilter):
     def _convert_names(self, names):
         return [
             self.name_class(
-                parent_context=self.context,
+                parent_value=self.value,
                 tree_name=name,
-                name_context=self._node_context,
+                name_value=self._node_value,
                 apply_decorators=not self._is_instance,
             ) for name in names
         ]
@@ -105,7 +105,7 @@ class ClassFilter(ParserTreeFilter):
     def _equals_origin_scope(self):
         node = self._origin_scope
         while node is not None:
-            if node == self._parser_scope or node == self.context:
+            if node == self._parser_scope or node == self.value:
                 return True
             node = get_cached_parent_scope(self._used_names, node)
         return False
@@ -138,10 +138,10 @@ class ClassMixin(object):
         return True
 
     def py__call__(self, arguments=None):
-        from jedi.inference.context import TreeInstance
+        from jedi.inference.value import TreeInstance
         if arguments is None:
             arguments = ValuesArguments([])
-        return ContextSet([TreeInstance(self.infer_state, self.parent_context, self, arguments)])
+        return ContextSet([TreeInstance(self.infer_state, self.parent_value, self, arguments)])
 
     def py__class__(self):
         return compiled.builtin_from_name(self.infer_state, u'type')
@@ -154,9 +154,9 @@ class ClassMixin(object):
         return self.name.string_name
 
     def get_param_names(self):
-        for context_ in self.py__getattribute__(u'__init__'):
-            if context_.is_function():
-                return list(context_.get_param_names())[1:]
+        for value_ in self.py__getattribute__(u'__init__'):
+            if value_.is_function():
+                return list(value_.get_param_names())[1:]
         return []
 
     @infer_state_method_generator_cache()
@@ -208,7 +208,7 @@ class ClassMixin(object):
                         yield filter
                 else:
                     yield ClassFilter(
-                        self.infer_state, self, node_context=cls,
+                        self.infer_state, self, node_value=cls,
                         origin_scope=origin_scope,
                         is_instance=is_instance
                     )
@@ -231,7 +231,7 @@ class ClassMixin(object):
     def get_global_filter(self, until_position=None, origin_scope=None):
         return ParserTreeFilter(
             self.infer_state,
-            context=self,
+            value=self,
             until_position=until_position,
             origin_scope=origin_scope
         )
@@ -252,7 +252,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                 continue  # These are not relevant for this search.
 
             from jedi.inference.gradual.annotation import find_unknown_type_vars
-            for type_var in find_unknown_type_vars(self.parent_context, node):
+            for type_var in find_unknown_type_vars(self.parent_value, node):
                 if type_var not in found:
                     # The order matters and it's therefore a list.
                     found.append(type_var)
@@ -262,7 +262,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         arglist = self.tree_node.get_super_arglist()
         if arglist:
             from jedi.inference import arguments
-            return arguments.TreeArguments(self.infer_state, self.parent_context, arglist)
+            return arguments.TreeArguments(self.infer_state, self.parent_value, arglist)
         return None
 
     @infer_state_method_cache(default=())
@@ -274,23 +274,23 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                 return lst
 
         if self.py__name__() == 'object' \
-                and self.parent_context == self.infer_state.builtins_module:
+                and self.parent_value == self.infer_state.builtins_module:
             return []
         return [LazyKnownContexts(
             self.infer_state.builtins_module.py__getattribute__('object')
         )]
 
-    def py__getitem__(self, index_context_set, contextualized_node):
+    def py__getitem__(self, index_value_set, valueualized_node):
         from jedi.inference.gradual.typing import LazyGenericClass
-        if not index_context_set:
+        if not index_value_set:
             return ContextSet([self])
         return ContextSet(
             LazyGenericClass(
                 self,
-                index_context,
-                context_of_index=contextualized_node.context,
+                index_value,
+                value_of_index=valueualized_node.value,
             )
-            for index_context in index_context_set
+            for index_value in index_value_set
         )
 
     def define_generics(self, type_var_dict):
@@ -326,15 +326,15 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         args = self._get_bases_arguments()
         if args is not None:
             m = [value for key, value in args.unpack() if key == 'metaclass']
-            metaclasses = ContextSet.from_sets(lazy_context.infer() for lazy_context in m)
+            metaclasses = ContextSet.from_sets(lazy_value.infer() for lazy_value in m)
             metaclasses = ContextSet(m for m in metaclasses if m.is_class())
             if metaclasses:
                 return metaclasses
 
         for lazy_base in self.py__bases__():
-            for context in lazy_base.infer():
-                if context.is_class():
-                    contexts = context.get_metaclasses()
-                    if contexts:
-                        return contexts
+            for value in lazy_base.infer():
+                if value.is_class():
+                    values = value.get_metaclasses()
+                    if values:
+                        return values
         return NO_CONTEXTS

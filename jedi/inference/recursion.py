@@ -115,7 +115,7 @@ class ExecutionRecursionDetector(object):
         self._recursion_level += 1
         self._parent_execution_funcs.append(funcdef)
 
-        module = execution.get_root_context()
+        module = execution.get_root_value()
 
         if module == self._infer_state.builtins_module:
             # We have control over builtins so we know they are not recursing

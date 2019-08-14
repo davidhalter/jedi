@@ -6,7 +6,7 @@ from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference.base_value import ContextSet, NO_CONTEXTS
-from jedi.inference.gradual.stub_context import TypingModuleWrapper, StubModuleContext
+from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
@@ -89,38 +89,38 @@ def _cache_stub_file_map(version_info):
 
 def import_module_decorator(func):
     @wraps(func)
-    def wrapper(infer_state, import_names, parent_module_context, sys_path, prefer_stubs):
+    def wrapper(infer_state, import_names, parent_module_value, sys_path, prefer_stubs):
         try:
-            python_context_set = infer_state.module_cache.get(import_names)
+            python_value_set = infer_state.module_cache.get(import_names)
         except KeyError:
-            if parent_module_context is not None and parent_module_context.is_stub():
-                parent_module_contexts = parent_module_context.non_stub_context_set
+            if parent_module_value is not None and parent_module_value.is_stub():
+                parent_module_values = parent_module_value.non_stub_value_set
             else:
-                parent_module_contexts = [parent_module_context]
+                parent_module_values = [parent_module_value]
             if import_names == ('os', 'path'):
                 # This is a huge exception, we follow a nested import
                 # ``os.path``, because it's a very important one in Python
                 # that is being achieved by messing with ``sys.modules`` in
                 # ``os``.
-                python_parent = next(iter(parent_module_contexts))
+                python_parent = next(iter(parent_module_values))
                 if python_parent is None:
                     python_parent, = infer_state.import_module(('os',), prefer_stubs=False)
-                python_context_set = python_parent.py__getattribute__('path')
+                python_value_set = python_parent.py__getattribute__('path')
             else:
-                python_context_set = ContextSet.from_sets(
+                python_value_set = ContextSet.from_sets(
                     func(infer_state, import_names, p, sys_path,)
-                    for p in parent_module_contexts
+                    for p in parent_module_values
                 )
-            infer_state.module_cache.add(import_names, python_context_set)
+            infer_state.module_cache.add(import_names, python_value_set)
 
         if not prefer_stubs:
-            return python_context_set
+            return python_value_set
 
-        stub = _try_to_load_stub_cached(infer_state, import_names, python_context_set,
-                                        parent_module_context, sys_path)
+        stub = _try_to_load_stub_cached(infer_state, import_names, python_value_set,
+                                        parent_module_value, sys_path)
         if stub is not None:
             return ContextSet([stub])
-        return python_context_set
+        return python_value_set
 
     return wrapper
 
@@ -139,19 +139,19 @@ def _try_to_load_stub_cached(infer_state, import_names, *args, **kwargs):
     return result
 
 
-def _try_to_load_stub(infer_state, import_names, python_context_set,
-                      parent_module_context, sys_path):
+def _try_to_load_stub(infer_state, import_names, python_value_set,
+                      parent_module_value, sys_path):
     """
     Trying to load a stub for a set of import_names.
 
     This is modelled to work like "PEP 561 -- Distributing and Packaging Type
     Information", see https://www.python.org/dev/peps/pep-0561.
     """
-    if parent_module_context is None and len(import_names) > 1:
+    if parent_module_value is None and len(import_names) > 1:
         try:
-            parent_module_context = _try_to_load_stub_cached(
+            parent_module_value = _try_to_load_stub_cached(
                 infer_state, import_names[:-1], NO_CONTEXTS,
-                parent_module_context=None, sys_path=sys_path)
+                parent_module_value=None, sys_path=sys_path)
         except KeyError:
             pass
 
@@ -162,7 +162,7 @@ def _try_to_load_stub(infer_state, import_names, python_context_set,
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
             m = _try_to_load_stub_from_file(
                 infer_state,
-                python_context_set,
+                python_value_set,
                 file_io=FileIO(init),
                 import_names=import_names,
             )
@@ -170,7 +170,7 @@ def _try_to_load_stub(infer_state, import_names, python_context_set,
                 return m
 
     # 2. Try to load pyi files next to py files.
-    for c in python_context_set:
+    for c in python_value_set:
         try:
             method = c.py__file__
         except AttributeError:
@@ -186,7 +186,7 @@ def _try_to_load_stub(infer_state, import_names, python_context_set,
             for file_path in file_paths:
                 m = _try_to_load_stub_from_file(
                     infer_state,
-                    python_context_set,
+                    python_value_set,
                     # The file path should end with .pyi
                     file_io=FileIO(file_path),
                     import_names=import_names,
@@ -195,15 +195,15 @@ def _try_to_load_stub(infer_state, import_names, python_context_set,
                     return m
 
     # 3. Try to load typeshed
-    m = _load_from_typeshed(infer_state, python_context_set, parent_module_context, import_names)
+    m = _load_from_typeshed(infer_state, python_value_set, parent_module_value, import_names)
     if m is not None:
         return m
 
-    # 4. Try to load pyi file somewhere if python_context_set was not defined.
-    if not python_context_set:
-        if parent_module_context is not None:
+    # 4. Try to load pyi file somewhere if python_value_set was not defined.
+    if not python_value_set:
+        if parent_module_value is not None:
             try:
-                method = parent_module_context.py__path__
+                method = parent_module_value.py__path__
             except AttributeError:
                 check_path = []
             else:
@@ -217,7 +217,7 @@ def _try_to_load_stub(infer_state, import_names, python_context_set,
         for p in check_path:
             m = _try_to_load_stub_from_file(
                 infer_state,
-                python_context_set,
+                python_value_set,
                 file_io=FileIO(os.path.join(p, *names_for_path) + '.pyi'),
                 import_names=import_names,
             )
@@ -229,18 +229,18 @@ def _try_to_load_stub(infer_state, import_names, python_context_set,
     return None
 
 
-def _load_from_typeshed(infer_state, python_context_set, parent_module_context, import_names):
+def _load_from_typeshed(infer_state, python_value_set, parent_module_value, import_names):
     import_name = import_names[-1]
     map_ = None
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(infer_state.grammar.version_info)
         import_name = _IMPORT_MAP.get(import_name, import_name)
-    elif isinstance(parent_module_context, StubModuleContext):
-        if not parent_module_context.is_package:
+    elif isinstance(parent_module_value, StubModuleContext):
+        if not parent_module_value.is_package:
             # Only if it's a package (= a folder) something can be
             # imported.
             return None
-        path = parent_module_context.py__path__()
+        path = parent_module_value.py__path__()
         map_ = _merge_create_stub_map(path)
 
     if map_ is not None:
@@ -248,13 +248,13 @@ def _load_from_typeshed(infer_state, python_context_set, parent_module_context, 
         if path is not None:
             return _try_to_load_stub_from_file(
                 infer_state,
-                python_context_set,
+                python_value_set,
                 file_io=FileIO(path),
                 import_names=import_names,
             )
 
 
-def _try_to_load_stub_from_file(infer_state, python_context_set, file_io, import_names):
+def _try_to_load_stub_from_file(infer_state, python_value_set, file_io, import_names):
     try:
         stub_module_node = infer_state.parse(
             file_io=file_io,
@@ -266,19 +266,19 @@ def _try_to_load_stub_from_file(infer_state, python_context_set, file_io, import
         return None
     else:
         return create_stub_module(
-            infer_state, python_context_set, stub_module_node, file_io,
+            infer_state, python_value_set, stub_module_node, file_io,
             import_names
         )
 
 
-def create_stub_module(infer_state, python_context_set, stub_module_node, file_io, import_names):
+def create_stub_module(infer_state, python_value_set, stub_module_node, file_io, import_names):
     if import_names == ('typing',):
         module_cls = TypingModuleWrapper
     else:
         module_cls = StubModuleContext
     file_name = os.path.basename(file_io.path)
-    stub_module_context = module_cls(
-        python_context_set, infer_state, stub_module_node,
+    stub_module_value = module_cls(
+        python_value_set, infer_state, stub_module_node,
         file_io=file_io,
         string_names=import_names,
         # The code was loaded with latest_grammar, so use
@@ -286,4 +286,4 @@ def create_stub_module(infer_state, python_context_set, stub_module_node, file_i
         code_lines=get_cached_code_lines(infer_state.latest_grammar, file_io.path),
         is_package=file_name == '__init__.pyi',
     )
-    return stub_module_context
+    return stub_module_value

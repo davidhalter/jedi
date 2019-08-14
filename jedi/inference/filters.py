@@ -68,11 +68,11 @@ def _get_definition_names(used_names, name_key):
 class AbstractUsedNamesFilter(AbstractFilter):
     name_class = TreeNameDefinition
 
-    def __init__(self, context, parser_scope):
+    def __init__(self, value, parser_scope):
         self._parser_scope = parser_scope
         self._module_node = self._parser_scope.get_root_node()
         self._used_names = self._module_node.get_used_names()
-        self.context = context
+        self.value = value
 
     def get(self, name, **filter_kwargs):
         return self._convert_names(self._filter(
@@ -81,7 +81,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
         ))
 
     def _convert_names(self, names):
-        return [self.name_class(self.context, name) for name in names]
+        return [self.name_class(self.value, name) for name in names]
 
     def values(self, **filter_kwargs):
         return self._convert_names(
@@ -94,23 +94,23 @@ class AbstractUsedNamesFilter(AbstractFilter):
         )
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.context)
+        return '<%s: %s>' % (self.__class__.__name__, self.value)
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
     # TODO remove infer_state as an argument, it's not used.
-    def __init__(self, infer_state, context, node_context=None, until_position=None,
+    def __init__(self, infer_state, value, node_value=None, until_position=None,
                  origin_scope=None):
         """
-        node_context is an option to specify a second context for use cases
+        node_value is an option to specify a second value for use cases
         like the class mro where the parent class of a new name would be the
-        context, but for some type inference it's important to have a local
-        context of the other classes.
+        value, but for some type inference it's important to have a local
+        value of the other classes.
         """
-        if node_context is None:
-            node_context = context
-        super(ParserTreeFilter, self).__init__(context, node_context.tree_node)
-        self._node_context = node_context
+        if node_value is None:
+            node_value = value
+        super(ParserTreeFilter, self).__init__(value, node_value.tree_node)
+        self._node_value = node_value
         self._origin_scope = origin_scope
         self._until_position = until_position
 
@@ -129,8 +129,8 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
     def _check_flows(self, names):
         for name in sorted(names, key=lambda name: name.start_pos, reverse=True):
             check = flow_analysis.reachability_check(
-                context=self._node_context,
-                context_scope=self._parser_scope,
+                value=self._node_value,
+                value_scope=self._parser_scope,
                 node=name,
                 origin_scope=self._origin_scope
             )
@@ -144,12 +144,12 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 class FunctionExecutionFilter(ParserTreeFilter):
     param_name = ParamName
 
-    def __init__(self, infer_state, context, node_context=None,
+    def __init__(self, infer_state, value, node_value=None,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
             infer_state,
-            context,
-            node_context,
+            value,
+            node_value,
             until_position,
             origin_scope
         )
@@ -159,14 +159,14 @@ class FunctionExecutionFilter(ParserTreeFilter):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                yield self.param_name(self.context, name)
+                yield self.param_name(self.value, name)
             else:
-                yield TreeNameDefinition(self.context, name)
+                yield TreeNameDefinition(self.value, name)
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):
-    def __init__(self, context, parser_scope):
-        super(GlobalNameFilter, self).__init__(context, parser_scope)
+    def __init__(self, value, parser_scope):
+        super(GlobalNameFilter, self).__init__(value, parser_scope)
 
     def get(self, name):
         try:
@@ -235,17 +235,17 @@ class _BuiltinMappedMethod(Context):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
     api_type = u'function'
 
-    def __init__(self, builtin_context, method, builtin_func):
+    def __init__(self, builtin_value, method, builtin_func):
         super(_BuiltinMappedMethod, self).__init__(
-            builtin_context.infer_state,
-            parent_context=builtin_context
+            builtin_value.infer_state,
+            parent_value=builtin_value
         )
         self._method = method
         self._builtin_func = builtin_func
 
     def py__call__(self, arguments):
         # TODO add TypeError if params are given/or not correct.
-        return self._method(self.parent_context)
+        return self._method(self.parent_value)
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
@@ -259,19 +259,19 @@ class SpecialMethodFilter(DictFilter):
     class SpecialMethodName(AbstractNameDefinition):
         api_type = u'function'
 
-        def __init__(self, parent_context, string_name, value, builtin_context):
+        def __init__(self, parent_value, string_name, value, builtin_value):
             callable_, python_version = value
             if python_version is not None and \
-                    python_version != parent_context.infer_state.environment.version_info.major:
+                    python_version != parent_value.infer_state.environment.version_info.major:
                 raise KeyError
 
-            self.parent_context = parent_context
+            self.parent_value = parent_value
             self.string_name = string_name
             self._callable = callable_
-            self._builtin_context = builtin_context
+            self._builtin_value = builtin_value
 
         def infer(self):
-            for filter in self._builtin_context.get_filters():
+            for filter in self._builtin_value.get_filters():
                 # We can take the first index, because on builtin methods there's
                 # always only going to be one name. The same is true for the
                 # inferred values.
@@ -282,22 +282,22 @@ class SpecialMethodFilter(DictFilter):
                     continue
                 break
             return ContextSet([
-                _BuiltinMappedMethod(self.parent_context, self._callable, builtin_func)
+                _BuiltinMappedMethod(self.parent_value, self._callable, builtin_func)
             ])
 
-    def __init__(self, context, dct, builtin_context):
+    def __init__(self, value, dct, builtin_value):
         super(SpecialMethodFilter, self).__init__(dct)
-        self.context = context
-        self._builtin_context = builtin_context
+        self.value = value
+        self._builtin_value = builtin_value
         """
-        This context is what will be used to introspect the name, where as the
-        other context will be used to execute the function.
+        This value is what will be used to introspect the name, where as the
+        other value will be used to execute the function.
 
         We distinguish, because we have to.
         """
 
     def _convert(self, name, value):
-        return self.SpecialMethodName(self.context, name, value, self._builtin_context)
+        return self.SpecialMethodName(self.value, name, value, self._builtin_value)
 
 
 class _OverwriteMeta(type):
@@ -321,9 +321,9 @@ class _OverwriteMeta(type):
 
 class _AttributeOverwriteMixin(object):
     def get_filters(self, search_global=False, *args, **kwargs):
-        yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_context)
+        yield SpecialMethodFilter(self, self.overwritten_methods, self._wrapped_value)
 
-        for filter in self._wrapped_context.get_filters(search_global):
+        for filter in self._wrapped_value.get_filters(search_global):
             yield filter
 
 
@@ -346,7 +346,7 @@ def publish_method(method_name, python_version_match=None):
     return decorator
 
 
-def get_global_filters(infer_state, context, until_position, origin_scope):
+def get_global_filters(infer_state, value, until_position, origin_scope):
     """
     Returns all filters in order of priority for name resolution.
 
@@ -364,8 +364,8 @@ def get_global_filters(infer_state, context, until_position, origin_scope):
     >>> scope = next(module_node.iter_funcdefs())
     >>> scope
     <Function: func@3-5>
-    >>> context = script._get_module().create_context(scope)
-    >>> filters = list(get_global_filters(context.infer_state, context, (4, 0), None))
+    >>> value = script._get_module().create_value(scope)
+    >>> filters = list(get_global_filters(value.infer_state, value, (4, 0), None))
 
     First we get the names from the function scope.
 
@@ -394,19 +394,19 @@ def get_global_filters(infer_state, context, until_position, origin_scope):
     >>> list(filters[3].values())  # doctest: +ELLIPSIS
     [...]
     """
-    from jedi.inference.context.function import FunctionExecutionContext
-    while context is not None:
+    from jedi.inference.value.function import FunctionExecutionContext
+    while value is not None:
         # Names in methods cannot be resolved within the class.
-        for filter in context.get_filters(
+        for filter in value.get_filters(
                 search_global=True,
                 until_position=until_position,
                 origin_scope=origin_scope):
             yield filter
-        if isinstance(context, FunctionExecutionContext):
+        if isinstance(value, FunctionExecutionContext):
             # The position should be reset if the current scope is a function.
             until_position = None
 
-        context = context.parent_context
+        value = value.parent_value
 
     # Add builtins to the global scope.
     yield next(infer_state.builtins_module.get_filters())

@@ -14,7 +14,7 @@ from jedi.api.file_name import file_name_completions
 from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.filters import get_global_filters
-from jedi.inference.gradual.conversion import convert_contexts
+from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import get_statement_of_position, cut_value_at_position
 
 
@@ -52,11 +52,11 @@ def filter_names(infer_state, completion_names, stack, like_name):
                 yield new
 
 
-def get_user_scope(module_context, position):
+def get_user_scope(module_value, position):
     """
     Returns the scope in which the user resides. This includes flows.
     """
-    user_stmt = get_statement_of_position(module_context.tree_node, position)
+    user_stmt = get_statement_of_position(module_value.tree_node, position)
     if user_stmt is None:
         def scan(scope):
             for s in scope.children:
@@ -68,12 +68,12 @@ def get_user_scope(module_context, position):
                         return scan(s)
             return None
 
-        scanned_node = scan(module_context.tree_node)
+        scanned_node = scan(module_value.tree_node)
         if scanned_node:
-            return module_context.create_context(scanned_node, node_is_context=True)
-        return module_context
+            return module_value.create_value(scanned_node, node_is_value=True)
+        return module_value
     else:
-        return module_context.create_context(user_stmt)
+        return module_value.create_value(user_stmt)
 
 
 def get_flow_scope_node(module_node, position):
@@ -87,7 +87,7 @@ def get_flow_scope_node(module_node, position):
 class Completion:
     def __init__(self, infer_state, module, code_lines, position, call_signatures_callback):
         self._infer_state = infer_state
-        self._module_context = module
+        self._module_value = module
         self._module_node = module.tree_node
         self._code_lines = code_lines
 
@@ -104,14 +104,14 @@ class Completion:
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
             completions = list(file_name_completions(
-                self._infer_state, self._module_context, start_leaf, string,
+                self._infer_state, self._module_value, start_leaf, string,
                 self._like_name, self._call_signatures_callback,
                 self._code_lines, self._original_position
             ))
             if completions:
                 return completions
 
-        completion_names = self._get_context_completions(leaf)
+        completion_names = self._get_value_completions(leaf)
 
         completions = filter_names(self._infer_state, completion_names,
                                    self.stack, self._like_name)
@@ -120,9 +120,9 @@ class Completion:
                                                   x.name.startswith('_'),
                                                   x.name.lower()))
 
-    def _get_context_completions(self, leaf):
+    def _get_value_completions(self, leaf):
         """
-        Analyzes the context that a completion is made in and decides what to
+        Analyzes the value that a completion is made in and decides what to
         return.
 
         Technically this works by generating a parser stack and analysing the
@@ -149,7 +149,7 @@ class Completion:
                 # completions since this probably just confuses the user.
                 return []
 
-            # If we don't have a context, just use global completion.
+            # If we don't have a value, just use global completion.
             return self._global_completions()
 
         allowed_transitions = \
@@ -208,7 +208,7 @@ class Completion:
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
-                return list(self._get_class_context_completions(is_function=True))
+                return list(self._get_class_value_completions(is_function=True))
             elif "import_stmt" in nonterminals:
                 level, names = parse_dotted_names(nodes, "import_from" in nonterminals)
 
@@ -223,7 +223,7 @@ class Completion:
                 completion_names += self._trailer_completions(dot.get_previous_leaf())
             else:
                 completion_names += self._global_completions()
-                completion_names += self._get_class_context_completions(is_function=False)
+                completion_names += self._get_class_value_completions(is_function=False)
 
             if 'trailer' in nonterminals:
                 call_signatures = self._call_signatures_callback()
@@ -237,12 +237,12 @@ class Completion:
                 yield keywords.KeywordName(self._infer_state, k)
 
     def _global_completions(self):
-        context = get_user_scope(self._module_context, self._position)
-        debug.dbg('global completion scope: %s', context)
+        value = get_user_scope(self._module_value, self._position)
+        debug.dbg('global completion scope: %s', value)
         flow_scope_node = get_flow_scope_node(self._module_node, self._position)
         filters = get_global_filters(
             self._infer_state,
-            context,
+            value,
             self._position,
             origin_scope=flow_scope_node
         )
@@ -252,34 +252,34 @@ class Completion:
         return completion_names
 
     def _trailer_completions(self, previous_leaf):
-        user_context = get_user_scope(self._module_context, self._position)
-        inferred_context = self._infer_state.create_context(
-            self._module_context, previous_leaf
+        user_value = get_user_scope(self._module_value, self._position)
+        inferred_value = self._infer_state.create_value(
+            self._module_value, previous_leaf
         )
-        contexts = infer_call_of_leaf(inferred_context, previous_leaf)
+        values = infer_call_of_leaf(inferred_value, previous_leaf)
         completion_names = []
-        debug.dbg('trailer completion contexts: %s', contexts, color='MAGENTA')
-        for context in contexts:
-            for filter in context.get_filters(
+        debug.dbg('trailer completion values: %s', values, color='MAGENTA')
+        for value in values:
+            for filter in value.get_filters(
                     search_global=False,
-                    origin_scope=user_context.tree_node):
+                    origin_scope=user_value.tree_node):
                 completion_names += filter.values()
 
-        python_contexts = convert_contexts(contexts)
-        for c in python_contexts:
-            if c not in contexts:
+        python_values = convert_values(values)
+        for c in python_values:
+            if c not in values:
                 for filter in c.get_filters(
                         search_global=False,
-                        origin_scope=user_context.tree_node):
+                        origin_scope=user_value.tree_node):
                     completion_names += filter.values()
         return completion_names
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]
-        i = imports.Importer(self._infer_state, names, self._module_context, level)
+        i = imports.Importer(self._infer_state, names, self._module_value, level)
         return i.completion_names(self._infer_state, only_modules=only_modules)
 
-    def _get_class_context_completions(self, is_function=True):
+    def _get_class_value_completions(self, is_function=True):
         """
         Autocomplete inherited methods when overriding in child class.
         """
@@ -287,9 +287,9 @@ class Completion:
         cls = tree.search_ancestor(leaf, 'classdef')
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.
-            random_context = self._module_context.create_context(
+            random_value = self._module_value.create_value(
                 cls,
-                node_is_context=True
+                node_is_value=True
             )
         else:
             return
@@ -297,7 +297,7 @@ class Completion:
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
-        filters = random_context.get_filters(search_global=False, is_instance=True)
+        filters = random_value.get_filters(search_global=False, is_instance=True)
         # The first dict is the dictionary of class itself.
         next(filters)
         for filter in filters:

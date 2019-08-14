@@ -12,7 +12,7 @@ from jedi._compatibility import find_module_py33, find_module
 from jedi.inference import compiled
 from jedi.inference import imports
 from jedi.api.project import Project
-from jedi.inference.gradual.conversion import _stub_to_python_context_set
+from jedi.inference.gradual.conversion import _stub_to_python_value_set
 from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
 
 THIS_DIR = os.path.dirname(__file__)
@@ -88,12 +88,12 @@ def test_correct_zip_package_behavior(Script, infer_state, environment, code,
                                       file, package, path, skip_python2):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
     pkg, = Script(code, sys_path=sys_path).goto_definitions()
-    context, = pkg._name.infer()
-    assert context.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
-    assert '.'.join(context.py__package__()) == package
-    assert context.is_package is (path is not None)
+    value, = pkg._name.infer()
+    assert value.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
+    assert '.'.join(value.py__package__()) == package
+    assert value.is_package is (path is not None)
     if path is not None:
-        assert context.py__path__() == [os.path.join(pkg_zip_path, path)]
+        assert value.py__path__() == [os.path.join(pkg_zip_path, path)]
 
 
 def test_find_module_not_package_zipped(Script, infer_state, environment):
@@ -156,8 +156,8 @@ def test_not_importable_file(Script):
 def test_import_unique(Script):
     src = "import os; os.path"
     defs = Script(src, path='example.py').goto_definitions()
-    parent_contexts = [d._name._context for d in defs]
-    assert len(parent_contexts) == len(set(parent_contexts))
+    parent_values = [d._name._value for d in defs]
+    assert len(parent_values) == len(set(parent_values))
 
 
 def test_cache_works_with_sys_path_param(Script, tmpdir):
@@ -300,8 +300,8 @@ def test_compiled_import_none(monkeypatch, Script):
     monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
     def_, = script.goto_definitions()
     assert def_.type == 'module'
-    context, = def_._name.infer()
-    assert not _stub_to_python_context_set(context)
+    value, = def_._name.infer()
+    assert not _stub_to_python_value_set(value)
 
 
 @pytest.mark.parametrize(

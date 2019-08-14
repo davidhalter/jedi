@@ -7,7 +7,7 @@ import pytest
 
 import jedi
 from jedi._compatibility import is_py3, py_version
-from jedi.inference.compiled import mixed, context
+from jedi.inference.compiled import mixed, value
 from importlib import import_module
 
 if py_version > 30:
@@ -101,8 +101,8 @@ def test_side_effect_completion():
     side_effect = get_completion('SideEffectContainer', _GlobalNameSpace.__dict__)
 
     # It's a class that contains MixedObject.
-    context, = side_effect._name.infer()
-    assert isinstance(context, mixed.MixedObject)
+    value, = side_effect._name.infer()
+    assert isinstance(value, mixed.MixedObject)
     foo = get_completion('SideEffectContainer.foo', _GlobalNameSpace.__dict__)
     assert foo.name == 'foo'
 

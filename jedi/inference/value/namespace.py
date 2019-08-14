@@ -2,7 +2,7 @@ from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.filters import DictFilter
 from jedi.inference.names import ContextNameMixin, AbstractNameDefinition
 from jedi.inference.base_value import Context
-from jedi.inference.context.module import SubModuleDictMixin
+from jedi.inference.value.module import SubModuleDictMixin
 
 
 class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
@@ -10,8 +10,8 @@ class ImplicitNSName(ContextNameMixin, AbstractNameDefinition):
     Accessing names for implicit namespace packages should infer to nothing.
     This object will prevent Jedi from raising exceptions
     """
-    def __init__(self, implicit_ns_context, string_name):
-        self._context = implicit_ns_context
+    def __init__(self, implicit_ns_value, string_name):
+        self._value = implicit_ns_value
         self.string_name = string_name
 
 
@@ -23,10 +23,10 @@ class ImplicitNamespaceContext(Context, SubModuleDictMixin):
     # folder foobar it will be available as an object:
     # <module 'foobar' (namespace)>.
     api_type = u'module'
-    parent_context = None
+    parent_value = None
 
     def __init__(self, infer_state, fullname, paths):
-        super(ImplicitNamespaceContext, self).__init__(infer_state, parent_context=None)
+        super(ImplicitNamespaceContext, self).__init__(infer_state, parent_value=None)
         self.infer_state = infer_state
         self._fullname = fullname
         self._paths = paths

@@ -34,7 +34,7 @@ def test_in_empty_space(Script):
     assert def_.name == 'X'
 
 
-def test_indent_context(Script):
+def test_indent_value(Script):
     """
     If an INDENT is the next supposed token, we should still be able to
     complete.
@@ -44,7 +44,7 @@ def test_indent_context(Script):
     assert comp.name == 'isinstance'
 
 
-def test_keyword_context(Script):
+def test_keyword_value(Script):
     def get_names(*args, **kwargs):
         return [d.name for d in Script(*args, **kwargs).completions()]
 
@@ -101,8 +101,8 @@ def test_fake_subnodes(Script):
     for i in range(2):
         completions = Script('').completions()
         c = get_str_completion(completions)
-        str_context, = c._name.infer()
-        n = len(str_context.tree_node.children[-1].children)
+        str_value, = c._name.infer()
+        n = len(str_value.tree_node.children[-1].children)
         if i == 0:
             limit = n
         else:

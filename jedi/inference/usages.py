@@ -26,22 +26,22 @@ def _dictionarize(names):
     )
 
 
-def _find_names(module_context, tree_name):
-    context = module_context.create_context(tree_name)
-    name = TreeNameDefinition(context, tree_name)
+def _find_names(module_value, tree_name):
+    value = module_value.create_value(tree_name)
+    name = TreeNameDefinition(value, tree_name)
     found_names = set(name.goto())
     found_names.add(name)
     return _dictionarize(_resolve_names(found_names))
 
 
-def usages(module_context, tree_name):
+def usages(module_value, tree_name):
     search_name = tree_name.value
-    found_names = _find_names(module_context, tree_name)
-    modules = set(d.get_root_context() for d in found_names.values())
+    found_names = _find_names(module_value, tree_name)
+    modules = set(d.get_root_value() for d in found_names.values())
     modules = set(m for m in modules if m.is_module() and not m.is_compiled())
 
     non_matching_usage_maps = {}
-    for m in imports.get_modules_containing_name(module_context.infer_state, modules, search_name):
+    for m in imports.get_modules_containing_name(module_value.infer_state, modules, search_name):
         for name_leaf in m.tree_node.get_used_names().get(search_name, []):
             new = _find_names(m, name_leaf)
             if any(tree_name in found_names for tree_name in new):

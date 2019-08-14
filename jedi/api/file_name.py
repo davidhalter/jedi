@@ -7,12 +7,12 @@ from jedi.inference.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
 
 
-def file_name_completions(infer_state, module_context, start_leaf, string,
+def file_name_completions(infer_state, module_value, start_leaf, string,
                           like_name, call_signatures_callback, code_lines, position):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
-    addition = _get_string_additions(module_context, start_leaf)
+    addition = _get_string_additions(module_value, start_leaf)
     if addition is None:
         return
     string = addition + string
@@ -25,7 +25,7 @@ def file_name_completions(infer_state, module_context, start_leaf, string,
     sigs = call_signatures_callback()
     is_in_os_path_join = sigs and all(s.full_name == 'os.path.join' for s in sigs)
     if is_in_os_path_join:
-        to_be_added = _add_os_path_join(module_context, start_leaf, sigs[0].bracket_start)
+        to_be_added = _add_os_path_join(module_value, start_leaf, sigs[0].bracket_start)
         if to_be_added is None:
             is_in_os_path_join = False
         else:
@@ -60,7 +60,7 @@ def file_name_completions(infer_state, module_context, start_leaf, string,
             )
 
 
-def _get_string_additions(module_context, start_leaf):
+def _get_string_additions(module_value, start_leaf):
     def iterate_nodes():
         node = addition.parent
         was_addition = True
@@ -77,18 +77,18 @@ def _get_string_additions(module_context, start_leaf):
     addition = start_leaf.get_previous_leaf()
     if addition != '+':
         return ''
-    context = module_context.create_context(start_leaf)
-    return _add_strings(context, reversed(list(iterate_nodes())))
+    value = module_value.create_value(start_leaf)
+    return _add_strings(value, reversed(list(iterate_nodes())))
 
 
-def _add_strings(context, nodes, add_slash=False):
+def _add_strings(value, nodes, add_slash=False):
     string = ''
     first = True
     for child_node in nodes:
-        contexts = context.infer_node(child_node)
-        if len(contexts) != 1:
+        values = value.infer_node(child_node)
+        if len(values) != 1:
             return None
-        c, = contexts
+        c, = values
         s = get_str_or_none(c)
         if s is None:
             return None
@@ -101,25 +101,25 @@ def _add_strings(context, nodes, add_slash=False):
 
 class FileName(AbstractArbitraryName):
     api_type = u'path'
-    is_context_name = False
+    is_value_name = False
 
 
-def _add_os_path_join(module_context, start_leaf, bracket_start):
+def _add_os_path_join(module_value, start_leaf, bracket_start):
     def check(maybe_bracket, nodes):
         if maybe_bracket.start_pos != bracket_start:
             return None
 
         if not nodes:
             return ''
-        context = module_context.create_context(nodes[0])
-        return _add_strings(context, nodes, add_slash=True) or ''
+        value = module_value.create_value(nodes[0])
+        return _add_strings(value, nodes, add_slash=True) or ''
 
     if start_leaf.type == 'error_leaf':
         # Unfinished string literal, like `join('`
-        context_node = start_leaf.parent
-        index = context_node.children.index(start_leaf)
+        value_node = start_leaf.parent
+        index = value_node.children.index(start_leaf)
         if index > 0:
-            error_node = context_node.children[index - 1]
+            error_node = value_node.children[index - 1]
             if error_node.type == 'error_node' and len(error_node.children) >= 2:
                 index = -2
                 if error_node.children[-1].type == 'arglist':

@@ -20,8 +20,8 @@ def _iter_nodes_for_param(param_name):
     from parso.python.tree import search_ancestor
     from jedi.inference.arguments import TreeArguments
 
-    execution_context = param_name.parent_context
-    function_node = execution_context.tree_node
+    execution_value = param_name.parent_value
+    function_node = execution_value.tree_node
     module_node = function_node.get_root_node()
     start = function_node.children[-1].start_pos
     end = function_node.children[-1].end_pos
@@ -35,44 +35,44 @@ def _iter_nodes_for_param(param_name):
                 # anyway
                 trailer = search_ancestor(argument, 'trailer')
                 if trailer is not None:  # Make sure we're in a function
-                    context = execution_context.create_context(trailer)
-                    if _goes_to_param_name(param_name, context, name):
-                        contexts = _to_callables(context, trailer)
+                    value = execution_value.create_value(trailer)
+                    if _goes_to_param_name(param_name, value, name):
+                        values = _to_callables(value, trailer)
 
                         args = TreeArguments.create_cached(
-                            execution_context.infer_state,
-                            context=context,
+                            execution_value.infer_state,
+                            value=value,
                             argument_node=trailer.children[1],
                             trailer=trailer,
                         )
-                        for c in contexts:
+                        for c in values:
                             yield c, args
                     else:
                         assert False
 
 
-def _goes_to_param_name(param_name, context, potential_name):
+def _goes_to_param_name(param_name, value, potential_name):
     if potential_name.type != 'name':
         return False
     from jedi.inference.names import TreeNameDefinition
-    found = TreeNameDefinition(context, potential_name).goto()
-    return any(param_name.parent_context == p.parent_context
+    found = TreeNameDefinition(value, potential_name).goto()
+    return any(param_name.parent_value == p.parent_value
                and param_name.start_pos == p.start_pos
                for p in found)
 
 
-def _to_callables(context, trailer):
+def _to_callables(value, trailer):
     from jedi.inference.syntax_tree import infer_trailer
 
     atom_expr = trailer.parent
     index = atom_expr.children[0] == 'await'
     # Infer atom first
-    contexts = context.infer_node(atom_expr.children[index])
+    values = value.infer_node(atom_expr.children[index])
     for trailer2 in atom_expr.children[index + 1:]:
         if trailer == trailer2:
             break
-        contexts = infer_trailer(context, contexts, trailer2)
-    return contexts
+        values = infer_trailer(value, values, trailer2)
+    return values
 
 
 def _remove_given_params(arguments, param_names):

@@ -25,9 +25,9 @@ from jedi._compatibility import u
 from jedi import debug
 from jedi.inference.utils import indent_block
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_value import iterator_to_context_set, ContextSet, \
+from jedi.inference.base_value import iterator_to_value_set, ContextSet, \
     NO_CONTEXTS
-from jedi.inference.lazy_context import LazyKnownContexts
+from jedi.inference.lazy_value import LazyKnownContexts
 
 
 DOCSTRING_PARAM_PATTERNS = [
@@ -183,7 +183,7 @@ def _strip_rst_role(type_str):
         return type_str
 
 
-def _infer_for_statement_string(module_context, string):
+def _infer_for_statement_string(module_value, string):
     code = dedent(u("""
     def pseudo_docstring_stuff():
         '''
@@ -205,7 +205,7 @@ def _infer_for_statement_string(module_context, string):
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
     debug.dbg('Parse docstring code %s', string, color='BLUE')
-    grammar = module_context.infer_state.latest_grammar
+    grammar = module_value.infer_state.latest_grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
     except ParserSyntaxError:
@@ -221,29 +221,29 @@ def _infer_for_statement_string(module_context, string):
     if stmt.type not in ('name', 'atom', 'atom_expr'):
         return []
 
-    from jedi.inference.context import FunctionContext
-    function_context = FunctionContext(
-        module_context.infer_state,
-        module_context,
+    from jedi.inference.value import FunctionContext
+    function_value = FunctionContext(
+        module_value.infer_state,
+        module_value,
         funcdef
     )
-    func_execution_context = function_context.get_function_execution()
+    func_execution_value = function_value.get_function_execution()
     # Use the module of the param.
     # TODO this module is not the module of the param in case of a function
     # call. In that case it's the module of the function call.
     # stuffed with content from a function call.
-    return list(_execute_types_in_stmt(func_execution_context, stmt))
+    return list(_execute_types_in_stmt(func_execution_value, stmt))
 
 
-def _execute_types_in_stmt(module_context, stmt):
+def _execute_types_in_stmt(module_value, stmt):
     """
     Executing all types or general elements that we find in a statement. This
     doesn't include tuple, list and dict literals, because the stuff they
     contain is executed. (Used as type information).
     """
-    definitions = module_context.infer_node(stmt)
+    definitions = module_value.infer_node(stmt)
     return ContextSet.from_sets(
-        _execute_array_values(module_context.infer_state, d)
+        _execute_array_values(module_value.infer_state, d)
         for d in definitions
     )
 
@@ -253,13 +253,13 @@ def _execute_array_values(infer_state, array):
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
     """
-    from jedi.inference.context.iterable import SequenceLiteralContext, FakeSequence
+    from jedi.inference.value.iterable import SequenceLiteralContext, FakeSequence
     if isinstance(array, SequenceLiteralContext):
         values = []
-        for lazy_context in array.py__iter__():
+        for lazy_value in array.py__iter__():
             objects = ContextSet.from_sets(
                 _execute_array_values(infer_state, typ)
-                for typ in lazy_context.infer()
+                for typ in lazy_value.infer()
             )
             values.append(LazyKnownContexts(objects))
         return {FakeSequence(infer_state, array.array_type, values)}
@@ -268,35 +268,35 @@ def _execute_array_values(infer_state, array):
 
 
 @infer_state_method_cache()
-def infer_param(execution_context, param):
-    from jedi.inference.context.instance import InstanceArguments
-    from jedi.inference.context import FunctionExecutionContext
+def infer_param(execution_value, param):
+    from jedi.inference.value.instance import InstanceArguments
+    from jedi.inference.value import FunctionExecutionContext
 
     def infer_docstring(docstring):
         return ContextSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
-            for p in _infer_for_statement_string(module_context, param_str)
+            for p in _infer_for_statement_string(module_value, param_str)
         )
-    module_context = execution_context.get_root_context()
+    module_value = execution_value.get_root_value()
     func = param.get_parent_function()
     if func.type == 'lambdef':
         return NO_CONTEXTS
 
-    types = infer_docstring(execution_context.py__doc__())
-    if isinstance(execution_context, FunctionExecutionContext) \
-            and isinstance(execution_context.var_args, InstanceArguments) \
-            and execution_context.function_context.py__name__() == '__init__':
-        class_context = execution_context.var_args.instance.class_context
-        types |= infer_docstring(class_context.py__doc__())
+    types = infer_docstring(execution_value.py__doc__())
+    if isinstance(execution_value, FunctionExecutionContext) \
+            and isinstance(execution_value.var_args, InstanceArguments) \
+            and execution_value.function_value.py__name__() == '__init__':
+        class_value = execution_value.var_args.instance.class_value
+        types |= infer_docstring(class_value.py__doc__())
 
     debug.dbg('Found param types for docstring: %s', types, color='BLUE')
     return types
 
 
 @infer_state_method_cache()
-@iterator_to_context_set
-def infer_return_types(function_context):
+@iterator_to_value_set
+def infer_return_types(function_value):
     def search_return_in_docstr(code):
         for p in DOCSTRING_RETURN_PATTERNS:
             match = p.search(code)
@@ -306,6 +306,6 @@ def infer_return_types(function_context):
         for type_ in _search_return_in_numpydocstr(code):
             yield type_
 
-    for type_str in search_return_in_docstr(function_context.py__doc__()):
-        for context in _infer_for_statement_string(function_context.get_root_context(), type_str):
-            yield context
+    for type_str in search_return_in_docstr(function_value.py__doc__()):
+        for value in _infer_for_statement_string(function_value.get_root_value(), type_str):
+            yield value
