@@ -11,7 +11,7 @@ from jedi.inference.lazy_context import LazyKnownContext, LazyKnownContexts, \
 from jedi.inference.names import ParamName, TreeNameDefinition
 from jedi.inference.base_context import NO_CONTEXTS, ContextSet, ContextualizedNode
 from jedi.inference.context import iterable
-from jedi.inference.cache import evaluator_as_method_param_cache
+from jedi.inference.cache import infer_state_as_method_param_cache
 from jedi.inference.param import get_executed_params_and_issues, ExecutedParam
 
 
@@ -59,7 +59,7 @@ def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callbac
                 kwargs.pop('callback', None)
             try:
                 args += tuple(_iterate_argument_clinic(
-                    context.evaluator,
+                    context.infer_state,
                     arguments,
                     clinic_args
                 ))
@@ -72,7 +72,7 @@ def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callbac
     return decorator
 
 
-def _iterate_argument_clinic(evaluator, arguments, parameters):
+def _iterate_argument_clinic(infer_state, arguments, parameters):
     """Uses a list with argument clinic information (see PEP 436)."""
     iterator = PushBackIterator(arguments.unpack())
     for i, (name, optional, allow_kwargs, stars) in enumerate(parameters):
@@ -84,7 +84,7 @@ def _iterate_argument_clinic(evaluator, arguments, parameters):
                     break
 
                 lazy_contexts.append(argument)
-            yield ContextSet([iterable.FakeSequence(evaluator, u'tuple', lazy_contexts)])
+            yield ContextSet([iterable.FakeSequence(infer_state, u'tuple', lazy_contexts)])
             lazy_contexts
             continue
         elif stars == 2:
@@ -161,7 +161,7 @@ class AnonymousArguments(AbstractArguments):
     def get_executed_params_and_issues(self, execution_context):
         from jedi.inference.dynamic import search_params
         return search_params(
-            execution_context.evaluator,
+            execution_context.infer_state,
             execution_context,
             execution_context.tree_node
         ), []
@@ -198,17 +198,17 @@ def unpack_arglist(arglist):
 
 
 class TreeArguments(AbstractArguments):
-    def __init__(self, evaluator, context, argument_node, trailer=None):
+    def __init__(self, infer_state, context, argument_node, trailer=None):
         """
         :param argument_node: May be an argument_node or a list of nodes.
         """
         self.argument_node = argument_node
         self.context = context
-        self._evaluator = evaluator
+        self._infer_state = infer_state
         self.trailer = trailer  # Can be None, e.g. in a class definition.
 
     @classmethod
-    @evaluator_as_method_param_cache()
+    @infer_state_as_method_param_cache()
     def create_cached(cls, *args, **kwargs):
         return cls(*args, **kwargs)
 
@@ -241,7 +241,7 @@ class TreeArguments(AbstractArguments):
                         if sync_comp_for.type == 'comp_for':
                             sync_comp_for = sync_comp_for.children[1]
                         comp = iterable.GeneratorComprehension(
-                            self._evaluator,
+                            self._infer_state,
                             defining_context=self.context,
                             sync_comp_for_node=sync_comp_for,
                             entry_node=el.children[0],

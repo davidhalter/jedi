@@ -40,7 +40,7 @@ def _iter_nodes_for_param(param_name):
                         contexts = _to_callables(context, trailer)
 
                         args = TreeArguments.create_cached(
-                            execution_context.evaluator,
+                            execution_context.infer_state,
                             context=context,
                             argument_node=trailer.children[1],
                             trailer=trailer,
@@ -66,7 +66,7 @@ def _to_callables(context, trailer):
 
     atom_expr = trailer.parent
     index = atom_expr.children[0] == 'await'
-    # Eval atom first
+    # Infer atom first
     contexts = context.infer_node(atom_expr.children[index])
     for trailer2 in atom_expr.children[index + 1:]:
         if trailer == trailer2:

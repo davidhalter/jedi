@@ -14,7 +14,7 @@ from jedi.inference.names import AbstractNameDefinition, ContextNameMixin, \
 from jedi.inference.base_context import Context, ContextSet, NO_CONTEXTS
 from jedi.inference.lazy_context import LazyKnownContext
 from jedi.inference.compiled.access import _sentinel
-from jedi.inference.cache import evaluator_function_cache
+from jedi.inference.cache import infer_state_function_cache
 from jedi.inference.helpers import reraise_getitem_errors
 from jedi.inference.signature import BuiltinSignature
 
@@ -41,15 +41,15 @@ class CheckAttribute(object):
 
 
 class CompiledObject(Context):
-    def __init__(self, evaluator, access_handle, parent_context=None):
-        super(CompiledObject, self).__init__(evaluator, parent_context)
+    def __init__(self, infer_state, access_handle, parent_context=None):
+        super(CompiledObject, self).__init__(infer_state, parent_context)
         self.access_handle = access_handle
 
     def py__call__(self, arguments):
         return_annotation = self.access_handle.get_return_annotation()
         if return_annotation is not None:
             # TODO the return annotation may also be a string.
-            return create_from_access_path(self.evaluator, return_annotation).execute_annotation()
+            return create_from_access_path(self.infer_state, return_annotation).execute_annotation()
 
         try:
             self.access_handle.getattr_paths(u'__call__')
@@ -59,26 +59,26 @@ class CompiledObject(Context):
             if self.access_handle.is_class():
                 from jedi.inference.context import CompiledInstance
                 return ContextSet([
-                    CompiledInstance(self.evaluator, self.parent_context, self, arguments)
+                    CompiledInstance(self.infer_state, self.parent_context, self, arguments)
                 ])
             else:
                 return ContextSet(self._execute_function(arguments))
 
     @CheckAttribute()
     def py__class__(self):
-        return create_from_access_path(self.evaluator, self.access_handle.py__class__())
+        return create_from_access_path(self.infer_state, self.access_handle.py__class__())
 
     @CheckAttribute()
     def py__mro__(self):
         return (self,) + tuple(
-            create_from_access_path(self.evaluator, access)
+            create_from_access_path(self.infer_state, access)
             for access in self.access_handle.py__mro__accesses()
         )
 
     @CheckAttribute()
     def py__bases__(self):
         return tuple(
-            create_from_access_path(self.evaluator, access)
+            create_from_access_path(self.infer_state, access)
             for access in self.access_handle.py__bases__()
         )
 
@@ -178,7 +178,7 @@ class CompiledObject(Context):
         search_global shouldn't change the fact that there's one dict, this way
         there's only one `object`.
         """
-        return CompiledObjectFilter(self.evaluator, self, is_instance)
+        return CompiledObjectFilter(self.infer_state, self, is_instance)
 
     @CheckAttribute(u'__getitem__')
     def py__simple_getitem__(self, index):
@@ -187,7 +187,7 @@ class CompiledObject(Context):
         if access is None:
             return NO_CONTEXTS
 
-        return ContextSet([create_from_access_path(self.evaluator, access)])
+        return ContextSet([create_from_access_path(self.infer_state, access)])
 
     def py__getitem__(self, index_context_set, contextualized_node):
         all_access_paths = self.access_handle.py__getitem__all_values()
@@ -196,7 +196,7 @@ class CompiledObject(Context):
             # object.
             return super(CompiledObject, self).py__getitem__(index_context_set, contextualized_node)
         return ContextSet(
-            create_from_access_path(self.evaluator, access)
+            create_from_access_path(self.infer_state, access)
             for access in all_access_paths
         )
 
@@ -215,7 +215,7 @@ class CompiledObject(Context):
             return
 
         for access in access_path_list:
-            yield LazyKnownContext(create_from_access_path(self.evaluator, access))
+            yield LazyKnownContext(create_from_access_path(self.infer_state, access))
 
     def py__name__(self):
         return self.access_handle.py__name__()
@@ -237,12 +237,12 @@ class CompiledObject(Context):
             try:
                 # TODO wtf is this? this is exactly the same as the thing
                 # below. It uses getattr as well.
-                self.evaluator.builtins_module.access_handle.getattr_paths(name)
+                self.infer_state.builtins_module.access_handle.getattr_paths(name)
             except AttributeError:
                 continue
             else:
-                bltn_obj = builtin_from_name(self.evaluator, name)
-                for result in self.evaluator.execute(bltn_obj, params):
+                bltn_obj = builtin_from_name(self.infer_state, name)
+                for result in self.infer_state.execute(bltn_obj, params):
                     yield result
         for type_ in docstrings.infer_return_types(self):
             yield type_
@@ -257,20 +257,20 @@ class CompiledObject(Context):
 
     def execute_operation(self, other, operator):
         return create_from_access_path(
-            self.evaluator,
+            self.infer_state,
             self.access_handle.execute_operation(other.access_handle, operator)
         )
 
     def negate(self):
-        return create_from_access_path(self.evaluator, self.access_handle.negate())
+        return create_from_access_path(self.infer_state, self.access_handle.negate())
 
     def get_metaclasses(self):
         return NO_CONTEXTS
 
 
 class CompiledName(AbstractNameDefinition):
-    def __init__(self, evaluator, parent_context, name):
-        self._evaluator = evaluator
+    def __init__(self, infer_state, parent_context, name):
+        self._infer_state = infer_state
         self.parent_context = parent_context
         self.string_name = name
 
@@ -296,7 +296,7 @@ class CompiledName(AbstractNameDefinition):
     @underscore_memoization
     def infer(self):
         return ContextSet([_create_from_name(
-            self._evaluator, self.parent_context, self.string_name
+            self._infer_state, self.parent_context, self.string_name
         )])
 
 
@@ -322,12 +322,12 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
 
     def infer(self):
         p = self._signature_param
-        evaluator = self.parent_context.evaluator
+        infer_state = self.parent_context.infer_state
         contexts = NO_CONTEXTS
         if p.has_default:
-            contexts = ContextSet([create_from_access_path(evaluator, p.default)])
+            contexts = ContextSet([create_from_access_path(infer_state, p.default)])
         if p.has_annotation:
-            annotation = create_from_access_path(evaluator, p.annotation)
+            annotation = create_from_access_path(infer_state, p.annotation)
             contexts |= annotation.execute_with_values()
         return contexts
 
@@ -364,8 +364,8 @@ class EmptyCompiledName(AbstractNameDefinition):
     completions, just give Jedi the option to return this object. It infers to
     nothing.
     """
-    def __init__(self, evaluator, name):
-        self.parent_context = evaluator.builtins_module
+    def __init__(self, infer_state, name):
+        self.parent_context = infer_state.builtins_module
         self.string_name = name
 
     def infer(self):
@@ -375,8 +375,8 @@ class EmptyCompiledName(AbstractNameDefinition):
 class CompiledObjectFilter(AbstractFilter):
     name_class = CompiledName
 
-    def __init__(self, evaluator, compiled_object, is_instance=False):
-        self._evaluator = evaluator
+    def __init__(self, infer_state, compiled_object, is_instance=False):
+        self._infer_state = infer_state
         self.compiled_object = compiled_object
         self.is_instance = is_instance
 
@@ -399,7 +399,7 @@ class CompiledObjectFilter(AbstractFilter):
         # Always use unicode objects in Python 2 from here.
         name = force_unicode(name)
 
-        if (is_descriptor and not self._evaluator.allow_descriptor_getattr) or not has_attribute:
+        if (is_descriptor and not self._infer_state.allow_descriptor_getattr) or not has_attribute:
             return [self._get_cached_name(name, is_empty=True)]
 
         if self.is_instance and name not in dir_callback():
@@ -409,7 +409,7 @@ class CompiledObjectFilter(AbstractFilter):
     @memoize_method
     def _get_cached_name(self, name, is_empty=False):
         if is_empty:
-            return EmptyCompiledName(self._evaluator, name)
+            return EmptyCompiledName(self._infer_state, name)
         else:
             return self._create_name(name)
 
@@ -426,12 +426,12 @@ class CompiledObjectFilter(AbstractFilter):
 
         # ``dir`` doesn't include the type names.
         if not self.is_instance and needs_type_completions:
-            for filter in builtin_from_name(self._evaluator, u'type').get_filters():
+            for filter in builtin_from_name(self._infer_state, u'type').get_filters():
                 names += filter.values()
         return names
 
     def _create_name(self, name):
-        return self.name_class(self._evaluator, self.compiled_object, name)
+        return self.name_class(self._infer_state, self.compiled_object, name)
 
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, self.compiled_object)
@@ -507,7 +507,7 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def _create_from_name(evaluator, compiled_object, name):
+def _create_from_name(infer_state, compiled_object, name):
     access_paths = compiled_object.access_handle.getattr_paths(name, default=None)
     parent_context = compiled_object
     if parent_context.is_class():
@@ -516,26 +516,26 @@ def _create_from_name(evaluator, compiled_object, name):
     context = None
     for access_path in access_paths:
         context = create_cached_compiled_object(
-            evaluator, access_path, parent_context=context
+            infer_state, access_path, parent_context=context
         )
     return context
 
 
 def _normalize_create_args(func):
     """The cache doesn't care about keyword vs. normal args."""
-    def wrapper(evaluator, obj, parent_context=None):
-        return func(evaluator, obj, parent_context)
+    def wrapper(infer_state, obj, parent_context=None):
+        return func(infer_state, obj, parent_context)
     return wrapper
 
 
-def create_from_access_path(evaluator, access_path):
+def create_from_access_path(infer_state, access_path):
     parent_context = None
     for name, access in access_path.accesses:
-        parent_context = create_cached_compiled_object(evaluator, access, parent_context)
+        parent_context = create_cached_compiled_object(infer_state, access, parent_context)
     return parent_context
 
 
 @_normalize_create_args
-@evaluator_function_cache()
-def create_cached_compiled_object(evaluator, access_handle, parent_context):
-    return CompiledObject(evaluator, access_handle, parent_context)
+@infer_state_function_cache()
+def create_cached_compiled_object(infer_state, access_handle, parent_context):
+    return CompiledObject(infer_state, access_handle, parent_context)

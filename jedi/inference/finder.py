@@ -33,9 +33,9 @@ from jedi.inference.gradual.conversion import convert_contexts
 
 
 class NameFinder(object):
-    def __init__(self, evaluator, context, name_context, name_or_str,
+    def __init__(self, infer_state, context, name_context, name_or_str,
                  position=None, analysis_errors=True):
-        self._evaluator = evaluator
+        self._infer_state = infer_state
         # Make sure that it's not just a syntax tree node.
         self._context = context
         self._name_context = name_context
@@ -114,7 +114,7 @@ class NameFinder(object):
                         if lambdef is None or position < lambdef.children[-2].start_pos:
                             position = ancestor.start_pos
 
-            return get_global_filters(self._evaluator, self._context, position, origin_scope)
+            return get_global_filters(self._infer_state, self._context, position, origin_scope)
         else:
             return self._get_context_filters(origin_scope)
 
@@ -173,7 +173,7 @@ class NameFinder(object):
     def _check_getattr(self, inst):
         """Checks for both __getattr__ and __getattribute__ methods"""
         # str is important, because it shouldn't be `Name`!
-        name = compiled.create_simple_object(self._evaluator, self._string_name)
+        name = compiled.create_simple_object(self._infer_state, self._string_name)
 
         # This is a little bit special. `__getattribute__` is in Python
         # executed before `__getattr__`. But: I know no use case, where
@@ -265,7 +265,7 @@ def _check_isinstance_type(context, element, search_name):
 
         # arglist stuff
         arglist = trailer.children[1]
-        args = TreeArguments(context.evaluator, context, arglist, trailer)
+        args = TreeArguments(context.infer_state, context, arglist, trailer)
         param_list = list(args.unpack())
         # Disallow keyword arguments
         assert len(param_list) == 2
@@ -275,7 +275,7 @@ def _check_isinstance_type(context, element, search_name):
         is_instance_call = helpers.call_of_leaf(lazy_context_object.data)
         # Do a simple get_code comparison. They should just have the same code,
         # and everything will be all right.
-        normalize = context.evaluator.grammar._normalize
+        normalize = context.infer_state.grammar._normalize
         assert normalize(is_instance_call) == normalize(call)
     except AssertionError:
         return None

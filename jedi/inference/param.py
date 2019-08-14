@@ -145,13 +145,13 @@ def get_executed_params_and_issues(execution_context, arguments):
                         var_arg_iterator.push_back((key, argument))
                         break
                     lazy_context_list.append(argument)
-            seq = iterable.FakeSequence(execution_context.evaluator, u'tuple', lazy_context_list)
+            seq = iterable.FakeSequence(execution_context.infer_state, u'tuple', lazy_context_list)
             result_arg = LazyKnownContext(seq)
         elif param.star_count == 2:
             if argument is not None:
                 too_many_args(argument)
             # **kwargs param
-            dct = iterable.FakeDict(execution_context.evaluator, dict(non_matching_keys))
+            dct = iterable.FakeDict(execution_context.infer_state, dict(non_matching_keys))
             result_arg = LazyKnownContext(dct)
             non_matching_keys = {}
         else:
@@ -235,11 +235,11 @@ def _error_argument_count(funcdef, actual_count):
 def _create_default_param(execution_context, param):
     if param.star_count == 1:
         result_arg = LazyKnownContext(
-            iterable.FakeSequence(execution_context.evaluator, u'tuple', [])
+            iterable.FakeSequence(execution_context.infer_state, u'tuple', [])
         )
     elif param.star_count == 2:
         result_arg = LazyKnownContext(
-            iterable.FakeDict(execution_context.evaluator, {})
+            iterable.FakeDict(execution_context.infer_state, {})
         )
     elif param.default is None:
         result_arg = LazyUnknownContext()

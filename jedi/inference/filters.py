@@ -98,8 +98,8 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
-    # TODO remove evaluator as an argument, it's not used.
-    def __init__(self, evaluator, context, node_context=None, until_position=None,
+    # TODO remove infer_state as an argument, it's not used.
+    def __init__(self, infer_state, context, node_context=None, until_position=None,
                  origin_scope=None):
         """
         node_context is an option to specify a second context for use cases
@@ -144,10 +144,10 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 class FunctionExecutionFilter(ParserTreeFilter):
     param_name = ParamName
 
-    def __init__(self, evaluator, context, node_context=None,
+    def __init__(self, infer_state, context, node_context=None,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
-            evaluator,
+            infer_state,
             context,
             node_context,
             until_position,
@@ -237,7 +237,7 @@ class _BuiltinMappedMethod(Context):
 
     def __init__(self, builtin_context, method, builtin_func):
         super(_BuiltinMappedMethod, self).__init__(
-            builtin_context.evaluator,
+            builtin_context.infer_state,
             parent_context=builtin_context
         )
         self._method = method
@@ -262,7 +262,7 @@ class SpecialMethodFilter(DictFilter):
         def __init__(self, parent_context, string_name, value, builtin_context):
             callable_, python_version = value
             if python_version is not None and \
-                    python_version != parent_context.evaluator.environment.version_info.major:
+                    python_version != parent_context.infer_state.environment.version_info.major:
                 raise KeyError
 
             self.parent_context = parent_context
@@ -329,8 +329,8 @@ class _AttributeOverwriteMixin(object):
 
 class LazyAttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
                                            LazyContextWrapper)):
-    def __init__(self, evaluator):
-        self.evaluator = evaluator
+    def __init__(self, infer_state):
+        self.infer_state = infer_state
 
 
 class AttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
@@ -346,7 +346,7 @@ def publish_method(method_name, python_version_match=None):
     return decorator
 
 
-def get_global_filters(evaluator, context, until_position, origin_scope):
+def get_global_filters(infer_state, context, until_position, origin_scope):
     """
     Returns all filters in order of priority for name resolution.
 
@@ -365,7 +365,7 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
     >>> scope
     <Function: func@3-5>
     >>> context = script._get_module().create_context(scope)
-    >>> filters = list(get_global_filters(context.evaluator, context, (4, 0), None))
+    >>> filters = list(get_global_filters(context.infer_state, context, (4, 0), None))
 
     First we get the names from the function scope.
 
@@ -409,4 +409,4 @@ def get_global_filters(evaluator, context, until_position, origin_scope):
         context = context.parent_context
 
     # Add builtins to the global scope.
-    yield next(evaluator.builtins_module.get_filters())
+    yield next(infer_state.builtins_module.get_filters())

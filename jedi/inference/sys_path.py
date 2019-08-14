@@ -1,7 +1,7 @@
 import os
 
 from jedi._compatibility import unicode, force_unicode, all_suffixes
-from jedi.inference.cache import evaluator_method_cache
+from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.base_context import ContextualizedNode
 from jedi.inference.helpers import is_string
 from jedi.common.utils import traverse_parents
@@ -92,7 +92,7 @@ def _paths_from_list_modifications(module_context, trailer1, trailer2):
                 yield abs_path
 
 
-@evaluator_method_cache(default=[])
+@infer_state_method_cache(default=[])
 def check_sys_path_modifications(module_context):
     """
     Detect sys.path modifications within module.
@@ -130,20 +130,20 @@ def check_sys_path_modifications(module_context):
     return added
 
 
-def discover_buildout_paths(evaluator, script_path):
+def discover_buildout_paths(infer_state, script_path):
     buildout_script_paths = set()
 
     for buildout_script_path in _get_buildout_script_paths(script_path):
-        for path in _get_paths_from_buildout_script(evaluator, buildout_script_path):
+        for path in _get_paths_from_buildout_script(infer_state, buildout_script_path):
             buildout_script_paths.add(path)
 
     return buildout_script_paths
 
 
-def _get_paths_from_buildout_script(evaluator, buildout_script_path):
+def _get_paths_from_buildout_script(infer_state, buildout_script_path):
     file_io = FileIO(buildout_script_path)
     try:
-        module_node = evaluator.parse(
+        module_node = infer_state.parse(
             file_io=file_io,
             cache=True,
             cache_path=settings.cache_directory
@@ -154,9 +154,9 @@ def _get_paths_from_buildout_script(evaluator, buildout_script_path):
 
     from jedi.inference.context import ModuleContext
     module = ModuleContext(
-        evaluator, module_node, file_io,
+        infer_state, module_node, file_io,
         string_names=None,
-        code_lines=get_cached_code_lines(evaluator.grammar, buildout_script_path),
+        code_lines=get_cached_code_lines(infer_state.grammar, buildout_script_path),
     )
     for path in check_sys_path_modifications(module):
         yield path

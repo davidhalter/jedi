@@ -136,11 +136,11 @@ def get_stack_at_position(grammar, code_lines, leaf, pos):
     )
 
 
-def infer_goto_definition(evaluator, context, leaf):
+def infer_goto_definition(infer_state, context, leaf):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
-        return evaluator.goto_definitions(context, leaf)
+        return infer_state.goto_definitions(context, leaf)
 
     parent = leaf.parent
     definitions = NO_CONTEXTS
@@ -154,7 +154,7 @@ def infer_goto_definition(evaluator, context, leaf):
         # e.g. `"foo"` or `1.0`
         return infer_atom(context, leaf)
     elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
-        return get_string_context_set(evaluator)
+        return get_string_context_set(infer_state)
     return definitions
 
 
@@ -376,7 +376,7 @@ def get_call_signature_details(module, position):
 
 
 @call_signature_time_cache("call_signatures_validity")
-def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos):
+def cache_call_signatures(infer_state, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
     line_index = user_pos[0] - 1
 
@@ -391,7 +391,7 @@ def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos
     else:
         yield (module_path, before_bracket, bracket_leaf.start_pos)
     yield infer_goto_definition(
-        evaluator,
+        infer_state,
         context,
         bracket_leaf.get_previous_leaf(),
     )

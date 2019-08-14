@@ -24,7 +24,7 @@ from parso import parse, ParserSyntaxError
 from jedi._compatibility import u
 from jedi import debug
 from jedi.inference.utils import indent_block
-from jedi.inference.cache import evaluator_method_cache
+from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.base_context import iterator_to_context_set, ContextSet, \
     NO_CONTEXTS
 from jedi.inference.lazy_context import LazyKnownContexts
@@ -205,7 +205,7 @@ def _infer_for_statement_string(module_context, string):
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
     debug.dbg('Parse docstring code %s', string, color='BLUE')
-    grammar = module_context.evaluator.latest_grammar
+    grammar = module_context.infer_state.latest_grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
     except ParserSyntaxError:
@@ -223,7 +223,7 @@ def _infer_for_statement_string(module_context, string):
 
     from jedi.inference.context import FunctionContext
     function_context = FunctionContext(
-        module_context.evaluator,
+        module_context.infer_state,
         module_context,
         funcdef
     )
@@ -243,12 +243,12 @@ def _execute_types_in_stmt(module_context, stmt):
     """
     definitions = module_context.infer_node(stmt)
     return ContextSet.from_sets(
-        _execute_array_values(module_context.evaluator, d)
+        _execute_array_values(module_context.infer_state, d)
         for d in definitions
     )
 
 
-def _execute_array_values(evaluator, array):
+def _execute_array_values(infer_state, array):
     """
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
@@ -258,16 +258,16 @@ def _execute_array_values(evaluator, array):
         values = []
         for lazy_context in array.py__iter__():
             objects = ContextSet.from_sets(
-                _execute_array_values(evaluator, typ)
+                _execute_array_values(infer_state, typ)
                 for typ in lazy_context.infer()
             )
             values.append(LazyKnownContexts(objects))
-        return {FakeSequence(evaluator, array.array_type, values)}
+        return {FakeSequence(infer_state, array.array_type, values)}
     else:
         return array.execute_annotation()
 
 
-@evaluator_method_cache()
+@infer_state_method_cache()
 def infer_param(execution_context, param):
     from jedi.inference.context.instance import InstanceArguments
     from jedi.inference.context import FunctionExecutionContext
@@ -294,7 +294,7 @@ def infer_param(execution_context, param):
     return types
 
 
-@evaluator_method_cache()
+@infer_state_method_cache()
 @iterator_to_context_set
 def infer_return_types(function_context):
     def search_return_in_docstr(code):
@@ -307,5 +307,5 @@ def infer_return_types(function_context):
             yield type_
 
     for type_str in search_return_in_docstr(function_context.py__doc__()):
-        for type_eval in _infer_for_statement_string(function_context.get_root_context(), type_str):
-            yield type_eval
+        for context in _infer_for_statement_string(function_context.get_root_context(), type_str):
+            yield context

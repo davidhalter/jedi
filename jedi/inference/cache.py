@@ -10,7 +10,7 @@ _NO_DEFAULT = object()
 _RECURSION_SENTINEL = object()
 
 
-def _memoize_default(default=_NO_DEFAULT, evaluator_is_first_arg=False, second_arg_is_evaluator=False):
+def _memoize_default(default=_NO_DEFAULT, infer_state_is_first_arg=False, second_arg_is_infer_state=False):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 
@@ -21,12 +21,12 @@ def _memoize_default(default=_NO_DEFAULT, evaluator_is_first_arg=False, second_a
     def func(function):
         def wrapper(obj, *args, **kwargs):
             # TODO These checks are kind of ugly and slow.
-            if evaluator_is_first_arg:
+            if infer_state_is_first_arg:
                 cache = obj.memoize_cache
-            elif second_arg_is_evaluator:
+            elif second_arg_is_infer_state:
                 cache = args[0].memoize_cache  # needed for meta classes
             else:
-                cache = obj.evaluator.memoize_cache
+                cache = obj.infer_state.memoize_cache
 
             try:
                 memo = cache[function]
@@ -47,23 +47,23 @@ def _memoize_default(default=_NO_DEFAULT, evaluator_is_first_arg=False, second_a
     return func
 
 
-def evaluator_function_cache(default=_NO_DEFAULT):
+def infer_state_function_cache(default=_NO_DEFAULT):
     def decorator(func):
-        return _memoize_default(default=default, evaluator_is_first_arg=True)(func)
+        return _memoize_default(default=default, infer_state_is_first_arg=True)(func)
 
     return decorator
 
 
-def evaluator_method_cache(default=_NO_DEFAULT):
+def infer_state_method_cache(default=_NO_DEFAULT):
     def decorator(func):
         return _memoize_default(default=default)(func)
 
     return decorator
 
 
-def evaluator_as_method_param_cache():
+def infer_state_as_method_param_cache():
     def decorator(call):
-        return _memoize_default(second_arg_is_evaluator=True)(call)
+        return _memoize_default(second_arg_is_infer_state=True)(call)
 
     return decorator
 
@@ -74,19 +74,19 @@ class CachedMetaClass(type):
     class initializations. Either you do it this way or with decorators, but
     with decorators you lose class access (isinstance, etc).
     """
-    @evaluator_as_method_param_cache()
+    @infer_state_as_method_param_cache()
     def __call__(self, *args, **kwargs):
         return super(CachedMetaClass, self).__call__(*args, **kwargs)
 
 
-def evaluator_method_generator_cache():
+def infer_state_method_generator_cache():
     """
     This is a special memoizer. It memoizes generators and also checks for
     recursion errors and returns no further iterator elemends in that case.
     """
     def func(function):
         def wrapper(obj, *args, **kwargs):
-            cache = obj.evaluator.memoize_cache
+            cache = obj.infer_state.memoize_cache
             try:
                 memo = cache[function]
             except KeyError:

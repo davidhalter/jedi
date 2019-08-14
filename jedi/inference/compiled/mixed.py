@@ -15,7 +15,7 @@ from jedi.file_io import FileIO
 from jedi.inference.base_context import ContextSet, ContextWrapper
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.context import ModuleContext
-from jedi.inference.cache import evaluator_function_cache
+from jedi.inference.cache import infer_state_function_cache
 from jedi.inference.compiled.getattr_static import getattr_static
 from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
@@ -48,7 +48,7 @@ class MixedObject(ContextWrapper):
         self.access_handle = compiled_object.access_handle
 
     def get_filters(self, *args, **kwargs):
-        yield MixedObjectFilter(self.evaluator, self)
+        yield MixedObjectFilter(self.infer_state, self)
 
     def get_signatures(self):
         # Prefer `inspect.signature` over somehow analyzing Python code. It
@@ -105,9 +105,9 @@ class MixedName(compiled.CompiledName):
         contexts = [None]
         for access in access_paths:
             contexts = ContextSet.from_sets(
-                _create(self._evaluator, access, parent_context=c)
+                _create(self._infer_state, access, parent_context=c)
                 if c is None or isinstance(c, MixedObject)
-                else ContextSet({create_cached_compiled_object(c.evaluator, access, c)})
+                else ContextSet({create_cached_compiled_object(c.infer_state, access, c)})
                 for c in contexts
             )
         return contexts
@@ -121,9 +121,9 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
     name_class = MixedName
 
 
-@evaluator_function_cache()
-def _load_module(evaluator, path):
-    module_node = evaluator.parse(
+@infer_state_function_cache()
+def _load_module(infer_state, path):
+    module_node = infer_state.parse(
         path=path,
         cache=True,
         diff_cache=settings.fast_parser,
@@ -131,7 +131,7 @@ def _load_module(evaluator, path):
     ).get_root_node()
     # python_module = inspect.getmodule(python_object)
     # TODO we should actually make something like this possible.
-    #evaluator.modules[python_module.__name__] = module_node
+    #infer_state.modules[python_module.__name__] = module_node
     return module_node
 
 
@@ -155,7 +155,7 @@ def _get_object_to_check(python_object):
         raise TypeError  # Prevents computation of `repr` within inspect.
 
 
-def _find_syntax_node_name(evaluator, python_object):
+def _find_syntax_node_name(infer_state, python_object):
     original_object = python_object
     try:
         python_object = _get_object_to_check(python_object)
@@ -168,13 +168,13 @@ def _find_syntax_node_name(evaluator, python_object):
         return None
 
     file_io = FileIO(path)
-    module_node = _load_module(evaluator, path)
+    module_node = _load_module(infer_state, path)
 
     if inspect.ismodule(python_object):
         # We don't need to check names for modules, because there's not really
         # a way to write a module in a module in Python (and also __name__ can
         # be something like ``email.utils``).
-        code_lines = get_cached_code_lines(evaluator.grammar, path)
+        code_lines = get_cached_code_lines(infer_state.grammar, path)
         return module_node, module_node, file_io, code_lines
 
     try:
@@ -214,7 +214,7 @@ def _find_syntax_node_name(evaluator, python_object):
         if line_names:
             names = line_names
 
-    code_lines = get_cached_code_lines(evaluator.grammar, path)
+    code_lines = get_cached_code_lines(infer_state.grammar, path)
     # It's really hard to actually get the right definition, here as a last
     # resort we just return the last one. This chance might lead to odd
     # completions at some points but will lead to mostly correct type
@@ -230,9 +230,9 @@ def _find_syntax_node_name(evaluator, python_object):
 
 
 @compiled_objects_cache('mixed_cache')
-def _create(evaluator, access_handle, parent_context, *args):
+def _create(infer_state, access_handle, parent_context, *args):
     compiled_object = create_cached_compiled_object(
-        evaluator,
+        infer_state,
         access_handle,
         parent_context=parent_context and parent_context.compiled_object
     )
@@ -240,7 +240,7 @@ def _create(evaluator, access_handle, parent_context, *args):
     # TODO accessing this is bad, but it probably doesn't matter that much,
     # because we're working with interpreteters only here.
     python_object = access_handle.access._obj
-    result = _find_syntax_node_name(evaluator, python_object)
+    result = _find_syntax_node_name(infer_state, python_object)
     if result is None:
         # TODO Care about generics from stuff like `[1]` and don't return like this.
         if type(python_object) in (dict, list, tuple):
@@ -257,14 +257,14 @@ def _create(evaluator, access_handle, parent_context, *args):
             name = compiled_object.get_root_context().py__name__()
             string_names = tuple(name.split('.'))
             module_context = ModuleContext(
-                evaluator, module_node,
+                infer_state, module_node,
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
                 is_package=hasattr(compiled_object, 'py__path__'),
             )
             if name is not None:
-                evaluator.module_cache.add(string_names, ContextSet([module_context]))
+                infer_state.module_cache.add(string_names, ContextSet([module_context]))
         else:
             if parent_context.tree_node.get_root_node() != module_node:
                 # This happens e.g. when __module__ is wrong, or when using

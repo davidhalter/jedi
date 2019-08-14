@@ -87,7 +87,7 @@ def add(node_context, error_name, node, message=None, typ=Error, payload=None):
     module_path = module_context.py__file__()
     issue_instance = typ(error_name, module_path, node.start_pos, message)
     debug.warning(str(issue_instance), format=False)
-    node_context.evaluator.analysis.append(issue_instance)
+    node_context.infer_state.analysis.append(issue_instance)
     return issue_instance
 
 
@@ -149,7 +149,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
 
         for python_cls in exception.mro():
             if cls.py__name__() == python_cls.__name__ \
-                    and cls.parent_context == cls.evaluator.builtins_module:
+                    and cls.parent_context == cls.infer_state.builtins_module:
                 return True
         return False
 
@@ -192,7 +192,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             arglist = trailer.children[1]
             assert arglist.type == 'arglist'
             from jedi.inference.arguments import TreeArguments
-            args = list(TreeArguments(node_context.evaluator, node_context, arglist).unpack())
+            args = list(TreeArguments(node_context.infer_state, node_context, arglist).unpack())
             # Arguments should be very simple
             assert len(args) == 2
 

@@ -39,8 +39,8 @@ py__doc__()                            Returns the docstring for a context.
 from jedi import debug
 from jedi._compatibility import use_metaclass
 from jedi.parser_utils import get_cached_parent_scope
-from jedi.inference.cache import evaluator_method_cache, CachedMetaClass, \
-    evaluator_method_generator_cache
+from jedi.inference.cache import infer_state_method_cache, CachedMetaClass, \
+    infer_state_method_generator_cache
 from jedi.inference import compiled
 from jedi.inference.lazy_context import LazyKnownContexts
 from jedi.inference.filters import ParserTreeFilter
@@ -73,7 +73,7 @@ class ClassName(TreeNameDefinition):
         # We're using a different context to infer, so we cannot call super().
         from jedi.inference.syntax_tree import tree_name_to_contexts
         inferred = tree_name_to_contexts(
-            self.parent_context.evaluator, self._name_context, self.tree_name)
+            self.parent_context.infer_state, self._name_context, self.tree_name)
 
         for result_context in inferred:
             if self._apply_decorators:
@@ -141,10 +141,10 @@ class ClassMixin(object):
         from jedi.inference.context import TreeInstance
         if arguments is None:
             arguments = ValuesArguments([])
-        return ContextSet([TreeInstance(self.evaluator, self.parent_context, self, arguments)])
+        return ContextSet([TreeInstance(self.infer_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
-        return compiled.builtin_from_name(self.evaluator, u'type')
+        return compiled.builtin_from_name(self.infer_state, u'type')
 
     @property
     def name(self):
@@ -159,7 +159,7 @@ class ClassMixin(object):
                 return list(context_.get_param_names())[1:]
         return []
 
-    @evaluator_method_generator_cache()
+    @infer_state_method_generator_cache()
     def py__mro__(self):
         mro = [self]
         yield self
@@ -208,13 +208,13 @@ class ClassMixin(object):
                         yield filter
                 else:
                     yield ClassFilter(
-                        self.evaluator, self, node_context=cls,
+                        self.infer_state, self, node_context=cls,
                         origin_scope=origin_scope,
                         is_instance=is_instance
                     )
         if not is_instance:
             from jedi.inference.compiled import builtin_from_name
-            type_ = builtin_from_name(self.evaluator, u'type')
+            type_ = builtin_from_name(self.infer_state, u'type')
             assert isinstance(type_, ClassContext)
             if type_ != self:
                 for instance in type_.py__call__():
@@ -230,7 +230,7 @@ class ClassMixin(object):
 
     def get_global_filter(self, until_position=None, origin_scope=None):
         return ParserTreeFilter(
-            self.evaluator,
+            self.infer_state,
             context=self,
             until_position=until_position,
             origin_scope=origin_scope
@@ -240,7 +240,7 @@ class ClassMixin(object):
 class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     api_type = u'class'
 
-    @evaluator_method_cache()
+    @infer_state_method_cache()
     def list_type_vars(self):
         found = []
         arglist = self.tree_node.get_super_arglist()
@@ -262,10 +262,10 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         arglist = self.tree_node.get_super_arglist()
         if arglist:
             from jedi.inference import arguments
-            return arguments.TreeArguments(self.evaluator, self.parent_context, arglist)
+            return arguments.TreeArguments(self.infer_state, self.parent_context, arglist)
         return None
 
-    @evaluator_method_cache(default=())
+    @infer_state_method_cache(default=())
     def py__bases__(self):
         args = self._get_bases_arguments()
         if args is not None:
@@ -274,10 +274,10 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
                 return lst
 
         if self.py__name__() == 'object' \
-                and self.parent_context == self.evaluator.builtins_module:
+                and self.parent_context == self.infer_state.builtins_module:
             return []
         return [LazyKnownContexts(
-            self.evaluator.builtins_module.py__getattribute__('object')
+            self.infer_state.builtins_module.py__getattribute__('object')
         )]
 
     def py__getitem__(self, index_context_set, contextualized_node):
@@ -321,7 +321,7 @@ class ClassContext(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBa
         debug.dbg('Unprocessed metaclass %s', metaclass)
         return []
 
-    @evaluator_method_cache(default=NO_CONTEXTS)
+    @infer_state_method_cache(default=NO_CONTEXTS)
     def get_metaclasses(self):
         args = self._get_bases_arguments()
         if args is not None:

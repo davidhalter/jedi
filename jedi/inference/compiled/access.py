@@ -109,8 +109,8 @@ def compiled_objects_cache(attribute_name):
         Caching the id has the advantage that an object doesn't need to be
         hashable.
         """
-        def wrapper(evaluator, obj, parent_context=None):
-            cache = getattr(evaluator, attribute_name)
+        def wrapper(infer_state, obj, parent_context=None):
+            cache = getattr(infer_state, attribute_name)
             # Do a very cheap form of caching here.
             key = id(obj)
             try:
@@ -119,9 +119,9 @@ def compiled_objects_cache(attribute_name):
             except KeyError:
                 # TODO wuaaaarrghhhhhhhh
                 if attribute_name == 'mixed_cache':
-                    result = func(evaluator, obj, parent_context)
+                    result = func(infer_state, obj, parent_context)
                 else:
-                    result = func(evaluator, obj)
+                    result = func(infer_state, obj)
                 # Need to cache all of them, otherwise the id could be overwritten.
                 cache[key] = result, obj, parent_context
                 return result
@@ -130,11 +130,11 @@ def compiled_objects_cache(attribute_name):
     return decorator
 
 
-def create_access(evaluator, obj):
-    return evaluator.compiled_subprocess.get_or_create_access_handle(obj)
+def create_access(infer_state, obj):
+    return infer_state.compiled_subprocess.get_or_create_access_handle(obj)
 
 
-def load_module(evaluator, dotted_name, sys_path):
+def load_module(infer_state, dotted_name, sys_path):
     temp, sys.path = sys.path, sys_path
     try:
         __import__(dotted_name)
@@ -154,7 +154,7 @@ def load_module(evaluator, dotted_name, sys_path):
     # Just access the cache after import, because of #59 as well as the very
     # complicated import structure of Python.
     module = sys.modules[dotted_name]
-    return create_access_path(evaluator, module)
+    return create_access_path(infer_state, module)
 
 
 class AccessPath(object):
@@ -171,8 +171,8 @@ class AccessPath(object):
         self.accesses = value
 
 
-def create_access_path(evaluator, obj):
-    access = create_access(evaluator, obj)
+def create_access_path(infer_state, obj):
+    access = create_access(infer_state, obj)
     return AccessPath(access.get_access_path_tuples())
 
 
@@ -193,18 +193,18 @@ def get_api_type(obj):
 
 
 class DirectObjectAccess(object):
-    def __init__(self, evaluator, obj):
-        self._evaluator = evaluator
+    def __init__(self, infer_state, obj):
+        self._infer_state = infer_state
         self._obj = obj
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self.get_repr())
 
     def _create_access(self, obj):
-        return create_access(self._evaluator, obj)
+        return create_access(self._infer_state, obj)
 
     def _create_access_path(self, obj):
-        return create_access_path(self._evaluator, obj)
+        return create_access_path(self._infer_state, obj)
 
     def py__bool__(self):
         return bool(self._obj)
@@ -376,7 +376,7 @@ class DirectObjectAccess(object):
         return get_api_type(self._obj)
 
     def get_access_path_tuples(self):
-        accesses = [create_access(self._evaluator, o) for o in self._get_objects_path()]
+        accesses = [create_access(self._infer_state, o) for o in self._get_objects_path()]
         return [(access.py__name__(), access) for access in accesses]
 
     def _get_objects_path(self):

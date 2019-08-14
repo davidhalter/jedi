@@ -15,24 +15,24 @@ except ImportError:
         pydoc_topics = None
 
 
-def get_operator(evaluator, string, pos):
-    return Keyword(evaluator, string, pos)
+def get_operator(infer_state, string, pos):
+    return Keyword(infer_state, string, pos)
 
 
 class KeywordName(AbstractArbitraryName):
     api_type = u'keyword'
 
     def infer(self):
-        return [Keyword(self.evaluator, self.string_name, (0, 0))]
+        return [Keyword(self.infer_state, self.string_name, (0, 0))]
 
 
 class Keyword(object):
     api_type = u'keyword'
 
-    def __init__(self, evaluator, name, pos):
-        self.name = KeywordName(evaluator, name)
+    def __init__(self, infer_state, name, pos):
+        self.name = KeywordName(infer_state, name)
         self.start_pos = pos
-        self.parent = evaluator.builtins_module
+        self.parent = infer_state.builtins_module
 
     @property
     def names(self):

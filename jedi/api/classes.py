@@ -25,7 +25,7 @@ def _sort_names_by_start_pos(names):
     return sorted(names, key=lambda s: s.start_pos or (0, 0))
 
 
-def defined_names(evaluator, context):
+def defined_names(infer_state, context):
     """
     List sub-definitions (e.g., methods in class).
 
@@ -34,11 +34,11 @@ def defined_names(evaluator, context):
     """
     filter = next(context.get_filters(search_global=True))
     names = [name for name in filter.values()]
-    return [Definition(evaluator, n) for n in _sort_names_by_start_pos(names)]
+    return [Definition(infer_state, n) for n in _sort_names_by_start_pos(names)]
 
 
 def _contexts_to_definitions(contexts):
-    return [Definition(c.evaluator, c.name) for c in contexts]
+    return [Definition(c.infer_state, c.name) for c in contexts]
 
 
 class BaseDefinition(object):
@@ -62,8 +62,8 @@ class BaseDefinition(object):
         'argparse._ActionsContainer': 'argparse.ArgumentParser',
     }.items())
 
-    def __init__(self, evaluator, name):
-        self._evaluator = evaluator
+    def __init__(self, infer_state, name):
+        self._infer_state = infer_state
         self._name = name
         """
         An instance of :class:`parso.python.tree.Name` subclass.
@@ -306,7 +306,7 @@ class BaseDefinition(object):
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
-        return [self if n == self._name else Definition(self._evaluator, n)
+        return [self if n == self._name else Definition(self._infer_state, n)
                 for n in names]
 
     def infer(self, **kwargs):  # Python 2...
@@ -329,7 +329,7 @@ class BaseDefinition(object):
             prefer_stubs=prefer_stubs,
         )
         resulting_names = [c.name for c in contexts]
-        return [self if n == self._name else Definition(self._evaluator, n)
+        return [self if n == self._name else Definition(self._infer_state, n)
                 for n in resulting_names]
 
     @property
@@ -346,7 +346,7 @@ class BaseDefinition(object):
         for context in self._name.infer():
             for signature in context.get_signatures():
                 return [
-                    Definition(self._evaluator, n)
+                    Definition(self._infer_state, n)
                     for n in signature.get_param_names(resolve_stars=True)
                 ]
 
@@ -366,7 +366,7 @@ class BaseDefinition(object):
 
         if isinstance(context, FunctionExecutionContext):
             context = context.function_context
-        return Definition(self._evaluator, context.name)
+        return Definition(self._infer_state, context.name)
 
     def __repr__(self):
         return "<%s %sname=%r, description=%r>" % (
@@ -396,7 +396,7 @@ class BaseDefinition(object):
         return ''.join(lines[start_index:index + after + 1])
 
     def get_signatures(self):
-        return [Signature(self._evaluator, s) for s in self._name.infer().get_signatures()]
+        return [Signature(self._infer_state, s) for s in self._name.infer().get_signatures()]
 
     def execute(self):
         return _contexts_to_definitions(self._name.infer().execute_with_values())
@@ -407,8 +407,8 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, evaluator, name, stack, like_name_length):
-        super(Completion, self).__init__(evaluator, name)
+    def __init__(self, infer_state, name, stack, like_name_length):
+        super(Completion, self).__init__(infer_state, name)
 
         self._like_name_length = like_name_length
         self._stack = stack
@@ -512,8 +512,8 @@ class Definition(BaseDefinition):
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
     """
-    def __init__(self, evaluator, definition):
-        super(Definition, self).__init__(evaluator, definition)
+    def __init__(self, infer_state, definition):
+        super(Definition, self).__init__(infer_state, definition)
 
     @property
     def description(self):
@@ -588,7 +588,7 @@ class Definition(BaseDefinition):
         """
         defs = self._name.infer()
         return sorted(
-            unite(defined_names(self._evaluator, d) for d in defs),
+            unite(defined_names(self._infer_state, d) for d in defs),
             key=lambda s: s._name.start_pos or (0, 0)
         )
 
@@ -606,13 +606,13 @@ class Definition(BaseDefinition):
         return self._name.start_pos == other._name.start_pos \
             and self.module_path == other.module_path \
             and self.name == other.name \
-            and self._evaluator == other._evaluator
+            and self._infer_state == other._infer_state
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self._name.start_pos, self.module_path, self.name, self._evaluator))
+        return hash((self._name.start_pos, self.module_path, self.name, self._infer_state))
 
 
 class Signature(Definition):
@@ -621,8 +621,8 @@ class Signature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, signature):
-        super(Signature, self).__init__(evaluator, signature.name)
+    def __init__(self, infer_state, signature):
+        super(Signature, self).__init__(infer_state, signature.name)
         self._signature = signature
 
     @property
@@ -630,7 +630,7 @@ class Signature(Definition):
         """
         :return list of ParamDefinition:
         """
-        return [ParamDefinition(self._evaluator, n)
+        return [ParamDefinition(self._infer_state, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]
 
     def to_string(self):
@@ -644,8 +644,8 @@ class CallSignature(Signature):
     return the `isinstance` function with its params. Without `(` it would
     return nothing.
     """
-    def __init__(self, evaluator, signature, call_details):
-        super(CallSignature, self).__init__(evaluator, signature)
+    def __init__(self, infer_state, signature, call_details):
+        super(CallSignature, self).__init__(infer_state, signature)
         self._call_details = call_details
         self._signature = signature
 

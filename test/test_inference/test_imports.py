@@ -43,12 +43,12 @@ pkg_zip_path = os.path.join(os.path.dirname(__file__),
                             'pkg.zip')
 
 
-def test_find_module_package_zipped(Script, evaluator, environment):
+def test_find_module_package_zipped(Script, infer_state, environment):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
     script = Script('import pkg; pkg.mod', sys_path=sys_path)
     assert len(script.completions()) == 1
 
-    file_io, is_package = evaluator.compiled_subprocess.get_module_info(
+    file_io, is_package = infer_state.compiled_subprocess.get_module_info(
         sys_path=sys_path,
         string=u'pkg',
         full_name=u'pkg'
@@ -84,7 +84,7 @@ def test_find_module_package_zipped(Script, evaluator, environment):
     ]
 
 )
-def test_correct_zip_package_behavior(Script, evaluator, environment, code,
+def test_correct_zip_package_behavior(Script, infer_state, environment, code,
                                       file, package, path, skip_python2):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
     pkg, = Script(code, sys_path=sys_path).goto_definitions()
@@ -96,13 +96,13 @@ def test_correct_zip_package_behavior(Script, evaluator, environment, code,
         assert context.py__path__() == [os.path.join(pkg_zip_path, path)]
 
 
-def test_find_module_not_package_zipped(Script, evaluator, environment):
+def test_find_module_not_package_zipped(Script, infer_state, environment):
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/not_pkg.zip')
     sys_path = environment.get_sys_path() + [path]
     script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
     assert len(script.completions()) == 1
 
-    file_io, is_package = evaluator.compiled_subprocess.get_module_info(
+    file_io, is_package = infer_state.compiled_subprocess.get_module_info(
         sys_path=sys_path,
         string=u'not_pkg',
         full_name=u'not_pkg'
@@ -310,16 +310,16 @@ def test_compiled_import_none(monkeypatch, Script):
         (os.path.join(THIS_DIR, '__init__.py'), True, ('ok', 'lala', 'x', 'test_imports')),
     ]
 )
-def test_get_modules_containing_name(evaluator, path, goal, is_package):
+def test_get_modules_containing_name(infer_state, path, goal, is_package):
     module = imports._load_python_module(
-        evaluator,
+        infer_state,
         FileIO(path),
         import_names=('ok', 'lala', 'x'),
         is_package=is_package,
     )
     assert module
     input_module, found_module = imports.get_modules_containing_name(
-        evaluator,
+        infer_state,
         [module],
         'string_that_only_exists_here'
     )
@@ -337,9 +337,9 @@ def test_get_modules_containing_name(evaluator, path, goal, is_package):
         ('/foo/bar/__init__.py', ('foo', 'bar'), True, ('foo', 'bar')),
     ]
 )
-def test_load_module_from_path(evaluator, path, base_names, is_package, names):
+def test_load_module_from_path(infer_state, path, base_names, is_package, names):
     file_io = KnownContentFileIO(path, '')
-    m = imports._load_module_from_path(evaluator, file_io, base_names)
+    m = imports._load_module_from_path(infer_state, file_io, base_names)
     assert m.is_package == is_package
     assert m.string_names == names
 
@@ -437,8 +437,8 @@ def test_pre_defined_imports_module(Script, environment, name):
     module = Script('', path=path)._get_module()
     assert module.string_names == (name,)
 
-    assert module.evaluator.builtins_module.py__file__() != path
-    assert module.evaluator.typing_module.py__file__() != path
+    assert module.infer_state.builtins_module.py__file__() != path
+    assert module.infer_state.typing_module.py__file__() != path
 
 
 @pytest.mark.parametrize('name', ('builtins', 'typing'))
@@ -454,8 +454,8 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
         sys_path=[tmpdir.strpath] + environment.get_sys_path(),
     )
     module, = script.goto_definitions()
-    assert module._evaluator.builtins_module.py__file__() != module_path
-    assert module._evaluator.typing_module.py__file__() != module_path
+    assert module._infer_state.builtins_module.py__file__() != module_path
+    assert module._infer_state.typing_module.py__file__() != module_path
 
 
 def test_import_with_semicolon(Script):

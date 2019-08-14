@@ -70,10 +70,10 @@ def _cleanup_process(process, thread):
             pass
 
 
-class _EvaluatorProcess(object):
-    def __init__(self, evaluator):
-        self._evaluator_weakref = weakref.ref(evaluator)
-        self._evaluator_id = id(evaluator)
+class _InferStateProcess(object):
+    def __init__(self, infer_state):
+        self._infer_state_weakref = weakref.ref(infer_state)
+        self._infer_state_id = id(infer_state)
         self._handles = {}
 
     def get_or_create_access_handle(self, obj):
@@ -81,7 +81,7 @@ class _EvaluatorProcess(object):
         try:
             return self.get_access_handle(id_)
         except KeyError:
-            access = DirectObjectAccess(self._evaluator_weakref(), obj)
+            access = DirectObjectAccess(self._infer_state_weakref(), obj)
             handle = AccessHandle(self, access, id_)
             self.set_access_handle(handle)
             return handle
@@ -93,19 +93,19 @@ class _EvaluatorProcess(object):
         self._handles[handle.id] = handle
 
 
-class EvaluatorSameProcess(_EvaluatorProcess):
+class InferStateSameProcess(_InferStateProcess):
     """
     Basically just an easy access to functions.py. It has the same API
-    as EvaluatorSubprocess and does the same thing without using a subprocess.
+    as InferStateSubprocess and does the same thing without using a subprocess.
     This is necessary for the Interpreter process.
     """
     def __getattr__(self, name):
-        return partial(_get_function(name), self._evaluator_weakref())
+        return partial(_get_function(name), self._infer_state_weakref())
 
 
-class EvaluatorSubprocess(_EvaluatorProcess):
-    def __init__(self, evaluator, compiled_subprocess):
-        super(EvaluatorSubprocess, self).__init__(evaluator)
+class InferStateSubprocess(_InferStateProcess):
+    def __init__(self, infer_state, compiled_subprocess):
+        super(InferStateSubprocess, self).__init__(infer_state)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
 
@@ -116,7 +116,7 @@ class EvaluatorSubprocess(_EvaluatorProcess):
             self._used = True
 
             result = self._compiled_subprocess.run(
-                self._evaluator_weakref(),
+                self._infer_state_weakref(),
                 func,
                 args=args,
                 kwargs=kwargs,
@@ -148,7 +148,7 @@ class EvaluatorSubprocess(_EvaluatorProcess):
 
     def __del__(self):
         if self._used and not self._compiled_subprocess.is_crashed:
-            self._compiled_subprocess.delete_evaluator(self._evaluator_id)
+            self._compiled_subprocess.delete_infer_state(self._infer_state_id)
 
 
 class CompiledSubprocess(object):
@@ -158,7 +158,7 @@ class CompiledSubprocess(object):
 
     def __init__(self, executable):
         self._executable = executable
-        self._evaluator_deletion_queue = queue.deque()
+        self._infer_state_deletion_queue = queue.deque()
         self._cleanup_callable = lambda: None
 
     def __repr__(self):
@@ -205,18 +205,18 @@ class CompiledSubprocess(object):
                                                   t)
         return process
 
-    def run(self, evaluator, function, args=(), kwargs={}):
-        # Delete old evaluators.
+    def run(self, infer_state, function, args=(), kwargs={}):
+        # Delete old infer_states.
         while True:
             try:
-                evaluator_id = self._evaluator_deletion_queue.pop()
+                infer_state_id = self._infer_state_deletion_queue.pop()
             except IndexError:
                 break
             else:
-                self._send(evaluator_id, None)
+                self._send(infer_state_id, None)
 
         assert callable(function)
-        return self._send(id(evaluator), function, args, kwargs)
+        return self._send(id(infer_state), function, args, kwargs)
 
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
@@ -225,7 +225,7 @@ class CompiledSubprocess(object):
         self.is_crashed = True
         self._cleanup_callable()
 
-    def _send(self, evaluator_id, function, args=(), kwargs={}):
+    def _send(self, infer_state_id, function, args=(), kwargs={}):
         if self.is_crashed:
             raise InternalError("The subprocess %s has crashed." % self._executable)
 
@@ -233,7 +233,7 @@ class CompiledSubprocess(object):
             # Python 2 compatibility
             kwargs = {force_unicode(key): value for key, value in kwargs.items()}
 
-        data = evaluator_id, function, args, kwargs
+        data = infer_state_id, function, args, kwargs
         try:
             pickle_dump(data, self._get_process().stdin, self._pickle_protocol)
         except (socket.error, IOError) as e:
@@ -272,59 +272,59 @@ class CompiledSubprocess(object):
             raise result
         return result
 
-    def delete_evaluator(self, evaluator_id):
+    def delete_infer_state(self, infer_state_id):
         """
-        Currently we are not deleting evalutors instantly. They only get
+        Currently we are not deleting infer_state instantly. They only get
         deleted once the subprocess is used again. It would probably a better
         solution to move all of this into a thread. However, the memory usage
-        of a single evaluator shouldn't be that high.
+        of a single infer_state shouldn't be that high.
         """
-        # With an argument - the evaluator gets deleted.
-        self._evaluator_deletion_queue.append(evaluator_id)
+        # With an argument - the infer_state gets deleted.
+        self._infer_state_deletion_queue.append(infer_state_id)
 
 
 class Listener(object):
     def __init__(self, pickle_protocol):
-        self._evaluators = {}
+        self._infer_states = {}
         # TODO refactor so we don't need to process anymore just handle
         # controlling.
-        self._process = _EvaluatorProcess(Listener)
+        self._process = _InferStateProcess(Listener)
         self._pickle_protocol = pickle_protocol
 
-    def _get_evaluator(self, function, evaluator_id):
-        from jedi.inference import Evaluator
+    def _get_infer_state(self, function, infer_state_id):
+        from jedi.inference import InferState
 
         try:
-            evaluator = self._evaluators[evaluator_id]
+            infer_state = self._infer_states[infer_state_id]
         except KeyError:
             from jedi.api.environment import InterpreterEnvironment
-            evaluator = Evaluator(
+            infer_state = InferState(
                 # The project is not actually needed. Nothing should need to
                 # access it.
                 project=None,
                 environment=InterpreterEnvironment()
             )
-            self._evaluators[evaluator_id] = evaluator
-        return evaluator
+            self._infer_states[infer_state_id] = infer_state
+        return infer_state
 
-    def _run(self, evaluator_id, function, args, kwargs):
-        if evaluator_id is None:
+    def _run(self, infer_state_id, function, args, kwargs):
+        if infer_state_id is None:
             return function(*args, **kwargs)
         elif function is None:
-            del self._evaluators[evaluator_id]
+            del self._infer_states[infer_state_id]
         else:
-            evaluator = self._get_evaluator(function, evaluator_id)
+            infer_state = self._get_infer_state(function, infer_state_id)
 
             # Exchange all handles
             args = list(args)
             for i, arg in enumerate(args):
                 if isinstance(arg, AccessHandle):
-                    args[i] = evaluator.compiled_subprocess.get_access_handle(arg.id)
+                    args[i] = infer_state.compiled_subprocess.get_access_handle(arg.id)
             for key, value in kwargs.items():
                 if isinstance(value, AccessHandle):
-                    kwargs[key] = evaluator.compiled_subprocess.get_access_handle(value.id)
+                    kwargs[key] = infer_state.compiled_subprocess.get_access_handle(value.id)
 
-            return function(evaluator, *args, **kwargs)
+            return function(infer_state, *args, **kwargs)
 
     def listen(self):
         stdout = sys.stdout
@@ -399,7 +399,7 @@ class AccessHandle(object):
 
     @memoize_method
     def _cached_results(self, name, *args, **kwargs):
-        #if type(self._subprocess) == EvaluatorSubprocess:
+        #if type(self._subprocess) == InferStateSubprocess:
             #print(name, args, kwargs,
                 #self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
             #)

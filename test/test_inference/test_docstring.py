@@ -66,7 +66,7 @@ def test_instance_doc(Script):
     assert defs[0].docstring() == 'Docstring of `TestClass`.'
 
 
-@unittest.skip('need evaluator class for that')
+@unittest.skip('need infer_state class for that')
 def test_attribute_docstring(Script):
     defs = Script("""
     x = None
@@ -75,7 +75,7 @@ def test_attribute_docstring(Script):
     assert defs[0].docstring() == 'Docstring of `x`.'
 
 
-@unittest.skip('need evaluator class for that')
+@unittest.skip('need infer_state class for that')
 def test_multiple_docstrings(Script):
     defs = Script("""
     def func():

@@ -41,7 +41,7 @@ def usages(module_context, tree_name):
     modules = set(m for m in modules if m.is_module() and not m.is_compiled())
 
     non_matching_usage_maps = {}
-    for m in imports.get_modules_containing_name(module_context.evaluator, modules, search_name):
+    for m in imports.get_modules_containing_name(module_context.infer_state, modules, search_name):
         for name_leaf in m.tree_node.get_used_names().get(search_name, []):
             new = _find_names(m, name_leaf)
             if any(tree_name in found_names for tree_name in new):

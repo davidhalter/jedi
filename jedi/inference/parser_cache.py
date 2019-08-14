@@ -1,6 +1,6 @@
-from jedi.inference.cache import evaluator_function_cache
+from jedi.inference.cache import infer_state_function_cache
 
 
-@evaluator_function_cache()
-def get_yield_exprs(evaluator, funcdef):
+@infer_state_function_cache()
+def get_yield_exprs(infer_state, funcdef):
     return list(funcdef.iter_yield_exprs())

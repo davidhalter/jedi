@@ -9,9 +9,9 @@ from jedi.inference.compiled.access import create_access_path
 from jedi.inference.base_context import ContextWrapper
 
 
-def _create(evaluator, obj):
+def _create(infer_state, obj):
     return compiled.create_from_access_path(
-        evaluator, create_access_path(evaluator, obj)
+        infer_state, create_access_path(infer_state, obj)
     )
 
 
@@ -23,9 +23,9 @@ class NamespaceObject(object):
 class MixedModuleContext(ContextWrapper):
     type = 'mixed_module'
 
-    def __init__(self, evaluator, tree_module, namespaces, file_io, code_lines):
+    def __init__(self, infer_state, tree_module, namespaces, file_io, code_lines):
         module_context = ModuleContext(
-            evaluator, tree_module,
+            infer_state, tree_module,
             file_io=file_io,
             string_names=('__main__',),
             code_lines=code_lines
@@ -38,7 +38,7 @@ class MixedModuleContext(ContextWrapper):
             yield filter
 
         for namespace_obj in self._namespace_objects:
-            compiled_object = _create(self.evaluator, namespace_obj)
+            compiled_object = _create(self.infer_state, namespace_obj)
             mixed_object = mixed.MixedObject(
                 compiled_object=compiled_object,
                 tree_context=self._wrapped_context

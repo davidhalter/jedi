@@ -66,10 +66,10 @@ class AbstractArbitraryName(AbstractNameDefinition):
     """
     is_context_name = False
 
-    def __init__(self, evaluator, string):
-        self.evaluator = evaluator
+    def __init__(self, infer_state, string):
+        self.infer_state = infer_state
         self.string_name = string
-        self.parent_context = evaluator.builtins_module
+        self.parent_context = infer_state.builtins_module
 
     def infer(self):
         return NO_CONTEXTS
@@ -103,7 +103,7 @@ class AbstractTreeName(AbstractNameDefinition):
         return parent_names + (self.tree_name.value,)
 
     def goto(self, **kwargs):
-        return self.parent_context.evaluator.goto(self.parent_context, self.tree_name, **kwargs)
+        return self.parent_context.infer_state.goto(self.parent_context, self.tree_name, **kwargs)
 
     def is_import(self):
         imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
@@ -157,7 +157,7 @@ class TreeNameDefinition(AbstractTreeName):
         # Refactor this, should probably be here.
         from jedi.inference.syntax_tree import tree_name_to_contexts
         parent = self.parent_context
-        return tree_name_to_contexts(parent.evaluator, parent, self.tree_name)
+        return tree_name_to_contexts(parent.infer_state, parent, self.tree_name)
 
     @property
     def api_type(self):
@@ -346,7 +346,7 @@ class ImportName(AbstractNameDefinition):
     def infer(self):
         from jedi.inference.imports import Importer
         m = self._from_module_context
-        return Importer(m.evaluator, [self.string_name], m, level=self._level).follow()
+        return Importer(m.infer_state, [self.string_name], m, level=self._level).follow()
 
     def goto(self):
         return [m.name for m in self.infer()]

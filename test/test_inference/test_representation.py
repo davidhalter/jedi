@@ -1,9 +1,9 @@
 from textwrap import dedent
 
 
-def get_definition_and_evaluator(Script, source):
+def get_definition_and_infer_state(Script, source):
     first, = Script(dedent(source)).goto_definitions()
-    return first._name._context, first._evaluator
+    return first._name._context, first._infer_state
 
 
 def test_function_execution(Script):
@@ -16,7 +16,7 @@ def test_function_execution(Script):
     def x():
         return str()
     x"""
-    func, evaluator = get_definition_and_evaluator(Script, s)
+    func, infer_state = get_definition_and_infer_state(Script, s)
     # Now just use the internals of the result (easiest way to get a fully
     # usable function).
     # Should return the same result both times.
@@ -29,6 +29,6 @@ def test_class_mro(Script):
     class X(object):
         pass
     X"""
-    cls, evaluator = get_definition_and_evaluator(Script, s)
+    cls, infer_state = get_definition_and_infer_state(Script, s)
     mro = cls.py__mro__()
     assert [c.name.string_name for c in mro] == ['X', 'object']

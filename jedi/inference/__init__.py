@@ -15,7 +15,7 @@ Type inference of Python code in |jedi| is based on three assumptions:
 The actual algorithm is based on a principle I call lazy type inference.  That
 said, the typical entry point for static analysis is calling
 ``infer_expr_stmt``. There's separate logic for autocompletion in the API, the
-evaluator is all about inferring an expression.
+infer_state is all about inferring an expression.
 
 TODO this paragraph is not what jedi does anymore, it's similar, but not the
 same.
@@ -32,9 +32,9 @@ return the ``date`` class.
 
 To *visualize* this (simplified):
 
-- ``Evaluator.infer_expr_stmt`` doesn't do much, because there's no assignment.
+- ``InferState.infer_expr_stmt`` doesn't do much, because there's no assignment.
 - ``Context.infer_node`` cares for resolving the dotted path
-- ``Evaluator.find_types`` searches for global definitions of datetime, which
+- ``InferState.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
 - Using the import logic, the datetime module is found.
 - Now ``find_types`` is called again by ``infer_node`` to find ``date``
@@ -72,7 +72,7 @@ from jedi import parser_utils
 from jedi.inference.utils import unite
 from jedi.inference import imports
 from jedi.inference import recursion
-from jedi.inference.cache import evaluator_function_cache
+from jedi.inference.cache import infer_state_function_cache
 from jedi.inference import helpers
 from jedi.inference.names import TreeNameDefinition, ParamName
 from jedi.inference.base_context import ContextualizedName, ContextualizedNode, \
@@ -85,13 +85,13 @@ from jedi.inference.syntax_tree import infer_trailer, infer_expr_stmt, \
 from jedi.plugins import plugin_manager
 
 
-class Evaluator(object):
+class InferState(object):
     def __init__(self, project, environment=None, script_path=None):
         if environment is None:
             environment = project.get_environment()
         self.environment = environment
         self.script_path = script_path
-        self.compiled_subprocess = environment.get_evaluator_subprocess(self)
+        self.compiled_subprocess = environment.get_infer_state_subprocess(self)
         self.grammar = environment.get_grammar()
 
         self.latest_grammar = parso.load_grammar(version='3.7')
@@ -128,7 +128,7 @@ class Evaluator(object):
         return context_set
 
     @property
-    @evaluator_function_cache()
+    @infer_state_function_cache()
     def builtins_module(self):
         module_name = u'builtins'
         if self.environment.version_info.major == 2:
@@ -137,7 +137,7 @@ class Evaluator(object):
         return builtins_module
 
     @property
-    @evaluator_function_cache()
+    @infer_state_function_cache()
     def typing_module(self):
         typing_module, = self.import_module((u'typing',))
         return typing_module
@@ -233,7 +233,7 @@ class Evaluator(object):
                 return infer_node(context, element)
         return self._infer_element_cached(context, element)
 
-    @evaluator_function_cache(default=NO_CONTEXTS)
+    @infer_state_function_cache(default=NO_CONTEXTS)
     def _infer_element_cached(self, context, element):
         return infer_node(context, element)
 

@@ -1,6 +1,6 @@
 class BaseContext(object):
-    def __init__(self, evaluator, parent_context=None):
-        self.evaluator = evaluator
+    def __init__(self, infer_state, parent_context=None):
+        self.infer_state = infer_state
         self.parent_context = parent_context
 
     def get_root_context(self):

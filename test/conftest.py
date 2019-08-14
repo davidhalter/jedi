@@ -162,10 +162,10 @@ def cwd_tmpdir(monkeypatch, tmpdir):
 
 
 @pytest.fixture
-def evaluator(Script):
-    return Script('')._evaluator
+def infer_state(Script):
+    return Script('')._infer_state
 
 
 @pytest.fixture
-def same_process_evaluator(Script):
-    return Script('', environment=InterpreterEnvironment())._evaluator
+def same_process_infer_state(Script):
+    return Script('', environment=InterpreterEnvironment())._infer_state

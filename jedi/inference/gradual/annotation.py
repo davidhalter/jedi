@@ -10,7 +10,7 @@ import re
 from parso import ParserSyntaxError, parse
 
 from jedi._compatibility import force_unicode
-from jedi.inference.cache import evaluator_method_cache
+from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.base_context import ContextSet, NO_CONTEXTS
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
@@ -32,13 +32,13 @@ def infer_annotation(context, annotation):
     """
     context_set = context.infer_node(annotation)
     if len(context_set) != 1:
-        debug.warning("Eval'ed typing index %s should lead to 1 object, "
+        debug.warning("Inferred typing index %s should lead to 1 object, "
                       " not %s" % (annotation, context_set))
         return context_set
 
-    evaled_context = list(context_set)[0]
-    if is_string(evaled_context):
-        result = _get_forward_reference_node(context, evaled_context.get_safe_value())
+    inferred_context = list(context_set)[0]
+    if is_string(inferred_context):
+        result = _get_forward_reference_node(context, inferred_context.get_safe_value())
         if result is not None:
             return context.infer_node(result)
     return context_set
@@ -60,7 +60,7 @@ def _infer_annotation_string(context, string, index=None):
 
 def _get_forward_reference_node(context, string):
     try:
-        new_node = context.evaluator.grammar.parse(
+        new_node = context.infer_state.grammar.parse(
             force_unicode(string),
             start_symbol='eval_input',
             error_recovery=False
@@ -106,21 +106,21 @@ def _split_comment_param_declaration(decl_text):
     return params
 
 
-@evaluator_method_cache()
+@infer_state_method_cache()
 def infer_param(execution_context, param):
     contexts = _infer_param(execution_context, param)
-    evaluator = execution_context.evaluator
+    infer_state = execution_context.infer_state
     if param.star_count == 1:
-        tuple_ = builtin_from_name(evaluator, 'tuple')
+        tuple_ = builtin_from_name(infer_state, 'tuple')
         return ContextSet([GenericClass(
             tuple_,
             generics=(contexts,),
         ) for c in contexts])
     elif param.star_count == 2:
-        dct = builtin_from_name(evaluator, 'dict')
+        dct = builtin_from_name(infer_state, 'dict')
         return ContextSet([GenericClass(
             dct,
-            generics=(ContextSet([builtin_from_name(evaluator, 'str')]), contexts),
+            generics=(ContextSet([builtin_from_name(infer_state, 'str')]), contexts),
         ) for c in contexts])
         pass
     return contexts
@@ -190,7 +190,7 @@ def py__annotations__(funcdef):
     return dct
 
 
-@evaluator_method_cache()
+@infer_state_method_cache()
 def infer_return_types(function_execution_context):
     """
     Infers the type of a function's return value,

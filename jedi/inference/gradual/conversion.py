@@ -87,11 +87,11 @@ def _load_stub_module(module):
         return module
     from jedi.inference.gradual.typeshed import _try_to_load_stub_cached
     return _try_to_load_stub_cached(
-        module.evaluator,
+        module.infer_state,
         import_names=module.string_names,
         python_context_set=ContextSet([module]),
         parent_module_context=None,
-        sys_path=module.evaluator.get_sys_path(),
+        sys_path=module.infer_state.get_sys_path(),
     )
 
 

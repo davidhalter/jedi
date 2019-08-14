@@ -28,7 +28,7 @@ def get_call_signature_param_names(call_signatures):
                 yield p._name
 
 
-def filter_names(evaluator, completion_names, stack, like_name):
+def filter_names(infer_state, completion_names, stack, like_name):
     comp_dct = {}
     if settings.case_insensitive_completion:
         like_name = like_name.lower()
@@ -39,7 +39,7 @@ def filter_names(evaluator, completion_names, stack, like_name):
 
         if string.startswith(like_name):
             new = classes.Completion(
-                evaluator,
+                infer_state,
                 name,
                 stack,
                 len(like_name)
@@ -85,8 +85,8 @@ def get_flow_scope_node(module_node, position):
 
 
 class Completion:
-    def __init__(self, evaluator, module, code_lines, position, call_signatures_callback):
-        self._evaluator = evaluator
+    def __init__(self, infer_state, module, code_lines, position, call_signatures_callback):
+        self._infer_state = infer_state
         self._module_context = module
         self._module_node = module.tree_node
         self._code_lines = code_lines
@@ -104,7 +104,7 @@ class Completion:
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
             completions = list(file_name_completions(
-                self._evaluator, self._module_context, start_leaf, string,
+                self._infer_state, self._module_context, start_leaf, string,
                 self._like_name, self._call_signatures_callback,
                 self._code_lines, self._original_position
             ))
@@ -113,7 +113,7 @@ class Completion:
 
         completion_names = self._get_context_completions(leaf)
 
-        completions = filter_names(self._evaluator, completion_names,
+        completions = filter_names(self._infer_state, completion_names,
                                    self.stack, self._like_name)
 
         return sorted(completions, key=lambda x: (x.name.startswith('__'),
@@ -135,7 +135,7 @@ class Completion:
         - In params (also lambda): no completion before =
         """
 
-        grammar = self._evaluator.grammar
+        grammar = self._infer_state.grammar
         self.stack = stack = None
 
         try:
@@ -234,14 +234,14 @@ class Completion:
     def _get_keyword_completion_names(self, allowed_transitions):
         for k in allowed_transitions:
             if isinstance(k, str) and k.isalpha():
-                yield keywords.KeywordName(self._evaluator, k)
+                yield keywords.KeywordName(self._infer_state, k)
 
     def _global_completions(self):
         context = get_user_scope(self._module_context, self._position)
         debug.dbg('global completion scope: %s', context)
         flow_scope_node = get_flow_scope_node(self._module_node, self._position)
         filters = get_global_filters(
-            self._evaluator,
+            self._infer_state,
             context,
             self._position,
             origin_scope=flow_scope_node
@@ -253,7 +253,7 @@ class Completion:
 
     def _trailer_completions(self, previous_leaf):
         user_context = get_user_scope(self._module_context, self._position)
-        inferred_context = self._evaluator.create_context(
+        inferred_context = self._infer_state.create_context(
             self._module_context, previous_leaf
         )
         contexts = infer_call_of_leaf(inferred_context, previous_leaf)
@@ -276,8 +276,8 @@ class Completion:
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]
-        i = imports.Importer(self._evaluator, names, self._module_context, level)
-        return i.completion_names(self._evaluator, only_modules=only_modules)
+        i = imports.Importer(self._infer_state, names, self._module_context, level)
+        return i.completion_names(self._infer_state, only_modules=only_modules)
 
     def _get_class_context_completions(self, is_function=True):
         """

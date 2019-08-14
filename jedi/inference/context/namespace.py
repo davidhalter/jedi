@@ -1,4 +1,4 @@
-from jedi.inference.cache import evaluator_method_cache
+from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.filters import DictFilter
 from jedi.inference.names import ContextNameMixin, AbstractNameDefinition
 from jedi.inference.base_context import Context
@@ -25,9 +25,9 @@ class ImplicitNamespaceContext(Context, SubModuleDictMixin):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, evaluator, fullname, paths):
-        super(ImplicitNamespaceContext, self).__init__(evaluator, parent_context=None)
-        self.evaluator = evaluator
+    def __init__(self, infer_state, fullname, paths):
+        super(ImplicitNamespaceContext, self).__init__(infer_state, parent_context=None)
+        self.infer_state = infer_state
         self._fullname = fullname
         self._paths = paths
 
@@ -35,7 +35,7 @@ class ImplicitNamespaceContext(Context, SubModuleDictMixin):
         yield DictFilter(self.sub_modules_dict())
 
     @property
-    @evaluator_method_cache()
+    @infer_state_method_cache()
     def name(self):
         string_name = self.py__package__()[-1]
         return ImplicitNSName(self, string_name)

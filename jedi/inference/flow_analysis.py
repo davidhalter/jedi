@@ -106,7 +106,7 @@ def _break_check(context, context_scope, flow_scope, node):
 
 
 def _check_if(context, node):
-    with execution_allowed(context.evaluator, node) as allowed:
+    with execution_allowed(context.infer_state, node) as allowed:
         if not allowed:
             return UNSURE
 
