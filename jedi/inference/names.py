@@ -3,7 +3,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.cache import memoize_method
 
 

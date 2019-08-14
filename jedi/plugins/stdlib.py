@@ -21,7 +21,7 @@ from jedi.inference.arguments import ValuesArguments, \
 from jedi.inference import analysis
 from jedi.inference import compiled
 from jedi.inference.context.instance import BoundMethod, InstanceArguments
-from jedi.inference.base_context import ContextualizedNode, \
+from jedi.inference.base_value import ContextualizedNode, \
     NO_CONTEXTS, ContextSet, ContextWrapper, LazyContextWrapper
 from jedi.inference.context import ClassContext, ModuleContext, \
     FunctionExecutionContext

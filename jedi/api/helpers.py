@@ -9,7 +9,7 @@ from parso.python.parser import Parser
 from parso.python import tree
 
 from jedi._compatibility import u, Parameter
-from jedi.inference.base_context import NO_CONTEXTS
+from jedi.inference.base_value import NO_CONTEXTS
 from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf
 from jedi.inference.compiled import get_string_context_set

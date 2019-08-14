@@ -1,7 +1,7 @@
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.filters import DictFilter
 from jedi.inference.names import ContextNameMixin, AbstractNameDefinition
-from jedi.inference.base_context import Context
+from jedi.inference.base_value import Context
 from jedi.inference.context.module import SubModuleDictMixin
 
 

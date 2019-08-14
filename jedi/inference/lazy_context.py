@@ -1,4 +1,4 @@
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.common.utils import monkeypatch
 
 

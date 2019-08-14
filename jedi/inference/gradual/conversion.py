@@ -1,5 +1,5 @@
 from jedi import debug
-from jedi.inference.base_context import ContextSet, \
+from jedi.inference.base_value import ContextSet, \
     NO_CONTEXTS
 from jedi.inference.utils import to_list
 from jedi.inference.gradual.stub_context import StubModuleContext

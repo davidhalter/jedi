@@ -5,7 +5,7 @@ from functools import wraps
 from jedi.file_io import FileIO
 from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.inference.gradual.stub_context import TypingModuleWrapper, StubModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

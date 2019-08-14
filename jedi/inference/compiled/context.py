@@ -11,7 +11,7 @@ from jedi.cache import underscore_memoization, memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ContextNameMixin, \
     ParamNameInterface
-from jedi.inference.base_context import Context, ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import Context, ContextSet, NO_CONTEXTS
 from jedi.inference.lazy_context import LazyKnownContext
 from jedi.inference.compiled.access import _sentinel
 from jedi.inference.cache import infer_state_function_cache

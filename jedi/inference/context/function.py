@@ -12,7 +12,7 @@ from jedi.inference.signature import TreeSignature
 from jedi.inference.arguments import AnonymousArguments
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
 from jedi.inference.names import ContextName, AbstractNameDefinition, ParamName
-from jedi.inference.base_context import ContextualizedNode, NO_CONTEXTS, \
+from jedi.inference.base_value import ContextualizedNode, NO_CONTEXTS, \
     ContextSet, TreeContext, ContextWrapper
 from jedi.inference.lazy_context import LazyKnownContexts, LazyKnownContext, \
     LazyTreeContext

@@ -73,10 +73,10 @@ Type inference of python code (inference/__init__.py)
 
 .. automodule:: jedi.inference
 
-Inference Contexts (inference/base_context.py)
+Inference Contexts (inference/base_value.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: jedi.inference.base_context
+.. automodule:: jedi.inference.base_value
 
 .. inheritance-diagram::
    jedi.inference.context.instance.TreeInstance

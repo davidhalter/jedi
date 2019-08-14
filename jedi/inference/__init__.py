@@ -75,7 +75,7 @@ from jedi.inference import recursion
 from jedi.inference.cache import infer_state_function_cache
 from jedi.inference import helpers
 from jedi.inference.names import TreeNameDefinition, ParamName
-from jedi.inference.base_context import ContextualizedName, ContextualizedNode, \
+from jedi.inference.base_value import ContextualizedName, ContextualizedNode, \
     ContextSet, NO_CONTEXTS, iterate_contexts
 from jedi.inference.context import ClassContext, FunctionContext, \
     AnonymousInstance, BoundMethod
@@ -368,7 +368,7 @@ class InferState(object):
                 search_global=True, is_goto=True
             )
 
-    def create_context(self, base_context, node, node_is_context=False, node_is_object=False):
+    def create_context(self, base_value, node, node_is_context=False, node_is_object=False):
         def parent_scope(node):
             while True:
                 node = node.parent
@@ -386,7 +386,7 @@ class InferState(object):
 
         def from_scope_node(scope_node, is_nested=True, node_is_object=False):
             if scope_node == base_node:
-                return base_context
+                return base_value
 
             is_funcdef = scope_node.type in ('funcdef', 'lambdef')
             parent_scope = parser_utils.get_parent_scope(scope_node)
@@ -413,7 +413,7 @@ class InferState(object):
                 return CompForContext.from_comp_for(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 
-        base_node = base_context.tree_node
+        base_node = base_value.tree_node
 
         if node_is_context and parser_utils.is_scope(node):
             scope_node = node

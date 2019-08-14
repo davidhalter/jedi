@@ -27,7 +27,7 @@ from jedi.inference.helpers import is_stdlib_path
 from jedi.inference.utils import to_list
 from jedi.parser_utils import get_parent_scope
 from jedi.inference.context import ModuleContext, instance
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.inference import recursion
 
 

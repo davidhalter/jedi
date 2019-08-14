@@ -3,7 +3,7 @@ Decorators are not really contexts, however we need some wrappers to improve
 docstrings and other things around decorators.
 '''
 
-from jedi.inference.base_context import ContextWrapper
+from jedi.inference.base_value import ContextWrapper
 
 
 class Decoratee(ContextWrapper):

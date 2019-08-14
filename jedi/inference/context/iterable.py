@@ -37,7 +37,7 @@ from jedi.inference.utils import safe_property, to_list
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.filters import ParserTreeFilter, LazyAttributeOverwrite, \
     publish_method
-from jedi.inference.base_context import ContextSet, Context, NO_CONTEXTS, \
+from jedi.inference.base_value import ContextSet, Context, NO_CONTEXTS, \
     TreeContext, ContextualizedNode, iterate_contexts, HelperContextMixin, _sentinel
 from jedi.parser_utils import get_sync_comp_fors
 

@@ -12,7 +12,7 @@ from jedi import settings
 from jedi.inference import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
-from jedi.inference.base_context import ContextSet, ContextWrapper
+from jedi.inference.base_value import ContextSet, ContextWrapper
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.context import ModuleContext
 from jedi.inference.cache import infer_state_function_cache

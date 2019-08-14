@@ -7,7 +7,7 @@ from jedi.inference.compiled.context import CompiledObjectFilter
 from jedi.inference.helpers import contexts_from_qualified_names
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import ContextName, TreeNameDefinition
-from jedi.inference.base_context import Context, NO_CONTEXTS, ContextSet, \
+from jedi.inference.base_value import Context, NO_CONTEXTS, ContextSet, \
     iterator_to_context_set, ContextWrapper
 from jedi.inference.lazy_context import LazyKnownContext, LazyKnownContexts
 from jedi.inference.cache import infer_state_method_cache

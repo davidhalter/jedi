@@ -6,11 +6,11 @@ from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.names import ContextNameMixin, AbstractNameDefinition
 from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.inference import compiled
-from jedi.inference.base_context import TreeContext
+from jedi.inference.base_value import TreeContext
 from jedi.inference.names import SubModuleName
 from jedi.inference.helpers import contexts_from_qualified_names
 from jedi.inference.compiled import create_simple_object
-from jedi.inference.base_context import ContextSet
+from jedi.inference.base_value import ContextSet
 
 
 class _ModuleAttributeName(AbstractNameDefinition):

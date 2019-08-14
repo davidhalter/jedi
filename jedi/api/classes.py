@@ -17,7 +17,7 @@ from jedi.inference.imports import ImportName
 from jedi.inference.context import FunctionExecutionContext
 from jedi.inference.gradual.typeshed import StubModuleContext
 from jedi.inference.gradual.conversion import convert_names, convert_contexts
-from jedi.inference.base_context import ContextSet
+from jedi.inference.base_value import ContextSet
 from jedi.api.keywords import KeywordName
 
 

@@ -46,7 +46,7 @@ from jedi.inference.lazy_context import LazyKnownContexts
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.names import TreeNameDefinition, ContextName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
-from jedi.inference.base_context import ContextSet, iterator_to_context_set, \
+from jedi.inference.base_value import ContextSet, iterator_to_context_set, \
     NO_CONTEXTS
 from jedi.inference.context.function import FunctionAndClassBase
 from jedi.plugins import plugin_manager

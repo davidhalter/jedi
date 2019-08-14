@@ -2,7 +2,7 @@ import os
 
 from jedi._compatibility import unicode, force_unicode, all_suffixes
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_context import ContextualizedNode
+from jedi.inference.base_value import ContextualizedNode
 from jedi.inference.helpers import is_string
 from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines

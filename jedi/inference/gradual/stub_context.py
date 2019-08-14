@@ -1,4 +1,4 @@
-from jedi.inference.base_context import ContextWrapper
+from jedi.inference.base_value import ContextWrapper
 from jedi.inference.context.module import ModuleContext
 from jedi.inference.filters import ParserTreeFilter, \
     TreeNameDefinition

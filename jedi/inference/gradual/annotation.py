@@ -11,7 +11,7 @@ from parso import ParserSyntaxError, parse
 
 from jedi._compatibility import force_unicode
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
 from jedi.inference.gradual.typing import GenericClass

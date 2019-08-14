@@ -6,7 +6,7 @@ from jedi.inference.context import ModuleContext
 from jedi.inference import compiled
 from jedi.inference.compiled import mixed
 from jedi.inference.compiled.access import create_access_path
-from jedi.inference.base_context import ContextWrapper
+from jedi.inference.base_value import ContextWrapper
 
 
 def _create(infer_state, obj):

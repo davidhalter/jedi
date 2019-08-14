@@ -25,7 +25,7 @@ from jedi._compatibility import u
 from jedi import debug
 from jedi.inference.utils import indent_block
 from jedi.inference.cache import infer_state_method_cache
-from jedi.inference.base_context import iterator_to_context_set, ContextSet, \
+from jedi.inference.base_value import iterator_to_context_set, ContextSet, \
     NO_CONTEXTS
 from jedi.inference.lazy_context import LazyKnownContexts
 

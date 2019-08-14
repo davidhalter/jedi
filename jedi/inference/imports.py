@@ -30,7 +30,7 @@ from jedi.inference import analysis
 from jedi.inference.utils import unite
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.names import ImportName, SubModuleName
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.inference.gradual.typeshed import import_module_decorator
 from jedi.inference.context.module import iter_module_names
 from jedi.plugins import plugin_manager

@@ -37,7 +37,7 @@ from jedi.inference.sys_path import transform_path_to_dotted
 from jedi.inference.names import TreeNameDefinition, ParamName
 from jedi.inference.syntax_tree import tree_name_to_contexts
 from jedi.inference.context import ModuleContext
-from jedi.inference.base_context import ContextSet
+from jedi.inference.base_value import ContextSet
 from jedi.inference.context.iterable import unpack_tuple_to_dict
 from jedi.inference.gradual.conversion import convert_names, convert_contexts
 from jedi.inference.gradual.utils import load_proper_stub_module

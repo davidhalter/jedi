@@ -9,7 +9,7 @@ from jedi.inference import analysis
 from jedi.inference.lazy_context import LazyKnownContext, LazyKnownContexts, \
     LazyTreeContext, get_merged_lazy_context
 from jedi.inference.names import ParamName, TreeNameDefinition
-from jedi.inference.base_context import NO_CONTEXTS, ContextSet, ContextualizedNode
+from jedi.inference.base_value import NO_CONTEXTS, ContextSet, ContextualizedNode
 from jedi.inference.context import iterable
 from jedi.inference.cache import infer_state_as_method_param_cache
 from jedi.inference.param import get_executed_params_and_issues, ExecutedParam

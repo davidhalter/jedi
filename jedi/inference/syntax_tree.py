@@ -8,7 +8,7 @@ from parso.python import tree
 from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS, ContextualizedNode, \
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS, ContextualizedNode, \
     ContextualizedName, iterator_to_context_set, iterate_contexts
 from jedi.inference.lazy_context import LazyTreeContext
 from jedi.inference import compiled

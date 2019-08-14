@@ -27,7 +27,7 @@ from jedi.inference import helpers
 from jedi.inference.context import iterable
 from jedi.inference.filters import get_global_filters
 from jedi.inference.names import TreeNameDefinition
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS
 from jedi.parser_utils import is_scope, get_parent_scope
 from jedi.inference.gradual.conversion import convert_contexts
 

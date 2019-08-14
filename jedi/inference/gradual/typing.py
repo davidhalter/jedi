@@ -9,7 +9,7 @@ from jedi._compatibility import unicode, force_unicode
 from jedi import debug
 from jedi.inference.cache import infer_state_method_cache
 from jedi.inference.compiled import builtin_from_name
-from jedi.inference.base_context import ContextSet, NO_CONTEXTS, Context, \
+from jedi.inference.base_value import ContextSet, NO_CONTEXTS, Context, \
     iterator_to_context_set, ContextWrapper, LazyContextWrapper
 from jedi.inference.lazy_context import LazyKnownContexts
 from jedi.inference.context.iterable import SequenceLiteralContext
