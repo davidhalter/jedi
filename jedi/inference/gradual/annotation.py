@@ -21,7 +21,7 @@ from jedi import debug
 from jedi import parser_utils
 
 
-def eval_annotation(context, annotation):
+def infer_annotation(context, annotation):
     """
     Inferes an annotation node. This means that it inferes the part of
     `int` here:
@@ -30,7 +30,7 @@ def eval_annotation(context, annotation):
 
     Also checks for forward references (strings)
     """
-    context_set = context.eval_node(annotation)
+    context_set = context.infer_node(annotation)
     if len(context_set) != 1:
         debug.warning("Eval'ed typing index %s should lead to 1 object, "
                       " not %s" % (annotation, context_set))
@@ -40,7 +40,7 @@ def eval_annotation(context, annotation):
     if is_string(evaled_context):
         result = _get_forward_reference_node(context, evaled_context.get_safe_value())
         if result is not None:
-            return context.eval_node(result)
+            return context.infer_node(result)
     return context_set
 
 
@@ -49,7 +49,7 @@ def _infer_annotation_string(context, string, index=None):
     if node is None:
         return NO_CONTEXTS
 
-    context_set = context.eval_node(node)
+    context_set = context.infer_node(node)
     if index is not None:
         context_set = context_set.filter(
             lambda context: context.array_type == u'tuple'  # noqa
@@ -174,7 +174,7 @@ def _infer_param(execution_context, param):
         )
     # Annotations are like default params and resolve in the same way.
     context = execution_context.function_context.get_default_param_context()
-    return eval_annotation(context, annotation)
+    return infer_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):
@@ -218,7 +218,7 @@ def infer_return_types(function_execution_context):
 
     context = function_execution_context.function_context.get_default_param_context()
     unknown_type_vars = list(find_unknown_type_vars(context, annotation))
-    annotation_contexts = eval_annotation(context, annotation)
+    annotation_contexts = infer_annotation(context, annotation)
     if not unknown_type_vars:
         return annotation_contexts.execute_annotation()
 
@@ -254,7 +254,7 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
         annotation_variables = find_unknown_type_vars(context, annotation_node)
         if annotation_variables:
             # Infer unknown type var
-            annotation_context_set = context.eval_node(annotation_node)
+            annotation_context_set = context.infer_node(annotation_node)
             star_count = executed_param._param_node.star_count
             actual_context_set = executed_param.infer(use_hints=False)
             if star_count == 1:
@@ -385,7 +385,7 @@ def find_unknown_type_vars(context, node):
                 for subscript_node in _unpack_subscriptlist(trailer.children[1]):
                     check_node(subscript_node)
         else:
-            type_var_set = context.eval_node(node)
+            type_var_set = context.infer_node(node)
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar) and type_var not in found:
                     found.append(type_var)

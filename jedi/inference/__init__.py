@@ -14,30 +14,30 @@ Type inference of Python code in |jedi| is based on three assumptions:
 
 The actual algorithm is based on a principle I call lazy type inference.  That
 said, the typical entry point for static analysis is calling
-``eval_expr_stmt``. There's separate logic for autocompletion in the API, the
+``infer_expr_stmt``. There's separate logic for autocompletion in the API, the
 evaluator is all about inferring an expression.
 
 TODO this paragraph is not what jedi does anymore, it's similar, but not the
 same.
 
-Now you need to understand what follows after ``eval_expr_stmt``. Let's
+Now you need to understand what follows after ``infer_expr_stmt``. Let's
 make an example::
 
     import datetime
     datetime.date.toda# <-- cursor here
 
 First of all, this module doesn't care about completion. It really just cares
-about ``datetime.date``. At the end of the procedure ``eval_expr_stmt`` will
+about ``datetime.date``. At the end of the procedure ``infer_expr_stmt`` will
 return the ``date`` class.
 
 To *visualize* this (simplified):
 
-- ``Evaluator.eval_expr_stmt`` doesn't do much, because there's no assignment.
-- ``Context.eval_node`` cares for resolving the dotted path
+- ``Evaluator.infer_expr_stmt`` doesn't do much, because there's no assignment.
+- ``Context.infer_node`` cares for resolving the dotted path
 - ``Evaluator.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
 - Using the import logic, the datetime module is found.
-- Now ``find_types`` is called again by ``eval_node`` to find ``date``
+- Now ``find_types`` is called again by ``infer_node`` to find ``date``
   inside the datetime module.
 
 Now what would happen if we wanted ``datetime.date.foo.bar``? Two more
@@ -49,7 +49,7 @@ What if the import would contain another ``ExprStmt`` like this::
     from foo import bar
     Date = bar.baz
 
-Well... You get it. Just another ``eval_expr_stmt`` recursion. It's really
+Well... You get it. Just another ``infer_expr_stmt`` recursion. It's really
 easy. Python can obviously get way more complicated then this. To understand
 tuple assignments, list comprehensions and everything else, a lot more code had
 to be written.
@@ -80,8 +80,8 @@ from jedi.inference.base_context import ContextualizedName, ContextualizedNode, 
 from jedi.inference.context import ClassContext, FunctionContext, \
     AnonymousInstance, BoundMethod
 from jedi.inference.context.iterable import CompForContext
-from jedi.inference.syntax_tree import eval_trailer, eval_expr_stmt, \
-    eval_node, check_tuple_assignments
+from jedi.inference.syntax_tree import infer_trailer, infer_expr_stmt, \
+    infer_node, check_tuple_assignments
 from jedi.plugins import plugin_manager
 
 
@@ -150,9 +150,9 @@ class Evaluator(object):
         """Convenience function"""
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
-    def eval_element(self, context, element):
+    def infer_element(self, context, element):
         if isinstance(context, CompForContext):
-            return eval_node(context, element)
+            return infer_node(context, element)
 
         if_stmt = element
         while if_stmt is not None:
@@ -211,31 +211,31 @@ class Evaluator(object):
                 result = NO_CONTEXTS
                 for name_dict in name_dicts:
                     with helpers.predefine_names(context, if_stmt, name_dict):
-                        result |= eval_node(context, element)
+                        result |= infer_node(context, element)
                 return result
             else:
-                return self._eval_element_if_inferred(context, element)
+                return self._infer_element_if_inferred(context, element)
         else:
             if predefined_if_name_dict:
-                return eval_node(context, element)
+                return infer_node(context, element)
             else:
-                return self._eval_element_if_inferred(context, element)
+                return self._infer_element_if_inferred(context, element)
 
-    def _eval_element_if_inferred(self, context, element):
+    def _infer_element_if_inferred(self, context, element):
         """
-        TODO This function is temporary: Merge with eval_element.
+        TODO This function is temporary: Merge with infer_element.
         """
         parent = element
         while parent is not None:
             parent = parent.parent
             predefined_if_name_dict = context.predefined_names.get(parent)
             if predefined_if_name_dict is not None:
-                return eval_node(context, element)
-        return self._eval_element_cached(context, element)
+                return infer_node(context, element)
+        return self._infer_element_cached(context, element)
 
     @evaluator_function_cache(default=NO_CONTEXTS)
-    def _eval_element_cached(self, context, element):
-        return eval_node(context, element)
+    def _infer_element_cached(self, context, element):
+        return infer_node(context, element)
 
     def goto_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)
@@ -252,9 +252,9 @@ class Evaluator(object):
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
                 if is_simple_name:
-                    return eval_expr_stmt(context, def_, name)
+                    return infer_expr_stmt(context, def_, name)
             if type_ == 'for_stmt':
-                container_types = context.eval_node(def_.children[3])
+                container_types = context.infer_node(def_.children[3])
                 cn = ContextualizedNode(context, def_.children[3])
                 for_types = iterate_contexts(container_types, cn)
                 c_node = ContextualizedName(context, name)
@@ -326,15 +326,15 @@ class Evaluator(object):
                 trailer = trailer.parent
             if trailer.type != 'classdef':
                 if trailer.type == 'decorator':
-                    context_set = context.eval_node(trailer.children[1])
+                    context_set = context.infer_node(trailer.children[1])
                 else:
                     i = trailer.parent.children.index(trailer)
                     to_infer = trailer.parent.children[:i]
                     if to_infer[0] == 'await':
                         to_infer.pop(0)
-                    context_set = context.eval_node(to_infer[0])
+                    context_set = context.infer_node(to_infer[0])
                     for trailer in to_infer[1:]:
-                        context_set = eval_trailer(context, context_set, trailer)
+                        context_set = infer_trailer(context, context_set, trailer)
                 param_names = []
                 for context in context_set:
                     for signature in context.get_signatures():
@@ -347,7 +347,7 @@ class Evaluator(object):
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
                 new_dotted.children[index - 1:] = []
-                values = context.eval_node(new_dotted)
+                values = context.infer_node(new_dotted)
                 return unite(
                     value.py__getattribute__(name, name_context=context, is_goto=True)
                     for value in values

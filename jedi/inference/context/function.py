@@ -185,7 +185,7 @@ class FunctionExecutionContext(TreeContext):
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
         if funcdef.type == 'lambdef':
-            return self.eval_node(funcdef.children[-1])
+            return self.infer_node(funcdef.children[-1])
 
         if check_yields:
             context_set = NO_CONTEXTS
@@ -217,7 +217,7 @@ class FunctionExecutionContext(TreeContext):
                         ctx = compiled.builtin_from_name(self.evaluator, u'None')
                         context_set |= ContextSet([ctx])
                     else:
-                        context_set |= self.eval_node(children[1])
+                        context_set |= self.infer_node(children[1])
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break

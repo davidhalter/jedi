@@ -62,16 +62,16 @@ def _goes_to_param_name(param_name, context, potential_name):
 
 
 def _to_callables(context, trailer):
-    from jedi.inference.syntax_tree import eval_trailer
+    from jedi.inference.syntax_tree import infer_trailer
 
     atom_expr = trailer.parent
     index = atom_expr.children[0] == 'await'
     # Eval atom first
-    contexts = context.eval_node(atom_expr.children[index])
+    contexts = context.infer_node(atom_expr.children[index])
     for trailer2 in atom_expr.children[index + 1:]:
         if trailer == trailer2:
             break
-        contexts = eval_trailer(context, contexts, trailer2)
+        contexts = infer_trailer(context, contexts, trailer2)
     return contexts
 
 

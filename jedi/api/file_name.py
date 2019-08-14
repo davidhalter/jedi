@@ -85,7 +85,7 @@ def _add_strings(context, nodes, add_slash=False):
     string = ''
     first = True
     for child_node in nodes:
-        contexts = context.eval_node(child_node)
+        contexts = context.infer_node(child_node)
         if len(contexts) != 1:
             return None
         c, = contexts

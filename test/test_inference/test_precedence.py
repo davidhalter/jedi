@@ -14,5 +14,5 @@ def test_equals(Script, environment, source):
         pytest.skip("Ellipsis does not exists in 2")
     script = Script(source)
     node = script._module_node.children[0]
-    first, = script._get_module().eval_node(node)
+    first, = script._get_module().infer_node(node)
     assert isinstance(first, CompiledObject) and first.get_safe_value() is True

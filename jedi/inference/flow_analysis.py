@@ -110,7 +110,7 @@ def _check_if(context, node):
         if not allowed:
             return UNSURE
 
-        types = context.eval_node(node)
+        types = context.infer_node(node)
         values = set(x.py__bool__() for x in types)
         if len(values) == 1:
             return Status.lookup_table[values.pop()]

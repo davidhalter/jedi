@@ -43,7 +43,7 @@ class LazyTreeContext(AbstractLazyContext):
 
     def infer(self):
         with monkeypatch(self.context, 'predefined_names', self._predefined_names):
-            return self.context.eval_node(self.data)
+            return self.context.infer_node(self.data)
 
 
 def get_merged_lazy_context(lazy_contexts):

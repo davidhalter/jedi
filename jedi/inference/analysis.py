@@ -167,7 +167,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
             if node is None:
                 return True  # An exception block that catches everything.
             else:
-                except_classes = node_context.eval_node(node)
+                except_classes = node_context.infer_node(node)
                 for cls in except_classes:
                     from jedi.inference.context import iterable
                     if isinstance(cls, iterable.Sequence) and \

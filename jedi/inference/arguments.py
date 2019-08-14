@@ -132,7 +132,7 @@ def _parse_argument_clinic(string):
 
 
 class _AbstractArgumentsMixin(object):
-    def eval_all(self, funcdef=None):
+    def infer_all(self, funcdef=None):
         """
         Inferes all arguments as a support for static analysis
         (normally Jedi).
@@ -216,7 +216,7 @@ class TreeArguments(AbstractArguments):
         named_args = []
         for star_count, el in unpack_arglist(self.argument_node):
             if star_count == 1:
-                arrays = self.context.eval_node(el)
+                arrays = self.context.infer_node(el)
                 iterators = [_iterate_star_args(self.context, a, el, funcdef)
                              for a in arrays]
                 for values in list(zip_longest(*iterators)):
@@ -226,7 +226,7 @@ class TreeArguments(AbstractArguments):
                         [v for v in values if v is not None]
                     )
             elif star_count == 2:
-                arrays = self.context.eval_node(el)
+                arrays = self.context.infer_node(el)
                 for dct in arrays:
                     for key, values in _star_star_dict(self.context, dct, el, funcdef):
                         yield key, values

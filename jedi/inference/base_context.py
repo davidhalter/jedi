@@ -77,8 +77,8 @@ class HelperContextMixin(object):
             debug.warning('Tried to run __await__ on context %s', self)
         return await_context_set.execute_with_values()
 
-    def eval_node(self, node):
-        return self.evaluator.eval_element(self, node)
+    def infer_node(self, node):
+        return self.evaluator.infer_element(self, node)
 
     def create_context(self, node, node_is_context=False, node_is_object=False):
         return self.evaluator.create_context(self, node, node_is_context, node_is_object)
@@ -286,7 +286,7 @@ class ContextualizedNode(object):
         return self.context.get_root_context()
 
     def infer(self):
-        return self.context.eval_node(self.node)
+        return self.context.infer_node(self.node)
 
     def __repr__(self):
         return '<%s: %s in %s>' % (self.__class__.__name__, self.node, self.context)

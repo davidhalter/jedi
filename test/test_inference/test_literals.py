@@ -2,7 +2,7 @@ import pytest
 from jedi.inference.context import TreeInstance
 
 
-def _eval_literal(Script, code, is_fstring=False):
+def _infer_literal(Script, code, is_fstring=False):
     def_, = Script(code).goto_definitions()
     if is_fstring:
         assert def_.name == 'str'
@@ -20,15 +20,15 @@ def test_f_strings(Script, environment):
     if environment.version_info < (3, 6):
         pytest.skip()
 
-    assert _eval_literal(Script, 'f"asdf"', is_fstring=True) == ''
-    assert _eval_literal(Script, 'f"{asdf} "', is_fstring=True) == ''
-    assert _eval_literal(Script, 'F"{asdf} "', is_fstring=True) == ''
-    assert _eval_literal(Script, 'rF"{asdf} "', is_fstring=True) == ''
+    assert _infer_literal(Script, 'f"asdf"', is_fstring=True) == ''
+    assert _infer_literal(Script, 'f"{asdf} "', is_fstring=True) == ''
+    assert _infer_literal(Script, 'F"{asdf} "', is_fstring=True) == ''
+    assert _infer_literal(Script, 'rF"{asdf} "', is_fstring=True) == ''
 
 
 def test_rb_strings(Script, environment):
-    assert _eval_literal(Script, 'br"asdf"') == b'asdf'
-    obj = _eval_literal(Script, 'rb"asdf"')
+    assert _infer_literal(Script, 'br"asdf"') == b'asdf'
+    obj = _infer_literal(Script, 'rb"asdf"')
 
     # rb is not valid in Python 2. Due to error recovery we just get a
     # string.
@@ -39,8 +39,8 @@ def test_thousand_separators(Script, environment):
     if environment.version_info < (3, 6):
         pytest.skip()
 
-    assert _eval_literal(Script, '1_2_3') == 123
-    assert _eval_literal(Script, '123_456_789') == 123456789
-    assert _eval_literal(Script, '0x3_4') == 52
-    assert _eval_literal(Script, '0b1_0') == 2
-    assert _eval_literal(Script, '0o1_0') == 8
+    assert _infer_literal(Script, '1_2_3') == 123
+    assert _infer_literal(Script, '123_456_789') == 123456789
+    assert _infer_literal(Script, '0x3_4') == 52
+    assert _infer_literal(Script, '0b1_0') == 2
+    assert _infer_literal(Script, '0o1_0') == 8

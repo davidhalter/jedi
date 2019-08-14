@@ -235,7 +235,7 @@ def _iter_over_arguments(maybe_tuple_context, defining_context):
                 from jedi.inference.gradual.annotation import _get_forward_reference_node
                 node = _get_forward_reference_node(defining_context, context.get_safe_value())
                 if node is not None:
-                    for c in defining_context.eval_node(node):
+                    for c in defining_context.infer_node(node):
                         yield c
             else:
                 yield context

@@ -10,7 +10,7 @@ from parso.python import tree
 
 from jedi._compatibility import u, Parameter
 from jedi.inference.base_context import NO_CONTEXTS
-from jedi.inference.syntax_tree import eval_atom
+from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf
 from jedi.inference.compiled import get_string_context_set
 from jedi.cache import call_signature_time_cache
@@ -146,13 +146,13 @@ def infer_goto_definition(evaluator, context, leaf):
     definitions = NO_CONTEXTS
     if parent.type == 'atom':
         # e.g. `(a + b)`
-        definitions = context.eval_node(leaf.parent)
+        definitions = context.infer_node(leaf.parent)
     elif parent.type == 'trailer':
         # e.g. `a()`
         definitions = infer_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         # e.g. `"foo"` or `1.0`
-        return eval_atom(context, leaf)
+        return infer_atom(context, leaf)
     elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
         return get_string_context_set(evaluator)
     return definitions

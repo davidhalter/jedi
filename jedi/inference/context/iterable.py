@@ -168,7 +168,7 @@ class ComprehensionMixin(object):
 
         input_node = comp_for.children[3]
         parent_context = parent_context or self._defining_context
-        input_types = parent_context.eval_node(input_node)
+        input_types = parent_context.infer_node(input_node)
         # TODO: simulate await if self.is_async
 
         cn = ContextualizedNode(parent_context, input_node)
@@ -186,9 +186,9 @@ class ComprehensionMixin(object):
                     for result in self._nested(comp_fors[1:], context_):
                         yield result
                 except IndexError:
-                    iterated = context_.eval_node(self._entry_node)
+                    iterated = context_.infer_node(self._entry_node)
                     if self.array_type == 'dict':
-                        yield iterated, context_.eval_node(self._value_node)
+                        yield iterated, context_.infer_node(self._value_node)
                     else:
                         yield iterated
 
@@ -357,14 +357,14 @@ class SequenceLiteralContext(Sequence):
         if self.array_type == u'dict':
             compiled_obj_index = compiled.create_simple_object(self.evaluator, index)
             for key, value in self.get_tree_entries():
-                for k in self._defining_context.eval_node(key):
+                for k in self._defining_context.infer_node(key):
                     try:
                         method = k.execute_operation
                     except AttributeError:
                         pass
                     else:
                         if method(compiled_obj_index, u'==').get_safe_value():
-                            return self._defining_context.eval_node(value)
+                            return self._defining_context.infer_node(value)
             raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
 
         if isinstance(index, slice):
@@ -372,7 +372,7 @@ class SequenceLiteralContext(Sequence):
         else:
             with reraise_getitem_errors(TypeError, KeyError, IndexError):
                 node = self.get_tree_entries()[index]
-            return self._defining_context.eval_node(node)
+            return self._defining_context.infer_node(node)
 
     def py__iter__(self, contextualized_node=None):
         """
@@ -383,7 +383,7 @@ class SequenceLiteralContext(Sequence):
             # Get keys.
             types = NO_CONTEXTS
             for k, _ in self.get_tree_entries():
-                types |= self._defining_context.eval_node(k)
+                types |= self._defining_context.infer_node(k)
             # We don't know which dict index comes first, therefore always
             # yield all the types.
             for _ in types:
@@ -392,7 +392,7 @@ class SequenceLiteralContext(Sequence):
             for node in self.get_tree_entries():
                 if node == ':' or node.type == 'subscript':
                     # TODO this should probably use at least part of the code
-                    #      of eval_subscript_list.
+                    #      of infer_subscript_list.
                     yield LazyKnownContext(Slice(self._defining_context, None, None, None))
                 else:
                     yield LazyTreeContext(self._defining_context, node)
@@ -405,7 +405,7 @@ class SequenceLiteralContext(Sequence):
 
     def _dict_values(self):
         return ContextSet.from_sets(
-            self._defining_context.eval_node(v)
+            self._defining_context.infer_node(v)
             for k, v in self.get_tree_entries()
         )
 
@@ -460,7 +460,7 @@ class SequenceLiteralContext(Sequence):
         resolved (as a string) and the values are still lazy contexts.
         """
         for key_node, value in self.get_tree_entries():
-            for key in self._defining_context.eval_node(key_node):
+            for key in self._defining_context.infer_node(key_node):
                 if is_string(key):
                     yield key.get_safe_value(), LazyTreeContext(self._defining_context, value)
 
@@ -495,7 +495,7 @@ class DictLiteralContext(_DictMixin, SequenceLiteralContext):
 
     def _dict_keys(self):
         return ContextSet.from_sets(
-            self._defining_context.eval_node(k)
+            self._defining_context.infer_node(k)
             for k, v in self.get_tree_entries()
         )
 
@@ -806,7 +806,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = self._context.eval_node(element)
+            result = self._context.infer_node(element)
             if len(result) != 1:
                 # For simplicity, we want slices to be clear defined with just
                 # one type.  Otherwise we will return an empty slice object.

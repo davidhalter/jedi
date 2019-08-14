@@ -73,8 +73,8 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
         if trailer.type == 'atom':
-            return context.eval_node(trailer)
-        return context.eval_node(leaf)
+            return context.infer_node(trailer)
+        return context.infer_node(leaf)
 
     power = trailer.parent
     index = power.children.index(trailer)
@@ -99,10 +99,10 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
         base = trailers[0]
         trailers = trailers[1:]
 
-    values = context.eval_node(base)
-    from jedi.inference.syntax_tree import eval_trailer
+    values = context.infer_node(base)
+    from jedi.inference.syntax_tree import infer_trailer
     for trailer in trailers:
-        values = eval_trailer(context, values, trailer)
+        values = infer_trailer(context, values, trailer)
     return values
 
 

@@ -627,7 +627,7 @@ class DataclassParamName(BaseTreeParamName):
         if self.annotation_node is None:
             return NO_CONTEXTS
         else:
-            return self.parent_context.eval_node(self.annotation_node)
+            return self.parent_context.infer_node(self.annotation_node)
 
 
 class ItemGetterCallable(ContextWrapper):

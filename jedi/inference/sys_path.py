@@ -85,7 +85,7 @@ def _paths_from_list_modifications(module_context, trailer1, trailer2):
     if name == 'insert' and len(arg.children) in (3, 4):  # Possible trailing comma.
         arg = arg.children[2]
 
-    for context in module_context.create_context(arg).eval_node(arg):
+    for context in module_context.create_context(arg).infer_node(arg):
         if is_string(context):
             abs_path = _abs_path(module_context, context.get_safe_value())
             if abs_path is not None:

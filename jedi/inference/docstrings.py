@@ -241,7 +241,7 @@ def _execute_types_in_stmt(module_context, stmt):
     doesn't include tuple, list and dict literals, because the stuff they
     contain is executed. (Used as type information).
     """
-    definitions = module_context.eval_node(stmt)
+    definitions = module_context.infer_node(stmt)
     return ContextSet.from_sets(
         _execute_array_values(module_context.evaluator, d)
         for d in definitions
@@ -272,7 +272,7 @@ def infer_param(execution_context, param):
     from jedi.inference.context.instance import InstanceArguments
     from jedi.inference.context import FunctionExecutionContext
 
-    def eval_docstring(docstring):
+    def infer_docstring(docstring):
         return ContextSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
@@ -283,12 +283,12 @@ def infer_param(execution_context, param):
     if func.type == 'lambdef':
         return NO_CONTEXTS
 
-    types = eval_docstring(execution_context.py__doc__())
+    types = infer_docstring(execution_context.py__doc__())
     if isinstance(execution_context, FunctionExecutionContext) \
             and isinstance(execution_context.var_args, InstanceArguments) \
             and execution_context.function_context.py__name__() == '__init__':
         class_context = execution_context.var_args.instance.class_context
-        types |= eval_docstring(class_context.py__doc__())
+        types |= infer_docstring(class_context.py__doc__())
 
     debug.dbg('Found param types for docstring: %s', types, color='BLUE')
     return types

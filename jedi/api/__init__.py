@@ -403,7 +403,7 @@ class Script(object):
                     for n in import_names:
                         imports.infer_import(context, n)
                 elif node.type == 'expr_stmt':
-                    types = context.eval_node(node)
+                    types = context.infer_node(node)
                     for testlist in node.children[:-1:2]:
                         # Iterate tuples.
                         unpack_tuple_to_dict(context, types, testlist)

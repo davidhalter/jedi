@@ -241,7 +241,7 @@ class ParamName(BaseTreeParamName):
         node = self.annotation_node
         if node is None:
             return NO_CONTEXTS
-        contexts = self.parent_context.parent_context.eval_node(node)
+        contexts = self.parent_context.parent_context.infer_node(node)
         if execute_annotation:
             contexts = contexts.execute_annotation()
         return contexts
@@ -250,7 +250,7 @@ class ParamName(BaseTreeParamName):
         node = self.default_node
         if node is None:
             return NO_CONTEXTS
-        return self.parent_context.parent_context.eval_node(node)
+        return self.parent_context.parent_context.infer_node(node)
 
     @property
     def default_node(self):
