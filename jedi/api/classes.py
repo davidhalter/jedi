@@ -360,7 +360,7 @@ class BaseDefinition(object):
         if not self._name.is_value_name:
             return None
 
-        value = self._name.parent_value
+        value = self._name.parent_context
         if value is None:
             return None
 

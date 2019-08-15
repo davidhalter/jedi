@@ -114,10 +114,10 @@ def execute(callback):
         except AttributeError:
             pass
         else:
-            if value.parent_value == value.infer_state.builtins_module:
+            if value.parent_context == value.infer_state.builtins_module:
                 module_name = 'builtins'
-            elif value.parent_value is not None and value.parent_value.is_module():
-                module_name = value.parent_value.py__name__()
+            elif value.parent_context is not None and value.parent_context.is_module():
+                module_name = value.parent_context.py__name__()
             else:
                 return call()
 
@@ -472,14 +472,14 @@ def collections_namedtuple(obj, arguments, callback):
     # Parse source code
     module = infer_state.grammar.parse(code)
     generated_class = next(module.iter_classdefs())
-    parent_value = ModuleValue(
+    parent_context = ModuleValue(
         infer_state, module,
         file_io=None,
         string_names=None,
         code_lines=parso.split_lines(code, keepends=True),
     )
 
-    return ValueSet([ClassValue(infer_state, parent_value, generated_class)])
+    return ValueSet([ClassValue(infer_state, parent_context, generated_class)])
 
 
 class PartialObject(object):
@@ -597,7 +597,7 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
                         else:
                             default = annassign.children[3]
                         param_names.append(DataclassParamName(
-                            parent_value=cls.parent_value,
+                            parent_context=cls.parent_context,
                             tree_name=name.tree_name,
                             annotation_node=annassign.children[1],
                             default_node=default,
@@ -615,8 +615,8 @@ class DataclassSignature(AbstractSignature):
 
 
 class DataclassParamName(BaseTreeParamName):
-    def __init__(self, parent_value, tree_name, annotation_node, default_node):
-        super(DataclassParamName, self).__init__(parent_value, tree_name)
+    def __init__(self, parent_context, tree_name, annotation_node, default_node):
+        super(DataclassParamName, self).__init__(parent_context, tree_name)
         self.annotation_node = annotation_node
         self.default_node = default_node
 
@@ -627,7 +627,7 @@ class DataclassParamName(BaseTreeParamName):
         if self.annotation_node is None:
             return NO_VALUES
         else:
-            return self.parent_value.infer_node(self.annotation_node)
+            return self.parent_context.infer_node(self.annotation_node)
 
 
 class ItemGetterCallable(ValueWrapper):

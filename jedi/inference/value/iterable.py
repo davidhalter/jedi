@@ -113,8 +113,8 @@ class Generator(GeneratorBase):
 
 class CompForValue(TreeValue):
     @classmethod
-    def from_comp_for(cls, parent_value, comp_for):
-        return cls(parent_value.infer_state, parent_value, comp_for)
+    def from_comp_for(cls, parent_context, comp_for):
+        return cls(parent_context.infer_state, parent_context, comp_for)
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self.infer_state, self)
@@ -158,27 +158,27 @@ def comprehension_from_atom(infer_state, value, atom):
 
 class ComprehensionMixin(object):
     @infer_state_method_cache()
-    def _get_comp_for_value(self, parent_value, comp_for):
-        return CompForValue.from_comp_for(parent_value, comp_for)
+    def _get_comp_for_value(self, parent_context, comp_for):
+        return CompForValue.from_comp_for(parent_context, comp_for)
 
-    def _nested(self, comp_fors, parent_value=None):
+    def _nested(self, comp_fors, parent_context=None):
         comp_for = comp_fors[0]
 
         is_async = comp_for.parent.type == 'comp_for'
 
         input_node = comp_for.children[3]
-        parent_value = parent_value or self._defining_value
-        input_types = parent_value.infer_node(input_node)
+        parent_context = parent_context or self._defining_value
+        input_types = parent_context.infer_node(input_node)
         # TODO: simulate await if self.is_async
 
-        cn = ValueualizedNode(parent_value, input_node)
+        cn = ValueualizedNode(parent_context, input_node)
         iterated = input_types.iterate(cn, is_async=is_async)
         exprlist = comp_for.children[1]
         for i, lazy_value in enumerate(iterated):
             types = lazy_value.infer()
-            dct = unpack_tuple_to_dict(parent_value, types, exprlist)
+            dct = unpack_tuple_to_dict(parent_context, types, exprlist)
             value_ = self._get_comp_for_value(
-                parent_value,
+                parent_context,
                 comp_for,
             )
             with predefine_names(value_, comp_for, dct):

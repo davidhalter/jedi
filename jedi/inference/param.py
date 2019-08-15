@@ -244,7 +244,7 @@ def _create_default_param(execution_value, param):
     elif param.default is None:
         result_arg = LazyUnknownValue()
     else:
-        result_arg = LazyTreeValue(execution_value.parent_value, param.default)
+        result_arg = LazyTreeValue(execution_value.parent_context, param.default)
     return ExecutedParam(execution_value, param, result_arg)
 
 

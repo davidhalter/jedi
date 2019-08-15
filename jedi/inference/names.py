@@ -10,7 +10,7 @@ from jedi.cache import memoize_method
 class AbstractNameDefinition(object):
     start_pos = None
     string_name = None
-    parent_value = None
+    parent_context = None
     tree_name = None
     is_value_name = True
     """
@@ -42,7 +42,7 @@ class AbstractNameDefinition(object):
         return None
 
     def get_root_value(self):
-        return self.parent_value.get_root_value()
+        return self.parent_context.get_root_value()
 
     def __repr__(self):
         if self.start_pos is None:
@@ -55,7 +55,7 @@ class AbstractNameDefinition(object):
 
     @property
     def api_type(self):
-        return self.parent_value.api_type
+        return self.parent_context.api_type
 
 
 class AbstractArbitraryName(AbstractNameDefinition):
@@ -69,15 +69,15 @@ class AbstractArbitraryName(AbstractNameDefinition):
     def __init__(self, infer_state, string):
         self.infer_state = infer_state
         self.string_name = string
-        self.parent_value = infer_state.builtins_module
+        self.parent_context = infer_state.builtins_module
 
     def infer(self):
         return NO_VALUES
 
 
 class AbstractTreeName(AbstractNameDefinition):
-    def __init__(self, parent_value, tree_name):
-        self.parent_value = parent_value
+    def __init__(self, parent_context, tree_name):
+        self.parent_context = parent_context
         self.tree_name = tree_name
 
     def get_qualified_names(self, include_module_names=False):
@@ -97,13 +97,13 @@ class AbstractTreeName(AbstractNameDefinition):
         return super(AbstractTreeName, self).get_qualified_names(include_module_names)
 
     def _get_qualified_names(self):
-        parent_names = self.parent_value.get_qualified_names()
+        parent_names = self.parent_context.get_qualified_names()
         if parent_names is None:
             return None
         return parent_names + (self.tree_name.value,)
 
     def goto(self, **kwargs):
-        return self.parent_value.infer_state.goto(self.parent_value, self.tree_name, **kwargs)
+        return self.parent_context.infer_state.goto(self.parent_context, self.tree_name, **kwargs)
 
     def is_import(self):
         imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
@@ -126,7 +126,7 @@ class ValueNameMixin(object):
         return self._value.get_qualified_names()
 
     def get_root_value(self):
-        if self.parent_value is None:  # A module
+        if self.parent_context is None:  # A module
             return self._value
         return super(ValueNameMixin, self).get_root_value()
 
@@ -137,7 +137,7 @@ class ValueNameMixin(object):
 
 class ValueName(ValueNameMixin, AbstractTreeName):
     def __init__(self, value, tree_name):
-        super(ValueName, self).__init__(value.parent_value, tree_name)
+        super(ValueName, self).__init__(value.parent_context, tree_name)
         self._value = value
 
     def goto(self):
@@ -156,7 +156,7 @@ class TreeNameDefinition(AbstractTreeName):
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.inference.syntax_tree import tree_name_to_values
-        parent = self.parent_value
+        parent = self.parent_context
         return tree_name_to_values(parent.infer_state, parent, self.tree_name)
 
     @property
@@ -241,7 +241,7 @@ class ParamName(BaseTreeParamName):
         node = self.annotation_node
         if node is None:
             return NO_VALUES
-        values = self.parent_value.parent_value.infer_node(node)
+        values = self.parent_context.parent_context.infer_node(node)
         if execute_annotation:
             values = values.execute_annotation()
         return values
@@ -250,7 +250,7 @@ class ParamName(BaseTreeParamName):
         node = self.default_node
         if node is None:
             return NO_VALUES
-        return self.parent_value.parent_value.infer_node(node)
+        return self.parent_context.parent_context.infer_node(node)
 
     @property
     def default_node(self):
@@ -297,7 +297,7 @@ class ParamName(BaseTreeParamName):
         return self.get_param().infer()
 
     def get_param(self):
-        params, _ = self.parent_value.get_executed_params_and_issues()
+        params, _ = self.parent_context.get_executed_params_and_issues()
         param_node = search_ancestor(self.tree_name, 'param')
         return params[param_node.position_index]
 
@@ -317,8 +317,8 @@ class ImportName(AbstractNameDefinition):
     start_pos = (1, 0)
     _level = 0
 
-    def __init__(self, parent_value, string_name):
-        self._from_module_value = parent_value
+    def __init__(self, parent_context, string_name):
+        self._from_module_value = parent_context
         self.string_name = string_name
 
     def get_qualified_names(self, include_module_names=False):
@@ -333,7 +333,7 @@ class ImportName(AbstractNameDefinition):
         return ()
 
     @property
-    def parent_value(self):
+    def parent_context(self):
         m = self._from_module_value
         import_values = self.infer()
         if not import_values:

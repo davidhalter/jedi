@@ -20,20 +20,20 @@ class _ModuleAttributeName(AbstractNameDefinition):
     api_type = u'instance'
 
     def __init__(self, parent_module, string_name, string_value=None):
-        self.parent_value = parent_module
+        self.parent_context = parent_module
         self.string_name = string_name
         self._string_value = string_value
 
     def infer(self):
         if self._string_value is not None:
             s = self._string_value
-            if self.parent_value.infer_state.environment.version_info.major == 2 \
+            if self.parent_context.infer_state.environment.version_info.major == 2 \
                     and not isinstance(s, bytes):
                 s = s.encode('utf-8')
             return ValueSet([
-                create_simple_object(self.parent_value.infer_state, s)
+                create_simple_object(self.parent_context.infer_state, s)
             ])
-        return compiled.get_string_value_set(self.parent_value.infer_state)
+        return compiled.get_string_value_set(self.parent_context.infer_state)
 
 
 class ModuleName(ValueNameMixin, AbstractNameDefinition):
@@ -189,12 +189,12 @@ class ModuleMixin(SubModuleDictMixin):
 
 class ModuleValue(ModuleMixin, TreeValue):
     api_type = u'module'
-    parent_value = None
+    parent_context = None
 
     def __init__(self, infer_state, module_node, file_io, string_names, code_lines, is_package=False):
         super(ModuleValue, self).__init__(
             infer_state,
-            parent_value=None,
+            parent_context=None,
             tree_node=module_node
         )
         self.file_io = file_io

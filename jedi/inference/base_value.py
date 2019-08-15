@@ -26,9 +26,9 @@ class HelperValueMixin(object):
     def get_root_value(self):
         value = self
         while True:
-            if value.parent_value is None:
+            if value.parent_context is None:
                 return value
-            value = value.parent_value
+            value = value.parent_context
 
     @classmethod
     @infer_state_as_method_param_cache()
@@ -211,7 +211,7 @@ class Value(HelperValueMixin, BaseValue):
 
     def is_stub(self):
         # The root value knows if it's a stub or not.
-        return self.parent_value.is_stub()
+        return self.parent_context.is_stub()
 
 
 def iterate_values(values, valueualized_node=None, is_async=False):
@@ -271,8 +271,8 @@ class ValueWrapper(_ValueWrapperBase):
 
 
 class TreeValue(Value):
-    def __init__(self, infer_state, parent_value, tree_node):
-        super(TreeValue, self).__init__(infer_state, parent_value)
+    def __init__(self, infer_state, parent_context, tree_node):
+        super(TreeValue, self).__init__(infer_state, parent_context)
         self.predefined_names = {}
         self.tree_node = tree_node
 

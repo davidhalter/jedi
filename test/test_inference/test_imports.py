@@ -156,8 +156,8 @@ def test_not_importable_file(Script):
 def test_import_unique(Script):
     src = "import os; os.path"
     defs = Script(src, path='example.py').goto_definitions()
-    parent_values = [d._name._value for d in defs]
-    assert len(parent_values) == len(set(parent_values))
+    parent_contexts = [d._name._value for d in defs]
+    assert len(parent_contexts) == len(set(parent_contexts))
 
 
 def test_cache_works_with_sys_path_param(Script, tmpdir):

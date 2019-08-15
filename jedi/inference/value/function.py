@@ -28,7 +28,7 @@ class LambdaName(AbstractNameDefinition):
 
     def __init__(self, lambda_value):
         self._lambda_value = lambda_value
-        self.parent_value = lambda_value.parent_value
+        self.parent_context = lambda_value.parent_context
 
     @property
     def start_pos(self):
@@ -40,13 +40,13 @@ class LambdaName(AbstractNameDefinition):
 
 class FunctionAndClassBase(TreeValue):
     def get_qualified_names(self):
-        if self.parent_value.is_class():
-            n = self.parent_value.get_qualified_names()
+        if self.parent_context.is_class():
+            n = self.parent_context.get_qualified_names()
             if n is None:
                 # This means that the parent class lives within a function.
                 return None
             return n + (self.py__name__(),)
-        elif self.parent_value.is_module():
+        elif self.parent_context.is_module():
             return (self.py__name__(),)
         else:
             return None
@@ -98,7 +98,7 @@ class FunctionMixin(object):
         if arguments is None:
             arguments = AnonymousArguments()
 
-        return FunctionExecutionValue(self.infer_state, self.parent_value, self, arguments)
+        return FunctionExecutionValue(self.infer_state, self.parent_context, self, arguments)
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.get_signature_functions()]
@@ -115,21 +115,21 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
                 return MethodValue(
                     value.infer_state,
                     value,
-                    parent_value=parent_value,
+                    parent_context=parent_context,
                     tree_node=tree_node
                 )
             else:
                 return cls(
                     value.infer_state,
-                    parent_value=parent_value,
+                    parent_context=parent_context,
                     tree_node=tree_node
                 )
 
         overloaded_funcs = list(_find_overload_functions(value, tree_node))
 
-        parent_value = value
-        while parent_value.is_class() or parent_value.is_instance():
-            parent_value = parent_value.parent_value
+        parent_context = value
+        while parent_context.is_class() or parent_context.is_instance():
+            parent_context = parent_context.parent_context
 
         function = create(tree_node)
 
@@ -145,7 +145,7 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         return c
 
     def get_default_param_value(self):
-        return self.parent_value
+        return self.parent_context
 
     def get_signature_functions(self):
         return [self]
@@ -171,10 +171,10 @@ class MethodValue(FunctionValue):
 class FunctionExecutionValue(TreeValue):
     function_execution_filter = FunctionExecutionFilter
 
-    def __init__(self, infer_state, parent_value, function_value, var_args):
+    def __init__(self, infer_state, parent_context, function_value, var_args):
         super(FunctionExecutionValue, self).__init__(
             infer_state,
-            parent_value,
+            parent_context,
             function_value.tree_node,
         )
         self.function_value = function_value

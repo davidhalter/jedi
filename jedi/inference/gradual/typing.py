@@ -37,7 +37,7 @@ _PROXY_TYPES = 'Optional Union ClassVar'.split()
 
 class TypingName(AbstractTreeName):
     def __init__(self, value, other_name):
-        super(TypingName, self).__init__(value.parent_value, other_name.tree_name)
+        super(TypingName, self).__init__(value.parent_context, other_name.tree_name)
         self._value = value
 
     def infer(self):
@@ -45,8 +45,8 @@ class TypingName(AbstractTreeName):
 
 
 class _BaseTypingValue(Value):
-    def __init__(self, infer_state, parent_value, tree_name):
-        super(_BaseTypingValue, self).__init__(infer_state, parent_value)
+    def __init__(self, infer_state, parent_context, tree_name):
+        super(_BaseTypingValue, self).__init__(infer_state, parent_context)
         self._tree_name = tree_name
 
     @property
@@ -87,39 +87,39 @@ class TypingModuleName(NameWrapper):
 
     def _remap(self):
         name = self.string_name
-        infer_state = self.parent_value.infer_state
+        infer_state = self.parent_context.infer_state
         try:
             actual = _TYPE_ALIAS_TYPES[name]
         except KeyError:
             pass
         else:
-            yield TypeAlias.create_cached(infer_state, self.parent_value, self.tree_name, actual)
+            yield TypeAlias.create_cached(infer_state, self.parent_context, self.tree_name, actual)
             return
 
         if name in _PROXY_CLASS_TYPES:
-            yield TypingClassValue.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield TypingClassValue.create_cached(infer_state, self.parent_context, self.tree_name)
         elif name in _PROXY_TYPES:
-            yield TypingValue.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield TypingValue.create_cached(infer_state, self.parent_context, self.tree_name)
         elif name == 'runtime':
             # We don't want anything here, not sure what this function is
             # supposed to do, since it just appears in the stubs and shouldn't
             # have any effects there (because it's never executed).
             return
         elif name == 'TypeVar':
-            yield TypeVarClass.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield TypeVarClass.create_cached(infer_state, self.parent_context, self.tree_name)
         elif name == 'Any':
-            yield Any.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield Any.create_cached(infer_state, self.parent_context, self.tree_name)
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
             yield builtin_from_name(infer_state, u'True')
         elif name == 'overload':
-            yield OverloadFunction.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield OverloadFunction.create_cached(infer_state, self.parent_context, self.tree_name)
         elif name == 'NewType':
-            yield NewTypeFunction.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield NewTypeFunction.create_cached(infer_state, self.parent_context, self.tree_name)
         elif name == 'cast':
             # TODO implement cast
-            yield CastFunction.create_cached(infer_state, self.parent_value, self.tree_name)
+            yield CastFunction.create_cached(infer_state, self.parent_context, self.tree_name)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
@@ -139,8 +139,8 @@ class TypingModuleFilterWrapper(FilterWrapper):
 
 
 class _WithIndexBase(_BaseTypingValue):
-    def __init__(self, infer_state, parent_value, name, index_value, value_of_index):
-        super(_WithIndexBase, self).__init__(infer_state, parent_value, name)
+    def __init__(self, infer_state, parent_context, name, index_value, value_of_index):
+        super(_WithIndexBase, self).__init__(infer_state, parent_context, name)
         self._index_value = index_value
         self._value_of_index = value_of_index
 
@@ -175,7 +175,7 @@ class TypingValueWithIndex(_WithIndexBase):
         cls = globals()[string_name]
         return ValueSet([cls(
             self.infer_state,
-            self.parent_value,
+            self.parent_context,
             self._tree_name,
             self._index_value,
             self._value_of_index
@@ -195,7 +195,7 @@ class TypingValue(_BaseTypingValue):
         return ValueSet(
             self.index_class.create_cached(
                 self.infer_state,
-                self.parent_value,
+                self.parent_context,
                 self._tree_name,
                 index_value,
                 value_of_index=valueualized_node.value)
@@ -245,9 +245,9 @@ def _iter_over_arguments(maybe_tuple_value, defining_value):
 
 
 class TypeAlias(LazyValueWrapper):
-    def __init__(self, parent_value, origin_tree_name, actual):
-        self.infer_state = parent_value.infer_state
-        self.parent_value = parent_value
+    def __init__(self, parent_context, origin_tree_name, actual):
+        self.infer_state = parent_context.infer_state
+        self.parent_context = parent_context
         self._origin_tree_name = origin_tree_name
         self._actual = actual  # e.g. builtins.list
 
@@ -359,7 +359,7 @@ class TypeVarClass(_BaseTypingValue):
 
         return ValueSet([TypeVar.create_cached(
             self.infer_state,
-            self.parent_value,
+            self.parent_context,
             self._tree_name,
             var_name,
             unpacked
@@ -391,8 +391,8 @@ class TypeVarClass(_BaseTypingValue):
 
 
 class TypeVar(_BaseTypingValue):
-    def __init__(self, infer_state, parent_value, tree_name, var_name, unpacked_args):
-        super(TypeVar, self).__init__(infer_state, parent_value, tree_name)
+    def __init__(self, infer_state, parent_context, tree_name, var_name, unpacked_args):
+        super(TypeVar, self).__init__(infer_state, parent_context, tree_name)
         self._var_name = var_name
 
         self._constraints_lazy_values = []
@@ -477,8 +477,8 @@ class NewTypeFunction(_BaseTypingValue):
 
 
 class NewType(Value):
-    def __init__(self, infer_state, parent_value, tree_node, type_value_set):
-        super(NewType, self).__init__(infer_state, parent_value)
+    def __init__(self, infer_state, parent_context, tree_node, type_value_set):
+        super(NewType, self).__init__(infer_state, parent_context)
         self._type_value_set = type_value_set
         self.tree_node = tree_node
 
@@ -498,7 +498,7 @@ class BoundTypeVarName(AbstractNameDefinition):
     """
     def __init__(self, type_var, value_set):
         self._type_var = type_var
-        self.parent_value = type_var.parent_value
+        self.parent_context = type_var.parent_context
         self._value_set = value_set
 
     def infer(self):

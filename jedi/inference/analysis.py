@@ -124,7 +124,7 @@ def add_attribute_error(name_value, lookup_value, name):
         for n in slot_names:
             # TODO do we even get here?
             if isinstance(name, CompiledInstanceName) and \
-                    n.parent_value.obj == object:
+                    n.parent_context.obj == object:
                 typ = Warning
                 break
 
@@ -149,7 +149,7 @@ def _check_for_exception_catch(node_value, jedi_name, exception, payload=None):
 
         for python_cls in exception.mro():
             if cls.py__name__() == python_cls.__name__ \
-                    and cls.parent_value == cls.infer_state.builtins_module:
+                    and cls.parent_context == cls.infer_state.builtins_module:
                 return True
         return False
 

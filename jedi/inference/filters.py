@@ -238,14 +238,14 @@ class _BuiltinMappedMethod(Value):
     def __init__(self, builtin_value, method, builtin_func):
         super(_BuiltinMappedMethod, self).__init__(
             builtin_value.infer_state,
-            parent_value=builtin_value
+            parent_context=builtin_value
         )
         self._method = method
         self._builtin_func = builtin_func
 
     def py__call__(self, arguments):
         # TODO add TypeError if params are given/or not correct.
-        return self._method(self.parent_value)
+        return self._method(self.parent_context)
 
     def __getattr__(self, name):
         return getattr(self._builtin_func, name)
@@ -259,13 +259,13 @@ class SpecialMethodFilter(DictFilter):
     class SpecialMethodName(AbstractNameDefinition):
         api_type = u'function'
 
-        def __init__(self, parent_value, string_name, value, builtin_value):
+        def __init__(self, parent_context, string_name, value, builtin_value):
             callable_, python_version = value
             if python_version is not None and \
-                    python_version != parent_value.infer_state.environment.version_info.major:
+                    python_version != parent_context.infer_state.environment.version_info.major:
                 raise KeyError
 
-            self.parent_value = parent_value
+            self.parent_context = parent_context
             self.string_name = string_name
             self._callable = callable_
             self._builtin_value = builtin_value
@@ -282,7 +282,7 @@ class SpecialMethodFilter(DictFilter):
                     continue
                 break
             return ValueSet([
-                _BuiltinMappedMethod(self.parent_value, self._callable, builtin_func)
+                _BuiltinMappedMethod(self.parent_context, self._callable, builtin_func)
             ])
 
     def __init__(self, value, dct, builtin_value):
@@ -406,7 +406,7 @@ def get_global_filters(infer_state, value, until_position, origin_scope):
             # The position should be reset if the current scope is a function.
             until_position = None
 
-        value = value.parent_value
+        value = value.parent_context
 
     # Add builtins to the global scope.
     yield next(infer_state.builtins_module.get_filters())

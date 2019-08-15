@@ -97,7 +97,7 @@ class MixedName(compiled.CompiledName):
     @underscore_memoization
     def infer(self):
         # TODO use logic from compiled.CompiledObjectFilter
-        access_paths = self.parent_value.access_handle.getattr_paths(
+        access_paths = self.parent_context.access_handle.getattr_paths(
             self.string_name,
             default=None
         )
@@ -105,7 +105,7 @@ class MixedName(compiled.CompiledName):
         values = [None]
         for access in access_paths:
             values = ValueSet.from_sets(
-                _create(self._infer_state, access, parent_value=c)
+                _create(self._infer_state, access, parent_context=c)
                 if c is None or isinstance(c, MixedObject)
                 else ValueSet({create_cached_compiled_object(c.infer_state, access, c)})
                 for c in values
@@ -230,11 +230,11 @@ def _find_syntax_node_name(infer_state, python_object):
 
 
 @compiled_objects_cache('mixed_cache')
-def _create(infer_state, access_handle, parent_value, *args):
+def _create(infer_state, access_handle, parent_context, *args):
     compiled_object = create_cached_compiled_object(
         infer_state,
         access_handle,
-        parent_value=parent_value and parent_value.compiled_object
+        parent_context=parent_context and parent_context.compiled_object
     )
 
     # TODO accessing this is bad, but it probably doesn't matter that much,
@@ -252,7 +252,7 @@ def _create(infer_state, access_handle, parent_value, *args):
     else:
         module_node, tree_node, file_io, code_lines = result
 
-        if parent_value is None:
+        if parent_context is None:
             # TODO this __name__ is probably wrong.
             name = compiled_object.get_root_value().py__name__()
             string_names = tuple(name.split('.'))
@@ -266,12 +266,12 @@ def _create(infer_state, access_handle, parent_value, *args):
             if name is not None:
                 infer_state.module_cache.add(string_names, ValueSet([module_value]))
         else:
-            if parent_value.tree_node.get_root_node() != module_node:
+            if parent_context.tree_node.get_root_node() != module_node:
                 # This happens e.g. when __module__ is wrong, or when using
                 # TypeVar('foo'), where Jedi uses 'foo' as the name and
                 # Python's TypeVar('foo').__module__ will be typing.
                 return ValueSet({compiled_object})
-            module_value = parent_value.get_root_value()
+            module_value = parent_context.get_root_value()
 
         tree_values = ValueSet({
             module_value.create_value(

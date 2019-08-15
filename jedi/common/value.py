@@ -1,14 +1,14 @@
 class BaseValue(object):
-    def __init__(self, infer_state, parent_value=None):
+    def __init__(self, infer_state, parent_context=None):
         self.infer_state = infer_state
-        self.parent_value = parent_value
+        self.parent_context = parent_context
 
     def get_root_value(self):
         value = self
         while True:
-            if value.parent_value is None:
+            if value.parent_context is None:
                 return value
-            value = value.parent_value
+            value = value.parent_context
 
 
 class BaseValueSet(object):

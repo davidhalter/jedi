@@ -63,8 +63,8 @@ def apply_py__get__(value, instance, class_value):
 
 
 class ClassName(TreeNameDefinition):
-    def __init__(self, parent_value, tree_name, name_value, apply_decorators):
-        super(ClassName, self).__init__(parent_value, tree_name)
+    def __init__(self, parent_context, tree_name, name_value, apply_decorators):
+        super(ClassName, self).__init__(parent_context, tree_name)
         self._name_value = name_value
         self._apply_decorators = apply_decorators
 
@@ -73,13 +73,13 @@ class ClassName(TreeNameDefinition):
         # We're using a different value to infer, so we cannot call super().
         from jedi.inference.syntax_tree import tree_name_to_values
         inferred = tree_name_to_values(
-            self.parent_value.infer_state, self._name_value, self.tree_name)
+            self.parent_context.infer_state, self._name_value, self.tree_name)
 
         for result_value in inferred:
             if self._apply_decorators:
                 for c in apply_py__get__(result_value,
                                          instance=None,
-                                         class_value=self.parent_value):
+                                         class_value=self.parent_context):
                     yield c
             else:
                 yield result_value
@@ -95,7 +95,7 @@ class ClassFilter(ParserTreeFilter):
     def _convert_names(self, names):
         return [
             self.name_class(
-                parent_value=self.value,
+                parent_context=self.value,
                 tree_name=name,
                 name_value=self._node_value,
                 apply_decorators=not self._is_instance,
@@ -141,7 +141,7 @@ class ClassMixin(object):
         from jedi.inference.value import TreeInstance
         if arguments is None:
             arguments = ValuesArguments([])
-        return ValueSet([TreeInstance(self.infer_state, self.parent_value, self, arguments)])
+        return ValueSet([TreeInstance(self.infer_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
         return compiled.builtin_from_name(self.infer_state, u'type')
@@ -252,7 +252,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
                 continue  # These are not relevant for this search.
 
             from jedi.inference.gradual.annotation import find_unknown_type_vars
-            for type_var in find_unknown_type_vars(self.parent_value, node):
+            for type_var in find_unknown_type_vars(self.parent_context, node):
                 if type_var not in found:
                     # The order matters and it's therefore a list.
                     found.append(type_var)
@@ -262,7 +262,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         arglist = self.tree_node.get_super_arglist()
         if arglist:
             from jedi.inference import arguments
-            return arguments.TreeArguments(self.infer_state, self.parent_value, arglist)
+            return arguments.TreeArguments(self.infer_state, self.parent_context, arglist)
         return None
 
     @infer_state_method_cache(default=())
@@ -274,7 +274,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
                 return lst
 
         if self.py__name__() == 'object' \
-                and self.parent_value == self.infer_state.builtins_module:
+                and self.parent_context == self.infer_state.builtins_module:
             return []
         return [LazyKnownValues(
             self.infer_state.builtins_module.py__getattribute__('object')

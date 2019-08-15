@@ -122,7 +122,7 @@ def _return_int():
         ('ret_int', '_return_int', 'test.test_inference.test_compiled'),
     ]
 )
-def test_parent_value(same_process_infer_state, attribute, expected_name, expected_parent):
+def test_parent_context(same_process_infer_state, attribute, expected_name, expected_parent):
     import decimal
 
     class C:
@@ -140,11 +140,11 @@ def test_parent_value(same_process_infer_state, attribute, expected_name, expect
     )
     x, = o.py__getattribute__(attribute)
     assert x.py__name__() == expected_name
-    module_name = x.parent_value.py__name__()
+    module_name = x.parent_context.py__name__()
     if module_name == '__builtin__':
         module_name = 'builtins'  # Python 2
     assert module_name == expected_parent
-    assert x.parent_value.parent_value is None
+    assert x.parent_context.parent_context is None
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")

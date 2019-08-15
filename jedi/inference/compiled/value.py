@@ -41,8 +41,8 @@ class CheckAttribute(object):
 
 
 class CompiledObject(Value):
-    def __init__(self, infer_state, access_handle, parent_value=None):
-        super(CompiledObject, self).__init__(infer_state, parent_value)
+    def __init__(self, infer_state, access_handle, parent_context=None):
+        super(CompiledObject, self).__init__(infer_state, parent_context)
         self.access_handle = access_handle
 
     def py__call__(self, arguments):
@@ -59,7 +59,7 @@ class CompiledObject(Value):
             if self.access_handle.is_class():
                 from jedi.inference.value import CompiledInstance
                 return ValueSet([
-                    CompiledInstance(self.infer_state, self.parent_value, self, arguments)
+                    CompiledInstance(self.infer_state, self.parent_context, self, arguments)
                 ])
             else:
                 return ValueSet(self._execute_function(arguments))
@@ -269,18 +269,18 @@ class CompiledObject(Value):
 
 
 class CompiledName(AbstractNameDefinition):
-    def __init__(self, infer_state, parent_value, name):
+    def __init__(self, infer_state, parent_context, name):
         self._infer_state = infer_state
-        self.parent_value = parent_value
+        self.parent_context = parent_context
         self.string_name = name
 
     def _get_qualified_names(self):
-        parent_qualified_names = self.parent_value.get_qualified_names()
+        parent_qualified_names = self.parent_context.get_qualified_names()
         return parent_qualified_names + (self.string_name,)
 
     def __repr__(self):
         try:
-            name = self.parent_value.name  # __name__ is not defined all the time
+            name = self.parent_context.name  # __name__ is not defined all the time
         except AttributeError:
             name = None
         return '<%s: (%s).%s>' % (self.__class__.__name__, name, self.string_name)
@@ -296,13 +296,13 @@ class CompiledName(AbstractNameDefinition):
     @underscore_memoization
     def infer(self):
         return ValueSet([_create_from_name(
-            self._infer_state, self.parent_value, self.string_name
+            self._infer_state, self.parent_context, self.string_name
         )])
 
 
 class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
     def __init__(self, compiled_obj, signature_param):
-        self.parent_value = compiled_obj.parent_value
+        self.parent_context = compiled_obj.parent_context
         self._signature_param = signature_param
 
     @property
@@ -322,7 +322,7 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
 
     def infer(self):
         p = self._signature_param
-        infer_state = self.parent_value.infer_state
+        infer_state = self.parent_context.infer_state
         values = NO_VALUES
         if p.has_default:
             values = ValueSet([create_from_access_path(infer_state, p.default)])
@@ -334,7 +334,7 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
 
 class UnresolvableParamName(ParamNameInterface, AbstractNameDefinition):
     def __init__(self, compiled_obj, name, default):
-        self.parent_value = compiled_obj.parent_value
+        self.parent_context = compiled_obj.parent_context
         self.string_name = name
         self._default = default
 
@@ -355,7 +355,7 @@ class CompiledValueName(ValueNameMixin, AbstractNameDefinition):
     def __init__(self, value, name):
         self.string_name = name
         self._value = value
-        self.parent_value = value.parent_value
+        self.parent_context = value.parent_context
 
 
 class EmptyCompiledName(AbstractNameDefinition):
@@ -365,7 +365,7 @@ class EmptyCompiledName(AbstractNameDefinition):
     nothing.
     """
     def __init__(self, infer_state, name):
-        self.parent_value = infer_state.builtins_module
+        self.parent_context = infer_state.builtins_module
         self.string_name = name
 
     def infer(self):
@@ -509,33 +509,33 @@ def _parse_function_doc(doc):
 
 def _create_from_name(infer_state, compiled_object, name):
     access_paths = compiled_object.access_handle.getattr_paths(name, default=None)
-    parent_value = compiled_object
-    if parent_value.is_class():
-        parent_value = parent_value.parent_value
+    parent_context = compiled_object
+    if parent_context.is_class():
+        parent_context = parent_context.parent_context
 
     value = None
     for access_path in access_paths:
         value = create_cached_compiled_object(
-            infer_state, access_path, parent_value=value
+            infer_state, access_path, parent_context=value
         )
     return value
 
 
 def _normalize_create_args(func):
     """The cache doesn't care about keyword vs. normal args."""
-    def wrapper(infer_state, obj, parent_value=None):
-        return func(infer_state, obj, parent_value)
+    def wrapper(infer_state, obj, parent_context=None):
+        return func(infer_state, obj, parent_context)
     return wrapper
 
 
 def create_from_access_path(infer_state, access_path):
-    parent_value = None
+    parent_context = None
     for name, access in access_path.accesses:
-        parent_value = create_cached_compiled_object(infer_state, access, parent_value)
-    return parent_value
+        parent_context = create_cached_compiled_object(infer_state, access, parent_context)
+    return parent_context
 
 
 @_normalize_create_args
 @infer_state_function_cache()
-def create_cached_compiled_object(infer_state, access_handle, parent_value):
-    return CompiledObject(infer_state, access_handle, parent_value)
+def create_cached_compiled_object(infer_state, access_handle, parent_context):
+    return CompiledObject(infer_state, access_handle, parent_context)

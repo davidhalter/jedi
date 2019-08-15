@@ -20,7 +20,7 @@ def _iter_nodes_for_param(param_name):
     from parso.python.tree import search_ancestor
     from jedi.inference.arguments import TreeArguments
 
-    execution_value = param_name.parent_value
+    execution_value = param_name.parent_context
     function_node = execution_value.tree_node
     module_node = function_node.get_root_node()
     start = function_node.children[-1].start_pos
@@ -56,7 +56,7 @@ def _goes_to_param_name(param_name, value, potential_name):
         return False
     from jedi.inference.names import TreeNameDefinition
     found = TreeNameDefinition(value, potential_name).goto()
-    return any(param_name.parent_value == p.parent_value
+    return any(param_name.parent_context == p.parent_context
                and param_name.start_pos == p.start_pos
                for p in found)
 

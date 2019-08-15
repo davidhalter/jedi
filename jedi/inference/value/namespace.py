@@ -23,10 +23,10 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     # folder foobar it will be available as an object:
     # <module 'foobar' (namespace)>.
     api_type = u'module'
-    parent_value = None
+    parent_context = None
 
     def __init__(self, infer_state, fullname, paths):
-        super(ImplicitNamespaceValue, self).__init__(infer_state, parent_value=None)
+        super(ImplicitNamespaceValue, self).__init__(infer_state, parent_context=None)
         self.infer_state = infer_state
         self._fullname = fullname
         self._paths = paths

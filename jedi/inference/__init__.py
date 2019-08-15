@@ -390,13 +390,13 @@ class InferState(object):
 
             is_funcdef = scope_node.type in ('funcdef', 'lambdef')
             parent_scope = parser_utils.get_parent_scope(scope_node)
-            parent_value = from_scope_node(parent_scope)
+            parent_context = from_scope_node(parent_scope)
 
             if is_funcdef:
-                func = FunctionValue.from_value(parent_value, scope_node)
-                if parent_value.is_class():
+                func = FunctionValue.from_value(parent_context, scope_node)
+                if parent_context.is_class():
                     instance = AnonymousInstance(
-                        self, parent_value.parent_value, parent_value)
+                        self, parent_context.parent_context, parent_context)
                     func = BoundMethod(
                         instance=instance,
                         function=func
@@ -406,11 +406,11 @@ class InferState(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                return ClassValue(self, parent_value, scope_node)
+                return ClassValue(self, parent_context, scope_node)
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
                 if node.start_pos >= scope_node.children[-1].start_pos:
-                    return parent_value
-                return CompForValue.from_comp_for(parent_value, scope_node)
+                    return parent_context
+                return CompForValue.from_comp_for(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 
         base_node = base_value.tree_node

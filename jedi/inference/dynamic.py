@@ -189,7 +189,7 @@ def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
         if value_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 infer_state,
-                v.parent_value,
+                v.parent_context,
                 v,
                 args
             )
@@ -203,12 +203,12 @@ def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
         if compare_node == value_node:
             for func_execution in create_func_excs():
                 yield func_execution
-        elif isinstance(v.parent_value, FunctionExecutionValue) and \
+        elif isinstance(v.parent_context, FunctionExecutionValue) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
-            params, _ = v.parent_value.get_executed_params_and_issues()
+            params, _ = v.parent_context.get_executed_params_and_issues()
             if len(params) != 1:
                 continue
             values = params[0].infer()

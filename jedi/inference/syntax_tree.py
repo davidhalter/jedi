@@ -637,7 +637,7 @@ def _apply_decorators(value, node):
     if node.type == 'classdef':
         decoratee_value = ClassValue(
             value.infer_state,
-            parent_value=value,
+            parent_context=value,
             tree_node=node
         )
     else:
