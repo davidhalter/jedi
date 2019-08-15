@@ -92,33 +92,31 @@ class NameFinder(object):
         else:
             return None
 
-    def get_filters(self, search_global=False):
+    def get_global_filters(self):
         origin_scope = self._get_origin_scope()
-        if search_global:
-            position = self._position
+        position = self._position
 
-            # For functions and classes the defaults don't belong to the
-            # function and get inferred in the value before the function. So
-            # make sure to exclude the function/class name.
-            if origin_scope is not None:
-                ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef', 'lambdef')
-                lambdef = None
-                if ancestor == 'lambdef':
-                    # For lambdas it's even more complicated since parts will
-                    # be inferred later.
-                    lambdef = ancestor
-                    ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef')
-                if ancestor is not None:
-                    colon = ancestor.children[-2]
-                    if position is not None and position < colon.start_pos:
-                        if lambdef is None or position < lambdef.children[-2].start_pos:
-                            position = ancestor.start_pos
+        # For functions and classes the defaults don't belong to the
+        # function and get inferred in the value before the function. So
+        # make sure to exclude the function/class name.
+        if origin_scope is not None:
+            ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef', 'lambdef')
+            lambdef = None
+            if ancestor == 'lambdef':
+                # For lambdas it's even more complicated since parts will
+                # be inferred later.
+                lambdef = ancestor
+                ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef')
+            if ancestor is not None:
+                colon = ancestor.children[-2]
+                if position is not None and position < colon.start_pos:
+                    if lambdef is None or position < lambdef.children[-2].start_pos:
+                        position = ancestor.start_pos
 
-            return get_global_filters(self._infer_state, self._value, position, origin_scope)
-        else:
-            return self._get_value_filters(origin_scope)
+        return get_global_filters(self._infer_state, self._value, position, origin_scope)
 
-    def _get_value_filters(self, origin_scope):
+    def get_value_filters(self):
+        origin_scope = self._get_origin_scope()
         for f in self._value.get_filters(False, self._position, origin_scope=origin_scope):
             yield f
         # This covers the case where a stub files are incomplete.

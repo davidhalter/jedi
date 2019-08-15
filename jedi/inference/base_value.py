@@ -66,7 +66,10 @@ class HelperValueMixin(object):
         from jedi.inference import finder
         f = finder.NameFinder(self.infer_state, self, name_value, name_or_str,
                               position, analysis_errors=analysis_errors)
-        filters = f.get_filters(search_global)
+        if search_global:
+            filters = f.get_global_filters()
+        else:
+            filters = f.get_value_filters()
         if is_goto:
             return f.filter_name(filters)
         return f.find(filters, attribute_lookup=not search_global)

@@ -572,7 +572,7 @@ def tree_name_to_values(infer_state, value, tree_name):
         if node.type == 'global_stmt':
             value = infer_state.create_value(value, tree_name)
             finder = NameFinder(infer_state, value, value, tree_name.value)
-            filters = finder.get_filters(search_global=True)
+            filters = finder.get_global_filters()
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             filters = [next(filters)]
