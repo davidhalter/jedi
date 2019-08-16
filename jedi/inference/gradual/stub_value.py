@@ -36,7 +36,6 @@ class StubModuleValue(ModuleValue):
 
     def _get_stub_filters(self, search_global, **filter_kwargs):
         return [StubFilter(
-            self.infer_state,
             value=self,
             search_global=search_global,
             **filter_kwargs

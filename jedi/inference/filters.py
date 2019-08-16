@@ -98,8 +98,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
-    # TODO remove infer_state as an argument, it's not used.
-    def __init__(self, infer_state, value, node_value=None, until_position=None,
+    def __init__(self, value, node_value=None, until_position=None,
                  origin_scope=None):
         """
         node_value is an option to specify a second value for use cases
@@ -144,10 +143,9 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 class FunctionExecutionFilter(ParserTreeFilter):
     param_name = ParamName
 
-    def __init__(self, infer_state, value, node_value=None,
+    def __init__(self, value, node_value=None,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
-            infer_state,
             value,
             node_value,
             until_position,

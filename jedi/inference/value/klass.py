@@ -208,7 +208,7 @@ class ClassMixin(object):
                         yield filter
                 else:
                     yield ClassFilter(
-                        self.infer_state, self, node_value=cls,
+                        self, node_value=cls,
                         origin_scope=origin_scope,
                         is_instance=is_instance
                     )
@@ -230,7 +230,6 @@ class ClassMixin(object):
 
     def get_global_filter(self, until_position=None, origin_scope=None):
         return ParserTreeFilter(
-            self.infer_state,
             value=self,
             until_position=until_position,
             origin_scope=origin_scope

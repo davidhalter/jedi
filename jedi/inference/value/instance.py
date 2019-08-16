@@ -132,7 +132,7 @@ class AbstractInstanceValue(Value):
                     # In this case we're excluding compiled objects that are
                     # not fake objects. It doesn't make sense for normal
                     # compiled objects to search for self variables.
-                    yield SelfAttributeFilter(self.infer_state, self, cls, origin_scope)
+                    yield SelfAttributeFilter(self, cls, origin_scope)
 
         class_filters = class_value.get_filters(
             search_global=False,
@@ -141,9 +141,9 @@ class AbstractInstanceValue(Value):
         )
         for f in class_filters:
             if isinstance(f, ClassFilter):
-                yield InstanceClassFilter(self.infer_state, self, f)
+                yield InstanceClassFilter(self, f)
             elif isinstance(f, CompiledObjectFilter):
-                yield CompiledInstanceClassFilter(self.infer_state, self, f)
+                yield CompiledInstanceClassFilter(self, f)
             else:
                 # Propably from the metaclass.
                 yield f
@@ -348,8 +348,7 @@ class CompiledInstanceName(compiled.CompiledName):
 class CompiledInstanceClassFilter(AbstractFilter):
     name_class = CompiledInstanceName
 
-    def __init__(self, infer_state, instance, f):
-        self._infer_state = infer_state
+    def __init__(self, instance, f):
         self._instance = instance
         self._class_filter = f
 
@@ -362,7 +361,7 @@ class CompiledInstanceClassFilter(AbstractFilter):
     def _convert(self, names):
         klass = self._class_filter.compiled_object
         return [
-            CompiledInstanceName(self._infer_state, self._instance, klass, n)
+            CompiledInstanceName(self._instance.infer_state, self._instance, klass, n)
             for n in names
         ]
 
@@ -456,7 +455,7 @@ class InstanceClassFilter(AbstractFilter):
     resulting names in LazyINstanceClassName. The idea is that the class name
     filtering can be very flexible and always be reflected in instances.
     """
-    def __init__(self, infer_state, instance, class_filter):
+    def __init__(self, instance, class_filter):
         self._instance = instance
         self._class_filter = class_filter
 
@@ -479,9 +478,8 @@ class SelfAttributeFilter(ClassFilter):
     """
     name_class = SelfName
 
-    def __init__(self, infer_state, value, class_value, origin_scope):
+    def __init__(self, value, class_value, origin_scope):
         super(SelfAttributeFilter, self).__init__(
-            infer_state=infer_state,
             value=value,
             node_value=class_value,
             origin_scope=origin_scope,

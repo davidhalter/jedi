@@ -58,7 +58,6 @@ class FunctionMixin(object):
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         if search_global:
             yield ParserTreeFilter(
-                self.infer_state,
                 value=self,
                 until_position=until_position,
                 origin_scope=origin_scope
@@ -294,7 +293,7 @@ class FunctionExecutionValue(TreeValue):
         )
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
-        yield self.function_execution_filter(self.infer_state, self,
+        yield self.function_execution_filter(self,
                                              until_position=until_position,
                                              origin_scope=origin_scope)
 

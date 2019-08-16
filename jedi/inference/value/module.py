@@ -101,7 +101,6 @@ class ModuleMixin(SubModuleDictMixin):
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
-                self.infer_state,
                 value=self,
                 until_position=until_position,
                 origin_scope=origin_scope

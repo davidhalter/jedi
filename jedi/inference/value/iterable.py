@@ -117,7 +117,7 @@ class CompForValue(TreeValue):
         return cls(parent_context.infer_state, parent_context, comp_for)
 
     def get_filters(self, search_global=False, until_position=None, origin_scope=None):
-        yield ParserTreeFilter(self.infer_state, self)
+        yield ParserTreeFilter(self)
 
 
 def comprehension_from_atom(infer_state, value, atom):
