@@ -28,7 +28,7 @@ from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
-from jedi.inference import InferState
+from jedi.inference import InferenceState
 from jedi.inference import imports
 from jedi.inference import usages
 from jedi.inference.arguments import try_iter_content
@@ -111,7 +111,7 @@ class Script(object):
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
-        self._infer_state = InferState(
+        self._infer_state = InferenceState(
             project, environment=environment, script_path=self.path
         )
         debug.speed('init')

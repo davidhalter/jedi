@@ -32,9 +32,9 @@ return the ``date`` class.
 
 To *visualize* this (simplified):
 
-- ``InferState.infer_expr_stmt`` doesn't do much, because there's no assignment.
+- ``InferenceState.infer_expr_stmt`` doesn't do much, because there's no assignment.
 - ``Value.infer_node`` cares for resolving the dotted path
-- ``InferState.find_types`` searches for global definitions of datetime, which
+- ``InferenceState.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
 - Using the import logic, the datetime module is found.
 - Now ``find_types`` is called again by ``infer_node`` to find ``date``
@@ -85,7 +85,7 @@ from jedi.inference.syntax_tree import infer_trailer, infer_expr_stmt, \
 from jedi.plugins import plugin_manager
 
 
-class InferState(object):
+class InferenceState(object):
     def __init__(self, project, environment=None, script_path=None):
         if environment is None:
             environment = project.get_environment()

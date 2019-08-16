@@ -11,7 +11,7 @@ from collections import namedtuple
 from jedi._compatibility import highest_pickle_protocol, which
 from jedi.cache import memoize_method, time_cache
 from jedi.inference.compiled.subprocess import CompiledSubprocess, \
-    InferStateSameProcess, InferStateSubprocess
+    InferenceStateSameProcess, InferenceStateSubprocess
 
 import parso
 
@@ -110,7 +110,7 @@ class Environment(_BaseEnvironment):
         return '<%s: %s in %s>' % (self.__class__.__name__, version, self.path)
 
     def get_infer_state_subprocess(self, infer_state):
-        return InferStateSubprocess(infer_state, self._get_subprocess())
+        return InferenceStateSubprocess(infer_state, self._get_subprocess())
 
     @memoize_method
     def get_sys_path(self):
@@ -141,7 +141,7 @@ class SameEnvironment(_SameEnvironmentMixin, Environment):
 
 class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
     def get_infer_state_subprocess(self, infer_state):
-        return InferStateSameProcess(infer_state)
+        return InferenceStateSameProcess(infer_state)
 
     def get_sys_path(self):
         return sys.path

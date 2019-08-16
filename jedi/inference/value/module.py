@@ -156,7 +156,7 @@ class ModuleMixin(SubModuleDictMixin):
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
-    # to push the star imports into InferState.module_cache, if we reenable this.
+    # to push the star imports into InferenceState.module_cache, if we reenable this.
     @infer_state_method_cache([])
     def star_imports(self):
         from jedi.inference.imports import Importer

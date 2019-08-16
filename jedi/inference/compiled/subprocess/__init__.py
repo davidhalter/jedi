@@ -70,7 +70,7 @@ def _cleanup_process(process, thread):
             pass
 
 
-class _InferStateProcess(object):
+class _InferenceStateProcess(object):
     def __init__(self, infer_state):
         self._infer_state_weakref = weakref.ref(infer_state)
         self._infer_state_id = id(infer_state)
@@ -93,19 +93,19 @@ class _InferStateProcess(object):
         self._handles[handle.id] = handle
 
 
-class InferStateSameProcess(_InferStateProcess):
+class InferenceStateSameProcess(_InferenceStateProcess):
     """
     Basically just an easy access to functions.py. It has the same API
-    as InferStateSubprocess and does the same thing without using a subprocess.
+    as InferenceStateSubprocess and does the same thing without using a subprocess.
     This is necessary for the Interpreter process.
     """
     def __getattr__(self, name):
         return partial(_get_function(name), self._infer_state_weakref())
 
 
-class InferStateSubprocess(_InferStateProcess):
+class InferenceStateSubprocess(_InferenceStateProcess):
     def __init__(self, infer_state, compiled_subprocess):
-        super(InferStateSubprocess, self).__init__(infer_state)
+        super(InferenceStateSubprocess, self).__init__(infer_state)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
 
@@ -288,17 +288,17 @@ class Listener(object):
         self._infer_states = {}
         # TODO refactor so we don't need to process anymore just handle
         # controlling.
-        self._process = _InferStateProcess(Listener)
+        self._process = _InferenceStateProcess(Listener)
         self._pickle_protocol = pickle_protocol
 
     def _get_infer_state(self, function, infer_state_id):
-        from jedi.inference import InferState
+        from jedi.inference import InferenceState
 
         try:
             infer_state = self._infer_states[infer_state_id]
         except KeyError:
             from jedi.api.environment import InterpreterEnvironment
-            infer_state = InferState(
+            infer_state = InferenceState(
                 # The project is not actually needed. Nothing should need to
                 # access it.
                 project=None,
@@ -399,7 +399,7 @@ class AccessHandle(object):
 
     @memoize_method
     def _cached_results(self, name, *args, **kwargs):
-        #if type(self._subprocess) == InferStateSubprocess:
+        #if type(self._subprocess) == InferenceStateSubprocess:
             #print(name, args, kwargs,
                 #self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
             #)
