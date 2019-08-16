@@ -254,27 +254,27 @@ def _create(inference_state, access_handle, parent_context, *args):
 
         if parent_context is None:
             # TODO this __name__ is probably wrong.
-            name = compiled_object.get_root_value().py__name__()
+            name = compiled_object.get_root_context().py__name__()
             string_names = tuple(name.split('.'))
-            module_value = ModuleValue(
+            module_context = ModuleValue(
                 inference_state, module_node,
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
                 is_package=hasattr(compiled_object, 'py__path__'),
-            )
+            ).as_context()
             if name is not None:
-                inference_state.module_cache.add(string_names, ValueSet([module_value]))
+                inference_state.module_cache.add(string_names, ValueSet([module_context]))
         else:
             if parent_context.tree_node.get_root_node() != module_node:
                 # This happens e.g. when __module__ is wrong, or when using
                 # TypeVar('foo'), where Jedi uses 'foo' as the name and
                 # Python's TypeVar('foo').__module__ will be typing.
                 return ValueSet({compiled_object})
-            module_value = parent_context.get_root_value()
+            module_context = parent_context.get_root_context()
 
         tree_values = ValueSet({
-            module_value.create_value(
+            module_context.create_context(
                 tree_node,
                 node_is_value=True,
                 node_is_object=True

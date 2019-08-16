@@ -57,12 +57,12 @@ class ModuleCache(object):
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
 @inference_state_method_cache(default=NO_VALUES)
-def infer_import(value, tree_name, is_goto=False):
-    module_value = value.get_root_value()
+def infer_import(context, tree_name, is_goto=False):
+    module_context = context.get_root_context()
     import_node = search_ancestor(tree_name, 'import_name', 'import_from')
     import_path = import_node.get_path_for_name(tree_name)
     from_import_name = None
-    inference_state = value.inference_state
+    inference_state = context.inference_state
     try:
         from_names = import_node.get_from_names()
     except AttributeError:
@@ -76,7 +76,7 @@ def infer_import(value, tree_name, is_goto=False):
             import_path = from_names
 
     importer = Importer(inference_state, tuple(import_path),
-                        module_value, import_node.level)
+                        module_context, import_node.level)
 
     types = importer.follow()
 
@@ -90,7 +90,7 @@ def infer_import(value, tree_name, is_goto=False):
         types = unite(
             t.py__getattribute__(
                 from_import_name,
-                name_value=value,
+                name_context=context,
                 is_goto=is_goto,
                 analysis_errors=False
             )
@@ -102,7 +102,7 @@ def infer_import(value, tree_name, is_goto=False):
         if not types:
             path = import_path + [from_import_name]
             importer = Importer(inference_state, tuple(path),
-                                module_value, import_node.level)
+                                module_context, import_node.level)
             types = importer.follow()
             # goto only accepts `Name`
             if is_goto:
@@ -183,7 +183,7 @@ def _level_to_base_import_path(project_path, directory, level):
 
 
 class Importer(object):
-    def __init__(self, inference_state, import_path, module_value, level=0):
+    def __init__(self, inference_state, import_path, module_context, level=0):
         """
         An implementation similar to ``__import__``. Use `follow`
         to actually follow the imports.
@@ -196,15 +196,15 @@ class Importer(object):
 
         :param import_path: List of namespaces (strings or Names).
         """
-        debug.speed('import %s %s' % (import_path, module_value))
+        debug.speed('import %s %s' % (import_path, module_context))
         self._inference_state = inference_state
         self.level = level
-        self.module_value = module_value
+        self.module_context = module_context
 
         self._fixed_sys_path = None
         self._infer_possible = True
         if level:
-            base = module_value.py__package__()
+            base = module_context.py__package__()
             # We need to care for two cases, the first one is if it's a valid
             # Python import. This import has a properly defined module name
             # chain like `foo.bar.baz` and an import in baz is made for
@@ -221,7 +221,7 @@ class Importer(object):
                     base = base[:-level + 1]
                 import_path = base + tuple(import_path)
             else:
-                path = module_value.py__file__()
+                path = module_context.py__file__()
                 import_path = list(import_path)
                 if path is None:
                     # If no path is defined, our best guess is that the current
@@ -245,7 +245,7 @@ class Importer(object):
                 if base_import_path is None:
                     if import_path:
                         _add_error(
-                            module_value, import_path[0],
+                            module_context, import_path[0],
                             message='Attempted relative import beyond top-level package.'
                         )
                 else:
@@ -266,11 +266,11 @@ class Importer(object):
 
         sys_path_mod = (
             self._inference_state.get_sys_path()
-            + sys_path.check_sys_path_modifications(self.module_value)
+            + sys_path.check_sys_path_modifications(self.module_context)
         )
 
         if self._inference_state.environment.version_info.major == 2:
-            file_path = self.module_value.py__file__()
+            file_path = self.module_context.py__file__()
             if file_path is not None:
                 # Python2 uses an old strange way of importing relative imports.
                 sys_path_mod.append(force_unicode(os.path.dirname(file_path)))
@@ -292,13 +292,13 @@ class Importer(object):
             value_set = ValueSet.from_sets([
                 self._inference_state.import_module(
                     import_names[:i+1],
-                    parent_module_value,
+                    parent_module_context,
                     sys_path
-                ) for parent_module_value in value_set
+                ) for parent_module_context in value_set
             ])
             if not value_set:
                 message = 'No module named ' + '.'.join(import_names)
-                _add_error(self.module_value, name, message)
+                _add_error(self.module_context, name, message)
                 return NO_VALUES
         return value_set
 
@@ -310,7 +310,7 @@ class Importer(object):
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
-            names += [ImportName(self.module_value, name)
+            names += [ImportName(self.module_context, name)
                       for name in self._inference_state.compiled_subprocess.get_builtin_module_names()]
 
         if search_path is None:
@@ -318,7 +318,7 @@ class Importer(object):
 
         for name in iter_module_names(self._inference_state, search_path):
             if in_module is None:
-                n = ImportName(self.module_value, name)
+                n = ImportName(self.module_context, name)
             else:
                 n = SubModuleName(in_module, name)
             names.append(n)
@@ -341,7 +341,7 @@ class Importer(object):
                     modname = mod.string_name
                     if modname.startswith('flask_'):
                         extname = modname[len('flask_'):]
-                        names.append(ImportName(self.module_value, extname))
+                        names.append(ImportName(self.module_context, extname))
                 # Now the old style: ``flaskext.foo``
                 for dir in self._sys_path_with_modifications():
                     flaskext = os.path.join(dir, 'flaskext')
@@ -374,7 +374,7 @@ class Importer(object):
 
 @plugin_manager.decorate()
 @import_module_decorator
-def import_module(inference_state, import_names, parent_module_value, sys_path):
+def import_module(inference_state, import_names, parent_module_context, sys_path):
     """
     This method is very similar to importlib's `_gcd_import`.
     """
@@ -385,7 +385,7 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
         return ValueSet([module])
 
     module_name = '.'.join(import_names)
-    if parent_module_value is None:
+    if parent_module_context is None:
         # Override the sys.path. It works only good that way.
         # Injecting the path directly into `find_module` did not work.
         file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
@@ -398,7 +398,7 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
             return NO_VALUES
     else:
         try:
-            method = parent_module_value.py__path__
+            method = parent_module_context.py__path__
         except AttributeError:
             # The module is not a package.
             return NO_VALUES
@@ -438,7 +438,7 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
             is_package=is_pkg,
         )
 
-    if parent_module_value is None:
+    if parent_module_context is None:
         debug.dbg('global search_module %s: %s', import_names[-1], module)
     else:
         debug.dbg('search_module %s in paths %s: %s', module_name, paths, module)

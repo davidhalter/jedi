@@ -192,6 +192,9 @@ class Script(object):
             self._inference_state.module_cache.add(names, ValueSet([module]))
         return module
 
+    def _get_module_context(self):
+        return self._get_module().as_context()
+
     def __repr__(self):
         return '<%s: %s %r>' % (
             self.__class__.__name__,
@@ -209,7 +212,7 @@ class Script(object):
         """
         with debug.increase_indent_cm('completions'):
             completion = Completion(
-                self._inference_state, self._get_module(), self._code_lines,
+                self._inference_state, self._get_module_context(), self._code_lines,
                 self._pos, self.call_signatures
             )
             return completion.completions()
@@ -239,9 +242,9 @@ class Script(object):
             if leaf is None:
                 return []
 
-        value = self._inference_state.create_value(self._get_module(), leaf)
+        context = self._inference_state.create_context(self._get_module_context(), leaf)
 
-        values = helpers.infer_goto_definition(self._inference_state, value, leaf)
+        values = helpers.infer_goto_definition(self._inference_state, context, leaf)
         values = convert_values(
             values,
             only_stubs=only_stubs,
@@ -299,8 +302,8 @@ class Script(object):
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
             return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
-        value = self._inference_state.create_value(self._get_module(), tree_name)
-        names = list(self._inference_state.goto(value, tree_name))
+        context = self._inference_state.create_context(self._get_module_context(), tree_name)
+        names = list(self._inference_state.goto(context, tree_name))
 
         if follow_imports:
             names = filter_follow_imports(names, lambda name: name.is_import())
@@ -340,7 +343,7 @@ class Script(object):
                 # Must be syntax
                 return []
 
-            names = usages.usages(self._get_module(), tree_name)
+            names = usages.usages(self._get_module_context(), tree_name)
 
             definitions = [classes.Definition(self._inference_state, n) for n in names]
             if not include_builtins:
@@ -368,8 +371,8 @@ class Script(object):
         if call_details is None:
             return []
 
-        value = self._inference_state.create_value(
-            self._get_module(),
+        value = self._inference_state.create_context(
+            self._get_module_context(),
             call_details.bracket_leaf
         )
         definitions = helpers.cache_call_signatures(
@@ -389,10 +392,10 @@ class Script(object):
     def _analysis(self):
         self._inference_state.is_analysis = True
         self._inference_state.analysis_modules = [self._module_node]
-        module = self._get_module()
+        module = self._get_module_context()
         try:
             for node in get_executable_nodes(self._module_node):
-                value = module.create_value(node)
+                value = module.create_context(node)
                 if node.type in ('funcdef', 'classdef'):
                     # Resolve the decorators.
                     tree_name_to_values(self._inference_state, value, node.children[1])
@@ -505,13 +508,13 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         else:
             cls = TreeNameDefinition
         return cls(
-            module_value.create_value(name),
+            module_context.create_context(name),
             name
         )
 
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
-    module_value = script._get_module()
+    module_context = script._get_module_context()
     defs = [
         classes.Definition(
             script._inference_state,

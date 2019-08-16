@@ -52,11 +52,11 @@ def filter_names(inference_state, completion_names, stack, like_name):
                 yield new
 
 
-def get_user_scope(module_value, position):
+def get_user_context(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
     """
-    user_stmt = get_statement_of_position(module_value.tree_node, position)
+    user_stmt = get_statement_of_position(module_context.tree_node, position)
     if user_stmt is None:
         def scan(scope):
             for s in scope.children:
@@ -68,12 +68,12 @@ def get_user_scope(module_value, position):
                         return scan(s)
             return None
 
-        scanned_node = scan(module_value.tree_node)
+        scanned_node = scan(module_context.tree_node)
         if scanned_node:
-            return module_value.create_value(scanned_node, node_is_value=True)
-        return module_value
+            return module_context.create_context(scanned_node, node_is_value=True)
+        return module_context
     else:
-        return module_value.create_value(user_stmt)
+        return module_context.create_context(user_stmt)
 
 
 def get_flow_scope_node(module_node, position):
@@ -85,10 +85,11 @@ def get_flow_scope_node(module_node, position):
 
 
 class Completion:
-    def __init__(self, inference_state, module, code_lines, position, call_signatures_callback):
+    def __init__(self, inference_state, module_context, code_lines, position,
+                 call_signatures_callback):
         self._inference_state = inference_state
-        self._module_value = module
-        self._module_node = module.tree_node
+        self._module_context = module_context
+        self._module_node = module_context.tree_node
         self._code_lines = code_lines
 
         # The first step of completions is to get the name
@@ -104,7 +105,7 @@ class Completion:
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
             completions = list(file_name_completions(
-                self._inference_state, self._module_value, start_leaf, string,
+                self._inference_state, self._module_context, start_leaf, string,
                 self._like_name, self._call_signatures_callback,
                 self._code_lines, self._original_position
             ))
@@ -237,7 +238,7 @@ class Completion:
                 yield keywords.KeywordName(self._inference_state, k)
 
     def _global_completions(self):
-        value = get_user_scope(self._module_value, self._position)
+        value = get_user_context(self._module_context, self._position)
         debug.dbg('global completion scope: %s', value)
         flow_scope_node = get_flow_scope_node(self._module_node, self._position)
         filters = get_global_filters(
@@ -252,9 +253,9 @@ class Completion:
         return completion_names
 
     def _trailer_completions(self, previous_leaf):
-        user_value = get_user_scope(self._module_value, self._position)
-        inferred_value = self._inference_state.create_value(
-            self._module_value, previous_leaf
+        user_value = get_user_context(self._module_context, self._position)
+        inferred_value = self._inference_state.create_context(
+            self._module_context, previous_leaf
         )
         values = infer_call_of_leaf(inferred_value, previous_leaf)
         completion_names = []
@@ -276,7 +277,7 @@ class Completion:
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]
-        i = imports.Importer(self._inference_state, names, self._module_value, level)
+        i = imports.Importer(self._inference_state, names, self._module_context, level)
         return i.completion_names(self._inference_state, only_modules=only_modules)
 
     def _get_class_value_completions(self, is_function=True):
@@ -287,7 +288,7 @@ class Completion:
         cls = tree.search_ancestor(leaf, 'classdef')
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.
-            random_value = self._module_value.create_value(
+            random_value = self._module_context.create_context(
                 cls,
                 node_is_value=True
             )

@@ -23,7 +23,7 @@ _sentinel = object()
 
 
 class HelperValueMixin(object):
-    def get_root_value(self):
+    def get_root_context(self):
         value = self
         while True:
             if value.parent_context is None:
@@ -82,9 +82,6 @@ class HelperValueMixin(object):
 
     def infer_node(self, node):
         return self.inference_state.infer_element(self, node)
-
-    def create_value(self, node, node_is_value=False, node_is_object=False):
-        return self.inference_state.create_value(self, node, node_is_value, node_is_object)
 
     def iterate(self, valueualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
@@ -281,18 +278,18 @@ class TreeValue(Value):
 
 
 class ValueualizedNode(object):
-    def __init__(self, value, node):
-        self.value = value
+    def __init__(self, context, node):
+        self.context = context
         self.node = node
 
-    def get_root_value(self):
-        return self.value.get_root_value()
+    def get_root_context(self):
+        return self.context.get_root_context()
 
     def infer(self):
-        return self.value.infer_node(self.node)
+        return self.context.infer_node(self.node)
 
     def __repr__(self):
-        return '<%s: %s in %s>' % (self.__class__.__name__, self.node, self.value)
+        return '<%s: %s in %s>' % (self.__class__.__name__, self.node, self.context)
 
 
 class ValueualizedName(ValueualizedNode):

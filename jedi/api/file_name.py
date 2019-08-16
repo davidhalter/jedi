@@ -7,12 +7,12 @@ from jedi.inference.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
 
 
-def file_name_completions(inference_state, module_value, start_leaf, string,
+def file_name_completions(inference_state, module_context, start_leaf, string,
                           like_name, call_signatures_callback, code_lines, position):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
-    addition = _get_string_additions(module_value, start_leaf)
+    addition = _get_string_additions(module_context, start_leaf)
     if addition is None:
         return
     string = addition + string
@@ -25,7 +25,7 @@ def file_name_completions(inference_state, module_value, start_leaf, string,
     sigs = call_signatures_callback()
     is_in_os_path_join = sigs and all(s.full_name == 'os.path.join' for s in sigs)
     if is_in_os_path_join:
-        to_be_added = _add_os_path_join(module_value, start_leaf, sigs[0].bracket_start)
+        to_be_added = _add_os_path_join(module_context, start_leaf, sigs[0].bracket_start)
         if to_be_added is None:
             is_in_os_path_join = False
         else:
@@ -60,7 +60,7 @@ def file_name_completions(inference_state, module_value, start_leaf, string,
             )
 
 
-def _get_string_additions(module_value, start_leaf):
+def _get_string_additions(module_context, start_leaf):
     def iterate_nodes():
         node = addition.parent
         was_addition = True
@@ -77,7 +77,7 @@ def _get_string_additions(module_value, start_leaf):
     addition = start_leaf.get_previous_leaf()
     if addition != '+':
         return ''
-    value = module_value.create_value(start_leaf)
+    value = module_context.create_context(start_leaf)
     return _add_strings(value, reversed(list(iterate_nodes())))
 
 
@@ -104,14 +104,14 @@ class FileName(AbstractArbitraryName):
     is_value_name = False
 
 
-def _add_os_path_join(module_value, start_leaf, bracket_start):
+def _add_os_path_join(module_context, start_leaf, bracket_start):
     def check(maybe_bracket, nodes):
         if maybe_bracket.start_pos != bracket_start:
             return None
 
         if not nodes:
             return ''
-        value = module_value.create_value(nodes[0])
+        value = module_context.create_context(nodes[0])
         return _add_strings(value, nodes, add_slash=True) or ''
 
     if start_leaf.type == 'error_leaf':

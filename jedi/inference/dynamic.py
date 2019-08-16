@@ -89,10 +89,10 @@ def search_params(inference_state, execution_value, funcdef):
         debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
 
         try:
-            module_value = execution_value.get_root_value()
+            module_context = execution_value.get_root_value()
             function_executions = _search_function_executions(
                 inference_state,
-                module_value,
+                module_context,
                 funcdef,
                 string_name=string_name,
             )
@@ -115,7 +115,7 @@ def search_params(inference_state, execution_value, funcdef):
 
 @inference_state_function_cache(default=None)
 @to_list
-def _search_function_executions(inference_state, module_value, funcdef, string_name):
+def _search_function_executions(inference_state, module_context, funcdef, string_name):
     """
     Returns a list of param names.
     """
@@ -129,8 +129,8 @@ def _search_function_executions(inference_state, module_value, funcdef, string_n
     found_executions = False
     i = 0
     for for_mod_value in imports.get_modules_containing_name(
-            inference_state, [module_value], string_name):
-        if not isinstance(module_value, ModuleValue):
+            inference_state, [module_context], string_name):
+        if not isinstance(module_context, ModuleValue):
             return
         for name, trailer in _get_possible_nodes(for_mod_value, string_name):
             i += 1
@@ -141,7 +141,8 @@ def _search_function_executions(inference_state, module_value, funcdef, string_n
             if i * inference_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 
-            random_value = inference_state.create_value(for_mod_value, name)
+            raise NotImplementedError
+            random_value = inference_state.create_context(for_mod_value, name)
             for function_execution in _check_name_for_execution(
                     inference_state, random_value, compare_node, name, trailer):
                 found_executions = True
@@ -219,7 +220,8 @@ def _check_name_for_execution(inference_state, value, compare_node, name, traile
                 execution_value = next(create_func_excs())
                 for name, trailer in _get_possible_nodes(module_value, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
-                        random_value = inference_state.create_value(execution_value, name)
+                        raise NotImplementedError
+                        random_value = inference_state.create_context(execution_value, name)
                         iterator = _check_name_for_execution(
                             inference_state,
                             random_value,

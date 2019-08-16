@@ -77,17 +77,17 @@ class Warning(Error):
     pass
 
 
-def add(node_value, error_name, node, message=None, typ=Error, payload=None):
+def add(node_context, error_name, node, message=None, typ=Error, payload=None):
     exception = CODES[error_name][1]
-    if _check_for_exception_catch(node_value, node, exception, payload):
+    if _check_for_exception_catch(node_context, node, exception, payload):
         return
 
     # TODO this path is probably not right
-    module_value = node_value.get_root_value()
-    module_path = module_value.py__file__()
+    module_context = node_context.get_root_context()
+    module_path = module_context.py__file__()
     issue_instance = typ(error_name, module_path, node.start_pos, message)
     debug.warning(str(issue_instance), format=False)
-    node_value.inference_state.analysis.append(issue_instance)
+    node_context.inference_state.analysis.append(issue_instance)
     return issue_instance
 
 
@@ -95,7 +95,7 @@ def _check_for_setattr(instance):
     """
     Check if there's any setattr method inside an instance. If so, return True.
     """
-    module = instance.get_root_value()
+    module = instance.get_root_context()
     node = module.tree_node
     if node is None:
         # If it's a compiled module or doesn't have a tree_node
@@ -112,7 +112,7 @@ def _check_for_setattr(instance):
                for n in stmt_names)
 
 
-def add_attribute_error(name_value, lookup_value, name):
+def add_attribute_error(name_context, lookup_value, name):
     message = ('AttributeError: %s has no attribute %s.' % (lookup_value, name))
     from jedi.inference.value.instance import CompiledInstanceName
     # Check for __getattr__/__getattribute__ existance and issue a warning
@@ -132,10 +132,10 @@ def add_attribute_error(name_value, lookup_value, name):
             typ = Warning
 
     payload = lookup_value, name
-    add(name_value, 'attribute-error', name, message, typ, payload)
+    add(name_context, 'attribute-error', name, message, typ, payload)
 
 
-def _check_for_exception_catch(node_value, jedi_name, exception, payload=None):
+def _check_for_exception_catch(node_context, jedi_name, exception, payload=None):
     """
     Checks if a jedi object (e.g. `Statement`) sits inside a try/catch and
     doesn't count as an error (if equal to `exception`).
@@ -167,7 +167,7 @@ def _check_for_exception_catch(node_value, jedi_name, exception, payload=None):
             if node is None:
                 return True  # An exception block that catches everything.
             else:
-                except_classes = node_value.infer_node(node)
+                except_classes = node_context.infer_node(node)
                 for cls in except_classes:
                     from jedi.inference.value import iterable
                     if isinstance(cls, iterable.Sequence) and \
@@ -192,18 +192,19 @@ def _check_for_exception_catch(node_value, jedi_name, exception, payload=None):
             arglist = trailer.children[1]
             assert arglist.type == 'arglist'
             from jedi.inference.arguments import TreeArguments
-            args = list(TreeArguments(node_value.inference_state, node_value, arglist).unpack())
+            args = TreeArguments(node_context.inference_state, node_context, arglist)
+            unpacked_args = list(args.unpack())
             # Arguments should be very simple
-            assert len(args) == 2
+            assert len(unpacked_args) == 2
 
             # Check name
-            key, lazy_value = args[1]
+            key, lazy_value = unpacked_args[1]
             names = list(lazy_value.infer())
             assert len(names) == 1 and is_string(names[0])
             assert force_unicode(names[0].get_safe_value()) == payload[1].value
 
             # Check objects
-            key, lazy_value = args[0]
+            key, lazy_value = unpacked_args[0]
             objects = lazy_value.infer()
             return payload[0] in objects
         except AssertionError:

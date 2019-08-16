@@ -32,7 +32,7 @@ class AbstractNameDefinition(object):
         if qualified_names is None or not include_module_names:
             return qualified_names
 
-        module_names = self.get_root_value().string_names
+        module_names = self.get_root_context().string_names
         if module_names is None:
             return None
         return module_names + qualified_names
@@ -41,8 +41,8 @@ class AbstractNameDefinition(object):
         # By default, a name has no qualified names.
         return None
 
-    def get_root_value(self):
-        return self.parent_context.get_root_value()
+    def get_root_context(self):
+        return self.parent_context.get_root_context()
 
     def __repr__(self):
         if self.start_pos is None:
@@ -87,7 +87,7 @@ class AbstractTreeName(AbstractNameDefinition):
         # In case of level == 1, it works always, because it's like a submodule
         # lookup.
         if import_node is not None and not (import_node.level == 1
-                                            and self.get_root_value().is_package):
+                                            and self.get_root_context().is_package):
             # TODO improve the situation for when level is present.
             if include_module_names and not import_node.level:
                 return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
@@ -103,7 +103,9 @@ class AbstractTreeName(AbstractNameDefinition):
         return parent_names + (self.tree_name.value,)
 
     def goto(self, **kwargs):
-        return self.parent_context.inference_state.goto(self.parent_context, self.tree_name, **kwargs)
+        return self.parent_context.inference_state.goto(
+            self.parent_context, self.tree_name, **kwargs
+        )
 
     def is_import(self):
         imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
@@ -125,10 +127,10 @@ class ValueNameMixin(object):
     def _get_qualified_names(self):
         return self._value.get_qualified_names()
 
-    def get_root_value(self):
+    def get_root_context(self):
         if self.parent_context is None:  # A module
-            return self._value
-        return super(ValueNameMixin, self).get_root_value()
+            return self._value.as_context()
+        return super(ValueNameMixin, self).get_root_context()
 
     @property
     def api_type(self):
@@ -156,8 +158,11 @@ class TreeNameDefinition(AbstractTreeName):
     def infer(self):
         # Refactor this, should probably be here.
         from jedi.inference.syntax_tree import tree_name_to_values
-        parent = self.parent_context
-        return tree_name_to_values(parent.inference_state, parent, self.tree_name)
+        return tree_name_to_values(
+            self.parent_context.inference_state,
+            self.parent_context,
+            self.tree_name
+        )
 
     @property
     def api_type(self):
@@ -318,14 +323,14 @@ class ImportName(AbstractNameDefinition):
     _level = 0
 
     def __init__(self, parent_context, string_name):
-        self._from_module_value = parent_context
+        self._from_module_context = parent_context
         self.string_name = string_name
 
     def get_qualified_names(self, include_module_names=False):
         if include_module_names:
             if self._level:
                 assert self._level == 1, "Everything else is not supported for now"
-                module_names = self._from_module_value.string_names
+                module_names = self._from_module_context.string_names
                 if module_names is None:
                     return module_names
                 return module_names + (self.string_name,)
@@ -334,7 +339,7 @@ class ImportName(AbstractNameDefinition):
 
     @property
     def parent_context(self):
-        m = self._from_module_value
+        m = self._from_module_context
         import_values = self.infer()
         if not import_values:
             return m
@@ -345,7 +350,7 @@ class ImportName(AbstractNameDefinition):
     @memoize_method
     def infer(self):
         from jedi.inference.imports import Importer
-        m = self._from_module_value
+        m = self._from_module_context
         return Importer(m.inference_state, [self.string_name], m, level=self._level).follow()
 
     def goto(self):

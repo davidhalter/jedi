@@ -111,11 +111,11 @@ class InferenceState(object):
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
 
-    def import_module(self, import_names, parent_module_value=None,
+    def import_module(self, import_names, parent_module_context=None,
                       sys_path=None, prefer_stubs=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
-        return imports.import_module(self, import_names, parent_module_value,
+        return imports.import_module(self, import_names, parent_module_context,
                                      sys_path, prefer_stubs=prefer_stubs)
 
     @staticmethod
@@ -150,9 +150,9 @@ class InferenceState(object):
         """Convenience function"""
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
-    def infer_element(self, value, element):
-        if isinstance(value, CompForValue):
-            return infer_node(value, element)
+    def infer_element(self, context, element):
+        if isinstance(context, CompForValue):
+            return infer_node(context, element)
 
         if_stmt = element
         while if_stmt is not None:
@@ -162,7 +162,7 @@ class InferenceState(object):
             if parser_utils.is_scope(if_stmt):
                 if_stmt = None
                 break
-        predefined_if_name_dict = value.predefined_names.get(if_stmt)
+        predefined_if_name_dict = context.predefined_names.get(if_stmt)
         # TODO there's a lot of issues with this one. We actually should do
         # this in a different way. Caching should only be active in certain
         # cases and this all sucks.
@@ -182,7 +182,7 @@ class InferenceState(object):
                 str_element_names = [e.value for e in element_names]
                 if any(i.value in str_element_names for i in if_names):
                     for if_name in if_names:
-                        definitions = self.goto_definitions(value, if_name)
+                        definitions = self.goto_definitions(context, if_name)
                         # Every name that has multiple different definitions
                         # causes the complexity to rise. The complexity should
                         # never fall below 1.
@@ -210,65 +210,65 @@ class InferenceState(object):
             if len(name_dicts) > 1:
                 result = NO_VALUES
                 for name_dict in name_dicts:
-                    with helpers.predefine_names(value, if_stmt, name_dict):
-                        result |= infer_node(value, element)
+                    with helpers.predefine_names(context, if_stmt, name_dict):
+                        result |= infer_node(context, element)
                 return result
             else:
-                return self._infer_element_if_inferred(value, element)
+                return self._infer_element_if_inferred(context, element)
         else:
             if predefined_if_name_dict:
-                return infer_node(value, element)
+                return infer_node(context, element)
             else:
-                return self._infer_element_if_inferred(value, element)
+                return self._infer_element_if_inferred(context, element)
 
-    def _infer_element_if_inferred(self, value, element):
+    def _infer_element_if_inferred(self, context, element):
         """
         TODO This function is temporary: Merge with infer_element.
         """
         parent = element
         while parent is not None:
             parent = parent.parent
-            predefined_if_name_dict = value.predefined_names.get(parent)
+            predefined_if_name_dict = context.predefined_names.get(parent)
             if predefined_if_name_dict is not None:
-                return infer_node(value, element)
-        return self._infer_element_cached(value, element)
+                return infer_node(context, element)
+        return self._infer_element_cached(context, element)
 
     @inference_state_function_cache(default=NO_VALUES)
-    def _infer_element_cached(self, value, element):
-        return infer_node(value, element)
+    def _infer_element_cached(self, context, element):
+        return infer_node(context, element)
 
-    def goto_definitions(self, value, name):
+    def goto_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
             is_classdef = type_ == 'classdef'
             if is_classdef or type_ == 'funcdef':
                 if is_classdef:
-                    c = ClassValue(self, value, name.parent)
+                    c = ClassValue(self, context, name.parent)
                 else:
-                    c = FunctionValue.from_value(value, name.parent)
+                    c = FunctionValue.from_value(context, name.parent)
                 return ValueSet([c])
 
             if type_ == 'expr_stmt':
                 is_simple_name = name.parent.type not in ('power', 'trailer')
                 if is_simple_name:
-                    return infer_expr_stmt(value, def_, name)
+                    return infer_expr_stmt(context, def_, name)
             if type_ == 'for_stmt':
-                container_types = value.infer_node(def_.children[3])
-                cn = ValueualizedNode(value, def_.children[3])
+                container_types = context.infer_node(def_.children[3])
+                cn = ValueualizedNode(context, def_.children[3])
                 for_types = iterate_values(container_types, cn)
-                c_node = ValueualizedName(value, name)
+                c_node = ValueualizedName(context, name)
                 return check_tuple_assignments(c_node, for_types)
             if type_ in ('import_from', 'import_name'):
-                return imports.infer_import(value, name)
+                return imports.infer_import(context, name)
         else:
-            result = self._follow_error_node_imports_if_possible(value, name)
+            result = self._follow_error_node_imports_if_possible(context, name)
             if result is not None:
                 return result
 
-        return helpers.infer_call_of_leaf(value, name)
+        return helpers.infer_call_of_leaf(context, name)
 
-    def _follow_error_node_imports_if_possible(self, value, name):
+    def _follow_error_node_imports_if_possible(self, context, name):
         error_node = tree.search_ancestor(name, 'error_node')
         if error_node is not None:
             # Get the first command start of a started simple_stmt. The error
@@ -292,10 +292,10 @@ class InferenceState(object):
                     is_import_from=is_import_from,
                     until_node=name,
                 )
-                return imports.Importer(self, names, value.get_root_value(), level).follow()
+                return imports.Importer(self, names, context.get_root_context(), level).follow()
         return None
 
-    def goto(self, value, name):
+    def goto(self, context, name):
         definition = name.get_definition(import_name_always=True)
         if definition is not None:
             type_ = definition.type
@@ -304,16 +304,16 @@ class InferenceState(object):
                 # a name it's something you can "goto" again.
                 is_simple_name = name.parent.type not in ('power', 'trailer')
                 if is_simple_name:
-                    return [TreeNameDefinition(value, name)]
+                    return [TreeNameDefinition(context, name)]
             elif type_ == 'param':
-                return [ParamName(value, name)]
+                return [ParamName(context, name)]
             elif type_ in ('import_from', 'import_name'):
-                module_names = imports.infer_import(value, name, is_goto=True)
+                module_names = imports.infer_import(context, name, is_goto=True)
                 return module_names
             else:
-                return [TreeNameDefinition(value, name)]
+                return [TreeNameDefinition(context, name)]
         else:
-            values = self._follow_error_node_imports_if_possible(value, name)
+            values = self._follow_error_node_imports_if_possible(context, name)
             if values is not None:
                 return [value.name for value in values]
 
@@ -326,15 +326,15 @@ class InferenceState(object):
                 trailer = trailer.parent
             if trailer.type != 'classdef':
                 if trailer.type == 'decorator':
-                    value_set = value.infer_node(trailer.children[1])
+                    value_set = context.infer_node(trailer.children[1])
                 else:
                     i = trailer.parent.children.index(trailer)
                     to_infer = trailer.parent.children[:i]
                     if to_infer[0] == 'await':
                         to_infer.pop(0)
-                    value_set = value.infer_node(to_infer[0])
+                    value_set = context.infer_node(to_infer[0])
                     for trailer in to_infer[1:]:
-                        value_set = infer_trailer(value, value_set, trailer)
+                        value_set = infer_trailer(context, value_set, trailer)
                 param_names = []
                 for value in value_set:
                     for signature in value.get_signatures():
@@ -347,28 +347,28 @@ class InferenceState(object):
             if index > 0:
                 new_dotted = helpers.deep_ast_copy(par)
                 new_dotted.children[index - 1:] = []
-                values = value.infer_node(new_dotted)
+                values = context.infer_node(new_dotted)
                 return unite(
                     value.py__getattribute__(name, name_value=value, is_goto=True)
                     for value in values
                 )
 
         if node_type == 'trailer' and par.children[0] == '.':
-            values = helpers.infer_call_of_leaf(value, name, cut_own_trailer=True)
-            return values.py__getattribute__(name, name_value=value, is_goto=True)
+            values = helpers.infer_call_of_leaf(context, name, cut_own_trailer=True)
+            return values.py__getattribute__(name, name_context=context, is_goto=True)
         else:
             stmt = tree.search_ancestor(
                 name, 'expr_stmt', 'lambdef'
             ) or name
             if stmt.type == 'lambdef':
                 stmt = name
-            return value.py__getattribute__(
+            return context.py__getattribute__(
                 name,
                 position=stmt.start_pos,
                 search_global=True, is_goto=True
             )
 
-    def create_value(self, base_value, node, node_is_value=False, node_is_object=False):
+    def create_context(self, base_context, node, node_is_value=False, node_is_object=False):
         def parent_scope(node):
             while True:
                 node = node.parent
@@ -386,14 +386,14 @@ class InferenceState(object):
 
         def from_scope_node(scope_node, is_nested=True, node_is_object=False):
             if scope_node == base_node:
-                return base_value
+                return base_context
 
             is_funcdef = scope_node.type in ('funcdef', 'lambdef')
             parent_scope = parser_utils.get_parent_scope(scope_node)
             parent_context = from_scope_node(parent_scope)
 
             if is_funcdef:
-                func = FunctionValue.from_value(parent_context, scope_node)
+                func = FunctionValue.from_context(parent_context, scope_node)
                 if parent_context.is_class():
                     instance = AnonymousInstance(
                         self, parent_context.parent_context, parent_context)
@@ -413,7 +413,7 @@ class InferenceState(object):
                 return CompForValue.from_comp_for(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 
-        base_node = base_value.tree_node
+        base_node = base_context.tree_node
 
         if node_is_value and parser_utils.is_scope(node):
             scope_node = node

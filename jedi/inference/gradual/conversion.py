@@ -90,7 +90,7 @@ def _load_stub_module(module):
         module.inference_state,
         import_names=module.string_names,
         python_value_set=ValueSet([module]),
-        parent_module_value=None,
+        parent_module_context=None,
         sys_path=module.inference_state.get_sys_path(),
     )
 

@@ -190,7 +190,8 @@ class ModuleValue(ModuleMixin, TreeValue):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, inference_state, module_node, file_io, string_names, code_lines, is_package=False):
+    def __init__(self, inference_state, module_node, file_io, string_names,
+                 code_lines, is_package=False):
         super(ModuleValue, self).__init__(
             inference_state,
             parent_context=None,

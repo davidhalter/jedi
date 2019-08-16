@@ -563,7 +563,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             expr_stmt = name.parent
 
             if expr_stmt.type == "expr_stmt" and expr_stmt.children[1].type == "annassign":
-                correct_scope = parser_utils.get_parent_scope(name) == value.tree_node
+                correct_scope = parser_utils.get_parent_scope(name) == context.tree_node
                 if correct_scope:
                     value_set |= annotation.infer_annotation(
                         context, expr_stmt.children[1].children[1]
@@ -576,7 +576,8 @@ def tree_name_to_values(inference_state, context, tree_name):
     if node is None:
         node = tree_name.parent
         if node.type == 'global_stmt':
-            value = inference_state.create_context(value, tree_name)
+            c = context.create_context(tree_name)
+            raise NotImplementedError
             finder = NameFinder(inference_state, value, value, tree_name.value)
             filters = finder.get_global_filters()
             # For global_stmt lookups, we only need the first possible scope,
@@ -584,8 +585,8 @@ def tree_name_to_values(inference_state, context, tree_name):
             filters = [next(filters)]
             return finder.find(filters, attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
-            value = inference_state.create_value(value, tree_name)
-            return infer_atom(value, tree_name)
+            c = inference_state.create_context(context, tree_name)
+            return infer_atom(c, tree_name)
 
     typ = node.type
     if typ == 'for_stmt':

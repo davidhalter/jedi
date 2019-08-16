@@ -669,8 +669,8 @@ def _check_array_additions(value, sequence):
     from jedi.inference import arguments
 
     debug.dbg('Dynamic array search for %s' % sequence, color='MAGENTA')
-    module_value = value.get_root_value()
-    if not settings.dynamic_array_additions or isinstance(module_value, compiled.CompiledObject):
+    module_context = value.get_root_context()
+    if not settings.dynamic_array_additions or isinstance(module_context, compiled.CompiledObject):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
         return NO_VALUES
 
@@ -696,7 +696,7 @@ def _check_array_additions(value, sequence):
     added_types = set()
     for add_name in search_names:
         try:
-            possible_names = module_value.tree_node.get_used_names()[add_name]
+            possible_names = module_context.tree_node.get_used_names()[add_name]
         except KeyError:
             continue
         else:
@@ -717,19 +717,20 @@ def _check_array_additions(value, sequence):
                             or execution_trailer.children[1] == ')':
                         continue
 
-                random_value = value.create_value(name)
+                raise NotImplementedError
+                random_context = value.create_context(name)
 
                 with recursion.execution_allowed(value.inference_state, power) as allowed:
                     if allowed:
                         found = infer_call_of_leaf(
-                            random_value,
+                            random_context,
                             name,
                             cut_own_trailer=True
                         )
                         if sequence in found:
                             # The arrays match. Now add the results
                             added_types |= find_additions(
-                                random_value,
+                                random_context,
                                 execution_trailer.children[1],
                                 add_name
                             )

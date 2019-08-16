@@ -11,11 +11,11 @@ from jedi import settings
 from jedi import debug
 
 
-def _abs_path(module_value, path):
+def _abs_path(module_context, path):
     if os.path.isabs(path):
         return path
 
-    module_path = module_value.py__file__()
+    module_path = module_context.py__file__()
     if module_path is None:
         # In this case we have no idea where we actually are in the file
         # system.
@@ -26,7 +26,7 @@ def _abs_path(module_value, path):
     return os.path.abspath(os.path.join(base_dir, path))
 
 
-def _paths_from_assignment(module_value, expr_stmt):
+def _paths_from_assignment(module_context, expr_stmt):
     """
     Extracts the assigned strings from an assignment that looks as follows::
 
@@ -60,16 +60,16 @@ def _paths_from_assignment(module_value, expr_stmt):
         except AssertionError:
             continue
 
-        cn = ValueualizedNode(module_value.create_value(expr_stmt), expr_stmt)
+        cn = ValueualizedNode(module_context.create_context(expr_stmt), expr_stmt)
         for lazy_value in cn.infer().iterate(cn):
             for value in lazy_value.infer():
                 if is_string(value):
-                    abs_path = _abs_path(module_value, value.get_safe_value())
+                    abs_path = _abs_path(module_context, value.get_safe_value())
                     if abs_path is not None:
                         yield abs_path
 
 
-def _paths_from_list_modifications(module_value, trailer1, trailer2):
+def _paths_from_list_modifications(module_context, trailer1, trailer2):
     """ extract the path from either "sys.path.append" or "sys.path.insert" """
     # Guarantee that both are trailers, the first one a name and the second one
     # a function execution with at least one param.
@@ -85,15 +85,15 @@ def _paths_from_list_modifications(module_value, trailer1, trailer2):
     if name == 'insert' and len(arg.children) in (3, 4):  # Possible trailing comma.
         arg = arg.children[2]
 
-    for value in module_value.create_value(arg).infer_node(arg):
+    for value in module_context.create_context(arg).infer_node(arg):
         if is_string(value):
-            abs_path = _abs_path(module_value, value.get_safe_value())
+            abs_path = _abs_path(module_context, value.get_safe_value())
             if abs_path is not None:
                 yield abs_path
 
 
 @inference_state_method_cache(default=[])
-def check_sys_path_modifications(module_value):
+def check_sys_path_modifications(module_context):
     """
     Detect sys.path modifications within module.
     """
@@ -108,12 +108,12 @@ def check_sys_path_modifications(module_value):
                     if n.type == 'name' and n.value == 'path':
                         yield name, power
 
-    if module_value.tree_node is None:
+    if module_context.tree_node is None:
         return []
 
     added = []
     try:
-        possible_names = module_value.tree_node.get_used_names()['path']
+        possible_names = module_context.tree_node.get_used_names()['path']
     except KeyError:
         pass
     else:
@@ -122,11 +122,11 @@ def check_sys_path_modifications(module_value):
             if len(power.children) >= 4:
                 added.extend(
                     _paths_from_list_modifications(
-                        module_value, *power.children[2:4]
+                        module_context, *power.children[2:4]
                     )
                 )
             elif expr_stmt is not None and expr_stmt.type == 'expr_stmt':
-                added.extend(_paths_from_assignment(module_value, expr_stmt))
+                added.extend(_paths_from_assignment(module_context, expr_stmt))
     return added
 
 
@@ -157,7 +157,7 @@ def _get_paths_from_buildout_script(inference_state, buildout_script_path):
         inference_state, module_node, file_io,
         string_names=None,
         code_lines=get_cached_code_lines(inference_state.grammar, buildout_script_path),
-    )
+    ).as_context()
     for path in check_sys_path_modifications(module):
         yield path
 

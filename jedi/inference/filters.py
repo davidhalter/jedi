@@ -159,7 +159,7 @@ class FunctionExecutionFilter(ParserTreeFilter):
             if param:
                 yield self.param_name(self.value, name)
             else:
-                yield TreeNameDefinition(self.value, name)
+                yield TreeNameDefinition(self.context, name)
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):
@@ -362,7 +362,7 @@ def get_global_filters(inference_state, value, until_position, origin_scope):
     >>> scope = next(module_node.iter_funcdefs())
     >>> scope
     <Function: func@3-5>
-    >>> value = script._get_module().create_value(scope)
+    >>> value = script._get_module_context().create_context(scope)
     >>> filters = list(get_global_filters(value.inference_state, value, (4, 0), None))
 
     First we get the names from the function scope.

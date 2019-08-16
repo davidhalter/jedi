@@ -14,7 +14,7 @@ class AbstractLazyValue(object):
 
 
 class LazyKnownValue(AbstractLazyValue):
-    """data is a value."""
+    """data is a Value."""
     def infer(self):
         return ValueSet([self.data])
 
@@ -34,16 +34,16 @@ class LazyUnknownValue(AbstractLazyValue):
 
 
 class LazyTreeValue(AbstractLazyValue):
-    def __init__(self, value, node):
+    def __init__(self, context, node):
         super(LazyTreeValue, self).__init__(node)
-        self.value = value
+        self.context = context
         # We need to save the predefined names. It's an unfortunate side effect
         # that needs to be tracked otherwise results will be wrong.
-        self._predefined_names = dict(value.predefined_names)
+        self._predefined_names = dict(context.predefined_names)
 
     def infer(self):
-        with monkeypatch(self.value, 'predefined_names', self._predefined_names):
-            return self.value.infer_node(self.data)
+        with monkeypatch(self.context, 'predefined_names', self._predefined_names):
+            return self.context.infer_node(self.data)
 
 
 def get_merged_lazy_value(lazy_values):

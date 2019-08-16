@@ -50,7 +50,7 @@ def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callbac
     clinic_args = list(_parse_argument_clinic(string))
 
     def decorator(func):
-        def wrapper(value, *args, **kwargs):
+        def wrapper(context, *args, **kwargs):
             if keep_arguments_param:
                 arguments = kwargs['arguments']
             else:
@@ -59,14 +59,14 @@ def repack_with_argument_clinic(string, keep_arguments_param=False, keep_callbac
                 kwargs.pop('callback', None)
             try:
                 args += tuple(_iterate_argument_clinic(
-                    value.inference_state,
+                    context.inference_state,
                     arguments,
                     clinic_args
                 ))
             except ParamIssue:
                 return NO_VALUES
             else:
-                return func(value, *args, **kwargs)
+                return func(context, *args, **kwargs)
 
         return wrapper
     return decorator
@@ -152,7 +152,7 @@ class _AbstractArgumentsMixin(object):
 
 
 class AbstractArguments(_AbstractArgumentsMixin):
-    value = None
+    context = None
     argument_node = None
     trailer = None
 
@@ -198,12 +198,12 @@ def unpack_arglist(arglist):
 
 
 class TreeArguments(AbstractArguments):
-    def __init__(self, inference_state, value, argument_node, trailer=None):
+    def __init__(self, inference_state, context, argument_node, trailer=None):
         """
         :param argument_node: May be an argument_node or a list of nodes.
         """
         self.argument_node = argument_node
-        self.value = value
+        self.context = context
         self._inference_state = inference_state
         self.trailer = trailer  # Can be None, e.g. in a class definition.
 
@@ -216,8 +216,8 @@ class TreeArguments(AbstractArguments):
         named_args = []
         for star_count, el in unpack_arglist(self.argument_node):
             if star_count == 1:
-                arrays = self.value.infer_node(el)
-                iterators = [_iterate_star_args(self.value, a, el, funcdef)
+                arrays = self.context.infer_node(el)
+                iterators = [_iterate_star_args(self.context, a, el, funcdef)
                              for a in arrays]
                 for values in list(zip_longest(*iterators)):
                     # TODO zip_longest yields None, that means this would raise
@@ -226,15 +226,15 @@ class TreeArguments(AbstractArguments):
                         [v for v in values if v is not None]
                     )
             elif star_count == 2:
-                arrays = self.value.infer_node(el)
+                arrays = self.context.infer_node(el)
                 for dct in arrays:
-                    for key, values in _star_star_dict(self.value, dct, el, funcdef):
+                    for key, values in _star_star_dict(self.context, dct, el, funcdef):
                         yield key, values
             else:
                 if el.type == 'argument':
                     c = el.children
                     if len(c) == 3:  # Keyword argument.
-                        named_args.append((c[0].value, LazyTreeValue(self.value, c[2]),))
+                        named_args.append((c[0].value, LazyTreeValue(self.context, c[2]),))
                     else:  # Generator comprehension.
                         # Include the brackets with the parent.
                         sync_comp_for = el.children[1]
@@ -242,13 +242,13 @@ class TreeArguments(AbstractArguments):
                             sync_comp_for = sync_comp_for.children[1]
                         comp = iterable.GeneratorComprehension(
                             self._inference_state,
-                            defining_value=self.value,
+                            defining_context=self.context,
                             sync_comp_for_node=sync_comp_for,
                             entry_node=el.children[0],
                         )
                         yield None, LazyKnownValue(comp)
                 else:
-                    yield None, LazyTreeValue(self.value, el)
+                    yield None, LazyTreeValue(self.context, el)
 
         # Reordering arguments is necessary, because star args sometimes appear
         # after named argument, but in the actual order it's prepended.
@@ -269,7 +269,7 @@ class TreeArguments(AbstractArguments):
             if not star_count or not isinstance(name, tree.Name):
                 continue
 
-            yield TreeNameDefinition(self.value, name)
+            yield TreeNameDefinition(self.context, name)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
@@ -302,9 +302,9 @@ class TreeArguments(AbstractArguments):
                 break
 
         if arguments.argument_node is not None:
-            return [ValueualizedNode(arguments.value, arguments.argument_node)]
+            return [ValueualizedNode(arguments.context, arguments.argument_node)]
         if arguments.trailer is not None:
-            return [ValueualizedNode(arguments.value, arguments.trailer)]
+            return [ValueualizedNode(arguments.context, arguments.trailer)]
         return []
 
 
@@ -325,8 +325,8 @@ class TreeArgumentsWrapper(_AbstractArgumentsMixin):
         self._wrapped_arguments = arguments
 
     @property
-    def value(self):
-        return self._wrapped_arguments.value
+    def context(self):
+        return self._wrapped_arguments.context
 
     @property
     def argument_node(self):
@@ -346,13 +346,13 @@ class TreeArgumentsWrapper(_AbstractArgumentsMixin):
         return '<%s: %s>' % (self.__class__.__name__, self._wrapped_arguments)
 
 
-def _iterate_star_args(value, array, input_node, funcdef=None):
+def _iterate_star_args(context, array, input_node, funcdef=None):
     if not array.py__getattribute__('__iter__'):
         if funcdef is not None:
             # TODO this funcdef should not be needed.
             m = "TypeError: %s() argument after * must be a sequence, not %s" \
                 % (funcdef.name.value, array)
-            analysis.add(value, 'type-error-star', input_node, message=m)
+            analysis.add(context, 'type-error-star', input_node, message=m)
     try:
         iter_ = array.py__iter__
     except AttributeError:
@@ -362,7 +362,7 @@ def _iterate_star_args(value, array, input_node, funcdef=None):
             yield lazy_value
 
 
-def _star_star_dict(value, array, input_node, funcdef):
+def _star_star_dict(context, array, input_node, funcdef):
     from jedi.inference.value.instance import CompiledInstance
     if isinstance(array, CompiledInstance) and array.name.string_name == 'dict':
         # For now ignore this case. In the future add proper iterators and just
@@ -374,5 +374,5 @@ def _star_star_dict(value, array, input_node, funcdef):
         if funcdef is not None:
             m = "TypeError: %s argument after ** must be a mapping, not %s" \
                 % (funcdef.name.value, array)
-            analysis.add(value, 'type-error-star-star', input_node, message=m)
+            analysis.add(context, 'type-error-star-star', input_node, message=m)
         return {}

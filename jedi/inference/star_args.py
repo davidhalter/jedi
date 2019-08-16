@@ -35,13 +35,14 @@ def _iter_nodes_for_param(param_name):
                 # anyway
                 trailer = search_ancestor(argument, 'trailer')
                 if trailer is not None:  # Make sure we're in a function
-                    value = execution_value.create_value(trailer)
-                    if _goes_to_param_name(param_name, value, name):
-                        values = _to_callables(value, trailer)
+                    raise NotImplementedError
+                    context = execution_value.create_context(trailer)
+                    if _goes_to_param_name(param_name, context, name):
+                        values = _to_callables(context, trailer)
 
                         args = TreeArguments.create_cached(
                             execution_value.inference_state,
-                            value=value,
+                            context=context,
                             argument_node=trailer.children[1],
                             trailer=trailer,
                         )
@@ -51,11 +52,11 @@ def _iter_nodes_for_param(param_name):
                         assert False
 
 
-def _goes_to_param_name(param_name, value, potential_name):
+def _goes_to_param_name(param_name, context, potential_name):
     if potential_name.type != 'name':
         return False
     from jedi.inference.names import TreeNameDefinition
-    found = TreeNameDefinition(value, potential_name).goto()
+    found = TreeNameDefinition(context, potential_name).goto()
     return any(param_name.parent_context == p.parent_context
                and param_name.start_pos == p.start_pos
                for p in found)

@@ -89,27 +89,27 @@ def _cache_stub_file_map(version_info):
 
 def import_module_decorator(func):
     @wraps(func)
-    def wrapper(inference_state, import_names, parent_module_value, sys_path, prefer_stubs):
+    def wrapper(inference_state, import_names, parent_module_context, sys_path, prefer_stubs):
         try:
             python_value_set = inference_state.module_cache.get(import_names)
         except KeyError:
-            if parent_module_value is not None and parent_module_value.is_stub():
-                parent_module_values = parent_module_value.non_stub_value_set
+            if parent_module_context is not None and parent_module_context.is_stub():
+                parent_module_contexts = parent_module_context.non_stub_value_set
             else:
-                parent_module_values = [parent_module_value]
+                parent_module_contexts = [parent_module_context]
             if import_names == ('os', 'path'):
                 # This is a huge exception, we follow a nested import
                 # ``os.path``, because it's a very important one in Python
                 # that is being achieved by messing with ``sys.modules`` in
                 # ``os``.
-                python_parent = next(iter(parent_module_values))
+                python_parent = next(iter(parent_module_contexts))
                 if python_parent is None:
                     python_parent, = inference_state.import_module(('os',), prefer_stubs=False)
                 python_value_set = python_parent.py__getattribute__('path')
             else:
                 python_value_set = ValueSet.from_sets(
                     func(inference_state, import_names, p, sys_path,)
-                    for p in parent_module_values
+                    for p in parent_module_contexts
                 )
             inference_state.module_cache.add(import_names, python_value_set)
 
@@ -117,7 +117,7 @@ def import_module_decorator(func):
             return python_value_set
 
         stub = _try_to_load_stub_cached(inference_state, import_names, python_value_set,
-                                        parent_module_value, sys_path)
+                                        parent_module_context, sys_path)
         if stub is not None:
             return ValueSet([stub])
         return python_value_set
@@ -140,18 +140,18 @@ def _try_to_load_stub_cached(inference_state, import_names, *args, **kwargs):
 
 
 def _try_to_load_stub(inference_state, import_names, python_value_set,
-                      parent_module_value, sys_path):
+                      parent_module_context, sys_path):
     """
     Trying to load a stub for a set of import_names.
 
     This is modelled to work like "PEP 561 -- Distributing and Packaging Type
     Information", see https://www.python.org/dev/peps/pep-0561.
     """
-    if parent_module_value is None and len(import_names) > 1:
+    if parent_module_context is None and len(import_names) > 1:
         try:
-            parent_module_value = _try_to_load_stub_cached(
+            parent_module_context = _try_to_load_stub_cached(
                 inference_state, import_names[:-1], NO_VALUES,
-                parent_module_value=None, sys_path=sys_path)
+                parent_module_context=None, sys_path=sys_path)
         except KeyError:
             pass
 
@@ -195,15 +195,15 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
                     return m
 
     # 3. Try to load typeshed
-    m = _load_from_typeshed(inference_state, python_value_set, parent_module_value, import_names)
+    m = _load_from_typeshed(inference_state, python_value_set, parent_module_context, import_names)
     if m is not None:
         return m
 
     # 4. Try to load pyi file somewhere if python_value_set was not defined.
     if not python_value_set:
-        if parent_module_value is not None:
+        if parent_module_context is not None:
             try:
-                method = parent_module_value.py__path__
+                method = parent_module_context.py__path__
             except AttributeError:
                 check_path = []
             else:
@@ -229,18 +229,18 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
     return None
 
 
-def _load_from_typeshed(inference_state, python_value_set, parent_module_value, import_names):
+def _load_from_typeshed(inference_state, python_value_set, parent_module_context, import_names):
     import_name = import_names[-1]
     map_ = None
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(inference_state.grammar.version_info)
         import_name = _IMPORT_MAP.get(import_name, import_name)
-    elif isinstance(parent_module_value, StubModuleValue):
-        if not parent_module_value.is_package:
+    elif isinstance(parent_module_context, StubModuleValue):
+        if not parent_module_context.is_package:
             # Only if it's a package (= a folder) something can be
             # imported.
             return None
-        path = parent_module_value.py__path__()
+        path = parent_module_context.py__path__()
         map_ = _merge_create_stub_map(path)
 
     if map_ is not None:
