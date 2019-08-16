@@ -11,6 +11,7 @@ from jedi.inference.names import SubModuleName
 from jedi.inference.helpers import values_from_qualified_names
 from jedi.inference.compiled import create_simple_object
 from jedi.inference.base_value import ValueSet
+from jedi.inference.context import ModuleContext
 
 
 class _ModuleAttributeName(AbstractNameDefinition):
@@ -274,6 +275,9 @@ class ModuleValue(ModuleMixin, TreeValue):
             return self._py__path__
         else:
             raise AttributeError('Only packages have __path__ attributes.')
+
+    def as_context(self):
+        return ModuleContext(self)
 
     def __repr__(self):
         return "<%s: %s@%s-%s is_stub=%s>" % (

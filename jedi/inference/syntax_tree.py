@@ -157,7 +157,7 @@ def infer_trailer(context, atom_values, trailer):
     if trailer_op == '[':
         trailer_op, node, _ = trailer.children
         return atom_values.get_item(
-            infer_subscript_list(context.inference_state, context, node),
+            _infer_subscript_list(context, node),
             ValueualizedNode(context, trailer)
         )
     else:
@@ -705,7 +705,7 @@ def check_tuple_assignments(valueualized_name, value_set):
     return value_set
 
 
-def infer_subscript_list(context, index):
+def _infer_subscript_list(context, index):
     """
     Handles slices in subscript nodes.
     """

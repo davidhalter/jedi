@@ -227,7 +227,7 @@ class IntegrationTestCase(object):
                 element = parser.get_root_node()
                 module_context = script._get_module_context()
                 user_context = get_user_context(module_context, (self.line_nr, 0))
-                if user_context.api_type == 'function':
+                if user_context._value.api_type == 'function':
                     user_context = user_context.get_function_execution()
                 element.parent = user_context.tree_node
                 results = convert_values(

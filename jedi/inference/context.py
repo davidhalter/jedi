@@ -28,18 +28,17 @@ class AbstractContext(object):
         return self._value.py__getattribute__
 
     @property
-    def tree_name(self):
+    def tree_node(self):
         return self._value.tree_node
 
     def infer_node(self, node):
-        raise NotImplementedError
+        return self.inference_state.infer_element(self, node)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._value)
 
 
 class FunctionContext(AbstractContext):
-    @abstractmethod
     def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
             self.inference_state,
@@ -56,3 +55,15 @@ class ModuleContext(AbstractContext):
     @property
     def py__package__(self):
         return self._value.py__package__
+
+
+class ClassContext(AbstractContext):
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield self._value.get_global_filter(until_position, origin_scope)
+
+    def get_global_filter(self, until_position=None, origin_scope=None):
+        return ParserTreeFilter(
+            value=self,
+            until_position=until_position,
+            origin_scope=origin_scope
+        )

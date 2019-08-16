@@ -75,7 +75,7 @@ class BaseDefinition(object):
         # This can take a while to complete, because in the worst case of
         # imports (consider `import a` completions), we need to load all
         # modules starting with a first.
-        return self._name.get_root_value()
+        return self._name.get_root_context()
 
     @property
     def module_path(self):
@@ -289,7 +289,7 @@ class BaseDefinition(object):
         if not self._name.is_value_name:
             return False
 
-        return self._name.get_root_value().is_stub()
+        return self._name.get_root_context().is_stub()
 
     def goto_assignments(self, **kwargs):  # Python 2...
         with debug.increase_indent_cm('goto for %s' % self._name):
@@ -389,7 +389,7 @@ class BaseDefinition(object):
         if not self._name.is_value_name or self.in_builtin_module():
             return ''
 
-        lines = self._name.get_root_value().code_lines
+        lines = self._name.get_root_context().code_lines
 
         index = self._name.start_pos[0] - 1
         start_index = max(index - before, 0)
