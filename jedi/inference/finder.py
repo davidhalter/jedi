@@ -56,7 +56,7 @@ class NameFinder(object):
         names = self.filter_name(filters)
         if self._found_predefined_types is not None and names:
             check = flow_analysis.reachability_check(
-                value=self._value,
+                context=self._value,
                 value_scope=self._value.tree_node,
                 node=self._name,
             )

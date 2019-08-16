@@ -258,7 +258,7 @@ class InferenceState(object):
                 cn = ValueualizedNode(value, def_.children[3])
                 for_types = iterate_values(container_types, cn)
                 c_node = ValueualizedName(value, name)
-                return check_tuple_assignments(self, c_node, for_types)
+                return check_tuple_assignments(c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(value, name)
         else:

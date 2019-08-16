@@ -63,9 +63,9 @@ def apply_py__get__(value, instance, class_value):
 
 
 class ClassName(TreeNameDefinition):
-    def __init__(self, parent_context, tree_name, name_value, apply_decorators):
+    def __init__(self, parent_context, tree_name, name_context, apply_decorators):
         super(ClassName, self).__init__(parent_context, tree_name)
-        self._name_value = name_value
+        self._name_context = name_context
         self._apply_decorators = apply_decorators
 
     @iterator_to_value_set
@@ -73,7 +73,7 @@ class ClassName(TreeNameDefinition):
         # We're using a different value to infer, so we cannot call super().
         from jedi.inference.syntax_tree import tree_name_to_values
         inferred = tree_name_to_values(
-            self.parent_context.inference_state, self._name_value, self.tree_name)
+            self.parent_context.inference_state, self._name_context, self.tree_name)
 
         for result_value in inferred:
             if self._apply_decorators:
