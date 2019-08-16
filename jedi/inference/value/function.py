@@ -2,7 +2,7 @@ from parso.python import tree
 
 from jedi._compatibility import use_metaclass
 from jedi import debug
-from jedi.inference.cache import infer_state_method_cache, CachedMetaClass
+from jedi.inference.cache import inference_state_method_cache, CachedMetaClass
 from jedi.inference import compiled
 from jedi.inference import recursion
 from jedi.inference import docstrings
@@ -97,7 +97,7 @@ class FunctionMixin(object):
         if arguments is None:
             arguments = AnonymousArguments()
 
-        return FunctionExecutionValue(self.infer_state, self.parent_context, self, arguments)
+        return FunctionExecutionValue(self.inference_state, self.parent_context, self, arguments)
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.get_signature_functions()]
@@ -112,14 +112,14 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         def create(tree_node):
             if value.is_class():
                 return MethodValue(
-                    value.infer_state,
+                    value.inference_state,
                     value,
                     parent_context=parent_context,
                     tree_node=tree_node
                 )
             else:
                 return cls(
-                    value.infer_state,
+                    value.inference_state,
                     parent_context=parent_context,
                     tree_node=tree_node
                 )
@@ -140,7 +140,7 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         return function
 
     def py__class__(self):
-        c, = values_from_qualified_names(self.infer_state, u'types', u'FunctionType')
+        c, = values_from_qualified_names(self.inference_state, u'types', u'FunctionType')
         return c
 
     def get_default_param_value(self):
@@ -151,8 +151,8 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
 
 
 class MethodValue(FunctionValue):
-    def __init__(self, infer_state, class_value, *args, **kwargs):
-        super(MethodValue, self).__init__(infer_state, *args, **kwargs)
+    def __init__(self, inference_state, class_value, *args, **kwargs):
+        super(MethodValue, self).__init__(inference_state, *args, **kwargs)
         self.class_value = class_value
 
     def get_default_param_value(self):
@@ -170,16 +170,16 @@ class MethodValue(FunctionValue):
 class FunctionExecutionValue(TreeValue):
     function_execution_filter = FunctionExecutionFilter
 
-    def __init__(self, infer_state, parent_context, function_value, var_args):
+    def __init__(self, inference_state, parent_context, function_value, var_args):
         super(FunctionExecutionValue, self).__init__(
-            infer_state,
+            inference_state,
             parent_context,
             function_value.tree_node,
         )
         self.function_value = function_value
         self.var_args = var_args
 
-    @infer_state_method_cache(default=NO_VALUES)
+    @inference_state_method_cache(default=NO_VALUES)
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
         funcdef = self.tree_node
@@ -188,7 +188,7 @@ class FunctionExecutionValue(TreeValue):
 
         if check_yields:
             value_set = NO_VALUES
-            returns = get_yield_exprs(self.infer_state, funcdef)
+            returns = get_yield_exprs(self.inference_state, funcdef)
         else:
             returns = funcdef.iter_return_stmts()
             from jedi.inference.gradual.annotation import infer_return_types
@@ -213,7 +213,7 @@ class FunctionExecutionValue(TreeValue):
                     try:
                         children = r.children
                     except AttributeError:
-                        ctx = compiled.builtin_from_name(self.infer_state, u'None')
+                        ctx = compiled.builtin_from_name(self.inference_state, u'None')
                         value_set |= ValueSet([ctx])
                     else:
                         value_set |= self.infer_node(children[1])
@@ -225,7 +225,7 @@ class FunctionExecutionValue(TreeValue):
     def _get_yield_lazy_value(self, yield_expr):
         if yield_expr.type == 'keyword':
             # `yield` just yields None.
-            ctx = compiled.builtin_from_name(self.infer_state, u'None')
+            ctx = compiled.builtin_from_name(self.inference_state, u'None')
             yield LazyKnownValue(ctx)
             return
 
@@ -242,7 +242,7 @@ class FunctionExecutionValue(TreeValue):
         # TODO: if is_async, wrap yield statements in Awaitable/async_generator_asend
         for_parents = [(y, tree.search_ancestor(y, 'for_stmt', 'funcdef',
                                                 'while_stmt', 'if_stmt'))
-                       for y in get_yield_exprs(self.infer_state, self.tree_node)]
+                       for y in get_yield_exprs(self.inference_state, self.tree_node)]
 
         # Calculate if the yields are placed within the same for loop.
         yields_order = []
@@ -297,7 +297,7 @@ class FunctionExecutionValue(TreeValue):
                                              until_position=until_position,
                                              origin_scope=origin_scope)
 
-    @infer_state_method_cache()
+    @inference_state_method_cache()
     def get_executed_params_and_issues(self):
         return self.var_args.get_executed_params_and_issues(self)
 
@@ -322,16 +322,16 @@ class FunctionExecutionValue(TreeValue):
         """
         Created to be used by inheritance.
         """
-        infer_state = self.infer_state
+        inference_state = self.inference_state
         is_coroutine = self.tree_node.parent.type in ('async_stmt', 'async_funcdef')
-        is_generator = bool(get_yield_exprs(infer_state, self.tree_node))
+        is_generator = bool(get_yield_exprs(inference_state, self.tree_node))
         from jedi.inference.gradual.typing import GenericClass
 
         if is_coroutine:
             if is_generator:
-                if infer_state.environment.version_info < (3, 6):
+                if inference_state.environment.version_info < (3, 6):
                     return NO_VALUES
-                async_generator_classes = infer_state.typing_module \
+                async_generator_classes = inference_state.typing_module \
                     .py__getattribute__('AsyncGenerator')
 
                 yield_values = self.merge_yield_values(is_async=True)
@@ -343,9 +343,9 @@ class FunctionExecutionValue(TreeValue):
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
-                if infer_state.environment.version_info < (3, 5):
+                if inference_state.environment.version_info < (3, 5):
                     return NO_VALUES
-                async_classes = infer_state.typing_module.py__getattribute__('Coroutine')
+                async_classes = inference_state.typing_module.py__getattribute__('Coroutine')
                 return_values = self.get_return_values()
                 # Only the first generic is relevant.
                 generics = (return_values.py__class__(), NO_VALUES, NO_VALUES)
@@ -354,7 +354,7 @@ class FunctionExecutionValue(TreeValue):
                 ).execute_annotation()
         else:
             if is_generator:
-                return ValueSet([iterable.Generator(infer_state, self)])
+                return ValueSet([iterable.Generator(inference_state, self)])
             else:
                 return self.get_return_values()
 
@@ -379,7 +379,7 @@ class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
         if matched:
             return value_set
 
-        if self.infer_state.is_analysis:
+        if self.inference_state.is_analysis:
             # In this case we want precision.
             return NO_VALUES
         return ValueSet.from_sets(fe.infer() for fe in function_executions)
@@ -411,7 +411,7 @@ def _find_overload_functions(value, tree_node):
 
     while True:
         filter = ParserTreeFilter(
-            value.infer_state,
+            value.inference_state,
             value,
             until_position=tree_node.start_pos
         )

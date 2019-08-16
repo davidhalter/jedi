@@ -4,8 +4,8 @@ from jedi.inference.compiled.value import CompiledObject, CompiledName, \
 from jedi.inference.base_value import ValueWrapper, LazyValueWrapper
 
 
-def builtin_from_name(infer_state, string):
-    typing_builtins_module = infer_state.builtins_module
+def builtin_from_name(inference_state, string):
+    typing_builtins_module = inference_state.builtins_module
     if string in ('None', 'True', 'False'):
         builtins, = typing_builtins_module.non_stub_value_set
         filter_ = next(builtins.get_filters())
@@ -18,7 +18,7 @@ def builtin_from_name(infer_state, string):
 
 class CompiledValue(LazyValueWrapper):
     def __init__(self, compiled_obj):
-        self.infer_state = compiled_obj.infer_state
+        self.inference_state = compiled_obj.inference_state
         self._compiled_obj = compiled_obj
 
     def __getattribute__(self, name):
@@ -29,36 +29,36 @@ class CompiledValue(LazyValueWrapper):
 
     def _get_wrapped_value(self):
         instance, = builtin_from_name(
-            self.infer_state, self._compiled_obj.name.string_name).execute_with_values()
+            self.inference_state, self._compiled_obj.name.string_name).execute_with_values()
         return instance
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._compiled_obj)
 
 
-def create_simple_object(infer_state, obj):
+def create_simple_object(inference_state, obj):
     """
     Only allows creations of objects that are easily picklable across Python
     versions.
     """
     assert type(obj) in (int, float, str, bytes, unicode, slice, complex, bool), obj
     compiled_obj = create_from_access_path(
-        infer_state,
-        infer_state.compiled_subprocess.create_simple_object(obj)
+        inference_state,
+        inference_state.compiled_subprocess.create_simple_object(obj)
     )
     return CompiledValue(compiled_obj)
 
 
-def get_string_value_set(infer_state):
-    return builtin_from_name(infer_state, u'str').execute_with_values()
+def get_string_value_set(inference_state):
+    return builtin_from_name(inference_state, u'str').execute_with_values()
 
 
-def load_module(infer_state, dotted_name, **kwargs):
+def load_module(inference_state, dotted_name, **kwargs):
     # Temporary, some tensorflow builtins cannot be loaded, so it's tried again
     # and again and it's really slow.
     if dotted_name.startswith('tensorflow.'):
         return None
-    access_path = infer_state.compiled_subprocess.load_module(dotted_name=dotted_name, **kwargs)
+    access_path = inference_state.compiled_subprocess.load_module(dotted_name=dotted_name, **kwargs)
     if access_path is None:
         return None
-    return create_from_access_path(infer_state, access_path)
+    return create_from_access_path(inference_state, access_path)

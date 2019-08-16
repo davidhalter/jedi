@@ -7,7 +7,7 @@ This file deals with all the typing.py cases.
 """
 from jedi._compatibility import unicode, force_unicode
 from jedi import debug
-from jedi.inference.cache import infer_state_method_cache
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
     iterator_to_value_set, ValueWrapper, LazyValueWrapper
@@ -45,8 +45,8 @@ class TypingName(AbstractTreeName):
 
 
 class _BaseTypingValue(Value):
-    def __init__(self, infer_state, parent_context, tree_name):
-        super(_BaseTypingValue, self).__init__(infer_state, parent_context)
+    def __init__(self, inference_state, parent_context, tree_name):
+        super(_BaseTypingValue, self).__init__(inference_state, parent_context)
         self._tree_name = tree_name
 
     @property
@@ -71,7 +71,7 @@ class _BaseTypingValue(Value):
         # TODO this is obviously not correct, but at least gives us a class if
         # we have none. Some of these objects don't really have a base class in
         # typeshed.
-        return builtin_from_name(self.infer_state, u'object')
+        return builtin_from_name(self.inference_state, u'object')
 
     @property
     def name(self):
@@ -87,39 +87,39 @@ class TypingModuleName(NameWrapper):
 
     def _remap(self):
         name = self.string_name
-        infer_state = self.parent_context.infer_state
+        inference_state = self.parent_context.inference_state
         try:
             actual = _TYPE_ALIAS_TYPES[name]
         except KeyError:
             pass
         else:
-            yield TypeAlias.create_cached(infer_state, self.parent_context, self.tree_name, actual)
+            yield TypeAlias.create_cached(inference_state, self.parent_context, self.tree_name, actual)
             return
 
         if name in _PROXY_CLASS_TYPES:
-            yield TypingClassValue.create_cached(infer_state, self.parent_context, self.tree_name)
+            yield TypingClassValue.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name in _PROXY_TYPES:
-            yield TypingValue.create_cached(infer_state, self.parent_context, self.tree_name)
+            yield TypingValue.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'runtime':
             # We don't want anything here, not sure what this function is
             # supposed to do, since it just appears in the stubs and shouldn't
             # have any effects there (because it's never executed).
             return
         elif name == 'TypeVar':
-            yield TypeVarClass.create_cached(infer_state, self.parent_context, self.tree_name)
+            yield TypeVarClass.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'Any':
-            yield Any.create_cached(infer_state, self.parent_context, self.tree_name)
+            yield Any.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
-            yield builtin_from_name(infer_state, u'True')
+            yield builtin_from_name(inference_state, u'True')
         elif name == 'overload':
-            yield OverloadFunction.create_cached(infer_state, self.parent_context, self.tree_name)
+            yield OverloadFunction.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'NewType':
-            yield NewTypeFunction.create_cached(infer_state, self.parent_context, self.tree_name)
+            yield NewTypeFunction.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'cast':
             # TODO implement cast
-            yield CastFunction.create_cached(infer_state, self.parent_context, self.tree_name)
+            yield CastFunction.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
@@ -139,8 +139,8 @@ class TypingModuleFilterWrapper(FilterWrapper):
 
 
 class _WithIndexBase(_BaseTypingValue):
-    def __init__(self, infer_state, parent_context, name, index_value, value_of_index):
-        super(_WithIndexBase, self).__init__(infer_state, parent_context, name)
+    def __init__(self, inference_state, parent_context, name, index_value, value_of_index):
+        super(_WithIndexBase, self).__init__(inference_state, parent_context, name)
         self._index_value = index_value
         self._value_of_index = value_of_index
 
@@ -164,7 +164,7 @@ class TypingValueWithIndex(_WithIndexBase):
             # Optional is basically just saying it's either None or the actual
             # type.
             return self.gather_annotation_classes().execute_annotation() \
-                | ValueSet([builtin_from_name(self.infer_state, u'None')])
+                | ValueSet([builtin_from_name(self.inference_state, u'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_value
             return ValueSet([self._index_value])
@@ -174,7 +174,7 @@ class TypingValueWithIndex(_WithIndexBase):
 
         cls = globals()[string_name]
         return ValueSet([cls(
-            self.infer_state,
+            self.inference_state,
             self.parent_context,
             self._tree_name,
             self._index_value,
@@ -194,7 +194,7 @@ class TypingValue(_BaseTypingValue):
     def py__getitem__(self, index_value_set, valueualized_node):
         return ValueSet(
             self.index_class.create_cached(
-                self.infer_state,
+                self.inference_state,
                 self.parent_context,
                 self._tree_name,
                 index_value,
@@ -206,7 +206,7 @@ class TypingValue(_BaseTypingValue):
 class _TypingClassMixin(object):
     def py__bases__(self):
         return [LazyKnownValues(
-            self.infer_state.builtins_module.py__getattribute__('object')
+            self.inference_state.builtins_module.py__getattribute__('object')
         )]
 
     def get_metaclasses(self):
@@ -246,7 +246,7 @@ def _iter_over_arguments(maybe_tuple_value, defining_value):
 
 class TypeAlias(LazyValueWrapper):
     def __init__(self, parent_context, origin_tree_name, actual):
-        self.infer_state = parent_context.infer_state
+        self.inference_state = parent_context.inference_state
         self.parent_context = parent_context
         self._origin_tree_name = origin_tree_name
         self._actual = actual  # e.g. builtins.list
@@ -263,13 +263,13 @@ class TypeAlias(LazyValueWrapper):
 
     def _get_wrapped_value(self):
         module_name, class_name = self._actual.split('.')
-        if self.infer_state.environment.version_info.major == 2 and module_name == 'builtins':
+        if self.inference_state.environment.version_info.major == 2 and module_name == 'builtins':
             module_name = '__builtin__'
 
-        # TODO use infer_state.import_module?
+        # TODO use inference_state.import_module?
         from jedi.inference.imports import Importer
         module, = Importer(
-            self.infer_state, [module_name], self.infer_state.builtins_module
+            self.inference_state, [module_name], self.inference_state.builtins_module
         ).follow()
         classes = module.py__getattribute__(class_name)
         # There should only be one, because it's code that we control.
@@ -358,7 +358,7 @@ class TypeVarClass(_BaseTypingValue):
             return NO_VALUES
 
         return ValueSet([TypeVar.create_cached(
-            self.infer_state,
+            self.inference_state,
             self.parent_context,
             self._tree_name,
             var_name,
@@ -382,7 +382,7 @@ class TypeVarClass(_BaseTypingValue):
             return None
         else:
             safe_value = method(default=None)
-            if self.infer_state.environment.version_info.major == 2:
+            if self.inference_state.environment.version_info.major == 2:
                 if isinstance(safe_value, bytes):
                     return force_unicode(safe_value)
             if isinstance(safe_value, (str, unicode)):
@@ -391,8 +391,8 @@ class TypeVarClass(_BaseTypingValue):
 
 
 class TypeVar(_BaseTypingValue):
-    def __init__(self, infer_state, parent_context, tree_name, var_name, unpacked_args):
-        super(TypeVar, self).__init__(infer_state, parent_context, tree_name)
+    def __init__(self, inference_state, parent_context, tree_name, var_name, unpacked_args):
+        super(TypeVar, self).__init__(inference_state, parent_context, tree_name)
         self._var_name = var_name
 
         self._constraints_lazy_values = []
@@ -469,7 +469,7 @@ class NewTypeFunction(_BaseTypingValue):
             return NO_VALUES
         return ValueSet(
             NewType(
-                self.infer_state,
+                self.inference_state,
                 valueualized_node.value,
                 valueualized_node.node,
                 second_arg.infer(),
@@ -477,8 +477,8 @@ class NewTypeFunction(_BaseTypingValue):
 
 
 class NewType(Value):
-    def __init__(self, infer_state, parent_context, tree_node, type_value_set):
-        super(NewType, self).__init__(infer_state, parent_context)
+    def __init__(self, inference_state, parent_context, tree_node, type_value_set):
+        super(NewType, self).__init__(inference_state, parent_context)
         self._type_value_set = type_value_set
         self.tree_node = tree_node
 
@@ -643,7 +643,7 @@ class LazyGenericClass(AbstractAnnotatedClass):
         self._index_value = index_value
         self._value_of_index = value_of_index
 
-    @infer_state_method_cache()
+    @inference_state_method_cache()
     def get_generics(self):
         return list(_iter_over_arguments(self._index_value, self._value_of_index))
 
@@ -668,7 +668,7 @@ class LazyAnnotatedBaseClass(object):
             if isinstance(base, AbstractAnnotatedClass):
                 # Here we have to recalculate the given types.
                 yield GenericClass.create_cached(
-                    base.infer_state,
+                    base.inference_state,
                     base._wrapped_value,
                     tuple(self._remap_type_vars(base)),
                 )
@@ -703,5 +703,5 @@ class InstanceWrapper(ValueWrapper):
                 except IndexError:
                     pass
             elif cls.py__name__() == 'Iterator':
-                return ValueSet([builtin_from_name(self.infer_state, u'None')])
+                return ValueSet([builtin_from_name(self.inference_state, u'None')])
         return self._wrapped_value.py__stop_iteration_returns()

@@ -7,7 +7,7 @@ from jedi.inference.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
 
 
-def file_name_completions(infer_state, module_value, start_leaf, string,
+def file_name_completions(inference_state, module_value, start_leaf, string,
                           like_name, call_signatures_callback, code_lines, position):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
@@ -30,7 +30,7 @@ def file_name_completions(infer_state, module_value, start_leaf, string,
             is_in_os_path_join = False
         else:
             string = to_be_added + string
-    base_path = os.path.join(infer_state.project._path, string)
+    base_path = os.path.join(inference_state.project._path, string)
     try:
         listed = os.listdir(base_path)
     except FileNotFoundError:
@@ -53,8 +53,8 @@ def file_name_completions(infer_state, module_value, start_leaf, string,
                 name += os.path.sep
 
             yield classes.Completion(
-                infer_state,
-                FileName(infer_state, name[len(must_start_with) - like_name_length:]),
+                inference_state,
+                FileName(inference_state, name[len(must_start_with) - like_name_length:]),
                 stack=None,
                 like_name_length=like_name_length
             )

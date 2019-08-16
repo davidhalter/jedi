@@ -1,6 +1,6 @@
 class BaseValue(object):
-    def __init__(self, infer_state, parent_context=None):
-        self.infer_state = infer_state
+    def __init__(self, inference_state, parent_context=None):
+        self.inference_state = inference_state
         self.parent_context = parent_context
 
     def get_root_value(self):

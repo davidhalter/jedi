@@ -1,4 +1,4 @@
-from jedi.inference.cache import infer_state_method_cache
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.filters import DictFilter
 from jedi.inference.names import ValueNameMixin, AbstractNameDefinition
 from jedi.inference.base_value import Value
@@ -25,9 +25,9 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, infer_state, fullname, paths):
-        super(ImplicitNamespaceValue, self).__init__(infer_state, parent_context=None)
-        self.infer_state = infer_state
+    def __init__(self, inference_state, fullname, paths):
+        super(ImplicitNamespaceValue, self).__init__(inference_state, parent_context=None)
+        self.inference_state = inference_state
         self._fullname = fullname
         self._paths = paths
 
@@ -35,7 +35,7 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
         yield DictFilter(self.sub_modules_dict())
 
     @property
-    @infer_state_method_cache()
+    @inference_state_method_cache()
     def name(self):
         string_name = self.py__package__()[-1]
         return ImplicitNSName(self, string_name)

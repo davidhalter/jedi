@@ -40,7 +40,7 @@ def _iter_nodes_for_param(param_name):
                         values = _to_callables(value, trailer)
 
                         args = TreeArguments.create_cached(
-                            execution_value.infer_state,
+                            execution_value.inference_state,
                             value=value,
                             argument_node=trailer.children[1],
                             trailer=trailer,

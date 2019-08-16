@@ -56,12 +56,12 @@ class RecursionDetector(object):
 
 
 @contextmanager
-def execution_allowed(infer_state, node):
+def execution_allowed(inference_state, node):
     """
     A decorator to detect recursions in statements. In a recursion a statement
     at the same place, in the same module may not be executed two times.
     """
-    pushed_nodes = infer_state.recursion_detector.pushed_nodes
+    pushed_nodes = inference_state.recursion_detector.pushed_nodes
 
     if node in pushed_nodes:
         debug.warning('catched stmt recursion: %s @%s', node,
@@ -78,7 +78,7 @@ def execution_allowed(infer_state, node):
 def execution_recursion_decorator(default=NO_VALUES):
     def decorator(func):
         def wrapper(self, **kwargs):
-            detector = self.infer_state.execution_recursion_detector
+            detector = self.inference_state.execution_recursion_detector
             limit_reached = detector.push_execution(self)
             try:
                 if limit_reached:
@@ -96,8 +96,8 @@ class ExecutionRecursionDetector(object):
     """
     Catches recursions of executions.
     """
-    def __init__(self, infer_state):
-        self._infer_state = infer_state
+    def __init__(self, inference_state):
+        self._inference_state = inference_state
 
         self._recursion_level = 0
         self._parent_execution_funcs = []
@@ -117,7 +117,7 @@ class ExecutionRecursionDetector(object):
 
         module = execution.get_root_value()
 
-        if module == self._infer_state.builtins_module:
+        if module == self._inference_state.builtins_module:
             # We have control over builtins so we know they are not recursing
             # like crazy. Therefore we just let them execute always, because
             # they usually just help a lot with getting good results.

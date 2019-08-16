@@ -71,9 +71,9 @@ def _cleanup_process(process, thread):
 
 
 class _InferenceStateProcess(object):
-    def __init__(self, infer_state):
-        self._infer_state_weakref = weakref.ref(infer_state)
-        self._infer_state_id = id(infer_state)
+    def __init__(self, inference_state):
+        self._inference_state_weakref = weakref.ref(inference_state)
+        self._inference_state_id = id(inference_state)
         self._handles = {}
 
     def get_or_create_access_handle(self, obj):
@@ -81,7 +81,7 @@ class _InferenceStateProcess(object):
         try:
             return self.get_access_handle(id_)
         except KeyError:
-            access = DirectObjectAccess(self._infer_state_weakref(), obj)
+            access = DirectObjectAccess(self._inference_state_weakref(), obj)
             handle = AccessHandle(self, access, id_)
             self.set_access_handle(handle)
             return handle
@@ -100,12 +100,12 @@ class InferenceStateSameProcess(_InferenceStateProcess):
     This is necessary for the Interpreter process.
     """
     def __getattr__(self, name):
-        return partial(_get_function(name), self._infer_state_weakref())
+        return partial(_get_function(name), self._inference_state_weakref())
 
 
 class InferenceStateSubprocess(_InferenceStateProcess):
-    def __init__(self, infer_state, compiled_subprocess):
-        super(InferenceStateSubprocess, self).__init__(infer_state)
+    def __init__(self, inference_state, compiled_subprocess):
+        super(InferenceStateSubprocess, self).__init__(inference_state)
         self._used = False
         self._compiled_subprocess = compiled_subprocess
 
@@ -116,7 +116,7 @@ class InferenceStateSubprocess(_InferenceStateProcess):
             self._used = True
 
             result = self._compiled_subprocess.run(
-                self._infer_state_weakref(),
+                self._inference_state_weakref(),
                 func,
                 args=args,
                 kwargs=kwargs,
@@ -148,7 +148,7 @@ class InferenceStateSubprocess(_InferenceStateProcess):
 
     def __del__(self):
         if self._used and not self._compiled_subprocess.is_crashed:
-            self._compiled_subprocess.delete_infer_state(self._infer_state_id)
+            self._compiled_subprocess.delete_inference_state(self._inference_state_id)
 
 
 class CompiledSubprocess(object):
@@ -158,7 +158,7 @@ class CompiledSubprocess(object):
 
     def __init__(self, executable):
         self._executable = executable
-        self._infer_state_deletion_queue = queue.deque()
+        self._inference_state_deletion_queue = queue.deque()
         self._cleanup_callable = lambda: None
 
     def __repr__(self):
@@ -205,18 +205,18 @@ class CompiledSubprocess(object):
                                                   t)
         return process
 
-    def run(self, infer_state, function, args=(), kwargs={}):
-        # Delete old infer_states.
+    def run(self, inference_state, function, args=(), kwargs={}):
+        # Delete old inference_states.
         while True:
             try:
-                infer_state_id = self._infer_state_deletion_queue.pop()
+                inference_state_id = self._inference_state_deletion_queue.pop()
             except IndexError:
                 break
             else:
-                self._send(infer_state_id, None)
+                self._send(inference_state_id, None)
 
         assert callable(function)
-        return self._send(id(infer_state), function, args, kwargs)
+        return self._send(id(inference_state), function, args, kwargs)
 
     def get_sys_path(self):
         return self._send(None, functions.get_sys_path, (), {})
@@ -225,7 +225,7 @@ class CompiledSubprocess(object):
         self.is_crashed = True
         self._cleanup_callable()
 
-    def _send(self, infer_state_id, function, args=(), kwargs={}):
+    def _send(self, inference_state_id, function, args=(), kwargs={}):
         if self.is_crashed:
             raise InternalError("The subprocess %s has crashed." % self._executable)
 
@@ -233,7 +233,7 @@ class CompiledSubprocess(object):
             # Python 2 compatibility
             kwargs = {force_unicode(key): value for key, value in kwargs.items()}
 
-        data = infer_state_id, function, args, kwargs
+        data = inference_state_id, function, args, kwargs
         try:
             pickle_dump(data, self._get_process().stdin, self._pickle_protocol)
         except (socket.error, IOError) as e:
@@ -272,59 +272,59 @@ class CompiledSubprocess(object):
             raise result
         return result
 
-    def delete_infer_state(self, infer_state_id):
+    def delete_inference_state(self, inference_state_id):
         """
-        Currently we are not deleting infer_state instantly. They only get
+        Currently we are not deleting inference_state instantly. They only get
         deleted once the subprocess is used again. It would probably a better
         solution to move all of this into a thread. However, the memory usage
-        of a single infer_state shouldn't be that high.
+        of a single inference_state shouldn't be that high.
         """
-        # With an argument - the infer_state gets deleted.
-        self._infer_state_deletion_queue.append(infer_state_id)
+        # With an argument - the inference_state gets deleted.
+        self._inference_state_deletion_queue.append(inference_state_id)
 
 
 class Listener(object):
     def __init__(self, pickle_protocol):
-        self._infer_states = {}
+        self._inference_states = {}
         # TODO refactor so we don't need to process anymore just handle
         # controlling.
         self._process = _InferenceStateProcess(Listener)
         self._pickle_protocol = pickle_protocol
 
-    def _get_infer_state(self, function, infer_state_id):
+    def _get_inference_state(self, function, inference_state_id):
         from jedi.inference import InferenceState
 
         try:
-            infer_state = self._infer_states[infer_state_id]
+            inference_state = self._inference_states[inference_state_id]
         except KeyError:
             from jedi.api.environment import InterpreterEnvironment
-            infer_state = InferenceState(
+            inference_state = InferenceState(
                 # The project is not actually needed. Nothing should need to
                 # access it.
                 project=None,
                 environment=InterpreterEnvironment()
             )
-            self._infer_states[infer_state_id] = infer_state
-        return infer_state
+            self._inference_states[inference_state_id] = inference_state
+        return inference_state
 
-    def _run(self, infer_state_id, function, args, kwargs):
-        if infer_state_id is None:
+    def _run(self, inference_state_id, function, args, kwargs):
+        if inference_state_id is None:
             return function(*args, **kwargs)
         elif function is None:
-            del self._infer_states[infer_state_id]
+            del self._inference_states[inference_state_id]
         else:
-            infer_state = self._get_infer_state(function, infer_state_id)
+            inference_state = self._get_inference_state(function, inference_state_id)
 
             # Exchange all handles
             args = list(args)
             for i, arg in enumerate(args):
                 if isinstance(arg, AccessHandle):
-                    args[i] = infer_state.compiled_subprocess.get_access_handle(arg.id)
+                    args[i] = inference_state.compiled_subprocess.get_access_handle(arg.id)
             for key, value in kwargs.items():
                 if isinstance(value, AccessHandle):
-                    kwargs[key] = infer_state.compiled_subprocess.get_access_handle(value.id)
+                    kwargs[key] = inference_state.compiled_subprocess.get_access_handle(value.id)
 
-            return function(infer_state, *args, **kwargs)
+            return function(inference_state, *args, **kwargs)
 
     def listen(self):
         stdout = sys.stdout

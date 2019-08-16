@@ -16,7 +16,7 @@ from jedi.parser_utils import clean_scope_docstring
 from jedi.common import BaseValueSet, BaseValue
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.utils import safe_property
-from jedi.inference.cache import infer_state_as_method_param_cache
+from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.cache import memoize_method
 
 _sentinel = object()
@@ -31,17 +31,17 @@ class HelperValueMixin(object):
             value = value.parent_context
 
     @classmethod
-    @infer_state_as_method_param_cache()
+    @inference_state_as_method_param_cache()
     def create_cached(cls, *args, **kwargs):
         return cls(*args, **kwargs)
 
     def execute(self, arguments):
-        return self.infer_state.execute(self, arguments=arguments)
+        return self.inference_state.execute(self, arguments=arguments)
 
     def execute_with_values(self, *value_list):
         from jedi.inference.arguments import ValuesArguments
         arguments = ValuesArguments([ValueSet([value]) for value in value_list])
-        return self.infer_state.execute(self, arguments)
+        return self.inference_state.execute(self, arguments)
 
     def execute_annotation(self):
         return self.execute_with_values()
@@ -64,7 +64,7 @@ class HelperValueMixin(object):
         if name_value is None:
             name_value = self
         from jedi.inference import finder
-        f = finder.NameFinder(self.infer_state, self, name_value, name_or_str,
+        f = finder.NameFinder(self.inference_state, self, name_value, name_or_str,
                               position, analysis_errors=analysis_errors)
         if search_global:
             filters = f.get_global_filters()
@@ -81,10 +81,10 @@ class HelperValueMixin(object):
         return await_value_set.execute_with_values()
 
     def infer_node(self, node):
-        return self.infer_state.infer_element(self, node)
+        return self.inference_state.infer_element(self, node)
 
     def create_value(self, node, node_is_value=False, node_is_object=False):
-        return self.infer_state.create_value(self, node, node_is_value, node_is_object)
+        return self.inference_state.create_value(self, node, node_is_value, node_is_object)
 
     def iterate(self, valueualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
@@ -239,8 +239,8 @@ class _ValueWrapperBase(HelperValueMixin):
             return CompiledValueName(self, wrapped_name.string_name)
 
     @classmethod
-    @infer_state_as_method_param_cache()
-    def create_cached(cls, infer_state, *args, **kwargs):
+    @inference_state_as_method_param_cache()
+    def create_cached(cls, inference_state, *args, **kwargs):
         return cls(*args, **kwargs)
 
     def __getattr__(self, name):
@@ -271,8 +271,8 @@ class ValueWrapper(_ValueWrapperBase):
 
 
 class TreeValue(Value):
-    def __init__(self, infer_state, parent_context, tree_node):
-        super(TreeValue, self).__init__(infer_state, parent_context)
+    def __init__(self, inference_state, parent_context, tree_node):
+        super(TreeValue, self).__init__(inference_state, parent_context)
         self.predefined_names = {}
         self.tree_node = tree_node
 
@@ -398,7 +398,7 @@ class ValueSet(BaseValueSet):
             )
 
     def execute(self, arguments):
-        return ValueSet.from_sets(c.infer_state.execute(c, arguments) for c in self._set)
+        return ValueSet.from_sets(c.inference_state.execute(c, arguments) for c in self._set)
 
     def execute_with_values(self, *args, **kwargs):
         return ValueSet.from_sets(c.execute_with_values(*args, **kwargs) for c in self._set)

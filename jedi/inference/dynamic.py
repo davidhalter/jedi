@@ -19,7 +19,7 @@ It works as follows:
 
 from jedi import settings
 from jedi import debug
-from jedi.inference.cache import infer_state_function_cache
+from jedi.inference.cache import inference_state_function_cache
 from jedi.inference import imports
 from jedi.inference.arguments import TreeArguments
 from jedi.inference.param import create_default_params
@@ -39,12 +39,12 @@ class DynamicExecutedParams(object):
     Simulates being a parameter while actually just being multiple params.
     """
 
-    def __init__(self, infer_state, executed_params):
-        self.infer_state = infer_state
+    def __init__(self, inference_state, executed_params):
+        self.inference_state = inference_state
         self._executed_params = executed_params
 
     def infer(self):
-        with recursion.execution_allowed(self.infer_state, self) as allowed:
+        with recursion.execution_allowed(self.inference_state, self) as allowed:
             # We need to catch recursions that may occur, because an
             # anonymous functions can create an anonymous parameter that is
             # more or less self referencing.
@@ -54,7 +54,7 @@ class DynamicExecutedParams(object):
 
 
 @debug.increase_indent
-def search_params(infer_state, execution_value, funcdef):
+def search_params(inference_state, execution_value, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -70,7 +70,7 @@ def search_params(infer_state, execution_value, funcdef):
     if not settings.dynamic_params:
         return create_default_params(execution_value, funcdef)
 
-    infer_state.dynamic_params_depth += 1
+    inference_state.dynamic_params_depth += 1
     try:
         path = execution_value.get_root_value().py__file__()
         if path is not None and is_stdlib_path(path):
@@ -91,7 +91,7 @@ def search_params(infer_state, execution_value, funcdef):
         try:
             module_value = execution_value.get_root_value()
             function_executions = _search_function_executions(
-                infer_state,
+                inference_state,
                 module_value,
                 funcdef,
                 string_name=string_name,
@@ -101,7 +101,7 @@ def search_params(infer_state, execution_value, funcdef):
                     function_execution.get_executed_params_and_issues()[0]
                     for function_execution in function_executions
                 ))
-                params = [DynamicExecutedParams(infer_state, executed_params)
+                params = [DynamicExecutedParams(inference_state, executed_params)
                           for executed_params in zipped_params]
                 # Inferes the ExecutedParams to types.
             else:
@@ -110,12 +110,12 @@ def search_params(infer_state, execution_value, funcdef):
             debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
     finally:
-        infer_state.dynamic_params_depth -= 1
+        inference_state.dynamic_params_depth -= 1
 
 
-@infer_state_function_cache(default=None)
+@inference_state_function_cache(default=None)
 @to_list
-def _search_function_executions(infer_state, module_value, funcdef, string_name):
+def _search_function_executions(inference_state, module_value, funcdef, string_name):
     """
     Returns a list of param names.
     """
@@ -129,7 +129,7 @@ def _search_function_executions(infer_state, module_value, funcdef, string_name)
     found_executions = False
     i = 0
     for for_mod_value in imports.get_modules_containing_name(
-            infer_state, [module_value], string_name):
+            inference_state, [module_value], string_name):
         if not isinstance(module_value, ModuleValue):
             return
         for name, trailer in _get_possible_nodes(for_mod_value, string_name):
@@ -138,12 +138,12 @@ def _search_function_executions(infer_state, module_value, funcdef, string_name)
             # This is a simple way to stop Jedi's dynamic param recursion
             # from going wild: The deeper Jedi's in the recursion, the less
             # code should be inferred.
-            if i * infer_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
+            if i * inference_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 
-            random_value = infer_state.create_value(for_mod_value, name)
+            random_value = inference_state.create_value(for_mod_value, name)
             for function_execution in _check_name_for_execution(
-                    infer_state, random_value, compare_node, name, trailer):
+                    inference_state, random_value, compare_node, name, trailer):
                 found_executions = True
                 yield function_execution
 
@@ -178,17 +178,17 @@ def _get_possible_nodes(module_value, func_string_name):
             yield name, trailer
 
 
-def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
+def _check_name_for_execution(inference_state, value, compare_node, name, trailer):
     from jedi.inference.value.function import FunctionExecutionValue
 
     def create_func_excs():
         arglist = trailer.children[1]
         if arglist == ')':
             arglist = None
-        args = TreeArguments(infer_state, value, arglist, trailer)
+        args = TreeArguments(inference_state, value, arglist, trailer)
         if value_node.type == 'classdef':
             created_instance = instance.TreeInstance(
-                infer_state,
+                inference_state,
                 v.parent_context,
                 v,
                 args
@@ -198,7 +198,7 @@ def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
         else:
             yield v.get_function_execution(args)
 
-    for v in infer_state.goto_definitions(value, name):
+    for v in inference_state.goto_definitions(value, name):
         value_node = v.tree_node
         if compare_node == value_node:
             for func_execution in create_func_excs():
@@ -219,9 +219,9 @@ def _check_name_for_execution(infer_state, value, compare_node, name, trailer):
                 execution_value = next(create_func_excs())
                 for name, trailer in _get_possible_nodes(module_value, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
-                        random_value = infer_state.create_value(execution_value, name)
+                        random_value = inference_state.create_value(execution_value, name)
                         iterator = _check_name_for_execution(
-                            infer_state,
+                            inference_state,
                             random_value,
                             compare_node,
                             name,

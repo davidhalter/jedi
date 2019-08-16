@@ -17,7 +17,7 @@ def test_add_dynamic_mods(Script):
     # Other fictional modules in another place in the fs.
     src2 = 'from .. import setup; setup.r(1)'
     script = Script(src1, path='../setup.py')
-    imports.load_module(script._infer_state, os.path.abspath(fname), src2)
+    imports.load_module(script._inference_state, os.path.abspath(fname), src2)
     result = script.goto_definitions()
     assert len(result) == 1
     assert result[0].description == 'class int'

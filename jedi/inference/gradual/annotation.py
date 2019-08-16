@@ -10,7 +10,7 @@ import re
 from parso import ParserSyntaxError, parse
 
 from jedi._compatibility import force_unicode
-from jedi.inference.cache import infer_state_method_cache
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
@@ -60,7 +60,7 @@ def _infer_annotation_string(value, string, index=None):
 
 def _get_forward_reference_node(value, string):
     try:
-        new_node = value.infer_state.grammar.parse(
+        new_node = value.inference_state.grammar.parse(
             force_unicode(string),
             start_symbol='eval_input',
             error_recovery=False
@@ -106,21 +106,21 @@ def _split_comment_param_declaration(decl_text):
     return params
 
 
-@infer_state_method_cache()
+@inference_state_method_cache()
 def infer_param(execution_value, param):
     values = _infer_param(execution_value, param)
-    infer_state = execution_value.infer_state
+    inference_state = execution_value.inference_state
     if param.star_count == 1:
-        tuple_ = builtin_from_name(infer_state, 'tuple')
+        tuple_ = builtin_from_name(inference_state, 'tuple')
         return ValueSet([GenericClass(
             tuple_,
             generics=(values,),
         ) for c in values])
     elif param.star_count == 2:
-        dct = builtin_from_name(infer_state, 'dict')
+        dct = builtin_from_name(inference_state, 'dict')
         return ValueSet([GenericClass(
             dct,
-            generics=(ValueSet([builtin_from_name(infer_state, 'str')]), values),
+            generics=(ValueSet([builtin_from_name(inference_state, 'str')]), values),
         ) for c in values])
         pass
     return values
@@ -190,7 +190,7 @@ def py__annotations__(funcdef):
     return dct
 
 
-@infer_state_method_cache()
+@inference_state_method_cache()
 def infer_return_types(function_execution_value):
     """
     Infers the type of a function's return value,

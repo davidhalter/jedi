@@ -89,9 +89,9 @@ def _cache_stub_file_map(version_info):
 
 def import_module_decorator(func):
     @wraps(func)
-    def wrapper(infer_state, import_names, parent_module_value, sys_path, prefer_stubs):
+    def wrapper(inference_state, import_names, parent_module_value, sys_path, prefer_stubs):
         try:
-            python_value_set = infer_state.module_cache.get(import_names)
+            python_value_set = inference_state.module_cache.get(import_names)
         except KeyError:
             if parent_module_value is not None and parent_module_value.is_stub():
                 parent_module_values = parent_module_value.non_stub_value_set
@@ -104,19 +104,19 @@ def import_module_decorator(func):
                 # ``os``.
                 python_parent = next(iter(parent_module_values))
                 if python_parent is None:
-                    python_parent, = infer_state.import_module(('os',), prefer_stubs=False)
+                    python_parent, = inference_state.import_module(('os',), prefer_stubs=False)
                 python_value_set = python_parent.py__getattribute__('path')
             else:
                 python_value_set = ValueSet.from_sets(
-                    func(infer_state, import_names, p, sys_path,)
+                    func(inference_state, import_names, p, sys_path,)
                     for p in parent_module_values
                 )
-            infer_state.module_cache.add(import_names, python_value_set)
+            inference_state.module_cache.add(import_names, python_value_set)
 
         if not prefer_stubs:
             return python_value_set
 
-        stub = _try_to_load_stub_cached(infer_state, import_names, python_value_set,
+        stub = _try_to_load_stub_cached(inference_state, import_names, python_value_set,
                                         parent_module_value, sys_path)
         if stub is not None:
             return ValueSet([stub])
@@ -125,21 +125,21 @@ def import_module_decorator(func):
     return wrapper
 
 
-def _try_to_load_stub_cached(infer_state, import_names, *args, **kwargs):
+def _try_to_load_stub_cached(inference_state, import_names, *args, **kwargs):
     try:
-        return infer_state.stub_module_cache[import_names]
+        return inference_state.stub_module_cache[import_names]
     except KeyError:
         pass
 
     # TODO is this needed? where are the exceptions coming from that make this
     # necessary? Just remove this line.
-    infer_state.stub_module_cache[import_names] = None
-    infer_state.stub_module_cache[import_names] = result = \
-        _try_to_load_stub(infer_state, import_names, *args, **kwargs)
+    inference_state.stub_module_cache[import_names] = None
+    inference_state.stub_module_cache[import_names] = result = \
+        _try_to_load_stub(inference_state, import_names, *args, **kwargs)
     return result
 
 
-def _try_to_load_stub(infer_state, import_names, python_value_set,
+def _try_to_load_stub(inference_state, import_names, python_value_set,
                       parent_module_value, sys_path):
     """
     Trying to load a stub for a set of import_names.
@@ -150,7 +150,7 @@ def _try_to_load_stub(infer_state, import_names, python_value_set,
     if parent_module_value is None and len(import_names) > 1:
         try:
             parent_module_value = _try_to_load_stub_cached(
-                infer_state, import_names[:-1], NO_VALUES,
+                inference_state, import_names[:-1], NO_VALUES,
                 parent_module_value=None, sys_path=sys_path)
         except KeyError:
             pass
@@ -161,7 +161,7 @@ def _try_to_load_stub(infer_state, import_names, python_value_set,
         for p in sys_path:
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
             m = _try_to_load_stub_from_file(
-                infer_state,
+                inference_state,
                 python_value_set,
                 file_io=FileIO(init),
                 import_names=import_names,
@@ -185,7 +185,7 @@ def _try_to_load_stub(infer_state, import_names, python_value_set,
 
             for file_path in file_paths:
                 m = _try_to_load_stub_from_file(
-                    infer_state,
+                    inference_state,
                     python_value_set,
                     # The file path should end with .pyi
                     file_io=FileIO(file_path),
@@ -195,7 +195,7 @@ def _try_to_load_stub(infer_state, import_names, python_value_set,
                     return m
 
     # 3. Try to load typeshed
-    m = _load_from_typeshed(infer_state, python_value_set, parent_module_value, import_names)
+    m = _load_from_typeshed(inference_state, python_value_set, parent_module_value, import_names)
     if m is not None:
         return m
 
@@ -216,7 +216,7 @@ def _try_to_load_stub(infer_state, import_names, python_value_set,
 
         for p in check_path:
             m = _try_to_load_stub_from_file(
-                infer_state,
+                inference_state,
                 python_value_set,
                 file_io=FileIO(os.path.join(p, *names_for_path) + '.pyi'),
                 import_names=import_names,
@@ -229,11 +229,11 @@ def _try_to_load_stub(infer_state, import_names, python_value_set,
     return None
 
 
-def _load_from_typeshed(infer_state, python_value_set, parent_module_value, import_names):
+def _load_from_typeshed(inference_state, python_value_set, parent_module_value, import_names):
     import_name = import_names[-1]
     map_ = None
     if len(import_names) == 1:
-        map_ = _cache_stub_file_map(infer_state.grammar.version_info)
+        map_ = _cache_stub_file_map(inference_state.grammar.version_info)
         import_name = _IMPORT_MAP.get(import_name, import_name)
     elif isinstance(parent_module_value, StubModuleValue):
         if not parent_module_value.is_package:
@@ -247,16 +247,16 @@ def _load_from_typeshed(infer_state, python_value_set, parent_module_value, impo
         path = map_.get(import_name)
         if path is not None:
             return _try_to_load_stub_from_file(
-                infer_state,
+                inference_state,
                 python_value_set,
                 file_io=FileIO(path),
                 import_names=import_names,
             )
 
 
-def _try_to_load_stub_from_file(infer_state, python_value_set, file_io, import_names):
+def _try_to_load_stub_from_file(inference_state, python_value_set, file_io, import_names):
     try:
-        stub_module_node = infer_state.parse(
+        stub_module_node = inference_state.parse(
             file_io=file_io,
             cache=True,
             use_latest_grammar=True
@@ -266,24 +266,24 @@ def _try_to_load_stub_from_file(infer_state, python_value_set, file_io, import_n
         return None
     else:
         return create_stub_module(
-            infer_state, python_value_set, stub_module_node, file_io,
+            inference_state, python_value_set, stub_module_node, file_io,
             import_names
         )
 
 
-def create_stub_module(infer_state, python_value_set, stub_module_node, file_io, import_names):
+def create_stub_module(inference_state, python_value_set, stub_module_node, file_io, import_names):
     if import_names == ('typing',):
         module_cls = TypingModuleWrapper
     else:
         module_cls = StubModuleValue
     file_name = os.path.basename(file_io.path)
     stub_module_value = module_cls(
-        python_value_set, infer_state, stub_module_node,
+        python_value_set, inference_state, stub_module_node,
         file_io=file_io,
         string_names=import_names,
         # The code was loaded with latest_grammar, so use
         # that.
-        code_lines=get_cached_code_lines(infer_state.latest_grammar, file_io.path),
+        code_lines=get_cached_code_lines(inference_state.latest_grammar, file_io.path),
         is_package=file_name == '__init__.pyi',
     )
     return stub_module_value

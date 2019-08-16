@@ -39,8 +39,8 @@ py__doc__()                            Returns the docstring for a value.
 from jedi import debug
 from jedi._compatibility import use_metaclass
 from jedi.parser_utils import get_cached_parent_scope
-from jedi.inference.cache import infer_state_method_cache, CachedMetaClass, \
-    infer_state_method_generator_cache
+from jedi.inference.cache import inference_state_method_cache, CachedMetaClass, \
+    inference_state_method_generator_cache
 from jedi.inference import compiled
 from jedi.inference.lazy_value import LazyKnownValues
 from jedi.inference.filters import ParserTreeFilter
@@ -73,7 +73,7 @@ class ClassName(TreeNameDefinition):
         # We're using a different value to infer, so we cannot call super().
         from jedi.inference.syntax_tree import tree_name_to_values
         inferred = tree_name_to_values(
-            self.parent_context.infer_state, self._name_value, self.tree_name)
+            self.parent_context.inference_state, self._name_value, self.tree_name)
 
         for result_value in inferred:
             if self._apply_decorators:
@@ -141,10 +141,10 @@ class ClassMixin(object):
         from jedi.inference.value import TreeInstance
         if arguments is None:
             arguments = ValuesArguments([])
-        return ValueSet([TreeInstance(self.infer_state, self.parent_context, self, arguments)])
+        return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
-        return compiled.builtin_from_name(self.infer_state, u'type')
+        return compiled.builtin_from_name(self.inference_state, u'type')
 
     @property
     def name(self):
@@ -159,7 +159,7 @@ class ClassMixin(object):
                 return list(value_.get_param_names())[1:]
         return []
 
-    @infer_state_method_generator_cache()
+    @inference_state_method_generator_cache()
     def py__mro__(self):
         mro = [self]
         yield self
@@ -214,7 +214,7 @@ class ClassMixin(object):
                     )
         if not is_instance:
             from jedi.inference.compiled import builtin_from_name
-            type_ = builtin_from_name(self.infer_state, u'type')
+            type_ = builtin_from_name(self.inference_state, u'type')
             assert isinstance(type_, ClassValue)
             if type_ != self:
                 for instance in type_.py__call__():
@@ -239,7 +239,7 @@ class ClassMixin(object):
 class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
     api_type = u'class'
 
-    @infer_state_method_cache()
+    @inference_state_method_cache()
     def list_type_vars(self):
         found = []
         arglist = self.tree_node.get_super_arglist()
@@ -261,10 +261,10 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         arglist = self.tree_node.get_super_arglist()
         if arglist:
             from jedi.inference import arguments
-            return arguments.TreeArguments(self.infer_state, self.parent_context, arglist)
+            return arguments.TreeArguments(self.inference_state, self.parent_context, arglist)
         return None
 
-    @infer_state_method_cache(default=())
+    @inference_state_method_cache(default=())
     def py__bases__(self):
         args = self._get_bases_arguments()
         if args is not None:
@@ -273,10 +273,10 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
                 return lst
 
         if self.py__name__() == 'object' \
-                and self.parent_context == self.infer_state.builtins_module:
+                and self.parent_context == self.inference_state.builtins_module:
             return []
         return [LazyKnownValues(
-            self.infer_state.builtins_module.py__getattribute__('object')
+            self.inference_state.builtins_module.py__getattribute__('object')
         )]
 
     def py__getitem__(self, index_value_set, valueualized_node):
@@ -320,7 +320,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         debug.dbg('Unprocessed metaclass %s', metaclass)
         return []
 
-    @infer_state_method_cache(default=NO_VALUES)
+    @inference_state_method_cache(default=NO_VALUES)
     def get_metaclasses(self):
         args = self._get_bases_arguments()
         if args is not None:

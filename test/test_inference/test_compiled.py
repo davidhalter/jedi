@@ -11,8 +11,8 @@ from jedi.inference.compiled.access import DirectObjectAccess
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
 
 
-def test_simple(infer_state, environment):
-    obj = compiled.create_simple_object(infer_state, u'_str_')
+def test_simple(inference_state, environment):
+    obj = compiled.create_simple_object(inference_state, u'_str_')
     upper, = obj.py__getattribute__(u'upper')
     objs = list(upper.execute_with_values())
     assert len(objs) == 1
@@ -23,15 +23,15 @@ def test_simple(infer_state, environment):
     assert objs[0].name.string_name == expected
 
 
-def test_builtin_loading(infer_state):
-    string, = infer_state.builtins_module.py__getattribute__(u'str')
+def test_builtin_loading(inference_state):
+    string, = inference_state.builtins_module.py__getattribute__(u'str')
     from_name, = string.py__getattribute__(u'__init__')
     assert from_name.tree_node
     assert not from_name.py__doc__()  # It's a stub
 
 
-def test_next_docstr(infer_state):
-    next_ = compiled.builtin_from_name(infer_state, u'next')
+def test_next_docstr(inference_state):
+    next_ = compiled.builtin_from_name(inference_state, u'next')
     assert next_.tree_node is not None
     assert next_.py__doc__() == ''  # It's a stub
     for non_stub in _stub_to_python_value_set(next_):
@@ -47,12 +47,12 @@ def test_parse_function_doc_illegal_docstr():
     assert ('', '') == compiled.value._parse_function_doc(docstr)
 
 
-def test_doc(infer_state):
+def test_doc(inference_state):
     """
     Even CompiledObject docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
-    str_ = compiled.create_simple_object(infer_state, u'')
+    str_ = compiled.create_simple_object(inference_state, u'')
     # Equals `''.__getnewargs__`
     obj, = str_.py__getattribute__(u'__getnewargs__')
     assert obj.py__doc__() == ''
@@ -103,7 +103,7 @@ def test_dict_values(Script, environment):
 def test_getitem_on_none(Script):
     script = Script('None[1j]')
     assert not script.goto_definitions()
-    issue, = script._infer_state.analysis
+    issue, = script._inference_state.analysis
     assert issue.name == 'type-error-not-subscriptable'
 
 
@@ -122,7 +122,7 @@ def _return_int():
         ('ret_int', '_return_int', 'test.test_inference.test_compiled'),
     ]
 )
-def test_parent_context(same_process_infer_state, attribute, expected_name, expected_parent):
+def test_parent_context(same_process_inference_state, attribute, expected_name, expected_parent):
     import decimal
 
     class C:
@@ -135,8 +135,8 @@ def test_parent_context(same_process_infer_state, attribute, expected_name, expe
         ret_int = _return_int
 
     o = compiled.CompiledObject(
-        same_process_infer_state,
-        DirectObjectAccess(same_process_infer_state, C)
+        same_process_inference_state,
+        DirectObjectAccess(same_process_inference_state, C)
     )
     x, = o.py__getattribute__(attribute)
     assert x.py__name__() == expected_name
@@ -163,9 +163,9 @@ def test_parent_context(same_process_infer_state, attribute, expected_name, expe
         (Counter("").most_common, ['Counter', 'most_common']),
     ]
 )
-def test_qualified_names(same_process_infer_state, obj, expected_names):
+def test_qualified_names(same_process_inference_state, obj, expected_names):
     o = compiled.CompiledObject(
-        same_process_infer_state,
-        DirectObjectAccess(same_process_infer_state, obj)
+        same_process_inference_state,
+        DirectObjectAccess(same_process_inference_state, obj)
     )
     assert o.get_qualified_names() == tuple(expected_names)

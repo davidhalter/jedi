@@ -66,7 +66,7 @@ def infer_call_of_leaf(value, leaf, cut_own_trailer=False):
     trailer = leaf.parent
     if trailer.type == 'fstring':
         from jedi.inference import compiled
-        return compiled.get_string_value_set(value.infer_state)
+        return compiled.get_string_value_set(value.inference_state)
 
     # The leaf may not be the last or first child, because there exist three
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
@@ -195,7 +195,7 @@ def predefine_names(value, flow_scope, dct):
 
 
 def is_string(value):
-    if value.infer_state.environment.version_info.major == 2:
+    if value.inference_state.environment.version_info.major == 2:
         str_classes = (unicode, bytes)
     else:
         str_classes = (unicode,)
@@ -265,5 +265,5 @@ def parse_dotted_names(nodes, is_import_from, until_node=None):
     return level, names
 
 
-def values_from_qualified_names(infer_state, *names):
-    return infer_state.import_module(names[:-1]).py__getattribute__(names[-1])
+def values_from_qualified_names(inference_state, *names):
+    return inference_state.import_module(names[:-1]).py__getattribute__(names[-1])

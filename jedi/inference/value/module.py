@@ -2,7 +2,7 @@ import re
 import os
 
 from jedi import debug
-from jedi.inference.cache import infer_state_method_cache
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.names import ValueNameMixin, AbstractNameDefinition
 from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.inference import compiled
@@ -27,13 +27,13 @@ class _ModuleAttributeName(AbstractNameDefinition):
     def infer(self):
         if self._string_value is not None:
             s = self._string_value
-            if self.parent_context.infer_state.environment.version_info.major == 2 \
+            if self.parent_context.inference_state.environment.version_info.major == 2 \
                     and not isinstance(s, bytes):
                 s = s.encode('utf-8')
             return ValueSet([
-                create_simple_object(self.parent_context.infer_state, s)
+                create_simple_object(self.parent_context.inference_state, s)
             ])
-        return compiled.get_string_value_set(self.parent_context.infer_state)
+        return compiled.get_string_value_set(self.parent_context.inference_state)
 
 
 class ModuleName(ValueNameMixin, AbstractNameDefinition):
@@ -48,9 +48,9 @@ class ModuleName(ValueNameMixin, AbstractNameDefinition):
         return self._name
 
 
-def iter_module_names(infer_state, paths):
+def iter_module_names(inference_state, paths):
     # Python modules/packages
-    for n in infer_state.compiled_subprocess.list_module_names(paths):
+    for n in inference_state.compiled_subprocess.list_module_names(paths):
         yield n
 
     for path in paths:
@@ -75,7 +75,7 @@ def iter_module_names(infer_state, paths):
 
 
 class SubModuleDictMixin(object):
-    @infer_state_method_cache()
+    @inference_state_method_cache()
     def sub_modules_dict(self):
         """
         Lists modules in the directory of this module (if this module is a
@@ -87,7 +87,7 @@ class SubModuleDictMixin(object):
         except AttributeError:
             pass
         else:
-            mods = iter_module_names(self.infer_state, method())
+            mods = iter_module_names(self.inference_state, method())
             for name in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self, name)
@@ -113,7 +113,7 @@ class ModuleMixin(SubModuleDictMixin):
             yield star_filter
 
     def py__class__(self):
-        c, = values_from_qualified_names(self.infer_state, u'types', u'ModuleType')
+        c, = values_from_qualified_names(self.inference_state, u'types', u'ModuleType')
         return c
 
     def is_module(self):
@@ -123,7 +123,7 @@ class ModuleMixin(SubModuleDictMixin):
         return False
 
     @property
-    @infer_state_method_cache()
+    @inference_state_method_cache()
     def name(self):
         return ModuleName(self, self._string_name)
 
@@ -140,7 +140,7 @@ class ModuleMixin(SubModuleDictMixin):
             # Remove PEP 3149 names
             return re.sub(r'\.[a-z]+-\d{2}[mud]{0,3}$', '', r.group(1))
 
-    @infer_state_method_cache()
+    @inference_state_method_cache()
     def _module_attributes_dict(self):
         names = ['__package__', '__doc__', '__name__']
         # All the additional module attributes are strings.
@@ -157,7 +157,7 @@ class ModuleMixin(SubModuleDictMixin):
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
     # to push the star imports into InferenceState.module_cache, if we reenable this.
-    @infer_state_method_cache([])
+    @inference_state_method_cache([])
     def star_imports(self):
         from jedi.inference.imports import Importer
 
@@ -165,7 +165,7 @@ class ModuleMixin(SubModuleDictMixin):
         for i in self.tree_node.iter_imports():
             if i.is_star_import():
                 new = Importer(
-                    self.infer_state,
+                    self.inference_state,
                     import_path=i.get_paths()[-1],
                     module_value=self,
                     level=i.level
@@ -190,9 +190,9 @@ class ModuleValue(ModuleMixin, TreeValue):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, infer_state, module_node, file_io, string_names, code_lines, is_package=False):
+    def __init__(self, inference_state, module_node, file_io, string_names, code_lines, is_package=False):
         super(ModuleValue, self).__init__(
-            infer_state,
+            inference_state,
             parent_context=None,
             tree_node=module_node
         )
@@ -242,7 +242,7 @@ class ModuleValue(ModuleMixin, TreeValue):
             # It is a namespace, now try to find the rest of the
             # modules on sys_path or whatever the search_path is.
             paths = set()
-            for s in self.infer_state.get_sys_path():
+            for s in self.inference_state.get_sys_path():
                 other = os.path.join(s, self.name.string_name)
                 if os.path.isdir(other):
                     paths.add(other)

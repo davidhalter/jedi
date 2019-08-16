@@ -109,8 +109,8 @@ class Environment(_BaseEnvironment):
         version = '.'.join(str(i) for i in self.version_info)
         return '<%s: %s in %s>' % (self.__class__.__name__, version, self.path)
 
-    def get_infer_state_subprocess(self, infer_state):
-        return InferenceStateSubprocess(infer_state, self._get_subprocess())
+    def get_inference_state_subprocess(self, inference_state):
+        return InferenceStateSubprocess(inference_state, self._get_subprocess())
 
     @memoize_method
     def get_sys_path(self):
@@ -140,8 +140,8 @@ class SameEnvironment(_SameEnvironmentMixin, Environment):
 
 
 class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
-    def get_infer_state_subprocess(self, infer_state):
-        return InferenceStateSameProcess(infer_state)
+    def get_inference_state_subprocess(self, inference_state):
+        return InferenceStateSameProcess(inference_state)
 
     def get_sys_path(self):
         return sys.path

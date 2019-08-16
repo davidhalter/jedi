@@ -235,7 +235,7 @@ class _BuiltinMappedMethod(Value):
 
     def __init__(self, builtin_value, method, builtin_func):
         super(_BuiltinMappedMethod, self).__init__(
-            builtin_value.infer_state,
+            builtin_value.inference_state,
             parent_context=builtin_value
         )
         self._method = method
@@ -260,7 +260,7 @@ class SpecialMethodFilter(DictFilter):
         def __init__(self, parent_context, string_name, value, builtin_value):
             callable_, python_version = value
             if python_version is not None and \
-                    python_version != parent_context.infer_state.environment.version_info.major:
+                    python_version != parent_context.inference_state.environment.version_info.major:
                 raise KeyError
 
             self.parent_context = parent_context
@@ -327,8 +327,8 @@ class _AttributeOverwriteMixin(object):
 
 class LazyAttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
                                            LazyValueWrapper)):
-    def __init__(self, infer_state):
-        self.infer_state = infer_state
+    def __init__(self, inference_state):
+        self.inference_state = inference_state
 
 
 class AttributeOverwrite(use_metaclass(_OverwriteMeta, _AttributeOverwriteMixin,
@@ -344,7 +344,7 @@ def publish_method(method_name, python_version_match=None):
     return decorator
 
 
-def get_global_filters(infer_state, value, until_position, origin_scope):
+def get_global_filters(inference_state, value, until_position, origin_scope):
     """
     Returns all filters in order of priority for name resolution.
 
@@ -363,7 +363,7 @@ def get_global_filters(infer_state, value, until_position, origin_scope):
     >>> scope
     <Function: func@3-5>
     >>> value = script._get_module().create_value(scope)
-    >>> filters = list(get_global_filters(value.infer_state, value, (4, 0), None))
+    >>> filters = list(get_global_filters(value.inference_state, value, (4, 0), None))
 
     First we get the names from the function scope.
 
@@ -407,4 +407,4 @@ def get_global_filters(infer_state, value, until_position, origin_scope):
         value = value.parent_context
 
     # Add builtins to the global scope.
-    yield next(infer_state.builtins_module.get_filters())
+    yield next(inference_state.builtins_module.get_filters())

@@ -162,10 +162,10 @@ def cwd_tmpdir(monkeypatch, tmpdir):
 
 
 @pytest.fixture
-def infer_state(Script):
-    return Script('')._infer_state
+def inference_state(Script):
+    return Script('')._inference_state
 
 
 @pytest.fixture
-def same_process_infer_state(Script):
-    return Script('', environment=InterpreterEnvironment())._infer_state
+def same_process_inference_state(Script):
+    return Script('', environment=InterpreterEnvironment())._inference_state

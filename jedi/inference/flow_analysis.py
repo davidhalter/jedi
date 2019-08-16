@@ -106,7 +106,7 @@ def _break_check(value, value_scope, flow_scope, node):
 
 
 def _check_if(value, node):
-    with execution_allowed(value.infer_state, node) as allowed:
+    with execution_allowed(value.inference_state, node) as allowed:
         if not allowed:
             return UNSURE
 

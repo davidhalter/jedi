@@ -63,7 +63,7 @@ def test_sys_path_with_modifications(Script):
     """)
 
     path = os.path.abspath(os.path.join(os.curdir, 'module_name.py'))
-    paths = Script(code, path=path)._infer_state.get_sys_path()
+    paths = Script(code, path=path)._inference_state.get_sys_path()
     assert '/tmp/.buildout/eggs/important_package.egg' in paths
 
 

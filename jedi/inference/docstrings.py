@@ -24,7 +24,7 @@ from parso import parse, ParserSyntaxError
 from jedi._compatibility import u
 from jedi import debug
 from jedi.inference.utils import indent_block
-from jedi.inference.cache import infer_state_method_cache
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import iterator_to_value_set, ValueSet, \
     NO_VALUES
 from jedi.inference.lazy_value import LazyKnownValues
@@ -205,7 +205,7 @@ def _infer_for_statement_string(module_value, string):
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
     debug.dbg('Parse docstring code %s', string, color='BLUE')
-    grammar = module_value.infer_state.latest_grammar
+    grammar = module_value.inference_state.latest_grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
     except ParserSyntaxError:
@@ -223,7 +223,7 @@ def _infer_for_statement_string(module_value, string):
 
     from jedi.inference.value import FunctionValue
     function_value = FunctionValue(
-        module_value.infer_state,
+        module_value.inference_state,
         module_value,
         funcdef
     )
@@ -243,12 +243,12 @@ def _execute_types_in_stmt(module_value, stmt):
     """
     definitions = module_value.infer_node(stmt)
     return ValueSet.from_sets(
-        _execute_array_values(module_value.infer_state, d)
+        _execute_array_values(module_value.inference_state, d)
         for d in definitions
     )
 
 
-def _execute_array_values(infer_state, array):
+def _execute_array_values(inference_state, array):
     """
     Tuples indicate that there's not just one return value, but the listed
     ones.  `(str, int)` means that it returns a tuple with both types.
@@ -258,16 +258,16 @@ def _execute_array_values(infer_state, array):
         values = []
         for lazy_value in array.py__iter__():
             objects = ValueSet.from_sets(
-                _execute_array_values(infer_state, typ)
+                _execute_array_values(inference_state, typ)
                 for typ in lazy_value.infer()
             )
             values.append(LazyKnownValues(objects))
-        return {FakeSequence(infer_state, array.array_type, values)}
+        return {FakeSequence(inference_state, array.array_type, values)}
     else:
         return array.execute_annotation()
 
 
-@infer_state_method_cache()
+@inference_state_method_cache()
 def infer_param(execution_value, param):
     from jedi.inference.value.instance import InstanceArguments
     from jedi.inference.value import FunctionExecutionValue
@@ -294,7 +294,7 @@ def infer_param(execution_value, param):
     return types
 
 
-@infer_state_method_cache()
+@inference_state_method_cache()
 @iterator_to_value_set
 def infer_return_types(function_value):
     def search_return_in_docstr(code):

@@ -13,8 +13,8 @@ sys.path.append('a' +* '/thirdparty')
 #? ['inference']
 import inference
 
-#? ['infer_state_function_cache']
-inference.infer_state_fu
+#? ['inference_state_function_cache']
+inference.inference_state_fu
 
 # Those don't work because dirname and abspath are not properly understood.
 ##? ['jedi_']

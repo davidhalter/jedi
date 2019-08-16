@@ -15,7 +15,7 @@ Type inference of Python code in |jedi| is based on three assumptions:
 The actual algorithm is based on a principle I call lazy type inference.  That
 said, the typical entry point for static analysis is calling
 ``infer_expr_stmt``. There's separate logic for autocompletion in the API, the
-infer_state is all about inferring an expression.
+inference_state is all about inferring an expression.
 
 TODO this paragraph is not what jedi does anymore, it's similar, but not the
 same.
@@ -72,7 +72,7 @@ from jedi import parser_utils
 from jedi.inference.utils import unite
 from jedi.inference import imports
 from jedi.inference import recursion
-from jedi.inference.cache import infer_state_function_cache
+from jedi.inference.cache import inference_state_function_cache
 from jedi.inference import helpers
 from jedi.inference.names import TreeNameDefinition, ParamName
 from jedi.inference.base_value import ValueualizedName, ValueualizedNode, \
@@ -91,7 +91,7 @@ class InferenceState(object):
             environment = project.get_environment()
         self.environment = environment
         self.script_path = script_path
-        self.compiled_subprocess = environment.get_infer_state_subprocess(self)
+        self.compiled_subprocess = environment.get_inference_state_subprocess(self)
         self.grammar = environment.get_grammar()
 
         self.latest_grammar = parso.load_grammar(version='3.7')
@@ -128,7 +128,7 @@ class InferenceState(object):
         return value_set
 
     @property
-    @infer_state_function_cache()
+    @inference_state_function_cache()
     def builtins_module(self):
         module_name = u'builtins'
         if self.environment.version_info.major == 2:
@@ -137,7 +137,7 @@ class InferenceState(object):
         return builtins_module
 
     @property
-    @infer_state_function_cache()
+    @inference_state_function_cache()
     def typing_module(self):
         typing_module, = self.import_module((u'typing',))
         return typing_module
@@ -233,7 +233,7 @@ class InferenceState(object):
                 return infer_node(value, element)
         return self._infer_element_cached(value, element)
 
-    @infer_state_function_cache(default=NO_VALUES)
+    @inference_state_function_cache(default=NO_VALUES)
     def _infer_element_cached(self, value, element):
         return infer_node(value, element)
 

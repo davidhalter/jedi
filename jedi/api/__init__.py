@@ -111,11 +111,11 @@ class Script(object):
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
-        self._infer_state = InferenceState(
+        self._inference_state = InferenceState(
             project, environment=environment, script_path=self.path
         )
         debug.speed('init')
-        self._module_node, source = self._infer_state.parse_and_get_code(
+        self._module_node, source = self._inference_state.parse_and_get_code(
             code=source,
             path=self.path,
             encoding=encoding,
@@ -156,7 +156,7 @@ class Script(object):
         is_package = False
         if self.path is not None:
             import_names, is_p = transform_path_to_dotted(
-                self._infer_state.get_sys_path(add_parent_paths=False),
+                self._inference_state.get_sys_path(add_parent_paths=False),
                 self.path
             )
             if import_names is not None:
@@ -170,7 +170,7 @@ class Script(object):
         if self.path is not None and self.path.endswith('.pyi'):
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
-                self._infer_state,
+                self._inference_state,
                 file_io,
                 names,
                 self._module_node
@@ -182,21 +182,21 @@ class Script(object):
             names = ('__main__',)
 
         module = ModuleValue(
-            self._infer_state, self._module_node, file_io,
+            self._inference_state, self._module_node, file_io,
             string_names=names,
             code_lines=self._code_lines,
             is_package=is_package,
         )
         if names[0] not in ('builtins', '__builtin__', 'typing'):
             # These modules are essential for Jedi, so don't overwrite them.
-            self._infer_state.module_cache.add(names, ValueSet([module]))
+            self._inference_state.module_cache.add(names, ValueSet([module]))
         return module
 
     def __repr__(self):
         return '<%s: %s %r>' % (
             self.__class__.__name__,
             repr(self._orig_path),
-            self._infer_state.environment,
+            self._inference_state.environment,
         )
 
     def completions(self):
@@ -209,7 +209,7 @@ class Script(object):
         """
         with debug.increase_indent_cm('completions'):
             completion = Completion(
-                self._infer_state, self._get_module(), self._code_lines,
+                self._inference_state, self._get_module(), self._code_lines,
                 self._pos, self.call_signatures
             )
             return completion.completions()
@@ -239,16 +239,16 @@ class Script(object):
             if leaf is None:
                 return []
 
-        value = self._infer_state.create_value(self._get_module(), leaf)
+        value = self._inference_state.create_value(self._get_module(), leaf)
 
-        values = helpers.infer_goto_definition(self._infer_state, value, leaf)
+        values = helpers.infer_goto_definition(self._inference_state, value, leaf)
         values = convert_values(
             values,
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._infer_state, c.name) for c in values]
+        defs = [classes.Definition(self._inference_state, c.name) for c in values]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
@@ -299,8 +299,8 @@ class Script(object):
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
             return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
-        value = self._infer_state.create_value(self._get_module(), tree_name)
-        names = list(self._infer_state.goto(value, tree_name))
+        value = self._inference_state.create_value(self._get_module(), tree_name)
+        names = list(self._inference_state.goto(value, tree_name))
 
         if follow_imports:
             names = filter_follow_imports(names, lambda name: name.is_import())
@@ -310,7 +310,7 @@ class Script(object):
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._infer_state, d) for d in set(names)]
+        defs = [classes.Definition(self._inference_state, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
     def usages(self, additional_module_paths=(), **kwargs):
@@ -342,7 +342,7 @@ class Script(object):
 
             names = usages.usages(self._get_module(), tree_name)
 
-            definitions = [classes.Definition(self._infer_state, n) for n in names]
+            definitions = [classes.Definition(self._inference_state, n) for n in names]
             if not include_builtins:
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
@@ -368,12 +368,12 @@ class Script(object):
         if call_details is None:
             return []
 
-        value = self._infer_state.create_value(
+        value = self._inference_state.create_value(
             self._get_module(),
             call_details.bracket_leaf
         )
         definitions = helpers.cache_call_signatures(
-            self._infer_state,
+            self._inference_state,
             value,
             call_details.bracket_leaf,
             self._code_lines,
@@ -383,19 +383,19 @@ class Script(object):
 
         # TODO here we use stubs instead of the actual values. We should use
         # the signatures from stubs, but the actual values, probably?!
-        return [classes.CallSignature(self._infer_state, signature, call_details)
+        return [classes.CallSignature(self._inference_state, signature, call_details)
                 for signature in definitions.get_signatures()]
 
     def _analysis(self):
-        self._infer_state.is_analysis = True
-        self._infer_state.analysis_modules = [self._module_node]
+        self._inference_state.is_analysis = True
+        self._inference_state.analysis_modules = [self._module_node]
         module = self._get_module()
         try:
             for node in get_executable_nodes(self._module_node):
                 value = module.create_value(node)
                 if node.type in ('funcdef', 'classdef'):
                     # Resolve the decorators.
-                    tree_name_to_values(self._infer_state, value, node.children[1])
+                    tree_name_to_values(self._inference_state, value, node.children[1])
                 elif isinstance(node, tree.Import):
                     import_names = set(node.get_defined_names())
                     if node.is_nested():
@@ -409,16 +409,16 @@ class Script(object):
                         unpack_tuple_to_dict(value, types, testlist)
                 else:
                     if node.type == 'name':
-                        defs = self._infer_state.goto_definitions(value, node)
+                        defs = self._inference_state.goto_definitions(value, node)
                     else:
                         defs = infer_call_of_leaf(value, node)
                     try_iter_content(defs)
-                self._infer_state.reset_recursion_limitations()
+                self._inference_state.reset_recursion_limitations()
 
-            ana = [a for a in self._infer_state.analysis if self.path == a.path]
+            ana = [a for a in self._inference_state.analysis if self.path == a.path]
             return sorted(set(ana), key=lambda x: x.line)
         finally:
-            self._infer_state.is_analysis = False
+            self._inference_state.is_analysis = False
 
 
 class Interpreter(Script):
@@ -467,11 +467,11 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(source, environment=environment,
                                           _project=Project(os.getcwd()), **kwds)
         self.namespaces = namespaces
-        self._infer_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
+        self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
     def _get_module(self):
         return interpreter.MixedModuleValue(
-            self._infer_state,
+            self._inference_state,
             self._module_node,
             self.namespaces,
             file_io=KnownContentFileIO(self.path, self._code),
@@ -514,7 +514,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
     module_value = script._get_module()
     defs = [
         classes.Definition(
-            script._infer_state,
+            script._inference_state,
             create_name(name)
         ) for name in get_module_names(script._module_node, all_scopes)
     ]

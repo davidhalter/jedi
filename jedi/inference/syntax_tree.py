@@ -23,7 +23,7 @@ from jedi.inference.value import TreeInstance
 from jedi.inference.finder import NameFinder
 from jedi.inference.helpers import is_string, is_literal, is_number
 from jedi.inference.compiled.access import COMPARISON_OPERATORS
-from jedi.inference.cache import infer_state_method_cache
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.gradual.stub_value import VersionInfo
 from jedi.inference.gradual import annotation
 from jedi.inference.value.decorator import Decoratee
@@ -41,14 +41,14 @@ def _limit_value_infers(func):
     """
     def wrapper(value, *args, **kwargs):
         n = value.tree_node
-        infer_state = value.infer_state
+        inference_state = value.inference_state
         try:
-            infer_state.inferred_element_counts[n] += 1
-            if infer_state.inferred_element_counts[n] > 300:
+            inference_state.inferred_element_counts[n] += 1
+            if inference_state.inferred_element_counts[n] > 300:
                 debug.warning('In value %s there were too many inferences.', n)
                 return NO_VALUES
         except KeyError:
-            infer_state.inferred_element_counts[n] = 1
+            inference_state.inferred_element_counts[n] = 1
         return func(value, *args, **kwargs)
 
     return wrapper
@@ -70,7 +70,7 @@ def _py__stop_iteration_returns(generators):
 @_limit_value_infers
 def infer_node(value, element):
     debug.dbg('infer_node %s@%s in %s', element, element.start_pos, value)
-    infer_state = value.infer_state
+    inference_state = value.inference_state
     typ = element.type
     if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword', 'fstring'):
         return infer_atom(value, element)
@@ -91,7 +91,7 @@ def infer_node(value, element):
             if trailer == '**':  # has a power operation.
                 right = value.infer_node(children[i + 1])
                 value_set = _infer_comparison(
-                    infer_state,
+                    inference_state,
                     value,
                     value_set,
                     trailer,
@@ -105,7 +105,7 @@ def infer_node(value, element):
         return value_set
     elif typ in ('testlist_star_expr', 'testlist',):
         # The implicit tuple in statements.
-        return ValueSet([iterable.SequenceLiteralValue(infer_state, value, element)])
+        return ValueSet([iterable.SequenceLiteralValue(inference_state, value, element)])
     elif typ in ('not_test', 'factor'):
         value_set = value.infer_node(element.children[-1])
         for operator in element.children[:-1]:
@@ -122,7 +122,7 @@ def infer_node(value, element):
         if element.value not in ('.', '...'):
             origin = element.parent
             raise AssertionError("unhandled operator %s in %s " % (repr(element.value), origin))
-        return ValueSet([compiled.builtin_from_name(infer_state, u'Ellipsis')])
+        return ValueSet([compiled.builtin_from_name(inference_state, u'Ellipsis')])
     elif typ == 'dotted_name':
         value_set = infer_atom(value, element.children[0])
         for next_name in element.children[2::2]:
@@ -158,7 +158,7 @@ def infer_trailer(value, atom_values, trailer):
     if trailer_op == '[':
         trailer_op, node, _ = trailer.children
         return atom_values.get_item(
-            infer_subscript_list(value.infer_state, value, node),
+            infer_subscript_list(value.inference_state, value, node),
             ValueualizedNode(value, trailer)
         )
     else:
@@ -170,7 +170,7 @@ def infer_trailer(value, atom_values, trailer):
             )
         else:
             assert trailer_op == '(', 'trailer_op is actually %s' % trailer_op
-            args = arguments.TreeArguments(value.infer_state, value, node, trailer)
+            args = arguments.TreeArguments(value.inference_state, value, node, trailer)
             return atom_values.execute(args)
 
 
@@ -183,7 +183,7 @@ def infer_atom(value, atom):
     if atom.type == 'name':
         if atom.value in ('True', 'False', 'None'):
             # Python 2...
-            return ValueSet([compiled.builtin_from_name(value.infer_state, atom.value)])
+            return ValueSet([compiled.builtin_from_name(value.inference_state, atom.value)])
 
         # This is the first global lookup.
         stmt = tree.search_ancestor(
@@ -207,7 +207,7 @@ def infer_atom(value, atom):
     elif atom.type == 'keyword':
         # For False/True/None
         if atom.value in ('False', 'True', 'None'):
-            return ValueSet([compiled.builtin_from_name(value.infer_state, atom.value)])
+            return ValueSet([compiled.builtin_from_name(value.inference_state, atom.value)])
         elif atom.value == 'print':
             # print e.g. could be inferred like this in Python 2.7
             return NO_VALUES
@@ -218,17 +218,17 @@ def infer_atom(value, atom):
         assert False, 'Cannot infer the keyword %s' % atom
 
     elif isinstance(atom, tree.Literal):
-        string = value.infer_state.compiled_subprocess.safe_literal_eval(atom.value)
-        return ValueSet([compiled.create_simple_object(value.infer_state, string)])
+        string = value.inference_state.compiled_subprocess.safe_literal_eval(atom.value)
+        return ValueSet([compiled.create_simple_object(value.inference_state, string)])
     elif atom.type == 'strings':
         # Will be multiple string.
         value_set = infer_atom(value, atom.children[0])
         for string in atom.children[1:]:
             right = infer_atom(value, string)
-            value_set = _infer_comparison(value.infer_state, value, value_set, u'+', right)
+            value_set = _infer_comparison(value.inference_state, value, value_set, u'+', right)
         return value_set
     elif atom.type == 'fstring':
-        return compiled.get_string_value_set(value.infer_state)
+        return compiled.get_string_value_set(value.inference_state)
     else:
         c = atom.children
         # Parentheses without commas are not tuples.
@@ -251,7 +251,7 @@ def infer_atom(value, atom):
 
             if comp_for.type in ('comp_for', 'sync_comp_for'):
                 return ValueSet([iterable.comprehension_from_atom(
-                    value.infer_state, value, atom
+                    value.inference_state, value, atom
                 )])
 
         # It's a dict/list/tuple literal.
@@ -262,19 +262,19 @@ def infer_atom(value, atom):
             array_node_c = []
         if c[0] == '{' and (array_node == '}' or ':' in array_node_c or
                             '**' in array_node_c):
-            new_value = iterable.DictLiteralValue(value.infer_state, value, atom)
+            new_value = iterable.DictLiteralValue(value.inference_state, value, atom)
         else:
-            new_value = iterable.SequenceLiteralValue(value.infer_state, value, atom)
+            new_value = iterable.SequenceLiteralValue(value.inference_state, value, atom)
         return ValueSet([new_value])
 
 
 @_limit_value_infers
 def infer_expr_stmt(value, stmt, seek_name=None):
-    with recursion.execution_allowed(value.infer_state, stmt) as allowed:
+    with recursion.execution_allowed(value.inference_state, stmt) as allowed:
         # Here we allow list/set to recurse under certain conditions. To make
         # it possible to resolve stuff like list(set(list(x))), this is
         # necessary.
-        if not allowed and value.get_root_value() == value.infer_state.builtins_module:
+        if not allowed and value.get_root_value() == value.inference_state.builtins_module:
             try:
                 instance = value.var_args.instance
             except AttributeError:
@@ -306,7 +306,7 @@ def _infer_expr_stmt(value, stmt, seek_name=None):
 
     if seek_name:
         c_node = ValueualizedName(value, seek_name)
-        value_set = check_tuple_assignments(value.infer_state, c_node, value_set)
+        value_set = check_tuple_assignments(value.inference_state, c_node, value_set)
 
     first_operator = next(stmt.yield_operators(), None)
     if first_operator not in ('=', None) and first_operator.type == 'operator':
@@ -331,10 +331,10 @@ def _infer_expr_stmt(value, stmt, seek_name=None):
                 dct = {for_stmt.children[1].value: lazy_value.infer()}
                 with helpers.predefine_names(value, for_stmt, dct):
                     t = value.infer_node(rhs)
-                    left = _infer_comparison(value.infer_state, value, left, operator, t)
+                    left = _infer_comparison(value.inference_state, value, left, operator, t)
             value_set = left
         else:
-            value_set = _infer_comparison(value.infer_state, value, left, operator, value_set)
+            value_set = _infer_comparison(value.inference_state, value, left, operator, value_set)
     debug.dbg('infer_expr_stmt result %s', value_set)
     return value_set
 
@@ -358,7 +358,7 @@ def infer_or_test(value, or_test):
                     types = value.infer_node(right)
             # Otherwise continue, because of uncertainty.
         else:
-            types = _infer_comparison(value.infer_state, value, types, operator,
+            types = _infer_comparison(value.inference_state, value, types, operator,
                                      value.infer_node(right))
     debug.dbg('infer_or_test types %s', types)
     return types
@@ -377,12 +377,12 @@ def infer_factor(value_set, operator):
             b = value.py__bool__()
             if b is None:  # Uncertainty.
                 return
-            yield compiled.create_simple_object(value.infer_state, not b)
+            yield compiled.create_simple_object(value.inference_state, not b)
         else:
             yield value
 
 
-def _literals_to_types(infer_state, result):
+def _literals_to_types(inference_state, result):
     # Changes literals ('a', 1, 1.0, etc) to its type instances (str(),
     # int(), float(), etc).
     new_result = NO_VALUES
@@ -390,27 +390,27 @@ def _literals_to_types(infer_state, result):
         if is_literal(typ):
             # Literals are only valid as long as the operations are
             # correct. Otherwise add a value-free instance.
-            cls = compiled.builtin_from_name(infer_state, typ.name.string_name)
+            cls = compiled.builtin_from_name(inference_state, typ.name.string_name)
             new_result |= cls.execute_with_values()
         else:
             new_result |= ValueSet([typ])
     return new_result
 
 
-def _infer_comparison(infer_state, value, left_values, operator, right_values):
+def _infer_comparison(inference_state, value, left_values, operator, right_values):
     if not left_values or not right_values:
         # illegal slices e.g. cause left/right_result to be None
         result = (left_values or NO_VALUES) | (right_values or NO_VALUES)
-        return _literals_to_types(infer_state, result)
+        return _literals_to_types(inference_state, result)
     else:
         # I don't think there's a reasonable chance that a string
         # operation is still correct, once we pass something like six
         # objects.
         if len(left_values) * len(right_values) > 6:
-            return _literals_to_types(infer_state, left_values | right_values)
+            return _literals_to_types(inference_state, left_values | right_values)
         else:
             return ValueSet.from_sets(
-                _infer_comparison_part(infer_state, value, left, operator, right)
+                _infer_comparison_part(inference_state, value, left, operator, right)
                 for left in left_values
                 for right in right_values
             )
@@ -440,8 +440,8 @@ def _is_list(value):
     return isinstance(value, iterable.Sequence) and value.array_type == 'list'
 
 
-def _bool_to_value(infer_state, bool_):
-    return compiled.builtin_from_name(infer_state, force_unicode(str(bool_)))
+def _bool_to_value(inference_state, bool_):
+    return compiled.builtin_from_name(inference_state, force_unicode(str(bool_)))
 
 
 def _get_tuple_ints(value):
@@ -461,7 +461,7 @@ def _get_tuple_ints(value):
     return numbers
 
 
-def _infer_comparison_part(infer_state, value, left, operator, right):
+def _infer_comparison_part(inference_state, value, left, operator, right):
     l_is_num = is_number(left)
     r_is_num = is_number(right)
     if isinstance(operator, unicode):
@@ -479,7 +479,7 @@ def _infer_comparison_part(infer_state, value, left, operator, right):
         if l_is_num and r_is_num or is_string(left) and is_string(right):
             return ValueSet([left.execute_operation(right, str_operator)])
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
-            return ValueSet([iterable.MergedArray(infer_state, (left, right))])
+            return ValueSet([iterable.MergedArray(inference_state, (left, right))])
     elif str_operator == '-':
         if l_is_num and r_is_num:
             return ValueSet([left.execute_operation(right, str_operator)])
@@ -499,18 +499,18 @@ def _infer_comparison_part(infer_state, value, left, operator, right):
             if str_operator in ('is', '!=', '==', 'is not'):
                 operation = COMPARISON_OPERATORS[str_operator]
                 bool_ = operation(left, right)
-                return ValueSet([_bool_to_value(infer_state, bool_)])
+                return ValueSet([_bool_to_value(inference_state, bool_)])
 
             if isinstance(left, VersionInfo):
                 version_info = _get_tuple_ints(right)
                 if version_info is not None:
                     bool_result = compiled.access.COMPARISON_OPERATORS[operator](
-                        infer_state.environment.version_info,
+                        inference_state.environment.version_info,
                         tuple(version_info)
                     )
-                    return ValueSet([_bool_to_value(infer_state, bool_result)])
+                    return ValueSet([_bool_to_value(inference_state, bool_result)])
 
-        return ValueSet([_bool_to_value(infer_state, True), _bool_to_value(infer_state, False)])
+        return ValueSet([_bool_to_value(inference_state, True), _bool_to_value(inference_state, False)])
     elif str_operator == 'in':
         return NO_VALUES
 
@@ -531,7 +531,7 @@ def _infer_comparison_part(infer_state, value, left, operator, right):
     return result
 
 
-def _remove_statements(infer_state, value, stmt, name):
+def _remove_statements(inference_state, value, stmt, name):
     """
     This is the part where statements are being stripped.
 
@@ -547,7 +547,7 @@ def _remove_statements(infer_state, value, stmt, name):
 
 
 @plugin_manager.decorate()
-def tree_name_to_values(infer_state, value, tree_name):
+def tree_name_to_values(inference_state, value, tree_name):
     value_set = NO_VALUES
     module_node = value.get_root_value().tree_node
     # First check for annotations, like: `foo: int = 3`
@@ -570,15 +570,15 @@ def tree_name_to_values(infer_state, value, tree_name):
     if node is None:
         node = tree_name.parent
         if node.type == 'global_stmt':
-            value = infer_state.create_value(value, tree_name)
-            finder = NameFinder(infer_state, value, value, tree_name.value)
+            value = inference_state.create_value(value, tree_name)
+            finder = NameFinder(inference_state, value, value, tree_name.value)
             filters = finder.get_global_filters()
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             filters = [next(filters)]
             return finder.find(filters, attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
-            value = infer_state.create_value(value, tree_name)
+            value = inference_state.create_value(value, tree_name)
             return infer_atom(value, tree_name)
 
     typ = node.type
@@ -602,9 +602,9 @@ def tree_name_to_values(infer_state, value, tree_name):
                 is_async=node.parent.type == 'async_stmt',
             )
             c_node = ValueualizedName(value, tree_name)
-            types = check_tuple_assignments(infer_state, c_node, for_types)
+            types = check_tuple_assignments(inference_state, c_node, for_types)
     elif typ == 'expr_stmt':
-        types = _remove_statements(infer_state, value, node, tree_name)
+        types = _remove_statements(inference_state, value, node, tree_name)
     elif typ == 'with_stmt':
         value_managers = value.infer_node(node.get_test_node_from_name(tree_name))
         enter_methods = value_managers.py__getattribute__(u'__enter__')
@@ -628,7 +628,7 @@ def tree_name_to_values(infer_state, value, tree_name):
 
 # We don't want to have functions/classes that are created by the same
 # tree_node.
-@infer_state_method_cache()
+@inference_state_method_cache()
 def _apply_decorators(value, node):
     """
     Returns the function, that should to be executed in the end.
@@ -636,7 +636,7 @@ def _apply_decorators(value, node):
     """
     if node.type == 'classdef':
         decoratee_value = ClassValue(
-            value.infer_state,
+            value.inference_state,
             parent_context=value,
             tree_node=node
         )
@@ -674,7 +674,7 @@ def _apply_decorators(value, node):
     return values
 
 
-def check_tuple_assignments(infer_state, valueualized_name, value_set):
+def check_tuple_assignments(inference_state, valueualized_name, value_set):
     """
     Checks if tuples are assigned.
     """
@@ -698,7 +698,7 @@ def check_tuple_assignments(infer_state, valueualized_name, value_set):
     return value_set
 
 
-def infer_subscript_list(infer_state, value, index):
+def infer_subscript_list(inference_state, value, index):
     """
     Handles slices in subscript nodes.
     """
@@ -724,7 +724,7 @@ def infer_subscript_list(infer_state, value, index):
 
         return ValueSet([iterable.Slice(value, *result)])
     elif index.type == 'subscriptlist':
-        return ValueSet([iterable.SequenceLiteralValue(infer_state, value, index)])
+        return ValueSet([iterable.SequenceLiteralValue(inference_state, value, index)])
 
     # No slices
     return value.infer_node(index)

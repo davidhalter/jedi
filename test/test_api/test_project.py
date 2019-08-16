@@ -13,12 +13,12 @@ def test_django_default_project(Script):
     )
     c, = script.completions()
     assert c.name == "SomeModel"
-    assert script._infer_state.project._django is True
+    assert script._inference_state.project._django is True
 
 
 def test_interpreter_project_path():
     # Run from anywhere it should be the cwd.
     dir = os.path.join(root_dir, 'test')
     with set_cwd(dir):
-        project = Interpreter('', [locals()])._infer_state.project
+        project = Interpreter('', [locals()])._inference_state.project
         assert project._path == dir

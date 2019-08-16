@@ -212,7 +212,7 @@ class IntegrationTestCase(object):
 
     def run_goto_definitions(self, compare_cb, environment):
         script = self.script(environment)
-        infer_state = script._infer_state
+        inference_state = script._inference_state
 
         def comparison(definition):
             suffix = '()' if definition.type == 'instance' else ''
@@ -232,13 +232,13 @@ class IntegrationTestCase(object):
                     user_value = user_value.get_function_execution()
                 element.parent = user_value.tree_node
                 results = convert_values(
-                    infer_state.infer_element(user_value, element),
+                    inference_state.infer_element(user_value, element),
                 )
                 if not results:
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))
 
-                should_be |= set(Definition(infer_state, r.name) for r in results)
+                should_be |= set(Definition(inference_state, r.name) for r in results)
             debug.dbg('Finished getting types', color='YELLOW')
 
             # Because the objects have different ids, `repr`, then compare.

@@ -145,13 +145,13 @@ def get_executed_params_and_issues(execution_value, arguments):
                         var_arg_iterator.push_back((key, argument))
                         break
                     lazy_value_list.append(argument)
-            seq = iterable.FakeSequence(execution_value.infer_state, u'tuple', lazy_value_list)
+            seq = iterable.FakeSequence(execution_value.inference_state, u'tuple', lazy_value_list)
             result_arg = LazyKnownValue(seq)
         elif param.star_count == 2:
             if argument is not None:
                 too_many_args(argument)
             # **kwargs param
-            dct = iterable.FakeDict(execution_value.infer_state, dict(non_matching_keys))
+            dct = iterable.FakeDict(execution_value.inference_state, dict(non_matching_keys))
             result_arg = LazyKnownValue(dct)
             non_matching_keys = {}
         else:
@@ -235,11 +235,11 @@ def _error_argument_count(funcdef, actual_count):
 def _create_default_param(execution_value, param):
     if param.star_count == 1:
         result_arg = LazyKnownValue(
-            iterable.FakeSequence(execution_value.infer_state, u'tuple', [])
+            iterable.FakeSequence(execution_value.inference_state, u'tuple', [])
         )
     elif param.star_count == 2:
         result_arg = LazyKnownValue(
-            iterable.FakeDict(execution_value.infer_state, {})
+            iterable.FakeDict(execution_value.inference_state, {})
         )
     elif param.default is None:
         result_arg = LazyUnknownValue()
