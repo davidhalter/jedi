@@ -150,7 +150,7 @@ def comprehension_from_atom(inference_state, value, atom):
 
     return cls(
         inference_state,
-        defining_value=value,
+        defining_context=value,
         sync_comp_for_node=sync_comp_for,
         entry_node=test_list_comp.children[0],
     )
@@ -167,7 +167,7 @@ class ComprehensionMixin(object):
         is_async = comp_for.parent.type == 'comp_for'
 
         input_node = comp_for.children[3]
-        parent_context = parent_context or self._defining_value
+        parent_context = parent_context or self._defining_context
         input_types = parent_context.infer_node(input_node)
         # TODO: simulate await if self.is_async
 
@@ -245,10 +245,10 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
 
 
 class _BaseComprehension(ComprehensionMixin):
-    def __init__(self, inference_state, defining_value, sync_comp_for_node, entry_node):
+    def __init__(self, inference_state, defining_context, sync_comp_for_node, entry_node):
         assert sync_comp_for_node.type == 'sync_comp_for'
         super(_BaseComprehension, self).__init__(inference_state)
-        self._defining_value = defining_value
+        self._defining_context = defining_context
         self._sync_comp_for_node = sync_comp_for_node
         self._entry_node = entry_node
 
@@ -277,10 +277,10 @@ class GeneratorComprehension(_BaseComprehension, GeneratorBase):
 class DictComprehension(ComprehensionMixin, Sequence):
     array_type = u'dict'
 
-    def __init__(self, inference_state, defining_value, sync_comp_for_node, key_node, value_node):
+    def __init__(self, inference_state, defining_context, sync_comp_for_node, key_node, value_node):
         assert sync_comp_for_node.type == 'sync_comp_for'
         super(DictComprehension, self).__init__(inference_state)
-        self._defining_value = defining_value
+        self._defining_context = defining_context
         self._sync_comp_for_node = sync_comp_for_node
         self._entry_node = key_node
         self._value_node = value_node
@@ -341,10 +341,10 @@ class SequenceLiteralValue(Sequence):
                '[': u'list',
                '{': u'set'}
 
-    def __init__(self, inference_state, defining_value, atom):
+    def __init__(self, inference_state, defining_context, atom):
         super(SequenceLiteralValue, self).__init__(inference_state)
         self.atom = atom
-        self._defining_value = defining_value
+        self._defining_context = defining_context
 
         if self.atom.type in self._TUPLE_LIKE:
             self.array_type = u'tuple'
@@ -357,14 +357,14 @@ class SequenceLiteralValue(Sequence):
         if self.array_type == u'dict':
             compiled_obj_index = compiled.create_simple_object(self.inference_state, index)
             for key, value in self.get_tree_entries():
-                for k in self._defining_value.infer_node(key):
+                for k in self._defining_context.infer_node(key):
                     try:
                         method = k.execute_operation
                     except AttributeError:
                         pass
                     else:
                         if method(compiled_obj_index, u'==').get_safe_value():
-                            return self._defining_value.infer_node(value)
+                            return self._defining_context.infer_node(value)
             raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
 
         if isinstance(index, slice):
@@ -372,7 +372,7 @@ class SequenceLiteralValue(Sequence):
         else:
             with reraise_getitem_errors(TypeError, KeyError, IndexError):
                 node = self.get_tree_entries()[index]
-            return self._defining_value.infer_node(node)
+            return self._defining_context.infer_node(node)
 
     def py__iter__(self, valueualized_node=None):
         """
@@ -383,7 +383,7 @@ class SequenceLiteralValue(Sequence):
             # Get keys.
             types = NO_VALUES
             for k, _ in self.get_tree_entries():
-                types |= self._defining_value.infer_node(k)
+                types |= self._defining_context.infer_node(k)
             # We don't know which dict index comes first, therefore always
             # yield all the types.
             for _ in types:
@@ -393,10 +393,10 @@ class SequenceLiteralValue(Sequence):
                 if node == ':' or node.type == 'subscript':
                     # TODO this should probably use at least part of the code
                     #      of infer_subscript_list.
-                    yield LazyKnownValue(Slice(self._defining_value, None, None, None))
+                    yield LazyKnownValue(Slice(self._defining_context, None, None, None))
                 else:
-                    yield LazyTreeValue(self._defining_value, node)
-            for addition in check_array_additions(self._defining_value, self):
+                    yield LazyTreeValue(self._defining_context, node)
+            for addition in check_array_additions(self._defining_context, self):
                 yield addition
 
     def py__len__(self):
@@ -405,7 +405,7 @@ class SequenceLiteralValue(Sequence):
 
     def _dict_values(self):
         return ValueSet.from_sets(
-            self._defining_value.infer_node(v)
+            self._defining_context.infer_node(v)
             for k, v in self.get_tree_entries()
         )
 
@@ -460,9 +460,9 @@ class SequenceLiteralValue(Sequence):
         resolved (as a string) and the values are still lazy values.
         """
         for key_node, value in self.get_tree_entries():
-            for key in self._defining_value.infer_node(key_node):
+            for key in self._defining_context.infer_node(key_node):
                 if is_string(key):
-                    yield key.get_safe_value(), LazyTreeValue(self._defining_value, value)
+                    yield key.get_safe_value(), LazyTreeValue(self._defining_context, value)
 
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
@@ -471,9 +471,9 @@ class SequenceLiteralValue(Sequence):
 class DictLiteralValue(_DictMixin, SequenceLiteralValue):
     array_type = u'dict'
 
-    def __init__(self, inference_state, defining_value, atom):
+    def __init__(self, inference_state, defining_context, atom):
         super(SequenceLiteralValue, self).__init__(inference_state)
-        self._defining_value = defining_value
+        self._defining_context = defining_context
         self.atom = atom
 
     @publish_method('values')
@@ -486,8 +486,8 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
         lazy_values = [
             LazyKnownValue(FakeSequence(
                 self.inference_state, u'tuple',
-                (LazyTreeValue(self._defining_value, key_node),
-                 LazyTreeValue(self._defining_value, value_node))
+                (LazyTreeValue(self._defining_context, key_node),
+                 LazyTreeValue(self._defining_context, value_node))
             )) for key_node, value_node in self.get_tree_entries()
         ]
 
@@ -495,7 +495,7 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
 
     def _dict_keys(self):
         return ValueSet.from_sets(
-            self._defining_value.infer_node(k)
+            self._defining_context.infer_node(k)
             for k, v in self.get_tree_entries()
         )
 
@@ -648,18 +648,18 @@ def unpack_tuple_to_dict(value, types, exprlist):
     raise NotImplementedError
 
 
-def check_array_additions(value, sequence):
+def check_array_additions(context, sequence):
     """ Just a mapper function for the internal _check_array_additions """
     if sequence.array_type not in ('list', 'set'):
         # TODO also check for dict updates
         return NO_VALUES
 
-    return _check_array_additions(value, sequence)
+    return _check_array_additions(context, sequence)
 
 
 @inference_state_method_cache(default=NO_VALUES)
 @debug.increase_indent
-def _check_array_additions(value, sequence):
+def _check_array_additions(context, sequence):
     """
     Checks if a `Array` has "add" (append, insert, extend) statements:
 
@@ -669,7 +669,7 @@ def _check_array_additions(value, sequence):
     from jedi.inference import arguments
 
     debug.dbg('Dynamic array search for %s' % sequence, color='MAGENTA')
-    module_context = value.get_root_context()
+    module_context = context.get_root_context()
     if not settings.dynamic_array_additions or isinstance(module_context, compiled.CompiledObject):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
         return NO_VALUES
@@ -701,7 +701,7 @@ def _check_array_additions(value, sequence):
             continue
         else:
             for name in possible_names:
-                value_node = value.tree_node
+                value_node = context.tree_node
                 if not (value_node.start_pos < name.start_pos < value_node.end_pos):
                     continue
                 trailer = name.parent
@@ -718,9 +718,9 @@ def _check_array_additions(value, sequence):
                         continue
 
                 raise NotImplementedError
-                random_context = value.create_context(name)
+                random_context = context.create_context(name)
 
-                with recursion.execution_allowed(value.inference_state, power) as allowed:
+                with recursion.execution_allowed(context.inference_state, power) as allowed:
                     if allowed:
                         found = infer_call_of_leaf(
                             random_context,
@@ -774,7 +774,7 @@ class _ArrayInstance(HelperValueMixin):
 
         from jedi.inference import arguments
         if isinstance(var_args, arguments.TreeArguments):
-            additions = _check_array_additions(var_args.value, self.instance)
+            additions = _check_array_additions(var_args.context, self.instance)
             for addition in additions:
                 yield addition
 

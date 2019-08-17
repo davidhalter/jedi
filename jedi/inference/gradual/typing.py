@@ -222,7 +222,7 @@ class TypingClassValue(_TypingClassMixin, TypingValue, ClassMixin):
     index_class = TypingClassValueWithIndex
 
 
-def _iter_over_arguments(maybe_tuple_value, defining_value):
+def _iter_over_arguments(maybe_tuple_value, defining_context):
     def iterate():
         if isinstance(maybe_tuple_value, SequenceLiteralValue):
             for lazy_value in maybe_tuple_value.py__iter__(valueualized_node=None):
@@ -234,9 +234,9 @@ def _iter_over_arguments(maybe_tuple_value, defining_value):
         for value in value_set:
             if is_string(value):
                 from jedi.inference.gradual.annotation import _get_forward_reference_node
-                node = _get_forward_reference_node(defining_value, value.get_safe_value())
+                node = _get_forward_reference_node(defining_context, value.get_safe_value())
                 if node is not None:
-                    for c in defining_value.infer_node(node):
+                    for c in defining_context.infer_node(node):
                         yield c
             else:
                 yield value

@@ -162,12 +162,13 @@ class ModuleMixin(SubModuleDictMixin):
         from jedi.inference.imports import Importer
 
         modules = []
+        module_context = self.as_context()
         for i in self.tree_node.iter_imports():
             if i.is_star_import():
                 new = Importer(
                     self.inference_state,
                     import_path=i.get_paths()[-1],
-                    module_value=self,
+                    module_context=module_context,
                     level=i.level
                 ).follow()
 

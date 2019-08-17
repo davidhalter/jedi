@@ -3,6 +3,7 @@ from jedi.inference.value.module import ModuleValue
 from jedi.inference.filters import ParserTreeFilter, \
     TreeNameDefinition
 from jedi.inference.gradual.typing import TypingModuleFilterWrapper
+from jedi.inference.context import ModuleContext
 
 
 class StubModuleValue(ModuleValue):
@@ -54,6 +55,17 @@ class StubModuleValue(ModuleValue):
 class TypingModuleWrapper(StubModuleValue):
     def get_filters(self, *args, **kwargs):
         filters = super(TypingModuleWrapper, self).get_filters(*args, **kwargs)
+        yield TypingModuleFilterWrapper(next(filters))
+        for f in filters:
+            yield f
+
+    def as_context(self):
+        return TypingModuleContext(self)
+
+
+class TypingModuleContext(ModuleContext):
+    def get_filters(self, *args, **kwargs):
+        filters = super(TypingModuleContext, self).get_filters(*args, **kwargs)
         yield TypingModuleFilterWrapper(next(filters))
         for f in filters:
             yield f

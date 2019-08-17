@@ -31,7 +31,6 @@ from jedi.inference.value import iterable
 from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
     LazyKnownValues
 from jedi.inference.names import ValueName, BaseTreeParamName
-from jedi.inference.syntax_tree import is_string
 from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
 from jedi.inference.signature import AbstractSignature, SignatureWrapper
@@ -305,8 +304,7 @@ def builtins_reversed(sequences, obj, arguments):
     key, lazy_value = next(arguments.unpack())
     cn = None
     if isinstance(lazy_value, LazyTreeValue):
-        # TODO access private
-        cn = ValueualizedNode(lazy_value.value, lazy_value.data)
+        cn = ValueualizedNode(lazy_value.context, lazy_value.data)
     ordered = list(sequences.iterate(cn))
 
     # Repack iterator values and then run it the normal way. This is
@@ -351,7 +349,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
                     message = 'TypeError: isinstance() arg 2 must be a ' \
                               'class, type, or tuple of classes and types, ' \
                               'not %s.' % cls_or_tup
-                    analysis.add(lazy_value.value, 'type-error-isinstance', node, message)
+                    analysis.add(lazy_value.context, 'type-error-isinstance', node, message)
 
     return ValueSet(
         compiled.builtin_from_name(inference_state, force_unicode(str(b)))
@@ -794,7 +792,7 @@ def get_metaclass_filters(func):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'EnumMeta' \
                     and metaclass.get_root_context().py__name__() == 'enum':
-                filter_ = ParserTreeFilter(value=cls)
+                filter_ = ParserTreeFilter(context=cls)
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
                 })]
