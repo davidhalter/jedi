@@ -170,6 +170,9 @@ class Value(HelperValueMixin, BaseValue):
     def is_bound_method(self):
         return False
 
+    def is_builtins_module(self):
+        return False
+
     def py__bool__(self):
         """
         Since Wrapper is a super class for classes, functions and modules,

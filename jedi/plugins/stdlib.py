@@ -114,10 +114,11 @@ def execute(callback):
         except AttributeError:
             pass
         else:
-            if value.parent_context.is_builtins_module():
+            p = value.parent_context
+            if p is not None and p.is_builtins_module():
                 module_name = 'builtins'
-            elif value.parent_context is not None and value.parent_context.is_module():
-                module_name = value.parent_context.py__name__()
+            elif p is not None and p.is_module():
+                module_name = p.py__name__()
             else:
                 return call()
 

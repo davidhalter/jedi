@@ -20,6 +20,7 @@ from jedi.inference.names import NameWrapper, AbstractTreeName, \
     AbstractNameDefinition, ValueName
 from jedi.inference.helpers import is_string
 from jedi.inference.value.klass import ClassMixin, ClassFilter
+from jedi.inference.context import ClassContext
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -549,21 +550,23 @@ class TypeVarFilter(object):
         return []
 
 
-class AbstractAnnotatedClass(ClassMixin, ValueWrapper):
-    def get_type_var_filter(self):
-        return TypeVarFilter(self.get_generics(), self.list_type_vars())
-
+class AnnotatedClassContext(ClassContext):
     def get_filters(self, *args, **kwargs):
-        filters = super(AbstractAnnotatedClass, self).get_filters(
+        filters = super(AnnotatedClassContext, self).get_filters(
             *args, **kwargs
         )
         for f in filters:
             yield f
 
-        if search_global:
-            # The type vars can only be looked up if it's a global search and
-            # not a direct lookup on the class.
-            yield self.get_type_var_filter()
+        # The type vars can only be looked up if it's a global search and
+        # not a direct lookup on the class.
+        yield self._value.get_type_var_filter()
+
+
+
+class AbstractAnnotatedClass(ClassMixin, ValueWrapper):
+    def get_type_var_filter(self):
+        return TypeVarFilter(self.get_generics(), self.list_type_vars())
 
     def is_same_class(self, other):
         if not isinstance(other, AbstractAnnotatedClass):
@@ -622,6 +625,9 @@ class AbstractAnnotatedClass(ClassMixin, ValueWrapper):
             self._wrapped_value,
             generics=tuple(new_generics)
         )])
+
+    def as_context(self):
+        return AnnotatedClassContext(self)
 
     def __repr__(self):
         return '<%s: %s%s>' % (

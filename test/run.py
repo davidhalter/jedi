@@ -224,14 +224,15 @@ class IntegrationTestCase(object):
                 string = match.group(0)
                 parser = grammar36.parse(string, start_symbol='eval_input', error_recovery=False)
                 parser_utils.move(parser.get_root_node(), self.line_nr)
-                element = parser.get_root_node()
+                node = parser.get_root_node()
                 module_context = script._get_module_context()
                 user_context = get_user_context(module_context, (self.line_nr, 0))
-                if user_context._value.api_type == 'function':
-                    user_context = user_context.get_function_execution()
-                element.parent = user_context.tree_node
+                # TODO needed?
+                #if user_context._value.api_type == 'function':
+                #    user_context = user_context.get_function_execution()
+                node.parent = user_context.tree_node
                 results = convert_values(
-                    inference_state.infer_element(user_context, element),
+                    user_context.infer_node(node),
                 )
                 if not results:
                     raise Exception('Could not resolve %s on line %s'

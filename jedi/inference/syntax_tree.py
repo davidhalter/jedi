@@ -75,7 +75,7 @@ def infer_node(context, element):
     if typ in ('name', 'number', 'string', 'atom', 'strings', 'keyword', 'fstring'):
         return infer_atom(context, element)
     elif typ == 'lambdef':
-        return ValueSet([FunctionValue.from_value(context, element)])
+        return ValueSet([FunctionValue.from_context(context, element)])
     elif typ == 'expr_stmt':
         return infer_expr_stmt(context, element)
     elif typ in ('power', 'atom_expr'):
@@ -571,8 +571,7 @@ def tree_name_to_values(inference_state, context, tree_name):
         node = tree_name.parent
         if node.type == 'global_stmt':
             c = context.create_context(tree_name)
-            raise NotImplementedError
-            finder = NameFinder(inference_state, value, value, tree_name.value)
+            finder = NameFinder(inference_state, c, c, tree_name.value)
             filters = finder.get_global_filters()
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
@@ -642,7 +641,7 @@ def _apply_decorators(context, node):
             tree_node=node
         )
     else:
-        decoratee_value = FunctionValue.from_value(context, node)
+        decoratee_value = FunctionValue.from_context(context, node)
     initial = values = ValueSet([decoratee_value])
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values, color="MAGENTA")

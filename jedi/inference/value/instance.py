@@ -190,7 +190,7 @@ class AbstractInstanceValue(Value):
         for name in self.get_function_slot_names(u'__init__'):
             # TODO is this correct? I think we need to check for functions.
             if isinstance(name, LazyInstanceClassName):
-                function = FunctionValue.from_value(
+                function = FunctionValue.from_context(
                     self.parent_context,
                     name.tree_name.parent
                 )
@@ -207,7 +207,7 @@ class AbstractInstanceValue(Value):
         else:
             parent_context = self.create_instance_value(class_value, scope)
             if scope.type == 'funcdef':
-                func = FunctionValue.from_value(
+                func = FunctionValue.from_context(
                     parent_context,
                     scope,
                 )

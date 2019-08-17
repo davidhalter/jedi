@@ -64,7 +64,7 @@ class NameFinder(object):
                 return NO_VALUES
             return self._found_predefined_types
 
-        types = self._names_to_types(names, attribute_lookup)
+        types = self._names_to_types(names)
 
         if not names and self._analysis_errors and not types \
                 and not (isinstance(self._name, tree.Name) and
@@ -184,7 +184,7 @@ class NameFinder(object):
                  inst.get_function_slot_names(u'__getattribute__'))
         return inst.execute_function_slots(names, name)
 
-    def _names_to_types(self, names, attribute_lookup):
+    def _names_to_types(self, names):
         values = ValueSet.from_sets(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, values)

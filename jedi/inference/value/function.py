@@ -16,6 +16,7 @@ from jedi.inference.base_value import ValueualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
     LazyTreeValue
+from jedi.inference.context import AbstractContext
 from jedi.inference.value import iterable
 from jedi import parser_utils
 from jedi.inference.parser_cache import get_yield_exprs
@@ -90,7 +91,7 @@ class FunctionMixin(object):
         if arguments is None:
             arguments = AnonymousArguments()
 
-        return FunctionExecutionContext(self.inference_state, self.parent_context, self, arguments)
+        return FunctionExecutionContext(self, arguments)
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.get_signature_functions()]
@@ -101,25 +102,25 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         return True
 
     @classmethod
-    def from_value(cls, value, tree_node):
+    def from_context(cls, context, tree_node):
         def create(tree_node):
-            if value.is_class():
+            if context.is_class():
                 return MethodValue(
-                    value.inference_state,
-                    value,
+                    context.inference_state,
+                    context,
                     parent_context=parent_context,
                     tree_node=tree_node
                 )
             else:
                 return cls(
-                    value.inference_state,
+                    context.inference_state,
                     parent_context=parent_context,
                     tree_node=tree_node
                 )
 
-        overloaded_funcs = list(_find_overload_functions(value, tree_node))
+        overloaded_funcs = list(_find_overload_functions(context, tree_node))
 
-        parent_context = value
+        parent_context = context
         while parent_context.is_class() or parent_context.is_instance():
             parent_context = parent_context.parent_context
 
@@ -160,15 +161,11 @@ class MethodValue(FunctionValue):
         return names + (self.py__name__(),)
 
 
-class FunctionExecutionContext(TreeValue):
+class FunctionExecutionContext(AbstractContext):
     function_execution_filter = FunctionExecutionFilter
 
-    def __init__(self, inference_state, parent_context, function_value, var_args):
-        super(FunctionExecutionContext, self).__init__(
-            inference_state,
-            parent_context,
-            function_value.tree_node,
-        )
+    def __init__(self, function_value, var_args):
+        super(FunctionExecutionContext, self).__init__(function_value)
         self.function_value = function_value
         self.var_args = var_args
 
