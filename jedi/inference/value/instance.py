@@ -146,21 +146,21 @@ class AbstractInstanceValue(Value):
                 # Propably from the metaclass.
                 yield f
 
-    def py__getitem__(self, index_value_set, valueualized_node):
+    def py__getitem__(self, index_value_set, contextualized_node):
         names = self.get_function_slot_names(u'__getitem__')
         if not names:
             return super(AbstractInstanceValue, self).py__getitem__(
                 index_value_set,
-                valueualized_node,
+                contextualized_node,
             )
 
         args = ValuesArguments([index_value_set])
         return ValueSet.from_sets(name.infer().execute(args) for name in names)
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         iter_slot_names = self.get_function_slot_names(u'__iter__')
         if not iter_slot_names:
-            return super(AbstractInstanceValue, self).py__iter__(valueualized_node)
+            return super(AbstractInstanceValue, self).py__iter__(contextualized_node)
 
         def iterate():
             for generator in self.execute_function_slots(iter_slot_names):

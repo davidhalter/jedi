@@ -272,7 +272,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
             self.inference_state.builtins_module.py__getattribute__('object')
         )]
 
-    def py__getitem__(self, index_value_set, valueualized_node):
+    def py__getitem__(self, index_value_set, contextualized_node):
         from jedi.inference.gradual.typing import LazyGenericClass
         if not index_value_set:
             return ValueSet([self])
@@ -280,7 +280,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
             LazyGenericClass(
                 self,
                 index_value,
-                value_of_index=valueualized_node.context,
+                value_of_index=contextualized_node.context,
             )
             for index_value in index_value_set
         )

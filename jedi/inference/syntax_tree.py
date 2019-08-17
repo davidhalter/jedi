@@ -598,7 +598,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             cn = ContextualizedNode(context, node.children[3])
             for_types = iterate_values(
                 cn.infer(),
-                valueualized_node=cn,
+                contextualized_node=cn,
                 is_async=node.parent.type == 'async_stmt',
             )
             c_node = ContextualizedName(context, tree_name)
@@ -674,13 +674,13 @@ def _apply_decorators(context, node):
     return values
 
 
-def check_tuple_assignments(valueualized_name, value_set):
+def check_tuple_assignments(contextualized_name, value_set):
     """
     Checks if tuples are assigned.
     """
     lazy_value = None
-    for index, node in valueualized_name.assignment_indexes():
-        cn = ContextualizedNode(valueualized_name.context, node)
+    for index, node in contextualized_name.assignment_indexes():
+        cn = ContextualizedNode(contextualized_name.context, node)
         iterated = value_set.iterate(cn)
         if isinstance(index, slice):
             # For no star unpacking is not possible.

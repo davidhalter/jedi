@@ -118,11 +118,11 @@ def get_executed_params_and_issues(execution_context, arguments):
                     had_multiple_value_error = True
                     m = ("TypeError: %s() got multiple values for keyword argument '%s'."
                          % (funcdef.name, key))
-                    for valueualized_node in arguments.get_calling_nodes():
+                    for contextualized_node in arguments.get_calling_nodes():
                         issues.append(
-                            analysis.add(valueualized_node.context,
+                            analysis.add(contextualized_node.context,
                                          'type-error-multiple-values',
-                                         valueualized_node.node, message=m)
+                                         contextualized_node.node, message=m)
                         )
                 else:
                     keys_used[key] = ExecutedParam(execution_context, key_param, argument)
@@ -161,13 +161,13 @@ def get_executed_params_and_issues(execution_context, arguments):
                 if param.default is None:
                     result_arg = LazyUnknownValue()
                     if not keys_only:
-                        for valueualized_node in arguments.get_calling_nodes():
+                        for contextualized_node in arguments.get_calling_nodes():
                             m = _error_argument_count(funcdef, len(unpacked_va))
                             issues.append(
                                 analysis.add(
-                                    valueualized_node.context,
+                                    contextualized_node.context,
                                     'type-error-too-few-arguments',
-                                    valueualized_node.node,
+                                    contextualized_node.node,
                                     message=m,
                                 )
                             )
@@ -194,12 +194,12 @@ def get_executed_params_and_issues(execution_context, arguments):
             if not (non_matching_keys or had_multiple_value_error or
                     param.star_count or param.default):
                 # add a warning only if there's not another one.
-                for valueualized_node in arguments.get_calling_nodes():
+                for contextualized_node in arguments.get_calling_nodes():
                     m = _error_argument_count(funcdef, len(unpacked_va))
                     issues.append(
-                        analysis.add(valueualized_node.context,
+                        analysis.add(contextualized_node.context,
                                      'type-error-too-few-arguments',
-                                     valueualized_node.node, message=m)
+                                     contextualized_node.node, message=m)
                     )
 
     for key, lazy_value in non_matching_keys.items():

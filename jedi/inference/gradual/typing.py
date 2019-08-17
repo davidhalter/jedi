@@ -192,14 +192,14 @@ class TypingValue(_BaseTypingValue):
     index_class = TypingValueWithIndex
     py__simple_getitem__ = None
 
-    def py__getitem__(self, index_value_set, valueualized_node):
+    def py__getitem__(self, index_value_set, contextualized_node):
         return ValueSet(
             self.index_class.create_cached(
                 self.inference_state,
                 self.parent_context,
                 self._tree_name,
                 index_value,
-                value_of_index=valueualized_node.context)
+                value_of_index=contextualized_node.context)
             for index_value in index_value_set
         )
 
@@ -225,7 +225,7 @@ class TypingClassValue(_TypingClassMixin, TypingValue, ClassMixin):
 def _iter_over_arguments(maybe_tuple_value, defining_context):
     def iterate():
         if isinstance(maybe_tuple_value, SequenceLiteralValue):
-            for lazy_value in maybe_tuple_value.py__iter__(valueualized_node=None):
+            for lazy_value in maybe_tuple_value.py__iter__(contextualized_node=None):
                 yield lazy_value.infer()
         else:
             yield ValueSet([maybe_tuple_value])
@@ -316,7 +316,7 @@ class Tuple(_ContainerBase):
             debug.dbg('The getitem type on Tuple was %s' % index)
             return NO_VALUES
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         if self._is_homogenous():
             yield LazyKnownValues(self._get_getitem_values(0).execute_annotation())
         else:
@@ -324,7 +324,7 @@ class Tuple(_ContainerBase):
                 for i in range(self._index_value.py__len__()):
                     yield LazyKnownValues(self._get_getitem_values(i).execute_annotation())
 
-    def py__getitem__(self, index_value_set, valueualized_node):
+    def py__getitem__(self, index_value_set, contextualized_node):
         if self._is_homogenous():
             return self._get_getitem_values(0).execute_annotation()
 
@@ -471,10 +471,10 @@ class NewTypeFunction(_BaseTypingValue):
         return ValueSet(
             NewType(
                 self.inference_state,
-                valueualized_node.context,
-                valueualized_node.node,
+                contextualized_node.context,
+                contextualized_node.node,
                 second_arg.infer(),
-            ) for valueualized_node in arguments.get_calling_nodes())
+            ) for contextualized_node in arguments.get_calling_nodes())
 
 
 class NewType(Value):

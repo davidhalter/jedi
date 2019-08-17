@@ -185,24 +185,24 @@ class CompiledObject(Value):
 
         return ValueSet([create_from_access_path(self.inference_state, access)])
 
-    def py__getitem__(self, index_value_set, valueualized_node):
+    def py__getitem__(self, index_value_set, contextualized_node):
         all_access_paths = self.access_handle.py__getitem__all_values()
         if all_access_paths is None:
             # This means basically that no __getitem__ has been defined on this
             # object.
-            return super(CompiledObject, self).py__getitem__(index_value_set, valueualized_node)
+            return super(CompiledObject, self).py__getitem__(index_value_set, contextualized_node)
         return ValueSet(
             create_from_access_path(self.inference_state, access)
             for access in all_access_paths
         )
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         # Python iterators are a bit strange, because there's no need for
         # the __iter__ function as long as __getitem__ is defined (it will
         # just start with __getitem__(0). This is especially true for
         # Python 2 strings, where `str.__iter__` is not even defined.
         if not self.access_handle.has_iter():
-            for x in super(CompiledObject, self).py__iter__(valueualized_node):
+            for x in super(CompiledObject, self).py__iter__(contextualized_node):
                 yield x
 
         access_path_list = self.access_handle.py__iter__list()

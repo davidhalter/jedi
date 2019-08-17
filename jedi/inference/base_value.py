@@ -52,10 +52,10 @@ class HelperValueMixin(object):
     def gather_annotation_classes(self):
         return ValueSet([self])
 
-    def merge_types_of_iterate(self, valueualized_node=None, is_async=False):
+    def merge_types_of_iterate(self, contextualized_node=None, is_async=False):
         return ValueSet.from_sets(
             lazy_value.infer()
-            for lazy_value in self.iterate(valueualized_node, is_async)
+            for lazy_value in self.iterate(contextualized_node, is_async)
         )
 
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
@@ -92,7 +92,7 @@ class HelperValueMixin(object):
     def infer_node(self, node):
         return self.inference_state.infer_element(self, node)
 
-    def iterate(self, valueualized_node=None, is_async=False):
+    def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
         if is_async:
             from jedi.inference.lazy_value import LazyKnownValues
@@ -106,7 +106,7 @@ class HelperValueMixin(object):
                         .py__stop_iteration_returns()
                 )  # noqa
             ])
-        return self.py__iter__(valueualized_node)
+        return self.py__iter__(contextualized_node)
 
     def is_sub_class_of(self, class_value):
         for cls in self.py__mro__():
@@ -137,24 +137,24 @@ class Value(HelperValueMixin, BaseValue):
         # overwritten.
         return self.__class__.__name__.lower()
 
-    def py__getitem__(self, index_value_set, valueualized_node):
+    def py__getitem__(self, index_value_set, contextualized_node):
         from jedi.inference import analysis
         # TODO this value is probably not right.
         analysis.add(
-            valueualized_node.context,
+            contextualized_node.context,
             'type-error-not-subscriptable',
-            valueualized_node.node,
+            contextualized_node.node,
             message="TypeError: '%s' object is not subscriptable" % self
         )
         return NO_VALUES
 
-    def py__iter__(self, valueualized_node=None):
-        if valueualized_node is not None:
+    def py__iter__(self, contextualized_node=None):
+        if contextualized_node is not None:
             from jedi.inference import analysis
             analysis.add(
-                valueualized_node.context,
+                contextualized_node.context,
                 'type-error-not-iterable',
-                valueualized_node.node,
+                contextualized_node.node,
                 message="TypeError: '%s' object is not iterable" % self)
         return iter([])
 
@@ -226,14 +226,14 @@ class Value(HelperValueMixin, BaseValue):
         raise NotImplementedError('Not all values need to be converted to contexts')
 
 
-def iterate_values(values, valueualized_node=None, is_async=False):
+def iterate_values(values, contextualized_node=None, is_async=False):
     """
     Calls `iterate`, on all values but ignores the ordering and just returns
     all values that the iterate functions yield.
     """
     return ValueSet.from_sets(
         lazy_value.infer()
-        for lazy_value in values.iterate(valueualized_node, is_async=is_async)
+        for lazy_value in values.iterate(contextualized_node, is_async=is_async)
     )
 
 
@@ -355,7 +355,7 @@ class ContextualizedName(ContextualizedNode):
         return indexes
 
 
-def _getitem(value, index_values, valueualized_node):
+def _getitem(value, index_values, contextualized_node):
     from jedi.inference.value.iterable import Slice
 
     # The actual getitem call.
@@ -391,7 +391,7 @@ def _getitem(value, index_values, valueualized_node):
     if unused_values or not index_values:
         result |= value.py__getitem__(
             ValueSet(unused_values),
-            valueualized_node
+            contextualized_node
         )
     debug.dbg('py__getitem__ result: %s', result)
     return result
@@ -401,9 +401,9 @@ class ValueSet(BaseValueSet):
     def py__class__(self):
         return ValueSet(c.py__class__() for c in self._set)
 
-    def iterate(self, valueualized_node=None, is_async=False):
+    def iterate(self, contextualized_node=None, is_async=False):
         from jedi.inference.lazy_value import get_merged_lazy_value
-        type_iters = [c.iterate(valueualized_node, is_async=is_async) for c in self._set]
+        type_iters = [c.iterate(contextualized_node, is_async=is_async) for c in self._set]
         for lazy_values in zip_longest(*type_iters):
             yield get_merged_lazy_value(
                 [l for l in lazy_values if l is not None]

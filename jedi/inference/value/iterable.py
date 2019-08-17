@@ -78,7 +78,7 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
         return True
 
     @publish_method('__iter__')
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         return ValueSet([self])
 
     @publish_method('send')
@@ -101,7 +101,7 @@ class Generator(GeneratorBase):
         super(Generator, self).__init__(inference_state)
         self._func_execution_context = func_execution_context
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         return self._func_execution_context.get_yield_lazy_values()
 
     def py__stop_iteration_returns(self):
@@ -199,7 +199,7 @@ class ComprehensionMixin(object):
         for result in self._nested(comp_fors):
             yield result
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         for set_ in self._iterate():
             yield LazyKnownValues(set_)
 
@@ -238,7 +238,7 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
     def parent(self):
         return self.inference_state.builtins_module
 
-    def py__getitem__(self, index_value_set, valueualized_node):
+    def py__getitem__(self, index_value_set, contextualized_node):
         if self.array_type == 'dict':
             return self._dict_values()
         return iterate_values(ValueSet([self]))
@@ -285,7 +285,7 @@ class DictComprehension(ComprehensionMixin, Sequence):
         self._entry_node = key_node
         self._value_node = value_node
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         for keys, values in self._iterate():
             yield LazyKnownValues(keys)
 
@@ -374,7 +374,7 @@ class SequenceLiteralValue(Sequence):
                 node = self.get_tree_entries()[index]
             return self._defining_context.infer_node(node)
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         """
         While values returns the possible values for any array field, this
         function returns the value for a certain index.
@@ -527,7 +527,7 @@ class FakeSequence(_FakeArray):
             lazy_value = self._lazy_value_list[index]
         return lazy_value.infer()
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         return self._lazy_value_list
 
     def py__bool__(self):
@@ -542,7 +542,7 @@ class FakeDict(_DictMixin, _FakeArray):
         super(FakeDict, self).__init__(inference_state, dct, u'dict')
         self._dct = dct
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         for key in self._dct:
             yield LazyKnownValue(compiled.create_simple_object(self.inference_state, key))
 
@@ -591,7 +591,7 @@ class MergedArray(_FakeArray):
         super(MergedArray, self).__init__(inference_state, arrays, arrays[-1].array_type)
         self._arrays = arrays
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         for array in self._arrays:
             for lazy_value in array.py__iter__():
                 yield lazy_value
@@ -762,7 +762,7 @@ class _ArrayInstance(HelperValueMixin):
         tuple_, = self.instance.inference_state.builtins_module.py__getattribute__('tuple')
         return tuple_
 
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         var_args = self.var_args
         try:
             _, lazy_value = next(var_args.unpack())
@@ -778,8 +778,8 @@ class _ArrayInstance(HelperValueMixin):
             for addition in additions:
                 yield addition
 
-    def iterate(self, valueualized_node=None, is_async=False):
-        return self.py__iter__(valueualized_node)
+    def iterate(self, contextualized_node=None, is_async=False):
+        return self.py__iter__(contextualized_node)
 
 
 class Slice(object):

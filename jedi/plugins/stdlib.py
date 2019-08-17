@@ -285,7 +285,7 @@ class ReversedObject(AttributeOverwrite):
         self._iter_list = iter_list
 
     @publish_method('__iter__')
-    def py__iter__(self, valueualized_node=None):
+    def py__iter__(self, contextualized_node=None):
         return self._iter_list
 
     @publish_method('next', python_version_match=2)
@@ -640,7 +640,7 @@ class ItemGetterCallable(ValueWrapper):
         for args_value in self._args_value_set:
             lazy_values = list(args_value.py__iter__())
             if len(lazy_values) == 1:
-                # TODO we need to add the valueualized value.
+                # TODO we need to add the contextualized value.
                 value_set |= item_value_set.get_item(lazy_values[0].infer(), None)
             else:
                 value_set |= ValueSet([iterable.FakeSequence(
