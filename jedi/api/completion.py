@@ -284,7 +284,7 @@ class Completion:
         cls = tree.search_ancestor(leaf, 'classdef')
         if isinstance(cls, (tree.Class, tree.Function)):
             # Complete the methods that are defined in the super classes.
-            random_value = self._module_context.create_context(
+            random_context = self._module_context.create_context(
                 cls,
                 node_is_value=True
             )
@@ -294,7 +294,8 @@ class Completion:
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
-        filters = random_value.get_filters(is_instance=True)
+        # TODO _value private access!
+        filters = random_context._value.get_filters(is_instance=True)
         # The first dict is the dictionary of class itself.
         next(filters)
         for filter in filters:

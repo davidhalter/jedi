@@ -106,7 +106,7 @@ class ClassFilter(ParserTreeFilter):
     def _equals_origin_scope(self):
         node = self._origin_scope
         while node is not None:
-            if node == self._parser_scope or node == self.value:
+            if node == self._parser_scope or node == self.context:
                 return True
             node = get_cached_parent_scope(self._used_names, node)
         return False

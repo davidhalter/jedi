@@ -231,9 +231,7 @@ class IntegrationTestCase(object):
                 #if user_context._value.api_type == 'function':
                 #    user_context = user_context.get_function_execution()
                 node.parent = user_context.tree_node
-                results = convert_values(
-                    user_context.infer_node(node),
-                )
+                results = convert_values(user_context.infer_node(node))
                 if not results:
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))

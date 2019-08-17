@@ -169,11 +169,11 @@ def _infer_param(execution_context, param):
 
         param_comment = params_comments[index]
         return _infer_annotation_string(
-            execution_context.function_value.get_default_param_value(),
+            execution_context.function_value.get_default_param_context(),
             param_comment
         )
     # Annotations are like default params and resolve in the same way.
-    value = execution_context.function_value.get_default_param_value()
+    value = execution_context.function_value.get_default_param_context()
     return infer_annotation(value, annotation)
 
 
@@ -210,13 +210,13 @@ def infer_return_types(function_execution_context):
             return NO_VALUES
 
         return _infer_annotation_string(
-            function_execution_context.function_value.get_default_param_value(),
+            function_execution_context.function_value.get_default_param_context(),
             match.group(1).strip()
         ).execute_annotation()
         if annotation is None:
             return NO_VALUES
 
-    value = function_execution_context.function_value.get_default_param_value()
+    value = function_execution_context.function_value.get_default_param_context()
     unknown_type_vars = list(find_unknown_type_vars(value, annotation))
     annotation_values = infer_annotation(value, annotation)
     if not unknown_type_vars:
@@ -241,7 +241,7 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
     2. Infer type vars with the execution state we have.
     3. Return the union of all type vars that have been found.
     """
-    value = execution_context.function_value.get_default_param_value()
+    value = execution_context.function_value.get_default_param_context()
 
     annotation_variable_results = {}
     executed_params, _ = execution_context.get_executed_params_and_issues()

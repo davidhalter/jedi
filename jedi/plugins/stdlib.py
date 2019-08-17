@@ -158,7 +158,7 @@ def _follow_param(inference_state, arguments, index):
         return lazy_value.infer()
 
 
-def argument_clinic(string, want_obj=False, want_value=False,
+def argument_clinic(string, want_obj=False, want_context=False,
                     want_arguments=False, want_inference_state=False,
                     want_callback=False):
     """
@@ -174,8 +174,8 @@ def argument_clinic(string, want_obj=False, want_value=False,
             assert not kwargs  # Python 2...
             debug.dbg('builtin start %s' % obj, color='MAGENTA')
             result = NO_VALUES
-            if want_value:
-                kwargs['value'] = arguments.value
+            if want_context:
+                kwargs['context'] = arguments.context
             if want_obj:
                 kwargs['obj'] = obj
             if want_inference_state:
@@ -268,11 +268,11 @@ class SuperInstance(LazyValueWrapper):
                     yield f
 
 
-@argument_clinic('[type[, obj]], /', want_value=True)
-def builtins_super(types, objects, value):
-    if isinstance(value, FunctionExecutionContext):
-        if isinstance(value.var_args, InstanceArguments):
-            instance = value.var_args.instance
+@argument_clinic('[type[, obj]], /', want_context=True)
+def builtins_super(types, objects, context):
+    if isinstance(context, FunctionExecutionContext):
+        if isinstance(context.var_args, InstanceArguments):
+            instance = context.var_args.instance
             # TODO if a class is given it doesn't have to be the direct super
             #      class, it can be an anecestor from long ago.
             return ValueSet({SuperInstance(instance.inference_state, instance)})

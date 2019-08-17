@@ -72,6 +72,9 @@ class AbstractContext(object):
     def py__name__(self):
         return self._value.py__name__()
 
+    def get_qualified_names(self):
+        return self._value.get_qualified_names()
+
     def py__doc__(self):
         return self._value.py__doc__()
 
@@ -103,6 +106,7 @@ class ModuleContext(AbstractContext):
     def get_filters(self, until_position=None, origin_scope=None):
         filters = self._value.get_filters(origin_scope)
         # Skip the first filter and replace it.
+        next(filters)
         yield MergedFilter(
             ParserTreeFilter(
                 context=self,

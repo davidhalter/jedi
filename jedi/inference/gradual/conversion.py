@@ -69,7 +69,7 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
                 ignore_compiled=prefer_stub_to_compiled,
             )
         if values and name_list:
-            new_names = values.py__getattribute__(name_list[-1], is_goto=True)
+            new_names = values.goto(name_list[-1])
             for new_name in new_names:
                 yield new_name
             if new_names:
@@ -121,7 +121,7 @@ def _python_to_stub_names(names, fallback_to_python=False):
                 for name in name_list[:-1]:
                     stubs = stubs.py__getattribute__(name)
         if stubs and name_list:
-            new_names = stubs.py__getattribute__(name_list[-1], is_goto=True)
+            new_names = stubs.goto(name_list[-1])
             for new_name in new_names:
                 yield new_name
             if new_names:

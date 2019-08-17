@@ -93,6 +93,9 @@ class FunctionMixin(object):
 
         return FunctionExecutionContext(self, arguments)
 
+    def as_context(self):
+        return self.get_function_execution()
+
     def get_signatures(self):
         return [TreeSignature(f) for f in self.get_signature_functions()]
 
@@ -137,7 +140,7 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         c, = values_from_qualified_names(self.inference_state, u'types', u'FunctionType')
         return c
 
-    def get_default_param_value(self):
+    def get_default_param_context(self):
         return self.parent_context
 
     def get_signature_functions(self):
@@ -145,17 +148,17 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
 
 
 class MethodValue(FunctionValue):
-    def __init__(self, inference_state, class_value, *args, **kwargs):
+    def __init__(self, inference_state, class_context, *args, **kwargs):
         super(MethodValue, self).__init__(inference_state, *args, **kwargs)
-        self.class_value = class_value
+        self.class_context = class_context
 
-    def get_default_param_value(self):
-        return self.class_value
+    def get_default_param_context(self):
+        return self.class_context
 
     def get_qualified_names(self):
         # Need to implement this, because the parent value of a method
         # value is not the class value but the module.
-        names = self.class_value.get_qualified_names()
+        names = self.class_context.get_qualified_names()
         if names is None:
             return None
         return names + (self.py__name__(),)

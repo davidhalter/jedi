@@ -349,13 +349,13 @@ class InferenceState(object):
                 new_dotted.children[index - 1:] = []
                 values = context.infer_node(new_dotted)
                 return unite(
-                    value.py__getattribute__(name, name_value=value, is_goto=True)
+                    value.goto(name, name_value=value)
                     for value in values
                 )
 
         if node_type == 'trailer' and par.children[0] == '.':
             values = helpers.infer_call_of_leaf(context, name, cut_own_trailer=True)
-            return values.py__getattribute__(name, name_context=context, is_goto=True)
+            return values.goto(name, name_context=context)
         else:
             stmt = tree.search_ancestor(
                 name, 'expr_stmt', 'lambdef'
@@ -391,8 +391,9 @@ class InferenceState(object):
             if is_funcdef:
                 func = FunctionValue.from_context(parent_context, scope_node)
                 if parent_context.is_class():
+                    # TODO _value private access!
                     instance = AnonymousInstance(
-                        self, parent_context.parent_context, parent_context)
+                        self, parent_context.parent_context, parent_context._value)
                     func = BoundMethod(
                         instance=instance,
                         function=func
@@ -402,7 +403,7 @@ class InferenceState(object):
                     return func.get_function_execution()
                 return func
             elif scope_node.type == 'classdef':
-                return ClassValue(self, parent_context, scope_node)
+                return ClassValue(self, parent_context, scope_node).as_context()
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context

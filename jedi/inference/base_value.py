@@ -71,6 +71,18 @@ class HelperValueMixin(object):
         filters = f.get_value_filters()
         return f.find(filters, attribute_lookup=True)
 
+    def goto(self, name_or_str, name_context=None, analysis_errors=True):
+        """
+        :param position: Position of the last statement -> tuple of line, column
+        """
+        if name_context is None:
+            name_context = self
+        from jedi.inference import finder
+        f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
+                              analysis_errors=analysis_errors)
+        filters = f.get_value_filters()
+        return f.filter_name(filters)
+
     def py__await__(self):
         await_value_set = self.py__getattribute__(u"__await__")
         if not await_value_set:
@@ -403,9 +415,10 @@ class ValueSet(BaseValueSet):
     def execute_with_values(self, *args, **kwargs):
         return ValueSet.from_sets(c.execute_with_values(*args, **kwargs) for c in self._set)
 
+    def goto(self, *args, **kwargs):
+        return reduce(add, [c.goto(*args, **kwargs) for c in self._set], [])
+
     def py__getattribute__(self, *args, **kwargs):
-        if kwargs.get('is_goto'):
-            return reduce(add, [c.py__getattribute__(*args, **kwargs) for c in self._set], [])
         return ValueSet.from_sets(c.py__getattribute__(*args, **kwargs) for c in self._set)
 
     def get_item(self, *args, **kwargs):
@@ -421,9 +434,6 @@ class ValueSet(BaseValueSet):
             else:
                 value_set |= method()
         return value_set
-
-    def as_context(self):
-        return [v.as_context() for v in self._set]
 
     def gather_annotation_classes(self):
         return ValueSet.from_sets([c.gather_annotation_classes() for c in self._set])
