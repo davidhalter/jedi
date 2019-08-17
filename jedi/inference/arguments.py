@@ -144,8 +144,8 @@ class _AbstractArgumentsMixin(object):
     def unpack(self, funcdef=None):
         raise NotImplementedError
 
-    def get_executed_params_and_issues(self, execution_value):
-        return get_executed_params_and_issues(execution_value, self)
+    def get_executed_params_and_issues(self, execution_context):
+        return get_executed_params_and_issues(execution_context, self)
 
     def get_calling_nodes(self):
         return []
@@ -158,12 +158,12 @@ class AbstractArguments(_AbstractArgumentsMixin):
 
 
 class AnonymousArguments(AbstractArguments):
-    def get_executed_params_and_issues(self, execution_value):
+    def get_executed_params_and_issues(self, execution_context):
         from jedi.inference.dynamic import search_params
         return search_params(
-            execution_value.inference_state,
-            execution_value,
-            execution_value.tree_node
+            execution_context.inference_state,
+            execution_context,
+            execution_context.tree_node
         ), []
 
     def __repr__(self):

@@ -54,7 +54,7 @@ class DynamicExecutedParams(object):
 
 
 @debug.increase_indent
-def search_params(inference_state, execution_value, funcdef):
+def search_params(inference_state, execution_context, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -68,28 +68,28 @@ def search_params(inference_state, execution_value, funcdef):
     is.
     """
     if not settings.dynamic_params:
-        return create_default_params(execution_value, funcdef)
+        return create_default_params(execution_context, funcdef)
 
     inference_state.dynamic_params_depth += 1
     try:
-        path = execution_value.get_root_context().py__file__()
+        path = execution_context.get_root_context().py__file__()
         if path is not None and is_stdlib_path(path):
             # We don't want to search for usages in the stdlib. Usually people
             # don't work with it (except if you are a core maintainer, sorry).
             # This makes everything slower. Just disable it and run the tests,
             # you will see the slowdown, especially in 3.6.
-            return create_default_params(execution_value, funcdef)
+            return create_default_params(execution_context, funcdef)
 
         if funcdef.type == 'lambdef':
             string_name = _get_lambda_name(funcdef)
             if string_name is None:
-                return create_default_params(execution_value, funcdef)
+                return create_default_params(execution_context, funcdef)
         else:
             string_name = funcdef.name.value
         debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
 
         try:
-            module_context = execution_value.get_root_context()
+            module_context = execution_context.get_root_context()
             function_executions = _search_function_executions(
                 inference_state,
                 module_context,
@@ -105,7 +105,7 @@ def search_params(inference_state, execution_value, funcdef):
                           for executed_params in zipped_params]
                 # Inferes the ExecutedParams to types.
             else:
-                return create_default_params(execution_value, funcdef)
+                return create_default_params(execution_context, funcdef)
         finally:
             debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
@@ -218,11 +218,11 @@ def _check_name_for_execution(inference_state, value, compare_node, name, traile
             if nodes == [compare_node]:
                 # Found a decorator.
                 module_value = value.get_root_context()
-                execution_value = next(create_func_excs())
+                execution_context = next(create_func_excs())
                 for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
                         raise NotImplementedError
-                        random_value = inference_state.create_context(execution_value, name)
+                        random_value = inference_state.create_context(execution_context, name)
                         iterator = _check_name_for_execution(
                             inference_state,
                             random_value,

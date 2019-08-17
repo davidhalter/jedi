@@ -107,9 +107,9 @@ def _split_comment_param_declaration(decl_text):
 
 
 @inference_state_method_cache()
-def infer_param(execution_value, param):
-    values = _infer_param(execution_value, param)
-    inference_state = execution_value.inference_state
+def infer_param(execution_context, param):
+    values = _infer_param(execution_context, param)
+    inference_state = execution_context.inference_state
     if param.star_count == 1:
         tuple_ = builtin_from_name(inference_state, 'tuple')
         return ValueSet([GenericClass(
@@ -126,7 +126,7 @@ def infer_param(execution_value, param):
     return values
 
 
-def _infer_param(execution_value, param):
+def _infer_param(execution_context, param):
     """
     Infers the type of a function parameter, using type annotations.
     """
@@ -159,7 +159,7 @@ def _infer_param(execution_value, param):
                 params_comments, all_params
             )
         from jedi.inference.value.instance import InstanceArguments
-        if isinstance(execution_value.var_args, InstanceArguments):
+        if isinstance(execution_context.var_args, InstanceArguments):
             if index == 0:
                 # Assume it's self, which is already handled
                 return NO_VALUES
@@ -169,11 +169,11 @@ def _infer_param(execution_value, param):
 
         param_comment = params_comments[index]
         return _infer_annotation_string(
-            execution_value.function_value.get_default_param_value(),
+            execution_context.function_value.get_default_param_value(),
             param_comment
         )
     # Annotations are like default params and resolve in the same way.
-    value = execution_value.function_value.get_default_param_value()
+    value = execution_context.function_value.get_default_param_value()
     return infer_annotation(value, annotation)
 
 
@@ -191,16 +191,16 @@ def py__annotations__(funcdef):
 
 
 @inference_state_method_cache()
-def infer_return_types(function_execution_value):
+def infer_return_types(function_execution_context):
     """
     Infers the type of a function's return value,
     according to type annotations.
     """
-    all_annotations = py__annotations__(function_execution_value.tree_node)
+    all_annotations = py__annotations__(function_execution_context.tree_node)
     annotation = all_annotations.get("return", None)
     if annotation is None:
         # If there is no Python 3-type annotation, look for a Python 2-type annotation
-        node = function_execution_value.tree_node
+        node = function_execution_context.tree_node
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:
             return NO_VALUES
@@ -210,19 +210,19 @@ def infer_return_types(function_execution_value):
             return NO_VALUES
 
         return _infer_annotation_string(
-            function_execution_value.function_value.get_default_param_value(),
+            function_execution_context.function_value.get_default_param_value(),
             match.group(1).strip()
         ).execute_annotation()
         if annotation is None:
             return NO_VALUES
 
-    value = function_execution_value.function_value.get_default_param_value()
+    value = function_execution_context.function_value.get_default_param_value()
     unknown_type_vars = list(find_unknown_type_vars(value, annotation))
     annotation_values = infer_annotation(value, annotation)
     if not unknown_type_vars:
         return annotation_values.execute_annotation()
 
-    type_var_dict = infer_type_vars_for_execution(function_execution_value, all_annotations)
+    type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
 
     return ValueSet.from_sets(
         ann.define_generics(type_var_dict)
@@ -231,7 +231,7 @@ def infer_return_types(function_execution_value):
     ).execute_annotation()
 
 
-def infer_type_vars_for_execution(execution_value, annotation_dict):
+def infer_type_vars_for_execution(execution_context, annotation_dict):
     """
     Some functions use type vars that are not defined by the class, but rather
     only defined in the function. See for example `iter`. In those cases we
@@ -241,10 +241,10 @@ def infer_type_vars_for_execution(execution_value, annotation_dict):
     2. Infer type vars with the execution state we have.
     3. Return the union of all type vars that have been found.
     """
-    value = execution_value.function_value.get_default_param_value()
+    value = execution_context.function_value.get_default_param_value()
 
     annotation_variable_results = {}
-    executed_params, _ = execution_value.get_executed_params_and_issues()
+    executed_params, _ = execution_context.get_executed_params_and_issues()
     for executed_param in executed_params:
         try:
             annotation_node = annotation_dict[executed_param.string_name]

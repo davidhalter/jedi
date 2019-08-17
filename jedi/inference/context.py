@@ -27,7 +27,6 @@ class AbstractContext(object):
     def goto(self, name_or_str, position):
         from jedi.inference import finder
         f = finder.NameFinder(self.inference_state, self, self, name_or_str, position)
-        raise NotImplementedError('this does not seem to be correct')
         filters = f.get_global_filters()
         return f.filter_name(filters)
 

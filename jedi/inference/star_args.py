@@ -20,8 +20,8 @@ def _iter_nodes_for_param(param_name):
     from parso.python.tree import search_ancestor
     from jedi.inference.arguments import TreeArguments
 
-    execution_value = param_name.parent_context
-    function_node = execution_value.tree_node
+    execution_context = param_name.parent_context
+    function_node = execution_context.tree_node
     module_node = function_node.get_root_node()
     start = function_node.children[-1].start_pos
     end = function_node.children[-1].end_pos
@@ -36,12 +36,12 @@ def _iter_nodes_for_param(param_name):
                 trailer = search_ancestor(argument, 'trailer')
                 if trailer is not None:  # Make sure we're in a function
                     raise NotImplementedError
-                    context = execution_value.create_context(trailer)
+                    context = execution_context.create_context(trailer)
                     if _goes_to_param_name(param_name, context, name):
                         values = _to_callables(context, trailer)
 
                         args = TreeArguments.create_cached(
-                            execution_value.inference_state,
+                            execution_context.inference_state,
                             context=context,
                             argument_node=trailer.children[1],
                             trailer=trailer,

@@ -227,12 +227,12 @@ def _infer_for_statement_string(module_value, string):
         module_value,
         funcdef
     )
-    func_execution_value = function_value.get_function_execution()
+    func_execution_context = function_value.get_function_execution()
     # Use the module of the param.
     # TODO this module is not the module of the param in case of a function
     # call. In that case it's the module of the function call.
     # stuffed with content from a function call.
-    return list(_execute_types_in_stmt(func_execution_value, stmt))
+    return list(_execute_types_in_stmt(func_execution_context, stmt))
 
 
 def _execute_types_in_stmt(module_value, stmt):
@@ -268,7 +268,7 @@ def _execute_array_values(inference_state, array):
 
 
 @inference_state_method_cache()
-def infer_param(execution_value, param):
+def infer_param(execution_context, param):
     from jedi.inference.value.instance import InstanceArguments
     from jedi.inference.value import FunctionExecutionContext
 
@@ -278,16 +278,16 @@ def infer_param(execution_value, param):
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _infer_for_statement_string(module_context, param_str)
         )
-    module_context = execution_value.get_root_context()
+    module_context = execution_context.get_root_context()
     func = param.get_parent_function()
     if func.type == 'lambdef':
         return NO_VALUES
 
-    types = infer_docstring(execution_value.py__doc__())
-    if isinstance(execution_value, FunctionExecutionContext) \
-            and isinstance(execution_value.var_args, InstanceArguments) \
-            and execution_value.function_value.py__name__() == '__init__':
-        class_value = execution_value.var_args.instance.class_value
+    types = infer_docstring(execution_context.py__doc__())
+    if isinstance(execution_context, FunctionExecutionContext) \
+            and isinstance(execution_context.var_args, InstanceArguments) \
+            and execution_context.function_value.py__name__() == '__init__':
+        class_value = execution_context.var_args.instance.class_value
         types |= infer_docstring(class_value.py__doc__())
 
     debug.dbg('Found param types for docstring: %s', types, color='BLUE')

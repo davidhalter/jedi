@@ -97,18 +97,18 @@ class GeneratorBase(LazyAttributeOverwrite, IterableMixin):
 
 class Generator(GeneratorBase):
     """Handling of `yield` functions."""
-    def __init__(self, inference_state, func_execution_value):
+    def __init__(self, inference_state, func_execution_context):
         super(Generator, self).__init__(inference_state)
-        self._func_execution_value = func_execution_value
+        self._func_execution_context = func_execution_context
 
     def py__iter__(self, valueualized_node=None):
-        return self._func_execution_value.get_yield_lazy_values()
+        return self._func_execution_context.get_yield_lazy_values()
 
     def py__stop_iteration_returns(self):
-        return self._func_execution_value.get_return_values()
+        return self._func_execution_context.get_return_values()
 
     def __repr__(self):
-        return "<%s of %s>" % (type(self).__name__, self._func_execution_value)
+        return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
 class CompForValue(TreeValue):
