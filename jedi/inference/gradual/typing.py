@@ -198,7 +198,7 @@ class TypingValue(_BaseTypingValue):
                 self.parent_context,
                 self._tree_name,
                 index_value,
-                value_of_index=valueualized_node.value)
+                value_of_index=valueualized_node.context)
             for index_value in index_value_set
         )
 
@@ -213,7 +213,7 @@ class _TypingClassMixin(object):
         return []
 
 
-class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex, ClassMixin):
+class TypingClassValueWithIndex(_TypingClassMixin, ClassMixin, TypingValueWithIndex):
     pass
 
 
@@ -470,7 +470,7 @@ class NewTypeFunction(_BaseTypingValue):
         return ValueSet(
             NewType(
                 self.inference_state,
-                valueualized_node.value,
+                valueualized_node.context,
                 valueualized_node.node,
                 second_arg.infer(),
             ) for valueualized_node in arguments.get_calling_nodes())
@@ -553,9 +553,8 @@ class AbstractAnnotatedClass(ClassMixin, ValueWrapper):
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_generics(), self.list_type_vars())
 
-    def get_filters(self, search_global=False, *args, **kwargs):
+    def get_filters(self, *args, **kwargs):
         filters = super(AbstractAnnotatedClass, self).get_filters(
-            search_global,
             *args, **kwargs
         )
         for f in filters:

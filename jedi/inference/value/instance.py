@@ -122,8 +122,7 @@ class AbstractInstanceValue(Value):
         else:
             return ValueSet([self])
 
-    def get_filters(self, search_global=None, until_position=None,
-                    origin_scope=None, include_self_names=True):
+    def get_filters(self, origin_scope=None, include_self_names=True):
         class_value = self.get_annotated_class_object()
         if include_self_names:
             for cls in class_value.py__mro__():
@@ -135,7 +134,6 @@ class AbstractInstanceValue(Value):
                     yield SelfAttributeFilter(self, cls, origin_scope)
 
         class_filters = class_value.get_filters(
-            search_global=False,
             origin_scope=origin_scope,
             is_instance=True,
         )
@@ -262,7 +260,7 @@ class TreeInstance(AbstractInstanceValue):
         # I don't think that dynamic append lookups should happen here. That
         # sounds more like something that should go to py__iter__.
         if class_value.py__name__() in ['list', 'set'] \
-                and parent_context.get_root_value() == inference_state.builtins_module:
+                and parent_context.get_root_context().is_builtins_module():
             # compare the module path with the builtin name.
             if settings.dynamic_array_additions:
                 var_args = iterable.get_dynamic_array_instance(self, var_args)
@@ -466,7 +464,10 @@ class InstanceClassFilter(AbstractFilter):
         return self._convert(self._class_filter.values(from_instance=True))
 
     def _convert(self, names):
-        return [LazyInstanceClassName(self._instance, self._class_filter.value, n) for n in names]
+        return [
+            LazyInstanceClassName(self._instance, self._class_filter.context, n)
+            for n in names
+        ]
 
     def __repr__(self):
         return '<%s for %s>' % (self.__class__.__name__, self._class_filter.value)
@@ -480,8 +481,8 @@ class SelfAttributeFilter(ClassFilter):
 
     def __init__(self, value, class_value, origin_scope):
         super(SelfAttributeFilter, self).__init__(
-            value=value,
-            node_value=class_value,
+            context=value,
+            node_context=class_value.as_context(),
             origin_scope=origin_scope,
             is_instance=True,
         )
@@ -503,7 +504,7 @@ class SelfAttributeFilter(ClassFilter):
                     yield name
 
     def _convert_names(self, names):
-        return [self.name_class(self.value, self._class_value, name) for name in names]
+        return [self.name_class(self.context, self._class_value, name) for name in names]
 
     def _check_flows(self, names):
         return names

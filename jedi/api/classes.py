@@ -14,7 +14,7 @@ from jedi.cache import memoize_method
 from jedi.inference import imports
 from jedi.inference import compiled
 from jedi.inference.imports import ImportName
-from jedi.inference.value import FunctionExecutionValue
+from jedi.inference.value import FunctionExecutionContext
 from jedi.inference.gradual.typeshed import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
@@ -32,7 +32,7 @@ def defined_names(inference_state, value):
     :type scope: Scope
     :rtype: list of Definition
     """
-    filter = next(value.get_filters(search_global=True))
+    filter = next(value.get_filters())
     names = [name for name in filter.values()]
     return [Definition(inference_state, n) for n in _sort_names_by_start_pos(names)]
 
@@ -183,7 +183,7 @@ class BaseDefinition(object):
         >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
-        return self._get_module().name.string_name
+        return self._get_module().py__name__()
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
@@ -364,7 +364,7 @@ class BaseDefinition(object):
         if value is None:
             return None
 
-        if isinstance(value, FunctionExecutionValue):
+        if isinstance(value, FunctionExecutionContext):
             value = value.function_value
         return Definition(self._inference_state, value.name)
 

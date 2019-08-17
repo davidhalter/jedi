@@ -99,11 +99,10 @@ class SubModuleDictMixin(object):
 
 
 class ModuleMixin(SubModuleDictMixin):
-    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
+    def get_filters(self, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
-                value=self,
-                until_position=until_position,
+                context=self.as_context(),
                 origin_scope=origin_scope
             ),
             GlobalNameFilter(self, self.tree_node),
@@ -151,9 +150,9 @@ class ModuleMixin(SubModuleDictMixin):
             dct['__file__'] = _ModuleAttributeName(self, '__file__', file)
         return dct
 
-    def iter_star_filters(self, search_global=False):
+    def iter_star_filters(self):
         for star_module in self.star_imports():
-            yield next(star_module.get_filters(search_global))
+            yield next(star_module.get_filters())
 
     # I'm not sure if the star import cache is really that effective anymore
     # with all the other really fast import caches. Recheck. Also we would need
@@ -189,7 +188,6 @@ class ModuleMixin(SubModuleDictMixin):
 
 class ModuleValue(ModuleMixin, TreeValue):
     api_type = u'module'
-    parent_context = None
 
     def __init__(self, inference_state, module_node, file_io, string_names,
                  code_lines, is_package=False):

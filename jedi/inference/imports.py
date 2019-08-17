@@ -87,17 +87,20 @@ def infer_import(context, tree_name, is_goto=False):
         return NO_VALUES
 
     if from_import_name is not None:
-        types = unite(
-            t.py__getattribute__(
+        if is_goto:
+            types = unite([
+                c.goto(
+                    from_import_name,
+                    name_context=context,
+                    analysis_errors=False
+                ) for c in types.as_context()
+            ])
+        else:
+            types = types.py__getattribute__(
                 from_import_name,
                 name_context=context,
-                is_goto=is_goto,
                 analysis_errors=False
             )
-            for t in types
-        )
-        if not is_goto:
-            types = ValueSet(types)
 
         if not types:
             path = import_path + [from_import_name]
@@ -360,7 +363,7 @@ class Importer(object):
 
                 both_values = values | convert_values(values)
                 for c in both_values:
-                    for filter in c.get_filters(search_global=False):
+                    for filter in c.get_filters():
                         names += filter.values()
         else:
             if self.level:

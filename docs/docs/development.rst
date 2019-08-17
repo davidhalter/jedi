@@ -82,7 +82,7 @@ Inference Values (inference/base_value.py)
    jedi.inference.value.instance.TreeInstance
    jedi.inference.value.klass.Classvalue
    jedi.inference.value.function.FunctionValue
-   jedi.inference.value.function.FunctionExecutionValue
+   jedi.inference.value.function.FunctionExecutionContext
    :parts: 1
 
 

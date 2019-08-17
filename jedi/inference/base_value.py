@@ -25,6 +25,9 @@ _sentinel = object()
 class HelperValueMixin(object):
     def get_root_context(self):
         value = self
+        if value.parent_context is None:
+            return value.as_context()
+
         while True:
             if value.parent_context is None:
                 return value
@@ -55,24 +58,18 @@ class HelperValueMixin(object):
             for lazy_value in self.iterate(valueualized_node, is_async)
         )
 
-    def py__getattribute__(self, name_or_str, name_value=None, position=None,
-                           search_global=False, is_goto=False,
+    def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            analysis_errors=True):
         """
         :param position: Position of the last statement -> tuple of line, column
         """
-        if name_value is None:
-            name_value = self
+        if name_context is None:
+            name_context = self
         from jedi.inference import finder
-        f = finder.NameFinder(self.inference_state, self, name_value, name_or_str,
+        f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
                               position, analysis_errors=analysis_errors)
-        if search_global:
-            filters = f.get_global_filters()
-        else:
-            filters = f.get_value_filters()
-        if is_goto:
-            return f.filter_name(filters)
-        return f.find(filters, attribute_lookup=not search_global)
+        filters = f.get_value_filters()
+        return f.find(filters, attribute_lookup=True)
 
     def py__await__(self):
         await_value_set = self.py__getattribute__(u"__await__")
@@ -132,7 +129,7 @@ class Value(HelperValueMixin, BaseValue):
         from jedi.inference import analysis
         # TODO this value is probably not right.
         analysis.add(
-            valueualized_node.value,
+            valueualized_node.context,
             'type-error-not-subscriptable',
             valueualized_node.node,
             message="TypeError: '%s' object is not subscriptable" % self
@@ -143,7 +140,7 @@ class Value(HelperValueMixin, BaseValue):
         if valueualized_node is not None:
             from jedi.inference import analysis
             analysis.add(
-                valueualized_node.value,
+                valueualized_node.context,
                 'type-error-not-iterable',
                 valueualized_node.node,
                 message="TypeError: '%s' object is not iterable" % self)
@@ -209,6 +206,9 @@ class Value(HelperValueMixin, BaseValue):
     def is_stub(self):
         # The root value knows if it's a stub or not.
         return self.parent_context.is_stub()
+
+    def as_context(self):
+        raise NotImplementedError('Not all values need to be converted to contexts')
 
 
 def iterate_values(values, valueualized_node=None, is_async=False):
@@ -418,6 +418,9 @@ class ValueSet(BaseValueSet):
             else:
                 value_set |= method()
         return value_set
+
+    def as_context(self):
+        return [v.as_context() for v in self._set]
 
     def gather_annotation_classes(self):
         return ValueSet.from_sets([c.gather_annotation_classes() for c in self._set])

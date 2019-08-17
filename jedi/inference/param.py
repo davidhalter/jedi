@@ -120,7 +120,7 @@ def get_executed_params_and_issues(execution_value, arguments):
                          % (funcdef.name, key))
                     for valueualized_node in arguments.get_calling_nodes():
                         issues.append(
-                            analysis.add(valueualized_node.value,
+                            analysis.add(valueualized_node.context,
                                          'type-error-multiple-values',
                                          valueualized_node.node, message=m)
                         )
@@ -165,7 +165,7 @@ def get_executed_params_and_issues(execution_value, arguments):
                             m = _error_argument_count(funcdef, len(unpacked_va))
                             issues.append(
                                 analysis.add(
-                                    valueualized_node.value,
+                                    valueualized_node.context,
                                     'type-error-too-few-arguments',
                                     valueualized_node.node,
                                     message=m,
@@ -197,7 +197,7 @@ def get_executed_params_and_issues(execution_value, arguments):
                 for valueualized_node in arguments.get_calling_nodes():
                     m = _error_argument_count(funcdef, len(unpacked_va))
                     issues.append(
-                        analysis.add(valueualized_node.value,
+                        analysis.add(valueualized_node.context,
                                      'type-error-too-few-arguments',
                                      valueualized_node.node, message=m)
                     )

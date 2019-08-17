@@ -55,18 +55,11 @@ class FunctionAndClassBase(TreeValue):
 class FunctionMixin(object):
     api_type = u'function'
 
-    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
-        if search_global:
-            yield ParserTreeFilter(
-                value=self,
-                until_position=until_position,
-                origin_scope=origin_scope
-            )
-        else:
-            cls = self.py__class__()
-            for instance in cls.execute_with_values():
-                for filter in instance.get_filters(search_global=False, origin_scope=origin_scope):
-                    yield filter
+    def get_filters(self, origin_scope=None):
+        cls = self.py__class__()
+        for instance in cls.execute_with_values():
+            for filter in instance.get_filters(origin_scope=origin_scope):
+                yield filter
 
     def py__get__(self, instance, class_value):
         from jedi.inference.value.instance import BoundMethod
@@ -97,7 +90,7 @@ class FunctionMixin(object):
         if arguments is None:
             arguments = AnonymousArguments()
 
-        return FunctionExecutionValue(self.inference_state, self.parent_context, self, arguments)
+        return FunctionExecutionContext(self.inference_state, self.parent_context, self, arguments)
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.get_signature_functions()]
@@ -167,11 +160,11 @@ class MethodValue(FunctionValue):
         return names + (self.py__name__(),)
 
 
-class FunctionExecutionValue(TreeValue):
+class FunctionExecutionContext(TreeValue):
     function_execution_filter = FunctionExecutionFilter
 
     def __init__(self, inference_state, parent_context, function_value, var_args):
-        super(FunctionExecutionValue, self).__init__(
+        super(FunctionExecutionContext, self).__init__(
             inference_state,
             parent_context,
             function_value.tree_node,
@@ -292,7 +285,7 @@ class FunctionExecutionValue(TreeValue):
             for lazy_value in self.get_yield_lazy_values()
         )
 
-    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
+    def get_filters(self, until_position=None, origin_scope=None):
         yield self.function_execution_filter(self,
                                              until_position=until_position,
                                              origin_scope=origin_scope)

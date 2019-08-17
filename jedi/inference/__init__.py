@@ -362,11 +362,7 @@ class InferenceState(object):
             ) or name
             if stmt.type == 'lambdef':
                 stmt = name
-            return context.py__getattribute__(
-                name,
-                position=stmt.start_pos,
-                search_global=True, is_goto=True
-            )
+            return context.goto(name, position=stmt.start_pos)
 
     def create_context(self, base_context, node, node_is_value=False, node_is_object=False):
         def parent_scope(node):

@@ -116,7 +116,7 @@ class CompForValue(TreeValue):
     def from_comp_for(cls, parent_context, comp_for):
         return cls(parent_context.inference_state, parent_context, comp_for)
 
-    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
+    def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self)
 
 

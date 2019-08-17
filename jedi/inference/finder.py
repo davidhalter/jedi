@@ -117,7 +117,7 @@ class NameFinder(object):
 
     def get_value_filters(self):
         origin_scope = self._get_origin_scope()
-        for f in self._value.get_filters(False, origin_scope=origin_scope):
+        for f in self._value.get_filters(origin_scope=origin_scope):
             yield f
         # This covers the case where a stub files are incomplete.
         if self._value.is_stub():

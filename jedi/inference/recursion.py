@@ -115,9 +115,9 @@ class ExecutionRecursionDetector(object):
         self._recursion_level += 1
         self._parent_execution_funcs.append(funcdef)
 
-        module = execution.get_root_value()
+        module_context = execution.get_root_context()
 
-        if module == self._inference_state.builtins_module:
+        if module_context.is_builtins_module():
             # We have control over builtins so we know they are not recursing
             # like crazy. Therefore we just let them execute always, because
             # they usually just help a lot with getting good results.
@@ -133,7 +133,8 @@ class ExecutionRecursionDetector(object):
         self._execution_count += 1
 
         if self._funcdef_execution_counts.setdefault(funcdef, 0) >= per_function_execution_limit:
-            if module.py__name__() in ('builtins', 'typing'):
+            # TODO why check for builtins here again?
+            if module_context.py__name__() in ('builtins', 'typing'):
                 return False
             debug.warning(
                 'Per function execution limit (%s) reached: %s',

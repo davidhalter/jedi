@@ -385,7 +385,7 @@ def cache_call_signatures(inference_state, value, bracket_leaf, code_lines, user
     whole = ''.join(other_lines + [before_cursor])
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
-    module_path = value.get_root_value().py__file__()
+    module_path = value.get_root_context().py__file__()
     if module_path is None:
         yield None  # Don't cache!
     else:

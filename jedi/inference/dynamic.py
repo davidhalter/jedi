@@ -72,7 +72,7 @@ def search_params(inference_state, execution_value, funcdef):
 
     inference_state.dynamic_params_depth += 1
     try:
-        path = execution_value.get_root_value().py__file__()
+        path = execution_value.get_root_context().py__file__()
         if path is not None and is_stdlib_path(path):
             # We don't want to search for usages in the stdlib. Usually people
             # don't work with it (except if you are a core maintainer, sorry).
@@ -89,7 +89,7 @@ def search_params(inference_state, execution_value, funcdef):
         debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
 
         try:
-            module_context = execution_value.get_root_value()
+            module_context = execution_value.get_root_context()
             function_executions = _search_function_executions(
                 inference_state,
                 module_context,
@@ -132,7 +132,8 @@ def _search_function_executions(inference_state, module_context, funcdef, string
             inference_state, [module_context], string_name):
         if not isinstance(module_context, ModuleValue):
             return
-        for name, trailer in _get_possible_nodes(for_mod_value, string_name):
+        for_mod_context = for_mod_value.as_context()
+        for name, trailer in _get_possible_nodes(for_mod_context, string_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion
@@ -142,7 +143,7 @@ def _search_function_executions(inference_state, module_context, funcdef, string
                 return
 
             raise NotImplementedError
-            random_value = inference_state.create_context(for_mod_value, name)
+            random_value = inference_state.create_context(for_mod_context, name)
             for function_execution in _check_name_for_execution(
                     inference_state, random_value, compare_node, name, trailer):
                 found_executions = True
@@ -180,7 +181,7 @@ def _get_possible_nodes(module_value, func_string_name):
 
 
 def _check_name_for_execution(inference_state, value, compare_node, name, trailer):
-    from jedi.inference.value.function import FunctionExecutionValue
+    from jedi.inference.value.function import FunctionExecutionContext
 
     def create_func_excs():
         arglist = trailer.children[1]
@@ -204,7 +205,7 @@ def _check_name_for_execution(inference_state, value, compare_node, name, traile
         if compare_node == value_node:
             for func_execution in create_func_excs():
                 yield func_execution
-        elif isinstance(v.parent_context, FunctionExecutionValue) and \
+        elif isinstance(v.parent_context, FunctionExecutionContext) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
@@ -216,9 +217,9 @@ def _check_name_for_execution(inference_state, value, compare_node, name, traile
             nodes = [v.tree_node for v in values]
             if nodes == [compare_node]:
                 # Found a decorator.
-                module_value = value.get_root_value()
+                module_value = value.get_root_context()
                 execution_value = next(create_func_excs())
-                for name, trailer in _get_possible_nodes(module_value, params[0].string_name):
+                for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
                         raise NotImplementedError
                         random_value = inference_state.create_context(execution_value, name)

@@ -3,7 +3,7 @@ class BaseValue(object):
         self.inference_state = inference_state
         self.parent_context = parent_context
 
-    def get_root_value(self):
+    def get_root_context(self):
         value = self
         while True:
             if value.parent_context is None:

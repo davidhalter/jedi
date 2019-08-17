@@ -125,8 +125,7 @@ def infer_node(context, element):
     elif typ == 'dotted_name':
         value_set = infer_atom(context, element.children[0])
         for next_name in element.children[2::2]:
-            # TODO add search_global=True?
-            value_set = value_set.py__getattribute__(next_name, name_value=context)
+            value_set = value_set.py__getattribute__(next_name, name_context=context)
         return value_set
     elif typ == 'eval_input':
         return infer_node(context, element.children[0])
@@ -199,11 +198,7 @@ def infer_atom(context, atom):
             # position to None, so the finder will not try to stop at a certain
             # position in the module.
             position = None
-        return context.py__getattribute__(
-            name_or_str=atom,
-            position=position,
-            search_global=True
-        )
+        return context.py__getattribute__(atom, position=position)
     elif atom.type == 'keyword':
         # For False/True/None
         if atom.value in ('False', 'True', 'None'):
@@ -225,7 +220,7 @@ def infer_atom(context, atom):
         value_set = infer_atom(context, atom.children[0])
         for string in atom.children[1:]:
             right = infer_atom(context, string)
-            value_set = _infer_comparison(state, value_set, u'+', right)
+            value_set = _infer_comparison(context, value_set, u'+', right)
         return value_set
     elif atom.type == 'fstring':
         return compiled.get_string_value_set(state)
@@ -274,7 +269,7 @@ def infer_expr_stmt(context, stmt, seek_name=None):
         # Here we allow list/set to recurse under certain conditions. To make
         # it possible to resolve stuff like list(set(list(x))), this is
         # necessary.
-        if not allowed and context.get_root_value() == context.inference_state.builtins_module:
+        if not allowed and context.get_root_context().is_builtins_module():
             try:
                 instance = context.var_args.instance
             except AttributeError:
@@ -314,8 +309,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
         operator = copy.copy(first_operator)
         operator.value = operator.value[:-1]
         name = stmt.get_defined_names()[0].value
-        left = context.py__getattribute__(
-            name, position=stmt.start_pos, search_global=True)
+        left = context.py__getattribute__(name, position=stmt.start_pos)
 
         for_stmt = tree.search_ancestor(stmt, 'for_stmt')
         if for_stmt is not None and for_stmt.type == 'for_stmt' and value_set \
@@ -687,7 +681,7 @@ def check_tuple_assignments(valueualized_name, value_set):
     """
     lazy_value = None
     for index, node in valueualized_name.assignment_indexes():
-        cn = ValueualizedNode(valueualized_name.value, node)
+        cn = ValueualizedNode(valueualized_name.context, node)
         iterated = value_set.iterate(cn)
         if isinstance(index, slice):
             # For no star unpacking is not possible.

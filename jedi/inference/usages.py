@@ -37,7 +37,7 @@ def _find_names(module_context, tree_name):
 def usages(module_context, tree_name):
     search_name = tree_name.value
     found_names = _find_names(module_context, tree_name)
-    modules = set(d.get_root_value() for d in found_names.values())
+    modules = set(d.get_root_context() for d in found_names.values())
     modules = set(m for m in modules if m.is_module() and not m.is_compiled())
 
     non_matching_usage_maps = {}

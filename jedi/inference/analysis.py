@@ -149,7 +149,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
 
         for python_cls in exception.mro():
             if cls.py__name__() == python_cls.__name__ \
-                    and cls.parent_context == cls.inference_state.builtins_module:
+                    and cls.parent_context.is_builtins_module():
                 return True
         return False
 

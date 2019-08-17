@@ -24,7 +24,7 @@ from jedi.inference.value.instance import BoundMethod, InstanceArguments
 from jedi.inference.base_value import ValueualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue, \
-    FunctionExecutionValue
+    FunctionExecutionContext
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
@@ -114,7 +114,7 @@ def execute(callback):
         except AttributeError:
             pass
         else:
-            if value.parent_context == value.inference_state.builtins_module:
+            if value.parent_context.is_builtins_module():
                 module_name = 'builtins'
             elif value.parent_context is not None and value.parent_context.is_module():
                 module_name = value.parent_context.py__name__()
@@ -260,7 +260,7 @@ class SuperInstance(LazyValueWrapper):
             return self._instance
         return next(iter(objs))
 
-    def get_filters(self, search_global=False, until_position=None, origin_scope=None):
+    def get_filters(self, origin_scope=None):
         for b in self._get_bases():
             for obj in b.infer().execute_with_values():
                 for f in obj.get_filters():
@@ -269,7 +269,7 @@ class SuperInstance(LazyValueWrapper):
 
 @argument_clinic('[type[, obj]], /', want_value=True)
 def builtins_super(types, objects, value):
-    if isinstance(value, FunctionExecutionValue):
+    if isinstance(value, FunctionExecutionContext):
         if isinstance(value.var_args, InstanceArguments):
             instance = value.var_args.instance
             # TODO if a class is given it doesn't have to be the direct super
@@ -336,7 +336,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
             if cls_or_tup.is_class():
                 bool_results.add(cls_or_tup in mro)
             elif cls_or_tup.name.string_name == 'tuple' \
-                    and cls_or_tup.get_root_value() == inference_state.builtins_module:
+                    and cls_or_tup.get_root_context().is_builtins_module():
                 # Check for tuples.
                 classes = ValueSet.from_sets(
                     lazy_value.infer()
@@ -792,7 +792,7 @@ def get_metaclass_filters(func):
     def wrapper(cls, metaclasses):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'EnumMeta' \
-                    and metaclass.get_root_value().py__name__() == 'enum':
+                    and metaclass.get_root_context().py__name__() == 'enum':
                 filter_ = ParserTreeFilter(value=cls)
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
@@ -816,7 +816,7 @@ class EnumInstance(LazyValueWrapper):
         obj, = self._cls.execute_with_values()
         return obj
 
-    def get_filters(self, search_global=False, position=None, origin_scope=None):
+    def get_filters(self, origin_scope=None):
         yield DictFilter(dict(
             name=compiled.create_simple_object(self.inference_state, self._name.string_name).name,
             value=self._name,

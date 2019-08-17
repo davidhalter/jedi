@@ -261,17 +261,13 @@ class Completion:
         completion_names = []
         debug.dbg('trailer completion values: %s', values, color='MAGENTA')
         for value in values:
-            for filter in value.get_filters(
-                    search_global=False,
-                    origin_scope=user_value.tree_node):
+            for filter in value.get_filters(origin_scope=user_value.tree_node):
                 completion_names += filter.values()
 
         python_values = convert_values(values)
         for c in python_values:
             if c not in values:
-                for filter in c.get_filters(
-                        search_global=False,
-                        origin_scope=user_value.tree_node):
+                for filter in c.get_filters(origin_scope=user_value.tree_node):
                     completion_names += filter.values()
         return completion_names
 
@@ -298,7 +294,7 @@ class Completion:
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
-        filters = random_value.get_filters(search_global=False, is_instance=True)
+        filters = random_value.get_filters(is_instance=True)
         # The first dict is the dictionary of class itself.
         next(filters)
         for filter in filters:

@@ -6,8 +6,8 @@ from jedi.inference.gradual.stub_value import StubModuleValue
 
 
 def _stub_to_python_value_set(stub_value, ignore_compiled=False):
-    stub_module = stub_value.get_root_value()
-    if not stub_module.is_stub():
+    stub_module_context = stub_value.get_root_context()
+    if not stub_module_context.is_stub():
         return ValueSet([stub_value])
 
     was_instance = stub_value.is_instance()
@@ -25,7 +25,7 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
         qualified_names = qualified_names[:-1]
         was_instance = True
 
-    values = _infer_from_stub(stub_module, qualified_names, ignore_compiled)
+    values = _infer_from_stub(stub_module_context, qualified_names, ignore_compiled)
     if was_instance:
         values = ValueSet.from_sets(
             c.execute_with_values()
@@ -39,9 +39,10 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
     return values
 
 
-def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
+def _infer_from_stub(stub_module_context, qualified_names, ignore_compiled):
     from jedi.inference.compiled.mixed import MixedObject
-    assert isinstance(stub_module, (StubModuleValue, MixedObject)), stub_module
+    stub_module = stub_module_context._value  # TODO private!
+    assert isinstance(stub_module, (StubModuleValue, MixedObject)), stub_module_context
     non_stubs = stub_module.non_stub_value_set
     if ignore_compiled:
         non_stubs = non_stubs.filter(lambda c: not c.is_compiled())
@@ -53,8 +54,8 @@ def _infer_from_stub(stub_module, qualified_names, ignore_compiled):
 @to_list
 def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
     for name in names:
-        module = name.get_root_value()
-        if not module.is_stub():
+        module_context = name.get_root_context()
+        if not module_context.is_stub():
             yield name
             continue
 
@@ -63,7 +64,7 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
             values = NO_VALUES
         else:
             values = _infer_from_stub(
-                module,
+                module_context,
                 name_list[:-1],
                 ignore_compiled=prefer_stub_to_compiled,
             )
@@ -98,8 +99,8 @@ def _load_stub_module(module):
 @to_list
 def _python_to_stub_names(names, fallback_to_python=False):
     for name in names:
-        module = name.get_root_value()
-        if module.is_stub():
+        module_context = name.get_root_context()
+        if module_context.is_stub():
             yield name
             continue
 
@@ -114,7 +115,7 @@ def _python_to_stub_names(names, fallback_to_python=False):
         name_list = name.get_qualified_names()
         stubs = NO_VALUES
         if name_list is not None:
-            stub_module = _load_stub_module(module)
+            stub_module = _load_stub_module(module_context.get_value())
             if stub_module is not None:
                 stubs = ValueSet({stub_module})
                 for name in name_list[:-1]:
@@ -171,7 +172,7 @@ def to_stub(value):
         value = value.py__class__()
 
     qualified_names = value.get_qualified_names()
-    stub_module = _load_stub_module(value.get_root_value())
+    stub_module = _load_stub_module(value.get_root_context().get_value())
     if stub_module is None or qualified_names is None:
         return NO_VALUES
 

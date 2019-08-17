@@ -17,6 +17,7 @@ from jedi.inference.compiled.access import _sentinel
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference.helpers import reraise_getitem_errors
 from jedi.inference.signature import BuiltinSignature
+from jedi.inference.context import AbstractContext
 
 
 class CheckAttribute(object):
@@ -168,16 +169,11 @@ class CompiledObject(Value):
         # Ensures that a CompiledObject is returned that is not an instance (like list)
         return self
 
-    def get_filters(self, search_global=False, is_instance=False,
-                    until_position=None, origin_scope=None):
+    def get_filters(self, is_instance=False, origin_scope=None):
         yield self._ensure_one_filter(is_instance)
 
     @memoize_method
     def _ensure_one_filter(self, is_instance):
-        """
-        search_global shouldn't change the fact that there's one dict, this way
-        there's only one `object`.
-        """
         return CompiledObjectFilter(self.inference_state, self, is_instance)
 
     @CheckAttribute(u'__getitem__')
@@ -266,6 +262,9 @@ class CompiledObject(Value):
 
     def get_metaclasses(self):
         return NO_VALUES
+
+    def as_context(self):
+        return AbstractContext(self)
 
 
 class CompiledName(AbstractNameDefinition):

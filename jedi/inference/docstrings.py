@@ -270,21 +270,21 @@ def _execute_array_values(inference_state, array):
 @inference_state_method_cache()
 def infer_param(execution_value, param):
     from jedi.inference.value.instance import InstanceArguments
-    from jedi.inference.value import FunctionExecutionValue
+    from jedi.inference.value import FunctionExecutionContext
 
     def infer_docstring(docstring):
         return ValueSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
-            for p in _infer_for_statement_string(module_value, param_str)
+            for p in _infer_for_statement_string(module_context, param_str)
         )
-    module_value = execution_value.get_root_value()
+    module_context = execution_value.get_root_context()
     func = param.get_parent_function()
     if func.type == 'lambdef':
         return NO_VALUES
 
     types = infer_docstring(execution_value.py__doc__())
-    if isinstance(execution_value, FunctionExecutionValue) \
+    if isinstance(execution_value, FunctionExecutionContext) \
             and isinstance(execution_value.var_args, InstanceArguments) \
             and execution_value.function_value.py__name__() == '__init__':
         class_value = execution_value.var_args.instance.class_value
@@ -307,5 +307,5 @@ def infer_return_types(function_value):
             yield type_
 
     for type_str in search_return_in_docstr(function_value.py__doc__()):
-        for value in _infer_for_statement_string(function_value.get_root_value(), type_str):
+        for value in _infer_for_statement_string(function_value.get_root_context(), type_str):
             yield value

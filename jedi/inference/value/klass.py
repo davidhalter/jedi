@@ -48,6 +48,7 @@ from jedi.inference.names import TreeNameDefinition, ValueName
 from jedi.inference.arguments import unpack_arglist, ValuesArguments
 from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
     NO_VALUES
+from jedi.inference.context import ClassContext
 from jedi.inference.value.function import FunctionAndClassBase
 from jedi.plugins import plugin_manager
 
@@ -95,9 +96,9 @@ class ClassFilter(ParserTreeFilter):
     def _convert_names(self, names):
         return [
             self.name_class(
-                parent_context=self.value,
+                parent_context=self.context,
                 tree_name=name,
-                name_value=self._node_value,
+                name_context=self._node_context,
                 apply_decorators=not self._is_instance,
             ) for name in names
         ]
@@ -192,26 +193,22 @@ class ClassMixin(object):
                             mro.append(cls_new)
                             yield cls_new
 
-    def get_filters(self, search_global=False, until_position=None,
-                    origin_scope=None, is_instance=False):
+    def get_filters(self, origin_scope=None, is_instance=False):
         metaclasses = self.get_metaclasses()
         if metaclasses:
             for f in self.get_metaclass_filters(metaclasses):
                 yield f
 
-        if search_global:
-            yield self.get_global_filter(until_position, origin_scope)
-        else:
-            for cls in self.py__mro__():
-                if isinstance(cls, compiled.CompiledObject):
-                    for filter in cls.get_filters(is_instance=is_instance):
-                        yield filter
-                else:
-                    yield ClassFilter(
-                        self, node_value=cls,
-                        origin_scope=origin_scope,
-                        is_instance=is_instance
-                    )
+        for cls in self.py__mro__():
+            if isinstance(cls, compiled.CompiledObject):
+                for filter in cls.get_filters(is_instance=is_instance):
+                    yield filter
+            else:
+                yield ClassFilter(
+                    self, node_context=cls.as_context(),
+                    origin_scope=origin_scope,
+                    is_instance=is_instance
+                )
         if not is_instance:
             from jedi.inference.compiled import builtin_from_name
             type_ = builtin_from_name(self.inference_state, u'type')
@@ -228,12 +225,8 @@ class ClassMixin(object):
         init_funcs = self.py__call__().py__getattribute__('__init__')
         return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
-    def get_global_filter(self, until_position=None, origin_scope=None):
-        return ParserTreeFilter(
-            value=self,
-            until_position=until_position,
-            origin_scope=origin_scope
-        )
+    def as_context(self):
+        return ClassContext(self)
 
 
 class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase)):
@@ -273,7 +266,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
                 return lst
 
         if self.py__name__() == 'object' \
-                and self.parent_context == self.inference_state.builtins_module:
+                and self.parent_context.is_builtins_module():
             return []
         return [LazyKnownValues(
             self.inference_state.builtins_module.py__getattribute__('object')
@@ -287,7 +280,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
             LazyGenericClass(
                 self,
                 index_value,
-                value_of_index=valueualized_node.value,
+                value_of_index=valueualized_node.context,
             )
             for index_value in index_value_set
         )
