@@ -2,7 +2,7 @@ import os
 
 from jedi._compatibility import unicode, force_unicode, all_suffixes
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference.base_value import ValueualizedNode
+from jedi.inference.base_value import ContextualizedNode
 from jedi.inference.helpers import is_string
 from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
@@ -60,7 +60,7 @@ def _paths_from_assignment(module_context, expr_stmt):
         except AssertionError:
             continue
 
-        cn = ValueualizedNode(module_context.create_context(expr_stmt), expr_stmt)
+        cn = ContextualizedNode(module_context.create_context(expr_stmt), expr_stmt)
         for lazy_value in cn.infer().iterate(cn):
             for value in lazy_value.infer():
                 if is_string(value):

@@ -292,7 +292,7 @@ class TreeValue(Value):
         return '<%s: %s>' % (self.__class__.__name__, self.tree_node)
 
 
-class ValueualizedNode(object):
+class ContextualizedNode(object):
     def __init__(self, context, node):
         self.context = context
         self.node = node
@@ -307,7 +307,7 @@ class ValueualizedNode(object):
         return '<%s: %s in %s>' % (self.__class__.__name__, self.node, self.context)
 
 
-class ValueualizedName(ValueualizedNode):
+class ContextualizedName(ContextualizedNode):
     # TODO merge with TreeNameDefinition?!
     @property
     def name(self):

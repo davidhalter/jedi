@@ -38,7 +38,7 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.filters import ParserTreeFilter, LazyAttributeOverwrite, \
     publish_method
 from jedi.inference.base_value import ValueSet, Value, NO_VALUES, \
-    TreeValue, ValueualizedNode, iterate_values, HelperValueMixin, _sentinel
+    TreeValue, ContextualizedNode, iterate_values, HelperValueMixin, _sentinel
 from jedi.parser_utils import get_sync_comp_fors
 
 
@@ -171,7 +171,7 @@ class ComprehensionMixin(object):
         input_types = parent_context.infer_node(input_node)
         # TODO: simulate await if self.is_async
 
-        cn = ValueualizedNode(parent_context, input_node)
+        cn = ContextualizedNode(parent_context, input_node)
         iterated = input_types.iterate(cn, is_async=is_async)
         exprlist = comp_for.children[1]
         for i, lazy_value in enumerate(iterated):

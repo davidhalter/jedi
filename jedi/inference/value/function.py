@@ -12,7 +12,7 @@ from jedi.inference.signature import TreeSignature
 from jedi.inference.arguments import AnonymousArguments
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
 from jedi.inference.names import ValueName, AbstractNameDefinition, ParamName
-from jedi.inference.base_value import ValueualizedNode, NO_VALUES, \
+from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
     LazyTreeValue
@@ -224,7 +224,7 @@ class FunctionExecutionContext(AbstractContext):
 
         node = yield_expr.children[1]
         if node.type == 'yield_arg':  # It must be a yield from.
-            cn = ValueualizedNode(self, node.children[1])
+            cn = ContextualizedNode(self, node.children[1])
             for lazy_value in cn.infer().iterate(cn):
                 yield lazy_value
         else:
@@ -269,7 +269,7 @@ class FunctionExecutionContext(AbstractContext):
                         yield result
             else:
                 input_node = for_stmt.get_testlist()
-                cn = ValueualizedNode(self, input_node)
+                cn = ContextualizedNode(self, input_node)
                 ordered = cn.infer().iterate(cn)
                 ordered = list(ordered)
                 for lazy_value in ordered:

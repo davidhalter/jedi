@@ -21,7 +21,7 @@ from jedi.inference.arguments import ValuesArguments, \
 from jedi.inference import analysis
 from jedi.inference import compiled
 from jedi.inference.value.instance import BoundMethod, InstanceArguments
-from jedi.inference.base_value import ValueualizedNode, \
+from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue, \
     FunctionExecutionContext
@@ -304,7 +304,7 @@ def builtins_reversed(sequences, obj, arguments):
     key, lazy_value = next(arguments.unpack())
     cn = None
     if isinstance(lazy_value, LazyTreeValue):
-        cn = ValueualizedNode(lazy_value.context, lazy_value.data)
+        cn = ContextualizedNode(lazy_value.context, lazy_value.data)
     ordered = list(sequences.iterate(cn))
 
     # Repack iterator values and then run it the normal way. This is

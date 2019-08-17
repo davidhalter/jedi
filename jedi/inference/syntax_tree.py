@@ -8,8 +8,8 @@ from parso.python import tree
 from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
-from jedi.inference.base_value import ValueSet, NO_VALUES, ValueualizedNode, \
-    ValueualizedName, iterator_to_value_set, iterate_values
+from jedi.inference.base_value import ValueSet, NO_VALUES, ContextualizedNode, \
+    ContextualizedName, iterator_to_value_set, iterate_values
 from jedi.inference.lazy_value import LazyTreeValue
 from jedi.inference import compiled
 from jedi.inference import recursion
@@ -157,7 +157,7 @@ def infer_trailer(context, atom_values, trailer):
         trailer_op, node, _ = trailer.children
         return atom_values.get_item(
             _infer_subscript_list(context, node),
-            ValueualizedNode(context, trailer)
+            ContextualizedNode(context, trailer)
         )
     else:
         debug.dbg('infer_trailer: %s in %s', trailer, atom_values)
@@ -300,7 +300,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
     value_set = context.infer_node(rhs)
 
     if seek_name:
-        c_node = ValueualizedName(context, seek_name)
+        c_node = ContextualizedName(context, seek_name)
         value_set = check_tuple_assignments(c_node, value_set)
 
     first_operator = next(stmt.yield_operators(), None)
@@ -318,7 +318,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
             # only in for loops without clutter, because they are
             # predictable. Also only do it, if the variable is not a tuple.
             node = for_stmt.get_testlist()
-            cn = ValueualizedNode(context, node)
+            cn = ContextualizedNode(context, node)
             ordered = list(cn.infer().iterate(cn))
 
             for lazy_value in ordered:
@@ -595,13 +595,13 @@ def tree_name_to_values(inference_state, context, tree_name):
         try:
             types = context.predefined_names[node][tree_name.value]
         except KeyError:
-            cn = ValueualizedNode(context, node.children[3])
+            cn = ContextualizedNode(context, node.children[3])
             for_types = iterate_values(
                 cn.infer(),
                 valueualized_node=cn,
                 is_async=node.parent.type == 'async_stmt',
             )
-            c_node = ValueualizedName(context, tree_name)
+            c_node = ContextualizedName(context, tree_name)
             types = check_tuple_assignments(c_node, for_types)
     elif typ == 'expr_stmt':
         types = _remove_statements(context, node, tree_name)
@@ -680,7 +680,7 @@ def check_tuple_assignments(valueualized_name, value_set):
     """
     lazy_value = None
     for index, node in valueualized_name.assignment_indexes():
-        cn = ValueualizedNode(valueualized_name.context, node)
+        cn = ContextualizedNode(valueualized_name.context, node)
         iterated = value_set.iterate(cn)
         if isinstance(index, slice):
             # For no star unpacking is not possible.

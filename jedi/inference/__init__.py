@@ -75,7 +75,7 @@ from jedi.inference import recursion
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference import helpers
 from jedi.inference.names import TreeNameDefinition, ParamName
-from jedi.inference.base_value import ValueualizedName, ValueualizedNode, \
+from jedi.inference.base_value import ContextualizedName, ContextualizedNode, \
     ValueSet, NO_VALUES, iterate_values
 from jedi.inference.value import ClassValue, FunctionValue, \
     AnonymousInstance, BoundMethod
@@ -255,9 +255,9 @@ class InferenceState(object):
                     return infer_expr_stmt(context, def_, name)
             if type_ == 'for_stmt':
                 container_types = context.infer_node(def_.children[3])
-                cn = ValueualizedNode(context, def_.children[3])
+                cn = ContextualizedNode(context, def_.children[3])
                 for_types = iterate_values(container_types, cn)
-                c_node = ValueualizedName(context, name)
+                c_node = ContextualizedName(context, name)
                 return check_tuple_assignments(c_node, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)

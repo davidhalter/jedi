@@ -9,7 +9,7 @@ from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
     LazyTreeValue, get_merged_lazy_value
 from jedi.inference.names import ParamName, TreeNameDefinition
-from jedi.inference.base_value import NO_VALUES, ValueSet, ValueualizedNode
+from jedi.inference.base_value import NO_VALUES, ValueSet, ContextualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.inference.param import get_executed_params_and_issues, ExecutedParam
@@ -302,9 +302,9 @@ class TreeArguments(AbstractArguments):
                 break
 
         if arguments.argument_node is not None:
-            return [ValueualizedNode(arguments.context, arguments.argument_node)]
+            return [ContextualizedNode(arguments.context, arguments.argument_node)]
         if arguments.trailer is not None:
-            return [ValueualizedNode(arguments.context, arguments.trailer)]
+            return [ContextualizedNode(arguments.context, arguments.trailer)]
         return []
 
 
