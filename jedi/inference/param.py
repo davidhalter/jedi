@@ -14,7 +14,7 @@ def _add_argument_issue(error_name, lazy_value, message):
         node = lazy_value.data
         if node.parent.type == 'argument':
             node = node.parent
-        return analysis.add(lazy_value.value, error_name, node, message)
+        return analysis.add(lazy_value.context, error_name, node, message)
 
 
 class ExecutedParam(object):

@@ -72,6 +72,9 @@ class AbstractContext(object):
     def py__name__(self):
         return self._value.py__name__()
 
+    def py__doc__(self):
+        return self._value.py__doc__()
+
     def infer_node(self, node):
         return self.inference_state.infer_element(self, node)
 

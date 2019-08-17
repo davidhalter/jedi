@@ -542,12 +542,13 @@ def get_modules_containing_name(inference_state, modules, name):
     used_mod_paths = set()
     folders_with_names_to_be_checked = []
     for m in modules:
-        if m.file_io is not None:
-            path = m.file_io.path
+        file_io = m.get_value().file_io
+        if file_io is not None:
+            path = file_io.path
             if path not in used_mod_paths:
                 used_mod_paths.add(path)
                 folders_with_names_to_be_checked.append((
-                    m.file_io.get_parent_folder(),
+                    file_io.get_parent_folder(),
                     m.py__package__()
                 ))
         yield m

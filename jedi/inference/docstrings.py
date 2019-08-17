@@ -183,7 +183,7 @@ def _strip_rst_role(type_str):
         return type_str
 
 
-def _infer_for_statement_string(module_value, string):
+def _infer_for_statement_string(module_context, string):
     code = dedent(u("""
     def pseudo_docstring_stuff():
         '''
@@ -205,7 +205,7 @@ def _infer_for_statement_string(module_value, string):
     # will be impossible to use `...` (Ellipsis) as a token. Docstring types
     # don't need to conform with the current grammar.
     debug.dbg('Parse docstring code %s', string, color='BLUE')
-    grammar = module_value.inference_state.latest_grammar
+    grammar = module_context.inference_state.latest_grammar
     try:
         module = grammar.parse(code.format(indent_block(string)), error_recovery=False)
     except ParserSyntaxError:
@@ -223,8 +223,8 @@ def _infer_for_statement_string(module_value, string):
 
     from jedi.inference.value import FunctionValue
     function_value = FunctionValue(
-        module_value.inference_state,
-        module_value,
+        module_context.inference_state,
+        module_context,
         funcdef
     )
     func_execution_context = function_value.get_function_execution()
@@ -235,15 +235,15 @@ def _infer_for_statement_string(module_value, string):
     return list(_execute_types_in_stmt(func_execution_context, stmt))
 
 
-def _execute_types_in_stmt(module_value, stmt):
+def _execute_types_in_stmt(module_context, stmt):
     """
     Executing all types or general elements that we find in a statement. This
     doesn't include tuple, list and dict literals, because the stuff they
     contain is executed. (Used as type information).
     """
-    definitions = module_value.infer_node(stmt)
+    definitions = module_context.infer_node(stmt)
     return ValueSet.from_sets(
-        _execute_array_values(module_value.inference_state, d)
+        _execute_array_values(module_context.inference_state, d)
         for d in definitions
     )
 
