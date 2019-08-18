@@ -292,6 +292,7 @@ class DictComprehension(ComprehensionMixin, Sequence):
     def py__simple_getitem__(self, index):
         for keys, values in self._iterate():
             for k in keys:
+                # TODO remove this isinstance.
                 if isinstance(k, compiled.CompiledObject):
                     # Be careful in the future if refactoring, index could be a
                     # slice.
@@ -670,7 +671,7 @@ def _check_array_additions(context, sequence):
 
     debug.dbg('Dynamic array search for %s' % sequence, color='MAGENTA')
     module_context = context.get_root_context()
-    if not settings.dynamic_array_additions or isinstance(module_context, compiled.CompiledObject):
+    if not settings.dynamic_array_additions or module_context.is_compiled():
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
         return NO_VALUES
 

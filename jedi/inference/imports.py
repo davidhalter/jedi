@@ -515,7 +515,7 @@ def _load_module_from_path(inference_state, file_io, base_names):
     return module
 
 
-def get_modules_containing_name(inference_state, modules, name):
+def get_module_contexts_containing_name(inference_state, module_contexts, name):
     """
     Search a name in the directories of modules.
     """
@@ -541,17 +541,17 @@ def get_modules_containing_name(inference_state, modules, name):
     # skip non python modules
     used_mod_paths = set()
     folders_with_names_to_be_checked = []
-    for m in modules:
-        file_io = m.get_value().file_io
-        if file_io is not None:
-            path = file_io.path
-            if path not in used_mod_paths:
+    for module_context in module_contexts:
+        path = module_context.py__file__()
+        if path not in used_mod_paths:
+            file_io = module_context.get_value().file_io
+            if file_io is not None:
                 used_mod_paths.add(path)
                 folders_with_names_to_be_checked.append((
                     file_io.get_parent_folder(),
-                    m.py__package__()
+                    module_context.py__package__()
                 ))
-        yield m
+        yield module_context
 
     if not settings.dynamic_params_for_other_modules:
         return

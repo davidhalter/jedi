@@ -128,11 +128,8 @@ def _search_function_executions(inference_state, module_context, funcdef, string
 
     found_executions = False
     i = 0
-    for for_mod_value in imports.get_modules_containing_name(
+    for for_mod_context in imports.get_module_contexts_containing_name(
             inference_state, [module_context], string_name):
-        if not isinstance(module_context, ModuleValue):
-            return
-        for_mod_context = for_mod_value.as_context()
         for name, trailer in _get_possible_nodes(for_mod_context, string_name):
             i += 1
 
@@ -142,10 +139,9 @@ def _search_function_executions(inference_state, module_context, funcdef, string
             if i * inference_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 
-            raise NotImplementedError
-            random_value = inference_state.create_context(for_mod_context, name)
+            random_context = inference_state.create_context(for_mod_context, name)
             for function_execution in _check_name_for_execution(
-                    inference_state, random_value, compare_node, name, trailer):
+                    inference_state, random_context, compare_node, name, trailer):
                 found_executions = True
                 yield function_execution
 
@@ -180,14 +176,14 @@ def _get_possible_nodes(module_value, func_string_name):
             yield name, trailer
 
 
-def _check_name_for_execution(inference_state, value, compare_node, name, trailer):
+def _check_name_for_execution(inference_state, context, compare_node, name, trailer):
     from jedi.inference.value.function import FunctionExecutionContext
 
     def create_func_excs():
         arglist = trailer.children[1]
         if arglist == ')':
             arglist = None
-        args = TreeArguments(inference_state, value, arglist, trailer)
+        args = TreeArguments(inference_state, context, arglist, trailer)
         if value_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 inference_state,
@@ -200,7 +196,7 @@ def _check_name_for_execution(inference_state, value, compare_node, name, traile
         else:
             yield v.get_function_execution(args)
 
-    for v in inference_state.goto_definitions(value, name):
+    for v in inference_state.goto_definitions(context, name):
         value_node = v.tree_node
         if compare_node == value_node:
             for func_execution in create_func_excs():
@@ -217,11 +213,10 @@ def _check_name_for_execution(inference_state, value, compare_node, name, traile
             nodes = [v.tree_node for v in values]
             if nodes == [compare_node]:
                 # Found a decorator.
-                module_value = value.get_root_context()
+                module_context = context.get_root_context()
                 execution_context = next(create_func_excs())
                 for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
-                        raise NotImplementedError
                         random_value = inference_state.create_context(execution_context, name)
                         iterator = _check_name_for_execution(
                             inference_state,
