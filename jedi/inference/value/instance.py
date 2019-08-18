@@ -198,33 +198,33 @@ class AbstractInstanceValue(Value):
                 yield bound_method.get_function_execution(self.var_args)
 
     @inference_state_method_cache()
-    def create_instance_value(self, class_value, node):
+    def create_instance_context(self, class_context, node):
         if node.parent.type in ('funcdef', 'classdef'):
             node = node.parent
         scope = get_parent_scope(node)
-        if scope == class_value.tree_node:
-            return class_value
+        if scope == class_context.tree_node:
+            return class_context
         else:
-            parent_context = self.create_instance_value(class_value, scope)
+            parent_context = self.create_instance_context(class_context, scope)
             if scope.type == 'funcdef':
                 func = FunctionValue.from_context(
                     parent_context,
                     scope,
                 )
                 bound_method = BoundMethod(self, func)
-                if scope.name.value == '__init__' and parent_context == class_value:
+                if scope.name.value == '__init__' and parent_context == class_context:
                     return bound_method.get_function_execution(self.var_args)
                 else:
                     return bound_method.get_function_execution()
             elif scope.type == 'classdef':
-                class_value = ClassValue(self.inference_state, parent_context, scope)
-                return class_value
+                class_context = ClassValue(self.inference_state, parent_context, scope)
+                return class_context.as_context()
             elif scope.type in ('comp_for', 'sync_comp_for'):
                 # Comprehensions currently don't have a special scope in Jedi.
-                return self.create_instance_value(class_value, scope)
+                return self.create_instance_context(class_context, scope)
             else:
                 raise NotImplementedError
-        return class_value
+        return class_context
 
     def get_signatures(self):
         call_funcs = self.py__getattribute__('__call__').py__get__(self, self.class_value)
@@ -425,7 +425,10 @@ class SelfName(TreeNameDefinition):
 
     @property
     def parent_context(self):
-        return self._instance.create_instance_value(self.class_value, self.tree_name)
+        return self._instance.create_instance_context(
+            self.class_value.as_context(),
+            self.tree_name
+        )
 
 
 class LazyInstanceClassName(object):

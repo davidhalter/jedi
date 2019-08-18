@@ -674,8 +674,8 @@ def _check_array_additions(context, sequence):
         debug.dbg('Dynamic array search aborted.', color='MAGENTA')
         return NO_VALUES
 
-    def find_additions(value, arglist, add_name):
-        params = list(arguments.TreeArguments(value.inference_state, value, arglist).unpack())
+    def find_additions(context, arglist, add_name):
+        params = list(arguments.TreeArguments(context.inference_state, context, arglist).unpack())
         result = set()
         if add_name in ['insert']:
             params = params[1:]
@@ -717,7 +717,6 @@ def _check_array_additions(context, sequence):
                             or execution_trailer.children[1] == ')':
                         continue
 
-                raise NotImplementedError
                 random_context = context.create_context(name)
 
                 with recursion.execution_allowed(context.inference_state, power) as allowed:
@@ -783,8 +782,8 @@ class _ArrayInstance(HelperValueMixin):
 
 
 class Slice(object):
-    def __init__(self, value, start, stop, step):
-        self._value = value
+    def __init__(self, python_value, start, stop, step):
+        self._python_value = python_value
         self._slice_object = None
         # All of them are either a Precedence or None.
         self._start = start
@@ -793,7 +792,7 @@ class Slice(object):
 
     def __getattr__(self, name):
         if self._slice_object is None:
-            value = compiled.builtin_from_name(self._value.inference_state, 'slice')
+            value = compiled.builtin_from_name(self._python_value.inference_state, 'slice')
             self._slice_object, = value.execute_with_values()
         return getattr(self._slice_object, name)
 
@@ -807,7 +806,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = self._value.infer_node(element)
+            result = self._python_value.infer_node(element)
             if len(result) != 1:
                 # For simplicity, we want slices to be clear defined with just
                 # one type.  Otherwise we will return an empty slice object.

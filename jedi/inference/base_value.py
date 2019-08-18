@@ -222,7 +222,11 @@ class Value(HelperValueMixin, BaseValue):
         # The root value knows if it's a stub or not.
         return self.parent_context.is_stub()
 
+    @memoize_method
     def as_context(self):
+        return self._as_context()
+
+    def _as_context(self):
         raise NotImplementedError('Not all values need to be converted to contexts')
 
 

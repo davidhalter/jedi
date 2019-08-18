@@ -59,7 +59,7 @@ class TypingModuleWrapper(StubModuleValue):
         for f in filters:
             yield f
 
-    def as_context(self):
+    def _as_context(self):
         return TypingModuleContext(self)
 
 

@@ -263,7 +263,7 @@ class CompiledObject(Value):
     def get_metaclasses(self):
         return NO_VALUES
 
-    def as_context(self):
+    def _as_context(self):
         return AbstractContext(self)
 
 

@@ -275,7 +275,7 @@ class ModuleValue(ModuleMixin, TreeValue):
         else:
             raise AttributeError('Only packages have __path__ attributes.')
 
-    def as_context(self):
+    def _as_context(self):
         return ModuleContext(self)
 
     def __repr__(self):

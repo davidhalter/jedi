@@ -225,7 +225,7 @@ class ClassMixin(object):
         init_funcs = self.py__call__().py__getattribute__('__init__')
         return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
-    def as_context(self):
+    def _as_context(self):
         return ClassContext(self)
 
 

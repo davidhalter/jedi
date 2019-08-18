@@ -626,7 +626,7 @@ class AbstractAnnotatedClass(ClassMixin, ValueWrapper):
             generics=tuple(new_generics)
         )])
 
-    def as_context(self):
+    def _as_context(self):
         return AnnotatedClassContext(self)
 
     def __repr__(self):
