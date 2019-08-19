@@ -204,7 +204,7 @@ class TypingValue(_BaseTypingValue):
         )
 
 
-class _TypingClassMixin(object):
+class _TypingClassMixin(ClassMixin):
     def py__bases__(self):
         return [LazyKnownValues(
             self.inference_state.builtins_module.py__getattribute__('object')
@@ -214,11 +214,11 @@ class _TypingClassMixin(object):
         return []
 
 
-class TypingClassValueWithIndex(_TypingClassMixin, ClassMixin, TypingValueWithIndex):
+class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
     pass
 
 
-class TypingClassValue(_TypingClassMixin, TypingValue, ClassMixin):
+class TypingClassValue(_TypingClassMixin, TypingValue):
     index_class = TypingClassValueWithIndex
 
 

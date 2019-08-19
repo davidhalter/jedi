@@ -139,7 +139,7 @@ def _search_function_executions(inference_state, module_context, funcdef, string
             if i * inference_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 
-            random_context = inference_state.create_context(for_mod_context, name)
+            random_context = for_mod_context.create_context(name)
             for function_execution in _check_name_for_execution(
                     inference_state, random_context, compare_node, name, trailer):
                 found_executions = True

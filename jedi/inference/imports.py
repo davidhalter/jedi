@@ -536,7 +536,7 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
         m = _load_module_from_path(inference_state, new_file_io, base_names)
         if isinstance(m, compiled.CompiledObject):
             return None
-        return m
+        return m.as_context()
 
     # skip non python modules
     used_mod_paths = set()
