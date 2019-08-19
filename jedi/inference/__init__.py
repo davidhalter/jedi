@@ -79,7 +79,7 @@ from jedi.inference.base_value import ContextualizedName, ContextualizedNode, \
     ValueSet, NO_VALUES, iterate_values
 from jedi.inference.value import ClassValue, FunctionValue, \
     AnonymousInstance, BoundMethod
-from jedi.inference.value.iterable import CompForValue
+from jedi.inference.context import CompForContext
 from jedi.inference.syntax_tree import infer_trailer, infer_expr_stmt, \
     infer_node, check_tuple_assignments
 from jedi.plugins import plugin_manager
@@ -151,7 +151,7 @@ class InferenceState(object):
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
     def infer_element(self, context, element):
-        if isinstance(context, CompForValue):
+        if isinstance(context, CompForContext):
             return infer_node(context, element)
 
         if_stmt = element
@@ -407,7 +407,7 @@ class InferenceState(object):
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
-                return CompForValue.from_comp_for(parent_context, scope_node)
+                return CompForContext(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
 
         base_node = base_context.tree_node

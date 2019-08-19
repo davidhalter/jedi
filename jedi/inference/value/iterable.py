@@ -35,11 +35,11 @@ from jedi.inference.helpers import get_int_or_none, is_string, \
     SimpleGetItemNotFound
 from jedi.inference.utils import safe_property, to_list
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference.filters import ParserTreeFilter, LazyAttributeOverwrite, \
-    publish_method
+from jedi.inference.filters import LazyAttributeOverwrite, publish_method
 from jedi.inference.base_value import ValueSet, Value, NO_VALUES, \
-    TreeValue, ContextualizedNode, iterate_values, HelperValueMixin, _sentinel
+    ContextualizedNode, iterate_values, HelperValueMixin, _sentinel
 from jedi.parser_utils import get_sync_comp_fors
+from jedi.inference.context import CompForContext
 
 
 class IterableMixin(object):
@@ -111,15 +111,6 @@ class Generator(GeneratorBase):
         return "<%s of %s>" % (type(self).__name__, self._func_execution_context)
 
 
-class CompForValue(TreeValue):
-    @classmethod
-    def from_comp_for(cls, parent_context, comp_for):
-        return cls(parent_context.inference_state, parent_context, comp_for)
-
-    def get_filters(self, until_position=None, origin_scope=None):
-        yield ParserTreeFilter(self)
-
-
 def comprehension_from_atom(inference_state, value, atom):
     bracket = atom.children[0]
     test_list_comp = atom.children[1]
@@ -159,7 +150,7 @@ def comprehension_from_atom(inference_state, value, atom):
 class ComprehensionMixin(object):
     @inference_state_method_cache()
     def _get_comp_for_value(self, parent_context, comp_for):
-        return CompForValue.from_comp_for(parent_context, comp_for)
+        return CompForContext(parent_context, comp_for)
 
     def _nested(self, comp_fors, parent_context=None):
         comp_for = comp_fors[0]

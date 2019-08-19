@@ -137,3 +137,30 @@ class ClassContext(AbstractContext):
             until_position=until_position,
             origin_scope=origin_scope
         )
+
+
+class CompForContext(AbstractContext):
+    def __init__(self, parent_context, comp_for):
+        self._parent_context = parent_context
+        self.inference_state = parent_context.inference_state
+        self._tree_node = comp_for
+
+    @property
+    def parent_context(self):
+        return self._parent_context
+
+    def get_root_context(self):
+        return self._parent_context.get_root_context()
+
+    def is_instance(self):
+        return False
+
+    def is_compiled(self):
+        return False
+
+    @property
+    def tree_node(self):
+        return self._tree_node
+
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield ParserTreeFilter(self)
