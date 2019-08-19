@@ -21,7 +21,7 @@ from jedi import debug
 from jedi import parser_utils
 
 
-def infer_annotation(value, annotation):
+def infer_annotation(context, annotation):
     """
     Inferes an annotation node. This means that it inferes the part of
     `int` here:
@@ -30,7 +30,7 @@ def infer_annotation(value, annotation):
 
     Also checks for forward references (strings)
     """
-    value_set = value.infer_node(annotation)
+    value_set = context.infer_node(annotation)
     if len(value_set) != 1:
         debug.warning("Inferred typing index %s should lead to 1 object, "
                       " not %s" % (annotation, value_set))
@@ -38,18 +38,18 @@ def infer_annotation(value, annotation):
 
     inferred_value = list(value_set)[0]
     if is_string(inferred_value):
-        result = _get_forward_reference_node(value, inferred_value.get_safe_value())
+        result = _get_forward_reference_node(context, inferred_value.get_safe_value())
         if result is not None:
-            return value.infer_node(result)
+            return context.infer_node(result)
     return value_set
 
 
-def _infer_annotation_string(value, string, index=None):
-    node = _get_forward_reference_node(value, string)
+def _infer_annotation_string(context, string, index=None):
+    node = _get_forward_reference_node(context, string)
     if node is None:
         return NO_VALUES
 
-    value_set = value.infer_node(node)
+    value_set = context.infer_node(node)
     if index is not None:
         value_set = value_set.filter(
             lambda value: value.array_type == u'tuple'  # noqa
@@ -58,9 +58,9 @@ def _infer_annotation_string(value, string, index=None):
     return value_set
 
 
-def _get_forward_reference_node(value, string):
+def _get_forward_reference_node(context, string):
     try:
-        new_node = value.inference_state.grammar.parse(
+        new_node = context.inference_state.grammar.parse(
             force_unicode(string),
             start_symbol='eval_input',
             error_recovery=False
@@ -69,9 +69,9 @@ def _get_forward_reference_node(value, string):
         debug.warning('Annotation not parsed: %s' % string)
         return None
     else:
-        module = value.tree_node.get_root_node()
+        module = context.tree_node.get_root_node()
         parser_utils.move(new_node, module.end_pos[0])
-        new_node.parent = value.tree_node
+        new_node.parent = context.tree_node
         return new_node
 
 
@@ -173,8 +173,8 @@ def _infer_param(execution_context, param):
             param_comment
         )
     # Annotations are like default params and resolve in the same way.
-    value = execution_context.function_value.get_default_param_context()
-    return infer_annotation(value, annotation)
+    context = execution_context.function_value.get_default_param_context()
+    return infer_annotation(context, annotation)
 
 
 def py__annotations__(funcdef):
@@ -216,9 +216,9 @@ def infer_return_types(function_execution_context):
         if annotation is None:
             return NO_VALUES
 
-    value = function_execution_context.function_value.get_default_param_context()
-    unknown_type_vars = list(find_unknown_type_vars(value, annotation))
-    annotation_values = infer_annotation(value, annotation)
+    context = function_execution_context.function_value.get_default_param_context()
+    unknown_type_vars = list(find_unknown_type_vars(context, annotation))
+    annotation_values = infer_annotation(context, annotation)
     if not unknown_type_vars:
         return annotation_values.execute_annotation()
 
@@ -241,7 +241,7 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
     2. Infer type vars with the execution state we have.
     3. Return the union of all type vars that have been found.
     """
-    value = execution_context.function_value.get_default_param_context()
+    context = execution_context.function_value.get_default_param_context()
 
     annotation_variable_results = {}
     executed_params, _ = execution_context.get_executed_params_and_issues()
@@ -251,10 +251,10 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
         except KeyError:
             continue
 
-        annotation_variables = find_unknown_type_vars(value, annotation_node)
+        annotation_variables = find_unknown_type_vars(context, annotation_node)
         if annotation_variables:
             # Infer unknown type var
-            annotation_value_set = value.infer_node(annotation_node)
+            annotation_value_set = context.infer_node(annotation_node)
             star_count = executed_param._param_node.star_count
             actual_value_set = executed_param.infer(use_hints=False)
             if star_count == 1:
@@ -337,22 +337,22 @@ def _infer_type_vars(annotation_value, value_set):
     return type_var_dict
 
 
-def find_type_from_comment_hint_for(value, node, name):
-    return _find_type_from_comment_hint(value, node, node.children[1], name)
+def find_type_from_comment_hint_for(context, node, name):
+    return _find_type_from_comment_hint(context, node, node.children[1], name)
 
 
-def find_type_from_comment_hint_with(value, node, name):
+def find_type_from_comment_hint_with(context, node, name):
     assert len(node.children[1].children) == 3, \
         "Can only be here when children[1] is 'foo() as f'"
     varlist = node.children[1].children[2]
-    return _find_type_from_comment_hint(value, node, varlist, name)
+    return _find_type_from_comment_hint(context, node, varlist, name)
 
 
-def find_type_from_comment_hint_assign(value, node, name):
-    return _find_type_from_comment_hint(value, node, node.children[0], name)
+def find_type_from_comment_hint_assign(context, node, name):
+    return _find_type_from_comment_hint(context, node, node.children[0], name)
 
 
-def _find_type_from_comment_hint(value, node, varlist, name):
+def _find_type_from_comment_hint(context, node, varlist, name):
     index = None
     if varlist.type in ("testlist_star_expr", "exprlist", "testlist"):
         # something like "a, b = 1, 2"
@@ -373,11 +373,11 @@ def _find_type_from_comment_hint(value, node, varlist, name):
     if match is None:
         return []
     return _infer_annotation_string(
-        value, match.group(1).strip(), index
+        context, match.group(1).strip(), index
     ).execute_annotation()
 
 
-def find_unknown_type_vars(value, node):
+def find_unknown_type_vars(context, node):
     def check_node(node):
         if node.type in ('atom_expr', 'power'):
             trailer = node.children[-1]
@@ -385,7 +385,7 @@ def find_unknown_type_vars(value, node):
                 for subscript_node in _unpack_subscriptlist(trailer.children[1]):
                     check_node(subscript_node)
         else:
-            type_var_set = value.infer_node(node)
+            type_var_set = context.infer_node(node)
             for type_var in type_var_set:
                 if isinstance(type_var, TypeVar) and type_var not in found:
                     found.append(type_var)

@@ -7,6 +7,7 @@ from jedi._compatibility import FileNotFoundError, cast_path
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.stub_value import TypingModuleWrapper, StubModuleValue
+from jedi.inference.context import ModuleContext
 
 _jedi_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TYPESHED_PATH = os.path.join(_jedi_path, 'third_party', 'typeshed')
@@ -235,7 +236,7 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_context
     if len(import_names) == 1:
         map_ = _cache_stub_file_map(inference_state.grammar.version_info)
         import_name = _IMPORT_MAP.get(import_name, import_name)
-    elif isinstance(parent_module_context, StubModuleValue):
+    elif isinstance(parent_module_context, ModuleContext):
         if not parent_module_context.is_package:
             # Only if it's a package (= a folder) something can be
             # imported.

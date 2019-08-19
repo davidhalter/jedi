@@ -153,7 +153,7 @@ class MethodValue(FunctionValue):
         self.class_value = class_value
 
     def get_default_param_context(self):
-        return self.class_value
+        return self.class_value.as_context()
 
     def get_qualified_names(self):
         # Need to implement this, because the parent value of a method

@@ -292,12 +292,10 @@ class DictComprehension(ComprehensionMixin, Sequence):
     def py__simple_getitem__(self, index):
         for keys, values in self._iterate():
             for k in keys:
-                # TODO remove this isinstance.
-                if isinstance(k, compiled.CompiledObject):
-                    # Be careful in the future if refactoring, index could be a
-                    # slice.
-                    if k.get_safe_value(default=object()) == index:
-                        return values
+                # Be careful in the future if refactoring, index could be a
+                # slice object.
+                if k.get_safe_value(default=object()) == index:
+                    return values
         raise SimpleGetItemNotFound()
 
     def _dict_keys(self):

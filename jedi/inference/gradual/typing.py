@@ -563,7 +563,6 @@ class AnnotatedClassContext(ClassContext):
         yield self._value.get_type_var_filter()
 
 
-
 class AbstractAnnotatedClass(ClassMixin, ValueWrapper):
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_generics(), self.list_type_vars())
