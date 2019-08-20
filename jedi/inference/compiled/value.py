@@ -17,7 +17,7 @@ from jedi.inference.compiled.access import _sentinel
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference.helpers import reraise_getitem_errors
 from jedi.inference.signature import BuiltinSignature
-from jedi.inference.context import AbstractContext
+from jedi.inference.context import CompiledContext
 
 
 class CheckAttribute(object):
@@ -264,7 +264,7 @@ class CompiledObject(Value):
         return NO_VALUES
 
     def _as_context(self):
-        return AbstractContext(self)
+        return CompiledContext(self)
 
 
 class CompiledName(AbstractNameDefinition):
@@ -515,7 +515,9 @@ def _create_from_name(inference_state, compiled_object, name):
     value = None
     for access_path in access_paths:
         value = create_cached_compiled_object(
-            inference_state, access_path, parent_context=value
+            inference_state,
+            access_path,
+            parent_context=None if value is None else value.as_context(),
         )
     return value
 

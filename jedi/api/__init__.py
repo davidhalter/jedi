@@ -472,13 +472,17 @@ class Interpreter(Script):
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
-    def _get_module(self):
-        return interpreter.MixedModuleValue(
-            self._inference_state,
-            self._module_node,
-            self.namespaces,
+    @cache.memoize_method
+    def _get_module_context(self):
+        tree_module_value = ModuleValue(
+            self._inference_state, self._module_node,
             file_io=KnownContentFileIO(self.path, self._code),
+            string_names=('__main__',),
             code_lines=self._code_lines,
+        )
+        return interpreter.MixedModuleContext(
+            tree_module_value,
+            self.namespaces,
         )
 
 

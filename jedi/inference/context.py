@@ -118,6 +118,14 @@ class ModuleContext(AbstractContext):
         for f in filters:  # Python 2...
             yield f
 
+    @property
+    def string_names(self):
+        return self._value.string_names
+
+    @property
+    def code_lines(self):
+        return self._value.code_lines
+
     def get_value(self):
         """
         This is the only function that converts a context back to a value.
@@ -125,6 +133,14 @@ class ModuleContext(AbstractContext):
         this method shouldn't be move to AbstractContext.
         """
         return self._value
+
+
+class NamespaceContext(AbstractContext):
+    def get_filters(self, until_position=None, origin_scope=None):
+        return self._value.get_filters()
+
+    def py__file__(self):
+        return self._value.py__file__()
 
 
 class ClassContext(AbstractContext):
@@ -164,3 +180,8 @@ class CompForContext(AbstractContext):
 
     def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self)
+
+
+class CompiledContext(AbstractContext):
+    def get_filters(self, until_position=None, origin_scope=None):
+        return self._value.get_filters()

@@ -246,7 +246,7 @@ class InferenceState(object):
                 if is_classdef:
                     c = ClassValue(self, context, name.parent)
                 else:
-                    c = FunctionValue.from_value(context, name.parent)
+                    c = FunctionValue.from_context(context, name.parent)
                 return ValueSet([c])
 
             if type_ == 'expr_stmt':
@@ -349,7 +349,7 @@ class InferenceState(object):
                 new_dotted.children[index - 1:] = []
                 values = context.infer_node(new_dotted)
                 return unite(
-                    value.goto(name, name_value=value)
+                    value.goto(name, name_context=value.as_context())
                     for value in values
                 )
 

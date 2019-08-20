@@ -96,6 +96,21 @@ class MixedName(compiled.CompiledName):
 
     @underscore_memoization
     def infer(self):
+        def access_to_value(parent_value, access):
+            if parent_value is None:
+                parent_context = None
+            else:
+                parent_context = parent_value.as_context()
+
+            if parent_context is None or isinstance(parent_context, MixedObject):
+                return _create(self._inference_state, access, parent_context=parent_context)
+            else:
+                return ValueSet({
+                    create_cached_compiled_object(
+                        parent_context.inference_state, access, parent_context
+                    )
+                })
+
         # TODO use logic from compiled.CompiledObjectFilter
         access_paths = self.parent_context.access_handle.getattr_paths(
             self.string_name,
@@ -104,12 +119,7 @@ class MixedName(compiled.CompiledName):
         assert len(access_paths)
         values = [None]
         for access in access_paths:
-            values = ValueSet.from_sets(
-                _create(self._inference_state, access, parent_context=c)
-                if c is None or isinstance(c, MixedObject)
-                else ValueSet({create_cached_compiled_object(c.inference_state, access, c)})
-                for c in values
-            )
+            values = ValueSet.from_sets(access_to_value(v, access) for v in values)
         return values
 
     @property
@@ -278,7 +288,8 @@ def _create(inference_state, access_handle, parent_context, *args):
                 tree_node,
                 node_is_value=True,
                 node_is_object=True
-            )
+            )._value
+            # TODO private access!
         })
         if tree_node.type == 'classdef':
             if not access_handle.is_class():

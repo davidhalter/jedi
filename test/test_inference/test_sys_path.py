@@ -14,7 +14,7 @@ def test_paths_from_assignment(Script):
     def paths(src):
         script = Script(src, path='/foo/bar.py')
         expr_stmt = script._module_node.children[0]
-        return set(sys_path._paths_from_assignment(script._get_module(), expr_stmt))
+        return set(sys_path._paths_from_assignment(script._get_module_context(), expr_stmt))
 
     # Normalize paths for Windows.
     path_a = os.path.abspath('/foo/a')

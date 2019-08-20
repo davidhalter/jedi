@@ -3,6 +3,7 @@ from jedi.inference.filters import DictFilter
 from jedi.inference.names import ValueNameMixin, AbstractNameDefinition
 from jedi.inference.base_value import Value
 from jedi.inference.value.module import SubModuleDictMixin
+from jedi.inference.context import NamespaceContext
 
 
 class ImplicitNSName(ValueNameMixin, AbstractNameDefinition):
@@ -59,6 +60,9 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
 
     def is_stub(self):
         return False
+
+    def as_context(self):
+        return NamespaceContext(self)
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self._fullname)

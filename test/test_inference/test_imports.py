@@ -318,12 +318,13 @@ def test_get_modules_containing_name(inference_state, path, goal, is_package):
         is_package=is_package,
     )
     assert module
-    input_module, found_module = imports.get_modules_containing_name(
+    module_context = module.as_context()
+    input_module, found_module = imports.get_module_contexts_containing_name(
         inference_state,
-        [module],
+        [module_context],
         'string_that_only_exists_here'
     )
-    assert input_module is module
+    assert input_module is module_context
     assert found_module.string_names == goal
 
 
@@ -424,7 +425,7 @@ def test_level_to_import_path(level, directory, project_path, result):
 
 def test_import_name_calculation(Script):
     s = Script(path=os.path.join(test_dir, 'completion', 'isinstance.py'))
-    m = s._get_module()
+    m = s._get_module_context()
     assert m.string_names == ('test', 'completion', 'isinstance')
 
 
@@ -434,7 +435,7 @@ def test_pre_defined_imports_module(Script, environment, name):
         name = '__builtin__'
 
     path = os.path.join(root_dir, name + '.py')
-    module = Script('', path=path)._get_module()
+    module = Script('', path=path)._get_module_context()
     assert module.string_names == (name,)
 
     assert module.inference_state.builtins_module.py__file__() != path

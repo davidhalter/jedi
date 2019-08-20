@@ -93,7 +93,7 @@ def infer_import(context, tree_name, is_goto=False):
                     from_import_name,
                     name_context=context,
                     analysis_errors=False
-                ) for c in types.as_context()
+                ) for c in types
             ])
         else:
             types = types.py__getattribute__(

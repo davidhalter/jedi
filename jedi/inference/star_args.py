@@ -35,7 +35,6 @@ def _iter_nodes_for_param(param_name):
                 # anyway
                 trailer = search_ancestor(argument, 'trailer')
                 if trailer is not None:  # Make sure we're in a function
-                    raise NotImplementedError
                     context = execution_context.create_context(trailer)
                     if _goes_to_param_name(param_name, context, name):
                         values = _to_callables(context, trailer)
@@ -62,17 +61,17 @@ def _goes_to_param_name(param_name, context, potential_name):
                for p in found)
 
 
-def _to_callables(value, trailer):
+def _to_callables(context, trailer):
     from jedi.inference.syntax_tree import infer_trailer
 
     atom_expr = trailer.parent
     index = atom_expr.children[0] == 'await'
     # Infer atom first
-    values = value.infer_node(atom_expr.children[index])
+    values = context.infer_node(atom_expr.children[index])
     for trailer2 in atom_expr.children[index + 1:]:
         if trailer == trailer2:
             break
-        values = infer_trailer(value, values, trailer2)
+        values = infer_trailer(context, values, trailer2)
     return values
 
 

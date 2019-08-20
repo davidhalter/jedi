@@ -10,8 +10,8 @@ from ..helpers import cwd_at
 
 
 def check_module_test(Script, code):
-    module_value = Script(code)._get_module()
-    return check_sys_path_modifications(module_value)
+    module_context = Script(code)._get_module_context()
+    return check_sys_path_modifications(module_context)
 
 
 @cwd_at('test/examples/buildout_project/src/proj_name')

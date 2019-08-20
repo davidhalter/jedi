@@ -22,7 +22,7 @@ def test_string_literals(Script):
     """)
 
     script = Script(dedent(source))
-    assert script._get_module().tree_node.end_pos == (6, 0)
+    assert script._get_module_context().tree_node.end_pos == (6, 0)
     assert script.completions()
 
 
@@ -47,4 +47,4 @@ def test_decorator_string_issue(Script):
 
     s = Script(source)
     assert s.completions()
-    assert s._get_module().tree_node.get_code() == source
+    assert s._get_module_context().tree_node.get_code() == source
