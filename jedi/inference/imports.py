@@ -295,9 +295,9 @@ class Importer(object):
             value_set = ValueSet.from_sets([
                 self._inference_state.import_module(
                     import_names[:i+1],
-                    parent_module_context,
+                    parent_module_value,
                     sys_path
-                ) for parent_module_context in value_set
+                ) for parent_module_value in value_set
             ])
             if not value_set:
                 message = 'No module named ' + '.'.join(import_names)
@@ -377,7 +377,7 @@ class Importer(object):
 
 @plugin_manager.decorate()
 @import_module_decorator
-def import_module(inference_state, import_names, parent_module_context, sys_path):
+def import_module(inference_state, import_names, parent_module_value, sys_path):
     """
     This method is very similar to importlib's `_gcd_import`.
     """
@@ -388,7 +388,7 @@ def import_module(inference_state, import_names, parent_module_context, sys_path
         return ValueSet([module])
 
     module_name = '.'.join(import_names)
-    if parent_module_context is None:
+    if parent_module_value is None:
         # Override the sys.path. It works only good that way.
         # Injecting the path directly into `find_module` did not work.
         file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
@@ -401,7 +401,7 @@ def import_module(inference_state, import_names, parent_module_context, sys_path
             return NO_VALUES
     else:
         try:
-            method = parent_module_context.py__path__
+            method = parent_module_value.py__path__
         except AttributeError:
             # The module is not a package.
             return NO_VALUES
@@ -441,7 +441,7 @@ def import_module(inference_state, import_names, parent_module_context, sys_path
             is_package=is_pkg,
         )
 
-    if parent_module_context is None:
+    if parent_module_value is None:
         debug.dbg('global search_module %s: %s', import_names[-1], module)
     else:
         debug.dbg('search_module %s in paths %s: %s', module_name, paths, module)

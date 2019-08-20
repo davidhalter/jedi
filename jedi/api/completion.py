@@ -109,6 +109,7 @@ class Completion:
                 self._like_name, self._call_signatures_callback,
                 self._code_lines, self._original_position
             ))
+            return completions
             if completions:
                 return completions
 

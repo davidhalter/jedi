@@ -103,6 +103,10 @@ class ModuleContext(AbstractContext):
     def py__package__(self):
         return self._value.py__package__
 
+    @property
+    def is_package(self):
+        return self._value.is_package
+
     def get_filters(self, until_position=None, origin_scope=None):
         filters = self._value.get_filters(origin_scope)
         # Skip the first filter and replace it.

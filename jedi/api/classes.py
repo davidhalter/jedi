@@ -12,9 +12,7 @@ from jedi import debug
 from jedi.inference.utils import unite
 from jedi.cache import memoize_method
 from jedi.inference import imports
-from jedi.inference import compiled
 from jedi.inference.imports import ImportName
-from jedi.inference.value import FunctionExecutionContext
 from jedi.inference.gradual.typeshed import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
@@ -25,14 +23,14 @@ def _sort_names_by_start_pos(names):
     return sorted(names, key=lambda s: s.start_pos or (0, 0))
 
 
-def defined_names(inference_state, value):
+def defined_names(inference_state, context):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Definition
     """
-    filter = next(value.get_filters())
+    filter = next(context.get_filters())
     names = [name for name in filter.values()]
     return [Definition(inference_state, n) for n in _sort_names_by_start_pos(names)]
 
@@ -71,7 +69,7 @@ class BaseDefinition(object):
         self.is_keyword = isinstance(self._name, KeywordName)
 
     @memoize_method
-    def _get_module(self):
+    def _get_module_context(self):
         # This can take a while to complete, because in the worst case of
         # imports (consider `import a` completions), we need to load all
         # modules starting with a first.
@@ -80,11 +78,11 @@ class BaseDefinition(object):
     @property
     def module_path(self):
         """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
-        module = self._get_module()
+        module = self._get_module_context()
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
             # have one.
-            return self._get_module().py__file__()
+            return self._get_module_context().py__file__()
 
         return None
 
@@ -183,14 +181,14 @@ class BaseDefinition(object):
         >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
-        return self._get_module().py__name__()
+        return self._get_module_context().py__name__()
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        if isinstance(self._get_module(), StubModuleValue):
-            return any(isinstance(value, compiled.CompiledObject)
-                       for value in self._get_module().non_stub_value_set)
-        return isinstance(self._get_module(), compiled.CompiledObject)
+        value = self._get_module_context().get_value()
+        if isinstance(value, StubModuleValue):
+            return any(v.is_compiled() for v in value.non_stub_value_set)
+        return value.is_compiled()
 
     @property
     def line(self):
@@ -360,13 +358,12 @@ class BaseDefinition(object):
         if not self._name.is_value_name:
             return None
 
-        value = self._name.parent_context
-        if value is None:
+        context = self._name.parent_context
+        if context is None:
             return None
 
-        if isinstance(value, FunctionExecutionContext):
-            value = value.function_value
-        return Definition(self._inference_state, value.name)
+        # TODO private access!
+        return Definition(self._inference_state, context._value.name)
 
     def __repr__(self):
         return "<%s %sname=%r, description=%r>" % (
@@ -588,7 +585,7 @@ class Definition(BaseDefinition):
         """
         defs = self._name.infer()
         return sorted(
-            unite(defined_names(self._inference_state, d) for d in defs),
+            unite(defined_names(self._inference_state, d.as_context()) for d in defs),
             key=lambda s: s._name.start_pos or (0, 0)
         )
 

@@ -111,11 +111,11 @@ class InferenceState(object):
         self.reset_recursion_limitations()
         self.allow_different_encoding = True
 
-    def import_module(self, import_names, parent_module_context=None,
+    def import_module(self, import_names, parent_module_value=None,
                       sys_path=None, prefer_stubs=True):
         if sys_path is None:
             sys_path = self.get_sys_path()
-        return imports.import_module(self, import_names, parent_module_context,
+        return imports.import_module(self, import_names, parent_module_value,
                                      sys_path, prefer_stubs=prefer_stubs)
 
     @staticmethod
