@@ -80,7 +80,8 @@ class ClassName(TreeNameDefinition):
             if self._apply_decorators:
                 for c in apply_py__get__(result_value,
                                          instance=None,
-                                         class_value=self.parent_context):
+                                         # TODO private access!
+                                         class_value=self.parent_context._value):
                     yield c
             else:
                 yield result_value
@@ -205,7 +206,7 @@ class ClassMixin(object):
                     yield filter
             else:
                 yield ClassFilter(
-                    self, node_context=cls.as_context(),
+                    self.as_context(), node_context=cls.as_context(),
                     origin_scope=origin_scope,
                     is_instance=is_instance
                 )

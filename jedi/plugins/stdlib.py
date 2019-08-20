@@ -583,7 +583,7 @@ class DataclassWrapper(ValueWrapper, ClassMixin):
         param_names = []
         for cls in reversed(list(self.py__mro__())):
             if isinstance(cls, DataclassWrapper):
-                filter_ = cls.get_global_filter()
+                filter_ = cls.as_context().get_global_filter()
                 # .values ordering is not guaranteed, at least not in
                 # Python < 3.6, when dicts where not ordered, which is an
                 # implementation detail anyway.

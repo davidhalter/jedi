@@ -192,3 +192,6 @@ class CompiledContext(AbstractContext):
 
     def get_value(self):
         return self._value
+
+    def py__file__(self):
+        return self._value.py__file__()

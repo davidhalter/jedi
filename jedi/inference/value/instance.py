@@ -432,15 +432,16 @@ class SelfName(TreeNameDefinition):
 
 
 class LazyInstanceClassName(object):
-    def __init__(self, instance, class_value, class_member_name):
+    def __init__(self, instance, class_context, class_member_name):
         self._instance = instance
-        self.class_value = class_value
+        self.class_context = class_context
         self._class_member_name = class_member_name
 
     @iterator_to_value_set
     def infer(self):
         for result_value in self._class_member_name.infer():
-            for c in apply_py__get__(result_value, self._instance, self.class_value):
+            # TODO private access!
+            for c in apply_py__get__(result_value, self._instance, self.class_context._value):
                 yield c
 
     def __getattr__(self, name):
