@@ -213,6 +213,10 @@ class _TypingClassMixin(ClassMixin):
     def get_metaclasses(self):
         return []
 
+    @property
+    def name(self):
+        return ValueName(self, self._tree_name)
+
 
 class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
     pass

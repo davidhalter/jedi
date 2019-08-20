@@ -21,6 +21,7 @@ from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.inference.compiled.value import create_cached_compiled_object
 from jedi.inference.gradual.conversion import to_stub
+from jedi.inference.context import CompiledContext
 
 _sentinel = object()
 
@@ -70,11 +71,20 @@ class MixedObject(ValueWrapper):
             return self.compiled_object.py__simple_getitem__(index)
         raise SimpleGetItemNotFound
 
+    def _as_context(self):
+        return MixedContext(self)
+
     def __repr__(self):
         return '<%s: %s>' % (
             type(self).__name__,
             self.access_handle.get_repr()
         )
+
+
+class MixedContext(CompiledContext):
+    @property
+    def compiled_object(self):
+        return self._value.compiled_object
 
 
 class MixedName(compiled.CompiledName):
@@ -102,7 +112,7 @@ class MixedName(compiled.CompiledName):
             else:
                 parent_context = parent_value.as_context()
 
-            if parent_context is None or isinstance(parent_context, MixedObject):
+            if parent_context is None or isinstance(parent_context, MixedContext):
                 return _create(self._inference_state, access, parent_context=parent_context)
             else:
                 return ValueSet({
@@ -244,7 +254,8 @@ def _create(inference_state, access_handle, parent_context, *args):
     compiled_object = create_cached_compiled_object(
         inference_state,
         access_handle,
-        parent_context=parent_context and parent_context.compiled_object
+        parent_context=None if parent_context is None
+                       else parent_context.compiled_object.as_context()  # noqa
     )
 
     # TODO accessing this is bad, but it probably doesn't matter that much,

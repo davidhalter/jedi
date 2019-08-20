@@ -77,15 +77,15 @@ def _get_string_additions(module_context, start_leaf):
     addition = start_leaf.get_previous_leaf()
     if addition != '+':
         return ''
-    value = module_context.create_context(start_leaf)
-    return _add_strings(value, reversed(list(iterate_nodes())))
+    context = module_context.create_context(start_leaf)
+    return _add_strings(context, reversed(list(iterate_nodes())))
 
 
-def _add_strings(value, nodes, add_slash=False):
+def _add_strings(context, nodes, add_slash=False):
     string = ''
     first = True
     for child_node in nodes:
-        values = value.infer_node(child_node)
+        values = context.infer_node(child_node)
         if len(values) != 1:
             return None
         c, = values
@@ -111,8 +111,8 @@ def _add_os_path_join(module_context, start_leaf, bracket_start):
 
         if not nodes:
             return ''
-        value = module_context.create_context(nodes[0])
-        return _add_strings(value, nodes, add_slash=True) or ''
+        context = module_context.create_context(nodes[0])
+        return _add_strings(context, nodes, add_slash=True) or ''
 
     if start_leaf.type == 'error_leaf':
         # Unfinished string literal, like `join('`

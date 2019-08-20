@@ -401,7 +401,7 @@ class InferenceState(object):
 
                 if is_nested and not node_is_object:
                     return func.get_function_execution()
-                return func
+                return func.as_context()
             elif scope_node.type == 'classdef':
                 return ClassValue(self, parent_context, scope_node).as_context()
             elif scope_node.type in ('comp_for', 'sync_comp_for'):

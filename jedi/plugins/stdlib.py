@@ -476,7 +476,7 @@ def collections_namedtuple(obj, arguments, callback):
         file_io=None,
         string_names=None,
         code_lines=parso.split_lines(code, keepends=True),
-    )
+    ).as_context()
 
     return ValueSet([ClassValue(inference_state, parent_context, generated_class)])
 

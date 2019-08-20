@@ -530,13 +530,18 @@ def _normalize_create_args(func):
 
 
 def create_from_access_path(inference_state, access_path):
-    parent_context = None
+    value = None
     for name, access in access_path.accesses:
-        parent_context = create_cached_compiled_object(inference_state, access, parent_context)
-    return parent_context
+        value = create_cached_compiled_object(
+            inference_state,
+            access,
+            parent_context=None if value is None else value.as_context()
+        )
+    return value
 
 
 @_normalize_create_args
 @inference_state_function_cache()
 def create_cached_compiled_object(inference_state, access_handle, parent_context):
+    assert not isinstance(parent_context, CompiledObject)
     return CompiledObject(inference_state, access_handle, parent_context)
