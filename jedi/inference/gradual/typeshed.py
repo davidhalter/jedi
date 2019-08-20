@@ -108,7 +108,7 @@ def import_module_decorator(func):
                     python_parent, = inference_state.import_module(('os',), prefer_stubs=False)
                 python_value_set = ValueSet.from_sets(
                     func(inference_state, (n,), None, sys_path,)
-                    for n in ['posixpath', 'ntpath', 'macpath', 'os2emxpath']
+                    for n in [u'posixpath', u'ntpath', u'macpath', u'os2emxpath']
                 )
             else:
                 python_value_set = ValueSet.from_sets(

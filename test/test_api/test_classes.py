@@ -386,7 +386,7 @@ def test_import(names):
     n = nms[1].goto_assignments()[0]
     # This is very special, normally the name doesn't chance, but since
     # os.path is a sys.modules hack, it does.
-    assert n.name in ('ntpath', 'posixpath', 'os2emxpath')
+    assert n.name in ('macpath', 'ntpath', 'posixpath', 'os2emxpath')
     assert n.type == 'module'
 
 

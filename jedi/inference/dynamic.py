@@ -179,34 +179,34 @@ def _get_possible_nodes(module_value, func_string_name):
 def _check_name_for_execution(inference_state, context, compare_node, name, trailer):
     from jedi.inference.value.function import FunctionExecutionContext
 
-    def create_func_excs():
+    def create_func_excs(value):
         arglist = trailer.children[1]
         if arglist == ')':
             arglist = None
         args = TreeArguments(inference_state, context, arglist, trailer)
-        if value_node.type == 'classdef':
+        if value.tree_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 inference_state,
-                v.parent_context,
-                v,
+                value.parent_context,
+                value,
                 args
             )
             for execution in created_instance.create_init_executions():
                 yield execution
         else:
-            yield v.get_function_execution(args)
+            yield value.get_function_execution(args)
 
-    for v in inference_state.goto_definitions(context, name):
-        value_node = v.tree_node
+    for value in inference_state.goto_definitions(context, name):
+        value_node = value.tree_node
         if compare_node == value_node:
-            for func_execution in create_func_excs():
+            for func_execution in create_func_excs(value):
                 yield func_execution
-        elif isinstance(v.parent_context, FunctionExecutionContext) and \
+        elif isinstance(value.parent_context, FunctionExecutionContext) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
-            params, _ = v.parent_context.get_executed_params_and_issues()
+            params, _ = value.parent_context.get_executed_params_and_issues()
             if len(params) != 1:
                 continue
             values = params[0].infer()
@@ -214,10 +214,10 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             if nodes == [compare_node]:
                 # Found a decorator.
                 module_context = context.get_root_context()
-                execution_context = next(create_func_excs())
+                execution_context = next(create_func_excs(value))
                 for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
-                        random_value = inference_state.create_context(execution_context, name)
+                        random_value = execution_context.create_context(name)
                         iterator = _check_name_for_execution(
                             inference_state,
                             random_value,
