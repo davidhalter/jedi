@@ -202,7 +202,7 @@ class Importer(object):
         debug.speed('import %s %s' % (import_path, module_context))
         self._inference_state = inference_state
         self.level = level
-        self.module_context = module_context
+        self._module_context = module_context
 
         self._fixed_sys_path = None
         self._infer_possible = True
@@ -269,11 +269,11 @@ class Importer(object):
 
         sys_path_mod = (
             self._inference_state.get_sys_path()
-            + sys_path.check_sys_path_modifications(self.module_context)
+            + sys_path.check_sys_path_modifications(self._module_context)
         )
 
         if self._inference_state.environment.version_info.major == 2:
-            file_path = self.module_context.py__file__()
+            file_path = self._module_context.py__file__()
             if file_path is not None:
                 # Python2 uses an old strange way of importing relative imports.
                 sys_path_mod.append(force_unicode(os.path.dirname(file_path)))
@@ -301,7 +301,7 @@ class Importer(object):
             ])
             if not value_set:
                 message = 'No module named ' + '.'.join(import_names)
-                _add_error(self.module_context, name, message)
+                _add_error(self._module_context, name, message)
                 return NO_VALUES
         return value_set
 
@@ -313,7 +313,7 @@ class Importer(object):
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
-            names += [ImportName(self.module_context, name)
+            names += [ImportName(self._module_context, name)
                       for name in self._inference_state.compiled_subprocess.get_builtin_module_names()]
 
         if search_path is None:
@@ -321,7 +321,7 @@ class Importer(object):
 
         for name in iter_module_names(self._inference_state, search_path):
             if in_module is None:
-                n = ImportName(self.module_context, name)
+                n = ImportName(self._module_context, name)
             else:
                 n = SubModuleName(in_module, name)
             names.append(n)
@@ -344,7 +344,7 @@ class Importer(object):
                     modname = mod.string_name
                     if modname.startswith('flask_'):
                         extname = modname[len('flask_'):]
-                        names.append(ImportName(self.module_context, extname))
+                        names.append(ImportName(self._module_context, extname))
                 # Now the old style: ``flaskext.foo``
                 for dir in self._sys_path_with_modifications():
                     flaskext = os.path.join(dir, 'flaskext')
