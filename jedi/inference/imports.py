@@ -58,20 +58,56 @@ class ModuleCache(object):
 # certain imports.
 @inference_state_method_cache(default=NO_VALUES)
 def infer_import(context, tree_name):
-    return _infer_import(context, tree_name, is_goto=False)
+    module_context = context.get_root_context()
+    from_import_name, import_path, level, values = \
+        _prepare_infer_import(module_context, tree_name)
+    if not values:
+        return NO_VALUES
+
+    if from_import_name is not None:
+        values = values.py__getattribute__(
+            from_import_name,
+            name_context=context,
+            analysis_errors=False
+        )
+
+        if not values:
+            path = import_path + (from_import_name,)
+            importer = Importer(context.inference_state, path, module_context, level)
+            values = importer.follow()
+    debug.dbg('after import: %s', values)
+    return values
 
 
 @inference_state_method_cache(default=[])
 def goto_import(context, tree_name):
-    return _infer_import(context, tree_name, is_goto=True)
-
-
-def _infer_import(context, tree_name, is_goto=False):
     module_context = context.get_root_context()
+    from_import_name, import_path, level, values = \
+        _prepare_infer_import(module_context, tree_name)
+    if not values:
+        return []
+
+    if from_import_name is not None:
+        names = unite([
+            c.goto(
+                from_import_name,
+                name_context=context,
+                analysis_errors=False
+            ) for c in values
+        ])
+        if names:
+            return names
+
+        path = import_path + (from_import_name,)
+        importer = Importer(context.inference_state, path, module_context, level)
+        values = importer.follow()
+    return set(s.name for s in values)
+
+
+def _prepare_infer_import(module_context, tree_name):
     import_node = search_ancestor(tree_name, 'import_name', 'import_from')
     import_path = import_node.get_path_for_name(tree_name)
     from_import_name = None
-    inference_state = context.inference_state
     try:
         from_names = import_node.get_from_names()
     except AttributeError:
@@ -84,48 +120,12 @@ def _infer_import(context, tree_name, is_goto=False):
             from_import_name = import_path[-1]
             import_path = from_names
 
-    importer = Importer(inference_state, tuple(import_path),
+    importer = Importer(module_context.inference_state, tuple(import_path),
                         module_context, import_node.level)
-
-    values = importer.follow()
 
     #if import_node.is_nested() and not self.nested_resolve:
     #    scopes = [NestedImportModule(module, import_node)]
-
-    if not values:
-        return NO_VALUES
-
-    if from_import_name is not None:
-        if is_goto:
-            values = unite([
-                c.goto(
-                    from_import_name,
-                    name_context=context,
-                    analysis_errors=False
-                ) for c in values
-            ])
-        else:
-            values = values.py__getattribute__(
-                from_import_name,
-                name_context=context,
-                analysis_errors=False
-            )
-
-        if not values:
-            path = import_path + [from_import_name]
-            importer = Importer(inference_state, tuple(path),
-                                module_context, import_node.level)
-            values = importer.follow()
-            # goto only accepts `Name`
-            if is_goto:
-                values = set(s.name for s in values)
-    else:
-        # goto only accepts `Name`
-        if is_goto:
-            values = set(s.name for s in values)
-
-    debug.dbg('after import: %s', values)
-    return values
+    return from_import_name, tuple(import_path), import_node.level, importer.follow()
 
 
 class NestedImportModule(tree.Module):
