@@ -78,45 +78,45 @@ def infer_import(context, tree_name, is_goto=False):
     importer = Importer(inference_state, tuple(import_path),
                         module_context, import_node.level)
 
-    types = importer.follow()
+    values = importer.follow()
 
     #if import_node.is_nested() and not self.nested_resolve:
     #    scopes = [NestedImportModule(module, import_node)]
 
-    if not types:
+    if not values:
         return NO_VALUES
 
     if from_import_name is not None:
         if is_goto:
-            types = unite([
+            values = unite([
                 c.goto(
                     from_import_name,
                     name_context=context,
                     analysis_errors=False
-                ) for c in types
+                ) for c in values
             ])
         else:
-            types = types.py__getattribute__(
+            values = values.py__getattribute__(
                 from_import_name,
                 name_context=context,
                 analysis_errors=False
             )
 
-        if not types:
+        if not values:
             path = import_path + [from_import_name]
             importer = Importer(inference_state, tuple(path),
                                 module_context, import_node.level)
-            types = importer.follow()
+            values = importer.follow()
             # goto only accepts `Name`
             if is_goto:
-                types = set(s.name for s in types)
+                values = set(s.name for s in values)
     else:
         # goto only accepts `Name`
         if is_goto:
-            types = set(s.name for s in types)
+            values = set(s.name for s in values)
 
-    debug.dbg('after import: %s', types)
-    return types
+    debug.dbg('after import: %s', values)
+    return values
 
 
 class NestedImportModule(tree.Module):
