@@ -41,7 +41,7 @@ def _stub_to_python_value_set(stub_value, ignore_compiled=False):
 
 def _infer_from_stub(stub_module_context, qualified_names, ignore_compiled):
     from jedi.inference.compiled.mixed import MixedObject
-    stub_module = stub_module_context._value  # TODO private!
+    stub_module = stub_module_context.get_value()
     assert isinstance(stub_module, (StubModuleValue, MixedObject)), stub_module_context
     non_stubs = stub_module.non_stub_value_set
     if ignore_compiled:
