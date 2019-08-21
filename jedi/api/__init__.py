@@ -371,13 +371,13 @@ class Script(object):
         if call_details is None:
             return []
 
-        value = self._inference_state.create_context(
+        context = self._inference_state.create_context(
             self._get_module_context(),
             call_details.bracket_leaf
         )
         definitions = helpers.cache_call_signatures(
             self._inference_state,
-            value,
+            context,
             call_details.bracket_leaf,
             self._code_lines,
             self._pos
@@ -395,26 +395,26 @@ class Script(object):
         module = self._get_module_context()
         try:
             for node in get_executable_nodes(self._module_node):
-                value = module.create_context(node)
+                context = module.create_context(node)
                 if node.type in ('funcdef', 'classdef'):
                     # Resolve the decorators.
-                    tree_name_to_values(self._inference_state, value, node.children[1])
+                    tree_name_to_values(self._inference_state, context, node.children[1])
                 elif isinstance(node, tree.Import):
                     import_names = set(node.get_defined_names())
                     if node.is_nested():
                         import_names |= set(path[-1] for path in node.get_paths())
                     for n in import_names:
-                        imports.infer_import(value, n)
+                        imports.infer_import(context, n)
                 elif node.type == 'expr_stmt':
-                    types = value.infer_node(node)
+                    types = context.infer_node(node)
                     for testlist in node.children[:-1:2]:
                         # Iterate tuples.
-                        unpack_tuple_to_dict(value, types, testlist)
+                        unpack_tuple_to_dict(context, types, testlist)
                 else:
                     if node.type == 'name':
-                        defs = self._inference_state.goto_definitions(value, node)
+                        defs = self._inference_state.goto_definitions(context, node)
                     else:
-                        defs = infer_call_of_leaf(value, node)
+                        defs = infer_call_of_leaf(context, node)
                     try_iter_content(defs)
                 self._inference_state.reset_recursion_limitations()
 

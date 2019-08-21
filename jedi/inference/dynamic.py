@@ -217,10 +217,10 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
                 execution_context = next(create_func_excs(value))
                 for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
-                        random_value = execution_context.create_context(name)
+                        random_context = execution_context.create_context(name)
                         iterator = _check_name_for_execution(
                             inference_state,
-                            random_value,
+                            random_context,
                             compare_node,
                             name,
                             trailer

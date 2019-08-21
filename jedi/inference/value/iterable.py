@@ -772,8 +772,8 @@ class _ArrayInstance(HelperValueMixin):
 
 
 class Slice(object):
-    def __init__(self, python_value, start, stop, step):
-        self._python_value = python_value
+    def __init__(self, python_context, start, stop, step):
+        self._python_context = python_context
         self._slice_object = None
         # All of them are either a Precedence or None.
         self._start = start
@@ -782,7 +782,7 @@ class Slice(object):
 
     def __getattr__(self, name):
         if self._slice_object is None:
-            value = compiled.builtin_from_name(self._python_value.inference_state, 'slice')
+            value = compiled.builtin_from_name(self._python_context.inference_state, 'slice')
             self._slice_object, = value.execute_with_values()
         return getattr(self._slice_object, name)
 
@@ -796,7 +796,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = self._python_value.infer_node(element)
+            result = self._python_context.infer_node(element)
             if len(result) != 1:
                 # For simplicity, we want slices to be clear defined with just
                 # one type.  Otherwise we will return an empty slice object.

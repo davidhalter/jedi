@@ -359,8 +359,8 @@ def get_global_filters(inference_state, context, until_position, origin_scope):
     >>> scope = next(module_node.iter_funcdefs())
     >>> scope
     <Function: func@3-5>
-    >>> value = script._get_module_context().create_context(scope)
-    >>> filters = list(get_global_filters(value.inference_state, value, (4, 0), None))
+    >>> context = script._get_module_context().create_context(scope)
+    >>> filters = list(get_global_filters(context.inference_state, context, (4, 0), None))
 
     First we get the names from the function scope.
 

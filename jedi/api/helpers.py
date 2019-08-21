@@ -136,23 +136,23 @@ def get_stack_at_position(grammar, code_lines, leaf, pos):
     )
 
 
-def infer_goto_definition(inference_state, value, leaf):
+def infer_goto_definition(inference_state, context, leaf):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
-        return inference_state.goto_definitions(value, leaf)
+        return inference_state.goto_definitions(context, leaf)
 
     parent = leaf.parent
     definitions = NO_VALUES
     if parent.type == 'atom':
         # e.g. `(a + b)`
-        definitions = value.infer_node(leaf.parent)
+        definitions = context.infer_node(leaf.parent)
     elif parent.type == 'trailer':
         # e.g. `a()`
-        definitions = infer_call_of_leaf(value, leaf)
+        definitions = infer_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         # e.g. `"foo"` or `1.0`
-        return infer_atom(value, leaf)
+        return infer_atom(context, leaf)
     elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
         return get_string_value_set(inference_state)
     return definitions
@@ -376,7 +376,7 @@ def get_call_signature_details(module, position):
 
 
 @call_signature_time_cache("call_signatures_validity")
-def cache_call_signatures(inference_state, value, bracket_leaf, code_lines, user_pos):
+def cache_call_signatures(inference_state, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
     line_index = user_pos[0] - 1
 
@@ -385,13 +385,13 @@ def cache_call_signatures(inference_state, value, bracket_leaf, code_lines, user
     whole = ''.join(other_lines + [before_cursor])
     before_bracket = re.match(r'.*\(', whole, re.DOTALL)
 
-    module_path = value.get_root_context().py__file__()
+    module_path = context.get_root_context().py__file__()
     if module_path is None:
         yield None  # Don't cache!
     else:
         yield (module_path, before_bracket, bracket_leaf.start_pos)
     yield infer_goto_definition(
         inference_state,
-        value,
+        context,
         bracket_leaf.get_previous_leaf(),
     )

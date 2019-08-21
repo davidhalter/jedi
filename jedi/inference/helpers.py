@@ -44,7 +44,7 @@ def deep_ast_copy(obj):
     return new_obj
 
 
-def infer_call_of_leaf(value, leaf, cut_own_trailer=False):
+def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
     """
     Creates a "call" node that consist of all ``trailer`` and ``power``
     objects.  E.g. if you call it with ``append``::
@@ -66,15 +66,15 @@ def infer_call_of_leaf(value, leaf, cut_own_trailer=False):
     trailer = leaf.parent
     if trailer.type == 'fstring':
         from jedi.inference import compiled
-        return compiled.get_string_value_set(value.inference_state)
+        return compiled.get_string_value_set(context.inference_state)
 
     # The leaf may not be the last or first child, because there exist three
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
         if trailer.type == 'atom':
-            return value.infer_node(trailer)
-        return value.infer_node(leaf)
+            return context.infer_node(trailer)
+        return context.infer_node(leaf)
 
     power = trailer.parent
     index = power.children.index(trailer)
@@ -99,10 +99,10 @@ def infer_call_of_leaf(value, leaf, cut_own_trailer=False):
         base = trailers[0]
         trailers = trailers[1:]
 
-    values = value.infer_node(base)
+    values = context.infer_node(base)
     from jedi.inference.syntax_tree import infer_trailer
     for trailer in trailers:
-        values = infer_trailer(value, values, trailer)
+        values = infer_trailer(context, values, trailer)
     return values
 
 
