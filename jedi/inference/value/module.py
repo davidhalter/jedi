@@ -83,12 +83,8 @@ class SubModuleDictMixin(object):
         package).
         """
         names = {}
-        try:
-            method = self.py__path__
-        except AttributeError:
-            pass
-        else:
-            mods = iter_module_names(self.inference_state, method())
+        if self.is_package:
+            mods = iter_module_names(self.inference_state, self.py__path__())
             for name in mods:
                 # It's obviously a relative import to the current module.
                 names[name] = SubModuleName(self, name)
@@ -233,7 +229,15 @@ class ModuleValue(ModuleMixin, TreeValue):
             return self.string_names
         return self.string_names[:-1]
 
-    def _py__path__(self):
+    def py__path__(self):
+        """
+        In case of a package, this returns Python's __path__ attribute, which
+        is a list of paths (strings).
+        Returns None if the module is not a package.
+        """
+        if not self.is_package:
+            return None
+
         # A namespace package is typically auto generated and ~10 lines long.
         first_few_lines = ''.join(self.code_lines[:50])
         # these are strings that need to be used for namespace packages,
@@ -257,23 +261,6 @@ class ModuleValue(ModuleMixin, TreeValue):
         file = self.py__file__()
         assert file is not None  # Shouldn't be a package in the first place.
         return [os.path.dirname(file)]
-
-    @property
-    def py__path__(self):
-        """
-        Not seen here, since it's a property. The callback actually uses a
-        variable, so use it like::
-
-            foo.py__path__(sys_path)
-
-        In case of a package, this returns Python's __path__ attribute, which
-        is a list of paths (strings).
-        Raises an AttributeError if the module is not a package.
-        """
-        if self.is_package:
-            return self._py__path__
-        else:
-            raise AttributeError('Only packages have __path__ attributes.')
 
     def _as_context(self):
         return ModuleContext(self)

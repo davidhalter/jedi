@@ -400,28 +400,26 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
         if is_pkg is None:
             return NO_VALUES
     else:
-        try:
-            method = parent_module_value.py__path__
-        except AttributeError:
-            # The module is not a package.
+        paths = parent_module_value.py__path__()
+        if paths is None:
+            # The module might not be a package.
             return NO_VALUES
+
+        for path in paths:
+            # At the moment we are only using one path. So this is
+            # not important to be correct.
+            if not isinstance(path, list):
+                path = [path]
+            file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
+                string=import_names[-1],
+                path=path,
+                full_name=module_name,
+                is_global_search=False,
+            )
+            if is_pkg is not None:
+                break
         else:
-            paths = method()
-            for path in paths:
-                # At the moment we are only using one path. So this is
-                # not important to be correct.
-                if not isinstance(path, list):
-                    path = [path]
-                file_io_or_ns, is_pkg = inference_state.compiled_subprocess.get_module_info(
-                    string=import_names[-1],
-                    path=path,
-                    full_name=module_name,
-                    is_global_search=False,
-                )
-                if is_pkg is not None:
-                    break
-            else:
-                return NO_VALUES
+            return NO_VALUES
 
     if isinstance(file_io_or_ns, ImplicitNSInfo):
         from jedi.inference.value.namespace import ImplicitNamespaceValue

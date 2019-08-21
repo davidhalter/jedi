@@ -61,6 +61,10 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     def is_stub(self):
         return False
 
+    @property
+    def is_package(self):
+        return True
+
     def as_context(self):
         return NamespaceContext(self)
 

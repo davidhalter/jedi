@@ -83,9 +83,14 @@ class CompiledObject(Value):
             for access in self.access_handle.py__bases__()
         )
 
-    @CheckAttribute()
     def py__path__(self):
-        return map(cast_path, self.access_handle.py__path__())
+        paths = self.access_handle.py__path__()
+        if paths is None:
+            return None
+        return map(cast_path, paths)
+
+    def is_package(self):
+        return self.py__path__() is not None
 
     @property
     def string_names(self):

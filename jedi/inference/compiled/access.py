@@ -273,7 +273,13 @@ class DirectObjectAccess(object):
         return [self._create_access_path(base) for base in self._obj.__bases__]
 
     def py__path__(self):
-        return self._obj.__path__
+        paths = getattr(self._obj, '__path__', None)
+        # Avoid some weird hacks that would just fail, because they cannot be
+        # used by pickle.
+        if not isinstance(paths, list) \
+                or not all(isinstance(p, (bytes, unicode)) for p in paths):
+            return None
+        return paths
 
     @_force_unicode_decorator
     def get_repr(self):

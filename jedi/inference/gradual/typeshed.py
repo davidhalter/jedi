@@ -206,12 +206,7 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
     # 4. Try to load pyi file somewhere if python_value_set was not defined.
     if not python_value_set:
         if parent_module_value is not None:
-            try:
-                method = parent_module_value.py__path__
-            except AttributeError:
-                check_path = []
-            else:
-                check_path = method()
+            check_path = parent_module_value.py__path__() or []
             # In case import_names
             names_for_path = (import_names[-1],)
         else:

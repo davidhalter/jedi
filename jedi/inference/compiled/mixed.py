@@ -277,7 +277,7 @@ def _create(inference_state, access_handle, parent_context, *args):
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
-                is_package=hasattr(compiled_object, 'py__path__'),
+                is_package=compiled_object.is_package,
             ).as_context()
             if name is not None:
                 inference_state.module_cache.add(string_names, ValueSet([module_context]))
