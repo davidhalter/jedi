@@ -19,7 +19,7 @@ from jedi.inference.utils import safe_property
 from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.cache import memoize_method
 
-_sentinel = object()
+sentinel = object()
 
 
 class HelperValueMixin(object):
@@ -205,8 +205,8 @@ class Value(HelperValueMixin, BaseValue):
             return clean_scope_docstring(self.tree_node)
         return None
 
-    def get_safe_value(self, default=_sentinel):
-        if default is _sentinel:
+    def get_safe_value(self, default=sentinel):
+        if default is sentinel:
             raise ValueError("There exists no safe value for value %s" % self)
         return default
 
@@ -360,8 +360,6 @@ class ContextualizedName(ContextualizedNode):
 
 
 def _getitem(value, index_values, contextualized_node):
-    from jedi.inference.value.iterable import Slice
-
     # The actual getitem call.
     simple_getitem = getattr(value, 'py__simple_getitem__', None)
 
@@ -369,17 +367,8 @@ def _getitem(value, index_values, contextualized_node):
     unused_values = set()
     for index_value in index_values:
         if simple_getitem is not None:
-            index = index_value
-            if isinstance(index_value, Slice):
-                index = index.obj
 
-            try:
-                method = index.get_safe_value
-            except AttributeError:
-                pass
-            else:
-                index = method(default=None)
-
+            index = index_value.get_safe_value(default=None)
             if type(index) in (float, int, str, unicode, slice, bytes):
                 try:
                     result |= simple_getitem(index)

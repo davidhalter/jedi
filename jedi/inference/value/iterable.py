@@ -37,7 +37,8 @@ from jedi.inference.utils import safe_property, to_list
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.filters import LazyAttributeOverwrite, publish_method
 from jedi.inference.base_value import ValueSet, Value, NO_VALUES, \
-    ContextualizedNode, iterate_values, HelperValueMixin, _sentinel
+    ContextualizedNode, iterate_values, HelperValueMixin, sentinel, \
+    LazyValueWrapper
 from jedi.parser_utils import get_sync_comp_fors
 from jedi.inference.context import CompForContext
 
@@ -54,8 +55,8 @@ class IterableMixin(object):
     # typeshed.
     if sys.version_info[0] == 2:
         # Python 2...........
-        def get_safe_value(self, default=_sentinel):
-            if default is _sentinel:
+        def get_safe_value(self, default=sentinel):
+            if default is sentinel:
                 raise ValueError("There exists no safe value for value %s" % self)
             return default
     else:
@@ -771,23 +772,21 @@ class _ArrayInstance(HelperValueMixin):
         return self.py__iter__(contextualized_node)
 
 
-class Slice(object):
+class Slice(LazyValueWrapper):
     def __init__(self, python_context, start, stop, step):
-        self._python_context = python_context
-        self._slice_object = None
+        self.inference_state = python_context.inference_state
+        self._context = python_context
         # All of them are either a Precedence or None.
         self._start = start
         self._stop = stop
         self._step = step
 
-    def __getattr__(self, name):
-        if self._slice_object is None:
-            value = compiled.builtin_from_name(self._python_context.inference_state, 'slice')
-            self._slice_object, = value.execute_with_values()
-        return getattr(self._slice_object, name)
+    def _get_wrapped_value(self):
+        value = compiled.builtin_from_name(self._context.inference_state, 'slice')
+        slice_value, = value.execute_with_values()
+        return slice_value
 
-    @property
-    def obj(self):
+    def get_safe_value(self, default=sentinel):
         """
         Imitate CompiledObject.obj behavior and return a ``builtin.slice()``
         object.
@@ -796,7 +795,7 @@ class Slice(object):
             if element is None:
                 return None
 
-            result = self._python_context.infer_node(element)
+            result = self._context.infer_node(element)
             if len(result) != 1:
                 # For simplicity, we want slices to be clear defined with just
                 # one type.  Otherwise we will return an empty slice object.
