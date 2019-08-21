@@ -89,9 +89,6 @@ class HelperValueMixin(object):
             debug.warning('Tried to run __await__ on value %s', self)
         return await_value_set.execute_with_values()
 
-    def infer_node(self, node):
-        return self.inference_state.infer_element(self, node)
-
     def iterate(self, contextualized_node=None, is_async=False):
         debug.dbg('iterate %s', self)
         if is_async:
