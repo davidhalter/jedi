@@ -99,11 +99,6 @@ class MixedName(compiled.CompiledName):
             return 0, 0
         return values[0].name.start_pos
 
-    @start_pos.setter
-    def start_pos(self, value):
-        # Ignore the __init__'s start_pos setter call.
-        pass
-
     @underscore_memoization
     def infer(self):
         def access_to_value(parent_value, access):
