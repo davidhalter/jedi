@@ -308,7 +308,7 @@ class InferenceState(object):
             elif type_ == 'param':
                 return [ParamName(context, name)]
             elif type_ in ('import_from', 'import_name'):
-                module_names = imports.infer_import(context, name, is_goto=True)
+                module_names = imports.goto_import(context, name)
                 return module_names
             else:
                 return [TreeNameDefinition(context, name)]

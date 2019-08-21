@@ -57,7 +57,16 @@ class ModuleCache(object):
 # This memoization is needed, because otherwise we will infinitely loop on
 # certain imports.
 @inference_state_method_cache(default=NO_VALUES)
-def infer_import(context, tree_name, is_goto=False):
+def infer_import(context, tree_name):
+    return _infer_import(context, tree_name, is_goto=False)
+
+
+@inference_state_method_cache(default=[])
+def goto_import(context, tree_name):
+    return _infer_import(context, tree_name, is_goto=True)
+
+
+def _infer_import(context, tree_name, is_goto=False):
     module_context = context.get_root_context()
     import_node = search_ancestor(tree_name, 'import_name', 'import_from')
     import_path = import_node.get_path_for_name(tree_name)
