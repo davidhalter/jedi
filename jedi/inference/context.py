@@ -45,7 +45,7 @@ class AbstractContext(object):
 
     def create_context(self, node):
         def from_scope_node(scope_node, is_nested=True):
-            if scope_node == base_node:
+            if scope_node == self.tree_node:
                 return self
 
             if scope_node.type in ('funcdef', 'lambdef', 'classdef'):
@@ -57,8 +57,6 @@ class AbstractContext(object):
                     return parent_context
                 return CompForContext(parent_context, scope_node)
             raise Exception("There's a scope that was not managed.")
-
-        base_node = self.tree_node
 
         def parent_scope(node):
             while True:
