@@ -282,20 +282,17 @@ class Completion:
         """
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         cls = tree.search_ancestor(leaf, 'classdef')
-        if isinstance(cls, (tree.Class, tree.Function)):
-            # Complete the methods that are defined in the super classes.
-            random_context = self._module_context.create_context(
-                cls,
-                node_is_value=True
-            )
-        else:
+        if cls is None:
             return
+
+        # Complete the methods that are defined in the super classes.
+        class_context = self._module_context.create_context(cls, node_is_value=True)
 
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
         # TODO _value private access!
-        filters = random_context._value.get_filters(is_instance=True)
+        filters = class_context._value.get_filters(is_instance=True)
         # The first dict is the dictionary of class itself.
         next(filters)
         for filter in filters:
