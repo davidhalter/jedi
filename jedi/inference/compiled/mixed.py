@@ -289,10 +289,7 @@ def _create(inference_state, access_handle, parent_context, *args):
                 return ValueSet({compiled_object})
             module_context = parent_context.get_root_context()
 
-        if tree_node is module_node:
-            tree_values = ValueSet({module_context.get_value()})
-        else:
-            tree_values = ValueSet({module_context.create_value(tree_node)})
+        tree_values = ValueSet({module_context.create_value(tree_node)})
         if tree_node.type == 'classdef':
             if not access_handle.is_class():
                 # Is an instance, not a class.

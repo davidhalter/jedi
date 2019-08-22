@@ -25,6 +25,10 @@ class AbstractContext(object):
     def create_value(self, node):
         from jedi.inference import value
 
+        if node == self.tree_node:
+            assert self.is_module()
+            return self.get_value()
+
         parent_context = self.create_context(node)
 
         if node.type in ('funcdef', 'lambdef'):
@@ -56,7 +60,7 @@ class AbstractContext(object):
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
                 return CompForContext(parent_context, scope_node)
-            raise Exception("There's a scope that was not managed.")
+            raise Exception("There's a scope that was not managed: %s" % scope_node)
 
         def parent_scope(node):
             while True:
