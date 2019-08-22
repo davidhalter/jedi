@@ -294,4 +294,4 @@ def cut_value_at_position(leaf, position):
 
 
 def get_string_quote(leaf):
-    return re.match('\w*("""|\'{3}|"|\')', leaf.value).group(1)
+    return re.match(r'\w*("""|\'{3}|"|\')', leaf.value).group(1)
