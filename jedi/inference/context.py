@@ -43,7 +43,7 @@ class AbstractContext(object):
         else:
             raise NotImplementedError("Probably shouldn't happen: %s" % node)
 
-    def create_context(self, node, node_is_value=False):
+    def create_context(self, node):
         def from_scope_node(scope_node, is_nested=True):
             if scope_node == base_node:
                 return self
@@ -60,31 +60,28 @@ class AbstractContext(object):
 
         base_node = self.tree_node
 
-        if node_is_value and parser_utils.is_scope(node):
-            scope_node = node
-        else:
-            def parent_scope(node):
-                while True:
-                    node = node.parent
+        def parent_scope(node):
+            while True:
+                node = node.parent
 
-                    if parser_utils.is_scope(node):
-                        return node
-                    elif node.type in ('argument', 'testlist_comp'):
-                        if node.children[1].type in ('comp_for', 'sync_comp_for'):
-                            return node.children[1]
-                    elif node.type == 'dictorsetmaker':
-                        for n in node.children[1:4]:
-                            # In dictionaries it can be pretty much anything.
-                            if n.type in ('comp_for', 'sync_comp_for'):
-                                return n
+                if parser_utils.is_scope(node):
+                    return node
+                elif node.type in ('argument', 'testlist_comp'):
+                    if node.children[1].type in ('comp_for', 'sync_comp_for'):
+                        return node.children[1]
+                elif node.type == 'dictorsetmaker':
+                    for n in node.children[1:4]:
+                        # In dictionaries it can be pretty much anything.
+                        if n.type in ('comp_for', 'sync_comp_for'):
+                            return n
 
-            scope_node = parent_scope(node)
-            if scope_node.type in ('funcdef', 'classdef'):
-                colon = scope_node.children[scope_node.children.index(':')]
-                if node.start_pos < colon.start_pos:
-                    parent = node.parent
-                    if not (parent.type == 'param' and parent.name == node):
-                        scope_node = parent_scope(scope_node)
+        scope_node = parent_scope(node)
+        if scope_node.type in ('funcdef', 'classdef'):
+            colon = scope_node.children[scope_node.children.index(':')]
+            if node.start_pos < colon.start_pos:
+                parent = node.parent
+                if not (parent.type == 'param' and parent.name == node):
+                    scope_node = parent_scope(scope_node)
         return from_scope_node(scope_node, is_nested=True)
 
     def goto(self, name_or_str, position):

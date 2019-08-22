@@ -15,7 +15,7 @@ from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.filters import get_global_filters
 from jedi.inference.gradual.conversion import convert_values
-from jedi.parser_utils import get_statement_of_position, cut_value_at_position
+from jedi.parser_utils import get_statement_of_position, cut_value_at_position, is_scope
 
 
 def get_call_signature_param_names(call_signatures):
@@ -70,7 +70,10 @@ def get_user_context(module_context, position):
 
         scanned_node = scan(module_context.tree_node)
         if scanned_node:
-            return module_context.create_context(scanned_node, node_is_value=True)
+            if is_scope(scanned_node):
+                return module_context.create_value(scanned_node).as_context()
+            else:
+                return module_context.create_context(scanned_node)
         return module_context
     else:
         return module_context.create_context(user_stmt)
@@ -284,7 +287,7 @@ class Completion:
             return
 
         # Complete the methods that are defined in the super classes.
-        class_context = self._module_context.create_context(cls, node_is_value=True)
+        class_context = self._module_context.create_value(cls).as_context()
 
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
