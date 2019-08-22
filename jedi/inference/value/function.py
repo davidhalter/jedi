@@ -381,7 +381,7 @@ class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
         return self._overloaded_functions
 
 
-def _find_overload_functions(value, tree_node):
+def _find_overload_functions(context, tree_node):
     def _is_overload_decorated(funcdef):
         if funcdef.parent.type == 'decorated':
             decorators = funcdef.parent.children[0]
@@ -404,8 +404,7 @@ def _find_overload_functions(value, tree_node):
 
     while True:
         filter = ParserTreeFilter(
-            value.inference_state,
-            value,
+            context,
             until_position=tree_node.start_pos
         )
         names = filter.get(tree_node.name.value)

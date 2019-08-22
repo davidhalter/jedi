@@ -483,14 +483,15 @@ class SelfAttributeFilter(ClassFilter):
     """
     name_class = SelfName
 
-    def __init__(self, value, class_value, origin_scope):
+    def __init__(self, instance, class_value, origin_scope):
         super(SelfAttributeFilter, self).__init__(
-            parent_context=value,
+            parent_context=instance.parent_context,
             node_context=class_value.as_context(),
             origin_scope=origin_scope,
             is_instance=True,
         )
         self._class_value = class_value
+        self._instance = instance
 
     def _filter(self, names):
         names = self._filter_self_names(names)
@@ -508,7 +509,7 @@ class SelfAttributeFilter(ClassFilter):
                     yield name
 
     def _convert_names(self, names):
-        return [self.name_class(self.parent_context, self._class_value, name) for name in names]
+        return [self.name_class(self._instance, self._class_value, name) for name in names]
 
     def _check_flows(self, names):
         return names
