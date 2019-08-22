@@ -68,11 +68,11 @@ def _get_definition_names(used_names, name_key):
 class AbstractUsedNamesFilter(AbstractFilter):
     name_class = TreeNameDefinition
 
-    def __init__(self, context, parser_scope):
+    def __init__(self, parent_context, parser_scope):
         self._parser_scope = parser_scope
         self._module_node = self._parser_scope.get_root_node()
         self._used_names = self._module_node.get_used_names()
-        self.context = context
+        self.parent_context = parent_context
 
     def get(self, name, **filter_kwargs):
         return self._convert_names(self._filter(
@@ -81,7 +81,7 @@ class AbstractUsedNamesFilter(AbstractFilter):
         ))
 
     def _convert_names(self, names):
-        return [self.name_class(self.context, name) for name in names]
+        return [self.name_class(self.parent_context, name) for name in names]
 
     def values(self, **filter_kwargs):
         return self._convert_names(
@@ -94,11 +94,11 @@ class AbstractUsedNamesFilter(AbstractFilter):
         )
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.context)
+        return '<%s: %s>' % (self.__class__.__name__, self.parent_context)
 
 
 class ParserTreeFilter(AbstractUsedNamesFilter):
-    def __init__(self, context, node_context=None, until_position=None,
+    def __init__(self, parent_context, node_context=None, until_position=None,
                  origin_scope=None):
         """
         node_context is an option to specify a second value for use cases
@@ -107,8 +107,8 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
         value of the other classes.
         """
         if node_context is None:
-            node_context = context
-        super(ParserTreeFilter, self).__init__(context, node_context.tree_node)
+            node_context = parent_context
+        super(ParserTreeFilter, self).__init__(parent_context, node_context.tree_node)
         self._node_context = node_context
         self._origin_scope = origin_scope
         self._until_position = until_position
@@ -143,10 +143,10 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
 class FunctionExecutionFilter(ParserTreeFilter):
     param_name = ParamName
 
-    def __init__(self, context, node_context=None,
+    def __init__(self, parent_context, node_context=None,
                  until_position=None, origin_scope=None):
         super(FunctionExecutionFilter, self).__init__(
-            context,
+            parent_context,
             node_context,
             until_position,
             origin_scope
@@ -157,9 +157,9 @@ class FunctionExecutionFilter(ParserTreeFilter):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                yield self.param_name(self.context, name)
+                yield self.param_name(self.parent_context, name)
             else:
-                yield TreeNameDefinition(self.context, name)
+                yield TreeNameDefinition(self.parent_context, name)
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):

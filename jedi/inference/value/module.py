@@ -98,7 +98,7 @@ class ModuleMixin(SubModuleDictMixin):
     def get_filters(self, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
-                context=self.as_context(),
+                parent_context=self.as_context(),
                 origin_scope=origin_scope
             ),
             GlobalNameFilter(self, self.tree_node),

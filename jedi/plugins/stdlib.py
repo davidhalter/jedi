@@ -792,7 +792,7 @@ def get_metaclass_filters(func):
         for metaclass in metaclasses:
             if metaclass.py__name__() == 'EnumMeta' \
                     and metaclass.get_root_context().py__name__() == 'enum':
-                filter_ = ParserTreeFilter(context=cls)
+                filter_ = ParserTreeFilter(parent_context=cls.as_context())
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
                 })]

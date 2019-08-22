@@ -469,7 +469,7 @@ class InstanceClassFilter(AbstractFilter):
 
     def _convert(self, names):
         return [
-            LazyInstanceClassName(self._instance, self._class_filter.context, n)
+            LazyInstanceClassName(self._instance, self._class_filter.parent_context, n)
             for n in names
         ]
 
@@ -485,7 +485,7 @@ class SelfAttributeFilter(ClassFilter):
 
     def __init__(self, value, class_value, origin_scope):
         super(SelfAttributeFilter, self).__init__(
-            context=value,
+            parent_context=value,
             node_context=class_value.as_context(),
             origin_scope=origin_scope,
             is_instance=True,
@@ -508,7 +508,7 @@ class SelfAttributeFilter(ClassFilter):
                     yield name
 
     def _convert_names(self, names):
-        return [self.name_class(self.context, self._class_value, name) for name in names]
+        return [self.name_class(self.parent_context, self._class_value, name) for name in names]
 
     def _check_flows(self, names):
         return names

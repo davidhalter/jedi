@@ -89,7 +89,7 @@ class FunctionContext(AbstractContext):
     def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
             self.inference_state,
-            context=self,
+            parent_context=self,
             until_position=until_position,
             origin_scope=origin_scope
         )
@@ -113,7 +113,7 @@ class ModuleContext(AbstractContext):
         next(filters)
         yield MergedFilter(
             ParserTreeFilter(
-                context=self,
+                parent_context=self,
                 until_position=until_position,
                 origin_scope=origin_scope
             ),
@@ -153,7 +153,7 @@ class ClassContext(AbstractContext):
 
     def get_global_filter(self, until_position=None, origin_scope=None):
         return ParserTreeFilter(
-            context=self,
+            parent_context=self,
             until_position=until_position,
             origin_scope=origin_scope
         )

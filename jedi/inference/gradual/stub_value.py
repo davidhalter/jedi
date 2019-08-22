@@ -37,7 +37,7 @@ class StubModuleValue(ModuleValue):
 
     def _get_stub_filters(self, origin_scope):
         return [StubFilter(
-            context=self.as_context(),
+            parent_context=self.as_context(),
             origin_scope=origin_scope
         )] + list(self.iter_star_filters())
 
