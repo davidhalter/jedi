@@ -22,32 +22,37 @@ class AbstractContext(object):
     def get_root_context(self):
         return self._value.get_root_context()
 
-    def create_context(self, node, node_is_value=False):
-        from jedi.inference.value import ClassValue, FunctionValue, \
-            AnonymousInstance, BoundMethod
+    def create_value(self, node):
+        from jedi.inference import value
 
+        parent_context = self.create_context(node)
+
+        if node.type in ('funcdef', 'lambdef'):
+            func = value.FunctionValue.from_context(parent_context, node)
+            if parent_context.is_class():
+                # TODO _value private access!
+                instance = value.AnonymousInstance(
+                    self.inference_state, parent_context.parent_context, parent_context._value)
+                func = value.BoundMethod(
+                    instance=instance,
+                    function=func
+                )
+            return func
+        elif node.type == 'classdef':
+            return value.ClassValue(self.inference_state, parent_context, node)
+        else:
+            raise NotImplementedError("Probably shouldn't happen: %s" % node)
+
+    def create_context(self, node, node_is_value=False):
         def from_scope_node(scope_node, is_nested=True):
             if scope_node == base_node:
                 return self
 
-            is_funcdef = scope_node.type in ('funcdef', 'lambdef')
-            parent_scope = parser_utils.get_parent_scope(scope_node)
-            parent_context = from_scope_node(parent_scope)
-
-            if is_funcdef:
-                func = FunctionValue.from_context(parent_context, scope_node)
-                if parent_context.is_class():
-                    # TODO _value private access!
-                    instance = AnonymousInstance(
-                        self.inference_state, parent_context.parent_context, parent_context._value)
-                    func = BoundMethod(
-                        instance=instance,
-                        function=func
-                    )
-                return func.as_context()
-            elif scope_node.type == 'classdef':
-                return ClassValue(self.inference_state, parent_context, scope_node).as_context()
+            if scope_node.type in ('funcdef', 'lambdef', 'classdef'):
+                return self.create_value(scope_node).as_context()
             elif scope_node.type in ('comp_for', 'sync_comp_for'):
+                parent_scope = parser_utils.get_parent_scope(scope_node)
+                parent_context = from_scope_node(parent_scope)
                 if node.start_pos >= scope_node.children[-1].start_pos:
                     return parent_context
                 return CompForContext(parent_context, scope_node)
