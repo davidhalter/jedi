@@ -124,14 +124,14 @@ def execute(callback):
             if isinstance(value, BoundMethod):
                 if module_name == 'builtins':
                     if value.py__name__() == '__get__':
-                        if value.class_value.py__name__() == 'property':
+                        if value.class_context.py__name__() == 'property':
                             return builtins_property(
                                 value,
                                 arguments=arguments,
                                 callback=call,
                             )
                     elif value.py__name__() in ('deleter', 'getter', 'setter'):
-                        if value.class_value.py__name__() == 'property':
+                        if value.class_context.py__name__() == 'property':
                             return ValueSet([value.instance])
 
                 return call()

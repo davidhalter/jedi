@@ -110,7 +110,7 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
             if context.is_class():
                 return MethodValue(
                     context.inference_state,
-                    context._value,  # TODO private access!
+                    context,
                     parent_context=parent_context,
                     tree_node=tree_node
                 )
@@ -148,17 +148,17 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
 
 
 class MethodValue(FunctionValue):
-    def __init__(self, inference_state, class_value, *args, **kwargs):
+    def __init__(self, inference_state, class_context, *args, **kwargs):
         super(MethodValue, self).__init__(inference_state, *args, **kwargs)
-        self.class_value = class_value
+        self.class_context = class_context
 
     def get_default_param_context(self):
-        return self.class_value.as_context()
+        return self.class_context
 
     def get_qualified_names(self):
         # Need to implement this, because the parent value of a method
         # value is not the class value but the module.
-        names = self.class_value.get_qualified_names()
+        names = self.class_context.get_qualified_names()
         if names is None:
             return None
         return names + (self.py__name__(),)
