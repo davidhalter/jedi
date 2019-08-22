@@ -94,21 +94,6 @@ def get_flow_branch_keyword(flow_node, node):
     return 0
 
 
-def get_statement_of_position(node, pos):
-    for c in node.children:
-        if c.start_pos <= pos <= c.end_pos:
-            if c.type not in ('decorated', 'simple_stmt', 'suite',
-                              'async_stmt', 'async_funcdef') \
-                    and not isinstance(c, (tree.Flow, tree.ClassOrFunc)):
-                return c
-            else:
-                try:
-                    return get_statement_of_position(c, pos)
-                except AttributeError:
-                    pass  # Must be a non-scope
-    return None
-
-
 def clean_scope_docstring(scope_node):
     """ Returns a cleaned version of the docstring token. """
     node = scope_node.get_doc_node()

@@ -15,7 +15,7 @@ from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.filters import get_global_filters
 from jedi.inference.gradual.conversion import convert_values
-from jedi.parser_utils import get_statement_of_position, cut_value_at_position
+from jedi.parser_utils import cut_value_at_position
 
 
 def get_call_signature_param_names(call_signatures):
@@ -56,10 +56,8 @@ def get_user_context(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
     """
-    node_or_leaf = get_statement_of_position(module_context.tree_node, position)
-    if node_or_leaf is None:
-        node_or_leaf = module_context.tree_node.get_leaf_for_position(position, include_prefixes=True)
-    return module_context.create_context(node_or_leaf)
+    leaf = module_context.tree_node.get_leaf_for_position(position, include_prefixes=True)
+    return module_context.create_context(leaf)
 
 
 def get_flow_scope_node(module_node, position):
