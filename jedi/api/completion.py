@@ -15,7 +15,7 @@ from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.filters import get_global_filters
 from jedi.inference.gradual.conversion import convert_values
-from jedi.parser_utils import get_statement_of_position, cut_value_at_position, is_scope
+from jedi.parser_utils import get_statement_of_position, cut_value_at_position
 
 
 def get_call_signature_param_names(call_signatures):
@@ -56,27 +56,10 @@ def get_user_context(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
     """
-    user_stmt = get_statement_of_position(module_context.tree_node, position)
-    if user_stmt is None:
-        def scan(scope):
-            for s in scope.children:
-                if s.start_pos <= position <= s.end_pos:
-                    if isinstance(s, (tree.Scope, tree.Flow)) \
-                            or s.type in ('async_stmt', 'async_funcdef'):
-                        return scan(s) or s
-                    elif s.type in ('suite', 'decorated'):
-                        return scan(s)
-            return None
-
-        scanned_node = scan(module_context.tree_node)
-        if scanned_node:
-            if is_scope(scanned_node):
-                return module_context.create_value(scanned_node).as_context()
-            else:
-                return module_context.create_context(scanned_node)
-        return module_context
-    else:
-        return module_context.create_context(user_stmt)
+    node_or_leaf = get_statement_of_position(module_context.tree_node, position)
+    if node_or_leaf is None:
+        node_or_leaf = module_context.tree_node.get_leaf_for_position(position, include_prefixes=True)
+    return module_context.create_context(node_or_leaf)
 
 
 def get_flow_scope_node(module_node, position):
