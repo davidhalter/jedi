@@ -293,7 +293,6 @@ def _create(inference_state, access_handle, parent_context, *args):
             module_context.create_context(
                 tree_node,
                 node_is_value=True,
-                node_is_object=True
             )._value
             # TODO private access!
         })
