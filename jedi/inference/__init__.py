@@ -77,8 +77,7 @@ from jedi.inference import helpers
 from jedi.inference.names import TreeNameDefinition, ParamName
 from jedi.inference.base_value import ContextualizedName, ContextualizedNode, \
     ValueSet, NO_VALUES, iterate_values
-from jedi.inference.value import ClassValue, FunctionValue, \
-    AnonymousInstance, BoundMethod
+from jedi.inference.value import ClassValue, FunctionValue
 from jedi.inference.context import CompForContext
 from jedi.inference.syntax_tree import infer_trailer, infer_expr_stmt, \
     infer_node, check_tuple_assignments
@@ -363,66 +362,6 @@ class InferenceState(object):
             if stmt.type == 'lambdef':
                 stmt = name
             return context.goto(name, position=stmt.start_pos)
-
-    def create_context(self, base_context, node, node_is_value=False, node_is_object=False):
-        def parent_scope(node):
-            while True:
-                node = node.parent
-
-                if parser_utils.is_scope(node):
-                    return node
-                elif node.type in ('argument', 'testlist_comp'):
-                    if node.children[1].type in ('comp_for', 'sync_comp_for'):
-                        return node.children[1]
-                elif node.type == 'dictorsetmaker':
-                    for n in node.children[1:4]:
-                        # In dictionaries it can be pretty much anything.
-                        if n.type in ('comp_for', 'sync_comp_for'):
-                            return n
-
-        def from_scope_node(scope_node, is_nested=True, node_is_object=False):
-            if scope_node == base_node:
-                return base_context
-
-            is_funcdef = scope_node.type in ('funcdef', 'lambdef')
-            parent_scope = parser_utils.get_parent_scope(scope_node)
-            parent_context = from_scope_node(parent_scope)
-
-            if is_funcdef:
-                func = FunctionValue.from_context(parent_context, scope_node)
-                if parent_context.is_class():
-                    # TODO _value private access!
-                    instance = AnonymousInstance(
-                        self, parent_context.parent_context, parent_context._value)
-                    func = BoundMethod(
-                        instance=instance,
-                        function=func
-                    )
-
-                if is_nested and not node_is_object:
-                    return func.get_function_execution()
-                return func.as_context()
-            elif scope_node.type == 'classdef':
-                return ClassValue(self, parent_context, scope_node).as_context()
-            elif scope_node.type in ('comp_for', 'sync_comp_for'):
-                if node.start_pos >= scope_node.children[-1].start_pos:
-                    return parent_context
-                return CompForContext(parent_context, scope_node)
-            raise Exception("There's a scope that was not managed.")
-
-        base_node = base_context.tree_node
-
-        if node_is_value and parser_utils.is_scope(node):
-            scope_node = node
-        else:
-            scope_node = parent_scope(node)
-            if scope_node.type in ('funcdef', 'classdef'):
-                colon = scope_node.children[scope_node.children.index(':')]
-                if node.start_pos < colon.start_pos:
-                    parent = node.parent
-                    if not (parent.type == 'param' and parent.name == node):
-                        scope_node = parent_scope(scope_node)
-        return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
 
     def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
                            use_latest_grammar=False, file_io=None, **kwargs):

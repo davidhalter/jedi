@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
     GlobalNameFilter
+from jedi import parser_utils
 
 
 class AbstractContext(object):
@@ -22,7 +23,67 @@ class AbstractContext(object):
         return self._value.get_root_context()
 
     def create_context(self, node, node_is_value=False, node_is_object=False):
-        return self.inference_state.create_context(self, node, node_is_value, node_is_object)
+        from jedi.inference.value import ClassValue, FunctionValue, \
+            AnonymousInstance, BoundMethod
+
+        def parent_scope(node):
+            while True:
+                node = node.parent
+
+                if parser_utils.is_scope(node):
+                    return node
+                elif node.type in ('argument', 'testlist_comp'):
+                    if node.children[1].type in ('comp_for', 'sync_comp_for'):
+                        return node.children[1]
+                elif node.type == 'dictorsetmaker':
+                    for n in node.children[1:4]:
+                        # In dictionaries it can be pretty much anything.
+                        if n.type in ('comp_for', 'sync_comp_for'):
+                            return n
+
+        def from_scope_node(scope_node, is_nested=True, node_is_object=False):
+            if scope_node == base_node:
+                return self
+
+            is_funcdef = scope_node.type in ('funcdef', 'lambdef')
+            parent_scope = parser_utils.get_parent_scope(scope_node)
+            parent_context = from_scope_node(parent_scope)
+
+            if is_funcdef:
+                func = FunctionValue.from_context(parent_context, scope_node)
+                if parent_context.is_class():
+                    # TODO _value private access!
+                    instance = AnonymousInstance(
+                        self.inference_state, parent_context.parent_context, parent_context._value)
+                    func = BoundMethod(
+                        instance=instance,
+                        function=func
+                    )
+
+                if is_nested and not node_is_object:
+                    return func.get_function_execution()
+                return func.as_context()
+            elif scope_node.type == 'classdef':
+                return ClassValue(self.inference_state, parent_context, scope_node).as_context()
+            elif scope_node.type in ('comp_for', 'sync_comp_for'):
+                if node.start_pos >= scope_node.children[-1].start_pos:
+                    return parent_context
+                return CompForContext(parent_context, scope_node)
+            raise Exception("There's a scope that was not managed.")
+
+        base_node = self.tree_node
+
+        if node_is_value and parser_utils.is_scope(node):
+            scope_node = node
+        else:
+            scope_node = parent_scope(node)
+            if scope_node.type in ('funcdef', 'classdef'):
+                colon = scope_node.children[scope_node.children.index(':')]
+                if node.start_pos < colon.start_pos:
+                    parent = node.parent
+                    if not (parent.type == 'param' and parent.name == node):
+                        scope_node = parent_scope(scope_node)
+        return from_scope_node(scope_node, is_nested=True, node_is_object=node_is_object)
 
     def goto(self, name_or_str, position):
         from jedi.inference import finder

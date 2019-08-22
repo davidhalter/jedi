@@ -578,7 +578,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             filters = [next(filters)]
             return finder.find(filters, attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
-            c = inference_state.create_context(context, tree_name)
+            c = context.create_context(tree_name)
             return infer_atom(c, tree_name)
 
     typ = node.type

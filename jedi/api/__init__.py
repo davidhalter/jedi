@@ -242,7 +242,7 @@ class Script(object):
             if leaf is None:
                 return []
 
-        context = self._inference_state.create_context(self._get_module_context(), leaf)
+        context = self._get_module_context().create_context(leaf)
 
         values = helpers.infer_goto_definition(self._inference_state, context, leaf)
         values = convert_values(
@@ -302,7 +302,7 @@ class Script(object):
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
             return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
-        context = self._inference_state.create_context(self._get_module_context(), tree_name)
+        context = self._get_module_context().create_context(tree_name)
         names = list(self._inference_state.goto(context, tree_name))
 
         if follow_imports:
@@ -371,10 +371,7 @@ class Script(object):
         if call_details is None:
             return []
 
-        context = self._inference_state.create_context(
-            self._get_module_context(),
-            call_details.bracket_leaf
-        )
+        context = self._get_module_context().create_context(call_details.bracket_leaf)
         definitions = helpers.cache_call_signatures(
             self._inference_state,
             context,

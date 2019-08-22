@@ -254,9 +254,7 @@ class Completion:
 
     def _trailer_completions(self, previous_leaf):
         user_value = get_user_context(self._module_context, self._position)
-        inferred_context = self._inference_state.create_context(
-            self._module_context, previous_leaf
-        )
+        inferred_context = self._module_context.create_context(previous_leaf)
         values = infer_call_of_leaf(inferred_context, previous_leaf)
         completion_names = []
         debug.dbg('trailer completion values: %s', values, color='MAGENTA')
