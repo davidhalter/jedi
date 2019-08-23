@@ -34,9 +34,9 @@ class AbstractContext(object):
         if node.type in ('funcdef', 'lambdef'):
             func = value.FunctionValue.from_context(parent_context, node)
             if parent_context.is_class():
-                # TODO _value private access!
+                class_value = parent_context.parent_context.create_value(parent_context.tree_node)
                 instance = value.AnonymousInstance(
-                    self.inference_state, parent_context.parent_context, parent_context._value)
+                    self.inference_state, parent_context.parent_context, class_value)
                 func = value.BoundMethod(
                     instance=instance,
                     function=func
