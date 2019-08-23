@@ -131,7 +131,7 @@ class AbstractInstanceValue(Value):
                     # In this case we're excluding compiled objects that are
                     # not fake objects. It doesn't make sense for normal
                     # compiled objects to search for self variables.
-                    yield SelfAttributeFilter(self, cls, origin_scope)
+                    yield SelfAttributeFilter(self, class_value, cls, origin_scope)
 
         class_filters = class_value.get_filters(
             origin_scope=origin_scope,
@@ -483,14 +483,14 @@ class SelfAttributeFilter(ClassFilter):
     """
     name_class = SelfName
 
-    def __init__(self, instance, class_value, origin_scope):
+    def __init__(self, instance, instance_class, class_value, origin_scope):
         super(SelfAttributeFilter, self).__init__(
-            parent_context=instance.parent_context,
+            class_value=instance_class,
             node_context=class_value.as_context(),
             origin_scope=origin_scope,
             is_instance=True,
         )
-        self._class_value = class_value
+        self._specific_class_value = class_value
         self._instance = instance
 
     def _filter(self, names):
@@ -509,7 +509,7 @@ class SelfAttributeFilter(ClassFilter):
                     yield name
 
     def _convert_names(self, names):
-        return [self.name_class(self._instance, self._class_value, name) for name in names]
+        return [self.name_class(self._instance, self._specific_class_value, name) for name in names]
 
     def _check_flows(self, names):
         return names

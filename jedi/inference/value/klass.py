@@ -64,10 +64,11 @@ def apply_py__get__(value, instance, class_value):
 
 
 class ClassName(TreeNameDefinition):
-    def __init__(self, parent_context, tree_name, name_context, apply_decorators):
+    def __init__(self, parent_context, class_value, tree_name, name_context, apply_decorators):
         super(ClassName, self).__init__(parent_context, tree_name)
         self._name_context = name_context
         self._apply_decorators = apply_decorators
+        self._class_value = class_value
 
     @iterator_to_value_set
     def infer(self):
@@ -80,8 +81,7 @@ class ClassName(TreeNameDefinition):
             if self._apply_decorators:
                 for c in apply_py__get__(result_value,
                                          instance=None,
-                                         # TODO private access!
-                                         class_value=self.parent_context._value):
+                                         class_value=self._class_value):
                     yield c
             else:
                 yield result_value
@@ -90,14 +90,21 @@ class ClassName(TreeNameDefinition):
 class ClassFilter(ParserTreeFilter):
     name_class = ClassName
 
-    def __init__(self, *args, **kwargs):
-        self._is_instance = kwargs.pop('is_instance')  # Python 2 :/
-        super(ClassFilter, self).__init__(*args, **kwargs)
+    def __init__(self, class_value, node_context=None, until_position=None,
+                 origin_scope=None, is_instance=False):
+        super(ClassFilter, self).__init__(
+            class_value.as_context(), node_context,
+            until_position=until_position,
+            origin_scope=origin_scope,
+        )
+        self._class_value = class_value
+        self._is_instance = is_instance
 
     def _convert_names(self, names):
         return [
             self.name_class(
                 parent_context=self.parent_context,
+                class_value=self._class_value,
                 tree_name=name,
                 name_context=self._node_context,
                 apply_decorators=not self._is_instance,
@@ -206,7 +213,7 @@ class ClassMixin(object):
                     yield filter
             else:
                 yield ClassFilter(
-                    self.as_context(), node_context=cls.as_context(),
+                    self, node_context=cls.as_context(),
                     origin_scope=origin_scope,
                     is_instance=is_instance
                 )
