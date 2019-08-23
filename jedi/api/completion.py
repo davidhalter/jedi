@@ -268,13 +268,12 @@ class Completion:
             return
 
         # Complete the methods that are defined in the super classes.
-        class_context = self._module_context.create_value(cls).as_context()
+        class_value = self._module_context.create_value(cls)
 
         if cls.start_pos[1] >= leaf.start_pos[1]:
             return
 
-        # TODO _value private access!
-        filters = class_context._value.get_filters(is_instance=True)
+        filters = class_value.get_filters(is_instance=True)
         # The first dict is the dictionary of class itself.
         next(filters)
         for filter in filters:
