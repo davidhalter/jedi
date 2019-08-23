@@ -29,7 +29,6 @@ from jedi.inference.filters import get_global_filters
 from jedi.inference.names import TreeNameDefinition
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.parser_utils import is_scope, get_parent_scope
-from jedi.inference.gradual.conversion import convert_values
 
 
 class NameFinder(object):
@@ -80,11 +79,8 @@ class NameFinder(object):
 
         return types
 
-    def _get_origin_scope(self):
-        return self._name if isinstance(self._name, tree.Name) else None
-
     def get_global_filters(self):
-        origin_scope = self._get_origin_scope()
+        origin_scope = self._name if isinstance(self._name, tree.Name) else None
         position = self._position
 
         # For functions and classes the defaults don't belong to the
@@ -105,16 +101,6 @@ class NameFinder(object):
                         position = ancestor.start_pos
 
         return get_global_filters(self._inference_state, self._context, position, origin_scope)
-
-    def get_value_filters(self):
-        origin_scope = self._get_origin_scope()
-        for f in self._context.get_filters(origin_scope=origin_scope):
-            yield f
-        # This covers the case where a stub files are incomplete.
-        if self._context.is_stub():
-            for c in convert_values(ValueSet({self._context})):
-                for f in c.get_filters():
-                    yield f
 
     def filter_name(self, filters):
         """

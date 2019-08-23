@@ -8,7 +8,7 @@ just one.
 """
 from functools import reduce
 from operator import add
-from parso.python.tree import ExprStmt, SyncCompFor
+from parso.python.tree import ExprStmt, SyncCompFor, Name
 
 from jedi import debug
 from jedi._compatibility import zip_longest, unicode
@@ -58,6 +58,17 @@ class HelperValueMixin(object):
             for lazy_value in self.iterate(contextualized_node, is_async)
         )
 
+    def _get_value_filters(self, name_or_str):
+        origin_scope = name_or_str if isinstance(name_or_str, Name) else None
+        for f in self.get_filters(origin_scope=origin_scope):
+            yield f
+        # This covers the case where a stub files are incomplete.
+        if self.is_stub():
+            from jedi.inference.gradual.conversion import convert_values
+            for c in convert_values(ValueSet({self})):
+                for f in c.get_filters():
+                    yield f
+
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            analysis_errors=True):
         """
@@ -68,7 +79,7 @@ class HelperValueMixin(object):
         from jedi.inference import finder
         f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
                               position, analysis_errors=analysis_errors)
-        filters = f.get_value_filters()
+        filters = self._get_value_filters(name_or_str)
         return f.find(filters, attribute_lookup=True)
 
     def goto(self, name_or_str, name_context=None, analysis_errors=True):
@@ -80,7 +91,7 @@ class HelperValueMixin(object):
         from jedi.inference import finder
         f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
                               analysis_errors=analysis_errors)
-        filters = f.get_value_filters()
+        filters = self._get_value_filters(name_or_str)
         return f.filter_name(filters)
 
     def py__await__(self):
