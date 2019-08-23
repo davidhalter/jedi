@@ -88,8 +88,6 @@ class ClassName(TreeNameDefinition):
 
 
 class ClassFilter(ParserTreeFilter):
-    name_class = ClassName
-
     def __init__(self, class_value, node_context=None, until_position=None,
                  origin_scope=None, is_instance=False):
         super(ClassFilter, self).__init__(
@@ -102,7 +100,7 @@ class ClassFilter(ParserTreeFilter):
 
     def _convert_names(self, names):
         return [
-            self.name_class(
+            ClassName(
                 parent_context=self.parent_context,
                 class_value=self._class_value,
                 tree_name=name,

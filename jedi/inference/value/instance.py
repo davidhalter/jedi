@@ -344,8 +344,6 @@ class CompiledInstanceName(compiled.CompiledName):
 
 
 class CompiledInstanceClassFilter(AbstractFilter):
-    name_class = CompiledInstanceName
-
     def __init__(self, instance, f):
         self._instance = instance
         self._class_filter = f
@@ -479,8 +477,6 @@ class SelfAttributeFilter(ClassFilter):
     """
     This class basically filters all the use cases where `self.*` was assigned.
     """
-    name_class = SelfName
-
     def __init__(self, instance, instance_class, class_value, origin_scope):
         super(SelfAttributeFilter, self).__init__(
             class_value=instance_class,
@@ -507,7 +503,7 @@ class SelfAttributeFilter(ClassFilter):
                     yield name
 
     def _convert_names(self, names):
-        return [self.name_class(self._instance, self._specific_class_value, name) for name in names]
+        return [SelfName(self._instance, self._specific_class_value, name) for name in names]
 
     def _check_flows(self, names):
         return names
