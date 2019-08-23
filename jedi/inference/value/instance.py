@@ -131,7 +131,7 @@ class AbstractInstanceValue(Value):
                     # In this case we're excluding compiled objects that are
                     # not fake objects. It doesn't make sense for normal
                     # compiled objects to search for self variables.
-                    yield SelfAttributeFilter(self, class_value, cls, origin_scope)
+                    yield SelfAttributeFilter(self, class_value, cls.as_context(), origin_scope)
 
         class_filters = class_value.get_filters(
             origin_scope=origin_scope,
@@ -416,15 +416,15 @@ class SelfName(TreeNameDefinition):
     """
     This name calculates the parent_context lazily.
     """
-    def __init__(self, instance, class_value, tree_name):
+    def __init__(self, instance, class_context, tree_name):
         self._instance = instance
-        self.class_value = class_value
+        self.class_context = class_context
         self.tree_name = tree_name
 
     @property
     def parent_context(self):
         return self._instance.create_instance_context(
-            self.class_value.as_context(),
+            self.class_context,
             self.tree_name
         )
 
@@ -477,14 +477,13 @@ class SelfAttributeFilter(ClassFilter):
     """
     This class basically filters all the use cases where `self.*` was assigned.
     """
-    def __init__(self, instance, instance_class, class_value, origin_scope):
+    def __init__(self, instance, instance_class, node_context, origin_scope):
         super(SelfAttributeFilter, self).__init__(
             class_value=instance_class,
-            node_context=class_value.as_context(),
+            node_context=node_context,
             origin_scope=origin_scope,
             is_instance=True,
         )
-        self._specific_class_value = class_value
         self._instance = instance
 
     def _filter(self, names):
@@ -503,7 +502,7 @@ class SelfAttributeFilter(ClassFilter):
                     yield name
 
     def _convert_names(self, names):
-        return [SelfName(self._instance, self._specific_class_value, name) for name in names]
+        return [SelfName(self._instance, self._node_context, name) for name in names]
 
     def _check_flows(self, names):
         return names

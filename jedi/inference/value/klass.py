@@ -64,8 +64,8 @@ def apply_py__get__(value, instance, class_value):
 
 
 class ClassName(TreeNameDefinition):
-    def __init__(self, parent_context, class_value, tree_name, name_context, apply_decorators):
-        super(ClassName, self).__init__(parent_context, tree_name)
+    def __init__(self, class_value, tree_name, name_context, apply_decorators):
+        super(ClassName, self).__init__(class_value.as_context(), tree_name)
         self._name_context = name_context
         self._apply_decorators = apply_decorators
         self._class_value = class_value
@@ -101,7 +101,6 @@ class ClassFilter(ParserTreeFilter):
     def _convert_names(self, names):
         return [
             ClassName(
-                parent_context=self.parent_context,
                 class_value=self._class_value,
                 tree_name=name,
                 name_context=self._node_context,
