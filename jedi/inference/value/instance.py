@@ -432,16 +432,14 @@ class SelfName(TreeNameDefinition):
 
 
 class LazyInstanceClassName(object):
-    def __init__(self, instance, class_context, class_member_name):
+    def __init__(self, instance, class_member_name):
         self._instance = instance
-        self.class_context = class_context
         self._class_member_name = class_member_name
 
     @iterator_to_value_set
     def infer(self):
         for result_value in self._class_member_name.infer():
-            # TODO private access!
-            for c in apply_py__get__(result_value, self._instance, self.class_context._value):
+            for c in apply_py__get__(result_value, self._instance, self._instance.py__class__()):
                 yield c
 
     def __getattr__(self, name):
@@ -454,7 +452,7 @@ class LazyInstanceClassName(object):
 class InstanceClassFilter(AbstractFilter):
     """
     This filter is special in that it uses the class filter and wraps the
-    resulting names in LazyINstanceClassName. The idea is that the class name
+    resulting names in LazyInstanceClassName. The idea is that the class name
     filtering can be very flexible and always be reflected in instances.
     """
     def __init__(self, instance, class_filter):
@@ -469,7 +467,7 @@ class InstanceClassFilter(AbstractFilter):
 
     def _convert(self, names):
         return [
-            LazyInstanceClassName(self._instance, self._class_filter.parent_context, n)
+            LazyInstanceClassName(self._instance, n)
             for n in names
         ]
 
