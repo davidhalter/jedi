@@ -572,10 +572,9 @@ def tree_name_to_values(inference_state, context, tree_name):
         if node.type == 'global_stmt':
             c = context.create_context(tree_name)
             finder = NameFinder(inference_state, c, c, tree_name.value)
-            filters = finder.get_global_filters()
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
-            filters = [next(filters)]
+            filters = [next(c.get_filters())]
             return finder.find(filters, attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
             c = context.create_context(tree_name)
