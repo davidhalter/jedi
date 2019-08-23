@@ -33,12 +33,12 @@ from jedi.inference.gradual.conversion import convert_values
 
 
 class NameFinder(object):
-    def __init__(self, inference_state, value, name_value, name_or_str,
+    def __init__(self, inference_state, context, name_value, name_or_str,
                  position=None, analysis_errors=True):
         self._inference_state = inference_state
         # Make sure that it's not just a syntax tree node.
-        self._value = value
-        self._name_value = name_value
+        self._context = context
+        self._name_context = name_value
         self._name = name_or_str
         if isinstance(name_or_str, tree.Name):
             self._string_name = name_or_str.value
@@ -56,8 +56,8 @@ class NameFinder(object):
         names = self.filter_name(filters)
         if self._found_predefined_types is not None and names:
             check = flow_analysis.reachability_check(
-                context=self._value,
-                value_scope=self._value.tree_node,
+                context=self._context,
+                value_scope=self._context.tree_node,
                 node=self._name,
             )
             if check is flow_analysis.UNREACHABLE:
@@ -72,25 +72,16 @@ class NameFinder(object):
             if isinstance(self._name, tree.Name):
                 if attribute_lookup:
                     analysis.add_attribute_error(
-                        self._name_value, self._value, self._name)
+                        self._name_context, self._context, self._name)
                 else:
                     message = ("NameError: name '%s' is not defined."
                                % self._string_name)
-                    analysis.add(self._name_value, 'name-error', self._name, message)
+                    analysis.add(self._name_context, 'name-error', self._name, message)
 
         return types
 
     def _get_origin_scope(self):
-        if isinstance(self._name, tree.Name):
-            scope = self._name
-            while scope.parent is not None:
-                # TODO why if classes?
-                if not isinstance(scope, tree.Scope):
-                    break
-                scope = scope.parent
-            return scope
-        else:
-            return None
+        return self._name if isinstance(self._name, tree.Name) else None
 
     def get_global_filters(self):
         origin_scope = self._get_origin_scope()
@@ -113,15 +104,15 @@ class NameFinder(object):
                     if lambdef is None or position < lambdef.children[-2].start_pos:
                         position = ancestor.start_pos
 
-        return get_global_filters(self._inference_state, self._value, position, origin_scope)
+        return get_global_filters(self._inference_state, self._context, position, origin_scope)
 
     def get_value_filters(self):
         origin_scope = self._get_origin_scope()
-        for f in self._value.get_filters(origin_scope=origin_scope):
+        for f in self._context.get_filters(origin_scope=origin_scope):
             yield f
         # This covers the case where a stub files are incomplete.
-        if self._value.is_stub():
-            for c in convert_values(ValueSet({self._value})):
+        if self._context.is_stub():
+            for c in convert_values(ValueSet({self._context})):
                 for f in c.get_filters():
                     yield f
 
@@ -133,13 +124,13 @@ class NameFinder(object):
         names = []
         # This paragraph is currently needed for proper branch type inference
         # (static analysis).
-        if self._value.predefined_names and isinstance(self._name, tree.Name):
+        if self._context.predefined_names and isinstance(self._name, tree.Name):
             node = self._name
             while node is not None and not is_scope(node):
                 node = node.parent
                 if node.type in ("if_stmt", "for_stmt", "comp_for", 'sync_comp_for'):
                     try:
-                        name_dict = self._value.predefined_names[node]
+                        name_dict = self._context.predefined_names[node]
                         types = name_dict[self._string_name]
                     except KeyError:
                         continue
@@ -165,7 +156,7 @@ class NameFinder(object):
                 break
 
         debug.dbg('finder.filter_name %s in (%s): %s@%s',
-                  self._string_name, self._value, names, self._position)
+                  self._string_name, self._context, names, self._position)
         return list(names)
 
     def _check_getattr(self, inst):
@@ -188,21 +179,21 @@ class NameFinder(object):
         values = ValueSet.from_sets(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, values)
-        if not names and self._value.is_instance() and not self._value.is_compiled():
+        if not names and self._context.is_instance() and not self._context.is_compiled():
             # handling __getattr__ / __getattribute__
-            return self._check_getattr(self._value)
+            return self._check_getattr(self._context)
 
         # Add isinstance and other if/assert knowledge.
         if not values and isinstance(self._name, tree.Name) and \
-                not self._name_value.is_instance() and not self._value.is_compiled():
+                not self._name_context.is_instance() and not self._context.is_compiled():
             flow_scope = self._name
-            base_nodes = [self._name_value.tree_node]
+            base_nodes = [self._name_context.tree_node]
 
             if any(b.type in ('comp_for', 'sync_comp_for') for b in base_nodes):
                 return values
             while True:
                 flow_scope = get_parent_scope(flow_scope, include_flows=True)
-                n = _check_flow_information(self._name_value, flow_scope,
+                n = _check_flow_information(self._name_context, flow_scope,
                                             self._name, self._position)
                 if n is not None:
                     return n
