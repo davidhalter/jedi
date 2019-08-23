@@ -279,10 +279,10 @@ class Script(object):
 
     def _goto_assignments(self, follow_imports, follow_builtin_imports,
                           only_stubs=False, prefer_stubs=False):
-        def filter_follow_imports(names, check):
+        def filter_follow_imports(names):
             for name in names:
-                if check(name):
-                    new_names = list(filter_follow_imports(name.goto(), check))
+                if name.is_import():
+                    new_names = list(filter_follow_imports(name.goto()))
                     found_builtin = False
                     if follow_builtin_imports:
                         for new_name in new_names:
@@ -306,7 +306,7 @@ class Script(object):
         names = list(self._inference_state.goto(context, tree_name))
 
         if follow_imports:
-            names = filter_follow_imports(names, lambda name: name.is_import())
+            names = filter_follow_imports(names)
         names = convert_names(
             names,
             only_stubs=only_stubs,

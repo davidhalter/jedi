@@ -88,18 +88,6 @@ class NameFinder(object):
         for filter in filters:
             names = filter.get(self._string_name)
             if names:
-                if len(names) == 1:
-                    n, = names
-                    if isinstance(n, TreeNameDefinition):
-                        # Something somewhere went terribly wrong. This
-                        # typically happens when using goto on an import in an
-                        # __init__ file. I think we need a better solution, but
-                        # it's kind of hard, because for Jedi it's not clear
-                        # that that name has not been defined, yet.
-                        if n.tree_name == self._name:
-                            def_ = self._name.get_definition()
-                            if def_ is not None and def_.type == 'import_from':
-                                continue
                 break
 
         debug.dbg('finder.filter_name %s in (%s): %s@%s',

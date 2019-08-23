@@ -95,7 +95,8 @@ def goto_import(context, tree_name):
                 analysis_errors=False
             ) for c in values
         ])
-        if names:
+        # Avoid recursion on the same names.
+        if names and not any(n.tree_name is tree_name for n in names):
             return names
 
         path = import_path + (from_import_name,)
