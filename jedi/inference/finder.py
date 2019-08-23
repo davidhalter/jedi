@@ -25,7 +25,6 @@ from jedi.inference import flow_analysis
 from jedi.inference.arguments import TreeArguments
 from jedi.inference import helpers
 from jedi.inference.value import iterable
-from jedi.inference.filters import get_global_filters
 from jedi.inference.names import TreeNameDefinition
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.parser_utils import is_scope, get_parent_scope
@@ -78,29 +77,6 @@ class NameFinder(object):
                     analysis.add(self._name_context, 'name-error', self._name, message)
 
         return types
-
-    def get_global_filters(self):
-        origin_scope = self._name if isinstance(self._name, tree.Name) else None
-        position = self._position
-
-        # For functions and classes the defaults don't belong to the
-        # function and get inferred in the value before the function. So
-        # make sure to exclude the function/class name.
-        if origin_scope is not None:
-            ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef', 'lambdef')
-            lambdef = None
-            if ancestor == 'lambdef':
-                # For lambdas it's even more complicated since parts will
-                # be inferred later.
-                lambdef = ancestor
-                ancestor = search_ancestor(origin_scope, 'funcdef', 'classdef')
-            if ancestor is not None:
-                colon = ancestor.children[-2]
-                if position is not None and position < colon.start_pos:
-                    if lambdef is None or position < lambdef.children[-2].start_pos:
-                        position = ancestor.start_pos
-
-        return get_global_filters(self._inference_state, self._context, position, origin_scope)
 
     def filter_name(self, filters):
         """

@@ -1,5 +1,8 @@
 from abc import abstractmethod
 
+from parso.tree import search_ancestor
+from parso.python.tree import Name
+
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
     GlobalNameFilter
 from jedi import parser_utils
@@ -19,7 +22,9 @@ class AbstractContext(object):
     def goto(self, name_or_str, position):
         from jedi.inference import finder
         f = finder.NameFinder(self.inference_state, self, self, name_or_str, position)
-        filters = f.get_global_filters()
+        filters = _get_global_filters_for_name(
+            self, name_or_str if isinstance(name_or_str, Name) else None, position,
+        )
         return f.filter_name(filters)
 
     def py__getattribute__(self, name_or_str, name_value=None, position=None,
@@ -32,7 +37,9 @@ class AbstractContext(object):
         from jedi.inference import finder
         f = finder.NameFinder(self.inference_state, self, name_value, name_or_str,
                               position, analysis_errors=analysis_errors)
-        filters = f.get_global_filters()
+        filters = _get_global_filters_for_name(
+            self, name_or_str if isinstance(name_or_str, Name) else None, position,
+        )
         return f.find(filters, attribute_lookup=False)
 
     def get_root_context(self):
@@ -290,3 +297,90 @@ class CompiledContext(ValueContext):
 
     def py__file__(self):
         return self._value.py__file__()
+
+
+def _get_global_filters_for_name(context, name_or_none, position):
+    # For functions and classes the defaults don't belong to the
+    # function and get inferred in the value before the function. So
+    # make sure to exclude the function/class name.
+    if name_or_none is not None:
+        ancestor = search_ancestor(name_or_none, 'funcdef', 'classdef', 'lambdef')
+        lambdef = None
+        if ancestor == 'lambdef':
+            # For lambdas it's even more complicated since parts will
+            # be inferred later.
+            lambdef = ancestor
+            ancestor = search_ancestor(name_or_none, 'funcdef', 'classdef')
+        if ancestor is not None:
+            colon = ancestor.children[-2]
+            if position is not None and position < colon.start_pos:
+                if lambdef is None or position < lambdef.children[-2].start_pos:
+                    position = ancestor.start_pos
+
+    return get_global_filters(context, position, name_or_none)
+
+
+def get_global_filters(context, until_position, origin_scope):
+    """
+    Returns all filters in order of priority for name resolution.
+
+    For global name lookups. The filters will handle name resolution
+    themselves, but here we gather possible filters downwards.
+
+    >>> from jedi._compatibility import u, no_unicode_pprint
+    >>> from jedi import Script
+    >>> script = Script(u('''
+    ... x = ['a', 'b', 'c']
+    ... def func():
+    ...     y = None
+    ... '''))
+    >>> module_node = script._module_node
+    >>> scope = next(module_node.iter_funcdefs())
+    >>> scope
+    <Function: func@3-5>
+    >>> context = script._get_module_context().create_context(scope)
+    >>> filters = list(get_global_filters(context, (4, 0), None))
+
+    First we get the names from the function scope.
+
+    >>> no_unicode_pprint(filters[0])  # doctest: +ELLIPSIS
+    MergedFilter(<ParserTreeFilter: ...>, <GlobalNameFilter: ...>)
+    >>> sorted(str(n) for n in filters[0].values())  # doctest: +NORMALIZE_WHITESPACE
+    ['<TreeNameDefinition: string_name=func start_pos=(3, 4)>',
+     '<TreeNameDefinition: string_name=x start_pos=(2, 0)>']
+    >>> filters[0]._filters[0]._until_position
+    (4, 0)
+    >>> filters[0]._filters[1]._until_position
+
+    Then it yields the names from one level "lower". In this example, this is
+    the module scope (including globals).
+    As a side note, you can see, that the position in the filter is None on the
+    globals filter, because there the whole module is searched.
+
+    >>> list(filters[1].values())  # package modules -> Also empty.
+    []
+    >>> sorted(name.string_name for name in filters[2].values())  # Module attributes
+    ['__doc__', '__name__', '__package__']
+
+    Finally, it yields the builtin filter, if `include_builtin` is
+    true (default).
+
+    >>> list(filters[3].values())  # doctest: +ELLIPSIS
+    [...]
+    """
+    base_context = context
+    from jedi.inference.value.function import FunctionExecutionContext
+    while context is not None:
+        # Names in methods cannot be resolved within the class.
+        for filter in context.get_filters(
+                until_position=until_position,
+                origin_scope=origin_scope):
+            yield filter
+        if isinstance(context, FunctionExecutionContext):
+            # The position should be reset if the current scope is a function.
+            until_position = None
+
+        context = context.parent_context
+
+    # Add builtins to the global scope.
+    yield next(base_context.inference_state.builtins_module.get_filters())

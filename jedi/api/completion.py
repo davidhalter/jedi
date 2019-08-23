@@ -13,7 +13,7 @@ from jedi.api import keywords
 from jedi.api.file_name import file_name_completions
 from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
-from jedi.inference.filters import get_global_filters
+from jedi.inference.context import get_global_filters
 from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
 
@@ -222,14 +222,13 @@ class Completion:
                 yield keywords.KeywordName(self._inference_state, k)
 
     def _global_completions(self):
-        value = get_user_context(self._module_context, self._position)
-        debug.dbg('global completion scope: %s', value)
+        context = get_user_context(self._module_context, self._position)
+        debug.dbg('global completion scope: %s', context)
         flow_scope_node = get_flow_scope_node(self._module_node, self._position)
         filters = get_global_filters(
-            self._inference_state,
-            value,
+            context,
             self._position,
-            origin_scope=flow_scope_node
+            flow_scope_node
         )
         completion_names = []
         for filter in filters:
