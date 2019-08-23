@@ -121,30 +121,10 @@ class NameFinder(object):
                   self._string_name, self._context, names, self._position)
         return list(names)
 
-    def _check_getattr(self, inst):
-        """Checks for both __getattr__ and __getattribute__ methods"""
-        # str is important, because it shouldn't be `Name`!
-        name = compiled.create_simple_object(self._inference_state, self._string_name)
-
-        # This is a little bit special. `__getattribute__` is in Python
-        # executed before `__getattr__`. But: I know no use case, where
-        # this could be practical and where Jedi would return wrong types.
-        # If you ever find something, let me know!
-        # We are inversing this, because a hand-crafted `__getattribute__`
-        # could still call another hand-crafted `__getattr__`, but not the
-        # other way around.
-        names = (inst.get_function_slot_names(u'__getattr__') or
-                 inst.get_function_slot_names(u'__getattribute__'))
-        return inst.execute_function_slots(names, name)
-
     def _names_to_types(self, names):
         values = ValueSet.from_sets(name.infer() for name in names)
 
         debug.dbg('finder._names_to_types: %s -> %s', names, values)
-        if not names and self._context.is_instance() and not self._context.is_compiled():
-            # handling __getattr__ / __getattribute__
-            return self._check_getattr(self._context)
-
         # Add isinstance and other if/assert knowledge.
         if not values and isinstance(self._name, tree.Name) and \
                 not self._name_context.is_instance() and not self._context.is_compiled():

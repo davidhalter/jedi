@@ -1,5 +1,7 @@
 from abc import abstractproperty
 
+from parso.python.tree import Name
+
 from jedi import debug
 from jedi import settings
 from jedi.inference import compiled
@@ -308,6 +310,29 @@ class TreeInstance(AbstractInstanceValue):
                 if init.is_function():
                     for signature in init.get_signatures():
                         yield signature.value
+
+    def py__getattribute__(self, name_or_str, *args, **kwargs):
+        inferred = super(AbstractInstanceValue, self).py__getattribute__(
+            name_or_str, *args, **kwargs)
+        if inferred or self.is_stub():
+            return inferred
+
+        # Since nothing was inferred, now check the __getattr__ and
+        # __getattribute__ methods. Stubs don't need to be checked, because
+        # they don't contain any logic.
+        n = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
+        name = compiled.create_simple_object(self.inference_state, n)
+
+        # This is a little bit special. `__getattribute__` is in Python
+        # executed before `__getattr__`. But: I know no use case, where
+        # this could be practical and where Jedi would return wrong types.
+        # If you ever find something, let me know!
+        # We are inversing this, because a hand-crafted `__getattribute__`
+        # could still call another hand-crafted `__getattr__`, but not the
+        # other way around.
+        names = (self.get_function_slot_names(u'__getattr__') or
+                 self.get_function_slot_names(u'__getattribute__'))
+        return self.execute_function_slots(names, name)
 
 
 class AnonymousInstance(TreeInstance):
