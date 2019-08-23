@@ -1,4 +1,5 @@
-from os.path import join, sep as s
+from os.path import join, sep as s, expanduser
+import os
 import sys
 from textwrap import dedent
 
@@ -82,6 +83,14 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
     s = Script("from test1 import foo\nfoo.",
                line=2, column=4, path=filename2)
     s.completions()
+
+def test_complete_expanduser(Script):
+    possibilities = os.listdir(expanduser('~'))
+    non_dots = [p for p in possibilities if not p.startswith('.') and len(p) > 1]
+    item = non_dots[0]
+    line = "'~%s%s'" % (os.sep, item)
+    s = Script(line, line=1, column=len(line)-1)
+    assert item in [c.name for c in s.completions()]
 
 
 def test_fake_subnodes(Script):
