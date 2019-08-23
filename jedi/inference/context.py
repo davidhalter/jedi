@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 from parso.tree import search_ancestor
-from parso.python.tree import Name, Param
+from parso.python.tree import Name
 
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
     GlobalNameFilter
@@ -39,9 +39,7 @@ class AbstractContext(object):
             name_context = self
         names, f = self._goto(name_or_str, position)
         values = f.find(names, attribute_lookup=False)
-        if not names and analysis_errors and not values \
-                and not (isinstance(name_or_str, Name) and
-                         isinstance(name_or_str.parent.parent, Param)):
+        if not names and not values and analysis_errors:
             if isinstance(name_or_str, Name):
                 from jedi.inference import analysis
                 message = ("NameError: name '%s' is not defined."
