@@ -16,7 +16,7 @@ from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
     LazyTreeValue
-from jedi.inference.context import AbstractContext
+from jedi.inference.context import ValueContext, TreeContextMixin
 from jedi.inference.value import iterable
 from jedi import parser_utils
 from jedi.inference.parser_cache import get_yield_exprs
@@ -164,7 +164,7 @@ class MethodValue(FunctionValue):
         return names + (self.py__name__(),)
 
 
-class FunctionExecutionContext(AbstractContext):
+class FunctionExecutionContext(ValueContext, TreeContextMixin):
     function_execution_filter = FunctionExecutionFilter
 
     def __init__(self, function_value, var_args):

@@ -6,21 +6,131 @@ from jedi import parser_utils
 
 
 class AbstractContext(object):
-    """
-    Should be defined, otherwise the API returns empty types.
-    """
-    predefined_names = {}
+    # Must be defined: inference_state and tree_node and parent_context as an attribute/property
 
-    def __init__(self, value):
-        self.inference_state = value.inference_state
-        self._value = value
+    def __init__(self, inference_state):
+        self.inference_state = inference_state
+        self.predefined_names = {}
 
     @abstractmethod
     def get_filters(self, until_position=None, origin_scope=None):
         raise NotImplementedError
 
+    def goto(self, name_or_str, position):
+        from jedi.inference import finder
+        f = finder.NameFinder(self.inference_state, self, self, name_or_str, position)
+        filters = f.get_global_filters()
+        return f.filter_name(filters)
+
+    def py__getattribute__(self, name_or_str, name_value=None, position=None,
+                           analysis_errors=True):
+        """
+        :param position: Position of the last statement -> tuple of line, column
+        """
+        if name_value is None:
+            name_value = self
+        from jedi.inference import finder
+        f = finder.NameFinder(self.inference_state, self, name_value, name_or_str,
+                              position, analysis_errors=analysis_errors)
+        filters = f.get_global_filters()
+        return f.find(filters, attribute_lookup=False)
+
     def get_root_context(self):
-        return self._value.get_root_context()
+        parent_context = self.parent_context
+        if parent_context is None:
+            return self
+        return parent_context.get_root_context()
+
+    def is_module(self):
+        return False
+
+    def is_builtins_module(self):
+        return False
+
+    def is_class(self):
+        return False
+
+    def is_stub(self):
+        return False
+
+    def is_instance(self):
+        return False
+
+    def is_compiled(self):
+        return False
+
+    @abstractmethod
+    def py__name__(self):
+        raise NotImplementedError
+
+    @property
+    def name(self):
+        return None
+
+    def get_qualified_names(self):
+        return ()
+
+    def py__doc__(self):
+        return ''
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self._value)
+
+
+class ValueContext(AbstractContext):
+    """
+    Should be defined, otherwise the API returns empty types.
+    """
+    def __init__(self, value):
+        super(ValueContext, self).__init__(value.inference_state)
+        self._value = value
+
+    @property
+    def tree_node(self):
+        return self._value.tree_node
+
+    @property
+    def parent_context(self):
+        return self._value.parent_context
+
+    def is_module(self):
+        return self._value.is_module()
+
+    def is_builtins_module(self):
+        return self._value == self.inference_state.builtins_module
+
+    def is_class(self):
+        return self._value.is_class()
+
+    def is_stub(self):
+        return self._value.is_stub()
+
+    def is_instance(self):
+        return self._value.is_instance()
+
+    def is_compiled(self):
+        return self._value.is_compiled()
+
+    def py__name__(self):
+        return self._value.py__name__()
+
+    @property
+    def name(self):
+        return self._value.name
+
+    def get_qualified_names(self):
+        return self._value.get_qualified_names()
+
+    def py__doc__(self):
+        return self._value.py__doc__()
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self._value)
+
+
+class TreeContextMixin(object):
+    def infer_node(self, node):
+        return self.inference_state.infer_element(self, node)
 
     def create_value(self, node):
         from jedi.inference import value
@@ -86,74 +196,8 @@ class AbstractContext(object):
                     scope_node = parent_scope(scope_node)
         return from_scope_node(scope_node, is_nested=True)
 
-    def goto(self, name_or_str, position):
-        from jedi.inference import finder
-        f = finder.NameFinder(self.inference_state, self, self, name_or_str, position)
-        filters = f.get_global_filters()
-        return f.filter_name(filters)
 
-    def py__getattribute__(self, name_or_str, name_value=None, position=None,
-                           analysis_errors=True):
-        """
-        :param position: Position of the last statement -> tuple of line, column
-        """
-        if name_value is None:
-            name_value = self
-        from jedi.inference import finder
-        f = finder.NameFinder(self.inference_state, self, name_value, name_or_str,
-                              position, analysis_errors=analysis_errors)
-        filters = f.get_global_filters()
-        return f.find(filters, attribute_lookup=False)
-
-    @property
-    def tree_node(self):
-        return self._value.tree_node
-
-    @property
-    def parent_context(self):
-        return self._value.parent_context
-
-    def is_module(self):
-        return self._value.is_module()
-
-    def is_builtins_module(self):
-        return self._value == self.inference_state.builtins_module
-
-    def is_class(self):
-        return self._value.is_class()
-
-    def is_stub(self):
-        return self._value.is_stub()
-
-    def is_instance(self):
-        return self._value.is_instance()
-
-    def is_compiled(self):
-        return self._value.is_compiled()
-
-    def py__name__(self):
-        return self._value.py__name__()
-
-    @property
-    def name(self):
-        if self._value is None:
-            return None
-        return self._value.name
-
-    def get_qualified_names(self):
-        return self._value.get_qualified_names()
-
-    def py__doc__(self):
-        return self._value.py__doc__()
-
-    def infer_node(self, node):
-        return self.inference_state.infer_element(self, node)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._value)
-
-
-class FunctionContext(AbstractContext):
+class FunctionContext(TreeContextMixin, ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(
             self.inference_state,
@@ -163,7 +207,7 @@ class FunctionContext(AbstractContext):
         )
 
 
-class ModuleContext(AbstractContext):
+class ModuleContext(TreeContextMixin, ValueContext):
     def py__file__(self):
         return self._value.py__file__()
 
@@ -202,12 +246,12 @@ class ModuleContext(AbstractContext):
         """
         This is the only function that converts a context back to a value.
         This is necessary for stub -> python conversion and vice versa. However
-        this method shouldn't be move to AbstractContext.
+        this method shouldn't be moved to AbstractContext.
         """
         return self._value
 
 
-class NamespaceContext(AbstractContext):
+class NamespaceContext(TreeContextMixin, ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         return self._value.get_filters()
 
@@ -215,7 +259,7 @@ class NamespaceContext(AbstractContext):
         return self._value.py__file__()
 
 
-class ClassContext(AbstractContext):
+class ClassContext(TreeContextMixin, ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         yield self.get_global_filter(until_position, origin_scope)
 
@@ -227,35 +271,17 @@ class ClassContext(AbstractContext):
         )
 
 
-class CompForContext(AbstractContext):
+class CompForContext(TreeContextMixin, AbstractContext):
     def __init__(self, parent_context, comp_for):
-        self._value = None
-        self._parent_context = parent_context
-        self.inference_state = parent_context.inference_state
-        self._tree_node = comp_for
-
-    @property
-    def parent_context(self):
-        return self._parent_context
-
-    def get_root_context(self):
-        return self._parent_context.get_root_context()
-
-    def is_instance(self):
-        return False
-
-    def is_compiled(self):
-        return False
-
-    @property
-    def tree_node(self):
-        return self._tree_node
+        super(CompForContext, self).__init__(parent_context.inference_state)
+        self.tree_node = comp_for
+        self.parent_context = parent_context
 
     def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self)
 
 
-class CompiledContext(AbstractContext):
+class CompiledContext(ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         return self._value.get_filters()
 

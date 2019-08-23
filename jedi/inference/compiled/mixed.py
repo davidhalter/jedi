@@ -21,7 +21,7 @@ from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.inference.compiled.value import create_cached_compiled_object
 from jedi.inference.gradual.conversion import to_stub
-from jedi.inference.context import CompiledContext
+from jedi.inference.context import CompiledContext, TreeContextMixin
 
 _sentinel = object()
 
@@ -81,7 +81,7 @@ class MixedObject(ValueWrapper):
         )
 
 
-class MixedContext(CompiledContext):
+class MixedContext(CompiledContext, TreeContextMixin):
     @property
     def compiled_object(self):
         return self._value.compiled_object
