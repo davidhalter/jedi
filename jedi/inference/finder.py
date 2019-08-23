@@ -77,22 +77,7 @@ class NameFinder(object):
                 return NO_VALUES
             return found_predefined_types
 
-        types = self._names_to_types(names)
-        self.check_issues(names, types, attribute_lookup)
-        return types
-
-    def check_issues(self, names, types, attribute_lookup):
-        if not names and self._analysis_errors and not types \
-                and not (isinstance(self._name, tree.Name) and
-                         isinstance(self._name.parent.parent, tree.Param)):
-            if isinstance(self._name, tree.Name):
-                if attribute_lookup:
-                    analysis.add_attribute_error(
-                        self._name_context, self._context, self._name)
-                else:
-                    message = ("NameError: name '%s' is not defined."
-                               % self._string_name)
-                    analysis.add(self._name_context, 'name-error', self._name, message)
+        return self._names_to_types(names)
 
     def filter_name(self, filters):
         """

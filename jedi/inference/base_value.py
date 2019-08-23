@@ -8,7 +8,7 @@ just one.
 """
 from functools import reduce
 from operator import add
-from parso.python.tree import ExprStmt, SyncCompFor, Name
+from parso.python.tree import ExprStmt, SyncCompFor, Name, Param
 
 from jedi import debug
 from jedi._compatibility import zip_longest, unicode
@@ -81,6 +81,14 @@ class HelperValueMixin(object):
         if not values:
             n = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
             values = self.py__getattribute__alternatives(n)
+
+        if not names and analysis_errors and not values \
+                and not (isinstance(name_or_str, Name) and
+                         isinstance(name_or_str.parent.parent, Param)):
+            if isinstance(name_or_str, Name):
+                from jedi.inference import analysis
+                analysis.add_attribute_error(
+                    name_context, self, name_or_str)
         return values
 
     def goto(self, *args, **kwargs):
