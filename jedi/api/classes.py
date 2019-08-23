@@ -361,9 +361,10 @@ class BaseDefinition(object):
         context = self._name.parent_context
         if context is None:
             return None
-
-        # TODO private access!
-        return Definition(self._inference_state, context._value.name)
+        while context.name is None:
+            # Happens for comprehension contexts
+            context = context.parent_context
+        return Definition(self._inference_state, context.name)
 
     def __repr__(self):
         return "<%s %sname=%r, description=%r>" % (

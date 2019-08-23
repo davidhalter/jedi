@@ -134,6 +134,12 @@ class AbstractContext(object):
     def py__name__(self):
         return self._value.py__name__()
 
+    @property
+    def name(self):
+        if self._value is None:
+            return None
+        return self._value.name
+
     def get_qualified_names(self):
         return self._value.get_qualified_names()
 
@@ -223,6 +229,7 @@ class ClassContext(AbstractContext):
 
 class CompForContext(AbstractContext):
     def __init__(self, parent_context, comp_for):
+        self._value = None
         self._parent_context = parent_context
         self.inference_state = parent_context.inference_state
         self._tree_node = comp_for
