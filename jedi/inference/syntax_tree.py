@@ -575,7 +575,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             filters = [next(c.get_filters())]
-            return finder.find(filters, attribute_lookup=False)
+            return finder.find(finder.filter_name(filters), attribute_lookup=False)
         elif node.type not in ('import_from', 'import_name'):
             c = context.create_context(tree_name)
             return infer_atom(c, tree_name)

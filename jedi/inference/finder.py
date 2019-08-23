@@ -46,12 +46,11 @@ class NameFinder(object):
         self._found_predefined_types = None
         self._analysis_errors = analysis_errors
 
-    def find(self, filters, attribute_lookup):
+    def find(self, names, attribute_lookup):
         """
         :params bool attribute_lookup: Tell to logic if we're accessing the
             attribute or the contents of e.g. a function.
         """
-        names = self.filter_name(filters)
         if self._found_predefined_types is not None and names:
             check = flow_analysis.reachability_check(
                 context=self._context,
@@ -63,7 +62,10 @@ class NameFinder(object):
             return self._found_predefined_types
 
         types = self._names_to_types(names)
+        self.check_issues(names, types, attribute_lookup)
+        return types
 
+    def check_issues(self, names, types, attribute_lookup):
         if not names and self._analysis_errors and not types \
                 and not (isinstance(self._name, tree.Name) and
                          isinstance(self._name.parent.parent, tree.Param)):
@@ -75,8 +77,6 @@ class NameFinder(object):
                     message = ("NameError: name '%s' is not defined."
                                % self._string_name)
                     analysis.add(self._name_context, 'name-error', self._name, message)
-
-        return types
 
     def filter_name(self, filters):
         """

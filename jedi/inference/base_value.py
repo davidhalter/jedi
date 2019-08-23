@@ -76,27 +76,24 @@ class HelperValueMixin(object):
         """
         if name_context is None:
             name_context = self
-        from jedi.inference import finder
-        f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
-                              position, analysis_errors=analysis_errors)
-        filters = self._get_value_filters(name_or_str)
-        values = f.find(filters, attribute_lookup=True)
+        names, f = self._goto(name_or_str, name_context, analysis_errors)
+        values = f.find(names, attribute_lookup=True)
         if not values:
             n = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
             values = self.py__getattribute__alternatives(n)
         return values
 
-    def goto(self, name_or_str, name_context=None, analysis_errors=True):
-        """
-        :param position: Position of the last statement -> tuple of line, column
-        """
+    def goto(self, *args, **kwargs):
+        return self._goto(*args, **kwargs)[0]
+
+    def _goto(self, name_or_str, name_context=None, analysis_errors=True):
         if name_context is None:
             name_context = self
         from jedi.inference import finder
         f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
                               analysis_errors=analysis_errors)
         filters = self._get_value_filters(name_or_str)
-        return f.filter_name(filters)
+        return f.filter_name(filters), f
 
     def py__await__(self):
         await_value_set = self.py__getattribute__(u"__await__")

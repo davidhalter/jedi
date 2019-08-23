@@ -20,12 +20,15 @@ class AbstractContext(object):
         raise NotImplementedError
 
     def goto(self, name_or_str, position):
+        return self._goto(name_or_str, position)[0]
+
+    def _goto(self, name_or_str, position):
         from jedi.inference import finder
         f = finder.NameFinder(self.inference_state, self, self, name_or_str, position)
         filters = _get_global_filters_for_name(
             self, name_or_str if isinstance(name_or_str, Name) else None, position,
         )
-        return f.filter_name(filters)
+        return f.filter_name(filters), f
 
     def py__getattribute__(self, name_or_str, name_value=None, position=None,
                            analysis_errors=True):
@@ -34,13 +37,8 @@ class AbstractContext(object):
         """
         if name_value is None:
             name_value = self
-        from jedi.inference import finder
-        f = finder.NameFinder(self.inference_state, self, name_value, name_or_str,
-                              position, analysis_errors=analysis_errors)
-        filters = _get_global_filters_for_name(
-            self, name_or_str if isinstance(name_or_str, Name) else None, position,
-        )
-        return f.find(filters, attribute_lookup=False)
+        names, f = self._goto(name_or_str, position)
+        return f.find(names, attribute_lookup=False)
 
     def get_root_context(self):
         parent_context = self.parent_context
