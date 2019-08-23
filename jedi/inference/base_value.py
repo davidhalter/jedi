@@ -80,7 +80,11 @@ class HelperValueMixin(object):
         f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
                               position, analysis_errors=analysis_errors)
         filters = self._get_value_filters(name_or_str)
-        return f.find(filters, attribute_lookup=True)
+        values = f.find(filters, attribute_lookup=True)
+        if not values:
+            n = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
+            values = self.py__getattribute__alternatives(n)
+        return values
 
     def goto(self, name_or_str, name_context=None, analysis_errors=True):
         """
@@ -224,6 +228,12 @@ class Value(HelperValueMixin, BaseValue):
 
     def py__stop_iteration_returns(self):
         debug.warning("Not possible to return the stop iterations of %s", self)
+        return NO_VALUES
+
+    def py__getattribute__alternatives(self, name_or_str):
+        """
+        For now a way to add values in cases like __getattr__.
+        """
         return NO_VALUES
 
     def get_qualified_names(self):

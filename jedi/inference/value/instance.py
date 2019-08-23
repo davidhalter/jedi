@@ -311,17 +311,16 @@ class TreeInstance(AbstractInstanceValue):
                     for signature in init.get_signatures():
                         yield signature.value
 
-    def py__getattribute__(self, name_or_str, *args, **kwargs):
-        inferred = super(AbstractInstanceValue, self).py__getattribute__(
-            name_or_str, *args, **kwargs)
-        if inferred or self.is_stub():
-            return inferred
+    def py__getattribute__alternatives(self, string_name):
+        '''
+        Since nothing was inferred, now check the __getattr__ and
+        __getattribute__ methods. Stubs don't need to be checked, because
+        they don't contain any logic.
+        '''
+        if self.is_stub():
+            return NO_VALUES
 
-        # Since nothing was inferred, now check the __getattr__ and
-        # __getattribute__ methods. Stubs don't need to be checked, because
-        # they don't contain any logic.
-        n = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
-        name = compiled.create_simple_object(self.inference_state, n)
+        name = compiled.create_simple_object(self.inference_state, string_name)
 
         # This is a little bit special. `__getattribute__` is in Python
         # executed before `__getattr__`. But: I know no use case, where
