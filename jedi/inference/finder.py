@@ -23,7 +23,7 @@ from jedi.inference.arguments import TreeArguments
 from jedi.inference import helpers
 from jedi.inference.value import iterable
 from jedi.inference.base_value import ValueSet, NO_VALUES
-from jedi.parser_utils import is_scope, get_parent_scope
+from jedi.parser_utils import is_scope
 
 
 class NameFinder(object):
@@ -47,9 +47,7 @@ class NameFinder(object):
         """
         values = ValueSet.from_sets(name.infer() for name in names)
         debug.dbg('finder._names_to_types: %s -> %s', names, values)
-        if values:
-            return values
-        return self._add_other_knowledge()
+        return values
 
     def filter_name(self, filters):
         """
@@ -64,27 +62,8 @@ class NameFinder(object):
 
         return list(names)
 
-    def _add_other_knowledge(self):
-        # Add isinstance and other if/assert knowledge.
-        if isinstance(self._name, tree.Name) and \
-                not self._name_context.is_instance() and not self._context.is_compiled():
-            flow_scope = self._name
-            base_nodes = [self._name_context.tree_node]
 
-            if any(b.type in ('comp_for', 'sync_comp_for') for b in base_nodes):
-                return NO_VALUES
-            while True:
-                flow_scope = get_parent_scope(flow_scope, include_flows=True)
-                n = _check_flow_information(self._name_context, flow_scope,
-                                            self._name, self._position)
-                if n is not None:
-                    return n
-                if flow_scope in base_nodes:
-                    break
-        return NO_VALUES
-
-
-def _check_flow_information(value, flow, search_name, pos):
+def check_flow_information(value, flow, search_name, pos):
     """ Try to find out the type of a variable just with the information that
     is given by the flows: e.g. It is also responsible for assert checks.::
 
