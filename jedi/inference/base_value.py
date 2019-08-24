@@ -144,10 +144,6 @@ class HelperValueMixin(object):
 
 class Value(HelperValueMixin, BaseValue):
     """
-    Should be defined, otherwise the API returns empty types.
-    """
-    predefined_names = {}
-    """
     To be defined by subclasses.
     """
     tree_node = None
@@ -265,8 +261,6 @@ def iterate_values(values, contextualized_node=None, is_async=False):
 
 
 class _ValueWrapperBase(HelperValueMixin):
-    predefined_names = {}
-
     @safe_property
     def name(self):
         from jedi.inference.names import ValueName
@@ -312,7 +306,6 @@ class ValueWrapper(_ValueWrapperBase):
 class TreeValue(Value):
     def __init__(self, inference_state, parent_context, tree_node):
         super(TreeValue, self).__init__(inference_state, parent_context)
-        self.predefined_names = {}
         self.tree_node = tree_node
 
     def __repr__(self):
