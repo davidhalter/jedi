@@ -96,7 +96,7 @@ class HelperValueMixin(object):
         if name_context is None:
             name_context = self
         from jedi.inference import finder
-        f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
+        f = finder.NameFinder(self, name_context, name_or_str,
                               analysis_errors=analysis_errors)
         filters = self._get_value_filters(name_or_str)
         names = f.filter_name(filters)

@@ -19,21 +19,17 @@ from parso.python import tree
 from parso.tree import search_ancestor
 from jedi import debug
 from jedi import settings
-from jedi.inference import compiled
-from jedi.inference import analysis
 from jedi.inference import flow_analysis
 from jedi.inference.arguments import TreeArguments
 from jedi.inference import helpers
 from jedi.inference.value import iterable
-from jedi.inference.names import TreeNameDefinition
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.parser_utils import is_scope, get_parent_scope
 
 
 class NameFinder(object):
-    def __init__(self, inference_state, context, name_value, name_or_str,
+    def __init__(self, context, name_value, name_or_str,
                  position=None, analysis_errors=True):
-        self._inference_state = inference_state
         # Make sure that it's not just a syntax tree node.
         self._context = context
         self._name_context = name_value
@@ -77,7 +73,11 @@ class NameFinder(object):
                 return NO_VALUES
             return found_predefined_types
 
-        return self._names_to_types(names)
+        values = ValueSet.from_sets(name.infer() for name in names)
+        debug.dbg('finder._names_to_types: %s -> %s', names, values)
+        if values:
+            return values
+        return self._add_other_knowledge()
 
     def filter_name(self, filters):
         """
@@ -92,18 +92,15 @@ class NameFinder(object):
 
         return list(names)
 
-    def _names_to_types(self, names):
-        values = ValueSet.from_sets(name.infer() for name in names)
-
-        debug.dbg('finder._names_to_types: %s -> %s', names, values)
+    def _add_other_knowledge(self):
         # Add isinstance and other if/assert knowledge.
-        if not values and isinstance(self._name, tree.Name) and \
+        if isinstance(self._name, tree.Name) and \
                 not self._name_context.is_instance() and not self._context.is_compiled():
             flow_scope = self._name
             base_nodes = [self._name_context.tree_node]
 
             if any(b.type in ('comp_for', 'sync_comp_for') for b in base_nodes):
-                return values
+                return NO_VALUES
             while True:
                 flow_scope = get_parent_scope(flow_scope, include_flows=True)
                 n = _check_flow_information(self._name_context, flow_scope,
@@ -112,7 +109,7 @@ class NameFinder(object):
                     return n
                 if flow_scope in base_nodes:
                     break
-        return values
+        return NO_VALUES
 
 
 def _check_flow_information(value, flow, search_name, pos):

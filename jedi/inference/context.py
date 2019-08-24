@@ -25,7 +25,7 @@ class AbstractContext(object):
 
     def _goto(self, name_or_str, position):
         from jedi.inference import finder
-        f = finder.NameFinder(self.inference_state, self, self, name_or_str, position)
+        f = finder.NameFinder(self, self, name_or_str, position)
         filters = _get_global_filters_for_name(
             self, name_or_str if isinstance(name_or_str, Name) else None, position,
         )
