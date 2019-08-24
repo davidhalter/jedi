@@ -7,6 +7,7 @@ from jedi.inference.lazy_value import LazyKnownValue, \
     LazyTreeValue, LazyUnknownValue
 from jedi.inference.value import iterable
 from jedi._compatibility import Parameter
+from jedi.inference.names import ParamName
 
 
 def _add_argument_issue(error_name, lazy_value, message):
@@ -17,32 +18,23 @@ def _add_argument_issue(error_name, lazy_value, message):
         return analysis.add(lazy_value.context, error_name, node, message)
 
 
-class ExecutedParam(object):
+class ExecutedParamName(ParamName):
     """Fake a param and give it values."""
     def __init__(self, execution_context, param_node, lazy_value, is_default=False):
-        self._execution_context = execution_context
-        from jedi.inference.names import ParamName
-        self._name = ParamName(execution_context, param_node.name)
+        super(ExecutedParamName, self).__init__(execution_context, param_node.name)
         self._lazy_value = lazy_value
         self._is_default = is_default
 
     def infer(self, use_hints=True):
         return self._lazy_value.infer()
 
-    @property
-    def string_name(self):
-        return self._name.string_name
-
-    def get_kind(self):
-        return self._name.get_kind()
-
     def matches_signature(self):
         if self._is_default:
             return True
         argument_values = self.infer(use_hints=False).py__class__()
-        if self._name.get_kind() in (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD):
+        if self.get_kind() in (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD):
             return True
-        annotations = self._name.infer_annotation(execute_annotation=False)
+        annotations = self.infer_annotation(execute_annotation=False)
         if not annotations:
             # If we cannot infer annotations - or there aren't any - pretend
             # that the signature matches.
@@ -56,7 +48,7 @@ class ExecutedParam(object):
 
     @property
     def var_args(self):
-        return self._execution_context.var_args
+        return self.parent_context.var_args
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
@@ -122,7 +114,7 @@ def get_executed_param_names_and_issues(execution_context, arguments):
                                          contextualized_node.node, message=m)
                         )
                 else:
-                    keys_used[key] = ExecutedParam(execution_context, key_param, argument)
+                    keys_used[key] = ExecutedParamName(execution_context, key_param, argument)
             key, argument = next(var_arg_iterator, (None, None))
 
         try:
@@ -174,7 +166,7 @@ def get_executed_param_names_and_issues(execution_context, arguments):
             else:
                 result_arg = argument
 
-        result_params.append(ExecutedParam(
+        result_params.append(ExecutedParamName(
             execution_context, param, result_arg,
             is_default=is_default
         ))
@@ -242,7 +234,7 @@ def _create_default_param(execution_context, param):
         result_arg = LazyUnknownValue()
     else:
         result_arg = LazyTreeValue(execution_context.parent_context, param.default)
-    return ExecutedParam(execution_context, param, result_arg)
+    return ExecutedParamName(execution_context, param, result_arg)
 
 
 def create_default_params(execution_context, funcdef):
