@@ -29,22 +29,24 @@ from jedi.parser_utils import get_parent_scope
 from jedi.inference.value import instance
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import recursion
+from jedi.inference.names import ParamNameWrapper
 
 
 MAX_PARAM_SEARCHES = 20
 
 
-class DynamicExecutedParams(object):
+class DynamicExecutedParamName(ParamNameWrapper):
     """
     Simulates being a parameter while actually just being multiple params.
     """
 
-    def __init__(self, inference_state, executed_param_names):
-        self.inference_state = inference_state
+    def __init__(self, executed_param_names):
+        super(DynamicExecutedParamName, self).__init__(executed_param_names[0])
         self._executed_param_names = executed_param_names
 
     def infer(self):
-        with recursion.execution_allowed(self.inference_state, self) as allowed:
+        inf = self.parent_context.inference_state
+        with recursion.execution_allowed(inf, self) as allowed:
             # We need to catch recursions that may occur, because an
             # anonymous functions can create an anonymous parameter that is
             # more or less self referencing.
@@ -101,7 +103,7 @@ def search_param_names(inference_state, execution_context, funcdef):
                     function_execution.get_executed_param_names_and_issues()[0]
                     for function_execution in function_executions
                 ))
-                params = [DynamicExecutedParams(inference_state, executed_param_names)
+                params = [DynamicExecutedParamName(executed_param_names)
                           for executed_param_names in zipped_param_names]
             else:
                 return create_default_params(execution_context, funcdef)

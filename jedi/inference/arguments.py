@@ -275,7 +275,7 @@ class TreeArguments(AbstractArguments):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
 
     def get_calling_nodes(self):
-        from jedi.inference.dynamic import DynamicExecutedParams
+        from jedi.inference.dynamic import DynamicExecutedParamName
         old_arguments_list = []
         arguments = self
 
@@ -291,7 +291,7 @@ class TreeArguments(AbstractArguments):
                 if not isinstance(names[0], ParamName):
                     break
                 param = names[0].get_param()
-                if isinstance(param, DynamicExecutedParams):
+                if isinstance(param, DynamicExecutedParamName):
                     # For dynamic searches we don't even want to see errors.
                     return []
                 if param.var_args is None:
