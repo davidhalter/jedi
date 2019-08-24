@@ -103,7 +103,6 @@ def search_params(inference_state, execution_context, funcdef):
                 ))
                 params = [DynamicExecutedParams(inference_state, executed_params)
                           for executed_params in zipped_params]
-                # Inferes the ExecutedParams to types.
             else:
                 return create_default_params(execution_context, funcdef)
         finally:
