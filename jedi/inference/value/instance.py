@@ -1,14 +1,12 @@
 from abc import abstractproperty
 
-from parso.python.tree import Name
-
 from jedi import debug
 from jedi import settings
 from jedi.inference import compiled
 from jedi.inference.compiled.value import CompiledObjectFilter
 from jedi.inference.helpers import values_from_qualified_names
 from jedi.inference.filters import AbstractFilter
-from jedi.inference.names import ValueName, TreeNameDefinition
+from jedi.inference.names import ValueName, TreeNameDefinition, ParamName
 from jedi.inference.base_value import Value, NO_VALUES, ValueSet, \
     iterator_to_value_set, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues
@@ -23,11 +21,10 @@ from jedi.inference.value import iterable
 from jedi.parser_utils import get_parent_scope
 
 
-class InstanceExecutedParam(object):
-    def __init__(self, instance, tree_param):
+class InstanceExecutedParamName(ParamName):
+    def __init__(self, instance, execution_context, tree_param):
+        super(InstanceExecutedParamName, self).__init__(execution_context, tree_param.name)
         self._instance = instance
-        self._tree_param = tree_param
-        self.string_name = self._tree_param.name.value
 
     def infer(self):
         return ValueSet([self._instance])
@@ -46,7 +43,8 @@ class AnonymousInstanceArguments(AnonymousArguments):
         if not tree_params:
             return [], []
 
-        self_param = InstanceExecutedParam(self._instance, tree_params[0])
+        self_param = InstanceExecutedParamName(
+            self._instance, execution_context, tree_params[0])
         if len(tree_params) == 1:
             # If the only param is self, we don't need to try to find
             # executions of this function, we have all the params already.
