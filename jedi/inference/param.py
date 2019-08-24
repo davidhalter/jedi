@@ -21,13 +21,11 @@ class ExecutedParam(object):
     def __init__(self, execution_context, param_node, lazy_value, is_default=False):
         self._execution_context = execution_context
         self._param_node = param_node
+        from jedi.inference.names import ParamName
+        self._name = ParamName(execution_context, param_node.name)
         self._lazy_value = lazy_value
         self.string_name = param_node.name.value
         self._is_default = is_default
-
-    def infer_annotations(self):
-        from jedi.inference.gradual.annotation import infer_param
-        return infer_param(self._execution_context, self._param_node)
 
     def infer(self, use_hints=True):
         return self._lazy_value.infer()
@@ -38,7 +36,7 @@ class ExecutedParam(object):
         argument_values = self.infer(use_hints=False).py__class__()
         if self._param_node.star_count:
             return True
-        annotations = self.infer_annotations()
+        annotations = self._name.infer_annotation(execute_annotation=False)
         if not annotations:
             # If we cannot infer annotations - or there aren't any - pretend
             # that the signature matches.
