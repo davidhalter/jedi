@@ -76,8 +76,8 @@ class HelperValueMixin(object):
         """
         if name_context is None:
             name_context = self
-        names, f = self._goto(name_or_str, name_context, analysis_errors)
-        values = f.find(names, attribute_lookup=True)
+        names = self.goto(name_or_str, name_context, analysis_errors)
+        values = ValueSet.from_sets(name.infer() for name in names)
         if not values:
             n = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
             values = self.py__getattribute__alternatives(n)
@@ -87,21 +87,17 @@ class HelperValueMixin(object):
                 from jedi.inference import analysis
                 analysis.add_attribute_error(
                     name_context, self, name_or_str)
+        debug.dbg('context.names_to_types: %s -> %s', names, values)
         return values
 
-    def goto(self, *args, **kwargs):
-        return self._goto(*args, **kwargs)[0]
-
-    def _goto(self, name_or_str, name_context=None, analysis_errors=True):
+    def goto(self, name_or_str, name_context=None, analysis_errors=True):
         if name_context is None:
             name_context = self
         from jedi.inference import finder
-        f = finder.NameFinder(self, name_context, name_or_str,
-                              analysis_errors=analysis_errors)
         filters = self._get_value_filters(name_or_str)
-        names = f.filter_name(filters)
+        names = finder.filter_name(filters, name_or_str)
         debug.dbg('Context.goto %s in (%s): %s', name_or_str, self, names)
-        return names, f
+        return names
 
     def py__await__(self):
         await_value_set = self.py__getattribute__(u"__await__")

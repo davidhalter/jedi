@@ -19,7 +19,7 @@ from jedi.inference import arguments
 from jedi.inference.value import ClassValue, FunctionValue
 from jedi.inference.value import iterable
 from jedi.inference.value import TreeInstance
-from jedi.inference.finder import NameFinder
+from jedi.inference.finder import filter_name
 from jedi.inference.helpers import is_string, is_literal, is_number
 from jedi.inference.compiled.access import COMPARISON_OPERATORS
 from jedi.inference.cache import inference_state_method_cache
@@ -570,11 +570,11 @@ def tree_name_to_values(inference_state, context, tree_name):
         node = tree_name.parent
         if node.type == 'global_stmt':
             c = context.create_context(tree_name)
-            finder = NameFinder(c, c, tree_name.value)
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             filters = [next(c.get_filters())]
-            return finder.find(finder.filter_name(filters), attribute_lookup=False)
+            names = filter_name(filters, tree_name)
+            return ValueSet.from_sets(name.infer() for name in names)
         elif node.type not in ('import_from', 'import_name'):
             c = context.create_context(tree_name)
             return infer_atom(c, tree_name)

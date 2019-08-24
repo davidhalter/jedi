@@ -15,52 +15,30 @@ Unfortunately every other thing is being ignored (e.g. a == '' would be easy to
 check for -> a is a string). There's big potential in these checks.
 """
 
-from parso.python import tree
 from parso.tree import search_ancestor
-from jedi import debug
+from parso.python.tree import Name
+
 from jedi import settings
 from jedi.inference.arguments import TreeArguments
 from jedi.inference import helpers
 from jedi.inference.value import iterable
-from jedi.inference.base_value import ValueSet, NO_VALUES
+from jedi.inference.base_value import NO_VALUES
 from jedi.parser_utils import is_scope
 
 
-class NameFinder(object):
-    def __init__(self, context, name_context, name_or_str,
-                 position=None, analysis_errors=True):
-        # Make sure that it's not just a syntax tree node.
-        self._context = context
-        self._name_context = name_context
-        self._name = name_or_str
-        if isinstance(name_or_str, tree.Name):
-            self._string_name = name_or_str.value
-        else:
-            self._string_name = name_or_str
-        self._position = position
-        self._analysis_errors = analysis_errors
+def filter_name(filters, name_or_str):
+    """
+    Searches names that are defined in a scope (the different
+    ``filters``), until a name fits.
+    """
+    string_name = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
+    names = []
+    for filter in filters:
+        names = filter.get(string_name)
+        if names:
+            break
 
-    def find(self, names, attribute_lookup):
-        """
-        :params bool attribute_lookup: Tell to logic if we're accessing the
-            attribute or the contents of e.g. a function.
-        """
-        values = ValueSet.from_sets(name.infer() for name in names)
-        debug.dbg('finder._names_to_types: %s -> %s', names, values)
-        return values
-
-    def filter_name(self, filters):
-        """
-        Searches names that are defined in a scope (the different
-        ``filters``), until a name fits.
-        """
-        names = []
-        for filter in filters:
-            names = filter.get(self._string_name)
-            if names:
-                break
-
-        return list(names)
+    return list(names)
 
 
 def check_flow_information(value, flow, search_name, pos):
