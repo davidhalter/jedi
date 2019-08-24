@@ -95,7 +95,7 @@ class BaseDefinition(object):
 
         :rtype: str or None
         """
-        return self._name.string_name
+        return self._name.get_public_name()
 
     @property
     def type(self):
@@ -242,7 +242,7 @@ class BaseDefinition(object):
     @property
     def description(self):
         """A textual description of the object."""
-        return self._name.string_name
+        return self._name.get_public_name()
 
     @property
     def full_name(self):
@@ -427,7 +427,7 @@ class Completion(BaseDefinition):
                 # TODO this doesn't work for nested calls.
                 append += '='
 
-        name = self._name.string_name
+        name = self._name.get_public_name()
         if like_name:
             name = name[self._like_name_length:]
         return name + append
@@ -483,7 +483,7 @@ class Completion(BaseDefinition):
         return Definition.description.__get__(self)
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self._name.string_name)
+        return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
 
     @memoize_method
     def follow_definition(self):
@@ -551,7 +551,7 @@ class Definition(BaseDefinition):
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
-            return typ + ' ' + self._name.string_name
+            return typ + ' ' + self._name.get_public_name()
 
         definition = tree_name.get_definition() or tree_name
         # Remove the prefix, because that's not what we want for get_code

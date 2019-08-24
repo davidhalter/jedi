@@ -45,6 +45,9 @@ class AbstractNameDefinition(object):
     def get_root_context(self):
         return self.parent_context.get_root_context()
 
+    def get_public_name(self):
+        return self.string_name
+
     def __repr__(self):
         if self.start_pos is None:
             return '<%s: string_name=%s>' % (self.__class__.__name__, self.string_name)
@@ -225,7 +228,7 @@ class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
     default_node = None
 
     def to_string(self):
-        output = self._kind_string() + self.string_name
+        output = self._kind_string() + self.get_public_name()
         annotation = self.annotation_node
         default = self.default_node
         if annotation is not None:
@@ -262,9 +265,8 @@ class ParamName(BaseTreeParamName):
     def default_node(self):
         return self._get_param_node().default
 
-    @property
-    def string_name(self):
-        name = self.tree_name.value
+    def get_public_name(self):
+        name = self.string_name
         if name.startswith('__'):
             # Params starting with __ are an equivalent to positional only
             # variables in typeshed.

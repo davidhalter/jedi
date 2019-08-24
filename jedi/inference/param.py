@@ -24,11 +24,14 @@ class ExecutedParam(object):
         from jedi.inference.names import ParamName
         self._name = ParamName(execution_context, param_node.name)
         self._lazy_value = lazy_value
-        self.string_name = param_node.name.value
         self._is_default = is_default
 
     def infer(self, use_hints=True):
         return self._lazy_value.infer()
+
+    @property
+    def string_name(self):
+        return self._name.string_name
 
     def get_kind(self):
         return self._name.get_kind()
