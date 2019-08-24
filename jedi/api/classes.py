@@ -687,7 +687,7 @@ class ParamDefinition(Definition):
         :param execute_annotation: If False, the values are not executed and
             you get classes instead of instances.
         """
-        return _values_to_definitions(self._name.infer_annotation(**kwargs))
+        return _values_to_definitions(self._name.infer_annotation(ignore_stars=True, **kwargs))
 
     def to_string(self):
         return self._name.to_string()

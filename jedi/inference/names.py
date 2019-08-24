@@ -242,11 +242,11 @@ class ParamName(BaseTreeParamName):
     def annotation_node(self):
         return self._get_param_node().annotation
 
-    def infer_annotation(self, execute_annotation=True):
-        node = self.annotation_node
-        if node is None:
-            return NO_VALUES
-        values = self.parent_context.parent_context.infer_node(node)
+    def infer_annotation(self, execute_annotation=True, ignore_stars=False):
+        from jedi.inference.gradual.annotation import infer_param
+        values = infer_param(
+            self.parent_context, self._get_param_node(),
+            ignore_stars=ignore_stars)
         if execute_annotation:
             values = values.execute_annotation()
         return values
@@ -299,6 +299,9 @@ class ParamName(BaseTreeParamName):
         return Parameter.POSITIONAL_OR_KEYWORD
 
     def infer(self):
+        values = self.infer_annotation()
+        if values:
+            return values
         return self.get_param().infer()
 
     def get_param(self):

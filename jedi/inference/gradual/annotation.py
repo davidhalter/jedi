@@ -107,8 +107,10 @@ def _split_comment_param_declaration(decl_text):
 
 
 @inference_state_method_cache()
-def infer_param(execution_context, param):
+def infer_param(execution_context, param, ignore_stars=False):
     values = _infer_param(execution_context, param)
+    if ignore_stars:
+        return values
     inference_state = execution_context.inference_state
     if param.star_count == 1:
         tuple_ = builtin_from_name(inference_state, 'tuple')

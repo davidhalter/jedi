@@ -33,9 +33,8 @@ class ExecutedParam(object):
     def infer(self, use_hints=True):
         if use_hints:
             doc_params = docstrings.infer_param(self._execution_context, self._param_node)
-            ann = self.infer_annotations().execute_annotation()
-            if ann or doc_params:
-                return ann | doc_params
+            if doc_params:
+                return doc_params
 
         return self._lazy_value.infer()
 

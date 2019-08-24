@@ -24,7 +24,7 @@ def function_parameters(a: A, b, c: str, d: int, e: str, f: str, g: int=4):
     d
     #? str()
     e
-    #? int() str()
+    #? str()
     f
     # int()
     g
