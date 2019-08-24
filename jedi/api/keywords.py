@@ -1,7 +1,7 @@
 import pydoc
 
-from jedi.evaluate.utils import ignored
-from jedi.evaluate.names import AbstractArbitraryName
+from jedi.inference.utils import ignored
+from jedi.inference.names import AbstractArbitraryName
 
 try:
     from pydoc_data import topics as pydoc_topics
@@ -15,24 +15,24 @@ except ImportError:
         pydoc_topics = None
 
 
-def get_operator(evaluator, string, pos):
-    return Keyword(evaluator, string, pos)
+def get_operator(inference_state, string, pos):
+    return Keyword(inference_state, string, pos)
 
 
 class KeywordName(AbstractArbitraryName):
     api_type = u'keyword'
 
     def infer(self):
-        return [Keyword(self.evaluator, self.string_name, (0, 0))]
+        return [Keyword(self.inference_state, self.string_name, (0, 0))]
 
 
 class Keyword(object):
     api_type = u'keyword'
 
-    def __init__(self, evaluator, name, pos):
-        self.name = KeywordName(evaluator, name)
+    def __init__(self, inference_state, name, pos):
+        self.name = KeywordName(inference_state, name)
         self.start_pos = pos
-        self.parent = evaluator.builtins_module
+        self.parent = inference_state.builtins_module
 
     @property
     def names(self):
@@ -44,7 +44,7 @@ class Keyword(object):
 
     def get_signatures(self):
         # TODO this makes no sense, I think Keyword should somehow merge with
-        #   Context to make it easier for the api/classes.py to deal with all
+        #   Value to make it easier for the api/classes.py to deal with all
         #   of it.
         return []
 

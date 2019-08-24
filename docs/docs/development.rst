@@ -47,12 +47,12 @@ The Jedi Core
 The core of Jedi consists of three parts:
 
 - :ref:`Parser <parser>`
-- :ref:`Python code evaluation <evaluate>`
+- :ref:`Python type inference <inference>`
 - :ref:`API <dev-api>`
 
-Most people are probably interested in :ref:`code evaluation <evaluate>`,
+Most people are probably interested in :ref:`type inference <inference>`,
 because that's where all the magic happens. I need to introduce the :ref:`parser
-<parser>` first, because :mod:`jedi.evaluate` uses it extensively.
+<parser>` first, because :mod:`jedi.inference` uses it extensively.
 
 .. _parser:
 
@@ -66,32 +66,32 @@ The parser creates a syntax tree that |jedi| analyses and tries to understand.
 The grammar that this parsers uses is very similar to the official Python
 `grammar files <https://docs.python.org/3/reference/grammar.html>`_.
 
-.. _evaluate:
+.. _inference:
 
-Evaluation of python code (evaluate/__init__.py)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Type inference of python code (inference/__init__.py)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.evaluate
+.. automodule:: jedi.inference
 
-Evaluation Contexts (evaluate/base_context.py)
+Inference Values (inference/base_value.py)
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. automodule:: jedi.evaluate.base_context
+.. automodule:: jedi.inference.base_value
 
 .. inheritance-diagram::
-   jedi.evaluate.context.instance.TreeInstance
-   jedi.evaluate.context.klass.ClassContext
-   jedi.evaluate.context.function.FunctionContext
-   jedi.evaluate.context.function.FunctionExecutionContext
+   jedi.inference.value.instance.TreeInstance
+   jedi.inference.value.klass.Classvalue
+   jedi.inference.value.function.FunctionValue
+   jedi.inference.value.function.FunctionExecutionContext
    :parts: 1
 
 
 .. _name_resolution:
 
-Name resolution (evaluate/finder.py)
+Name resolution (inference/finder.py)
 ++++++++++++++++++++++++++++++++++++
 
-.. automodule:: jedi.evaluate.finder
+.. automodule:: jedi.inference.finder
 
 
 .. _dev-api:
@@ -124,33 +124,33 @@ without some features.
 
 .. _iterables:
 
-Iterables & Dynamic Arrays (evaluate/context/iterable.py)
+Iterables & Dynamic Arrays (inference/value/iterable.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To understand Python on a deeper level, |jedi| needs to understand some of the
 dynamic features of Python like lists that are filled after creation:
 
-.. automodule:: jedi.evaluate.context.iterable
+.. automodule:: jedi.inference.value.iterable
 
 
 .. _dynamic:
 
-Parameter completion (evaluate/dynamic.py)
+Parameter completion (inference/dynamic.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.evaluate.dynamic
+.. automodule:: jedi.inference.dynamic
 
 
 .. _docstrings:
 
-Docstrings (evaluate/docstrings.py)
+Docstrings (inference/docstrings.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.evaluate.docstrings
+.. automodule:: jedi.inference.docstrings
 
 .. _refactoring:
 
-Refactoring (evaluate/refactoring.py)
+Refactoring (inference/refactoring.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: jedi.refactoring
@@ -169,18 +169,18 @@ Imports & Modules
 
 .. _builtin:
 
-Compiled Modules (evaluate/compiled.py)
+Compiled Modules (inference/compiled.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.evaluate.compiled
+.. automodule:: jedi.inference.compiled
 
 
 .. _imports:
 
-Imports (evaluate/imports.py)
+Imports (inference/imports.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.evaluate.imports
+.. automodule:: jedi.inference.imports
 
 
 .. _caching-recursions:
@@ -204,7 +204,7 @@ Caching (cache.py)
 Recursions (recursion.py)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: jedi.evaluate.recursion
+.. automodule:: jedi.inference.recursion
 
 
 .. _dev-helpers:

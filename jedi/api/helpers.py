@@ -9,10 +9,10 @@ from parso.python.parser import Parser
 from parso.python import tree
 
 from jedi._compatibility import u, Parameter
-from jedi.evaluate.base_context import NO_CONTEXTS
-from jedi.evaluate.syntax_tree import eval_atom
-from jedi.evaluate.helpers import evaluate_call_of_leaf
-from jedi.evaluate.compiled import get_string_context_set
+from jedi.inference.base_value import NO_VALUES
+from jedi.inference.syntax_tree import infer_atom
+from jedi.inference.helpers import infer_call_of_leaf
+from jedi.inference.compiled import get_string_value_set
 from jedi.cache import call_signature_time_cache
 
 
@@ -87,7 +87,7 @@ def _get_code_for_stack(code_lines, leaf, position):
         if is_after_newline:
             if user_stmt.start_pos[1] > position[1]:
                 # This means that it's actually a dedent and that means that we
-                # start without context (part of a suite).
+                # start without value (part of a suite).
                 return u('')
 
         # This is basically getting the relevant lines.
@@ -136,25 +136,25 @@ def get_stack_at_position(grammar, code_lines, leaf, pos):
     )
 
 
-def evaluate_goto_definition(evaluator, context, leaf):
+def infer_goto_definition(inference_state, context, leaf):
     if leaf.type == 'name':
         # In case of a name we can just use goto_definition which does all the
         # magic itself.
-        return evaluator.goto_definitions(context, leaf)
+        return inference_state.goto_definitions(context, leaf)
 
     parent = leaf.parent
-    definitions = NO_CONTEXTS
+    definitions = NO_VALUES
     if parent.type == 'atom':
         # e.g. `(a + b)`
-        definitions = context.eval_node(leaf.parent)
+        definitions = context.infer_node(leaf.parent)
     elif parent.type == 'trailer':
         # e.g. `a()`
-        definitions = evaluate_call_of_leaf(context, leaf)
+        definitions = infer_call_of_leaf(context, leaf)
     elif isinstance(leaf, tree.Literal):
         # e.g. `"foo"` or `1.0`
-        return eval_atom(context, leaf)
+        return infer_atom(context, leaf)
     elif leaf.type in ('fstring_string', 'fstring_start', 'fstring_end'):
-        return get_string_context_set(evaluator)
+        return get_string_value_set(inference_state)
     return definitions
 
 
@@ -376,7 +376,7 @@ def get_call_signature_details(module, position):
 
 
 @call_signature_time_cache("call_signatures_validity")
-def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos):
+def cache_call_signatures(inference_state, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
     line_index = user_pos[0] - 1
 
@@ -390,8 +390,8 @@ def cache_call_signatures(evaluator, context, bracket_leaf, code_lines, user_pos
         yield None  # Don't cache!
     else:
         yield (module_path, before_bracket, bracket_leaf.start_pos)
-    yield evaluate_goto_definition(
-        evaluator,
+    yield infer_goto_definition(
+        inference_state,
         context,
         bracket_leaf.get_previous_leaf(),
     )

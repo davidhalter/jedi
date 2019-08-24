@@ -28,19 +28,19 @@ from jedi.api import helpers
 from jedi.api.completion import Completion
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
-from jedi.evaluate import Evaluator
-from jedi.evaluate import imports
-from jedi.evaluate import usages
-from jedi.evaluate.arguments import try_iter_content
-from jedi.evaluate.helpers import get_module_names, evaluate_call_of_leaf
-from jedi.evaluate.sys_path import transform_path_to_dotted
-from jedi.evaluate.names import TreeNameDefinition, ParamName
-from jedi.evaluate.syntax_tree import tree_name_to_contexts
-from jedi.evaluate.context import ModuleContext
-from jedi.evaluate.base_context import ContextSet
-from jedi.evaluate.context.iterable import unpack_tuple_to_dict
-from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
-from jedi.evaluate.gradual.utils import load_proper_stub_module
+from jedi.inference import InferenceState
+from jedi.inference import imports
+from jedi.inference import usages
+from jedi.inference.arguments import try_iter_content
+from jedi.inference.helpers import get_module_names, infer_call_of_leaf
+from jedi.inference.sys_path import transform_path_to_dotted
+from jedi.inference.names import TreeNameDefinition, ParamName
+from jedi.inference.syntax_tree import tree_name_to_values
+from jedi.inference.value import ModuleValue
+from jedi.inference.base_value import ValueSet
+from jedi.inference.value.iterable import unpack_tuple_to_dict
+from jedi.inference.gradual.conversion import convert_names, convert_values
+from jedi.inference.gradual.utils import load_proper_stub_module
 
 # Jedi uses lots and lots of recursion. By setting this a little bit higher, we
 # can remove some "maximum recursion depth" errors.
@@ -62,7 +62,7 @@ class Script(object):
 
     - if `sys_path` parameter is ``None`` and ``VIRTUAL_ENV`` environment
       variable is defined, ``sys.path`` for the specified environment will be
-      guessed (see :func:`jedi.evaluate.sys_path.get_venv_path`) and used for
+      guessed (see :func:`jedi.inference.sys_path.get_venv_path`) and used for
       the script;
 
     - otherwise ``sys.path`` will match that of |jedi|.
@@ -111,11 +111,11 @@ class Script(object):
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
-        self._evaluator = Evaluator(
+        self._inference_state = InferenceState(
             project, environment=environment, script_path=self.path
         )
         debug.speed('init')
-        self._module_node, source = self._evaluator.parse_and_get_code(
+        self._module_node, source = self._inference_state.parse_and_get_code(
             code=source,
             path=self.path,
             encoding=encoding,
@@ -156,7 +156,7 @@ class Script(object):
         is_package = False
         if self.path is not None:
             import_names, is_p = transform_path_to_dotted(
-                self._evaluator.get_sys_path(add_parent_paths=False),
+                self._inference_state.get_sys_path(add_parent_paths=False),
                 self.path
             )
             if import_names is not None:
@@ -170,7 +170,7 @@ class Script(object):
         if self.path is not None and self.path.endswith('.pyi'):
             # We are in a stub file. Try to load the stub properly.
             stub_module = load_proper_stub_module(
-                self._evaluator,
+                self._inference_state,
                 file_io,
                 names,
                 self._module_node
@@ -181,22 +181,25 @@ class Script(object):
         if names is None:
             names = ('__main__',)
 
-        module = ModuleContext(
-            self._evaluator, self._module_node, file_io,
+        module = ModuleValue(
+            self._inference_state, self._module_node, file_io,
             string_names=names,
             code_lines=self._code_lines,
             is_package=is_package,
         )
         if names[0] not in ('builtins', '__builtin__', 'typing'):
             # These modules are essential for Jedi, so don't overwrite them.
-            self._evaluator.module_cache.add(names, ContextSet([module]))
+            self._inference_state.module_cache.add(names, ValueSet([module]))
         return module
+
+    def _get_module_context(self):
+        return self._get_module().as_context()
 
     def __repr__(self):
         return '<%s: %s %r>' % (
             self.__class__.__name__,
             repr(self._orig_path),
-            self._evaluator.environment,
+            self._inference_state.environment,
         )
 
     def completions(self):
@@ -209,7 +212,7 @@ class Script(object):
         """
         with debug.increase_indent_cm('completions'):
             completion = Completion(
-                self._evaluator, self._get_module(), self._code_lines,
+                self._inference_state, self._get_module_context(), self._code_lines,
                 self._pos, self.call_signatures
             )
             return completion.completions()
@@ -239,16 +242,16 @@ class Script(object):
             if leaf is None:
                 return []
 
-        context = self._evaluator.create_context(self._get_module(), leaf)
+        context = self._get_module_context().create_context(leaf)
 
-        contexts = helpers.evaluate_goto_definition(self._evaluator, context, leaf)
-        contexts = convert_contexts(
-            contexts,
+        values = helpers.infer_goto_definition(self._inference_state, context, leaf)
+        values = convert_values(
+            values,
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._evaluator, c.name) for c in contexts]
+        defs = [classes.Definition(self._inference_state, c.name) for c in values]
         # The additional set here allows the definitions to become unique in an
         # API sense. In the internals we want to separate more things than in
         # the API.
@@ -276,10 +279,10 @@ class Script(object):
 
     def _goto_assignments(self, follow_imports, follow_builtin_imports,
                           only_stubs=False, prefer_stubs=False):
-        def filter_follow_imports(names, check):
+        def filter_follow_imports(names):
             for name in names:
-                if check(name):
-                    new_names = list(filter_follow_imports(name.goto(), check))
+                if name.is_import():
+                    new_names = list(filter_follow_imports(name.goto()))
                     found_builtin = False
                     if follow_builtin_imports:
                         for new_name in new_names:
@@ -299,18 +302,18 @@ class Script(object):
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
             return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
-        context = self._evaluator.create_context(self._get_module(), tree_name)
-        names = list(self._evaluator.goto(context, tree_name))
+        context = self._get_module_context().create_context(tree_name)
+        names = list(self._inference_state.goto(context, tree_name))
 
         if follow_imports:
-            names = filter_follow_imports(names, lambda name: name.is_import())
+            names = filter_follow_imports(names)
         names = convert_names(
             names,
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
 
-        defs = [classes.Definition(self._evaluator, d) for d in set(names)]
+        defs = [classes.Definition(self._inference_state, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
     def usages(self, additional_module_paths=(), **kwargs):
@@ -340,9 +343,9 @@ class Script(object):
                 # Must be syntax
                 return []
 
-            names = usages.usages(self._get_module(), tree_name)
+            names = usages.usages(self._get_module_context(), tree_name)
 
-            definitions = [classes.Definition(self._evaluator, n) for n in names]
+            definitions = [classes.Definition(self._inference_state, n) for n in names]
             if not include_builtins:
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
@@ -368,12 +371,9 @@ class Script(object):
         if call_details is None:
             return []
 
-        context = self._evaluator.create_context(
-            self._get_module(),
-            call_details.bracket_leaf
-        )
+        context = self._get_module_context().create_context(call_details.bracket_leaf)
         definitions = helpers.cache_call_signatures(
-            self._evaluator,
+            self._inference_state,
             context,
             call_details.bracket_leaf,
             self._code_lines,
@@ -381,21 +381,21 @@ class Script(object):
         )
         debug.speed('func_call followed')
 
-        # TODO here we use stubs instead of the actual contexts. We should use
-        # the signatures from stubs, but the actual contexts, probably?!
-        return [classes.CallSignature(self._evaluator, signature, call_details)
+        # TODO here we use stubs instead of the actual values. We should use
+        # the signatures from stubs, but the actual values, probably?!
+        return [classes.CallSignature(self._inference_state, signature, call_details)
                 for signature in definitions.get_signatures()]
 
     def _analysis(self):
-        self._evaluator.is_analysis = True
-        self._evaluator.analysis_modules = [self._module_node]
-        module = self._get_module()
+        self._inference_state.is_analysis = True
+        self._inference_state.analysis_modules = [self._module_node]
+        module = self._get_module_context()
         try:
             for node in get_executable_nodes(self._module_node):
                 context = module.create_context(node)
                 if node.type in ('funcdef', 'classdef'):
                     # Resolve the decorators.
-                    tree_name_to_contexts(self._evaluator, context, node.children[1])
+                    tree_name_to_values(self._inference_state, context, node.children[1])
                 elif isinstance(node, tree.Import):
                     import_names = set(node.get_defined_names())
                     if node.is_nested():
@@ -403,22 +403,22 @@ class Script(object):
                     for n in import_names:
                         imports.infer_import(context, n)
                 elif node.type == 'expr_stmt':
-                    types = context.eval_node(node)
+                    types = context.infer_node(node)
                     for testlist in node.children[:-1:2]:
                         # Iterate tuples.
                         unpack_tuple_to_dict(context, types, testlist)
                 else:
                     if node.type == 'name':
-                        defs = self._evaluator.goto_definitions(context, node)
+                        defs = self._inference_state.goto_definitions(context, node)
                     else:
-                        defs = evaluate_call_of_leaf(context, node)
+                        defs = infer_call_of_leaf(context, node)
                     try_iter_content(defs)
-                self._evaluator.reset_recursion_limitations()
+                self._inference_state.reset_recursion_limitations()
 
-            ana = [a for a in self._evaluator.analysis if self.path == a.path]
+            ana = [a for a in self._inference_state.analysis if self.path == a.path]
             return sorted(set(ana), key=lambda x: x.line)
         finally:
-            self._evaluator.is_analysis = False
+            self._inference_state.is_analysis = False
 
 
 class Interpreter(Script):
@@ -467,15 +467,19 @@ class Interpreter(Script):
         super(Interpreter, self).__init__(source, environment=environment,
                                           _project=Project(os.getcwd()), **kwds)
         self.namespaces = namespaces
-        self._evaluator.allow_descriptor_getattr = self._allow_descriptor_getattr_default
+        self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 
-    def _get_module(self):
-        return interpreter.MixedModuleContext(
-            self._evaluator,
-            self._module_node,
-            self.namespaces,
+    @cache.memoize_method
+    def _get_module_context(self):
+        tree_module_value = ModuleValue(
+            self._inference_state, self._module_node,
             file_io=KnownContentFileIO(self.path, self._code),
+            string_names=('__main__',),
             code_lines=self._code_lines,
+        )
+        return interpreter.MixedModuleContext(
+            tree_module_value,
+            self.namespaces,
         )
 
 
@@ -511,10 +515,10 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
 
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
-    module_context = script._get_module()
+    module_context = script._get_module_context()
     defs = [
         classes.Definition(
-            script._evaluator,
+            script._inference_state,
             create_name(name)
         ) for name in get_module_names(script._module_node, all_scopes)
     ]

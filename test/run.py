@@ -123,10 +123,10 @@ import jedi
 from jedi import debug
 from jedi._compatibility import unicode, is_py3
 from jedi.api.classes import Definition
-from jedi.api.completion import get_user_scope
+from jedi.api.completion import get_user_context
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
-from jedi.evaluate.gradual.conversion import convert_contexts
+from jedi.inference.gradual.conversion import convert_values
 
 
 TEST_COMPLETIONS = 0
@@ -212,7 +212,7 @@ class IntegrationTestCase(object):
 
     def run_goto_definitions(self, compare_cb, environment):
         script = self.script(environment)
-        evaluator = script._evaluator
+        inference_state = script._inference_state
 
         def comparison(definition):
             suffix = '()' if definition.type == 'instance' else ''
@@ -224,21 +224,19 @@ class IntegrationTestCase(object):
                 string = match.group(0)
                 parser = grammar36.parse(string, start_symbol='eval_input', error_recovery=False)
                 parser_utils.move(parser.get_root_node(), self.line_nr)
-                element = parser.get_root_node()
-                module_context = script._get_module()
-                # The context shouldn't matter for the test results.
-                user_context = get_user_scope(module_context, (self.line_nr, 0))
-                if user_context.api_type == 'function':
-                    user_context = user_context.get_function_execution()
-                element.parent = user_context.tree_node
-                results = convert_contexts(
-                    evaluator.eval_element(user_context, element),
-                )
+                node = parser.get_root_node()
+                module_context = script._get_module_context()
+                user_context = get_user_context(module_context, (self.line_nr, 0))
+                # TODO needed?
+                #if user_context._value.api_type == 'function':
+                #    user_context = user_context.get_function_execution()
+                node.parent = user_context.tree_node
+                results = convert_values(user_context.infer_node(node))
                 if not results:
                     raise Exception('Could not resolve %s on line %s'
                                     % (match.string, self.line_nr - 1))
 
-                should_be |= set(Definition(evaluator, r.name) for r in results)
+                should_be |= set(Definition(inference_state, r.name) for r in results)
             debug.dbg('Finished getting types', color='YELLOW')
 
             # Because the objects have different ids, `repr`, then compare.
@@ -258,7 +256,10 @@ class IntegrationTestCase(object):
     def run_usages(self, compare_cb, environment):
         result = self.script(environment).usages()
         self.correct = self.correct.strip()
-        compare = sorted((r.module_name, r.line, r.column) for r in result)
+        compare = sorted(
+            (re.sub(r'^test\.completion\.', '', r.module_name), r.line, r.column)
+            for r in result
+        )
         wanted = []
         if not self.correct:
             positions = []

@@ -9,7 +9,7 @@ from pytest import raises
 from parso import cache
 
 from jedi import preload_module
-from jedi.evaluate.gradual import typeshed
+from jedi.inference.gradual import typeshed
 
 
 def test_preload_modules():
@@ -219,15 +219,16 @@ def test_goto_assignments_follow_imports(Script):
 
 
 def test_goto_module(Script):
-    def check(line, expected):
+    def check(line, expected, follow_imports=False):
         script = Script(path=path, line=line)
-        module, = script.goto_assignments()
+        module, = script.goto_assignments(follow_imports=follow_imports)
         assert module.module_path == expected
 
     base_path = os.path.join(os.path.dirname(__file__), 'simple_import')
     path = os.path.join(base_path, '__init__.py')
 
     check(1, os.path.join(base_path, 'module.py'))
+    check(1, os.path.join(base_path, 'module.py'), follow_imports=True)
     check(5, os.path.join(base_path, 'module2.py'))
 
 

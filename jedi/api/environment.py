@@ -10,8 +10,8 @@ from collections import namedtuple
 
 from jedi._compatibility import highest_pickle_protocol, which
 from jedi.cache import memoize_method, time_cache
-from jedi.evaluate.compiled.subprocess import CompiledSubprocess, \
-    EvaluatorSameProcess, EvaluatorSubprocess
+from jedi.inference.compiled.subprocess import CompiledSubprocess, \
+    InferenceStateSameProcess, InferenceStateSubprocess
 
 import parso
 
@@ -109,8 +109,8 @@ class Environment(_BaseEnvironment):
         version = '.'.join(str(i) for i in self.version_info)
         return '<%s: %s in %s>' % (self.__class__.__name__, version, self.path)
 
-    def get_evaluator_subprocess(self, evaluator):
-        return EvaluatorSubprocess(evaluator, self._get_subprocess())
+    def get_inference_state_subprocess(self, inference_state):
+        return InferenceStateSubprocess(inference_state, self._get_subprocess())
 
     @memoize_method
     def get_sys_path(self):
@@ -140,8 +140,8 @@ class SameEnvironment(_SameEnvironmentMixin, Environment):
 
 
 class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
-    def get_evaluator_subprocess(self, evaluator):
-        return EvaluatorSameProcess(evaluator)
+    def get_inference_state_subprocess(self, inference_state):
+        return InferenceStateSameProcess(inference_state)
 
     def get_sys_path(self):
         return sys.path
@@ -286,7 +286,7 @@ def find_virtualenvs(paths=None, **kwargs):
             for path in os.listdir(directory):
                 path = os.path.join(directory, path)
                 if path in _used_paths:
-                    # A path shouldn't be evaluated twice.
+                    # A path shouldn't be inferred twice.
                     continue
                 _used_paths.add(path)
 

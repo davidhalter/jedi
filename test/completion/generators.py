@@ -24,7 +24,7 @@ next(gen_ret(1))
 #? []
 next(gen_ret()).
 
-# generators evaluate to true if cast by bool.
+# generators infer to true if cast by bool.
 a = ''
 if gen_ret():
     a = 3

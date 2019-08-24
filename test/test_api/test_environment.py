@@ -42,10 +42,10 @@ def test_versions(version):
     assert env.get_sys_path()
 
 
-def test_load_module(evaluator):
-    access_path = evaluator.compiled_subprocess.load_module(
+def test_load_module(inference_state):
+    access_path = inference_state.compiled_subprocess.load_module(
         dotted_name=u'math',
-        sys_path=evaluator.get_sys_path()
+        sys_path=inference_state.get_sys_path()
     )
     name, access_handle = access_path.accesses[0]
 
@@ -55,31 +55,31 @@ def test_load_module(evaluator):
         access_handle.py__mro__()
 
 
-def test_error_in_environment(evaluator, Script, environment):
+def test_error_in_environment(inference_state, Script, environment):
     if isinstance(environment, InterpreterEnvironment):
         pytest.skip("We don't catch these errors at the moment.")
 
     # Provoke an error to show how Jedi can recover from it.
     with pytest.raises(jedi.InternalError):
-        evaluator.compiled_subprocess._test_raise_error(KeyboardInterrupt)
+        inference_state.compiled_subprocess._test_raise_error(KeyboardInterrupt)
     # The second time it should raise an InternalError again.
     with pytest.raises(jedi.InternalError):
-        evaluator.compiled_subprocess._test_raise_error(KeyboardInterrupt)
+        inference_state.compiled_subprocess._test_raise_error(KeyboardInterrupt)
     # Jedi should still work.
     def_, = Script('str').goto_definitions()
     assert def_.name == 'str'
 
 
-def test_stdout_in_subprocess(evaluator, Script):
-    evaluator.compiled_subprocess._test_print(stdout='.')
+def test_stdout_in_subprocess(inference_state, Script):
+    inference_state.compiled_subprocess._test_print(stdout='.')
     Script('1').goto_definitions()
 
 
-def test_killed_subprocess(evaluator, Script, environment):
+def test_killed_subprocess(inference_state, Script, environment):
     if isinstance(environment, InterpreterEnvironment):
         pytest.skip("We cannot kill our own process")
     # Just kill the subprocess.
-    evaluator.compiled_subprocess._compiled_subprocess._get_process().kill()
+    inference_state.compiled_subprocess._compiled_subprocess._get_process().kill()
     # Since the process was terminated (and nobody knows about it) the first
     # Jedi call fails.
     with pytest.raises(jedi.InternalError):

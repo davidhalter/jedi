@@ -6,8 +6,8 @@ from jedi.api.environment import SameEnvironment, \
     get_cached_default_environment
 from jedi.api.exceptions import WrongVersion
 from jedi._compatibility import force_unicode
-from jedi.evaluate.sys_path import discover_buildout_paths
-from jedi.evaluate.cache import evaluator_as_method_param_cache
+from jedi.inference.sys_path import discover_buildout_paths
+from jedi.inference.cache import inference_state_as_method_param_cache
 from jedi.common.utils import traverse_parents
 
 _CONFIG_FOLDER = '.jedi'
@@ -77,8 +77,8 @@ class Project(object):
 
         py2_comp(path, **kwargs)
 
-    @evaluator_as_method_param_cache()
-    def _get_base_sys_path(self, evaluator, environment=None):
+    @inference_state_as_method_param_cache()
+    def _get_base_sys_path(self, inference_state, environment=None):
         if self._sys_path is not None:
             return self._sys_path
 
@@ -93,8 +93,8 @@ class Project(object):
             pass
         return sys_path
 
-    @evaluator_as_method_param_cache()
-    def _get_sys_path(self, evaluator, environment=None, add_parent_paths=True):
+    @inference_state_as_method_param_cache()
+    def _get_sys_path(self, inference_state, environment=None, add_parent_paths=True):
         """
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
@@ -102,15 +102,15 @@ class Project(object):
         suffixed = []
         prefixed = []
 
-        sys_path = list(self._get_base_sys_path(evaluator, environment))
+        sys_path = list(self._get_base_sys_path(inference_state, environment))
         if self._smart_sys_path:
             prefixed.append(self._path)
 
-            if evaluator.script_path is not None:
-                suffixed += discover_buildout_paths(evaluator, evaluator.script_path)
+            if inference_state.script_path is not None:
+                suffixed += discover_buildout_paths(inference_state, inference_state.script_path)
 
                 if add_parent_paths:
-                    traversed = list(traverse_parents(evaluator.script_path))
+                    traversed = list(traverse_parents(inference_state.script_path))
 
                     # AFAIK some libraries have imports like `foo.foo.bar`, which
                     # leads to the conclusion to by default prefer longer paths

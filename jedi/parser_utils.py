@@ -30,7 +30,7 @@ def get_executable_nodes(node, last_added=False):
         if last_added is False and node.parent.type != 'param' and next_leaf != '=':
             result.append(node)
     elif typ == 'expr_stmt':
-        # I think evaluating the statement (and possibly returned arrays),
+        # I think inferring the statement (and possibly returned arrays),
         # should be enough for static analysis.
         result.append(node)
         for child in node.children:
@@ -92,21 +92,6 @@ def get_flow_branch_keyword(flow_node, node):
         if first_leaf in _FLOW_KEYWORDS:
             keyword = first_leaf
     return 0
-
-
-def get_statement_of_position(node, pos):
-    for c in node.children:
-        if c.start_pos <= pos <= c.end_pos:
-            if c.type not in ('decorated', 'simple_stmt', 'suite',
-                              'async_stmt', 'async_funcdef') \
-                    and not isinstance(c, (tree.Flow, tree.ClassOrFunc)):
-                return c
-            else:
-                try:
-                    return get_statement_of_position(c, pos)
-                except AttributeError:
-                    pass  # Must be a non-scope
-    return None
 
 
 def clean_scope_docstring(scope_node):
@@ -294,4 +279,4 @@ def cut_value_at_position(leaf, position):
 
 
 def get_string_quote(leaf):
-    return re.match('\w*("""|\'{3}|"|\')', leaf.value).group(1)
+    return re.match(r'\w*("""|\'{3}|"|\')', leaf.value).group(1)

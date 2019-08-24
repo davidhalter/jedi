@@ -9,15 +9,13 @@ import warnings
 
 from jedi import settings
 from jedi import debug
-from jedi.evaluate.utils import unite
+from jedi.inference.utils import unite
 from jedi.cache import memoize_method
-from jedi.evaluate import imports
-from jedi.evaluate import compiled
-from jedi.evaluate.imports import ImportName
-from jedi.evaluate.context import FunctionExecutionContext
-from jedi.evaluate.gradual.typeshed import StubModuleContext
-from jedi.evaluate.gradual.conversion import convert_names, convert_contexts
-from jedi.evaluate.base_context import ContextSet
+from jedi.inference import imports
+from jedi.inference.imports import ImportName
+from jedi.inference.gradual.typeshed import StubModuleValue
+from jedi.inference.gradual.conversion import convert_names, convert_values
+from jedi.inference.base_value import ValueSet
 from jedi.api.keywords import KeywordName
 
 
@@ -25,20 +23,20 @@ def _sort_names_by_start_pos(names):
     return sorted(names, key=lambda s: s.start_pos or (0, 0))
 
 
-def defined_names(evaluator, context):
+def defined_names(inference_state, context):
     """
     List sub-definitions (e.g., methods in class).
 
     :type scope: Scope
     :rtype: list of Definition
     """
-    filter = next(context.get_filters(search_global=True))
+    filter = next(context.get_filters())
     names = [name for name in filter.values()]
-    return [Definition(evaluator, n) for n in _sort_names_by_start_pos(names)]
+    return [Definition(inference_state, n) for n in _sort_names_by_start_pos(names)]
 
 
-def _contexts_to_definitions(contexts):
-    return [Definition(c.evaluator, c.name) for c in contexts]
+def _values_to_definitions(values):
+    return [Definition(c.inference_state, c.name) for c in values]
 
 
 class BaseDefinition(object):
@@ -62,8 +60,8 @@ class BaseDefinition(object):
         'argparse._ActionsContainer': 'argparse.ArgumentParser',
     }.items())
 
-    def __init__(self, evaluator, name):
-        self._evaluator = evaluator
+    def __init__(self, inference_state, name):
+        self._inference_state = inference_state
         self._name = name
         """
         An instance of :class:`parso.python.tree.Name` subclass.
@@ -71,7 +69,7 @@ class BaseDefinition(object):
         self.is_keyword = isinstance(self._name, KeywordName)
 
     @memoize_method
-    def _get_module(self):
+    def _get_module_context(self):
         # This can take a while to complete, because in the worst case of
         # imports (consider `import a` completions), we need to load all
         # modules starting with a first.
@@ -80,11 +78,11 @@ class BaseDefinition(object):
     @property
     def module_path(self):
         """Shows the file path of a module. e.g. ``/usr/lib/python2.7/os.py``"""
-        module = self._get_module()
+        module = self._get_module_context()
         if module.is_stub() or not module.is_compiled():
             # Compiled modules should not return a module path even if they
             # have one.
-            return self._get_module().py__file__()
+            return self._get_module_context().py__file__()
 
         return None
 
@@ -97,7 +95,7 @@ class BaseDefinition(object):
 
         :rtype: str or None
         """
-        return self._name.string_name
+        return self._name.get_public_name()
 
     @property
     def type(self):
@@ -167,8 +165,8 @@ class BaseDefinition(object):
                 resolve = True
 
         if isinstance(self._name, imports.SubModuleName) or resolve:
-            for context in self._name.infer():
-                return context.api_type
+            for value in self._name.infer():
+                return value.api_type
         return self._name.api_type
 
     @property
@@ -183,14 +181,14 @@ class BaseDefinition(object):
         >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
-        return self._get_module().name.string_name
+        return self._get_module_context().py__name__()
 
     def in_builtin_module(self):
         """Whether this is a builtin module."""
-        if isinstance(self._get_module(), StubModuleContext):
-            return any(isinstance(context, compiled.CompiledObject)
-                       for context in self._get_module().non_stub_context_set)
-        return isinstance(self._get_module(), compiled.CompiledObject)
+        value = self._get_module_context().get_value()
+        if isinstance(value, StubModuleValue):
+            return any(v.is_compiled() for v in value.non_stub_value_set)
+        return value.is_compiled()
 
     @property
     def line(self):
@@ -244,7 +242,7 @@ class BaseDefinition(object):
     @property
     def description(self):
         """A textual description of the object."""
-        return self._name.string_name
+        return self._name.get_public_name()
 
     @property
     def full_name(self):
@@ -270,7 +268,7 @@ class BaseDefinition(object):
         be ``<module 'posixpath' ...>```. However most users find the latter
         more practical.
         """
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return None
 
         names = self._name.get_qualified_names(include_module_names=True)
@@ -286,7 +284,7 @@ class BaseDefinition(object):
         return '.'.join(names)
 
     def is_stub(self):
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return False
 
         return self._name.get_root_context().is_stub()
@@ -298,7 +296,7 @@ class BaseDefinition(object):
     def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return []
 
         names = convert_names(
@@ -306,7 +304,7 @@ class BaseDefinition(object):
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
-        return [self if n == self._name else Definition(self._evaluator, n)
+        return [self if n == self._name else Definition(self._inference_state, n)
                 for n in names]
 
     def infer(self, **kwargs):  # Python 2...
@@ -316,20 +314,20 @@ class BaseDefinition(object):
     def _infer(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return []
 
         # First we need to make sure that we have stub names (if possible) that
         # we can follow. If we don't do that, we can end up with the inferred
         # results of Python objects instead of stubs.
         names = convert_names([self._name], prefer_stubs=True)
-        contexts = convert_contexts(
-            ContextSet.from_sets(n.infer() for n in names),
+        values = convert_values(
+            ValueSet.from_sets(n.infer() for n in names),
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
-        resulting_names = [c.name for c in contexts]
-        return [self if n == self._name else Definition(self._evaluator, n)
+        resulting_names = [c.name for c in values]
+        return [self if n == self._name else Definition(self._inference_state, n)
                 for n in resulting_names]
 
     @property
@@ -343,10 +341,10 @@ class BaseDefinition(object):
         """
         # Only return the first one. There might be multiple one, especially
         # with overloading.
-        for context in self._name.infer():
-            for signature in context.get_signatures():
+        for value in self._name.infer():
+            for signature in value.get_signatures():
                 return [
-                    Definition(self._evaluator, n)
+                    Definition(self._inference_state, n)
                     for n in signature.get_param_names(resolve_stars=True)
                 ]
 
@@ -357,16 +355,16 @@ class BaseDefinition(object):
         raise AttributeError('There are no params defined on this.')
 
     def parent(self):
-        if not self._name.is_context_name:
+        if not self._name.is_value_name:
             return None
 
         context = self._name.parent_context
         if context is None:
             return None
-
-        if isinstance(context, FunctionExecutionContext):
-            context = context.function_context
-        return Definition(self._evaluator, context.name)
+        while context.name is None:
+            # Happens for comprehension contexts
+            context = context.parent_context
+        return Definition(self._inference_state, context.name)
 
     def __repr__(self):
         return "<%s %sname=%r, description=%r>" % (
@@ -386,7 +384,7 @@ class BaseDefinition(object):
         :return str: Returns the line(s) of code or an empty string if it's a
                      builtin.
         """
-        if not self._name.is_context_name or self.in_builtin_module():
+        if not self._name.is_value_name or self.in_builtin_module():
             return ''
 
         lines = self._name.get_root_context().code_lines
@@ -396,10 +394,10 @@ class BaseDefinition(object):
         return ''.join(lines[start_index:index + after + 1])
 
     def get_signatures(self):
-        return [Signature(self._evaluator, s) for s in self._name.infer().get_signatures()]
+        return [Signature(self._inference_state, s) for s in self._name.infer().get_signatures()]
 
     def execute(self):
-        return _contexts_to_definitions(self._name.infer().execute_evaluated())
+        return _values_to_definitions(self._name.infer().execute_with_values())
 
 
 class Completion(BaseDefinition):
@@ -407,8 +405,8 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, evaluator, name, stack, like_name_length):
-        super(Completion, self).__init__(evaluator, name)
+    def __init__(self, inference_state, name, stack, like_name_length):
+        super(Completion, self).__init__(inference_state, name)
 
         self._like_name_length = like_name_length
         self._stack = stack
@@ -429,7 +427,7 @@ class Completion(BaseDefinition):
                 # TODO this doesn't work for nested calls.
                 append += '='
 
-        name = self._name.string_name
+        name = self._name.get_public_name()
         if like_name:
             name = name[self._like_name_length:]
         return name + append
@@ -485,7 +483,7 @@ class Completion(BaseDefinition):
         return Definition.description.__get__(self)
 
     def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self._name.string_name)
+        return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
 
     @memoize_method
     def follow_definition(self):
@@ -512,8 +510,8 @@ class Definition(BaseDefinition):
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
     or :meth:`api.Script.goto_definitions`.
     """
-    def __init__(self, evaluator, definition):
-        super(Definition, self).__init__(evaluator, definition)
+    def __init__(self, inference_state, definition):
+        super(Definition, self).__init__(inference_state, definition)
 
     @property
     def description(self):
@@ -553,7 +551,7 @@ class Definition(BaseDefinition):
             if typ == 'function':
                 # For the description we want a short and a pythonic way.
                 typ = 'def'
-            return typ + ' ' + self._name.string_name
+            return typ + ' ' + self._name.get_public_name()
 
         definition = tree_name.get_definition() or tree_name
         # Remove the prefix, because that's not what we want for get_code
@@ -588,7 +586,7 @@ class Definition(BaseDefinition):
         """
         defs = self._name.infer()
         return sorted(
-            unite(defined_names(self._evaluator, d) for d in defs),
+            unite(defined_names(self._inference_state, d.as_context()) for d in defs),
             key=lambda s: s._name.start_pos or (0, 0)
         )
 
@@ -606,13 +604,13 @@ class Definition(BaseDefinition):
         return self._name.start_pos == other._name.start_pos \
             and self.module_path == other.module_path \
             and self.name == other.name \
-            and self._evaluator == other._evaluator
+            and self._inference_state == other._inference_state
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self._name.start_pos, self.module_path, self.name, self._evaluator))
+        return hash((self._name.start_pos, self.module_path, self.name, self._inference_state))
 
 
 class Signature(Definition):
@@ -621,8 +619,8 @@ class Signature(Definition):
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
-    def __init__(self, evaluator, signature):
-        super(Signature, self).__init__(evaluator, signature.name)
+    def __init__(self, inference_state, signature):
+        super(Signature, self).__init__(inference_state, signature.name)
         self._signature = signature
 
     @property
@@ -630,7 +628,7 @@ class Signature(Definition):
         """
         :return list of ParamDefinition:
         """
-        return [ParamDefinition(self._evaluator, n)
+        return [ParamDefinition(self._inference_state, n)
                 for n in self._signature.get_param_names(resolve_stars=True)]
 
     def to_string(self):
@@ -644,8 +642,8 @@ class CallSignature(Signature):
     return the `isinstance` function with its params. Without `(` it would
     return nothing.
     """
-    def __init__(self, evaluator, signature, call_details):
-        super(CallSignature, self).__init__(evaluator, signature)
+    def __init__(self, inference_state, signature, call_details):
+        super(CallSignature, self).__init__(inference_state, signature)
         self._call_details = call_details
         self._signature = signature
 
@@ -680,7 +678,7 @@ class ParamDefinition(Definition):
         """
         :return list of Definition:
         """
-        return _contexts_to_definitions(self._name.infer_default())
+        return _values_to_definitions(self._name.infer_default())
 
     def infer_annotation(self, **kwargs):
         """
@@ -689,7 +687,7 @@ class ParamDefinition(Definition):
         :param execute_annotation: If False, the values are not executed and
             you get classes instead of instances.
         """
-        return _contexts_to_definitions(self._name.infer_annotation(**kwargs))
+        return _values_to_definitions(self._name.infer_annotation(ignore_stars=True, **kwargs))
 
     def to_string(self):
         return self._name.to_string()
@@ -709,10 +707,10 @@ class ParamDefinition(Definition):
         return self._name.get_kind()
 
 
-def _format_signatures(context):
+def _format_signatures(value):
     return '\n'.join(
         signature.to_string()
-        for signature in context.get_signatures()
+        for signature in value.get_signatures()
     )
 
 
@@ -725,7 +723,7 @@ class _Help(object):
         self._name = definition
 
     @memoize_method
-    def _get_contexts(self, fast):
+    def _get_values(self, fast):
         if isinstance(self._name, ImportName) and fast:
             return {}
 
@@ -742,20 +740,20 @@ class _Help(object):
         """
         full_doc = ''
         # Using the first docstring that we see.
-        for context in self._get_contexts(fast=fast):
+        for value in self._get_values(fast=fast):
             if full_doc:
-                # In case we have multiple contexts, just return all of them
+                # In case we have multiple values, just return all of them
                 # separated by a few dashes.
                 full_doc += '\n' + '-' * 30 + '\n'
 
-            doc = context.py__doc__()
+            doc = value.py__doc__()
 
             signature_text = ''
-            if self._name.is_context_name:
+            if self._name.is_value_name:
                 if not raw:
-                    signature_text = _format_signatures(context)
-                if not doc and context.is_stub():
-                    for c in convert_contexts(ContextSet({context}), ignore_compiled=False):
+                    signature_text = _format_signatures(value)
+                if not doc and value.is_stub():
+                    for c in convert_values(ValueSet({value}), ignore_compiled=False):
                         doc = c.py__doc__()
                         if doc:
                             break

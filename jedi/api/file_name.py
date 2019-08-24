@@ -1,37 +1,13 @@
 import os
-import sys
 
 from jedi._compatibility import FileNotFoundError, force_unicode, scandir
-from jedi.evaluate.names import AbstractArbitraryName
+from jedi.inference.names import AbstractArbitraryName
 from jedi.api import classes
-from jedi.evaluate.helpers import get_str_or_none
+from jedi.inference.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
 
 
-if sys.version_info < (3,6) or True:
-    """
-    A super-minimal shim around listdir that behave like
-    scandir for the information we need.
-    """
-    class DirEntry:
-
-        def __init__(self, name, basepath):
-            self.name = name
-            self.basepath = basepath
-
-        def is_dir(self):
-            path_for_name = os.path.join(self.basepath, self.name)
-            return os.path.isdir(path_for_name)
-
-    def scandir(dir):
-        return [DirEntry(name, dir) for name in os.listdir(dir)]
-else:
-    from os import scandir
-
-
-
-
-def file_name_completions(evaluator, module_context, start_leaf, string,
+def file_name_completions(inference_state, module_context, start_leaf, string,
                           like_name, call_signatures_callback, code_lines, position):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
@@ -54,7 +30,7 @@ def file_name_completions(evaluator, module_context, start_leaf, string,
             is_in_os_path_join = False
         else:
             string = to_be_added + string
-    base_path = os.path.join(evaluator.project._path, string)
+    base_path = os.path.join(inference_state.project._path, string)
     try:
         listed = scandir(base_path)
     except FileNotFoundError:
@@ -77,8 +53,8 @@ def file_name_completions(evaluator, module_context, start_leaf, string,
                 name += os.path.sep
 
             yield classes.Completion(
-                evaluator,
-                FileName(evaluator, name[len(must_start_with) - like_name_length:]),
+                inference_state,
+                FileName(inference_state, name[len(must_start_with) - like_name_length:]),
                 stack=None,
                 like_name_length=like_name_length
             )
@@ -109,10 +85,10 @@ def _add_strings(context, nodes, add_slash=False):
     string = ''
     first = True
     for child_node in nodes:
-        contexts = context.eval_node(child_node)
-        if len(contexts) != 1:
+        values = context.infer_node(child_node)
+        if len(values) != 1:
             return None
-        c, = contexts
+        c, = values
         s = get_str_or_none(c)
         if s is None:
             return None
@@ -125,7 +101,7 @@ def _add_strings(context, nodes, add_slash=False):
 
 class FileName(AbstractArbitraryName):
     api_type = u'path'
-    is_context_name = False
+    is_value_name = False
 
 
 def _add_os_path_join(module_context, start_leaf, bracket_start):
@@ -140,10 +116,10 @@ def _add_os_path_join(module_context, start_leaf, bracket_start):
 
     if start_leaf.type == 'error_leaf':
         # Unfinished string literal, like `join('`
-        context_node = start_leaf.parent
-        index = context_node.children.index(start_leaf)
+        value_node = start_leaf.parent
+        index = value_node.children.index(start_leaf)
         if index > 0:
-            error_node = context_node.children[index - 1]
+            error_node = value_node.children[index - 1]
             if error_node.type == 'error_node' and len(error_node.children) >= 2:
                 index = -2
                 if error_node.children[-1].type == 'arglist':

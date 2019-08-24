@@ -45,18 +45,6 @@ class TestCallAndName:
         assert parser_utils.safe_literal_eval(literal.value) == 'hello'
 
 
-def test_user_statement_on_import():
-    """github #285"""
-    s = "from datetime import (\n" \
-        "    time)"
-
-    for pos in [(2, 1), (2, 4)]:
-        p = parse(s)
-        stmt = parser_utils.get_statement_of_position(p, pos)
-        assert isinstance(stmt, tree.Import)
-        assert [n.value for n in stmt.get_defined_names()] == ['time']
-
-
 def test_hex_values_in_docstring():
     source = r'''
         def foo(object):

@@ -12,7 +12,7 @@ from jedi._compatibility import py_version
 collect_ignore = [
     'setup.py',
     '__main__.py',
-    'jedi/evaluate/compiled/subprocess/__main__.py',
+    'jedi/inference/compiled/subprocess/__main__.py',
     'build/',
     'test/examples',
 ]

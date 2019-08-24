@@ -10,7 +10,7 @@ from . import refactor
 
 import jedi
 from jedi.api.environment import InterpreterEnvironment
-from jedi.evaluate.analysis import Warning
+from jedi.inference.analysis import Warning
 
 
 def pytest_addoption(parser):
@@ -162,10 +162,10 @@ def cwd_tmpdir(monkeypatch, tmpdir):
 
 
 @pytest.fixture
-def evaluator(Script):
-    return Script('')._evaluator
+def inference_state(Script):
+    return Script('')._inference_state
 
 
 @pytest.fixture
-def same_process_evaluator(Script):
-    return Script('', environment=InterpreterEnvironment())._evaluator
+def same_process_inference_state(Script):
+    return Script('', environment=InterpreterEnvironment())._inference_state

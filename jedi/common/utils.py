@@ -16,7 +16,7 @@ def traverse_parents(path, include_current=False):
 @contextmanager
 def monkeypatch(obj, attribute_name, new_value):
     """
-    Like pytest's monkeypatch, but as a context manager.
+    Like pytest's monkeypatch, but as a value manager.
     """
     old_value = getattr(obj, attribute_name)
     try:

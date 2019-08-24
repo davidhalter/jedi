@@ -131,12 +131,12 @@ New APIs:
 ++++++++++++++++++
 
 - The import logic has been rewritten to look more like Python's. There is now
-  an ``Evaluator.modules`` import cache, which resembles ``sys.modules``.
+  an ``InferState.modules`` import cache, which resembles ``sys.modules``.
 - Integrated the parser of 2to3. This will make refactoring possible. It will
   also be possible to check for error messages (like compiling an AST would give)
   in the future.
-- With the new parser, the evaluation also completely changed. It's now simpler
-  and more readable.
+- With the new parser, the type inference also completely changed. It's now
+  simpler and more readable.
 - Completely rewritten REPL completion.
 - Added ``jedi.names``, a command to do static analysis. Thanks to that
   sourcegraph guys for sponsoring this!

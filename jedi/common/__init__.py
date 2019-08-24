@@ -1,1 +1,1 @@
-from jedi.common.context import BaseContextSet, BaseContext
+from jedi.common.value import BaseValueSet, BaseValue

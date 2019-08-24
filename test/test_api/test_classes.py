@@ -8,7 +8,7 @@ import pytest
 
 import jedi
 from jedi import __doc__ as jedi_doc
-from jedi.evaluate.compiled import CompiledContextName
+from jedi.inference.compiled import CompiledValueName
 
 
 def test_is_keyword(Script):
@@ -287,6 +287,20 @@ def test_parent_on_completion(Script):
     assert parent.type == 'class'
 
 
+def test_parent_on_comprehension():
+    ns = jedi.names('''\
+    def spam():
+        return [i for i in range(5)]
+    ''', all_scopes=True)
+
+    assert [name.name for name in ns] == ['spam', 'i']
+
+    assert ns[0].parent().name == ''
+    assert ns[0].parent().type == 'module'
+    assert ns[1].parent().name == 'spam'
+    assert ns[1].parent().type == 'function'
+
+
 def test_type(Script):
     for c in Script('a = [str()]; a[0].').completions():
         if c.name == '__class__' and False:  # TODO fix.
@@ -386,7 +400,7 @@ def test_import(names):
     n = nms[1].goto_assignments()[0]
     # This is very special, normally the name doesn't chance, but since
     # os.path is a sys.modules hack, it does.
-    assert n.name in ('ntpath', 'posixpath', 'os2emxpath')
+    assert n.name in ('macpath', 'ntpath', 'posixpath', 'os2emxpath')
     assert n.type == 'module'
 
 
@@ -398,7 +412,7 @@ def test_import_alias(names):
     n = nms[0].goto_assignments()[0]
     assert n.name == 'json'
     assert n.type == 'module'
-    assert n._name._context.tree_node.type == 'file_input'
+    assert n._name._value.tree_node.type == 'file_input'
 
     assert nms[1].name == 'foo'
     assert nms[1].type == 'module'
@@ -407,7 +421,7 @@ def test_import_alias(names):
     assert len(ass) == 1
     assert ass[0].name == 'json'
     assert ass[0].type == 'module'
-    assert ass[0]._name._context.tree_node.type == 'file_input'
+    assert ass[0]._name._value.tree_node.type == 'file_input'
 
 
 def test_added_equals_to_params(Script):
@@ -436,7 +450,7 @@ def test_builtin_module_with_path(Script):
     confusing.
     """
     semlock, = Script('from _multiprocessing import SemLock').goto_definitions()
-    assert isinstance(semlock._name, CompiledContextName)
+    assert isinstance(semlock._name, CompiledValueName)
     assert semlock.module_path is None
     assert semlock.in_builtin_module() is True
     assert semlock.name == 'SemLock'

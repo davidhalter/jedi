@@ -83,7 +83,7 @@ def test_add_to_end(Script):
 
 def test_tokenizer_with_string_literal_backslash(Script):
     c = Script("statement = u'foo\\\n'; statement").goto_definitions()
-    assert c[0]._name._context.get_safe_value() == 'foo'
+    assert c[0]._name._value.get_safe_value() == 'foo'
 
 
 def test_ellipsis_without_getitem(Script, environment):

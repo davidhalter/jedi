@@ -1,6 +1,6 @@
 """
 Special cases of completions (typically special positions that caused issues
-with context parsing.
+with value parsing.
 """
 
 def pass_decorator(func):

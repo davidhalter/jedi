@@ -34,7 +34,7 @@ def test_in_empty_space(Script):
     assert def_.name == 'X'
 
 
-def test_indent_context(Script):
+def test_indent_value(Script):
     """
     If an INDENT is the next supposed token, we should still be able to
     complete.
@@ -44,7 +44,7 @@ def test_indent_context(Script):
     assert comp.name == 'isinstance'
 
 
-def test_keyword_context(Script):
+def test_keyword_value(Script):
     def get_names(*args, **kwargs):
         return [d.name for d in Script(*args, **kwargs).completions()]
 
@@ -89,7 +89,7 @@ def test_fake_subnodes(Script):
     Test the number of subnodes of a fake object.
 
     There was a bug where the number of child nodes would grow on every
-    call to :func:``jedi.evaluate.compiled.fake.get_faked``.
+    call to :func:``jedi.inference.compiled.fake.get_faked``.
 
     See Github PR#649 and isseu #591.
     """
@@ -101,8 +101,8 @@ def test_fake_subnodes(Script):
     for i in range(2):
         completions = Script('').completions()
         c = get_str_completion(completions)
-        str_context, = c._name.infer()
-        n = len(str_context.tree_node.children[-1].children)
+        str_value, = c._name.infer()
+        n = len(str_value.tree_node.children[-1].children)
         if i == 0:
             limit = n
         else:
@@ -223,7 +223,7 @@ se = s * 2 if s == '\\' else s
         (f2, os_path + 'join(dirname(__file__), "completion", "basi)', 33, ['on"']),
         (f2, os_path + 'join(dirname(__file__), "completion", "basi")', 33, ['on"']),
 
-        # join with one argument. join will not get evaluated and the result is
+        # join with one argument. join will not get inferred and the result is
         # that directories and in a slash. This is unfortunate, but doesn't
         # really matter.
         (f2, os_path + 'join("tes', 9, ['t"']),

@@ -10,11 +10,11 @@ sys.path.append(dirname(os.path.abspath('thirdparty' + os.path.sep + 'asdf')))
 # syntax err
 sys.path.append('a' +* '/thirdparty')
 
-#? ['evaluate']
-import evaluate
+#? ['inference']
+import inference
 
-#? ['evaluator_function_cache']
-evaluate.Evaluator_fu
+#? ['inference_state_function_cache']
+inference.inference_state_fu
 
 # Those don't work because dirname and abspath are not properly understood.
 ##? ['jedi_']

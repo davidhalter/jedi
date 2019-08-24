@@ -36,7 +36,7 @@ definition = 0
 str(def
 
 
-# It might be hard to determine the context
+# It might be hard to determine the value
 class Foo(object):
     @property
     #? ['str']
