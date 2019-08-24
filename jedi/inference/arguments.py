@@ -12,7 +12,7 @@ from jedi.inference.names import ParamName, TreeNameDefinition
 from jedi.inference.base_value import NO_VALUES, ValueSet, ContextualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import inference_state_as_method_param_cache
-from jedi.inference.param import get_executed_params_and_issues
+from jedi.inference.param import get_executed_param_names_and_issues
 
 
 def try_iter_content(types, depth=0):
@@ -144,8 +144,8 @@ class _AbstractArgumentsMixin(object):
     def unpack(self, funcdef=None):
         raise NotImplementedError
 
-    def get_executed_params_and_issues(self, execution_context):
-        return get_executed_params_and_issues(execution_context, self)
+    def get_executed_param_names_and_issues(self, execution_context):
+        return get_executed_param_names_and_issues(execution_context, self)
 
     def get_calling_nodes(self):
         return []
@@ -158,7 +158,7 @@ class AbstractArguments(_AbstractArgumentsMixin):
 
 
 class AnonymousArguments(AbstractArguments):
-    def get_executed_params_and_issues(self, execution_context):
+    def get_executed_param_names_and_issues(self, execution_context):
         from jedi.inference.dynamic import search_params
         return search_params(
             execution_context.inference_state,

@@ -40,7 +40,7 @@ class AnonymousInstanceArguments(AnonymousArguments):
     def __init__(self, instance):
         self._instance = instance
 
-    def get_executed_params_and_issues(self, execution_context):
+    def get_executed_param_names_and_issues(self, execution_context):
         from jedi.inference.dynamic import search_params
         tree_params = execution_context.tree_node.get_params()
         if not tree_params:
@@ -542,8 +542,8 @@ class InstanceArguments(TreeArgumentsWrapper):
         for values in self._wrapped_arguments.unpack(func):
             yield values
 
-    def get_executed_params_and_issues(self, execution_context):
+    def get_executed_param_names_and_issues(self, execution_context):
         if isinstance(self._wrapped_arguments, AnonymousInstanceArguments):
-            return self._wrapped_arguments.get_executed_params_and_issues(execution_context)
+            return self._wrapped_arguments.get_executed_param_names_and_issues(execution_context)
 
-        return super(InstanceArguments, self).get_executed_params_and_issues(execution_context)
+        return super(InstanceArguments, self).get_executed_param_names_and_issues(execution_context)

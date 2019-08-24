@@ -98,7 +98,7 @@ def search_params(inference_state, execution_context, funcdef):
             )
             if function_executions:
                 zipped_params = zip(*list(
-                    function_execution.get_executed_params_and_issues()[0]
+                    function_execution.get_executed_param_names_and_issues()[0]
                     for function_execution in function_executions
                 ))
                 params = [DynamicExecutedParams(inference_state, executed_params)
@@ -205,7 +205,7 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
-            params, _ = value.parent_context.get_executed_params_and_issues()
+            params, _ = value.parent_context.get_executed_param_names_and_issues()
             if len(params) != 1:
                 continue
             values = params[0].infer()

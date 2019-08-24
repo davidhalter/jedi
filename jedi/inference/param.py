@@ -62,7 +62,7 @@ class ExecutedParam(object):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
-def get_executed_params_and_issues(execution_context, arguments):
+def get_executed_param_names_and_issues(execution_context, arguments):
     def too_many_args(argument):
         m = _error_argument_count(funcdef, len(unpacked_va))
         # Just report an error for the first param that is not needed (like

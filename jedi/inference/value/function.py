@@ -286,11 +286,11 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
                                              origin_scope=origin_scope)
 
     @inference_state_method_cache()
-    def get_executed_params_and_issues(self):
-        return self.var_args.get_executed_params_and_issues(self)
+    def get_executed_param_names_and_issues(self):
+        return self.var_args.get_executed_param_names_and_issues(self)
 
     def matches_signature(self):
-        executed_params, issues = self.get_executed_params_and_issues()
+        executed_params, issues = self.get_executed_param_names_and_issues()
         if issues:
             return False
 
