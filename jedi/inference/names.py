@@ -207,10 +207,15 @@ class ParamNameInterface(_ParamMixin):
     def to_string(self):
         raise NotImplementedError
 
-    def get_param(self):
-        # TODO document better where this is used and when. Currently it has
-        #      very limited use, but is still in use. It's currently not even
-        #      clear what values would be allowed.
+    def get_executed_param_name(self):
+        """
+        For dealing with type inference and working around the graph, we
+        sometimes want to have the param name of the execution. This feels a
+        bit strange and we might have to refactor at some point.
+
+        For now however it exists to avoid infering params when we don't really
+        need them (e.g. when we can just instead use annotations.
+        """
         return None
 
     @property
@@ -310,9 +315,9 @@ class ParamName(BaseTreeParamName):
         if doc_params:
             return doc_params
 
-        return self.get_param().infer()
+        return self.get_executed_param_name().infer()
 
-    def get_param(self):
+    def get_executed_param_name(self):
         params_names, _ = self.parent_context.get_executed_param_names_and_issues()
         return params_names[self._get_param_node().position_index]
 

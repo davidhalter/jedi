@@ -290,7 +290,7 @@ class TreeArguments(AbstractArguments):
                     break
                 if not isinstance(names[0], ParamName):
                     break
-                param = names[0].get_param()
+                param = names[0].get_executed_param_name()
                 if isinstance(param, DynamicExecutedParamName):
                     # For dynamic searches we don't even want to see errors.
                     return []
