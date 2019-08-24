@@ -313,9 +313,9 @@ class ParamName(BaseTreeParamName):
         return self.get_param().infer()
 
     def get_param(self):
-        params, _ = self.parent_context.get_executed_param_names_and_issues()
+        params_names, _ = self.parent_context.get_executed_param_names_and_issues()
         param_node = search_ancestor(self.tree_name, 'param')
-        return params[param_node.position_index]
+        return params_names[param_node.position_index]
 
 
 class ParamNameWrapper(_ParamMixin):

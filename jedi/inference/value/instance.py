@@ -51,13 +51,13 @@ class AnonymousInstanceArguments(AnonymousArguments):
             # If the only param is self, we don't need to try to find
             # executions of this function, we have all the params already.
             return [self_param], []
-        executed_params = list(search_param_names(
+        executed_param_names = list(search_param_names(
             execution_context.inference_state,
             execution_context,
             execution_context.tree_node
         ))
-        executed_params[0] = self_param
-        return executed_params, []
+        executed_param_names[0] = self_param
+        return executed_param_names, []
 
 
 class AbstractInstanceValue(Value):

@@ -25,13 +25,13 @@ class ExecutedParamName(ParamName):
         self._lazy_value = lazy_value
         self._is_default = is_default
 
-    def infer(self, use_hints=True):
+    def infer(self):
         return self._lazy_value.infer()
 
     def matches_signature(self):
         if self._is_default:
             return True
-        argument_values = self.infer(use_hints=False).py__class__()
+        argument_values = self.infer().py__class__()
         if self.get_kind() in (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD):
             return True
         annotations = self.infer_annotation(execute_annotation=False)

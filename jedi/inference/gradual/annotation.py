@@ -246,10 +246,10 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
     context = execution_context.function_value.get_default_param_context()
 
     annotation_variable_results = {}
-    executed_params, _ = execution_context.get_executed_param_names_and_issues()
-    for executed_param in executed_params:
+    executed_param_names, _ = execution_context.get_executed_param_names_and_issues()
+    for executed_param_name in executed_param_names:
         try:
-            annotation_node = annotation_dict[executed_param.string_name]
+            annotation_node = annotation_dict[executed_param_name.string_name]
         except KeyError:
             continue
 
@@ -257,8 +257,8 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
         if annotation_variables:
             # Infer unknown type var
             annotation_value_set = context.infer_node(annotation_node)
-            kind = executed_param.get_kind()
-            actual_value_set = executed_param.infer(use_hints=False)
+            kind = executed_param_name.get_kind()
+            actual_value_set = executed_param_name.infer()
             if kind is Parameter.VAR_POSITIONAL:
                 actual_value_set = actual_value_set.merge_types_of_iterate()
             elif kind is Parameter.VAR_KEYWORD:

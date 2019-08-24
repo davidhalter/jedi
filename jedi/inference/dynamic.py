@@ -26,7 +26,7 @@ from jedi.inference.param import create_default_params
 from jedi.inference.helpers import is_stdlib_path
 from jedi.inference.utils import to_list
 from jedi.parser_utils import get_parent_scope
-from jedi.inference.value import ModuleValue, instance
+from jedi.inference.value import instance
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import recursion
 
@@ -39,9 +39,9 @@ class DynamicExecutedParams(object):
     Simulates being a parameter while actually just being multiple params.
     """
 
-    def __init__(self, inference_state, executed_params):
+    def __init__(self, inference_state, executed_param_names):
         self.inference_state = inference_state
-        self._executed_params = executed_params
+        self._executed_param_names = executed_param_names
 
     def infer(self):
         with recursion.execution_allowed(self.inference_state, self) as allowed:
@@ -49,7 +49,7 @@ class DynamicExecutedParams(object):
             # anonymous functions can create an anonymous parameter that is
             # more or less self referencing.
             if allowed:
-                return ValueSet.from_sets(p.infer() for p in self._executed_params)
+                return ValueSet.from_sets(p.infer() for p in self._executed_param_names)
             return NO_VALUES
 
 
@@ -97,12 +97,12 @@ def search_param_names(inference_state, execution_context, funcdef):
                 string_name=string_name,
             )
             if function_executions:
-                zipped_params = zip(*list(
+                zipped_param_names = zip(*list(
                     function_execution.get_executed_param_names_and_issues()[0]
                     for function_execution in function_executions
                 ))
-                params = [DynamicExecutedParams(inference_state, executed_params)
-                          for executed_params in zipped_params]
+                params = [DynamicExecutedParams(inference_state, executed_param_names)
+                          for executed_param_names in zipped_param_names]
             else:
                 return create_default_params(execution_context, funcdef)
         finally:
@@ -129,7 +129,7 @@ def _search_function_executions(inference_state, module_context, funcdef, string
     i = 0
     for for_mod_context in imports.get_module_contexts_containing_name(
             inference_state, [module_context], string_name):
-        for name, trailer in _get_possible_nodes(for_mod_context, string_name):
+        for name, trailer in _get_potential_nodes(for_mod_context, string_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion
@@ -162,7 +162,7 @@ def _get_lambda_name(node):
     return None
 
 
-def _get_possible_nodes(module_value, func_string_name):
+def _get_potential_nodes(module_value, func_string_name):
     try:
         names = module_value.tree_node.get_used_names()[func_string_name]
     except KeyError:
@@ -205,16 +205,17 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
-            params, _ = value.parent_context.get_executed_param_names_and_issues()
-            if len(params) != 1:
+            param_names, _ = value.parent_context.get_executed_param_names_and_issues()
+            if len(param_names) != 1:
                 continue
-            values = params[0].infer()
+            values = param_names[0].infer()
             nodes = [v.tree_node for v in values]
             if nodes == [compare_node]:
                 # Found a decorator.
                 module_context = context.get_root_context()
                 execution_context = next(create_func_excs(value))
-                for name, trailer in _get_possible_nodes(module_context, params[0].string_name):
+                potential_nodes = _get_potential_nodes(module_context, param_names[0].string_name)
+                for name, trailer in potential_nodes:
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
                         random_context = execution_context.create_context(name)
                         iterator = _check_name_for_execution(

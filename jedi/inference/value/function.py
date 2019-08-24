@@ -290,12 +290,12 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
         return self.var_args.get_executed_param_names_and_issues(self)
 
     def matches_signature(self):
-        executed_params, issues = self.get_executed_param_names_and_issues()
+        executed_param_names, issues = self.get_executed_param_names_and_issues()
         if issues:
             return False
 
-        matches = all(executed_param.matches_signature()
-                      for executed_param in executed_params)
+        matches = all(executed_param_name.matches_signature()
+                      for executed_param_name in executed_param_names)
         if debug.enable_notice:
             signature = parser_utils.get_call_signature(self.tree_node)
             if matches:
