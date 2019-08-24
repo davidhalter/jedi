@@ -9,7 +9,7 @@ import re
 
 from parso import ParserSyntaxError, parse
 
-from jedi._compatibility import force_unicode
+from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
@@ -257,11 +257,11 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
         if annotation_variables:
             # Infer unknown type var
             annotation_value_set = context.infer_node(annotation_node)
-            star_count = executed_param._param_node.star_count
+            kind = executed_param.get_kind()
             actual_value_set = executed_param.infer(use_hints=False)
-            if star_count == 1:
+            if kind is Parameter.VAR_POSITIONAL:
                 actual_value_set = actual_value_set.merge_types_of_iterate()
-            elif star_count == 2:
+            elif kind is Parameter.VAR_KEYWORD:
                 # TODO _dict_values is not public.
                 actual_value_set = actual_value_set.try_merge('_dict_values')
             for ann in annotation_value_set:

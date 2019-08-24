@@ -6,6 +6,7 @@ from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, \
     LazyTreeValue, LazyUnknownValue
 from jedi.inference.value import iterable
+from jedi._compatibility import Parameter
 
 
 def _add_argument_issue(error_name, lazy_value, message):
@@ -20,7 +21,6 @@ class ExecutedParam(object):
     """Fake a param and give it values."""
     def __init__(self, execution_context, param_node, lazy_value, is_default=False):
         self._execution_context = execution_context
-        self._param_node = param_node
         from jedi.inference.names import ParamName
         self._name = ParamName(execution_context, param_node.name)
         self._lazy_value = lazy_value
@@ -30,11 +30,14 @@ class ExecutedParam(object):
     def infer(self, use_hints=True):
         return self._lazy_value.infer()
 
+    def get_kind(self):
+        return self._name.get_kind()
+
     def matches_signature(self):
         if self._is_default:
             return True
         argument_values = self.infer(use_hints=False).py__class__()
-        if self._param_node.star_count:
+        if self._name.get_kind() in (Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD):
             return True
         annotations = self._name.infer_annotation(execute_annotation=False)
         if not annotations:
