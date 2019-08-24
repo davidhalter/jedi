@@ -159,8 +159,8 @@ class AbstractArguments(_AbstractArgumentsMixin):
 
 class AnonymousArguments(AbstractArguments):
     def get_executed_param_names_and_issues(self, execution_context):
-        from jedi.inference.dynamic import search_params
-        return search_params(
+        from jedi.inference.dynamic import search_param_names
+        return search_param_names(
             execution_context.inference_state,
             execution_context,
             execution_context.tree_node

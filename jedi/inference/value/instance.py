@@ -41,7 +41,7 @@ class AnonymousInstanceArguments(AnonymousArguments):
         self._instance = instance
 
     def get_executed_param_names_and_issues(self, execution_context):
-        from jedi.inference.dynamic import search_params
+        from jedi.inference.dynamic import search_param_names
         tree_params = execution_context.tree_node.get_params()
         if not tree_params:
             return [], []
@@ -51,7 +51,7 @@ class AnonymousInstanceArguments(AnonymousArguments):
             # If the only param is self, we don't need to try to find
             # executions of this function, we have all the params already.
             return [self_param], []
-        executed_params = list(search_params(
+        executed_params = list(search_param_names(
             execution_context.inference_state,
             execution_context,
             execution_context.tree_node

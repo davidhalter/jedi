@@ -54,7 +54,7 @@ class DynamicExecutedParams(object):
 
 
 @debug.increase_indent
-def search_params(inference_state, execution_context, funcdef):
+def search_param_names(inference_state, execution_context, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
