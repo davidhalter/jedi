@@ -5,7 +5,6 @@ from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, \
     LazyTreeValue, LazyUnknownValue
-from jedi.inference import docstrings
 from jedi.inference.value import iterable
 
 
@@ -31,11 +30,6 @@ class ExecutedParam(object):
         return infer_param(self._execution_context, self._param_node)
 
     def infer(self, use_hints=True):
-        if use_hints:
-            doc_params = docstrings.infer_param(self._execution_context, self._param_node)
-            if doc_params:
-                return doc_params
-
         return self._lazy_value.infer()
 
     def matches_signature(self):

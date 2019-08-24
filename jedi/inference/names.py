@@ -4,6 +4,7 @@ from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
 from jedi.inference.base_value import ValueSet, NO_VALUES
+from jedi.inference import docstrings
 from jedi.cache import memoize_method
 
 
@@ -302,6 +303,11 @@ class ParamName(BaseTreeParamName):
         values = self.infer_annotation()
         if values:
             return values
+
+        doc_params = docstrings.infer_param(self.parent_context, self._get_param_node())
+        if doc_params:
+            return doc_params
+
         return self.get_param().infer()
 
     def get_param(self):
