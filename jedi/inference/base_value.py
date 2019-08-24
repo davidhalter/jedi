@@ -99,7 +99,9 @@ class HelperValueMixin(object):
         f = finder.NameFinder(self.inference_state, self, name_context, name_or_str,
                               analysis_errors=analysis_errors)
         filters = self._get_value_filters(name_or_str)
-        return f.filter_name(filters), f
+        names = f.filter_name(filters)
+        debug.dbg('Context.goto %s in (%s): %s', name_or_str, self, names)
+        return names, f
 
     def py__await__(self):
         await_value_set = self.py__getattribute__(u"__await__")

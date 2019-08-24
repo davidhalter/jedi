@@ -5,6 +5,7 @@ from parso.python.tree import Name
 
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
     GlobalNameFilter
+from jedi import debug
 from jedi import parser_utils
 
 
@@ -28,7 +29,9 @@ class AbstractContext(object):
         filters = _get_global_filters_for_name(
             self, name_or_str if isinstance(name_or_str, Name) else None, position,
         )
-        return f.filter_name(filters), f
+        names = f.filter_name(filters)
+        debug.dbg('Context.goto %s in (%s): %s', name_or_str, self, names)
+        return names, f
 
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            analysis_errors=True):

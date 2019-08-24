@@ -90,8 +90,6 @@ class NameFinder(object):
             if names:
                 break
 
-        debug.dbg('finder.filter_name %s in (%s): %s@%s',
-                  self._string_name, self._context, names, self._position)
         return list(names)
 
     def _names_to_types(self, names):
