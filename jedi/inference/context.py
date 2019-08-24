@@ -358,6 +358,9 @@ class CompForContext(TreeContextMixin, AbstractContext):
     def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self)
 
+    def py__name__(self):
+        return '<comprehension context>'
+
 
 class CompiledContext(ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
