@@ -194,7 +194,7 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             for execution in created_instance.create_init_executions():
                 yield execution
         else:
-            yield value.get_function_execution(args)
+            yield value.as_context(args)
 
     for value in inference_state.goto_definitions(context, name):
         value_node = value.tree_node

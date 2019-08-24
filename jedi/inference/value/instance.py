@@ -197,7 +197,7 @@ class AbstractInstanceValue(Value):
                     name.tree_name.parent
                 )
                 bound_method = BoundMethod(self, function)
-                yield bound_method.get_function_execution(self.var_args)
+                yield bound_method.as_context(self.var_args)
 
     @inference_state_method_cache()
     def create_instance_context(self, class_context, node):
@@ -215,9 +215,9 @@ class AbstractInstanceValue(Value):
                 )
                 bound_method = BoundMethod(self, func)
                 if scope.name.value == '__init__' and parent_context == class_context:
-                    return bound_method.get_function_execution(self.var_args)
+                    return bound_method.as_context(self.var_args)
                 else:
-                    return bound_method.get_function_execution()
+                    return bound_method.as_context()
             elif scope.type == 'classdef':
                 class_context = ClassValue(self.inference_state, parent_context, scope)
                 return class_context.as_context()
@@ -286,7 +286,7 @@ class TreeInstance(AbstractInstanceValue):
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
             bound = BoundMethod(self, func)
-            execution = bound.get_function_execution(self.var_args)
+            execution = bound.as_context(self.var_args)
             if not execution.matches_signature():
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
@@ -404,15 +404,15 @@ class BoundMethod(FunctionMixin, ValueWrapper):
 
         return InstanceArguments(self.instance, arguments)
 
-    def get_function_execution(self, arguments=None):
+    def as_context(self, arguments=None):
         arguments = self._get_arguments(arguments)
-        return super(BoundMethod, self).get_function_execution(arguments)
+        return super(BoundMethod, self).as_context(arguments)
 
     def py__call__(self, arguments):
         if isinstance(self._wrapped_value, OverloadedFunctionValue):
             return self._wrapped_value.py__call__(self._get_arguments(arguments))
 
-        function_execution = self.get_function_execution(arguments)
+        function_execution = self.as_context(arguments)
         return function_execution.infer()
 
     def get_signature_functions(self):

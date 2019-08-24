@@ -69,7 +69,7 @@ class FunctionMixin(object):
         return ValueSet([BoundMethod(instance, self)])
 
     def get_param_names(self):
-        function_execution = self.get_function_execution()
+        function_execution = self.as_context()
         return [ParamName(function_execution, param.name)
                 for param in self.tree_node.get_params()]
 
@@ -83,17 +83,13 @@ class FunctionMixin(object):
         return self.name.string_name
 
     def py__call__(self, arguments):
-        function_execution = self.get_function_execution(arguments)
+        function_execution = self.as_context(arguments)
         return function_execution.infer()
 
-    def get_function_execution(self, arguments=None):
+    def _as_context(self, arguments=None):
         if arguments is None:
             arguments = AnonymousArguments()
-
         return FunctionExecutionContext(self, arguments)
-
-    def _as_context(self):
-        return self.get_function_execution()
 
     def get_signatures(self):
         return [TreeSignature(f) for f in self.get_signature_functions()]
@@ -362,7 +358,7 @@ class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
         value_set = NO_VALUES
         matched = False
         for f in self._overloaded_functions:
-            function_execution = f.get_function_execution(arguments)
+            function_execution = f.as_context(arguments)
             function_executions.append(function_execution)
             if function_execution.matches_signature():
                 matched = True

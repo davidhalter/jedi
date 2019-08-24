@@ -227,7 +227,7 @@ def _infer_for_statement_string(module_context, string):
         module_context,
         funcdef
     )
-    func_execution_context = function_value.get_function_execution()
+    func_execution_context = function_value.as_context()
     # Use the module of the param.
     # TODO this module is not the module of the param in case of a function
     # call. In that case it's the module of the function call.

@@ -134,8 +134,8 @@ class HelperValueMixin(object):
         return self == class2
 
     @memoize_method
-    def as_context(self):
-        return self._as_context()
+    def as_context(self, *args, **kwargs):
+        return self._as_context(*args, **kwargs)
 
 
 class Value(HelperValueMixin, BaseValue):
