@@ -150,7 +150,7 @@ def comprehension_from_atom(inference_state, value, atom):
 
 class ComprehensionMixin(object):
     @inference_state_method_cache()
-    def _get_comp_for_value(self, parent_context, comp_for):
+    def _get_comp_for_context(self, parent_context, comp_for):
         return CompForContext(parent_context, comp_for)
 
     def _nested(self, comp_fors, parent_context=None):
@@ -169,18 +169,18 @@ class ComprehensionMixin(object):
         for i, lazy_value in enumerate(iterated):
             types = lazy_value.infer()
             dct = unpack_tuple_to_dict(parent_context, types, exprlist)
-            value_ = self._get_comp_for_value(
+            context = self._get_comp_for_context(
                 parent_context,
                 comp_for,
             )
-            with predefine_names(value_, comp_for, dct):
+            with predefine_names(context, comp_for, dct):
                 try:
-                    for result in self._nested(comp_fors[1:], value_):
+                    for result in self._nested(comp_fors[1:], context):
                         yield result
                 except IndexError:
-                    iterated = value_.infer_node(self._entry_node)
+                    iterated = context.infer_node(self._entry_node)
                     if self.array_type == 'dict':
-                        yield iterated, value_.infer_node(self._value_node)
+                        yield iterated, context.infer_node(self._value_node)
                     else:
                         yield iterated
 

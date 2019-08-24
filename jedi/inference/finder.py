@@ -28,11 +28,11 @@ from jedi.parser_utils import is_scope, get_parent_scope
 
 
 class NameFinder(object):
-    def __init__(self, context, name_value, name_or_str,
+    def __init__(self, context, name_context, name_or_str,
                  position=None, analysis_errors=True):
         # Make sure that it's not just a syntax tree node.
         self._context = context
-        self._name_context = name_value
+        self._name_context = name_context
         self._name = name_or_str
         if isinstance(name_or_str, tree.Name):
             self._string_name = name_or_str.value
