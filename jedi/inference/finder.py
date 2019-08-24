@@ -19,7 +19,6 @@ from parso.python import tree
 from parso.tree import search_ancestor
 from jedi import debug
 from jedi import settings
-from jedi.inference import flow_analysis
 from jedi.inference.arguments import TreeArguments
 from jedi.inference import helpers
 from jedi.inference.value import iterable
@@ -46,33 +45,6 @@ class NameFinder(object):
         :params bool attribute_lookup: Tell to logic if we're accessing the
             attribute or the contents of e.g. a function.
         """
-        found_predefined_types = None
-        # This paragraph is currently needed for proper branch type inference
-        # (static analysis).
-        if self._context.predefined_names and isinstance(self._name, tree.Name):
-            node = self._name
-            while node is not None and not is_scope(node):
-                node = node.parent
-                if node.type in ("if_stmt", "for_stmt", "comp_for", 'sync_comp_for'):
-                    try:
-                        name_dict = self._context.predefined_names[node]
-                        types = name_dict[self._string_name]
-                    except KeyError:
-                        continue
-                    else:
-                        found_predefined_types = types
-                        break
-
-        if found_predefined_types is not None and names:
-            check = flow_analysis.reachability_check(
-                context=self._context,
-                value_scope=self._context.tree_node,
-                node=self._name,
-            )
-            if check is flow_analysis.UNREACHABLE:
-                return NO_VALUES
-            return found_predefined_types
-
         values = ValueSet.from_sets(name.infer() for name in names)
         debug.dbg('finder._names_to_types: %s -> %s', names, values)
         if values:

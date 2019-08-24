@@ -6,6 +6,7 @@ from parso.python.tree import Name
 
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
     GlobalNameFilter
+from jedi.inference.base_value import NO_VALUES
 from jedi import debug
 from jedi import parser_utils
 
@@ -42,12 +43,42 @@ class AbstractContext(object):
         if name_context is None:
             name_context = self
         names, f = self._goto(name_or_str, position)
-        values = f.find(names, attribute_lookup=False)
+
+        string_name = name_or_str.value if isinstance(name_or_str, Name) else name_or_str
+
+        # This paragraph is currently needed for proper branch type inference
+        # (static analysis).
+        found_predefined_types = None
+        if self.predefined_names and isinstance(name_or_str, Name):
+            node = name_or_str
+            while node is not None and not parser_utils.is_scope(node):
+                node = node.parent
+                if node.type in ("if_stmt", "for_stmt", "comp_for", 'sync_comp_for'):
+                    try:
+                        name_dict = self.predefined_names[node]
+                        types = name_dict[string_name]
+                    except KeyError:
+                        continue
+                    else:
+                        found_predefined_types = types
+                        break
+        if found_predefined_types is not None and names:
+            from jedi.inference import flow_analysis
+            check = flow_analysis.reachability_check(
+                context=self,
+                value_scope=self.tree_node,
+                node=name_or_str,
+            )
+            if check is flow_analysis.UNREACHABLE:
+                values = NO_VALUES
+            else:
+                values = found_predefined_types
+        else:
+            values = f.find(names, attribute_lookup=False)
         if not names and not values and analysis_errors:
             if isinstance(name_or_str, Name):
                 from jedi.inference import analysis
-                message = ("NameError: name '%s' is not defined."
-                           % name_or_str if isinstance(name_or_str, Name) else name_or_str)
+                message = ("NameError: name '%s' is not defined." % string_name)
                 analysis.add(name_context, 'name-error', name_or_str, message)
         return values
 
