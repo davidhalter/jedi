@@ -1,10 +1,34 @@
 import os
+import sys
 
-from jedi._compatibility import FileNotFoundError, force_unicode
+from jedi._compatibility import FileNotFoundError, force_unicode, scandir
 from jedi.evaluate.names import AbstractArbitraryName
 from jedi.api import classes
 from jedi.evaluate.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
+
+
+if sys.version_info < (3,6) or True:
+    """
+    A super-minimal shim around listdir that behave like
+    scandir for the information we need.
+    """
+    class DirEntry:
+
+        def __init__(self, name, basepath):
+            self.name = name
+            self.basepath = basepath
+
+        def is_dir(self):
+            path_for_name = os.path.join(self.basepath, self.name)
+            return os.path.isdir(path_for_name)
+
+    def scandir(dir):
+        return [DirEntry(name, dir) for name in os.listdir(dir)]
+else:
+    from os import scandir
+
+
 
 
 def file_name_completions(evaluator, module_context, start_leaf, string,
@@ -32,13 +56,13 @@ def file_name_completions(evaluator, module_context, start_leaf, string,
             string = to_be_added + string
     base_path = os.path.join(evaluator.project._path, string)
     try:
-        listed = os.listdir(base_path)
+        listed = scandir(base_path)
     except FileNotFoundError:
         return
-    for name in listed:
+    for entry in listed:
+        name = entry.name
         if name.startswith(must_start_with):
-            path_for_name = os.path.join(base_path, name)
-            if is_in_os_path_join or not os.path.isdir(path_for_name):
+            if is_in_os_path_join or not entry.is_dir():
                 if start_leaf.type == 'string':
                     quote = get_string_quote(start_leaf)
                 else:

@@ -27,6 +27,27 @@ is_py35 = is_py3 and sys.version_info[1] >= 5
 py_version = int(str(sys.version_info[0]) + str(sys.version_info[1]))
 
 
+if sys.version_info[:2] < (3, 5):
+    """
+    A super-minimal shim around listdir that behave like
+    scandir for the information we need.
+    """
+    class _DirEntry:
+
+        def __init__(self, name, basepath):
+            self.name = name
+            self.basepath = basepath
+
+        def is_dir(self):
+            path_for_name = os.path.join(self.basepath, self.name)
+            return os.path.isdir(path_for_name)
+
+    def scandir(dir):
+        return [_DirEntry(name, dir) for name in os.listdir(dir)]
+else:
+    from os import scandir
+
+
 class DummyFile(object):
     def __init__(self, loader, string):
         self.loader = loader
