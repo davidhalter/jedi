@@ -31,8 +31,7 @@ from jedi.inference import recursion
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
     LazyTreeValue
 from jedi.inference.helpers import get_int_or_none, is_string, \
-    predefine_names, infer_call_of_leaf, reraise_getitem_errors, \
-    SimpleGetItemNotFound
+    infer_call_of_leaf, reraise_getitem_errors, SimpleGetItemNotFound
 from jedi.inference.utils import safe_property, to_list
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.filters import LazyAttributeOverwrite, publish_method
@@ -173,7 +172,7 @@ class ComprehensionMixin(object):
                 parent_context,
                 comp_for,
             )
-            with predefine_names(context, comp_for, dct):
+            with context.predefine_names(comp_for, dct):
                 try:
                     for result in self._nested(comp_fors[1:], context):
                         yield result

@@ -184,16 +184,6 @@ def get_module_names(module, all_scopes):
     return names
 
 
-@contextmanager
-def predefine_names(value, flow_scope, dct):
-    predefined = value.predefined_names
-    predefined[flow_scope] = dct
-    try:
-        yield
-    finally:
-        del predefined[flow_scope]
-
-
 def is_string(value):
     if value.inference_state.environment.version_info.major == 2:
         str_classes = (unicode, bytes)

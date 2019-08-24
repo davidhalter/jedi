@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from contextlib import contextmanager
 
 from parso.tree import search_ancestor
 from parso.python.tree import Name
@@ -87,6 +88,15 @@ class AbstractContext(object):
 
     def py__doc__(self):
         return ''
+
+    @contextmanager
+    def predefine_names(self, flow_scope, dct):
+        predefined = self.predefined_names
+        predefined[flow_scope] = dct
+        try:
+            yield
+        finally:
+            del predefined[flow_scope]
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._value)

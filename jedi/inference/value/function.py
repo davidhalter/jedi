@@ -7,7 +7,6 @@ from jedi.inference import compiled
 from jedi.inference import recursion
 from jedi.inference import docstrings
 from jedi.inference import flow_analysis
-from jedi.inference import helpers
 from jedi.inference.signature import TreeSignature
 from jedi.inference.arguments import AnonymousArguments
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
@@ -274,7 +273,7 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
                 ordered = list(ordered)
                 for lazy_value in ordered:
                     dct = {str(for_stmt.children[1].value): lazy_value.infer()}
-                    with helpers.predefine_names(self, for_stmt, dct):
+                    with self.predefine_names(for_stmt, dct):
                         for yield_in_same_for_stmt in yields:
                             for result in self._get_yield_lazy_value(yield_in_same_for_stmt):
                                 yield result

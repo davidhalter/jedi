@@ -13,7 +13,6 @@ from jedi.inference.base_value import ValueSet, NO_VALUES, ContextualizedNode, \
 from jedi.inference.lazy_value import LazyTreeValue
 from jedi.inference import compiled
 from jedi.inference import recursion
-from jedi.inference import helpers
 from jedi.inference import analysis
 from jedi.inference import imports
 from jedi.inference import arguments
@@ -323,7 +322,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
 
             for lazy_value in ordered:
                 dct = {for_stmt.children[1].value: lazy_value.infer()}
-                with helpers.predefine_names(context, for_stmt, dct):
+                with context.predefine_names(for_stmt, dct):
                     t = context.infer_node(rhs)
                     left = _infer_comparison(context, left, operator, t)
             value_set = left

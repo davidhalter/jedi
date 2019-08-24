@@ -209,7 +209,7 @@ class InferenceState(object):
             if len(name_dicts) > 1:
                 result = NO_VALUES
                 for name_dict in name_dicts:
-                    with helpers.predefine_names(context, if_stmt, name_dict):
+                    with context.predefine_names(if_stmt, name_dict):
                         result |= infer_node(context, element)
                 return result
             else:
