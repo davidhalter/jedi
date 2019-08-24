@@ -69,6 +69,15 @@ class HelperValueMixin(object):
                 for f in c.get_filters():
                     yield f
 
+    def goto(self, name_or_str, name_context=None, analysis_errors=True):
+        if name_context is None:
+            name_context = self
+        from jedi.inference import finder
+        filters = self._get_value_filters(name_or_str)
+        names = finder.filter_name(filters, name_or_str)
+        debug.dbg('context.goto %s in (%s): %s', name_or_str, self, names)
+        return names
+
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
                            analysis_errors=True):
         """
@@ -89,15 +98,6 @@ class HelperValueMixin(object):
                     name_context, self, name_or_str)
         debug.dbg('context.names_to_types: %s -> %s', names, values)
         return values
-
-    def goto(self, name_or_str, name_context=None, analysis_errors=True):
-        if name_context is None:
-            name_context = self
-        from jedi.inference import finder
-        filters = self._get_value_filters(name_or_str)
-        names = finder.filter_name(filters, name_or_str)
-        debug.dbg('Context.goto %s in (%s): %s', name_or_str, self, names)
-        return names
 
     def py__await__(self):
         await_value_set = self.py__getattribute__(u"__await__")

@@ -29,7 +29,7 @@ class AbstractContext(object):
             self, name_or_str if isinstance(name_or_str, Name) else None, position,
         )
         names = finder.filter_name(filters, name_or_str)
-        debug.dbg('Context.goto %s in (%s): %s', name_or_str, self, names)
+        debug.dbg('context.goto %s in (%s): %s', name_or_str, self, names)
         return names
 
     def py__getattribute__(self, name_or_str, name_context=None, position=None,
