@@ -61,20 +61,19 @@ def infer_import(context, tree_name):
     module_context = context.get_root_context()
     from_import_name, import_path, level, values = \
         _prepare_infer_import(module_context, tree_name)
-    if not values:
-        return NO_VALUES
+    if values:
 
-    if from_import_name is not None:
-        values = values.py__getattribute__(
-            from_import_name,
-            name_context=context,
-            analysis_errors=False
-        )
+        if from_import_name is not None:
+            values = values.py__getattribute__(
+                from_import_name,
+                name_context=context,
+                analysis_errors=False
+            )
 
-        if not values:
-            path = import_path + (from_import_name,)
-            importer = Importer(context.inference_state, path, module_context, level)
-            values = importer.follow()
+            if not values:
+                path = import_path + (from_import_name,)
+                importer = Importer(context.inference_state, path, module_context, level)
+                values = importer.follow()
     debug.dbg('after import: %s', values)
     return values
 

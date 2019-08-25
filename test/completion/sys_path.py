@@ -1,10 +1,10 @@
 
 import sys
 import os
-from os import dirname
+from os.path import dirname
 
 sys.path.insert(0, '../../jedi')
-sys.path.append(dirname(os.path.abspath('thirdparty' + os.path.sep + 'asdf')))
+sys.path.append(os.path.join(dirname(__file__), 'thirdparty'))
 
 # modifications, that should fail:
 # syntax err
@@ -17,8 +17,8 @@ import inference
 inference.inference_state_fu
 
 # Those don't work because dirname and abspath are not properly understood.
-##? ['jedi_']
+#? ['jedi_']
 import jedi_
 
-##? ['el']
+#? ['el']
 jedi_.el
