@@ -17,7 +17,6 @@ from jedi.inference.value.function import \
     FunctionValue, FunctionMixin, OverloadedFunctionValue
 from jedi.inference.value.klass import ClassValue, apply_py__get__, \
     ClassFilter
-from jedi.inference.value import iterable
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
 from jedi.parser_utils import get_parent_scope
 
@@ -39,7 +38,7 @@ class AnonymousInstanceArguments(AnonymousArguments):
         self._instance = instance
 
     def get_executed_param_names_and_issues(self, execution_context):
-        from jedi.inference.dynamic import search_param_names
+        from jedi.inference.dynamic_params import search_param_names
         tree_params = execution_context.tree_node.get_params()
         if not tree_params:
             return [], []

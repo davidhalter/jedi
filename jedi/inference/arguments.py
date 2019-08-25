@@ -159,7 +159,7 @@ class AbstractArguments(_AbstractArgumentsMixin):
 
 class AnonymousArguments(AbstractArguments):
     def get_executed_param_names_and_issues(self, execution_context):
-        from jedi.inference.dynamic import search_param_names
+        from jedi.inference.dynamic_params import search_param_names
         return search_param_names(
             execution_context.inference_state,
             execution_context,
@@ -275,7 +275,7 @@ class TreeArguments(AbstractArguments):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
 
     def get_calling_nodes(self):
-        from jedi.inference.dynamic import DynamicExecutedParamName
+        from jedi.inference.dynamic_params import DynamicExecutedParamName
         old_arguments_list = []
         arguments = self
 
