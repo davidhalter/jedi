@@ -643,9 +643,8 @@ class ItemGetterCallable(ValueWrapper):
                 # TODO we need to add the contextualized value.
                 value_set |= item_value_set.get_item(lazy_values[0].infer(), None)
             else:
-                value_set |= ValueSet([iterable.FakeSequence(
+                value_set |= ValueSet([iterable.FakeList(
                     self._wrapped_value.inference_state,
-                    'list',
                     [
                         LazyKnownValues(item_value_set.get_item(lazy_value.infer(), None))
                         for lazy_value in lazy_values

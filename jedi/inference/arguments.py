@@ -84,7 +84,7 @@ def _iterate_argument_clinic(inference_state, arguments, parameters):
                     break
 
                 lazy_values.append(argument)
-            yield ValueSet([iterable.FakeSequence(inference_state, u'tuple', lazy_values)])
+            yield ValueSet([iterable.FakeTuple(inference_state, lazy_values)])
             lazy_values
             continue
         elif stars == 2:

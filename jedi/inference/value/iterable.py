@@ -298,15 +298,14 @@ class DictComprehension(ComprehensionMixin, Sequence):
     @publish_method('values')
     def _imitate_values(self):
         lazy_value = LazyKnownValues(self._dict_values())
-        return ValueSet([FakeSequence(self.inference_state, u'list', [lazy_value])])
+        return ValueSet([FakeList(self.inference_state, [lazy_value])])
 
     @publish_method('items')
     def _imitate_items(self):
         lazy_values = [
             LazyKnownValue(
-                FakeSequence(
+                FakeTuple(
                     self.inference_state,
-                    u'tuple',
                     [LazyKnownValues(key),
                      LazyKnownValues(value)]
                 )
@@ -314,7 +313,7 @@ class DictComprehension(ComprehensionMixin, Sequence):
             for key, value in self._iterate()
         ]
 
-        return ValueSet([FakeSequence(self.inference_state, u'list', lazy_values)])
+        return ValueSet([FakeList(self.inference_state, lazy_values)])
 
     def get_mapping_item_values(self):
         return self._dict_keys(), self._dict_values()
@@ -469,19 +468,19 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
     @publish_method('values')
     def _imitate_values(self):
         lazy_value = LazyKnownValues(self._dict_values())
-        return ValueSet([FakeSequence(self.inference_state, u'list', [lazy_value])])
+        return ValueSet([FakeList(self.inference_state, [lazy_value])])
 
     @publish_method('items')
     def _imitate_items(self):
         lazy_values = [
-            LazyKnownValue(FakeSequence(
-                self.inference_state, u'tuple',
+            LazyKnownValue(FakeTuple(
+                self.inference_state,
                 (LazyTreeValue(self._defining_context, key_node),
                  LazyTreeValue(self._defining_context, value_node))
             )) for key_node, value_node in self.get_tree_entries()
         ]
 
-        return ValueSet([FakeSequence(self.inference_state, u'list', lazy_values)])
+        return ValueSet([FakeList(self.inference_state, lazy_values)])
 
     def _dict_keys(self):
         return ValueSet.from_sets(
@@ -493,14 +492,13 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
         return self._dict_keys(), self._dict_values()
 
 
-class FakeSequence(Sequence):
-    def __init__(self, inference_state, array_type, lazy_value_list):
+class _FakeSequence(Sequence):
+    def __init__(self, inference_state, lazy_value_list):
         """
         type should be one of "tuple", "list"
         """
-        super(FakeSequence, self).__init__(inference_state)
+        super(_FakeSequence, self).__init__(inference_state)
         self._lazy_value_list = lazy_value_list
-        self.array_type = array_type
 
     def py__simple_getitem__(self, index):
         if isinstance(index, slice):
@@ -518,6 +516,14 @@ class FakeSequence(Sequence):
 
     def __repr__(self):
         return "<%s of %s>" % (type(self).__name__, self._lazy_value_list)
+
+
+class FakeTuple(_FakeSequence):
+    array_type = u'tuple'
+
+
+class FakeList(_FakeSequence):
+    array_type = u'tuple'
 
 
 class FakeDict(_DictMixin, Sequence):
@@ -553,8 +559,8 @@ class FakeDict(_DictMixin, Sequence):
 
     @publish_method('values')
     def _values(self):
-        return ValueSet([FakeSequence(
-            self.inference_state, u'tuple',
+        return ValueSet([FakeTuple(
+            self.inference_state,
             [LazyKnownValues(self._dict_values())]
         )])
 
