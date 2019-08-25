@@ -18,6 +18,7 @@ from jedi.inference.value.function import \
 from jedi.inference.value.klass import ClassValue, apply_py__get__, \
     ClassFilter
 from jedi.inference.value import iterable
+from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
 from jedi.parser_utils import get_parent_scope
 
 
@@ -263,7 +264,7 @@ class TreeInstance(AbstractInstanceValue):
                 and parent_context.get_root_context().is_builtins_module():
             # compare the module path with the builtin name.
             if settings.dynamic_array_additions:
-                var_args = iterable.get_dynamic_array_instance(self, var_args)
+                var_args = get_dynamic_array_instance(self, var_args)
 
         super(TreeInstance, self).__init__(inference_state, parent_context,
                                            class_value, var_args)
