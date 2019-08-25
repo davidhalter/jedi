@@ -736,6 +736,10 @@ class _ArrayInstance(HelperValueMixin):
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
     It makes it possible to use set/list conversions.
+
+    This is not a proper context, because it doesn't have to be. It's not used
+    in the wild, it's just used within typeshed as an argument to `__init__`
+    for set/list and never used in any other place.
     """
     def __init__(self, instance, var_args):
         self.instance = instance
