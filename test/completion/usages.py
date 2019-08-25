@@ -150,8 +150,7 @@ class NestedClass():
         return self
 
 # Shouldn't find a definition, because there's other `instance`.
-# TODO reenable that test
-##< (0, 14),
+#< (0, 14),
 NestedClass().instance
 
 

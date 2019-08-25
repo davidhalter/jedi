@@ -240,8 +240,7 @@ cls().s
 
 import zipfile
 z = zipfile.ZipFile("foo")
-# It's too slow. So we don't run it at the moment.
-##? ['upper']
+#? ['upper']
 z.read('name').upper
 
 # -----------------
