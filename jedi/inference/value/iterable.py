@@ -385,7 +385,7 @@ class SequenceLiteralValue(Sequence):
                     yield LazyKnownValue(Slice(self._defining_context, None, None, None))
                 else:
                     yield LazyTreeValue(self._defining_context, node)
-            for addition in check_array_additions(self._defining_context, self):
+            for addition in _check_array_additions(self._defining_context, self):
                 yield addition
 
     def py__len__(self):
@@ -632,18 +632,18 @@ def unpack_tuple_to_dict(value, types, exprlist):
     raise NotImplementedError
 
 
-def check_array_additions(context, sequence):
-    """ Just a mapper function for the internal _check_array_additions """
+def _check_array_additions(context, sequence):
+    """ Just a mapper function for the internal _internal_check_array_additions """
     if sequence.array_type not in ('list', 'set'):
         # TODO also check for dict updates
         return NO_VALUES
 
-    return _check_array_additions(context, sequence)
+    return _internal_check_array_additions(context, sequence)
 
 
 @inference_state_method_cache(default=NO_VALUES)
 @debug.increase_indent
-def _check_array_additions(context, sequence):
+def _internal_check_array_additions(context, sequence):
     """
     Checks if a `Array` has "add" (append, insert, extend) statements:
 
@@ -757,7 +757,7 @@ class _ArrayInstance(HelperValueMixin):
 
         from jedi.inference import arguments
         if isinstance(var_args, arguments.TreeArguments):
-            additions = _check_array_additions(var_args.context, self.instance)
+            additions = _internal_check_array_additions(var_args.context, self.instance)
             for addition in additions:
                 yield addition
 
