@@ -493,21 +493,14 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
         return self._dict_keys(), self._dict_values()
 
 
-class _FakeArray(SequenceLiteralValue):
-    def __init__(self, inference_state, container, type):
-        super(SequenceLiteralValue, self).__init__(inference_state)
-        self.array_type = type
-        self.atom = container
-        # TODO is this class really needed?
-
-
-class FakeSequence(_FakeArray):
+class FakeSequence(Sequence):
     def __init__(self, inference_state, array_type, lazy_value_list):
         """
         type should be one of "tuple", "list"
         """
-        super(FakeSequence, self).__init__(inference_state, None, array_type)
+        super(FakeSequence, self).__init__(inference_state)
         self._lazy_value_list = lazy_value_list
+        self.array_type = array_type
 
     def py__simple_getitem__(self, index):
         if isinstance(index, slice):
@@ -527,9 +520,11 @@ class FakeSequence(_FakeArray):
         return "<%s of %s>" % (type(self).__name__, self._lazy_value_list)
 
 
-class FakeDict(_DictMixin, _FakeArray):
+class FakeDict(_DictMixin, Sequence):
+    array_type = u'dict'
+
     def __init__(self, inference_state, dct):
-        super(FakeDict, self).__init__(inference_state, dct, u'dict')
+        super(FakeDict, self).__init__(inference_state)
         self._dct = dct
 
     def py__iter__(self, contextualized_node=None):
@@ -576,9 +571,10 @@ class FakeDict(_DictMixin, _FakeArray):
         return self._dct.items()
 
 
-class MergedArray(_FakeArray):
+class MergedArray(Sequence):
     def __init__(self, inference_state, arrays):
-        super(MergedArray, self).__init__(inference_state, arrays, arrays[-1].array_type)
+        super(MergedArray, self).__init__(inference_state)
+        self.array_type = arrays[-1].array_type
         self._arrays = arrays
 
     def py__iter__(self, contextualized_node=None):
