@@ -591,14 +591,6 @@ class MergedArray(Sequence):
     def py__simple_getitem__(self, index):
         return ValueSet.from_sets(lazy_value.infer() for lazy_value in self.py__iter__())
 
-    def get_tree_entries(self):
-        for array in self._arrays:
-            for a in array.get_tree_entries():
-                yield a
-
-    def __len__(self):
-        return sum(len(a) for a in self._arrays)
-
 
 def unpack_tuple_to_dict(value, types, exprlist):
     """
