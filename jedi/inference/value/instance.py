@@ -270,6 +270,14 @@ class TreeInstance(AbstractInstanceValue):
         self.tree_node = class_value.tree_node
 
     @property
+    def array_type(self):
+        name = self.class_value.py__name__()
+        if name in ['list', 'set', 'dict'] \
+                and self.parent_context.get_root_context().is_builtins_module():
+            return name
+        return None
+
+    @property
     def name(self):
         return ValueName(self, self.class_value.name.tree_name)
 

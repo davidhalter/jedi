@@ -164,6 +164,9 @@ class Value(HelperValueMixin, BaseValue):
         )
         return NO_VALUES
 
+    def py__simple_getitem__(self, index):
+        raise SimpleGetItemNotFound
+
     def py__iter__(self, contextualized_node=None):
         if contextualized_node is not None:
             from jedi.inference import analysis
@@ -376,20 +379,16 @@ class ContextualizedName(ContextualizedNode):
 
 def _getitem(value, index_values, contextualized_node):
     # The actual getitem call.
-    simple_getitem = getattr(value, 'py__simple_getitem__', None)
-
     result = NO_VALUES
     unused_values = set()
     for index_value in index_values:
-        if simple_getitem is not None:
-
-            index = index_value.get_safe_value(default=None)
-            if type(index) in (float, int, str, unicode, slice, bytes):
-                try:
-                    result |= simple_getitem(index)
-                    continue
-                except SimpleGetItemNotFound:
-                    pass
+        index = index_value.get_safe_value(default=None)
+        if type(index) in (float, int, str, unicode, slice, bytes):
+            try:
+                result |= value.py__simple_getitem__(index)
+                continue
+            except SimpleGetItemNotFound:
+                pass
 
         unused_values.add(index_value)
 

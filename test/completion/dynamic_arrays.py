@@ -326,6 +326,15 @@ some_lst[0]
 #? int str tuple
 some_lst[1]
 
+some_lst2 = list([1])
+some_lst2[3] = ''
+#? int() str()
+some_lst2[0]
+#? str()
+some_lst2[3]
+#? int() str()
+some_lst2[2]
+
 # -----------------
 # set setitem/other modifications (should not work)
 # -----------------
@@ -356,4 +365,17 @@ some_dct['x']
 #? int float list tuple
 some_dct['unknown']
 #? float
+some_dct['a']
+
+some_dct = dict({'a': 1, 1: ''})
+some_dct = dict(a=1, x=''})
+#? int() str()
+some_dct['la']
+some_dct['x'] = list
+some_dct['y'] = tuple
+#? list
+some_dct['x']
+#? int() str() list tuple
+some_dct['unknown']
+#? int() str() list tuple
 some_dct['a']
