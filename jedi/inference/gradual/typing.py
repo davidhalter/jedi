@@ -143,7 +143,7 @@ class _WithIndexBase(_BaseTypingValue):
     def __init__(self, inference_state, parent_context, name, index_value, value_of_index):
         super(_WithIndexBase, self).__init__(inference_state, parent_context, name)
         self._index_value = index_value
-        self._value_of_index = value_of_index
+        self._context_of_index = value_of_index
 
     def __repr__(self):
         return '<%s: %s[%s]>' % (
@@ -179,12 +179,12 @@ class TypingValueWithIndex(_WithIndexBase):
             self.parent_context,
             self._tree_name,
             self._index_value,
-            self._value_of_index
+            self._context_of_index
         )])
 
     def gather_annotation_classes(self):
         return ValueSet.from_sets(
-            _iter_over_arguments(self._index_value, self._value_of_index)
+            _iter_over_arguments(self._index_value, self._context_of_index)
         )
 
 
@@ -285,7 +285,7 @@ class TypeAlias(LazyValueWrapper):
 
 class _ContainerBase(_WithIndexBase):
     def _get_getitem_values(self, index):
-        args = _iter_over_arguments(self._index_value, self._value_of_index)
+        args = _iter_over_arguments(self._index_value, self._context_of_index)
         for i, values in enumerate(args):
             if i == index:
                 return values
@@ -333,7 +333,7 @@ class Tuple(_ContainerBase):
             return self._get_getitem_values(0).execute_annotation()
 
         return ValueSet.from_sets(
-            _iter_over_arguments(self._index_value, self._value_of_index)
+            _iter_over_arguments(self._index_value, self._context_of_index)
         ).execute_annotation()
 
 
@@ -649,11 +649,11 @@ class LazyGenericClass(AbstractAnnotatedClass):
     def __init__(self, class_value, index_value, value_of_index):
         super(LazyGenericClass, self).__init__(class_value)
         self._index_value = index_value
-        self._value_of_index = value_of_index
+        self._context_of_index = value_of_index
 
     @inference_state_method_cache()
     def get_generics(self):
-        return list(_iter_over_arguments(self._index_value, self._value_of_index))
+        return list(_iter_over_arguments(self._index_value, self._context_of_index))
 
 
 class GenericClass(AbstractAnnotatedClass):
