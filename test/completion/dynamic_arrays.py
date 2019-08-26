@@ -307,3 +307,46 @@ lst.append('')
 #? float() int() str()
 lst[0]
 
+# -----------------
+# list setitem
+# -----------------
+
+some_lst = [int]
+some_lst[3] = str
+#? int
+some_lst[0]
+#? str
+some_lst[3]
+#? int str
+some_lst[2]
+
+some_lst[0] = tuple
+#? tuple
+some_lst[0]
+#? int str tuple
+some_lst[1]
+
+# -----------------
+# set setitem (should not work)
+# -----------------
+
+some_set = {int}
+some_set[3] = str
+#? int
+some_set[0]
+#? int
+some_set[3]
+
+# -----------------
+# dict setitem
+# -----------------
+
+some_dct = {'a': float, 1: int}
+some_dct['x'] = list
+some_dct['y'] = tuple
+#? list
+some_dct['x']
+#? int float list tuple
+some_dct['unknown']
+#? float
+some_dct['a']
