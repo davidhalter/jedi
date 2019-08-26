@@ -327,7 +327,7 @@ some_lst[0]
 some_lst[1]
 
 # -----------------
-# set setitem (should not work)
+# set setitem/other modifications (should not work)
 # -----------------
 
 some_set = {int}
@@ -336,6 +336,13 @@ some_set[3] = str
 some_set[0]
 #? int
 some_set[3]
+
+something = object()
+something[3] = str
+#? 
+something[0]
+#?
+something[3]
 
 # -----------------
 # dict setitem

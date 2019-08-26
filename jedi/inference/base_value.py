@@ -140,9 +140,12 @@ class HelperValueMixin(object):
 
 class Value(HelperValueMixin, BaseValue):
     """
-    To be defined by subclasses.
+    To be implemented by subclasses.
     """
     tree_node = None
+    # Possible values: None, tuple, list, dict and set. Here to deal with these
+    # very important containers.
+    array_type = None
 
     @property
     def api_type(self):
