@@ -118,15 +118,15 @@ class D(): pass
 class E(): pass
 lst = [1]
 lst.append(1.0)
-lst += [C]
+lst += [C()]
 s = set(lst)
 s.add("")
-s += [D]
+s += [D()]
 lst = list(s)
 lst.append({})
-lst += [E]
+lst += [E()]
 
-##? dict() int() float() str() C D E
+#? dict() int() float() str() C() D() E()
 lst[0]
 
 # -----------------
