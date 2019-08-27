@@ -13,7 +13,7 @@ from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
-    AbstractAnnotatedClass
+    AbstractAnnotatedClass, TypingClassValueWithIndex
 from jedi.inference.gradual.typing import GenericClass
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
@@ -275,10 +275,11 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
 
 def _merge_type_var_dicts(base_dict, new_dict):
     for type_var_name, values in new_dict.items():
-        try:
-            base_dict[type_var_name] |= values
-        except KeyError:
-            base_dict[type_var_name] = values
+        if values:
+            try:
+                base_dict[type_var_name] |= values
+            except KeyError:
+                base_dict[type_var_name] = values
 
 
 def _infer_type_vars(annotation_value, value_set):

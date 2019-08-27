@@ -285,7 +285,6 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
                                              until_position=until_position,
                                              origin_scope=origin_scope)
 
-    @inference_state_method_cache()
     def get_executed_param_names_and_issues(self):
         return self.var_args.get_executed_param_names_and_issues(self)
 

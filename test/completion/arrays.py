@@ -261,6 +261,9 @@ def y(a):
 #?
 y(**d)
 
+#? str()
+d['a']
+
 # problem with more complicated casts
 dic = {str(key): ''}
 #? str()

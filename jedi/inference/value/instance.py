@@ -195,6 +195,7 @@ class AbstractInstanceValue(Value):
                     name.tree_name.parent
                 )
                 bound_method = BoundMethod(self, function)
+
                 yield bound_method.as_context(self.var_args)
 
     @inference_state_method_cache()
@@ -288,22 +289,24 @@ class TreeInstance(AbstractInstanceValue):
         from jedi.inference.gradual.annotation import py__annotations__, \
             infer_type_vars_for_execution
 
-        for func in self._get_annotation_init_functions():
+        for signature in self.class_value.py__getattribute__('__init__').get_signatures():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
-            bound = BoundMethod(self, func)
-            execution = bound.as_context(self.var_args)
+            bound_method = BoundMethod(self, signature.value)
+            execution = bound_method.as_context(self.var_args)
             if not execution.matches_signature():
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
                 continue
 
             all_annotations = py__annotations__(execution.tree_node)
-            defined, = self.class_value.define_generics(
-                infer_type_vars_for_execution(execution, all_annotations),
-            )
-            debug.dbg('Inferred instance value as %s', defined, color='BLUE')
-            return defined
+            type_var_dict = infer_type_vars_for_execution(execution, all_annotations)
+            if type_var_dict:
+                defined, = self.class_value.define_generics(
+                    infer_type_vars_for_execution(execution, all_annotations),
+                )
+                debug.dbg('Inferred instance value as %s', defined, color='BLUE')
+                return defined
         return None
 
     def get_annotated_class_object(self):

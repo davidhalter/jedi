@@ -4,6 +4,7 @@ from parso.python import tree
 
 from jedi._compatibility import zip_longest
 from jedi import debug
+from jedi.cache import memoize_method
 from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
@@ -158,6 +159,7 @@ class AbstractArguments(_AbstractArgumentsMixin):
 
 
 class AnonymousArguments(AbstractArguments):
+    @memoize_method
     def get_executed_param_names_and_issues(self, execution_context):
         from jedi.inference.dynamic_params import search_param_names
         return search_param_names(
