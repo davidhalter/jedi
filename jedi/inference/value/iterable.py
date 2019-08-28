@@ -323,19 +323,6 @@ class SequenceLiteralValue(Sequence):
 
     def py__simple_getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
-        if self.array_type == u'dict':
-            compiled_obj_index = compiled.create_simple_object(self.inference_state, index)
-            for key, value in self.get_tree_entries():
-                for k in self._defining_context.infer_node(key):
-                    try:
-                        method = k.execute_operation
-                    except AttributeError:
-                        pass
-                    else:
-                        if method(compiled_obj_index, u'==').get_safe_value():
-                            return self._defining_context.infer_node(value)
-            raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
-
         if isinstance(index, slice):
             return ValueSet([self])
         else:
@@ -348,35 +335,19 @@ class SequenceLiteralValue(Sequence):
         While values returns the possible values for any array field, this
         function returns the value for a certain index.
         """
-        if self.array_type == u'dict':
-            # Get keys.
-            types = NO_VALUES
-            for k, _ in self.get_tree_entries():
-                types |= self._defining_context.infer_node(k)
-            # We don't know which dict index comes first, therefore always
-            # yield all the types.
-            for _ in types:
-                yield LazyKnownValues(types)
-        else:
-            for node in self.get_tree_entries():
-                if node == ':' or node.type == 'subscript':
-                    # TODO this should probably use at least part of the code
-                    #      of infer_subscript_list.
-                    yield LazyKnownValue(Slice(self._defining_context, None, None, None))
-                else:
-                    yield LazyTreeValue(self._defining_context, node)
-            for addition in check_array_additions(self._defining_context, self):
-                yield addition
+        for node in self.get_tree_entries():
+            if node == ':' or node.type == 'subscript':
+                # TODO this should probably use at least part of the code
+                #      of infer_subscript_list.
+                yield LazyKnownValue(Slice(self._defining_context, None, None, None))
+            else:
+                yield LazyTreeValue(self._defining_context, node)
+        for addition in check_array_additions(self._defining_context, self):
+            yield addition
 
     def py__len__(self):
         # This function is not really used often. It's more of a try.
         return len(self.get_tree_entries())
-
-    def _dict_values(self):
-        return ValueSet.from_sets(
-            self._defining_context.infer_node(v)
-            for k, v in self.get_tree_entries()
-        )
 
     def get_tree_entries(self):
         c = self.atom.children
@@ -445,6 +416,34 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
         self._defining_context = defining_context
         self.atom = atom
 
+    def py__simple_getitem__(self, index):
+        """Here the index is an int/str. Raises IndexError/KeyError."""
+        compiled_obj_index = compiled.create_simple_object(self.inference_state, index)
+        for key, value in self.get_tree_entries():
+            for k in self._defining_context.infer_node(key):
+                try:
+                    method = k.execute_operation
+                except AttributeError:
+                    pass
+                else:
+                    if method(compiled_obj_index, u'==').get_safe_value():
+                        return self._defining_context.infer_node(value)
+        raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
+
+    def py__iter__(self, contextualized_node=None):
+        """
+        While values returns the possible values for any array field, this
+        function returns the value for a certain index.
+        """
+        # Get keys.
+        types = NO_VALUES
+        for k, _ in self.get_tree_entries():
+            types |= self._defining_context.infer_node(k)
+        # We don't know which dict index comes first, therefore always
+        # yield all the types.
+        for _ in types:
+            yield LazyKnownValues(types)
+
     @publish_method('values')
     def _imitate_values(self):
         lazy_value = LazyKnownValues(self._dict_values())
@@ -461,6 +460,12 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
         ]
 
         return ValueSet([FakeList(self.inference_state, lazy_values)])
+
+    def _dict_values(self):
+        return ValueSet.from_sets(
+            self._defining_context.infer_node(v)
+            for k, v in self.get_tree_entries()
+        )
 
     def _dict_keys(self):
         return ValueSet.from_sets(
