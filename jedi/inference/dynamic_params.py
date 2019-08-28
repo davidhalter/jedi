@@ -46,7 +46,7 @@ class DynamicExecutedParamName(ParamNameWrapper):
 
     def infer(self):
         inf = self.parent_context.inference_state
-        with recursion.execution_allowed(inf, self) as allowed:
+        with recursion.execution_allowed(inf, self.tree_name) as allowed:
             # We need to catch recursions that may occur, because an
             # anonymous functions can create an anonymous parameter that is
             # more or less self referencing.
