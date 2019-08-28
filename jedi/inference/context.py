@@ -151,9 +151,6 @@ class AbstractContext(object):
         finally:
             del predefined[flow_scope]
 
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._value)
-
 
 class ValueContext(AbstractContext):
     """
@@ -360,6 +357,9 @@ class CompForContext(TreeContextMixin, AbstractContext):
 
     def py__name__(self):
         return '<comprehension context>'
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.tree_node)
 
 
 class CompiledContext(ValueContext):
