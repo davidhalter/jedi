@@ -368,7 +368,6 @@ some_dct['unknown']
 some_dct['a']
 
 some_dct = dict({'a': 1, 1: ''})
-some_dct = dict(a=1, x=''})
 #? int() str()
 some_dct['la']
 some_dct['x'] = list

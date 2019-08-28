@@ -323,7 +323,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
     is_annassign = first_operator not in ('=', None) and first_operator.type == 'operator'
     if is_annassign or is_setitem:
         # `=` is always the last character in aug assignments -> -1
-        name = stmt.get_defined_names()[0].value
+        name = stmt.get_defined_names(include_setitem=True)[0].value
         left_values = context.py__getattribute__(name, position=stmt.start_pos)
 
         if is_setitem:
@@ -594,7 +594,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             return value_set
 
     types = []
-    node = tree_name.get_definition(import_name_always=True)
+    node = tree_name.get_definition(import_name_always=True, include_setitem=True)
     if node is None:
         node = tree_name.parent
         if node.type == 'global_stmt':

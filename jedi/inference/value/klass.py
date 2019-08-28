@@ -120,7 +120,7 @@ class ClassFilter(ParserTreeFilter):
         # Filter for ClassVar variables
         # TODO this is not properly done, yet. It just checks for the string
         # ClassVar in the annotation, which can be quite imprecise. If we
-        # wanted to do this correct, we would have to resolve the ClassVar.
+        # wanted to do this correct, we would have to infer the ClassVar.
         if not from_instance:
             expr_stmt = name.get_definition()
             if expr_stmt is not None and expr_stmt.type == 'expr_stmt':
