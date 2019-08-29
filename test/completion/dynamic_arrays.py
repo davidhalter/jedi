@@ -370,11 +370,14 @@ some_dct['a']
 some_dct = dict({'a': 1, 1: ''})
 #? int() str()
 some_dct['la']
+#? int()
+some_dct['a']
+
 some_dct['x'] = list
 some_dct['y'] = tuple
 #? list
 some_dct['x']
 #? int() str() list tuple
 some_dct['unknown']
-#? int() str() list tuple
+#? int()
 some_dct['a']

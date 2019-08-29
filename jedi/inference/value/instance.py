@@ -342,6 +342,29 @@ class TreeInstance(AbstractInstanceValue):
                  self.get_function_slot_names(u'__getattribute__'))
         return self.execute_function_slots(names, name)
 
+    def py__simple_getitem__(self, index):
+        if self.array_type == 'dict':
+            # Logic for dict({'foo': bar}) and dict(foo=bar)
+            # reversed, because:
+            # >>> dict({'a': 1}, a=3)
+            # {'a': 3}
+            # TODO tuple initializations
+            # >>> dict([('a', 4)])
+            # {'a': 4}
+            for key, lazy_context in reversed(list(self.var_args.unpack())):
+                if key is None:
+                    values = ValueSet.from_sets(
+                        dct_value.py__simple_getitem__(index)
+                        for dct_value in lazy_context.infer()
+                        if dct_value.array_type == 'dict'
+                    )
+                    if values:
+                        return values
+                else:
+                    if key == index:
+                        return lazy_context.infer()
+        return super(TreeInstance, self).py__simple_getitem__(index)
+
 
 class AnonymousInstance(TreeInstance):
     def __init__(self, inference_state, parent_context, class_value):
