@@ -127,7 +127,8 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         if overloaded_funcs:
             return OverloadedFunctionValue(
                 function,
-                [create(f) for f in overloaded_funcs]
+                # Get them into the correct order: lower line first.
+                list(reversed([create(f) for f in overloaded_funcs]))
             )
         return function
 

@@ -281,10 +281,18 @@ d = dict(a=3, b='')
 x, = d.values()
 #? int() str()
 x
-#? int() str()
+#? int()
 d['a']
 #? int() str() None
 d.get('a')
+
+some_dct = dict({'a': 1, 'b': ''}, a=1.0)
+#? float()
+some_dct['a']
+#? str()
+some_dct['b']
+#? int() float() str()
+some_dct['c']
 
 # -----------------
 # with variable as index

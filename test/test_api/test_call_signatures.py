@@ -266,11 +266,11 @@ def _params(Script, source, line=None, column=None):
 def test_int_params(Script):
     sig1, sig2 = Script('int(').call_signatures()
     # int is defined as: `int(x[, base])`
-    assert len(sig1.params) == 2
+    assert len(sig1.params) == 1
     assert sig1.params[0].name == 'x'
-    assert sig1.params[1].name == 'base'
-    assert len(sig2.params) == 1
+    assert len(sig2.params) == 2
     assert sig2.params[0].name == 'x'
+    assert sig2.params[1].name == 'base'
 
 
 def test_pow_params(Script):

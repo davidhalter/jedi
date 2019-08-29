@@ -55,6 +55,8 @@ class AbstractSignature(_SignatureMixin):
         raise NotImplementedError
 
     def __repr__(self):
+        if self.value is self._function_value:
+            return '<%s: %s>' % (self.__class__.__name__, self.value)
         return '<%s: %s, %s>' % (self.__class__.__name__, self.value, self._function_value)
 
 

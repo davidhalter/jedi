@@ -42,7 +42,7 @@ class ExecutedParamName(ParamName):
         matches = any(c1.is_sub_class_of(c2)
                       for c1 in argument_values
                       for c2 in annotations.gather_annotation_classes())
-        debug.dbg("signature compare %s: %s <=> %s",
+        debug.dbg("param compare %s: %s <=> %s",
                   matches, argument_values, annotations, color='BLUE')
         return matches
 
