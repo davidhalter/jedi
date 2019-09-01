@@ -13,7 +13,7 @@ from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
-    AbstractAnnotatedClass, TypingClassValueWithIndex
+    AbstractAnnotatedClass
 from jedi.inference.gradual.typing import GenericClass
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
@@ -107,11 +107,11 @@ def _split_comment_param_declaration(decl_text):
 
 
 @inference_state_method_cache()
-def infer_param(execution_context, param, ignore_stars=False):
-    values = _infer_param(execution_context, param)
+def infer_param(function_value, param, ignore_stars=False):
+    values = _infer_param(function_value, param)
     if ignore_stars:
         return values
-    inference_state = execution_context.inference_state
+    inference_state = function_value.inference_state
     if param.star_count == 1:
         tuple_ = builtin_from_name(inference_state, 'tuple')
         return ValueSet([GenericClass(
@@ -128,7 +128,7 @@ def infer_param(execution_context, param, ignore_stars=False):
     return values
 
 
-def _infer_param(execution_context, param):
+def _infer_param(function_value, param):
     """
     Infers the type of a function parameter, using type annotations.
     """
@@ -161,7 +161,7 @@ def _infer_param(execution_context, param):
                 params_comments, all_params
             )
         from jedi.inference.value.instance import InstanceArguments
-        if isinstance(execution_context.var_args, InstanceArguments):
+        if function_value.is_bound_method():
             if index == 0:
                 # Assume it's self, which is already handled
                 return NO_VALUES
@@ -171,11 +171,11 @@ def _infer_param(execution_context, param):
 
         param_comment = params_comments[index]
         return _infer_annotation_string(
-            execution_context.function_value.get_default_param_context(),
+            function_value.get_default_param_context(),
             param_comment
         )
     # Annotations are like default params and resolve in the same way.
-    context = execution_context.function_value.get_default_param_context()
+    context = function_value.get_default_param_context()
     return infer_annotation(context, annotation)
 
 

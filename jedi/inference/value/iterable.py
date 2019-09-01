@@ -561,6 +561,9 @@ class FakeDict(_DictMixin, Sequence):
     def exact_key_items(self):
         return self._dct.items()
 
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self._dct)
+
 
 class MergedArray(Sequence):
     def __init__(self, inference_state, arrays):

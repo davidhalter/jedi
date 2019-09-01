@@ -56,7 +56,7 @@ class DynamicExecutedParamName(ParamNameWrapper):
 
 
 @debug.increase_indent
-def search_param_names(inference_state, execution_context, funcdef):
+def search_param_names(inference_state, function_value, funcdef):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -70,28 +70,28 @@ def search_param_names(inference_state, execution_context, funcdef):
     is.
     """
     if not settings.dynamic_params:
-        return create_default_params(execution_context, funcdef)
+        return create_default_params(function_value, funcdef)
 
     inference_state.dynamic_params_depth += 1
     try:
-        path = execution_context.get_root_context().py__file__()
+        path = function_value.get_root_context().py__file__()
         if path is not None and is_stdlib_path(path):
             # We don't want to search for usages in the stdlib. Usually people
             # don't work with it (except if you are a core maintainer, sorry).
             # This makes everything slower. Just disable it and run the tests,
             # you will see the slowdown, especially in 3.6.
-            return create_default_params(execution_context, funcdef)
+            return create_default_params(function_value, funcdef)
 
         if funcdef.type == 'lambdef':
             string_name = _get_lambda_name(funcdef)
             if string_name is None:
-                return create_default_params(execution_context, funcdef)
+                return create_default_params(function_value, funcdef)
         else:
             string_name = funcdef.name.value
         debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
 
         try:
-            module_context = execution_context.get_root_context()
+            module_context = function_value.get_root_context()
             function_executions = _search_function_executions(
                 inference_state,
                 module_context,
@@ -106,7 +106,7 @@ def search_param_names(inference_state, execution_context, funcdef):
                 params = [DynamicExecutedParamName(executed_param_names)
                           for executed_param_names in zipped_param_names]
             else:
-                return create_default_params(execution_context, funcdef)
+                return create_default_params(function_value, funcdef)
         finally:
             debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params

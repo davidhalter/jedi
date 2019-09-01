@@ -269,27 +269,22 @@ def _execute_array_values(inference_state, array):
 
 
 @inference_state_method_cache()
-def infer_param(execution_context, param):
-    from jedi.inference.value.instance import InstanceArguments
-    from jedi.inference.value import FunctionExecutionContext
-
+def infer_param(function_value, param):
     def infer_docstring(docstring):
         return ValueSet(
             p
             for param_str in _search_param_in_docstr(docstring, param.name.value)
             for p in _infer_for_statement_string(module_context, param_str)
         )
-    module_context = execution_context.get_root_context()
+    module_context = function_value.get_root_context()
     func = param.get_parent_function()
     if func.type == 'lambdef':
         return NO_VALUES
 
-    types = infer_docstring(execution_context.py__doc__())
-    if isinstance(execution_context, FunctionExecutionContext) \
-            and isinstance(execution_context.var_args, InstanceArguments) \
-            and execution_context.function_value.py__name__() == '__init__':
-        class_value = execution_context.var_args.instance.class_value
-        types |= infer_docstring(class_value.py__doc__())
+    types = infer_docstring(function_value.py__doc__())
+    if function_value.is_bound_method() \
+            and function_value.py__name__() == '__init__':
+        types |= infer_docstring(function_value.class_context.py__doc__())
 
     debug.dbg('Found param types for docstring: %s', types, color='BLUE')
     return types

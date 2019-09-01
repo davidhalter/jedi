@@ -34,7 +34,7 @@ from jedi.inference import usages
 from jedi.inference.arguments import try_iter_content
 from jedi.inference.helpers import get_module_names, infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
-from jedi.inference.names import TreeNameDefinition, ParamName
+from jedi.inference.names import TreeNameDefinition, SimpleParamName
 from jedi.inference.syntax_tree import tree_name_to_values
 from jedi.inference.value import ModuleValue
 from jedi.inference.base_value import ValueSet
@@ -504,14 +504,13 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         return definitions and is_def or references and not is_def
 
     def create_name(name):
+        context = module_context.create_context(name)
         if name.parent.type == 'param':
-            cls = ParamName
+            func = tree.search_ancestor(name, 'funcdef', 'lambdef')
+            func = context.get_root_context().create_value(func)
+            return SimpleParamName(func, name)
         else:
-            cls = TreeNameDefinition
-        return cls(
-            module_context.create_context(name),
-            name
-        )
+            return TreeNameDefinition(context, name)
 
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)

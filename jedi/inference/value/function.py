@@ -69,8 +69,8 @@ class FunctionMixin(object):
         return ValueSet([BoundMethod(instance, self)])
 
     def get_param_names(self):
-        function_execution = self.as_context()
-        return [ParamName(function_execution, param.name)
+        arguments = AnonymousArguments()
+        return [ParamName(self, param.name, arguments)
                 for param in self.tree_node.get_params()]
 
     @property
@@ -282,29 +282,11 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
         )
 
     def get_filters(self, until_position=None, origin_scope=None):
-        yield self.function_execution_filter(self,
-                                             until_position=until_position,
-                                             origin_scope=origin_scope)
+        yield FunctionExecutionFilter(
+            self, self._value, until_position=until_position, origin_scope=origin_scope)
 
     def get_executed_param_names_and_issues(self):
-        return self.var_args.get_executed_param_names_and_issues(self)
-
-    def matches_signature(self):
-        executed_param_names, issues = self.get_executed_param_names_and_issues()
-        if issues:
-            return False
-
-        matches = all(executed_param_name.matches_signature()
-                      for executed_param_name in executed_param_names)
-        if debug.enable_notice:
-            signature = parser_utils.get_call_signature(self.tree_node)
-            if matches:
-                debug.dbg("Overloading match: %s@%s (%s)",
-                          signature, self.tree_node.start_pos[0], self.var_args, color='BLUE')
-            else:
-                debug.dbg("Overloading no match: %s@%s (%s)",
-                          signature, self.tree_node.start_pos[0], self.var_args, color='BLUE')
-        return matches
+        return self.var_args.get_executed_param_names_and_issues(self._value)
 
     def infer(self):
         """
@@ -355,17 +337,11 @@ class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
     def py__call__(self, arguments):
         debug.dbg("Execute overloaded function %s", self._wrapped_value, color='BLUE')
         function_executions = []
-        value_set = NO_VALUES
-        matched = False
-        for f in self._overloaded_functions:
-            function_execution = f.as_context(arguments)
+        for signature in self.get_signatures():
+            function_execution = signature.value.as_context(arguments)
             function_executions.append(function_execution)
-            if function_execution.matches_signature():
-                matched = True
+            if signature.matches_signature(arguments):
                 return function_execution.infer()
-
-        if matched:
-            return value_set
 
         if self.inference_state.is_analysis:
             # In this case we want precision.

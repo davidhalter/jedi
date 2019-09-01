@@ -242,8 +242,24 @@ class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
             output += '=' + default.get_code(include_prefix=False)
         return output
 
+    def get_public_name(self):
+        name = self.string_name
+        if name.startswith('__'):
+            # Params starting with __ are an equivalent to positional only
+            # variables in typeshed.
+            name = name[2:]
+        return name
 
-class ParamName(BaseTreeParamName):
+    def goto(self, **kwargs):
+        return [self]
+
+
+class SimpleParamName(BaseTreeParamName):
+    def __init__(self, function_value, tree_name):
+        super(BaseTreeParamName, self).__init__(
+            function_value.get_default_param_context(), tree_name)
+        self.function_value = function_value
+
     def _get_param_node(self):
         return search_ancestor(self.tree_name, 'param')
 
@@ -254,7 +270,7 @@ class ParamName(BaseTreeParamName):
     def infer_annotation(self, execute_annotation=True, ignore_stars=False):
         from jedi.inference.gradual.annotation import infer_param
         values = infer_param(
-            self.parent_context, self._get_param_node(),
+            self.function_value, self._get_param_node(),
             ignore_stars=ignore_stars)
         if execute_annotation:
             values = values.execute_annotation()
@@ -264,19 +280,11 @@ class ParamName(BaseTreeParamName):
         node = self.default_node
         if node is None:
             return NO_VALUES
-        return self.parent_context.parent_context.infer_node(node)
+        return self.parent_context.infer_node(node)
 
     @property
     def default_node(self):
         return self._get_param_node().default
-
-    def get_public_name(self):
-        name = self.string_name
-        if name.startswith('__'):
-            # Params starting with __ are an equivalent to positional only
-            # variables in typeshed.
-            name = name[2:]
-        return name
 
     def get_kind(self):
         tree_param = self._get_param_node()
@@ -311,14 +319,24 @@ class ParamName(BaseTreeParamName):
         if values:
             return values
 
-        doc_params = docstrings.infer_param(self.parent_context, self._get_param_node())
-        if doc_params:
-            return doc_params
+        doc_params = docstrings.infer_param(self.function_value, self._get_param_node())
+        return doc_params
+
+
+class ParamName(SimpleParamName):
+    def __init__(self, function_value, tree_name, arguments):
+        super(ParamName, self).__init__(function_value, tree_name)
+        self.arguments = arguments
+
+    def infer(self):
+        values = super(ParamName, self).infer()
+        if values:
+            return values
 
         return self.get_executed_param_name().infer()
 
     def get_executed_param_name(self):
-        params_names, _ = self.parent_context.get_executed_param_names_and_issues()
+        params_names, _ = self.arguments.get_executed_param_names_and_issues(self.function_value)
         return params_names[self._get_param_node().position_index]
 
 

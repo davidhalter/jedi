@@ -22,8 +22,9 @@ from jedi.parser_utils import get_parent_scope
 
 
 class InstanceExecutedParamName(ParamName):
-    def __init__(self, instance, execution_context, tree_param):
-        super(InstanceExecutedParamName, self).__init__(execution_context, tree_param.name)
+    def __init__(self, instance, function_value, tree_param):
+        super(InstanceExecutedParamName, self).__init__(
+            function_value, tree_param.name, arguments=None)
         self._instance = instance
 
     def infer(self):
@@ -37,22 +38,22 @@ class AnonymousInstanceArguments(AnonymousArguments):
     def __init__(self, instance):
         self._instance = instance
 
-    def get_executed_param_names_and_issues(self, execution_context):
+    def get_executed_param_names_and_issues(self, function_value):
         from jedi.inference.dynamic_params import search_param_names
-        tree_params = execution_context.tree_node.get_params()
+        tree_params = function_value.tree_node.get_params()
         if not tree_params:
             return [], []
 
         self_param = InstanceExecutedParamName(
-            self._instance, execution_context, tree_params[0])
+            self._instance, function_value, tree_params[0])
         if len(tree_params) == 1:
             # If the only param is self, we don't need to try to find
             # executions of this function, we have all the params already.
             return [self_param], []
         executed_param_names = list(search_param_names(
-            execution_context.inference_state,
-            execution_context,
-            execution_context.tree_node
+            function_value.inference_state,
+            function_value,
+            function_value.tree_node
         ))
         executed_param_names[0] = self_param
         return executed_param_names, []
@@ -289,16 +290,16 @@ class TreeInstance(AbstractInstanceValue):
         from jedi.inference.gradual.annotation import py__annotations__, \
             infer_type_vars_for_execution
 
+        args = InstanceArguments(self, self.var_args)
         for signature in self.class_value.py__getattribute__('__init__').get_signatures():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
-            bound_method = BoundMethod(self, signature.value)
-            execution = bound_method.as_context(self.var_args)
-            if not execution.matches_signature():
+            if not signature.matches_signature(args):
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
                 continue
-
+            bound_method = BoundMethod(self, signature.value)
+            execution = bound_method.as_context(self.var_args)
             all_annotations = py__annotations__(execution.tree_node)
             type_var_dict = infer_type_vars_for_execution(execution, all_annotations)
             if type_var_dict:
@@ -574,8 +575,8 @@ class InstanceArguments(TreeArgumentsWrapper):
         for values in self._wrapped_arguments.unpack(func):
             yield values
 
-    def get_executed_param_names_and_issues(self, execution_context):
+    def get_executed_param_names_and_issues(self, function_value):
         if isinstance(self._wrapped_arguments, AnonymousInstanceArguments):
-            return self._wrapped_arguments.get_executed_param_names_and_issues(execution_context)
+            return self._wrapped_arguments.get_executed_param_names_and_issues(function_value)
 
-        return super(InstanceArguments, self).get_executed_param_names_and_issues(execution_context)
+        return super(InstanceArguments, self).get_executed_param_names_and_issues(function_value)
