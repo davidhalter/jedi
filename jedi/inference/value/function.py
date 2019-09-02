@@ -285,9 +285,6 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
             arguments=self._arguments
         )
 
-    def get_executed_param_names_and_issues(self):
-        return self._arguments.get_executed_param_names_and_issues(self._value)
-
     def infer(self):
         """
         Created to be used by inheritance.

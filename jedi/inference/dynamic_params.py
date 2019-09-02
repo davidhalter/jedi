@@ -92,16 +92,16 @@ def search_param_names(inference_state, function_value, funcdef):
 
         try:
             module_context = function_value.get_root_context()
-            function_executions = _search_function_executions(
+            arguments_list = _search_function_arguments(
                 inference_state,
                 module_context,
                 funcdef,
                 string_name=string_name,
             )
-            if function_executions:
+            if arguments_list:
                 zipped_param_names = zip(*list(
-                    function_execution.get_executed_param_names_and_issues()[0]
-                    for function_execution in function_executions
+                    arguments.get_executed_param_names_and_issues(function_value)[0]
+                    for arguments in arguments_list
                 ))
                 params = [DynamicExecutedParamName(executed_param_names)
                           for executed_param_names in zipped_param_names]
@@ -116,7 +116,7 @@ def search_param_names(inference_state, function_value, funcdef):
 
 @inference_state_function_cache(default=None)
 @to_list
-def _search_function_executions(inference_state, module_context, funcdef, string_name):
+def _search_function_arguments(inference_state, module_context, funcdef, string_name):
     """
     Returns a list of param names.
     """
@@ -127,7 +127,7 @@ def _search_function_executions(inference_state, module_context, funcdef, string
             string_name = cls.name.value
             compare_node = cls
 
-    found_executions = False
+    found_arguments = False
     i = 0
     for for_mod_context in imports.get_module_contexts_containing_name(
             inference_state, [module_context], string_name):
@@ -141,14 +141,14 @@ def _search_function_executions(inference_state, module_context, funcdef, string
                 return
 
             random_context = for_mod_context.create_context(name)
-            for function_execution in _check_name_for_execution(
+            for arguments in _check_name_for_execution(
                     inference_state, random_context, compare_node, name, trailer):
-                found_executions = True
-                yield function_execution
+                found_arguments = True
+                yield arguments
 
         # If there are results after processing a module, we're probably
         # good to process. This is a speed optimization.
-        if found_executions:
+        if found_arguments:
             return
 
 
@@ -201,13 +201,16 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
         value_node = value.tree_node
         if compare_node == value_node:
             for func_execution in create_func_excs(value):
-                yield func_execution
+                # TODO private access
+                yield func_execution._arguments
         elif isinstance(value.parent_context, FunctionExecutionContext) and \
                 compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
-            param_names, _ = value.parent_context.get_executed_param_names_and_issues()
+            # TODO private access
+            param_names, _ = value.parent_context._arguments.get_executed_param_names_and_issues(
+            value.parent_context._value)
             if len(param_names) != 1:
                 continue
             values = param_names[0].infer()
@@ -227,5 +230,5 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
                             name,
                             trailer
                         )
-                        for function_execution in iterator:
-                            yield function_execution
+                        for arguments in iterator:
+                            yield arguments

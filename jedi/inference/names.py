@@ -329,7 +329,8 @@ class SimpleParamName(X):
 
     def infer(self):
         func_context = self.function_value.as_context()
-        param_names, _ = func_context.get_executed_param_names_and_issues()
+        # TODO private access
+        param_names, _ = func_context._arguments.get_executed_param_names_and_issues(self.function_value)
         return param_names[self._get_param_node().position_index].infer()
 
 
