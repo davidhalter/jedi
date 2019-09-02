@@ -300,12 +300,11 @@ class TreeInstance(AbstractInstanceValue):
                 # need to infer anything.
                 continue
             bound_method = BoundMethod(self, signature.value)
-            execution = bound_method.as_context(self.arguments)
-            all_annotations = py__annotations__(execution.tree_node)
-            type_var_dict = infer_type_vars_for_execution(execution, all_annotations)
+            all_annotations = py__annotations__(signature.value.tree_node)
+            type_var_dict = infer_type_vars_for_execution(bound_method, args, all_annotations)
             if type_var_dict:
                 defined, = self.class_value.define_generics(
-                    infer_type_vars_for_execution(execution, all_annotations),
+                    infer_type_vars_for_execution(signature.value, args, all_annotations),
                 )
                 debug.dbg('Inferred instance value as %s', defined, color='BLUE')
                 return defined

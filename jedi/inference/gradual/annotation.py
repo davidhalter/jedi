@@ -193,16 +193,16 @@ def py__annotations__(funcdef):
 
 
 @inference_state_method_cache()
-def infer_return_types(function_execution_context):
+def infer_return_types(function, arguments):
     """
     Infers the type of a function's return value,
     according to type annotations.
     """
-    all_annotations = py__annotations__(function_execution_context.tree_node)
+    all_annotations = py__annotations__(function.tree_node)
     annotation = all_annotations.get("return", None)
     if annotation is None:
         # If there is no Python 3-type annotation, look for a Python 2-type annotation
-        node = function_execution_context.tree_node
+        node = function.tree_node
         comment = parser_utils.get_following_comment_same_line(node)
         if comment is None:
             return NO_VALUES
@@ -212,19 +212,19 @@ def infer_return_types(function_execution_context):
             return NO_VALUES
 
         return _infer_annotation_string(
-            function_execution_context.function_value.get_default_param_context(),
+            function.get_default_param_context(),
             match.group(1).strip()
         ).execute_annotation()
         if annotation is None:
             return NO_VALUES
 
-    context = function_execution_context.function_value.get_default_param_context()
+    context = function.get_default_param_context()
     unknown_type_vars = list(find_unknown_type_vars(context, annotation))
     annotation_values = infer_annotation(context, annotation)
     if not unknown_type_vars:
         return annotation_values.execute_annotation()
 
-    type_var_dict = infer_type_vars_for_execution(function_execution_context, all_annotations)
+    type_var_dict = infer_type_vars_for_execution(function, arguments, all_annotations)
 
     return ValueSet.from_sets(
         ann.define_generics(type_var_dict)
@@ -233,7 +233,7 @@ def infer_return_types(function_execution_context):
     ).execute_annotation()
 
 
-def infer_type_vars_for_execution(execution_context, annotation_dict):
+def infer_type_vars_for_execution(function, arguments, annotation_dict):
     """
     Some functions use type vars that are not defined by the class, but rather
     only defined in the function. See for example `iter`. In those cases we
@@ -243,10 +243,10 @@ def infer_type_vars_for_execution(execution_context, annotation_dict):
     2. Infer type vars with the execution state we have.
     3. Return the union of all type vars that have been found.
     """
-    context = execution_context.function_value.get_default_param_context()
+    context = function.get_default_param_context()
 
     annotation_variable_results = {}
-    executed_param_names, _ = execution_context.get_executed_param_names_and_issues()
+    executed_param_names, _ = arguments.get_executed_param_names_and_issues(function)
     for executed_param_name in executed_param_names:
         try:
             annotation_node = annotation_dict[executed_param_name.string_name]

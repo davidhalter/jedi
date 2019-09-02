@@ -162,7 +162,6 @@ class MethodValue(FunctionValue):
 class FunctionExecutionContext(ValueContext, TreeContextMixin):
     def __init__(self, function_value, arguments):
         super(FunctionExecutionContext, self).__init__(function_value)
-        self.function_value = function_value
         self._arguments = arguments
 
     @inference_state_method_cache(default=NO_VALUES)
@@ -178,12 +177,12 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
         else:
             returns = funcdef.iter_return_stmts()
             from jedi.inference.gradual.annotation import infer_return_types
-            value_set = infer_return_types(self)
+            value_set = infer_return_types(self._value, self._arguments)
             if value_set:
                 # If there are annotations, prefer them over anything else.
                 # This will make it faster.
                 return value_set
-            value_set |= docstrings.infer_return_types(self.function_value)
+            value_set |= docstrings.infer_return_types(self._value)
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)
