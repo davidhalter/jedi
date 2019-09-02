@@ -292,13 +292,13 @@ class TreeArguments(AbstractArguments):
                     break
                 if not isinstance(names[0], ParamName):
                     break
-                param = names[0].get_executed_param_name()
-                if isinstance(param, DynamicExecutedParamName):
+                executed_param_name = names[0].get_executed_param_name()
+                if isinstance(executed_param_name, DynamicExecutedParamName):
                     # For dynamic searches we don't even want to see errors.
                     return []
-                if param.var_args is None:
+                if executed_param_name.arguments is None:
                     break
-                arguments = param.var_args
+                arguments = executed_param_name.arguments
                 break
 
         if arguments.argument_node is not None:

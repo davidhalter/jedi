@@ -19,12 +19,9 @@ def _add_argument_issue(error_name, lazy_value, message):
 
 
 class ExecutedParamName(ParamName):
-    """Fake a param and give it values."""
     def __init__(self, function_value, arguments, param_node, lazy_value, is_default=False):
-        # The arguments parameter is not needed, because it's an executed param
-        # name.
         super(ExecutedParamName, self).__init__(
-            function_value, param_node.name, arguments=None)
+            function_value, param_node.name, arguments=arguments)
         self._lazy_value = lazy_value
         self._is_default = is_default
 
