@@ -74,7 +74,7 @@ from jedi.inference import imports
 from jedi.inference import recursion
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference import helpers
-from jedi.inference.names import TreeNameDefinition, SimpleParamName
+from jedi.inference.names import TreeNameDefinition
 from jedi.inference.base_value import ContextualizedName, ContextualizedNode, \
     ValueSet, NO_VALUES, iterate_values
 from jedi.inference.value import ClassValue, FunctionValue
@@ -304,11 +304,6 @@ class InferenceState(object):
                 is_simple_name = name.parent.type not in ('power', 'trailer')
                 if is_simple_name:
                     return [TreeNameDefinition(context, name)]
-            elif type_ == 'param':
-                assert False
-                funcdef = tree.search_ancestor(name, 'funcdef', 'lambdef')
-                func = context.get_root_context().create_value(funcdef)
-                return [SimpleParamName(func, name)]
             elif type_ in ('import_from', 'import_name'):
                 module_names = imports.goto_import(context, name)
                 return module_names
