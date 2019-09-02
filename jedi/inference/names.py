@@ -254,7 +254,7 @@ class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
         return [self]
 
 
-class SimpleParamName(BaseTreeParamName):
+class X(BaseTreeParamName):
     def __init__(self, function_value, tree_name):
         super(BaseTreeParamName, self).__init__(
             function_value.get_default_param_context(), tree_name)
@@ -323,7 +323,17 @@ class SimpleParamName(BaseTreeParamName):
         return doc_params
 
 
-class ParamName(SimpleParamName):
+class SimpleParamName(X):
+    def __init__(self, function_value, tree_name):
+        super(SimpleParamName, self).__init__(function_value, tree_name)
+
+    def infer(self):
+        func_context = self.function_value.as_context()
+        param_names, _ = func_context.get_executed_param_names_and_issues()
+        return param_names[self._get_param_node().position_index].infer()
+
+
+class ParamName(X):
     def __init__(self, function_value, tree_name, arguments):
         super(ParamName, self).__init__(function_value, tree_name)
         self.arguments = arguments
