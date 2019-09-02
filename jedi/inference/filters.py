@@ -13,7 +13,8 @@ from jedi.inference.base_value import ValueSet, Value, ValueWrapper, \
     LazyValueWrapper
 from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.utils import to_list
-from jedi.inference.names import TreeNameDefinition, ParamName, AbstractNameDefinition
+from jedi.inference.names import TreeNameDefinition, ParamName, \
+    SimpleParamName, AbstractNameDefinition
 
 _definition_name_cache = weakref.WeakKeyDictionary()
 
@@ -158,7 +159,10 @@ class FunctionExecutionFilter(ParserTreeFilter):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                yield ParamName(self._function_value, name, self._arguments)
+                if self._arguments:
+                    yield ParamName(self._function_value, name, self._arguments)
+                else:
+                    yield SimpleParamName(self._function_value, name)
             else:
                 yield TreeNameDefinition(self.parent_context, name)
 

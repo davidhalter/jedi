@@ -86,8 +86,6 @@ class FunctionMixin(object):
         return function_execution.infer()
 
     def _as_context(self, arguments=None):
-        if arguments is None:
-            arguments = AnonymousArguments()
         return FunctionExecutionContext(self, arguments)
 
     def get_signatures(self):

@@ -331,9 +331,9 @@ class SimpleParamName(X):
         values = super(SimpleParamName, self).infer()
         if values:
             return values
-        func_context = self.function_value.as_context()
         # TODO private access
-        param_names, _ = func_context._arguments.get_executed_param_names_and_issues(self.function_value)
+        from jedi.inference.dynamic_params import search_param_names
+        param_names = search_param_names(self.function_value.inference_state, self.function_value, self.function_value.tree_node)
         return param_names[self._get_param_node().position_index].infer()
 
 
