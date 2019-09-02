@@ -422,3 +422,15 @@ def cast_tests():
 
 #? str()
 cast_tests()
+
+
+# -------------------------
+# dynamic
+# -------------------------
+
+def dynamic_annotation(x: int):
+    #? int()
+    return x
+
+#? int()
+dynamic_annotation('')
