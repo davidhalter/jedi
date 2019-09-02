@@ -328,6 +328,9 @@ class SimpleParamName(X):
         super(SimpleParamName, self).__init__(function_value, tree_name)
 
     def infer(self):
+        values = super(SimpleParamName, self).infer()
+        if values:
+            return values
         func_context = self.function_value.as_context()
         # TODO private access
         param_names, _ = func_context._arguments.get_executed_param_names_and_issues(self.function_value)
