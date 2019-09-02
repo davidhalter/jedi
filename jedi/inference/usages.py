@@ -1,5 +1,7 @@
+from parso.python.tree import search_ancestor
+
 from jedi.inference import imports
-from jedi.inference.names import TreeNameDefinition
+from jedi.inference.names import TreeNameDefinition, SimpleParamName
 
 
 def _resolve_names(definition_names, avoid_names=()):
@@ -27,8 +29,14 @@ def _dictionarize(names):
 
 
 def _find_names(module_context, tree_name):
-    context = module_context.create_context(tree_name)
-    name = TreeNameDefinition(context, tree_name)
+    definition = tree_name.get_definition()
+    if definition and definition.type == 'param' and definition.name == tree_name:
+        funcdef = search_ancestor(definition, 'funcdef', 'lambdef')
+        func = module_context.create_value(funcdef)
+        name = SimpleParamName(func, tree_name)
+    else:
+        context = module_context.create_context(tree_name)
+        name = TreeNameDefinition(context, tree_name)
     found_names = set(name.goto())
     found_names.add(name)
     return _dictionarize(_resolve_names(found_names))
