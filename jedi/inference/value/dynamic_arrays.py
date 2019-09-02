@@ -125,12 +125,12 @@ def _internal_check_array_additions(context, sequence):
 
 def get_dynamic_array_instance(instance, arguments):
     """Used for set() and list() instances."""
-    ai = _ArrayInstance(instance, arguments)
+    ai = _DynamicArrayAdditions(instance, arguments)
     from jedi.inference import arguments
     return arguments.ValuesArguments([ValueSet([ai])])
 
 
-class _ArrayInstance(HelperValueMixin):
+class _DynamicArrayAdditions(HelperValueMixin):
     """
     Used for the usage of set() and list().
     This is definitely a hack, but a good one :-)
