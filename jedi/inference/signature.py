@@ -94,8 +94,9 @@ class TreeSignature(AbstractSignature):
         return params
 
     def matches_signature(self, arguments):
+        from jedi.inference.param import get_executed_param_names_and_issues
         executed_param_names, issues = \
-            arguments.get_executed_param_names_and_issues(self._function_value)
+            get_executed_param_names_and_issues(self._function_value, arguments)
         if issues:
             return False
 

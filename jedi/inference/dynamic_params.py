@@ -19,13 +19,13 @@ It works as follows:
 
 from jedi import settings
 from jedi import debug
+from jedi.parser_utils import get_parent_scope
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference import imports
 from jedi.inference.arguments import TreeArguments
-from jedi.inference.param import create_default_params
+from jedi.inference.param import create_default_params, get_executed_param_names
 from jedi.inference.helpers import is_stdlib_path
 from jedi.inference.utils import to_list
-from jedi.parser_utils import get_parent_scope
 from jedi.inference.value import instance
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import recursion
@@ -100,7 +100,7 @@ def search_param_names(inference_state, function_value, funcdef):
             )
             if arguments_list:
                 zipped_param_names = zip(*list(
-                    arguments.get_executed_param_names_and_issues(function_value)[0]
+                    get_executed_param_names(function_value, arguments)[0]
                     for arguments in arguments_list
                 ))
                 params = [DynamicExecutedParamName(executed_param_names)

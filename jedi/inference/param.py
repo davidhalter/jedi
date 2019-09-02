@@ -205,6 +205,10 @@ def get_executed_param_names_and_issues(function_value, arguments):
     return result_params, issues
 
 
+def get_executed_param_names(function_value, arguments):
+    return get_executed_param_names_and_issues(function_value, arguments)
+
+
 def _error_argument_count(funcdef, actual_count):
     params = funcdef.get_params()
     default_arguments = sum(1 for p in params if p.default or p.star_count)
