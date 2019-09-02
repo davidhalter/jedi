@@ -270,7 +270,7 @@ def infer_expr_stmt(context, stmt, seek_name=None):
         # necessary.
         if not allowed and context.get_root_context().is_builtins_module():
             try:
-                instance = context.var_args.instance
+                instance = context.arguments.instance
             except AttributeError:
                 pass
             else:

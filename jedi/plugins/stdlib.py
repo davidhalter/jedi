@@ -193,7 +193,7 @@ def argument_clinic(string, want_obj=False, want_context=False,
 
 @argument_clinic('obj, type, /', want_obj=True, want_arguments=True)
 def builtins_property(objects, types, obj, arguments):
-    property_args = obj.instance.var_args.unpack()
+    property_args = obj.instance.arguments.unpack()
     key, lazy_value = next(property_args, (None, None))
     if key is not None or lazy_value is None:
         debug.warning('property expected a first param, not %s', arguments)
@@ -270,8 +270,8 @@ class SuperInstance(LazyValueWrapper):
 @argument_clinic('[type[, obj]], /', want_context=True)
 def builtins_super(types, objects, context):
     if isinstance(context, FunctionExecutionContext):
-        if isinstance(context.var_args, InstanceArguments):
-            instance = context.var_args.instance
+        if isinstance(context.arguments, InstanceArguments):
+            instance = context.arguments.instance
             # TODO if a class is given it doesn't have to be the direct super
             #      class, it can be an anecestor from long ago.
             return ValueSet({SuperInstance(instance.inference_state, instance)})

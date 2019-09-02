@@ -140,27 +140,27 @@ class _ArrayInstance(HelperValueMixin):
     in the wild, it's just used within typeshed as an argument to `__init__`
     for set/list and never used in any other place.
     """
-    def __init__(self, instance, var_args):
+    def __init__(self, instance, arguments):
         self.instance = instance
-        self.var_args = var_args
+        self.arguments = arguments
 
     def py__class__(self):
         tuple_, = self.instance.inference_state.builtins_module.py__getattribute__('tuple')
         return tuple_
 
     def py__iter__(self, contextualized_node=None):
-        var_args = self.var_args
+        arguments = self.arguments
         try:
-            _, lazy_value = next(var_args.unpack())
+            _, lazy_value = next(arguments.unpack())
         except StopIteration:
             pass
         else:
             for lazy in lazy_value.infer().iterate():
                 yield lazy
 
-        from jedi.inference import arguments
-        if isinstance(var_args, arguments.TreeArguments):
-            additions = _internal_check_array_additions(var_args.context, self.instance)
+        from jedi.inference.arguments import TreeArguments
+        if isinstance(arguments, TreeArguments):
+            additions = _internal_check_array_additions(arguments.context, self.instance)
             for addition in additions:
                 yield addition
 

@@ -162,10 +162,10 @@ class MethodValue(FunctionValue):
 class FunctionExecutionContext(ValueContext, TreeContextMixin):
     function_execution_filter = FunctionExecutionFilter
 
-    def __init__(self, function_value, var_args):
+    def __init__(self, function_value, arguments):
         super(FunctionExecutionContext, self).__init__(function_value)
         self.function_value = function_value
-        self.var_args = var_args
+        self.arguments = arguments
 
     @inference_state_method_cache(default=NO_VALUES)
     @recursion.execution_recursion_decorator()
@@ -285,7 +285,7 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
             self, self._value, until_position=until_position, origin_scope=origin_scope)
 
     def get_executed_param_names_and_issues(self):
-        return self.var_args.get_executed_param_names_and_issues(self._value)
+        return self.arguments.get_executed_param_names_and_issues(self._value)
 
     def infer(self):
         """

@@ -158,7 +158,7 @@ class FunctionExecutionFilter(ParserTreeFilter):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                yield ParamName(self._function_value, name, self.parent_context.var_args)
+                yield ParamName(self._function_value, name, self.parent_context.arguments)
             else:
                 yield TreeNameDefinition(self.parent_context, name)
 

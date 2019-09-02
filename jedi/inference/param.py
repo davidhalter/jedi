@@ -46,10 +46,6 @@ class ExecutedParamName(ParamName):
                   matches, argument_values, annotations, color='BLUE')
         return matches
 
-    @property
-    def var_args(self):
-        return self.arguments
-
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
