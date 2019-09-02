@@ -305,6 +305,7 @@ class InferenceState(object):
                 if is_simple_name:
                     return [TreeNameDefinition(context, name)]
             elif type_ == 'param':
+                assert False
                 funcdef = tree.search_ancestor(name, 'funcdef', 'lambdef')
                 func = context.get_root_context().create_value(funcdef)
                 return [SimpleParamName(func, name)]

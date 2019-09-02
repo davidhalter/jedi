@@ -6,6 +6,7 @@ from parso.python.tree import Name
 
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
     GlobalNameFilter
+from jedi.inference.names import SimpleParamName, TreeNameDefinition
 from jedi.inference.base_value import NO_VALUES, ValueSet
 from jedi.parser_utils import get_parent_scope
 from jedi import debug
@@ -270,6 +271,16 @@ class TreeContextMixin(object):
                 if not (parent.type == 'param' and parent.name == node):
                     scope_node = parent_scope(scope_node)
         return from_scope_node(scope_node, is_nested=True)
+
+    def create_name(self, tree_name):
+        definition = tree_name.get_definition()
+        if definition and definition.type == 'param' and definition.name == tree_name:
+            funcdef = search_ancestor(definition, 'funcdef', 'lambdef')
+            func = self.create_value(funcdef)
+            return SimpleParamName(func, tree_name)
+        else:
+            context = self.create_context(tree_name)
+            return TreeNameDefinition(context, tree_name)
 
 
 class FunctionContext(TreeContextMixin, ValueContext):

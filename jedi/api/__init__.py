@@ -302,8 +302,8 @@ class Script(object):
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
             return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
-        context = self._get_module_context().create_context(tree_name)
-        names = list(self._inference_state.goto(context, tree_name))
+        name = self._get_module_context().create_name(tree_name)
+        names = list(name.goto())
 
         if follow_imports:
             names = filter_follow_imports(names)
