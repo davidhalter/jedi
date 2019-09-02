@@ -270,8 +270,9 @@ class SuperInstance(LazyValueWrapper):
 @argument_clinic('[type[, obj]], /', want_context=True)
 def builtins_super(types, objects, context):
     if isinstance(context, FunctionExecutionContext):
-        if isinstance(context.arguments, InstanceArguments):
-            instance = context.arguments.instance
+        # TODO _arguments should be private. make this different.
+        if isinstance(context._arguments, InstanceArguments):
+            instance = context._arguments.instance
             # TODO if a class is given it doesn't have to be the direct super
             #      class, it can be an anecestor from long ago.
             return ValueSet({SuperInstance(instance.inference_state, instance)})
