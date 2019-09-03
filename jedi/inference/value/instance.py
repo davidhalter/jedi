@@ -68,13 +68,17 @@ class AnonymousMethodExecutionFilter(AnonymousFunctionExecutionFilter):
     def _convert_param(self, param, name):
         if param.position_index == 0:
             return InstanceExecutedParamName(self._instance, self._function_value, name)
-        return super(AnonymousFunctionExecutionFilter, self)._convert_param(param, name)
+        return super(AnonymousMethodExecutionFilter, self)._convert_param(param, name)
 
 
 class AnonymousMethodExecutionContext(BaseFunctionExecutionContext):
+    def __init__(self, instance, value):
+        super(AnonymousMethodExecutionContext, self).__init__(value)
+        self.instance = instance
+
     def get_filters(self, until_position=None, origin_scope=None):
-        yield AnonymousFunctionExecutionFilter(
-            self, self._value,
+        yield AnonymousMethodExecutionFilter(
+            self.instance, self, self._value,
             until_position=until_position,
             origin_scope=origin_scope,
         )
@@ -83,7 +87,7 @@ class AnonymousMethodExecutionContext(BaseFunctionExecutionContext):
         param_names = list(self._value.get_param_names())
         # set the self name
         param_names[0] = InstanceExecutedParamName(
-            self._instance,
+            self.instance,
             self._function_value,
             param_names[0].tree_name
         )
@@ -469,6 +473,9 @@ class BoundMethod(FunctionMixin, ValueWrapper):
         return InstanceArguments(self.instance, arguments)
 
     def as_context(self, arguments=None):
+        if arguments is None:
+            return AnonymousMethodExecutionContext(self.instance, self)
+
         arguments = self._get_arguments(arguments)
         return super(BoundMethod, self).as_context(arguments)
 

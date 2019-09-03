@@ -152,7 +152,7 @@ class _FunctionExecutionFilter(ParserTreeFilter):
         )
         self._function_value = function_value
 
-    def _convert_param(self, name):
+    def _convert_param(self, param, name):
         raise NotImplementedError
 
     @to_list
