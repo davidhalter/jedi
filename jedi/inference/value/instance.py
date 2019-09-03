@@ -130,13 +130,6 @@ class CompiledInstance(AbstractInstanceValue):
     def name(self):
         return compiled.CompiledValueName(self, self.class_value.name.string_name)
 
-    def get_first_non_keyword_argument_values(self):
-        key, lazy_value = next(self.arguments.unpack(), ('', None))
-        if key is not None:
-            return NO_VALUES
-
-        return lazy_value.infer()
-
     def is_stub(self):
         return False
 

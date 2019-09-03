@@ -265,20 +265,6 @@ def infer_atom(context, atom):
 @_limit_value_infers
 def infer_expr_stmt(context, stmt, seek_name=None):
     with recursion.execution_allowed(context.inference_state, stmt) as allowed:
-        # Here we allow list/set to recurse under certain conditions. To make
-        # it possible to resolve stuff like list(set(list(x))), this is
-        # necessary.
-        if not allowed and context.get_root_context().is_builtins_module():
-            try:
-                instance = context.arguments.instance
-            except AttributeError:
-                pass
-            else:
-                if instance.name.string_name in ('list', 'set'):
-                    c = instance.get_first_non_keyword_argument_values()
-                    if instance not in c:
-                        allowed = True
-
         if allowed:
             return _infer_expr_stmt(context, stmt, seek_name)
     return NO_VALUES
