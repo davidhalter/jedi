@@ -332,9 +332,23 @@ class SimpleParamName(X):
         if values:
             return values
         # TODO private access
-        from jedi.inference.dynamic_params import search_param_names
-        param_names = search_param_names(self.function_value)
-        return param_names[self._get_param_node().position_index].infer()
+        from jedi.inference.dynamic_params import dynamic_param_lookup
+        param = self._get_param_node()
+        values = dynamic_param_lookup(self.function_value, param.position_index)
+        if values:
+            return values
+
+        if param.star_count == 1:
+            from jedi.inference.value.iterable import FakeTuple
+            value = FakeTuple(self.function_value.inference_state, [])
+        elif param.star_count == 2:
+            from jedi.inference.value.iterable import FakeDict
+            value = FakeDict(self.function_value.inference_state, {})
+        elif param.default is None:
+            return NO_VALUES
+        else:
+            return self.function_value.parent_context.infer_node(param.default)
+        return ValueSet({value})
 
 
 class ParamName(X):

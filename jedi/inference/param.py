@@ -219,24 +219,3 @@ def _error_argument_count(funcdef, actual_count):
         before = 'from %s to ' % (len(params) - default_arguments)
     return ('TypeError: %s() takes %s%s arguments (%s given).'
             % (funcdef.name, before, len(params), actual_count))
-
-
-def _create_default_param(function_value, arguments, param):
-    if param.star_count == 1:
-        result_arg = LazyKnownValue(
-            iterable.FakeTuple(function_value.inference_state, [])
-        )
-    elif param.star_count == 2:
-        result_arg = LazyKnownValue(
-            iterable.FakeDict(function_value.inference_state, {})
-        )
-    elif param.default is None:
-        result_arg = LazyUnknownValue()
-    else:
-        result_arg = LazyTreeValue(function_value.parent_context, param.default)
-    return ExecutedParamName(function_value, arguments, param, result_arg)
-
-
-def create_default_params(function_value, funcdef):
-    return [_create_default_param(function_value, None, p)
-            for p in funcdef.get_params()]
