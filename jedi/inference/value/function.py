@@ -160,11 +160,7 @@ class MethodValue(FunctionValue):
         return names + (self.py__name__(),)
 
 
-class FunctionExecutionContext(ValueContext, TreeContextMixin):
-    def __init__(self, function_value, arguments):
-        super(FunctionExecutionContext, self).__init__(function_value)
-        self._arguments = arguments
-
+class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
     @inference_state_method_cache(default=NO_VALUES)
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
@@ -278,14 +274,6 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
             for lazy_value in self.get_yield_lazy_values()
         )
 
-    def get_filters(self, until_position=None, origin_scope=None):
-        yield FunctionExecutionFilter(
-            self, self._value,
-            until_position=until_position,
-            origin_scope=origin_scope,
-            arguments=self._arguments
-        )
-
     def infer(self):
         """
         Created to be used by inheritance.
@@ -326,6 +314,20 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
             else:
                 return self.get_return_values()
 
+
+class FunctionExecutionContext(BaseFunctionExecutionContext):
+    def __init__(self, function_value, arguments):
+        super(FunctionExecutionContext, self).__init__(function_value)
+        self._arguments = arguments
+
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield FunctionExecutionFilter(
+            self, self._value,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            arguments=self._arguments
+        )
+
     def get_param_names(self):
         return [
             ParamName(self._value, param.name, self._arguments)
@@ -333,10 +335,7 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
         ]
 
 
-class AnonymousFunctionExecution(FunctionExecutionContext):
-    def __init__(self, function_value):
-        super(AnonymousFunctionExecution, self).__init__(function_value, arguments=None)
-
+class AnonymousFunctionExecution(BaseFunctionExecutionContext):
     def get_filters(self, until_position=None, origin_scope=None):
         yield FunctionExecutionFilter(
             self, self._value,

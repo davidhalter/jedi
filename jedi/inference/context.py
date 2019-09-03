@@ -454,14 +454,14 @@ def get_global_filters(context, until_position, origin_scope):
     [...]
     """
     base_context = context
-    from jedi.inference.value.function import FunctionExecutionContext
+    from jedi.inference.value.function import BaseFunctionExecutionContext
     while context is not None:
         # Names in methods cannot be resolved within the class.
         for filter in context.get_filters(
                 until_position=until_position,
                 origin_scope=origin_scope):
             yield filter
-        if isinstance(context, FunctionExecutionContext):
+        if isinstance(context, BaseFunctionExecutionContext):
             # The position should be reset if the current scope is a function.
             until_position = None
 

@@ -178,7 +178,7 @@ def _get_potential_nodes(module_value, func_string_name):
 
 
 def _check_name_for_execution(inference_state, context, compare_node, name, trailer):
-    from jedi.inference.value.function import FunctionExecutionContext
+    from jedi.inference.value.function import BaseFunctionExecutionContext
 
     def create_func_excs(value):
         arglist = trailer.children[1]
@@ -203,8 +203,8 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             for func_execution in create_func_excs(value):
                 # TODO private access
                 yield func_execution._arguments
-        elif isinstance(value.parent_context, FunctionExecutionContext) and \
-                compare_node.type == 'funcdef':
+        elif isinstance(value.parent_context, BaseFunctionExecutionContext) \
+                and compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
