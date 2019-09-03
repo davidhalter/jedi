@@ -119,14 +119,6 @@ class AbstractInstanceValue(Value):
     def get_annotated_class_object(self):
         return self.class_value  # This is the default.
 
-    def py__call__(self, arguments):
-        names = self.get_function_slot_names(u'__call__')
-        if not names:
-            # Means the Instance is not callable.
-            return super(AbstractInstanceValue, self).py__call__(arguments)
-
-        return ValueSet.from_sets(name.infer().execute(arguments) for name in names)
-
     def py__class__(self):
         return self.class_value
 
@@ -134,136 +126,16 @@ class AbstractInstanceValue(Value):
         # Signalize that we don't know about the bool type.
         return None
 
-    def get_function_slot_names(self, name):
-        # Python classes don't look at the dictionary of the instance when
-        # looking up `__call__`. This is something that has to do with Python's
-        # internal slot system (note: not __slots__, but C slots).
-        for filter in self.get_filters(include_self_names=False):
-            names = filter.get(name)
-            if names:
-                return names
-        return []
-
-    def execute_function_slots(self, names, *inferred_args):
-        return ValueSet.from_sets(
-            name.infer().execute_with_values(*inferred_args)
-            for name in names
-        )
-
-    def py__get__(self, obj, class_value):
-        """
-        obj may be None.
-        """
-        # Arguments in __get__ descriptors are obj, class.
-        # `method` is the new parent of the array, don't know if that's good.
-        names = self.get_function_slot_names(u'__get__')
-        if names:
-            if obj is None:
-                obj = compiled.builtin_from_name(self.inference_state, u'None')
-            return self.execute_function_slots(names, obj, class_value)
-        else:
-            return ValueSet([self])
-
-    def get_filters(self, origin_scope=None, include_self_names=True):
-        class_value = self.get_annotated_class_object()
-        if include_self_names:
-            for cls in class_value.py__mro__():
-                if not isinstance(cls, compiled.CompiledObject) \
-                        or cls.tree_node is not None:
-                    # In this case we're excluding compiled objects that are
-                    # not fake objects. It doesn't make sense for normal
-                    # compiled objects to search for self variables.
-                    yield SelfAttributeFilter(self, class_value, cls.as_context(), origin_scope)
-
-        class_filters = class_value.get_filters(
-            origin_scope=origin_scope,
-            is_instance=True,
-        )
-        for f in class_filters:
-            if isinstance(f, ClassFilter):
-                yield InstanceClassFilter(self, f)
-            elif isinstance(f, CompiledObjectFilter):
-                yield CompiledInstanceClassFilter(self, f)
-            else:
-                # Propably from the metaclass.
-                yield f
-
-    def py__getitem__(self, index_value_set, contextualized_node):
-        names = self.get_function_slot_names(u'__getitem__')
-        if not names:
-            return super(AbstractInstanceValue, self).py__getitem__(
-                index_value_set,
-                contextualized_node,
-            )
-
-        args = ValuesArguments([index_value_set])
-        return ValueSet.from_sets(name.infer().execute(args) for name in names)
-
-    def py__iter__(self, contextualized_node=None):
-        iter_slot_names = self.get_function_slot_names(u'__iter__')
-        if not iter_slot_names:
-            return super(AbstractInstanceValue, self).py__iter__(contextualized_node)
-
-        def iterate():
-            for generator in self.execute_function_slots(iter_slot_names):
-                if generator.is_instance() and not generator.is_compiled():
-                    # `__next__` logic.
-                    if self.inference_state.environment.version_info.major == 2:
-                        name = u'next'
-                    else:
-                        name = u'__next__'
-                    next_slot_names = generator.get_function_slot_names(name)
-                    if next_slot_names:
-                        yield LazyKnownValues(
-                            generator.execute_function_slots(next_slot_names)
-                        )
-                    else:
-                        debug.warning('Instance has no __next__ function in %s.', generator)
-                else:
-                    for lazy_value in generator.py__iter__():
-                        yield lazy_value
-        return iterate()
-
     @abstractproperty
     def name(self):
-        pass
-
-    @inference_state_method_cache()
-    def create_instance_context(self, class_context, node):
-        if node.parent.type in ('funcdef', 'classdef'):
-            node = node.parent
-        scope = get_parent_scope(node)
-        if scope == class_context.tree_node:
-            return class_context
-        else:
-            parent_context = self.create_instance_context(class_context, scope)
-            if scope.type == 'funcdef':
-                func = FunctionValue.from_context(
-                    parent_context,
-                    scope,
-                )
-                bound_method = BoundMethod(self, func)
-                if scope.name.value == '__init__' and parent_context == class_context:
-                    return bound_method.as_context(self.arguments)
-                else:
-                    return bound_method.as_context()
-            elif scope.type == 'classdef':
-                class_context = ClassValue(self.inference_state, parent_context, scope)
-                return class_context.as_context()
-            elif scope.type in ('comp_for', 'sync_comp_for'):
-                # Comprehensions currently don't have a special scope in Jedi.
-                return self.create_instance_context(class_context, scope)
-            else:
-                raise NotImplementedError
-        return class_context
+        raise NotImplementedError
 
     def get_signatures(self):
         call_funcs = self.py__getattribute__('__call__').py__get__(self, self.class_value)
         return [s.bind(self) for s in call_funcs.get_signatures()]
 
     def __repr__(self):
-        return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_value,
-                                   self.arguments)
+        return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_value)
 
 
 class CompiledInstance(AbstractInstanceValue):
@@ -271,6 +143,15 @@ class CompiledInstance(AbstractInstanceValue):
         self._original_arguments = arguments
         super(CompiledInstance, self).__init__(inference_state, parent_context,
                                                class_value, arguments)
+
+    def get_filters(self, origin_scope=None, include_self_names=True):
+        class_value = self.get_annotated_class_object()
+        class_filters = class_value.get_filters(
+            origin_scope=origin_scope,
+            is_instance=True,
+        )
+        for f in class_filters:
+            yield CompiledInstanceClassFilter(self, f)
 
     @property
     def name(self):
@@ -342,6 +223,29 @@ class TreeInstance(AbstractInstanceValue):
     def get_annotated_class_object(self):
         return self._get_annotated_class_object() or self.class_value
 
+    def get_filters(self, origin_scope=None, include_self_names=True):
+        class_value = self.get_annotated_class_object()
+        if include_self_names:
+            for cls in class_value.py__mro__():
+                if not cls.is_compiled():
+                    # In this case we're excluding compiled objects that are
+                    # not fake objects. It doesn't make sense for normal
+                    # compiled objects to search for self variables.
+                    yield SelfAttributeFilter(self, class_value, cls.as_context(), origin_scope)
+
+        class_filters = class_value.get_filters(
+            origin_scope=origin_scope,
+            is_instance=True,
+        )
+        for f in class_filters:
+            if isinstance(f, ClassFilter):
+                yield InstanceClassFilter(self, f)
+            elif isinstance(f, CompiledObjectFilter):
+                yield CompiledInstanceClassFilter(self, f)
+            else:
+                # Propably from the metaclass.
+                yield f
+
     def _get_annotation_init_functions(self):
         filter = next(self.class_value.get_filters())
         for init_name in filter.get('__init__'):
@@ -394,6 +298,113 @@ class TreeInstance(AbstractInstanceValue):
                     if key == index:
                         return lazy_context.infer()
         return super(TreeInstance, self).py__simple_getitem__(index)
+
+    def py__getitem__(self, index_value_set, contextualized_node):
+        names = self.get_function_slot_names(u'__getitem__')
+        if not names:
+            return super(AbstractInstanceValue, self).py__getitem__(
+                index_value_set,
+                contextualized_node,
+            )
+
+        args = ValuesArguments([index_value_set])
+        return ValueSet.from_sets(name.infer().execute(args) for name in names)
+
+    def py__iter__(self, contextualized_node=None):
+        iter_slot_names = self.get_function_slot_names(u'__iter__')
+        if not iter_slot_names:
+            return super(AbstractInstanceValue, self).py__iter__(contextualized_node)
+
+        def iterate():
+            for generator in self.execute_function_slots(iter_slot_names):
+                if generator.is_instance() and not generator.is_compiled():
+                    # `__next__` logic.
+                    if self.inference_state.environment.version_info.major == 2:
+                        name = u'next'
+                    else:
+                        name = u'__next__'
+                    next_slot_names = generator.get_function_slot_names(name)
+                    if next_slot_names:
+                        yield LazyKnownValues(
+                            generator.execute_function_slots(next_slot_names)
+                        )
+                    else:
+                        debug.warning('Instance has no __next__ function in %s.', generator)
+                else:
+                    for lazy_value in generator.py__iter__():
+                        yield lazy_value
+        return iterate()
+
+    def py__call__(self, arguments):
+        names = self.get_function_slot_names(u'__call__')
+        if not names:
+            # Means the Instance is not callable.
+            return super(AbstractInstanceValue, self).py__call__(arguments)
+
+        return ValueSet.from_sets(name.infer().execute(arguments) for name in names)
+
+    def py__get__(self, obj, class_value):
+        """
+        obj may be None.
+        """
+        # Arguments in __get__ descriptors are obj, class.
+        # `method` is the new parent of the array, don't know if that's good.
+        names = self.get_function_slot_names(u'__get__')
+        if names:
+            if obj is None:
+                obj = compiled.builtin_from_name(self.inference_state, u'None')
+            return self.execute_function_slots(names, obj, class_value)
+        else:
+            return ValueSet([self])
+
+    def get_function_slot_names(self, name):
+        # Python classes don't look at the dictionary of the instance when
+        # looking up `__call__`. This is something that has to do with Python's
+        # internal slot system (note: not __slots__, but C slots).
+        for filter in self.get_filters(include_self_names=False):
+            names = filter.get(name)
+            if names:
+                return names
+        return []
+
+    def execute_function_slots(self, names, *inferred_args):
+        return ValueSet.from_sets(
+            name.infer().execute_with_values(*inferred_args)
+            for name in names
+        )
+
+    @inference_state_method_cache()
+    def create_instance_context(self, class_context, node):
+        if node.parent.type in ('funcdef', 'classdef'):
+            node = node.parent
+        scope = get_parent_scope(node)
+        if scope == class_context.tree_node:
+            return class_context
+        else:
+            parent_context = self.create_instance_context(class_context, scope)
+            if scope.type == 'funcdef':
+                func = FunctionValue.from_context(
+                    parent_context,
+                    scope,
+                )
+                bound_method = BoundMethod(self, func)
+                if scope.name.value == '__init__' and parent_context == class_context:
+                    return bound_method.as_context(self.arguments)
+                else:
+                    return bound_method.as_context()
+            elif scope.type == 'classdef':
+                class_context = ClassValue(self.inference_state, parent_context, scope)
+                return class_context.as_context()
+            elif scope.type in ('comp_for', 'sync_comp_for'):
+                # Comprehensions currently don't have a special scope in Jedi.
+                return self.create_instance_context(class_context, scope)
+            else:
+                raise NotImplementedError
+        return class_context
+
+    def __repr__(self):
+        return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_value,
+                                   self.arguments)
 
 
 class AnonymousInstance(TreeInstance):
