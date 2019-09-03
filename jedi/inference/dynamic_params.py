@@ -208,9 +208,7 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             # Here we're trying to find decorators by checking the first
             # parameter. It's not very generic though. Should find a better
             # solution that also applies to nested decorators.
-            # TODO private access
-            param_names, _ = value.parent_context._arguments.get_executed_param_names_and_issues(
-            value.parent_context._value)
+            param_names = value.parent_context.get_param_names()
             if len(param_names) != 1:
                 continue
             values = param_names[0].infer()

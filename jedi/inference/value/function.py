@@ -10,7 +10,8 @@ from jedi.inference import flow_analysis
 from jedi.inference.signature import TreeSignature
 from jedi.inference.arguments import AnonymousArguments
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
-from jedi.inference.names import ValueName, AbstractNameDefinition, SimpleParamName
+from jedi.inference.names import ValueName, AbstractNameDefinition, \
+    SimpleParamName, ParamName
 from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
@@ -322,6 +323,15 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
                 return ValueSet([iterable.Generator(inference_state, self)])
             else:
                 return self.get_return_values()
+
+    def get_param_names(self):
+        if self._arguments is None:
+            return self._value.get_param_names()
+        else:
+            return [
+                ParamName(self._value, param.name, self._arguments)
+                for param in self._value.tree_node.get_params()
+            ]
 
 
 class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
