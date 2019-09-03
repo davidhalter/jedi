@@ -182,36 +182,19 @@ class _BaseTreeInstance(AbstractInstanceValue):
 
     @inference_state_method_cache()
     def create_instance_context(self, class_context, node):
-        if node.parent.type in ('funcdef', 'classdef'):
-            node = node.parent
-        scope = get_parent_scope(node)
-        if scope == class_context.tree_node:
-            return class_context
-        else:
-            parent_context = self.create_instance_context(class_context, scope)
-            if scope.type == 'funcdef':
-                func = FunctionValue.from_context(
-                    parent_context,
-                    scope,
-                )
+        new = node
+        while True:
+            func_node = new
+            new = search_ancestor(new, 'funcdef', 'classdef')
+            if class_context.tree_node is new:
+                func = FunctionValue.from_context(class_context, func_node)
                 bound_method = BoundMethod(self, func)
-                if scope.name.value == '__init__' and parent_context == class_context:
-                    # TODO private access
-                    if hasattr(self, 'arguments'):
-                        return bound_method.as_context(self.arguments)
-                    else:
-                        return bound_method.as_context()
+                if func_node.name.value == '__init__':
+                    context = bound_method.as_context(self.arguments)
                 else:
-                    return bound_method.as_context()
-            elif scope.type == 'classdef':
-                class_context = ClassValue(self.inference_state, parent_context, scope)
-                return class_context.as_context()
-            elif scope.type in ('comp_for', 'sync_comp_for'):
-                # Comprehensions currently don't have a special scope in Jedi.
-                return self.create_instance_context(class_context, scope)
-            else:
-                raise NotImplementedError
-        return class_context
+                    context = bound_method.as_context()
+                break
+        return context.create_context(node)
 
     def py__getattribute__alternatives(self, string_name):
         '''
@@ -383,7 +366,7 @@ class TreeInstance(_BaseTreeInstance):
 
 
 class AnonymousInstance(_BaseTreeInstance):
-    pass
+    arguments = None
 
 
 class CompiledInstanceName(compiled.CompiledName):
