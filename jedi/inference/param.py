@@ -206,7 +206,7 @@ def get_executed_param_names_and_issues(function_value, arguments):
 
 
 def get_executed_param_names(function_value, arguments):
-    return get_executed_param_names_and_issues(function_value, arguments)
+    return get_executed_param_names_and_issues(function_value, arguments)[0]
 
 
 def _error_argument_count(funcdef, actual_count):

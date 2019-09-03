@@ -100,7 +100,7 @@ def search_param_names(inference_state, function_value, funcdef):
             )
             if arguments_list:
                 zipped_param_names = zip(*list(
-                    get_executed_param_names(function_value, arguments)[0]
+                    get_executed_param_names(function_value, arguments)
                     for arguments in arguments_list
                 ))
                 params = [DynamicExecutedParamName(executed_param_names)
