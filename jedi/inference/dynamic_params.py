@@ -89,21 +89,15 @@ def dynamic_param_lookup(function_value, param_index):
     debug.dbg('Dynamic param search in %s.', string_name, color='MAGENTA')
 
     module_context = function_value.get_root_context()
-    arguments_list = _search_function_arguments(
-        module_context,
-        funcdef,
-        string_name=string_name,
+    arguments_list = _search_function_arguments(module_context, funcdef, string_name)
+    values = ValueSet.from_sets(
+        get_executed_param_names(
+            function_value, arguments
+        )[param_index].infer()
+        for arguments in arguments_list
     )
-    if arguments_list:
-        return ValueSet.from_sets(
-            get_executed_param_names(
-                function_value, arguments
-            )[param_index].infer()
-            for arguments in arguments_list
-        )
-    else:
-        return NO_VALUES
     debug.dbg('Dynamic param result finished', color='MAGENTA')
+    return values
 
 
 @inference_state_method_cache(default=None)
