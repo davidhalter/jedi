@@ -331,7 +331,6 @@ class SimpleParamName(X):
         values = super(SimpleParamName, self).infer()
         if values:
             return values
-        # TODO private access
         from jedi.inference.dynamic_params import dynamic_param_lookup
         param = self._get_param_node()
         values = dynamic_param_lookup(self.function_value, param.position_index)

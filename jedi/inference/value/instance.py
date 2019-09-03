@@ -1,5 +1,7 @@
 from abc import abstractproperty
 
+from parso.python.tree import search_ancestor
+
 from jedi import debug
 from jedi import settings
 from jedi.inference import compiled
@@ -484,10 +486,7 @@ class SelfName(TreeNameDefinition):
 
     @property
     def parent_context(self):
-        return self._instance.create_instance_context(
-            self.class_context,
-            self.tree_name
-        )
+        return self._instance.create_instance_context(self.class_context, self.tree_name)
 
 
 class LazyInstanceClassName(object):
@@ -548,9 +547,9 @@ class SelfAttributeFilter(ClassFilter):
         self._instance = instance
 
     def _filter(self, names):
-        names = self._filter_self_names(names)
         start, end = self._parser_scope.start_pos, self._parser_scope.end_pos
-        return [n for n in names if start < n.start_pos < end]
+        names = [n for n in names if start < n.start_pos < end]
+        return self._filter_self_names(names)
 
     def _filter_self_names(self, names):
         for name in names:
@@ -559,8 +558,19 @@ class SelfAttributeFilter(ClassFilter):
                     and len(trailer.parent.children) == 2 \
                     and trailer.children[0] == '.':
                 if name.is_definition() and self._access_possible(name, from_instance=True):
-                    # TODO filter non-self assignments.
-                    yield name
+                    # TODO filter non-self assignments instead of this bad
+                    #      filter.
+                    if self._is_in_right_scope(name):
+                        yield name
+
+    def _is_in_right_scope(self, name):
+        base = name
+        hit_funcdef = False
+        while True:
+            base = search_ancestor(base, 'funcdef', 'classdef', 'lambdef')
+            if base is self._parser_scope:
+                return hit_funcdef
+            hit_funcdef = True
 
     def _convert_names(self, names):
         return [SelfName(self._instance, self._node_context, name) for name in names]

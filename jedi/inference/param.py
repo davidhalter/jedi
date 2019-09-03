@@ -66,6 +66,7 @@ def get_executed_param_names_and_issues(function_value, arguments):
             )
         else:
             issues.append(None)
+            debug.warning('non-public warning: %s', m)
 
     issues = []  # List[Optional[analysis issue]]
     result_params = []
