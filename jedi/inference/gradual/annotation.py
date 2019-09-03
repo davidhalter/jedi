@@ -17,6 +17,7 @@ from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
 from jedi.inference.gradual.typing import GenericClass
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
+from jedi.inference.param import get_executed_param_names_and_issues
 from jedi import debug
 from jedi import parser_utils
 
@@ -246,7 +247,7 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
     context = function.get_default_param_context()
 
     annotation_variable_results = {}
-    executed_param_names, _ = arguments.get_executed_param_names_and_issues(function)
+    executed_param_names, _ = get_executed_param_names_and_issues(function, arguments)
     for executed_param_name in executed_param_names:
         try:
             annotation_node = annotation_dict[executed_param_name.string_name]

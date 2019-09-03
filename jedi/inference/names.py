@@ -350,7 +350,8 @@ class ParamName(X):
         return self.get_executed_param_name().infer()
 
     def get_executed_param_name(self):
-        params_names, _ = self.arguments.get_executed_param_names_and_issues(self.function_value)
+        from jedi.inference.param import get_executed_param_names_and_issues
+        params_names, _ = get_executed_param_names_and_issues(self.function_value, self.arguments)
         return params_names[self._get_param_node().position_index]
 
 

@@ -4,7 +4,6 @@ from parso.python import tree
 
 from jedi._compatibility import zip_longest
 from jedi import debug
-from jedi.cache import memoize_method
 from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
@@ -13,7 +12,6 @@ from jedi.inference.names import ParamName, TreeNameDefinition, SimpleParamName
 from jedi.inference.base_value import NO_VALUES, ValueSet, ContextualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import inference_state_as_method_param_cache
-from jedi.inference.param import get_executed_param_names_and_issues
 
 
 def try_iter_content(types, depth=0):
@@ -144,9 +142,6 @@ class _AbstractArgumentsMixin(object):
 
     def unpack(self, funcdef=None):
         raise NotImplementedError
-
-    def get_executed_param_names_and_issues(self, function_value):
-        return get_executed_param_names_and_issues(function_value, self)
 
     def get_calling_nodes(self):
         return []

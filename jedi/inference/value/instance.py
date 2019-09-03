@@ -585,6 +585,3 @@ class InstanceArguments(TreeArgumentsWrapper):
         yield None, LazyKnownValue(self.instance)
         for values in self._wrapped_arguments.unpack(func):
             yield values
-
-    def get_executed_param_names_and_issues(self, function_value):
-        return super(InstanceArguments, self).get_executed_param_names_and_issues(function_value)
