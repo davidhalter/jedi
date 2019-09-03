@@ -15,7 +15,7 @@ from jedi.inference.arguments import AnonymousArguments, \
     ValuesArguments, TreeArgumentsWrapper
 from jedi.inference.value.function import \
     FunctionValue, FunctionMixin, OverloadedFunctionValue, \
-    BaseFunctionExecutionContext
+    BaseFunctionExecutionContext, FunctionExecutionContext
 from jedi.inference.value.klass import ClassValue, apply_py__get__, \
     ClassFilter
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
@@ -92,6 +92,12 @@ class AnonymousMethodExecutionContext(BaseFunctionExecutionContext):
             param_names[0].tree_name
         )
         return param_names
+
+
+class MethodExecutionContext(FunctionExecutionContext):
+    def __init__(self, instance, *args, **kwargs):
+        super(MethodExecutionContext, self).__init__(*args, **kwargs)
+        self.instance = instance
 
 
 class AbstractInstanceValue(Value):
@@ -472,12 +478,12 @@ class BoundMethod(FunctionMixin, ValueWrapper):
 
         return InstanceArguments(self.instance, arguments)
 
-    def as_context(self, arguments=None):
+    def _as_context(self, arguments=None):
         if arguments is None:
             return AnonymousMethodExecutionContext(self.instance, self)
 
         arguments = self._get_arguments(arguments)
-        return super(BoundMethod, self).as_context(arguments)
+        return MethodExecutionContext(self.instance, self, arguments)
 
     def py__call__(self, arguments):
         if isinstance(self._wrapped_value, OverloadedFunctionValue):

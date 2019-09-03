@@ -20,13 +20,13 @@ from jedi.inference.arguments import ValuesArguments, \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.inference import analysis
 from jedi.inference import compiled
-from jedi.inference.value.instance import BoundMethod, InstanceArguments, \
-    AnonymousMethodExecutionContext
+from jedi.inference.value.instance import BoundMethod, \
+    AnonymousMethodExecutionContext, MethodExecutionContext
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
 from jedi.inference.value.klass import ClassMixin
-from jedi.inference.value.function import FunctionMixin, BaseFunctionExecutionContext
+from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
 from jedi.inference.lazy_value import LazyTreeValue, LazyKnownValue, \
     LazyKnownValues
@@ -269,19 +269,14 @@ class SuperInstance(LazyValueWrapper):
 
 @argument_clinic('[type[, obj]], /', want_context=True)
 def builtins_super(types, objects, context):
-    if isinstance(context, BaseFunctionExecutionContext):
-        instance = None
-        if isinstance(context, AnonymousMethodExecutionContext):
-            instance = context.instance
-        # TODO _arguments should be private. make this different.
-        elif isinstance(getattr(context, '_arguments', None), InstanceArguments):
-            instance = context._arguments.instance
-            # TODO if a class is given it doesn't have to be the direct super
-            #      class, it can be an anecestor from long ago.
-        if instance is not None:
-            return ValueSet({SuperInstance(instance.inference_state, instance)})
-
-    return NO_VALUES
+    instance = None
+    if isinstance(context, AnonymousMethodExecutionContext):
+        instance = context.instance
+    elif isinstance(context, MethodExecutionContext):
+        instance = context.instance
+    if instance is None:
+        return NO_VALUES
+    return ValueSet({SuperInstance(instance.inference_state, instance)})
 
 
 class ReversedObject(AttributeOverwrite):
