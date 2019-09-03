@@ -8,7 +8,6 @@ from jedi.inference import recursion
 from jedi.inference import docstrings
 from jedi.inference import flow_analysis
 from jedi.inference.signature import TreeSignature
-from jedi.inference.arguments import AnonymousArguments
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter, \
     AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, AbstractNameDefinition, \

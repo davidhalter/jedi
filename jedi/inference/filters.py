@@ -159,8 +159,11 @@ class _FunctionExecutionFilter(ParserTreeFilter):
     def _convert_names(self, names):
         for name in names:
             param = search_ancestor(name, 'param')
+            # Here we don't need to check if the param is a default/annotation,
+            # because those are not definitions and never make it to this
+            # point.
             if param:
-                yield self._convert_param(name)
+                yield self._convert_param(param, name)
             else:
                 yield TreeNameDefinition(self.parent_context, name)
 
@@ -170,12 +173,12 @@ class FunctionExecutionFilter(_FunctionExecutionFilter):
         self._arguments = kwargs.pop('arguments')  # Python 2
         super(FunctionExecutionFilter, self).__init__(*args, **kwargs)
 
-    def _convert_param(self, name):
+    def _convert_param(self, param, name):
         return ParamName(self._function_value, name, self._arguments)
 
 
 class AnonymousFunctionExecutionFilter(_FunctionExecutionFilter):
-    def _convert_param(self, name):
+    def _convert_param(self, param, name):
         return SimpleParamName(self._function_value, name)
 
 

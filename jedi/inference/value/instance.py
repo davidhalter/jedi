@@ -5,7 +5,7 @@ from jedi import settings
 from jedi.inference import compiled
 from jedi.inference.compiled.value import CompiledObjectFilter
 from jedi.inference.helpers import values_from_qualified_names
-from jedi.inference.filters import AbstractFilter
+from jedi.inference.filters import AbstractFilter, AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, TreeNameDefinition, ParamName
 from jedi.inference.base_value import Value, NO_VALUES, ValueSet, \
     iterator_to_value_set, ValueWrapper
@@ -14,7 +14,8 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.arguments import AnonymousArguments, \
     ValuesArguments, TreeArgumentsWrapper
 from jedi.inference.value.function import \
-    FunctionValue, FunctionMixin, OverloadedFunctionValue
+    FunctionValue, FunctionMixin, OverloadedFunctionValue, \
+    BaseFunctionExecutionContext
 from jedi.inference.value.klass import ClassValue, apply_py__get__, \
     ClassFilter
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
@@ -22,9 +23,9 @@ from jedi.parser_utils import get_parent_scope
 
 
 class InstanceExecutedParamName(ParamName):
-    def __init__(self, instance, function_value, tree_param):
+    def __init__(self, instance, function_value, tree_name):
         super(InstanceExecutedParamName, self).__init__(
-            function_value, tree_param.name, arguments=None)
+            function_value, tree_name, arguments=None)
         self._instance = instance
 
     def infer(self):
@@ -45,7 +46,7 @@ class AnonymousInstanceArguments(AnonymousArguments):
             return [], []
 
         self_param = InstanceExecutedParamName(
-            self._instance, function_value, tree_params[0])
+            self._instance, function_value, tree_params[0].name)
         if len(tree_params) == 1:
             # If the only param is self, we don't need to try to find
             # executions of this function, we have all the params already.
@@ -57,6 +58,36 @@ class AnonymousInstanceArguments(AnonymousArguments):
         ))
         executed_param_names[0] = self_param
         return executed_param_names, []
+
+
+class AnonymousMethodExecutionFilter(AnonymousFunctionExecutionFilter):
+    def __init__(self, instance, *args, **kwargs):
+        super(AnonymousMethodExecutionFilter, self).__init__(*args, **kwargs)
+        self._instance = instance
+
+    def _convert_param(self, param, name):
+        if param.position_index == 0:
+            return InstanceExecutedParamName(self._instance, self._function_value, name)
+        return super(AnonymousFunctionExecutionFilter, self)._convert_param(param, name)
+
+
+class AnonymousMethodExecutionContext(BaseFunctionExecutionContext):
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield AnonymousFunctionExecutionFilter(
+            self, self._value,
+            until_position=until_position,
+            origin_scope=origin_scope,
+        )
+
+    def get_param_names(self):
+        param_names = list(self._value.get_param_names())
+        # set the self name
+        param_names[0] = InstanceExecutedParamName(
+            self._instance,
+            self._function_value,
+            param_names[0].tree_name
+        )
+        return param_names
 
 
 class AbstractInstanceValue(Value):
