@@ -220,7 +220,7 @@ def infer_return_types(function, arguments):
             return NO_VALUES
 
     context = function.get_default_param_context()
-    unknown_type_vars = list(find_unknown_type_vars(context, annotation))
+    unknown_type_vars = find_unknown_type_vars(context, annotation)
     annotation_values = infer_annotation(context, annotation)
     if not unknown_type_vars:
         return annotation_values.execute_annotation()
