@@ -9,7 +9,8 @@ from jedi.inference import docstrings
 from jedi.inference import flow_analysis
 from jedi.inference.signature import TreeSignature
 from jedi.inference.arguments import AnonymousArguments
-from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
+from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter, \
+    AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, AbstractNameDefinition, \
     SimpleParamName, ParamName
 from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
@@ -337,11 +338,10 @@ class FunctionExecutionContext(BaseFunctionExecutionContext):
 
 class AnonymousFunctionExecution(BaseFunctionExecutionContext):
     def get_filters(self, until_position=None, origin_scope=None):
-        yield FunctionExecutionFilter(
+        yield AnonymousFunctionExecutionFilter(
             self, self._value,
             until_position=until_position,
             origin_scope=origin_scope,
-            arguments=None,
         )
 
     def get_param_names(self):

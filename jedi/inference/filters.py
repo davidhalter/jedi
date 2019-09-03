@@ -143,28 +143,40 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
                 break
 
 
-class FunctionExecutionFilter(ParserTreeFilter):
-    def __init__(self, parent_context, function_value,
-                 until_position, origin_scope, arguments):
-        super(FunctionExecutionFilter, self).__init__(
+class _FunctionExecutionFilter(ParserTreeFilter):
+    def __init__(self, parent_context, function_value, until_position, origin_scope):
+        super(_FunctionExecutionFilter, self).__init__(
             parent_context,
             until_position=until_position,
             origin_scope=origin_scope,
         )
         self._function_value = function_value
-        self._arguments = arguments
+
+    def _convert_param(self, name):
+        raise NotImplementedError
 
     @to_list
     def _convert_names(self, names):
         for name in names:
             param = search_ancestor(name, 'param')
             if param:
-                if self._arguments:
-                    yield ParamName(self._function_value, name, self._arguments)
-                else:
-                    yield SimpleParamName(self._function_value, name)
+                yield self._convert_param(name)
             else:
                 yield TreeNameDefinition(self.parent_context, name)
+
+
+class FunctionExecutionFilter(_FunctionExecutionFilter):
+    def __init__(self, *args, **kwargs):
+        self._arguments = kwargs.pop('arguments')  # Python 2
+        super(FunctionExecutionFilter, self).__init__(*args, **kwargs)
+
+    def _convert_param(self, name):
+        return ParamName(self._function_value, name, self._arguments)
+
+
+class AnonymousFunctionExecutionFilter(_FunctionExecutionFilter):
+    def _convert_param(self, name):
+        return SimpleParamName(self._function_value, name)
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):
