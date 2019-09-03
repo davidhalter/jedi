@@ -11,8 +11,7 @@ from jedi.inference.base_value import Value, NO_VALUES, ValueSet, \
     iterator_to_value_set, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference.arguments import AnonymousArguments, \
-    ValuesArguments, TreeArgumentsWrapper
+from jedi.inference.arguments import ValuesArguments, TreeArgumentsWrapper
 from jedi.inference.value.function import \
     FunctionValue, FunctionMixin, OverloadedFunctionValue, \
     BaseFunctionExecutionContext, FunctionExecutionContext
@@ -33,31 +32,6 @@ class InstanceExecutedParamName(ParamName):
 
     def matches_signature(self):
         return True
-
-
-class AnonymousInstanceArguments(AnonymousArguments):
-    def __init__(self, instance):
-        self._instance = instance
-
-    def get_executed_param_names_and_issues(self, function_value):
-        from jedi.inference.dynamic_params import search_param_names
-        tree_params = function_value.tree_node.get_params()
-        if not tree_params:
-            return [], []
-
-        self_param = InstanceExecutedParamName(
-            self._instance, function_value, tree_params[0].name)
-        if len(tree_params) == 1:
-            # If the only param is self, we don't need to try to find
-            # executions of this function, we have all the params already.
-            return [self_param], []
-        executed_param_names = list(search_param_names(
-            function_value.inference_state,
-            function_value,
-            function_value.tree_node
-        ))
-        executed_param_names[0] = self_param
-        return executed_param_names, []
 
 
 class AnonymousMethodExecutionFilter(AnonymousFunctionExecutionFilter):
@@ -227,6 +201,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
                 )
                 bound_method = BoundMethod(self, func)
                 if scope.name.value == '__init__' and parent_context == class_context:
+                    # TODO private access
                     if hasattr(self, 'arguments'):
                         return bound_method.as_context(self.arguments)
                     else:
@@ -612,7 +587,4 @@ class InstanceArguments(TreeArgumentsWrapper):
             yield values
 
     def get_executed_param_names_and_issues(self, function_value):
-        if isinstance(self._wrapped_arguments, AnonymousInstanceArguments):
-            return self._wrapped_arguments.get_executed_param_names_and_issues(function_value)
-
         return super(InstanceArguments, self).get_executed_param_names_and_issues(function_value)

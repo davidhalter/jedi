@@ -158,20 +158,6 @@ class AbstractArguments(_AbstractArgumentsMixin):
     trailer = None
 
 
-class AnonymousArguments(AbstractArguments):
-    @memoize_method
-    def get_executed_param_names_and_issues(self, function_value):
-        from jedi.inference.dynamic_params import search_param_names
-        return search_param_names(
-            function_value.inference_state,
-            function_value,
-            function_value.tree_node
-        ), []
-
-    def __repr__(self):
-        return '%s()' % self.__class__.__name__
-
-
 def unpack_arglist(arglist):
     if arglist is None:
         return
