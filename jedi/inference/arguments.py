@@ -9,7 +9,7 @@ from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
     LazyTreeValue, get_merged_lazy_value
-from jedi.inference.names import ParamName, TreeNameDefinition
+from jedi.inference.names import ParamName, TreeNameDefinition, SimpleParamName
 from jedi.inference.base_value import NO_VALUES, ValueSet, ContextualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import inference_state_as_method_param_cache
@@ -277,7 +277,6 @@ class TreeArguments(AbstractArguments):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
 
     def get_calling_nodes(self):
-        from jedi.inference.dynamic_params import DynamicExecutedParamName
         old_arguments_list = []
         arguments = self
 
@@ -290,14 +289,13 @@ class TreeArguments(AbstractArguments):
                 names = calling_name.goto()
                 if len(names) != 1:
                     break
+                if isinstance(names[0], SimpleParamName):
+                    # Dynamic parameters should not have calling nodes, because
+                    # they are dynamic and extremely random.
+                    return []
                 if not isinstance(names[0], ParamName):
                     break
                 executed_param_name = names[0].get_executed_param_name()
-                if isinstance(executed_param_name, DynamicExecutedParamName):
-                    # For dynamic searches we don't even want to see errors.
-                    return []
-                if executed_param_name.arguments is None:
-                    break
                 arguments = executed_param_name.arguments
                 break
 
