@@ -254,9 +254,9 @@ class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
         return [self]
 
 
-class X(BaseTreeParamName):
+class _ActualTreeParamName(BaseTreeParamName):
     def __init__(self, function_value, tree_name):
-        super(BaseTreeParamName, self).__init__(
+        super(_ActualTreeParamName, self).__init__(
             function_value.get_default_param_context(), tree_name)
         self.function_value = function_value
 
@@ -323,12 +323,12 @@ class X(BaseTreeParamName):
         return doc_params
 
 
-class SimpleParamName(X):
+class AnonymousParamName(_ActualTreeParamName):
     def __init__(self, function_value, tree_name):
-        super(SimpleParamName, self).__init__(function_value, tree_name)
+        super(AnonymousParamName, self).__init__(function_value, tree_name)
 
     def infer(self):
-        values = super(SimpleParamName, self).infer()
+        values = super(AnonymousParamName, self).infer()
         if values:
             return values
         from jedi.inference.dynamic_params import dynamic_param_lookup
@@ -350,7 +350,7 @@ class SimpleParamName(X):
         return ValueSet({value})
 
 
-class ParamName(X):
+class ParamName(_ActualTreeParamName):
     def __init__(self, function_value, tree_name, arguments):
         super(ParamName, self).__init__(function_value, tree_name)
         self.arguments = arguments

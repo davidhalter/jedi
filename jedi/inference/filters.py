@@ -14,7 +14,7 @@ from jedi.inference.base_value import ValueSet, Value, ValueWrapper, \
 from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.utils import to_list
 from jedi.inference.names import TreeNameDefinition, ParamName, \
-    SimpleParamName, AbstractNameDefinition
+    AnonymousParamName, AbstractNameDefinition
 
 _definition_name_cache = weakref.WeakKeyDictionary()
 
@@ -179,7 +179,7 @@ class FunctionExecutionFilter(_FunctionExecutionFilter):
 
 class AnonymousFunctionExecutionFilter(_FunctionExecutionFilter):
     def _convert_param(self, param, name):
-        return SimpleParamName(self._function_value, name)
+        return AnonymousParamName(self._function_value, name)
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):

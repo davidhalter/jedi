@@ -11,7 +11,7 @@ from jedi.inference.signature import TreeSignature
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter, \
     AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, AbstractNameDefinition, \
-    SimpleParamName, ParamName
+    AnonymousParamName, ParamName
 from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
@@ -70,7 +70,7 @@ class FunctionMixin(object):
         return ValueSet([BoundMethod(instance, self)])
 
     def get_param_names(self):
-        return [SimpleParamName(self, param.name)
+        return [AnonymousParamName(self, param.name)
                 for param in self.tree_node.get_params()]
 
     @property

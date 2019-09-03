@@ -34,7 +34,7 @@ from jedi.inference import usages
 from jedi.inference.arguments import try_iter_content
 from jedi.inference.helpers import get_module_names, infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
-from jedi.inference.names import TreeNameDefinition, SimpleParamName
+from jedi.inference.names import TreeNameDefinition, AnonymousParamName
 from jedi.inference.syntax_tree import tree_name_to_values
 from jedi.inference.value import ModuleValue
 from jedi.inference.base_value import ValueSet
@@ -508,7 +508,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         if name.parent.type == 'param':
             func = tree.search_ancestor(name, 'funcdef', 'lambdef')
             func = context.get_root_context().create_value(func)
-            return SimpleParamName(func, name)
+            return AnonymousParamName(func, name)
         else:
             return TreeNameDefinition(context, name)
 

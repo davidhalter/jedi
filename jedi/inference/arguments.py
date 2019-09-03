@@ -8,7 +8,7 @@ from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
     LazyTreeValue, get_merged_lazy_value
-from jedi.inference.names import ParamName, TreeNameDefinition, SimpleParamName
+from jedi.inference.names import ParamName, TreeNameDefinition, AnonymousParamName
 from jedi.inference.base_value import NO_VALUES, ValueSet, ContextualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import inference_state_as_method_param_cache
@@ -270,7 +270,7 @@ class TreeArguments(AbstractArguments):
                 names = calling_name.goto()
                 if len(names) != 1:
                     break
-                if isinstance(names[0], SimpleParamName):
+                if isinstance(names[0], AnonymousParamName):
                     # Dynamic parameters should not have calling nodes, because
                     # they are dynamic and extremely random.
                     return []
