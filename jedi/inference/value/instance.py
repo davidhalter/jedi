@@ -228,18 +228,6 @@ class AbstractInstanceValue(Value):
     def name(self):
         pass
 
-    def create_init_executions(self):
-        for name in self.get_function_slot_names(u'__init__'):
-            # TODO is this correct? I think we need to check for functions.
-            if isinstance(name, LazyInstanceClassName):
-                function = FunctionValue.from_context(
-                    self.parent_context,
-                    name.tree_name.parent
-                )
-                bound_method = BoundMethod(self, function)
-
-                yield bound_method.as_context(self.arguments)
-
     @inference_state_method_cache()
     def create_instance_context(self, class_context, node):
         if node.parent.type in ('funcdef', 'classdef'):

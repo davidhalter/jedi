@@ -185,6 +185,7 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
         if arglist == ')':
             arglist = None
         args = TreeArguments(inference_state, context, arglist, trailer)
+        from jedi.inference.value.instance import BoundMethod, InstanceArguments
         if value.tree_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 inference_state,
@@ -192,17 +193,18 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
                 value,
                 args
             )
-            for execution in created_instance.create_init_executions():
-                yield execution
+            args = InstanceArguments(created_instance, args)
+            yield args
         else:
-            yield value.as_context(args)
+            if isinstance(value, BoundMethod):
+                args = InstanceArguments(value.instance, args)
+            yield args
 
     for value in inference_state.goto_definitions(context, name):
         value_node = value.tree_node
         if compare_node == value_node:
-            for func_execution in create_func_excs(value):
-                # TODO private access
-                yield func_execution._arguments
+            for arguments in create_func_excs(value):
+                yield arguments
         elif isinstance(value.parent_context, BaseFunctionExecutionContext) \
                 and compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
@@ -216,7 +218,7 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             if nodes == [compare_node]:
                 # Found a decorator.
                 module_context = context.get_root_context()
-                execution_context = next(create_func_excs(value))
+                execution_context = value.as_context(next(create_func_excs(value)))
                 potential_nodes = _get_potential_nodes(module_context, param_names[0].string_name)
                 for name, trailer in potential_nodes:
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
