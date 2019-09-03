@@ -161,6 +161,9 @@ class MethodValue(FunctionValue):
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
+    def _infer_annotations(self):
+        raise NotImplementedError
+
     @inference_state_method_cache(default=NO_VALUES)
     @recursion.execution_recursion_decorator()
     def get_return_values(self, check_yields=False):
@@ -172,14 +175,13 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             value_set = NO_VALUES
             returns = get_yield_exprs(self.inference_state, funcdef)
         else:
-            returns = funcdef.iter_return_stmts()
-            from jedi.inference.gradual.annotation import infer_return_types
-            value_set = infer_return_types(self._value, self._arguments)
+            value_set = self._infer_annotations()
             if value_set:
                 # If there are annotations, prefer them over anything else.
                 # This will make it faster.
                 return value_set
             value_set |= docstrings.infer_return_types(self._value)
+            returns = funcdef.iter_return_stmts()
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)
@@ -328,6 +330,10 @@ class FunctionExecutionContext(BaseFunctionExecutionContext):
             arguments=self._arguments
         )
 
+    def _infer_annotations(self):
+        from jedi.inference.gradual.annotation import infer_return_types
+        return infer_return_types(self._value, self._arguments)
+
     def get_param_names(self):
         return [
             ParamName(self._value, param.name, self._arguments)
@@ -336,6 +342,11 @@ class FunctionExecutionContext(BaseFunctionExecutionContext):
 
 
 class AnonymousFunctionExecution(BaseFunctionExecutionContext):
+    def _infer_annotations(self):
+        # I don't think inferring anonymous executions is a big thing.
+        # Anonymous contexts are mostly there for the user to work in. ~ dave
+        return NO_VALUES
+
     def get_filters(self, until_position=None, origin_scope=None):
         yield AnonymousFunctionExecutionFilter(
             self, self._value,
