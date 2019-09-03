@@ -87,6 +87,8 @@ class FunctionMixin(object):
         return function_execution.infer()
 
     def _as_context(self, arguments=None):
+        if arguments is None:
+            return AnonymousFunctionExecution(self)
         return FunctionExecutionContext(self, arguments)
 
     def get_signatures(self):
@@ -325,13 +327,26 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
                 return self.get_return_values()
 
     def get_param_names(self):
-        if self._arguments is None:
-            return self._value.get_param_names()
-        else:
-            return [
-                ParamName(self._value, param.name, self._arguments)
-                for param in self._value.tree_node.get_params()
-            ]
+        return [
+            ParamName(self._value, param.name, self._arguments)
+            for param in self._value.tree_node.get_params()
+        ]
+
+
+class AnonymousFunctionExecution(FunctionExecutionContext):
+    def __init__(self, function_value):
+        super(AnonymousFunctionExecution, self).__init__(function_value, arguments=None)
+
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield FunctionExecutionFilter(
+            self, self._value,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            arguments=None,
+        )
+
+    def get_param_names(self):
+        return self._value.get_param_names()
 
 
 class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
