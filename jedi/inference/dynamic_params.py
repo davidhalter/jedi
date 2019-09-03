@@ -20,7 +20,7 @@ It works as follows:
 from jedi import settings
 from jedi import debug
 from jedi.parser_utils import get_parent_scope
-from jedi.inference.cache import inference_state_function_cache
+from jedi.inference.cache import inference_state_method_cache
 from jedi.inference import imports
 from jedi.inference.arguments import TreeArguments
 from jedi.inference.param import create_default_params, get_executed_param_names
@@ -56,7 +56,7 @@ class DynamicExecutedParamName(ParamNameWrapper):
 
 
 @debug.increase_indent
-def search_param_names(inference_state, function_value, funcdef):
+def search_param_names(function_value):
     """
     A dynamic search for param values. If you try to complete a type:
 
@@ -69,10 +69,13 @@ def search_param_names(inference_state, function_value, funcdef):
     have to look for all calls to ``func`` to find out what ``foo`` possibly
     is.
     """
+    function_value.inference_state
+    funcdef = function_value.tree_node
+
     if not settings.dynamic_params:
         return create_default_params(function_value, funcdef)
 
-    inference_state.dynamic_params_depth += 1
+    function_value.inference_state.dynamic_params_depth += 1
     try:
         path = function_value.get_root_context().py__file__()
         if path is not None and is_stdlib_path(path):
@@ -93,7 +96,6 @@ def search_param_names(inference_state, function_value, funcdef):
         try:
             module_context = function_value.get_root_context()
             arguments_list = _search_function_arguments(
-                inference_state,
                 module_context,
                 funcdef,
                 string_name=string_name,
@@ -111,12 +113,12 @@ def search_param_names(inference_state, function_value, funcdef):
             debug.dbg('Dynamic param result finished', color='MAGENTA')
         return params
     finally:
-        inference_state.dynamic_params_depth -= 1
+        function_value.inference_state.dynamic_params_depth -= 1
 
 
-@inference_state_function_cache(default=None)
+@inference_state_method_cache(default=None)
 @to_list
-def _search_function_arguments(inference_state, module_context, funcdef, string_name):
+def _search_function_arguments(module_context, funcdef, string_name):
     """
     Returns a list of param names.
     """
@@ -129,6 +131,7 @@ def _search_function_arguments(inference_state, module_context, funcdef, string_
 
     found_arguments = False
     i = 0
+    inference_state = module_context.inference_state
     for for_mod_context in imports.get_module_contexts_containing_name(
             inference_state, [module_context], string_name):
         for name, trailer in _get_potential_nodes(for_mod_context, string_name):

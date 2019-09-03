@@ -333,7 +333,7 @@ class SimpleParamName(X):
             return values
         # TODO private access
         from jedi.inference.dynamic_params import search_param_names
-        param_names = search_param_names(self.function_value.inference_state, self.function_value, self.function_value.tree_node)
+        param_names = search_param_names(self.function_value)
         return param_names[self._get_param_node().position_index].infer()
 
 
