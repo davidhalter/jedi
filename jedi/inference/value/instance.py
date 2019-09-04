@@ -17,10 +17,8 @@ from jedi.inference.arguments import ValuesArguments, TreeArgumentsWrapper
 from jedi.inference.value.function import \
     FunctionValue, FunctionMixin, OverloadedFunctionValue, \
     BaseFunctionExecutionContext, FunctionExecutionContext
-from jedi.inference.value.klass import ClassValue, apply_py__get__, \
-    ClassFilter
+from jedi.inference.value.klass import apply_py__get__, ClassFilter
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
-from jedi.parser_utils import get_parent_scope
 
 
 class InstanceExecutedParamName(ParamName):
@@ -117,7 +115,7 @@ class CompiledInstance(AbstractInstanceValue):
     def __init__(self, inference_state, parent_context, class_value, arguments):
         super(CompiledInstance, self).__init__(inference_state, parent_context,
                                                class_value)
-        self.arguments = arguments
+        self._arguments = arguments
 
     def get_filters(self, origin_scope=None, include_self_names=True):
         class_value = self.get_annotated_class_object()
@@ -190,7 +188,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
                 func = FunctionValue.from_context(class_context, func_node)
                 bound_method = BoundMethod(self, func)
                 if func_node.name.value == '__init__':
-                    context = bound_method.as_context(self.arguments)
+                    context = bound_method.as_context(self._arguments)
                 else:
                     context = bound_method.as_context()
                 break
@@ -305,7 +303,7 @@ class TreeInstance(_BaseTreeInstance):
 
         super(_BaseTreeInstance, self).__init__(inference_state, parent_context,
                                                 class_value)
-        self.arguments = arguments
+        self._arguments = arguments
         self.tree_node = class_value.tree_node
 
     # This can recurse, if the initialization of the class includes a reference
@@ -315,7 +313,7 @@ class TreeInstance(_BaseTreeInstance):
         from jedi.inference.gradual.annotation import py__annotations__, \
             infer_type_vars_for_execution
 
-        args = InstanceArguments(self, self.arguments)
+        args = InstanceArguments(self, self._arguments)
         for signature in self.class_value.py__getattribute__('__init__').get_signatures():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
@@ -346,7 +344,7 @@ class TreeInstance(_BaseTreeInstance):
             # TODO tuple initializations
             # >>> dict([('a', 4)])
             # {'a': 4}
-            for key, lazy_context in reversed(list(self.arguments.unpack())):
+            for key, lazy_context in reversed(list(self._arguments.unpack())):
                 if key is None:
                     values = ValueSet.from_sets(
                         dct_value.py__simple_getitem__(index)
@@ -362,11 +360,11 @@ class TreeInstance(_BaseTreeInstance):
 
     def __repr__(self):
         return "<%s of %s(%s)>" % (self.__class__.__name__, self.class_value,
-                                   self.arguments)
+                                   self._arguments)
 
 
 class AnonymousInstance(_BaseTreeInstance):
-    arguments = None
+    _arguments = None
 
 
 class CompiledInstanceName(compiled.CompiledName):
