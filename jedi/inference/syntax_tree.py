@@ -9,7 +9,7 @@ from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.inference.base_value import ValueSet, NO_VALUES, ContextualizedNode, \
-    ContextualizedName, iterator_to_value_set, iterate_values
+    iterator_to_value_set, iterate_values
 from jedi.inference.lazy_value import LazyTreeValue
 from jedi.inference import compiled
 from jedi.inference import recursion
@@ -25,6 +25,7 @@ from jedi.inference.compiled.access import COMPARISON_OPERATORS
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.gradual.stub_value import VersionInfo
 from jedi.inference.gradual import annotation
+from jedi.inference.names import TreeNameDefinition
 from jedi.inference.value.decorator import Decoratee
 from jedi.plugins import plugin_manager
 
@@ -301,8 +302,8 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
     value_set = context.infer_node(rhs)
 
     if seek_name:
-        c_node = ContextualizedName(context, seek_name)
-        value_set = check_tuple_assignments(c_node, value_set)
+        n = TreeNameDefinition(context, seek_name)
+        value_set = check_tuple_assignments(n, value_set)
 
     first_operator = next(stmt.yield_operators(), None)
     is_setitem, subscriptlist = check_setitem(stmt)
@@ -614,8 +615,8 @@ def tree_name_to_values(inference_state, context, tree_name):
                 contextualized_node=cn,
                 is_async=node.parent.type == 'async_stmt',
             )
-            c_node = ContextualizedName(context, tree_name)
-            types = check_tuple_assignments(c_node, for_types)
+            n = TreeNameDefinition(context, tree_name)
+            types = check_tuple_assignments(n, for_types)
     elif typ == 'expr_stmt':
         types = _remove_statements(context, node, tree_name)
     elif typ == 'with_stmt':
@@ -687,13 +688,13 @@ def _apply_decorators(context, node):
     return values
 
 
-def check_tuple_assignments(contextualized_name, value_set):
+def check_tuple_assignments(name, value_set):
     """
     Checks if tuples are assigned.
     """
     lazy_value = None
-    for index, node in contextualized_name.assignment_indexes():
-        cn = ContextualizedNode(contextualized_name.context, node)
+    for index, node in name.assignment_indexes():
+        cn = ContextualizedNode(name.parent_context, node)
         iterated = value_set.iterate(cn)
         if isinstance(index, slice):
             # For no star unpacking is not possible.

@@ -175,6 +175,46 @@ class TreeNameDefinition(AbstractTreeName):
             return 'statement'
         return self._API_TYPES.get(definition.type, 'statement')
 
+    def assignment_indexes(self):
+        """
+        Returns an array of tuple(int, node) of the indexes that are used in
+        tuple assignments.
+
+        For example if the name is ``y`` in the following code::
+
+            x, (y, z) = 2, ''
+
+        would result in ``[(1, xyz_node), (0, yz_node)]``.
+
+        When searching for b in the case ``a, *b, c = [...]`` it will return::
+
+            [(slice(1, -1), abc_node)]
+        """
+        indexes = []
+        is_star_expr = False
+        node = self.tree_name.parent
+        compare = self.tree_name
+        while node is not None:
+            if node.type in ('testlist', 'testlist_comp', 'testlist_star_expr', 'exprlist'):
+                for i, child in enumerate(node.children):
+                    if child == compare:
+                        index = int(i / 2)
+                        if is_star_expr:
+                            from_end = int((len(node.children) - i) / 2)
+                            index = slice(index, -from_end)
+                        indexes.insert(0, (index, node))
+                        break
+                else:
+                    raise LookupError("Couldn't find the assignment.")
+                is_star_expr = False
+            elif node.type == 'star_expr':
+                is_star_expr = True
+            elif node.type in ('expr_stmt', 'sync_comp_for'):
+                break
+
+            compare = node
+            node = node.parent
+        return indexes
 
 class _ParamMixin(object):
     def maybe_positional_argument(self, include_star=True):
