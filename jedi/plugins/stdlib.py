@@ -334,10 +334,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
     )
 
 
-class StaticMethodObject(AttributeOverwrite, ValueWrapper):
-    def get_object(self):
-        return self._wrapped_value
-
+class StaticMethodObject(ValueWrapper):
     def py__get__(self, instance, klass):
         return ValueSet([self._wrapped_value])
 
@@ -347,13 +344,10 @@ def builtins_staticmethod(functions):
     return ValueSet(StaticMethodObject(f) for f in functions)
 
 
-class ClassMethodObject(AttributeOverwrite, ValueWrapper):
+class ClassMethodObject(ValueWrapper):
     def __init__(self, class_method_obj, function):
         super(ClassMethodObject, self).__init__(class_method_obj)
         self._function = function
-
-    def get_object(self):
-        return self._wrapped_value
 
     def py__get__(self, obj, class_value):
         return ValueSet([
@@ -362,7 +356,7 @@ class ClassMethodObject(AttributeOverwrite, ValueWrapper):
         ])
 
 
-class ClassMethodGet(AttributeOverwrite, ValueWrapper):
+class ClassMethodGet(ValueWrapper):
     def __init__(self, get_method, klass, function):
         super(ClassMethodGet, self).__init__(get_method)
         self._class = klass
@@ -370,9 +364,6 @@ class ClassMethodGet(AttributeOverwrite, ValueWrapper):
 
     def get_signatures(self):
         return self._function.get_signatures()
-
-    def get_object(self):
-        return self._wrapped_value
 
     def py__call__(self, arguments):
         return self._function.execute(ClassMethodArguments(self._class, arguments))
@@ -402,9 +393,6 @@ class PropertyObject(AttributeOverwrite, ValueWrapper):
     def __init__(self, property_obj, function):
         super(PropertyObject, self).__init__(property_obj)
         self._function = function
-
-    def get_object(self):
-        return self._wrapped_value
 
     def py__get__(self, instance, class_value):
         if instance is None:
