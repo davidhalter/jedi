@@ -16,11 +16,11 @@ from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
 from jedi.inference.utils import safe_property
 from jedi.inference.helpers import get_str_or_none
-from jedi.inference.arguments import ValuesArguments, \
+from jedi.inference.arguments import \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.inference import analysis
 from jedi.inference import compiled
-from jedi.inference.value.instance import BoundMethod, \
+from jedi.inference.value.instance import \
     AnonymousMethodExecutionContext, MethodExecutionContext
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
@@ -121,19 +121,7 @@ def execute(callback):
             else:
                 return call()
 
-            if isinstance(value, BoundMethod):
-                if module_name == 'builtins':
-                    if value.py__name__() == '__get__':
-                        if value.class_context.py__name__() == 'property':
-                            return builtins_property(
-                                value,
-                                arguments=arguments,
-                                callback=call,
-                            )
-                    elif value.py__name__() in ('deleter', 'getter', 'setter'):
-                        if value.class_context.py__name__() == 'property':
-                            return ValueSet([value.instance])
-
+            if value.is_bound_method():
                 return call()
 
             # for now we just support builtin functions.
@@ -189,17 +177,6 @@ def argument_clinic(string, want_obj=False, want_context=False,
 
         return wrapper
     return f
-
-
-@argument_clinic('obj, type, /', want_obj=True, want_arguments=True)
-def builtins_property(objects, types, obj, arguments):
-    property_args = obj.instance.arguments.unpack()
-    key, lazy_value = next(property_args, (None, None))
-    if key is not None or lazy_value is None:
-        debug.warning('property expected a first param, not %s', arguments)
-        return NO_VALUES
-
-    return lazy_value.infer().py__call__(arguments=ValuesArguments([objects]))
 
 
 @argument_clinic('iterator[, default], /', want_inference_state=True)
@@ -417,6 +394,35 @@ def builtins_classmethod(functions, obj, arguments):
     return ValueSet(
         ClassMethodObject(class_method_object, function)
         for class_method_object in obj.py__call__(arguments=arguments)
+        for function in functions
+    )
+
+
+class PropertyObject(AttributeOverwrite, ValueWrapper):
+    def __init__(self, property_obj, function):
+        super(PropertyObject, self).__init__(property_obj)
+        self._function = function
+
+    def get_object(self):
+        return self._wrapped_value
+
+    def py__get__(self, instance, class_value):
+        if instance is None:
+            return NO_VALUES
+        return self._function.execute_with_values(instance)
+
+    @publish_method('deleter')
+    @publish_method('getter')
+    @publish_method('setter')
+    def _return_self(self):
+        return ValueSet({self})
+
+
+@argument_clinic('func, /', want_callback=True)
+def builtins_property(functions, callback):
+    return ValueSet(
+        PropertyObject(property_value, function)
+        for property_value in callback()
         for function in functions
     )
 
@@ -737,6 +743,7 @@ _implemented = {
         'iter': builtins_iter,
         'staticmethod': builtins_staticmethod,
         'classmethod': builtins_classmethod,
+        'property': builtins_property,
     },
     'copy': {
         'copy': _return_first_param,
