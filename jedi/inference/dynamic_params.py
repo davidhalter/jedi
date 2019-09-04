@@ -16,6 +16,7 @@ It works as follows:
 - search for function calls named ``foo``
 - execute these calls and check the input.
 """
+
 from jedi import settings
 from jedi import debug
 from jedi.parser_utils import get_parent_scope
@@ -112,29 +113,23 @@ def _search_function_arguments(module_context, funcdef, string_name):
             string_name = cls.name.value
             compare_node = cls
 
-    module_contexts = imports.get_module_contexts_containing_name(
-            module_context.inference_state, [module_context], string_name
-    )
-    return _search_function_arguments_for_module(
-        module_contexts, funcdef, compare_node, string_name)
-
-
-def _search_function_arguments_for_module(module_contexts, funcdef, compare_node, string_name):
     found_arguments = False
     i = 0
-    for module_context in module_contexts:
-        for name, trailer in _get_potential_nodes(module_context, string_name):
+    inference_state = module_context.inference_state
+    for for_mod_context in imports.get_module_contexts_containing_name(
+            inference_state, [module_context], string_name):
+        for name, trailer in _get_potential_nodes(for_mod_context, string_name):
             i += 1
 
             # This is a simple way to stop Jedi's dynamic param recursion
             # from going wild: The deeper Jedi's in the recursion, the less
             # code should be inferred.
-            if i * module_context.inference_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
+            if i * inference_state.dynamic_params_depth > MAX_PARAM_SEARCHES:
                 return
 
-            random_context = module_context.create_context(name)
+            random_context = for_mod_context.create_context(name)
             for arguments in _check_name_for_execution(
-                    module_context.inference_state, random_context, compare_node, name, trailer):
+                    inference_state, random_context, compare_node, name, trailer):
                 found_arguments = True
                 yield arguments
 
@@ -206,8 +201,9 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             if len(param_names) != 1:
                 continue
             values = param_names[0].infer()
-            if [v.tree_node for v in values] == [compare_node]:
-                # Found a decorator or something that looks like it.
+            nodes = [v.tree_node for v in values]
+            if nodes == [compare_node]:
+                # Found a decorator.
                 module_context = context.get_root_context()
                 execution_context = value.as_context(next(create_func_excs(value)))
                 potential_nodes = _get_potential_nodes(module_context, param_names[0].string_name)
