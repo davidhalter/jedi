@@ -141,15 +141,15 @@ class _DynamicArrayAdditions(HelperValueMixin):
     for set/list and never used in any other place.
     """
     def __init__(self, instance, arguments):
-        self.instance = instance
-        self.arguments = arguments
+        self._instance = instance
+        self._arguments = arguments
 
     def py__class__(self):
-        tuple_, = self.instance.inference_state.builtins_module.py__getattribute__('tuple')
+        tuple_, = self._instance.inference_state.builtins_module.py__getattribute__('tuple')
         return tuple_
 
     def py__iter__(self, contextualized_node=None):
-        arguments = self.arguments
+        arguments = self._arguments
         try:
             _, lazy_value = next(arguments.unpack())
         except StopIteration:
@@ -160,7 +160,7 @@ class _DynamicArrayAdditions(HelperValueMixin):
 
         from jedi.inference.arguments import TreeArguments
         if isinstance(arguments, TreeArguments):
-            additions = _internal_check_array_additions(arguments.context, self.instance)
+            additions = _internal_check_array_additions(arguments.context, self._instance)
             for addition in additions:
                 yield addition
 
