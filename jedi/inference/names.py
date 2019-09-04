@@ -119,13 +119,13 @@ class AbstractTreeName(AbstractNameDefinition):
                 # a name it's something you can "goto" again.
                 is_simple_name = name.parent.type not in ('power', 'trailer')
                 if is_simple_name:
-                    return [TreeNameDefinition(context, name)]
+                    return [self]
             elif type_ in ('import_from', 'import_name'):
                 from jedi.inference.imports import goto_import
                 module_names = goto_import(context, name)
                 return module_names
             else:
-                return [TreeNameDefinition(context, name)]
+                return [self]
         else:
             from jedi.inference.imports import follow_error_node_imports_if_possible
             values = follow_error_node_imports_if_possible(context, name)

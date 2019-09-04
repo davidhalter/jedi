@@ -62,7 +62,6 @@ I need to mention now that lazy type inference is really good because it
 only *inferes* what needs to be *inferred*. All the statements and modules
 that are not used are just being ignored.
 """
-from parso.python import tree
 import parso
 from parso import python_bytes_to_unicode
 from jedi.file_io import FileIO
