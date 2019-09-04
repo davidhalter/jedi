@@ -20,12 +20,13 @@ from jedi.inference.value import ClassValue, FunctionValue
 from jedi.inference.value import iterable
 from jedi.inference.value.dynamic_arrays import ListModification, DictModification
 from jedi.inference.value import TreeInstance
-from jedi.inference.helpers import is_string, is_literal, is_number
+from jedi.inference.helpers import is_string, is_literal, is_number, get_names_of_node
 from jedi.inference.compiled.access import COMPARISON_OPERATORS
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.gradual.stub_value import VersionInfo
 from jedi.inference.gradual import annotation
 from jedi.inference.names import TreeNameDefinition
+from jedi.inference.context import CompForContext
 from jedi.inference.value.decorator import Decoratee
 from jedi.plugins import plugin_manager
 
@@ -66,9 +67,99 @@ def _py__stop_iteration_returns(generators):
     return results
 
 
+def infer_node(context, element):
+    if isinstance(context, CompForContext):
+        return _infer_node(context, element)
+
+    if_stmt = element
+    while if_stmt is not None:
+        if_stmt = if_stmt.parent
+        if if_stmt.type in ('if_stmt', 'for_stmt'):
+            break
+        if parser_utils.is_scope(if_stmt):
+            if_stmt = None
+            break
+    predefined_if_name_dict = context.predefined_names.get(if_stmt)
+    # TODO there's a lot of issues with this one. We actually should do
+    # this in a different way. Caching should only be active in certain
+    # cases and this all sucks.
+    if predefined_if_name_dict is None and if_stmt \
+            and if_stmt.type == 'if_stmt' and context.inference_state.is_analysis:
+        if_stmt_test = if_stmt.children[1]
+        name_dicts = [{}]
+        # If we already did a check, we don't want to do it again -> If
+        # value.predefined_names is filled, we stop.
+        # We don't want to check the if stmt itself, it's just about
+        # the content.
+        if element.start_pos > if_stmt_test.end_pos:
+            # Now we need to check if the names in the if_stmt match the
+            # names in the suite.
+            if_names = get_names_of_node(if_stmt_test)
+            element_names = get_names_of_node(element)
+            str_element_names = [e.value for e in element_names]
+            if any(i.value in str_element_names for i in if_names):
+                for if_name in if_names:
+                    definitions = context.inference_state.goto_definitions(context, if_name)
+                    # Every name that has multiple different definitions
+                    # causes the complexity to rise. The complexity should
+                    # never fall below 1.
+                    if len(definitions) > 1:
+                        if len(name_dicts) * len(definitions) > 16:
+                            debug.dbg('Too many options for if branch inference %s.', if_stmt)
+                            # There's only a certain amount of branches
+                            # Jedi can infer, otherwise it will take to
+                            # long.
+                            name_dicts = [{}]
+                            break
+
+                        original_name_dicts = list(name_dicts)
+                        name_dicts = []
+                        for definition in definitions:
+                            new_name_dicts = list(original_name_dicts)
+                            for i, name_dict in enumerate(new_name_dicts):
+                                new_name_dicts[i] = name_dict.copy()
+                                new_name_dicts[i][if_name.value] = ValueSet([definition])
+
+                            name_dicts += new_name_dicts
+                    else:
+                        for name_dict in name_dicts:
+                            name_dict[if_name.value] = definitions
+        if len(name_dicts) > 1:
+            result = NO_VALUES
+            for name_dict in name_dicts:
+                with context.predefine_names(if_stmt, name_dict):
+                    result |= _infer_node(context, element)
+            return result
+        else:
+            return _infer_node_if_inferred(context, element)
+    else:
+        if predefined_if_name_dict:
+            return _infer_node(context, element)
+        else:
+            return _infer_node_if_inferred(context, element)
+
+
+def _infer_node_if_inferred(context, element):
+    """
+    TODO This function is temporary: Merge with infer_node.
+    """
+    parent = element
+    while parent is not None:
+        parent = parent.parent
+        predefined_if_name_dict = context.predefined_names.get(parent)
+        if predefined_if_name_dict is not None:
+            return _infer_node(context, element)
+    return _infer_node_cached(context, element)
+
+
+@inference_state_method_cache(default=NO_VALUES)
+def _infer_node_cached(context, element):
+    return _infer_node(context, element)
+
+
 @debug.increase_indent
 @_limit_value_infers
-def infer_node(context, element):
+def _infer_node(context, element):
     debug.dbg('infer_node %s@%s in %s', element, element.start_pos, context)
     inference_state = context.inference_state
     typ = element.type
@@ -128,7 +219,7 @@ def infer_node(context, element):
             value_set = value_set.py__getattribute__(next_name, name_context=context)
         return value_set
     elif typ == 'eval_input':
-        return infer_node(context, element.children[0])
+        return context.infer_node(element.children[0])
     elif typ == 'annassign':
         return annotation.infer_annotation(context, element.children[1]) \
             .execute_annotation()
@@ -143,7 +234,7 @@ def infer_node(context, element):
         # Generator.send() is not implemented.
         return NO_VALUES
     elif typ == 'namedexpr_test':
-        return infer_node(context, element.children[2])
+        return context.infer_node(element.children[2])
     else:
         return infer_or_test(context, element)
 

@@ -33,7 +33,7 @@ return the ``date`` class.
 To *visualize* this (simplified):
 
 - ``InferenceState.infer_expr_stmt`` doesn't do much, because there's no assignment.
-- ``Value.infer_node`` cares for resolving the dotted path
+- ``Context.infer_node`` cares for resolving the dotted path
 - ``InferenceState.find_types`` searches for global definitions of datetime, which
   it finds in the definition of an import, by scanning the syntax tree.
 - Using the import logic, the datetime module is found.
@@ -147,93 +147,6 @@ class InferenceState(object):
     def get_sys_path(self, **kwargs):
         """Convenience function"""
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
-
-    def infer_element(self, context, element):
-        if isinstance(context, CompForContext):
-            return infer_node(context, element)
-
-        if_stmt = element
-        while if_stmt is not None:
-            if_stmt = if_stmt.parent
-            if if_stmt.type in ('if_stmt', 'for_stmt'):
-                break
-            if parser_utils.is_scope(if_stmt):
-                if_stmt = None
-                break
-        predefined_if_name_dict = context.predefined_names.get(if_stmt)
-        # TODO there's a lot of issues with this one. We actually should do
-        # this in a different way. Caching should only be active in certain
-        # cases and this all sucks.
-        if predefined_if_name_dict is None and if_stmt \
-                and if_stmt.type == 'if_stmt' and self.is_analysis:
-            if_stmt_test = if_stmt.children[1]
-            name_dicts = [{}]
-            # If we already did a check, we don't want to do it again -> If
-            # value.predefined_names is filled, we stop.
-            # We don't want to check the if stmt itself, it's just about
-            # the content.
-            if element.start_pos > if_stmt_test.end_pos:
-                # Now we need to check if the names in the if_stmt match the
-                # names in the suite.
-                if_names = helpers.get_names_of_node(if_stmt_test)
-                element_names = helpers.get_names_of_node(element)
-                str_element_names = [e.value for e in element_names]
-                if any(i.value in str_element_names for i in if_names):
-                    for if_name in if_names:
-                        definitions = self.goto_definitions(context, if_name)
-                        # Every name that has multiple different definitions
-                        # causes the complexity to rise. The complexity should
-                        # never fall below 1.
-                        if len(definitions) > 1:
-                            if len(name_dicts) * len(definitions) > 16:
-                                debug.dbg('Too many options for if branch inference %s.', if_stmt)
-                                # There's only a certain amount of branches
-                                # Jedi can infer, otherwise it will take to
-                                # long.
-                                name_dicts = [{}]
-                                break
-
-                            original_name_dicts = list(name_dicts)
-                            name_dicts = []
-                            for definition in definitions:
-                                new_name_dicts = list(original_name_dicts)
-                                for i, name_dict in enumerate(new_name_dicts):
-                                    new_name_dicts[i] = name_dict.copy()
-                                    new_name_dicts[i][if_name.value] = ValueSet([definition])
-
-                                name_dicts += new_name_dicts
-                        else:
-                            for name_dict in name_dicts:
-                                name_dict[if_name.value] = definitions
-            if len(name_dicts) > 1:
-                result = NO_VALUES
-                for name_dict in name_dicts:
-                    with context.predefine_names(if_stmt, name_dict):
-                        result |= infer_node(context, element)
-                return result
-            else:
-                return self._infer_element_if_inferred(context, element)
-        else:
-            if predefined_if_name_dict:
-                return infer_node(context, element)
-            else:
-                return self._infer_element_if_inferred(context, element)
-
-    def _infer_element_if_inferred(self, context, element):
-        """
-        TODO This function is temporary: Merge with infer_element.
-        """
-        parent = element
-        while parent is not None:
-            parent = parent.parent
-            predefined_if_name_dict = context.predefined_names.get(parent)
-            if predefined_if_name_dict is not None:
-                return infer_node(context, element)
-        return self._infer_element_cached(context, element)
-
-    @inference_state_function_cache(default=NO_VALUES)
-    def _infer_element_cached(self, context, element):
-        return infer_node(context, element)
 
     def goto_definitions(self, context, name):
         def_ = name.get_definition(import_name_always=True)

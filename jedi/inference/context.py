@@ -206,7 +206,8 @@ class ValueContext(AbstractContext):
 
 class TreeContextMixin(object):
     def infer_node(self, node):
-        return self.inference_state.infer_element(self, node)
+        from jedi.inference.syntax_tree import infer_node
+        return infer_node(self, node)
 
     def create_value(self, node):
         from jedi.inference import value
