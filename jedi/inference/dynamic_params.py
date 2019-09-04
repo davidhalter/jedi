@@ -167,12 +167,12 @@ def _get_potential_nodes(module_value, func_string_name):
 def _check_name_for_execution(inference_state, context, compare_node, name, trailer):
     from jedi.inference.value.function import BaseFunctionExecutionContext
 
-    def create_func_excs(value):
+    def create_args(value):
         arglist = trailer.children[1]
         if arglist == ')':
             arglist = None
         args = TreeArguments(inference_state, context, arglist, trailer)
-        from jedi.inference.value.instance import BoundMethod, InstanceArguments
+        from jedi.inference.value.instance import InstanceArguments
         if value.tree_node.type == 'classdef':
             created_instance = instance.TreeInstance(
                 inference_state,
@@ -180,18 +180,16 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
                 value,
                 args
             )
-            args = InstanceArguments(created_instance, args)
-            yield args
+            return InstanceArguments(created_instance, args)
         else:
-            if isinstance(value, BoundMethod):
+            if value.is_bound_method():
                 args = InstanceArguments(value.instance, args)
-            yield args
+            return args
 
     for value in inference_state.goto_definitions(context, name):
         value_node = value.tree_node
         if compare_node == value_node:
-            for arguments in create_func_excs(value):
-                yield arguments
+            yield create_args(value)
         elif isinstance(value.parent_context, BaseFunctionExecutionContext) \
                 and compare_node.type == 'funcdef':
             # Here we're trying to find decorators by checking the first
@@ -201,11 +199,10 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
             if len(param_names) != 1:
                 continue
             values = param_names[0].infer()
-            nodes = [v.tree_node for v in values]
-            if nodes == [compare_node]:
+            if [v.tree_node for v in values] == [compare_node]:
                 # Found a decorator.
                 module_context = context.get_root_context()
-                execution_context = value.as_context(next(create_func_excs(value)))
+                execution_context = value.as_context(create_args(value))
                 potential_nodes = _get_potential_nodes(module_context, param_names[0].string_name)
                 for name, trailer in potential_nodes:
                     if value_node.start_pos < name.start_pos < value_node.end_pos:
