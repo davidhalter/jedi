@@ -104,7 +104,7 @@ def test_completion_on_hex_literals(Script):
     _check_number(Script, '0xE7.', 'int')
     _check_number(Script, '0xEa.', 'int')
     # theoretically, but people can just check for syntax errors:
-    #assert Script('0x.').completions() == []
+    assert Script('0x.').completions() == []
 
 
 def test_completion_on_complex_literals(Script):
