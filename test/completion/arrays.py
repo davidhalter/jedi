@@ -269,6 +269,9 @@ dic = {str(key): ''}
 #? str()
 dic['']
 
+# Just skip Python 2 tests from here. EoL soon, I'm too lazy for it.
+# python > 2.7
+
 
 for x in {1: 3.0, '': 1j}:
     #? int() str()
