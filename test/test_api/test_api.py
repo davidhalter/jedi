@@ -3,8 +3,10 @@ Test all things related to the ``jedi.api`` module.
 """
 
 import os
+import sys
 from textwrap import dedent
 
+import pytest
 from pytest import raises
 from parso import cache
 
@@ -12,6 +14,7 @@ from jedi import preload_module
 from jedi.inference.gradual import typeshed
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, EoL")
 def test_preload_modules():
     def check_loaded(*modules):
         for grammar_cache in cache.parser_cache.values():
