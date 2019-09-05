@@ -276,7 +276,7 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
         ('kwargs = dict(b=3)', 'wrapped(b, /, **kwargs)'),
     ]
 )
-def test_param_resolving(Script, stmt, expected):
+def test_param_resolving_to_static(Script, stmt, expected, skip_pre_python35):
     code = dedent('''\
         def full_redirect(func):
             def wrapped(*args, **kwargs):
