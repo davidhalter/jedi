@@ -130,6 +130,9 @@ class CompiledInstance(AbstractInstanceValue):
     def name(self):
         return compiled.CompiledValueName(self, self.class_value.name.string_name)
 
+    def is_compiled(self):
+        return True
+
     def is_stub(self):
         return False
 
