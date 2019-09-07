@@ -265,3 +265,64 @@ def test_file_path_completions(Script, file, code, column, expected):
         assert len(comps) > 100  # This is basically global completions.
     else:
         assert [c.complete for c in comps] == expected
+
+
+@pytest.mark.parametrize(
+    'added_code, column, expected', [
+        ('ints[', 5, ['1', '50']),
+        ('ints[]', 5, ['1', '50']),
+        ('ints[1]', 5, ['1']),
+        ('ints[1]', 6, ['']),
+        ('ints[1', 5, ['1']),
+        ('ints[1', 6, ['']),
+
+        ('ints[5]', 5, ['1']),
+        ('ints[5]', 6, ['0']),
+        ('ints[50', 5, ['50']),
+        ('ints[5', 6, ['0']),
+        ('ints[50', 6, ['0']),
+        ('ints[50', 7, ['']),
+
+        ('strs[', 5, ["'asdf'", "'foo'", "'fbar'"]),
+        ('strs[]', 5, ["'asdf'", "'foo'", "'fbar'"]),
+        ("strs[']", 6, ["asdf'", "foo'", "fbar'"]),
+        ('strs["]', 6, ['asdf"', 'foo"', 'fbar"']),
+        ('strs["""]', 6, ['asdf', 'foo', 'fbar']),
+        ('strs["""]', 8, ['asdf"""', 'foo"""', 'fbar"""']),
+        ('strs[b"]', 8, []),
+        ('strs[r"asd', 11, ['f"']),
+        ('strs[R"asd', 11, ['f"']),
+        ('strs[f"asd', 11, ['f"']),
+
+        ('strs["f', 7, ['oo"]']),
+        ('strs["f"', 7, ['oo']),
+        ('strs["f]', 7, ['oo"]']),
+        ('strs["f"]', 7, ['oo']),
+
+        ('mixed[', 6, ['1', '1.1', 'None', "'a\sdf'", "b'foo'"]),
+        ('mixed[1', 6, ['', '.1']),
+
+        ('casted["f', 9, ['3"', 'bar"', 'oo"']),
+        ('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'uuu"', 'ull"']),
+    ]
+)
+def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_python35):
+    code = dedent(r'''
+        ints = {1: ''}
+        ints[50] = 3.0
+        strs = {'asdf': 1, u"""foo""": 2, r'fbar': 3}
+        mixed = {1: 2, 1.10: 4, None: 6, r'a\sdf': 8, b'foo': 9}
+        casted = dict(strs, f3=4, r'\\xyz')
+        casted_mod = dict(casted)
+        casted_mod["fuuu"] = 8
+        casted_mod["full"] = 8
+        ''')
+    line = None
+    if isinstance(column, tuple):
+        raise NotImplementedError
+        line, column = column
+    comps = Script(code + added_code, line=line, column=column).completions()
+    if expected == "A LOT":
+        assert len(comps) > 100  # This is basically global completions.
+    else:
+        assert [c.complete for c in comps] == expected
