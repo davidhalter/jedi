@@ -96,7 +96,7 @@ class Completion:
             if completions:
                 return completions
 
-        completion_names = self._get_value_completions(leaf)
+        completion_names = self._get_context_completions(leaf)
 
         completions = filter_names(self._inference_state, completion_names,
                                    self.stack, self._like_name)
@@ -105,9 +105,9 @@ class Completion:
                                                   x.name.startswith('_'),
                                                   x.name.lower()))
 
-    def _get_value_completions(self, leaf):
+    def _get_context_completions(self, leaf):
         """
-        Analyzes the value that a completion is made in and decides what to
+        Analyzes the current context of a completion and decides what to
         return.
 
         Technically this works by generating a parser stack and analysing the
