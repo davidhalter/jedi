@@ -53,5 +53,6 @@ micbou (@micbou)
 Dima Gerasimov (@karlicoss) <karlicoss@gmail.com>
 Max Woerner Chase (@mwchase) <max.chase@gmail.com>
 Johannes Maria Frank (@jmfrank63) <jmfrank63@gmail.com>
+Sinkerine (@15cm) <i@15cm.net>
 
 Note: (@user) means a github user name.

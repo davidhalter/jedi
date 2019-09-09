@@ -251,6 +251,15 @@ def _get_cached_default_environment():
     return get_default_environment()
 
 
+def find_virtualenv(path, safe=True):
+    if os.path.isdir(path):
+        try:
+            executable = _get_executable_path(path, safe=safe)
+            return Environment(executable)
+        except InvalidPythonEnvironment:
+            pass
+
+
 def find_virtualenvs(paths=None, **kwargs):
     """
     :param paths: A list of paths in your file system to be scanned for
@@ -290,11 +299,9 @@ def find_virtualenvs(paths=None, **kwargs):
                     continue
                 _used_paths.add(path)
 
-                try:
-                    executable = _get_executable_path(path, safe=safe)
-                    yield Environment(executable)
-                except InvalidPythonEnvironment:
-                    pass
+                virtual_env = find_virtualenv(path, safe)
+                if virtual_env:
+                    yield virtual_env
 
     return py27_comp(paths, **kwargs)
 
