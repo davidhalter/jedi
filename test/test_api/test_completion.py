@@ -1,4 +1,5 @@
 from os.path import join, sep as s
+import os
 import sys
 from textwrap import dedent
 
@@ -164,6 +165,7 @@ f2 = join(root_dir, 'test', 'example.py')
 os_path = 'from os.path import *\n'
 # os.path.sep escaped
 se = s * 2 if s == '\\' else s
+current_dirname = os.path.basename(os.path.abspath(os.path.curdir))
 
 
 @pytest.mark.parametrize(
@@ -181,7 +183,7 @@ se = s * 2 if s == '\\' else s
         ('test%sexample.py' % se, 'r"test%scomp"' % s, 5, ['t' + s]),
         ('test%sexample.py' % se, 'r"test%scomp"' % s, 11, ['letion' + s]),
         ('test%sexample.py' % se, '"%s"' % join('test', 'completion', 'basi'), 21, ['c.py']),
-        ('example.py', 'rb"' + join('..', 'jedi', 'tes'), None, ['t' + s]),
+        ('example.py', 'rb"'+ join('..', current_dirname, 'tes'), None, ['t' + s]),
 
         # Absolute paths
         (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py"']),
