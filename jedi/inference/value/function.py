@@ -8,9 +8,10 @@ from jedi.inference import recursion
 from jedi.inference import docstrings
 from jedi.inference import flow_analysis
 from jedi.inference.signature import TreeSignature
-from jedi.inference.arguments import AnonymousArguments
-from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter
-from jedi.inference.names import ValueName, AbstractNameDefinition, ParamName
+from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter, \
+    AnonymousFunctionExecutionFilter
+from jedi.inference.names import ValueName, AbstractNameDefinition, \
+    AnonymousParamName, ParamName
 from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
@@ -69,8 +70,7 @@ class FunctionMixin(object):
         return ValueSet([BoundMethod(instance, self)])
 
     def get_param_names(self):
-        function_execution = self.as_context()
-        return [ParamName(function_execution, param.name)
+        return [AnonymousParamName(self, param.name)
                 for param in self.tree_node.get_params()]
 
     @property
@@ -88,7 +88,7 @@ class FunctionMixin(object):
 
     def _as_context(self, arguments=None):
         if arguments is None:
-            arguments = AnonymousArguments()
+            return AnonymousFunctionExecution(self)
         return FunctionExecutionContext(self, arguments)
 
     def get_signatures(self):
@@ -127,7 +127,8 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         if overloaded_funcs:
             return OverloadedFunctionValue(
                 function,
-                [create(f) for f in overloaded_funcs]
+                # Get them into the correct order: lower line first.
+                list(reversed([create(f) for f in overloaded_funcs]))
             )
         return function
 
@@ -159,13 +160,9 @@ class MethodValue(FunctionValue):
         return names + (self.py__name__(),)
 
 
-class FunctionExecutionContext(ValueContext, TreeContextMixin):
-    function_execution_filter = FunctionExecutionFilter
-
-    def __init__(self, function_value, var_args):
-        super(FunctionExecutionContext, self).__init__(function_value)
-        self.function_value = function_value
-        self.var_args = var_args
+class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
+    def _infer_annotations(self):
+        raise NotImplementedError
 
     @inference_state_method_cache(default=NO_VALUES)
     @recursion.execution_recursion_decorator()
@@ -178,14 +175,13 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
             value_set = NO_VALUES
             returns = get_yield_exprs(self.inference_state, funcdef)
         else:
-            returns = funcdef.iter_return_stmts()
-            from jedi.inference.gradual.annotation import infer_return_types
-            value_set = infer_return_types(self)
+            value_set = self._infer_annotations()
             if value_set:
                 # If there are annotations, prefer them over anything else.
                 # This will make it faster.
                 return value_set
-            value_set |= docstrings.infer_return_types(self.function_value)
+            value_set |= docstrings.infer_return_types(self._value)
+            returns = funcdef.iter_return_stmts()
 
         for r in returns:
             check = flow_analysis.reachability_check(self, funcdef, r)
@@ -280,32 +276,6 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
             for lazy_value in self.get_yield_lazy_values()
         )
 
-    def get_filters(self, until_position=None, origin_scope=None):
-        yield self.function_execution_filter(self,
-                                             until_position=until_position,
-                                             origin_scope=origin_scope)
-
-    @inference_state_method_cache()
-    def get_executed_param_names_and_issues(self):
-        return self.var_args.get_executed_param_names_and_issues(self)
-
-    def matches_signature(self):
-        executed_param_names, issues = self.get_executed_param_names_and_issues()
-        if issues:
-            return False
-
-        matches = all(executed_param_name.matches_signature()
-                      for executed_param_name in executed_param_names)
-        if debug.enable_notice:
-            signature = parser_utils.get_call_signature(self.tree_node)
-            if matches:
-                debug.dbg("Overloading match: %s@%s (%s)",
-                          signature, self.tree_node.start_pos[0], self.var_args, color='BLUE')
-            else:
-                debug.dbg("Overloading no match: %s@%s (%s)",
-                          signature, self.tree_node.start_pos[0], self.var_args, color='BLUE')
-        return matches
-
     def infer(self):
         """
         Created to be used by inheritance.
@@ -347,6 +317,47 @@ class FunctionExecutionContext(ValueContext, TreeContextMixin):
                 return self.get_return_values()
 
 
+class FunctionExecutionContext(BaseFunctionExecutionContext):
+    def __init__(self, function_value, arguments):
+        super(FunctionExecutionContext, self).__init__(function_value)
+        self._arguments = arguments
+
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield FunctionExecutionFilter(
+            self, self._value,
+            until_position=until_position,
+            origin_scope=origin_scope,
+            arguments=self._arguments
+        )
+
+    def _infer_annotations(self):
+        from jedi.inference.gradual.annotation import infer_return_types
+        return infer_return_types(self._value, self._arguments)
+
+    def get_param_names(self):
+        return [
+            ParamName(self._value, param.name, self._arguments)
+            for param in self._value.tree_node.get_params()
+        ]
+
+
+class AnonymousFunctionExecution(BaseFunctionExecutionContext):
+    def _infer_annotations(self):
+        # I don't think inferring anonymous executions is a big thing.
+        # Anonymous contexts are mostly there for the user to work in. ~ dave
+        return NO_VALUES
+
+    def get_filters(self, until_position=None, origin_scope=None):
+        yield AnonymousFunctionExecutionFilter(
+            self, self._value,
+            until_position=until_position,
+            origin_scope=origin_scope,
+        )
+
+    def get_param_names(self):
+        return self._value.get_param_names()
+
+
 class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
     def __init__(self, function, overloaded_functions):
         super(OverloadedFunctionValue, self).__init__(function)
@@ -355,17 +366,11 @@ class OverloadedFunctionValue(FunctionMixin, ValueWrapper):
     def py__call__(self, arguments):
         debug.dbg("Execute overloaded function %s", self._wrapped_value, color='BLUE')
         function_executions = []
-        value_set = NO_VALUES
-        matched = False
-        for f in self._overloaded_functions:
-            function_execution = f.as_context(arguments)
+        for signature in self.get_signatures():
+            function_execution = signature.value.as_context(arguments)
             function_executions.append(function_execution)
-            if function_execution.matches_signature():
-                matched = True
+            if signature.matches_signature(arguments):
                 return function_execution.infer()
-
-        if matched:
-            return value_set
 
         if self.inference_state.is_analysis:
             # In this case we want precision.

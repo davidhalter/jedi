@@ -266,3 +266,25 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
     assert quantity.name == 'int'
     price, = sig.params[-2].infer()
     assert price.name == 'float'
+
+
+@pytest.mark.parametrize(
+    'stmt, expected', [
+        ('args = 1', 'wrapped(*args, b, c)'),
+        ('args = (1,)', 'wrapped(*args, c)'),
+        ('kwargs = 1', 'wrapped(b, /, **kwargs)'),
+        ('kwargs = dict(b=3)', 'wrapped(b, /, **kwargs)'),
+    ]
+)
+def test_param_resolving_to_static(Script, stmt, expected, skip_pre_python35):
+    code = dedent('''\
+        def full_redirect(func):
+            def wrapped(*args, **kwargs):
+                {stmt}
+                return func(1, *args, **kwargs)
+            return wrapped
+        def simple(a, b, *, c): ...
+        full_redirect(simple)('''.format(stmt=stmt))
+
+    sig, = Script(code).call_signatures()
+    assert sig.to_string() == expected

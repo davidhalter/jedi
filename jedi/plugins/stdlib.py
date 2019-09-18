@@ -16,15 +16,15 @@ from jedi._compatibility import force_unicode, Parameter
 from jedi import debug
 from jedi.inference.utils import safe_property
 from jedi.inference.helpers import get_str_or_none
-from jedi.inference.arguments import ValuesArguments, \
+from jedi.inference.arguments import \
     repack_with_argument_clinic, AbstractArguments, TreeArgumentsWrapper
 from jedi.inference import analysis
 from jedi.inference import compiled
-from jedi.inference.value.instance import BoundMethod, InstanceArguments
+from jedi.inference.value.instance import \
+    AnonymousMethodExecutionContext, MethodExecutionContext
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
-from jedi.inference.value import ClassValue, ModuleValue, \
-    FunctionExecutionContext
+from jedi.inference.value import ClassValue, ModuleValue
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.value.function import FunctionMixin
 from jedi.inference.value import iterable
@@ -121,19 +121,7 @@ def execute(callback):
             else:
                 return call()
 
-            if isinstance(value, BoundMethod):
-                if module_name == 'builtins':
-                    if value.py__name__() == '__get__':
-                        if value.class_context.py__name__() == 'property':
-                            return builtins_property(
-                                value,
-                                arguments=arguments,
-                                callback=call,
-                            )
-                    elif value.py__name__() in ('deleter', 'getter', 'setter'):
-                        if value.class_context.py__name__() == 'property':
-                            return ValueSet([value.instance])
-
+            if value.is_bound_method():
                 return call()
 
             # for now we just support builtin functions.
@@ -157,7 +145,7 @@ def _follow_param(inference_state, arguments, index):
         return lazy_value.infer()
 
 
-def argument_clinic(string, want_obj=False, want_context=False,
+def argument_clinic(string, want_value=False, want_context=False,
                     want_arguments=False, want_inference_state=False,
                     want_callback=False):
     """
@@ -167,18 +155,18 @@ def argument_clinic(string, want_obj=False, want_context=False,
     def f(func):
         @repack_with_argument_clinic(string, keep_arguments_param=True,
                                      keep_callback_param=True)
-        def wrapper(obj, *args, **kwargs):
+        def wrapper(value, *args, **kwargs):
             arguments = kwargs.pop('arguments')
             callback = kwargs.pop('callback')
             assert not kwargs  # Python 2...
-            debug.dbg('builtin start %s' % obj, color='MAGENTA')
+            debug.dbg('builtin start %s' % value, color='MAGENTA')
             result = NO_VALUES
             if want_context:
                 kwargs['context'] = arguments.context
-            if want_obj:
-                kwargs['obj'] = obj
+            if want_value:
+                kwargs['value'] = value
             if want_inference_state:
-                kwargs['inference_state'] = obj.inference_state
+                kwargs['inference_state'] = value.inference_state
             if want_arguments:
                 kwargs['arguments'] = arguments
             if want_callback:
@@ -189,17 +177,6 @@ def argument_clinic(string, want_obj=False, want_context=False,
 
         return wrapper
     return f
-
-
-@argument_clinic('obj, type, /', want_obj=True, want_arguments=True)
-def builtins_property(objects, types, obj, arguments):
-    property_args = obj.instance.var_args.unpack()
-    key, lazy_value = next(property_args, (None, None))
-    if key is not None or lazy_value is None:
-        debug.warning('property expected a first param, not %s', arguments)
-        return NO_VALUES
-
-    return lazy_value.infer().py__call__(arguments=ValuesArguments([objects]))
 
 
 @argument_clinic('iterator[, default], /', want_inference_state=True)
@@ -223,14 +200,14 @@ def builtins_iter(iterators_or_callables, defaults):
 @argument_clinic('object, name[, default], /')
 def builtins_getattr(objects, names, defaults=None):
     # follow the first param
-    for obj in objects:
+    for value in objects:
         for name in names:
             string = get_str_or_none(name)
             if string is None:
                 debug.warning('getattr called without str')
                 continue
             else:
-                return obj.py__getattribute__(force_unicode(string))
+                return value.py__getattribute__(force_unicode(string))
     return NO_VALUES
 
 
@@ -262,21 +239,21 @@ class SuperInstance(LazyValueWrapper):
 
     def get_filters(self, origin_scope=None):
         for b in self._get_bases():
-            for obj in b.infer().execute_with_values():
-                for f in obj.get_filters():
+            for value in b.infer().execute_with_values():
+                for f in value.get_filters():
                     yield f
 
 
-@argument_clinic('[type[, obj]], /', want_context=True)
+@argument_clinic('[type[, value]], /', want_context=True)
 def builtins_super(types, objects, context):
-    if isinstance(context, FunctionExecutionContext):
-        if isinstance(context.var_args, InstanceArguments):
-            instance = context.var_args.instance
-            # TODO if a class is given it doesn't have to be the direct super
-            #      class, it can be an anecestor from long ago.
-            return ValueSet({SuperInstance(instance.inference_state, instance)})
-
-    return NO_VALUES
+    instance = None
+    if isinstance(context, AnonymousMethodExecutionContext):
+        instance = context.instance
+    elif isinstance(context, MethodExecutionContext):
+        instance = context.instance
+    if instance is None:
+        return NO_VALUES
+    return ValueSet({SuperInstance(instance.inference_state, instance)})
 
 
 class ReversedObject(AttributeOverwrite):
@@ -296,8 +273,8 @@ class ReversedObject(AttributeOverwrite):
         )
 
 
-@argument_clinic('sequence, /', want_obj=True, want_arguments=True)
-def builtins_reversed(sequences, obj, arguments):
+@argument_clinic('sequence, /', want_value=True, want_arguments=True)
+def builtins_reversed(sequences, value, arguments):
     # While we could do without this variable (just by using sequences), we
     # want static analysis to work well. Therefore we need to generated the
     # values again.
@@ -311,11 +288,11 @@ def builtins_reversed(sequences, obj, arguments):
     # necessary, because `reversed` is a function and autocompletion
     # would fail in certain cases like `reversed(x).__iter__` if we
     # just returned the result directly.
-    seq, = obj.inference_state.typing_module.py__getattribute__('Iterator').execute_with_values()
+    seq, = value.inference_state.typing_module.py__getattribute__('Iterator').execute_with_values()
     return ValueSet([ReversedObject(seq, list(reversed(ordered)))])
 
 
-@argument_clinic('obj, type, /', want_arguments=True, want_inference_state=True)
+@argument_clinic('value, type, /', want_arguments=True, want_inference_state=True)
 def builtins_isinstance(objects, types, arguments, inference_state):
     bool_results = set()
     for o in objects:
@@ -357,10 +334,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
     )
 
 
-class StaticMethodObject(AttributeOverwrite, ValueWrapper):
-    def get_object(self):
-        return self._wrapped_value
-
+class StaticMethodObject(ValueWrapper):
     def py__get__(self, instance, klass):
         return ValueSet([self._wrapped_value])
 
@@ -370,22 +344,19 @@ def builtins_staticmethod(functions):
     return ValueSet(StaticMethodObject(f) for f in functions)
 
 
-class ClassMethodObject(AttributeOverwrite, ValueWrapper):
+class ClassMethodObject(ValueWrapper):
     def __init__(self, class_method_obj, function):
         super(ClassMethodObject, self).__init__(class_method_obj)
         self._function = function
 
-    def get_object(self):
-        return self._wrapped_value
-
-    def py__get__(self, obj, class_value):
+    def py__get__(self, instance, class_value):
         return ValueSet([
             ClassMethodGet(__get__, class_value, self._function)
             for __get__ in self._wrapped_value.py__getattribute__('__get__')
         ])
 
 
-class ClassMethodGet(AttributeOverwrite, ValueWrapper):
+class ClassMethodGet(ValueWrapper):
     def __init__(self, get_method, klass, function):
         super(ClassMethodGet, self).__init__(get_method)
         self._class = klass
@@ -393,9 +364,6 @@ class ClassMethodGet(AttributeOverwrite, ValueWrapper):
 
     def get_signatures(self):
         return self._function.get_signatures()
-
-    def get_object(self):
-        return self._wrapped_value
 
     def py__call__(self, arguments):
         return self._function.execute(ClassMethodArguments(self._class, arguments))
@@ -412,16 +380,42 @@ class ClassMethodArguments(TreeArgumentsWrapper):
             yield values
 
 
-@argument_clinic('sequence, /', want_obj=True, want_arguments=True)
-def builtins_classmethod(functions, obj, arguments):
+@argument_clinic('sequence, /', want_value=True, want_arguments=True)
+def builtins_classmethod(functions, value, arguments):
     return ValueSet(
         ClassMethodObject(class_method_object, function)
-        for class_method_object in obj.py__call__(arguments=arguments)
+        for class_method_object in value.py__call__(arguments=arguments)
         for function in functions
     )
 
 
-def collections_namedtuple(obj, arguments, callback):
+class PropertyObject(AttributeOverwrite, ValueWrapper):
+    def __init__(self, property_obj, function):
+        super(PropertyObject, self).__init__(property_obj)
+        self._function = function
+
+    def py__get__(self, instance, class_value):
+        if instance is None:
+            return NO_VALUES
+        return self._function.execute_with_values(instance)
+
+    @publish_method('deleter')
+    @publish_method('getter')
+    @publish_method('setter')
+    def _return_self(self):
+        return ValueSet({self})
+
+
+@argument_clinic('func, /', want_callback=True)
+def builtins_property(functions, callback):
+    return ValueSet(
+        PropertyObject(property_value, function)
+        for property_value in callback()
+        for function in functions
+    )
+
+
+def collections_namedtuple(value, arguments, callback):
     """
     Implementation of the namedtuple function.
 
@@ -429,7 +423,7 @@ def collections_namedtuple(obj, arguments, callback):
     inferring the result.
 
     """
-    inference_state = obj.inference_state
+    inference_state = value.inference_state
 
     # Process arguments
     name = u'jedi_unknown_namedtuple'
@@ -548,10 +542,10 @@ class MergedPartialArguments(AbstractArguments):
             yield key_lazy_value
 
 
-def functools_partial(obj, arguments, callback):
+def functools_partial(value, arguments, callback):
     return ValueSet(
         PartialObject(instance, arguments)
-        for instance in obj.py__call__(arguments)
+        for instance in value.py__call__(arguments)
     )
 
 
@@ -569,12 +563,12 @@ def _random_choice(sequences):
     )
 
 
-def _dataclass(obj, arguments, callback):
-    for c in _follow_param(obj.inference_state, arguments, 0):
+def _dataclass(value, arguments, callback):
+    for c in _follow_param(value.inference_state, arguments, 0):
         if c.is_class():
             return ValueSet([DataclassWrapper(c)])
         else:
-            return ValueSet([obj])
+            return ValueSet([value])
     return NO_VALUES
 
 
@@ -643,9 +637,8 @@ class ItemGetterCallable(ValueWrapper):
                 # TODO we need to add the contextualized value.
                 value_set |= item_value_set.get_item(lazy_values[0].infer(), None)
             else:
-                value_set |= ValueSet([iterable.FakeSequence(
+                value_set |= ValueSet([iterable.FakeList(
                     self._wrapped_value.inference_state,
-                    'list',
                     [
                         LazyKnownValues(item_value_set.get_item(lazy_value.infer(), None))
                         for lazy_value in lazy_values
@@ -681,17 +674,17 @@ class Wrapped(ValueWrapper, FunctionMixin):
         return [self]
 
 
-@argument_clinic('*args, /', want_obj=True, want_arguments=True)
-def _operator_itemgetter(args_value_set, obj, arguments):
+@argument_clinic('*args, /', want_value=True, want_arguments=True)
+def _operator_itemgetter(args_value_set, value, arguments):
     return ValueSet([
         ItemGetterCallable(instance, args_value_set)
-        for instance in obj.py__call__(arguments)
+        for instance in value.py__call__(arguments)
     ])
 
 
 def _create_string_input_function(func):
-    @argument_clinic('string, /', want_obj=True, want_arguments=True)
-    def wrapper(strings, obj, arguments):
+    @argument_clinic('string, /', want_value=True, want_arguments=True)
+    def wrapper(strings, value, arguments):
         def iterate():
             for value in strings:
                 s = get_str_or_none(value)
@@ -701,7 +694,7 @@ def _create_string_input_function(func):
         values = ValueSet(iterate())
         if values:
             return values
-        return obj.py__call__(arguments)
+        return value.py__call__(arguments)
     return wrapper
 
 
@@ -738,14 +731,15 @@ _implemented = {
         'iter': builtins_iter,
         'staticmethod': builtins_staticmethod,
         'classmethod': builtins_classmethod,
+        'property': builtins_property,
     },
     'copy': {
         'copy': _return_first_param,
         'deepcopy': _return_first_param,
     },
     'json': {
-        'load': lambda obj, arguments, callback: NO_VALUES,
-        'loads': lambda obj, arguments, callback: NO_VALUES,
+        'load': lambda value, arguments, callback: NO_VALUES,
+        'loads': lambda value, arguments, callback: NO_VALUES,
     },
     'collections': {
         'namedtuple': collections_namedtuple,
@@ -772,7 +766,7 @@ _implemented = {
         # The _alias function just leads to some annoying type inference.
         # Therefore, just make it return nothing, which leads to the stubs
         # being used instead. This only matters for 3.7+.
-        '_alias': lambda obj, arguments, callback: NO_VALUES,
+        '_alias': lambda value, arguments, callback: NO_VALUES,
     },
     'dataclasses': {
         # For now this works at least better than Jedi trying to understand it.
@@ -902,8 +896,8 @@ class EnumInstance(LazyValueWrapper):
         return ValueName(self, self._name.tree_name)
 
     def _get_wrapped_value(self):
-        obj, = self._cls.execute_with_values()
-        return obj
+        value, = self._cls.execute_with_values()
+        return value
 
     def get_filters(self, origin_scope=None):
         yield DictFilter(dict(

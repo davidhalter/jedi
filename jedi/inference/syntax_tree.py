@@ -9,7 +9,7 @@ from jedi._compatibility import force_unicode, unicode
 from jedi import debug
 from jedi import parser_utils
 from jedi.inference.base_value import ValueSet, NO_VALUES, ContextualizedNode, \
-    ContextualizedName, iterator_to_value_set, iterate_values
+    iterator_to_value_set, iterate_values
 from jedi.inference.lazy_value import LazyTreeValue
 from jedi.inference import compiled
 from jedi.inference import recursion
@@ -18,12 +18,15 @@ from jedi.inference import imports
 from jedi.inference import arguments
 from jedi.inference.value import ClassValue, FunctionValue
 from jedi.inference.value import iterable
+from jedi.inference.value.dynamic_arrays import ListModification, DictModification
 from jedi.inference.value import TreeInstance
-from jedi.inference.helpers import is_string, is_literal, is_number
+from jedi.inference.helpers import is_string, is_literal, is_number, get_names_of_node
 from jedi.inference.compiled.access import COMPARISON_OPERATORS
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.gradual.stub_value import VersionInfo
 from jedi.inference.gradual import annotation
+from jedi.inference.names import TreeNameDefinition
+from jedi.inference.context import CompForContext
 from jedi.inference.value.decorator import Decoratee
 from jedi.plugins import plugin_manager
 
@@ -64,9 +67,99 @@ def _py__stop_iteration_returns(generators):
     return results
 
 
+def infer_node(context, element):
+    if isinstance(context, CompForContext):
+        return _infer_node(context, element)
+
+    if_stmt = element
+    while if_stmt is not None:
+        if_stmt = if_stmt.parent
+        if if_stmt.type in ('if_stmt', 'for_stmt'):
+            break
+        if parser_utils.is_scope(if_stmt):
+            if_stmt = None
+            break
+    predefined_if_name_dict = context.predefined_names.get(if_stmt)
+    # TODO there's a lot of issues with this one. We actually should do
+    # this in a different way. Caching should only be active in certain
+    # cases and this all sucks.
+    if predefined_if_name_dict is None and if_stmt \
+            and if_stmt.type == 'if_stmt' and context.inference_state.is_analysis:
+        if_stmt_test = if_stmt.children[1]
+        name_dicts = [{}]
+        # If we already did a check, we don't want to do it again -> If
+        # value.predefined_names is filled, we stop.
+        # We don't want to check the if stmt itself, it's just about
+        # the content.
+        if element.start_pos > if_stmt_test.end_pos:
+            # Now we need to check if the names in the if_stmt match the
+            # names in the suite.
+            if_names = get_names_of_node(if_stmt_test)
+            element_names = get_names_of_node(element)
+            str_element_names = [e.value for e in element_names]
+            if any(i.value in str_element_names for i in if_names):
+                for if_name in if_names:
+                    definitions = context.inference_state.goto_definitions(context, if_name)
+                    # Every name that has multiple different definitions
+                    # causes the complexity to rise. The complexity should
+                    # never fall below 1.
+                    if len(definitions) > 1:
+                        if len(name_dicts) * len(definitions) > 16:
+                            debug.dbg('Too many options for if branch inference %s.', if_stmt)
+                            # There's only a certain amount of branches
+                            # Jedi can infer, otherwise it will take to
+                            # long.
+                            name_dicts = [{}]
+                            break
+
+                        original_name_dicts = list(name_dicts)
+                        name_dicts = []
+                        for definition in definitions:
+                            new_name_dicts = list(original_name_dicts)
+                            for i, name_dict in enumerate(new_name_dicts):
+                                new_name_dicts[i] = name_dict.copy()
+                                new_name_dicts[i][if_name.value] = ValueSet([definition])
+
+                            name_dicts += new_name_dicts
+                    else:
+                        for name_dict in name_dicts:
+                            name_dict[if_name.value] = definitions
+        if len(name_dicts) > 1:
+            result = NO_VALUES
+            for name_dict in name_dicts:
+                with context.predefine_names(if_stmt, name_dict):
+                    result |= _infer_node(context, element)
+            return result
+        else:
+            return _infer_node_if_inferred(context, element)
+    else:
+        if predefined_if_name_dict:
+            return _infer_node(context, element)
+        else:
+            return _infer_node_if_inferred(context, element)
+
+
+def _infer_node_if_inferred(context, element):
+    """
+    TODO This function is temporary: Merge with infer_node.
+    """
+    parent = element
+    while parent is not None:
+        parent = parent.parent
+        predefined_if_name_dict = context.predefined_names.get(parent)
+        if predefined_if_name_dict is not None:
+            return _infer_node(context, element)
+    return _infer_node_cached(context, element)
+
+
+@inference_state_method_cache(default=NO_VALUES)
+def _infer_node_cached(context, element):
+    return _infer_node(context, element)
+
+
 @debug.increase_indent
 @_limit_value_infers
-def infer_node(context, element):
+def _infer_node(context, element):
     debug.dbg('infer_node %s@%s in %s', element, element.start_pos, context)
     inference_state = context.inference_state
     typ = element.type
@@ -126,7 +219,7 @@ def infer_node(context, element):
             value_set = value_set.py__getattribute__(next_name, name_context=context)
         return value_set
     elif typ == 'eval_input':
-        return infer_node(context, element.children[0])
+        return context.infer_node(element.children[0])
     elif typ == 'annassign':
         return annotation.infer_annotation(context, element.children[1]) \
             .execute_annotation()
@@ -141,7 +234,7 @@ def infer_node(context, element):
         # Generator.send() is not implemented.
         return NO_VALUES
     elif typ == 'namedexpr_test':
-        return infer_node(context, element.children[2])
+        return context.infer_node(element.children[2])
     else:
         return infer_or_test(context, element)
 
@@ -264,20 +357,6 @@ def infer_atom(context, atom):
 @_limit_value_infers
 def infer_expr_stmt(context, stmt, seek_name=None):
     with recursion.execution_allowed(context.inference_state, stmt) as allowed:
-        # Here we allow list/set to recurse under certain conditions. To make
-        # it possible to resolve stuff like list(set(list(x))), this is
-        # necessary.
-        if not allowed and context.get_root_context().is_builtins_module():
-            try:
-                instance = context.var_args.instance
-            except AttributeError:
-                pass
-            else:
-                if instance.name.string_name in ('list', 'set'):
-                    c = instance.get_first_non_keyword_argument_values()
-                    if instance not in c:
-                        allowed = True
-
         if allowed:
             return _infer_expr_stmt(context, stmt, seek_name)
     return NO_VALUES
@@ -291,42 +370,71 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
     names are defined in the statement, `seek_name` returns the result for
     this name.
 
+    expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
+                     ('=' (yield_expr|testlist_star_expr))*)
+    annassign: ':' test ['=' test]
+    augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' |
+                '<<=' | '>>=' | '**=' | '//=')
+
     :param stmt: A `tree.ExprStmt`.
     """
+    def check_setitem(stmt):
+        atom_expr = stmt.children[0]
+        if atom_expr.type not in ('atom_expr', 'power'):
+            return False, None
+        name = atom_expr.children[0]
+        if name.type != 'name' or len(atom_expr.children) != 2:
+            return False, None
+        trailer = atom_expr.children[-1]
+        return trailer.children[0] == '[', trailer.children[1]
+
     debug.dbg('infer_expr_stmt %s (%s)', stmt, seek_name)
     rhs = stmt.get_rhs()
     value_set = context.infer_node(rhs)
 
     if seek_name:
-        c_node = ContextualizedName(context, seek_name)
-        value_set = check_tuple_assignments(c_node, value_set)
+        n = TreeNameDefinition(context, seek_name)
+        value_set = check_tuple_assignments(n, value_set)
 
     first_operator = next(stmt.yield_operators(), None)
-    if first_operator not in ('=', None) and first_operator.type == 'operator':
+    is_setitem, subscriptlist = check_setitem(stmt)
+    is_annassign = first_operator not in ('=', None) and first_operator.type == 'operator'
+    if is_annassign or is_setitem:
         # `=` is always the last character in aug assignments -> -1
-        operator = copy.copy(first_operator)
-        operator.value = operator.value[:-1]
-        name = stmt.get_defined_names()[0].value
-        left = context.py__getattribute__(name, position=stmt.start_pos)
+        name = stmt.get_defined_names(include_setitem=True)[0].value
+        left_values = context.py__getattribute__(name, position=stmt.start_pos)
 
-        for_stmt = tree.search_ancestor(stmt, 'for_stmt')
-        if for_stmt is not None and for_stmt.type == 'for_stmt' and value_set \
-                and parser_utils.for_stmt_defines_one_name(for_stmt):
-            # Iterate through result and add the values, that's possible
-            # only in for loops without clutter, because they are
-            # predictable. Also only do it, if the variable is not a tuple.
-            node = for_stmt.get_testlist()
-            cn = ContextualizedNode(context, node)
-            ordered = list(cn.infer().iterate(cn))
+        if is_setitem:
+            def to_mod(v):
+                c = ContextualizedNode(context, subscriptlist)
+                if v.array_type == 'dict':
+                    return DictModification(v, value_set, c)
+                elif v.array_type == 'list':
+                    return ListModification(v, value_set, c)
+                return v
 
-            for lazy_value in ordered:
-                dct = {for_stmt.children[1].value: lazy_value.infer()}
-                with context.predefine_names(for_stmt, dct):
-                    t = context.infer_node(rhs)
-                    left = _infer_comparison(context, left, operator, t)
-            value_set = left
+            value_set = ValueSet(to_mod(v) for v in left_values)
         else:
-            value_set = _infer_comparison(context, left, operator, value_set)
+            operator = copy.copy(first_operator)
+            operator.value = operator.value[:-1]
+            for_stmt = tree.search_ancestor(stmt, 'for_stmt')
+            if for_stmt is not None and for_stmt.type == 'for_stmt' and value_set \
+                    and parser_utils.for_stmt_defines_one_name(for_stmt):
+                # Iterate through result and add the values, that's possible
+                # only in for loops without clutter, because they are
+                # predictable. Also only do it, if the variable is not a tuple.
+                node = for_stmt.get_testlist()
+                cn = ContextualizedNode(context, node)
+                ordered = list(cn.infer().iterate(cn))
+
+                for lazy_value in ordered:
+                    dct = {for_stmt.children[1].value: lazy_value.infer()}
+                    with context.predefine_names(for_stmt, dct):
+                        t = context.infer_node(rhs)
+                        left_values = _infer_comparison(context, left_values, operator, t)
+                value_set = left_values
+            else:
+                value_set = _infer_comparison(context, left_values, operator, value_set)
     debug.dbg('infer_expr_stmt result %s', value_set)
     return value_set
 
@@ -564,7 +672,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             return value_set
 
     types = []
-    node = tree_name.get_definition(import_name_always=True)
+    node = tree_name.get_definition(import_name_always=True, include_setitem=True)
     if node is None:
         node = tree_name.parent
         if node.type == 'global_stmt':
@@ -598,8 +706,8 @@ def tree_name_to_values(inference_state, context, tree_name):
                 contextualized_node=cn,
                 is_async=node.parent.type == 'async_stmt',
             )
-            c_node = ContextualizedName(context, tree_name)
-            types = check_tuple_assignments(c_node, for_types)
+            n = TreeNameDefinition(context, tree_name)
+            types = check_tuple_assignments(n, for_types)
     elif typ == 'expr_stmt':
         types = _remove_statements(context, node, tree_name)
     elif typ == 'with_stmt':
@@ -671,13 +779,13 @@ def _apply_decorators(context, node):
     return values
 
 
-def check_tuple_assignments(contextualized_name, value_set):
+def check_tuple_assignments(name, value_set):
     """
     Checks if tuples are assigned.
     """
     lazy_value = None
-    for index, node in contextualized_name.assignment_indexes():
-        cn = ContextualizedNode(contextualized_name.context, node)
+    for index, node in name.assignment_indexes():
+        cn = ContextualizedNode(name.parent_context, node)
         iterated = value_set.iterate(cn)
         if isinstance(index, slice):
             # For no star unpacking is not possible.

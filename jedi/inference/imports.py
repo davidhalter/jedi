@@ -61,20 +61,19 @@ def infer_import(context, tree_name):
     module_context = context.get_root_context()
     from_import_name, import_path, level, values = \
         _prepare_infer_import(module_context, tree_name)
-    if not values:
-        return NO_VALUES
+    if values:
 
-    if from_import_name is not None:
-        values = values.py__getattribute__(
-            from_import_name,
-            name_context=context,
-            analysis_errors=False
-        )
+        if from_import_name is not None:
+            values = values.py__getattribute__(
+                from_import_name,
+                name_context=context,
+                analysis_errors=False
+            )
 
-        if not values:
-            path = import_path + (from_import_name,)
-            importer = Importer(context.inference_state, path, module_context, level)
-            values = importer.follow()
+            if not values:
+                path = import_path + (from_import_name,)
+                importer = Importer(context.inference_state, path, module_context, level)
+                values = importer.follow()
     debug.dbg('after import: %s', values)
     return values
 
@@ -578,3 +577,33 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
         m = check_fs(file_io, base_names)
         if m is not None:
             yield m
+
+
+def follow_error_node_imports_if_possible(context, name):
+    error_node = tree.search_ancestor(name, 'error_node')
+    if error_node is not None:
+        # Get the first command start of a started simple_stmt. The error
+        # node is sometimes a small_stmt and sometimes a simple_stmt. Check
+        # for ; leaves that start a new statements.
+        start_index = 0
+        for index, n in enumerate(error_node.children):
+            if n.start_pos > name.start_pos:
+                break
+            if n == ';':
+                start_index = index + 1
+        nodes = error_node.children[start_index:]
+        first_name = nodes[0].get_first_leaf().value
+
+        # Make it possible to infer stuff like `import foo.` or
+        # `from foo.bar`.
+        if first_name in ('from', 'import'):
+            is_import_from = first_name == 'from'
+            level, names = helpers.parse_dotted_names(
+                nodes,
+                is_import_from=is_import_from,
+                until_node=name,
+            )
+            return Importer(
+                context.inference_state, names, context.get_root_context(), level).follow()
+    return None
+

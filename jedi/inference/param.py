@@ -19,9 +19,9 @@ def _add_argument_issue(error_name, lazy_value, message):
 
 
 class ExecutedParamName(ParamName):
-    """Fake a param and give it values."""
-    def __init__(self, execution_context, param_node, lazy_value, is_default=False):
-        super(ExecutedParamName, self).__init__(execution_context, param_node.name)
+    def __init__(self, function_value, arguments, param_node, lazy_value, is_default=False):
+        super(ExecutedParamName, self).__init__(
+            function_value, param_node.name, arguments=arguments)
         self._lazy_value = lazy_value
         self._is_default = is_default
 
@@ -42,19 +42,15 @@ class ExecutedParamName(ParamName):
         matches = any(c1.is_sub_class_of(c2)
                       for c1 in argument_values
                       for c2 in annotations.gather_annotation_classes())
-        debug.dbg("signature compare %s: %s <=> %s",
+        debug.dbg("param compare %s: %s <=> %s",
                   matches, argument_values, annotations, color='BLUE')
         return matches
-
-    @property
-    def var_args(self):
-        return self.parent_context.var_args
 
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.string_name)
 
 
-def get_executed_param_names_and_issues(execution_context, arguments):
+def get_executed_param_names_and_issues(function_value, arguments):
     def too_many_args(argument):
         m = _error_argument_count(funcdef, len(unpacked_va))
         # Just report an error for the first param that is not needed (like
@@ -70,15 +66,16 @@ def get_executed_param_names_and_issues(execution_context, arguments):
             )
         else:
             issues.append(None)
+            debug.warning('non-public warning: %s', m)
 
     issues = []  # List[Optional[analysis issue]]
     result_params = []
     param_dict = {}
-    funcdef = execution_context.tree_node
+    funcdef = function_value.tree_node
     # Default params are part of the value where the function was defined.
     # This means that they might have access on class variables that the
     # function itself doesn't have.
-    default_param_context = execution_context.function_value.get_default_param_context()
+    default_param_context = function_value.get_default_param_context()
 
     for param in funcdef.get_params():
         param_dict[param.name.value] = param
@@ -114,7 +111,8 @@ def get_executed_param_names_and_issues(execution_context, arguments):
                                          contextualized_node.node, message=m)
                         )
                 else:
-                    keys_used[key] = ExecutedParamName(execution_context, key_param, argument)
+                    keys_used[key] = ExecutedParamName(
+                        function_value, arguments, key_param, argument)
             key, argument = next(var_arg_iterator, (None, None))
 
         try:
@@ -134,13 +132,13 @@ def get_executed_param_names_and_issues(execution_context, arguments):
                         var_arg_iterator.push_back((key, argument))
                         break
                     lazy_value_list.append(argument)
-            seq = iterable.FakeSequence(execution_context.inference_state, u'tuple', lazy_value_list)
+            seq = iterable.FakeTuple(function_value.inference_state, lazy_value_list)
             result_arg = LazyKnownValue(seq)
         elif param.star_count == 2:
             if argument is not None:
                 too_many_args(argument)
             # **kwargs param
-            dct = iterable.FakeDict(execution_context.inference_state, dict(non_matching_keys))
+            dct = iterable.FakeDict(function_value.inference_state, dict(non_matching_keys))
             result_arg = LazyKnownValue(dct)
             non_matching_keys = {}
         else:
@@ -167,8 +165,7 @@ def get_executed_param_names_and_issues(execution_context, arguments):
                 result_arg = argument
 
         result_params.append(ExecutedParamName(
-            execution_context, param, result_arg,
-            is_default=is_default
+            function_value, arguments, param, result_arg, is_default=is_default
         ))
         if not isinstance(result_arg, LazyUnknownValue):
             keys_used[param.name.value] = result_params[-1]
@@ -209,6 +206,10 @@ def get_executed_param_names_and_issues(execution_context, arguments):
     return result_params, issues
 
 
+def get_executed_param_names(function_value, arguments):
+    return get_executed_param_names_and_issues(function_value, arguments)[0]
+
+
 def _error_argument_count(funcdef, actual_count):
     params = funcdef.get_params()
     default_arguments = sum(1 for p in params if p.default or p.star_count)
@@ -219,24 +220,3 @@ def _error_argument_count(funcdef, actual_count):
         before = 'from %s to ' % (len(params) - default_arguments)
     return ('TypeError: %s() takes %s%s arguments (%s given).'
             % (funcdef.name, before, len(params), actual_count))
-
-
-def _create_default_param(execution_context, param):
-    if param.star_count == 1:
-        result_arg = LazyKnownValue(
-            iterable.FakeSequence(execution_context.inference_state, u'tuple', [])
-        )
-    elif param.star_count == 2:
-        result_arg = LazyKnownValue(
-            iterable.FakeDict(execution_context.inference_state, {})
-        )
-    elif param.default is None:
-        result_arg = LazyUnknownValue()
-    else:
-        result_arg = LazyTreeValue(execution_context.parent_context, param.default)
-    return ExecutedParamName(execution_context, param, result_arg)
-
-
-def create_default_params(execution_context, funcdef):
-    return [_create_default_param(execution_context, p)
-            for p in funcdef.get_params()]

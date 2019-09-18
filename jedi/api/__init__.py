@@ -34,7 +34,6 @@ from jedi.inference import usages
 from jedi.inference.arguments import try_iter_content
 from jedi.inference.helpers import get_module_names, infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
-from jedi.inference.names import TreeNameDefinition, ParamName
 from jedi.inference.syntax_tree import tree_name_to_values
 from jedi.inference.value import ModuleValue
 from jedi.inference.base_value import ValueSet
@@ -302,8 +301,8 @@ class Script(object):
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
             return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
-        context = self._get_module_context().create_context(tree_name)
-        names = list(self._inference_state.goto(context, tree_name))
+        name = self._get_module_context().create_name(tree_name)
+        names = list(name.goto())
 
         if follow_imports:
             names = filter_follow_imports(names)
@@ -503,23 +502,13 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
         is_def = _def._name.tree_name.is_definition()
         return definitions and is_def or references and not is_def
 
-    def create_name(name):
-        if name.parent.type == 'param':
-            cls = ParamName
-        else:
-            cls = TreeNameDefinition
-        return cls(
-            module_context.create_context(name),
-            name
-        )
-
     # Set line/column to a random position, because they don't matter.
     script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
     module_context = script._get_module_context()
     defs = [
         classes.Definition(
             script._inference_state,
-            create_name(name)
+            module_context.create_name(name)
         ) for name in get_module_names(script._module_node, all_scopes)
     ]
     return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))

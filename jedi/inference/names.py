@@ -3,9 +3,11 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
+from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import docstrings
 from jedi.cache import memoize_method
+from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
 
 
 class AbstractNameDefinition(object):
@@ -106,10 +108,77 @@ class AbstractTreeName(AbstractNameDefinition):
             return None
         return parent_names + (self.tree_name.value,)
 
-    def goto(self, **kwargs):
-        return self.parent_context.inference_state.goto(
-            self.parent_context, self.tree_name, **kwargs
-        )
+    def goto(self):
+        context = self.parent_context
+        name = self.tree_name
+        definition = name.get_definition(import_name_always=True)
+        if definition is not None:
+            type_ = definition.type
+            if type_ == 'expr_stmt':
+                # Only take the parent, because if it's more complicated than just
+                # a name it's something you can "goto" again.
+                is_simple_name = name.parent.type not in ('power', 'trailer')
+                if is_simple_name:
+                    return [self]
+            elif type_ in ('import_from', 'import_name'):
+                from jedi.inference.imports import goto_import
+                module_names = goto_import(context, name)
+                return module_names
+            else:
+                return [self]
+        else:
+            from jedi.inference.imports import follow_error_node_imports_if_possible
+            values = follow_error_node_imports_if_possible(context, name)
+            if values is not None:
+                return [value.name for value in values]
+
+        par = name.parent
+        node_type = par.type
+        if node_type == 'argument' and par.children[1] == '=' and par.children[0] == name:
+            # Named param goto.
+            trailer = par.parent
+            if trailer.type == 'arglist':
+                trailer = trailer.parent
+            if trailer.type != 'classdef':
+                if trailer.type == 'decorator':
+                    value_set = context.infer_node(trailer.children[1])
+                else:
+                    i = trailer.parent.children.index(trailer)
+                    to_infer = trailer.parent.children[:i]
+                    if to_infer[0] == 'await':
+                        to_infer.pop(0)
+                    value_set = context.infer_node(to_infer[0])
+                    from jedi.inference.syntax_tree import infer_trailer
+                    for trailer in to_infer[1:]:
+                        value_set = infer_trailer(context, value_set, trailer)
+                param_names = []
+                for value in value_set:
+                    for signature in value.get_signatures():
+                        for param_name in signature.get_param_names():
+                            if param_name.string_name == name.value:
+                                param_names.append(param_name)
+                return param_names
+        elif node_type == 'dotted_name':  # Is a decorator.
+            index = par.children.index(name)
+            if index > 0:
+                new_dotted = deep_ast_copy(par)
+                new_dotted.children[index - 1:] = []
+                values = context.infer_node(new_dotted)
+                return unite(
+                    value.goto(name, name_context=value.as_context())
+                    for value in values
+                )
+
+        if node_type == 'trailer' and par.children[0] == '.':
+            values = infer_call_of_leaf(context, name, cut_own_trailer=True)
+            return values.goto(name, name_context=context)
+        else:
+            stmt = search_ancestor(
+                name, 'expr_stmt', 'lambdef'
+            ) or name
+            if stmt.type == 'lambdef':
+                stmt = name
+            return context.goto(name, position=stmt.start_pos)
 
     def is_import(self):
         imp = search_ancestor(self.tree_name, 'import_from', 'import_name')
@@ -174,6 +243,47 @@ class TreeNameDefinition(AbstractTreeName):
         if definition is None:
             return 'statement'
         return self._API_TYPES.get(definition.type, 'statement')
+
+    def assignment_indexes(self):
+        """
+        Returns an array of tuple(int, node) of the indexes that are used in
+        tuple assignments.
+
+        For example if the name is ``y`` in the following code::
+
+            x, (y, z) = 2, ''
+
+        would result in ``[(1, xyz_node), (0, yz_node)]``.
+
+        When searching for b in the case ``a, *b, c = [...]`` it will return::
+
+            [(slice(1, -1), abc_node)]
+        """
+        indexes = []
+        is_star_expr = False
+        node = self.tree_name.parent
+        compare = self.tree_name
+        while node is not None:
+            if node.type in ('testlist', 'testlist_comp', 'testlist_star_expr', 'exprlist'):
+                for i, child in enumerate(node.children):
+                    if child == compare:
+                        index = int(i / 2)
+                        if is_star_expr:
+                            from_end = int((len(node.children) - i) / 2)
+                            index = slice(index, -from_end)
+                        indexes.insert(0, (index, node))
+                        break
+                else:
+                    raise LookupError("Couldn't find the assignment.")
+                is_star_expr = False
+            elif node.type == 'star_expr':
+                is_star_expr = True
+            elif node.type in ('expr_stmt', 'sync_comp_for'):
+                break
+
+            compare = node
+            node = node.parent
+        return indexes
 
 
 class _ParamMixin(object):
@@ -242,8 +352,24 @@ class BaseTreeParamName(ParamNameInterface, AbstractTreeName):
             output += '=' + default.get_code(include_prefix=False)
         return output
 
+    def get_public_name(self):
+        name = self.string_name
+        if name.startswith('__'):
+            # Params starting with __ are an equivalent to positional only
+            # variables in typeshed.
+            name = name[2:]
+        return name
 
-class ParamName(BaseTreeParamName):
+    def goto(self, **kwargs):
+        return [self]
+
+
+class _ActualTreeParamName(BaseTreeParamName):
+    def __init__(self, function_value, tree_name):
+        super(_ActualTreeParamName, self).__init__(
+            function_value.get_default_param_context(), tree_name)
+        self.function_value = function_value
+
     def _get_param_node(self):
         return search_ancestor(self.tree_name, 'param')
 
@@ -254,7 +380,7 @@ class ParamName(BaseTreeParamName):
     def infer_annotation(self, execute_annotation=True, ignore_stars=False):
         from jedi.inference.gradual.annotation import infer_param
         values = infer_param(
-            self.parent_context, self._get_param_node(),
+            self.function_value, self._get_param_node(),
             ignore_stars=ignore_stars)
         if execute_annotation:
             values = values.execute_annotation()
@@ -264,19 +390,11 @@ class ParamName(BaseTreeParamName):
         node = self.default_node
         if node is None:
             return NO_VALUES
-        return self.parent_context.parent_context.infer_node(node)
+        return self.parent_context.infer_node(node)
 
     @property
     def default_node(self):
         return self._get_param_node().default
-
-    def get_public_name(self):
-        name = self.string_name
-        if name.startswith('__'):
-            # Params starting with __ are an equivalent to positional only
-            # variables in typeshed.
-            name = name[2:]
-        return name
 
     def get_kind(self):
         tree_param = self._get_param_node()
@@ -311,14 +429,52 @@ class ParamName(BaseTreeParamName):
         if values:
             return values
 
-        doc_params = docstrings.infer_param(self.parent_context, self._get_param_node())
-        if doc_params:
-            return doc_params
+        doc_params = docstrings.infer_param(self.function_value, self._get_param_node())
+        return doc_params
+
+
+class AnonymousParamName(_ActualTreeParamName):
+    def __init__(self, function_value, tree_name):
+        super(AnonymousParamName, self).__init__(function_value, tree_name)
+
+    def infer(self):
+        values = super(AnonymousParamName, self).infer()
+        if values:
+            return values
+        from jedi.inference.dynamic_params import dynamic_param_lookup
+        param = self._get_param_node()
+        values = dynamic_param_lookup(self.function_value, param.position_index)
+        if values:
+            return values
+
+        if param.star_count == 1:
+            from jedi.inference.value.iterable import FakeTuple
+            value = FakeTuple(self.function_value.inference_state, [])
+        elif param.star_count == 2:
+            from jedi.inference.value.iterable import FakeDict
+            value = FakeDict(self.function_value.inference_state, {})
+        elif param.default is None:
+            return NO_VALUES
+        else:
+            return self.function_value.parent_context.infer_node(param.default)
+        return ValueSet({value})
+
+
+class ParamName(_ActualTreeParamName):
+    def __init__(self, function_value, tree_name, arguments):
+        super(ParamName, self).__init__(function_value, tree_name)
+        self.arguments = arguments
+
+    def infer(self):
+        values = super(ParamName, self).infer()
+        if values:
+            return values
 
         return self.get_executed_param_name().infer()
 
     def get_executed_param_name(self):
-        params_names, _ = self.parent_context.get_executed_param_names_and_issues()
+        from jedi.inference.param import get_executed_param_names
+        params_names = get_executed_param_names(self.function_value, self.arguments)
         return params_names[self._get_param_node().position_index]
 
 

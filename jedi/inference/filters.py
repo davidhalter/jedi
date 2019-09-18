@@ -13,7 +13,8 @@ from jedi.inference.base_value import ValueSet, Value, ValueWrapper, \
     LazyValueWrapper
 from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.utils import to_list
-from jedi.inference.names import TreeNameDefinition, ParamName, AbstractNameDefinition
+from jedi.inference.names import TreeNameDefinition, ParamName, \
+    AnonymousParamName, AbstractNameDefinition
 
 _definition_name_cache = weakref.WeakKeyDictionary()
 
@@ -61,7 +62,9 @@ def _get_definition_names(used_names, name_key):
         return for_module[name_key]
     except KeyError:
         names = used_names.get(name_key, ())
-        result = for_module[name_key] = tuple(name for name in names if name.is_definition())
+        result = for_module[name_key] = tuple(
+            name for name in names if name.is_definition(include_setitem=True)
+        )
         return result
 
 
@@ -140,26 +143,43 @@ class ParserTreeFilter(AbstractUsedNamesFilter):
                 break
 
 
-class FunctionExecutionFilter(ParserTreeFilter):
-    param_name = ParamName
-
-    def __init__(self, parent_context, node_context=None,
-                 until_position=None, origin_scope=None):
-        super(FunctionExecutionFilter, self).__init__(
+class _FunctionExecutionFilter(ParserTreeFilter):
+    def __init__(self, parent_context, function_value, until_position, origin_scope):
+        super(_FunctionExecutionFilter, self).__init__(
             parent_context,
-            node_context,
-            until_position,
-            origin_scope
+            until_position=until_position,
+            origin_scope=origin_scope,
         )
+        self._function_value = function_value
+
+    def _convert_param(self, param, name):
+        raise NotImplementedError
 
     @to_list
     def _convert_names(self, names):
         for name in names:
             param = search_ancestor(name, 'param')
+            # Here we don't need to check if the param is a default/annotation,
+            # because those are not definitions and never make it to this
+            # point.
             if param:
-                yield self.param_name(self.parent_context, name)
+                yield self._convert_param(param, name)
             else:
                 yield TreeNameDefinition(self.parent_context, name)
+
+
+class FunctionExecutionFilter(_FunctionExecutionFilter):
+    def __init__(self, *args, **kwargs):
+        self._arguments = kwargs.pop('arguments')  # Python 2
+        super(FunctionExecutionFilter, self).__init__(*args, **kwargs)
+
+    def _convert_param(self, param, name):
+        return ParamName(self._function_value, name, self._arguments)
+
+
+class AnonymousFunctionExecutionFilter(_FunctionExecutionFilter):
+    def _convert_param(self, param, name):
+        return AnonymousParamName(self._function_value, name)
 
 
 class GlobalNameFilter(AbstractUsedNamesFilter):

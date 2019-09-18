@@ -6,6 +6,7 @@ from parso.python.tree import Name
 
 from jedi.inference.filters import ParserTreeFilter, MergedFilter, \
     GlobalNameFilter
+from jedi.inference.names import AnonymousParamName, TreeNameDefinition
 from jedi.inference.base_value import NO_VALUES, ValueSet
 from jedi.parser_utils import get_parent_scope
 from jedi import debug
@@ -151,9 +152,6 @@ class AbstractContext(object):
         finally:
             del predefined[flow_scope]
 
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._value)
-
 
 class ValueContext(AbstractContext):
     """
@@ -208,7 +206,8 @@ class ValueContext(AbstractContext):
 
 class TreeContextMixin(object):
     def infer_node(self, node):
-        return self.inference_state.infer_element(self, node)
+        from jedi.inference.syntax_tree import infer_node
+        return infer_node(self, node)
 
     def create_value(self, node):
         from jedi.inference import value
@@ -273,6 +272,16 @@ class TreeContextMixin(object):
                 if not (parent.type == 'param' and parent.name == node):
                     scope_node = parent_scope(scope_node)
         return from_scope_node(scope_node, is_nested=True)
+
+    def create_name(self, tree_name):
+        definition = tree_name.get_definition()
+        if definition and definition.type == 'param' and definition.name == tree_name:
+            funcdef = search_ancestor(definition, 'funcdef', 'lambdef')
+            func = self.create_value(funcdef)
+            return AnonymousParamName(func, tree_name)
+        else:
+            context = self.create_context(tree_name)
+            return TreeNameDefinition(context, tree_name)
 
 
 class FunctionContext(TreeContextMixin, ValueContext):
@@ -358,6 +367,12 @@ class CompForContext(TreeContextMixin, AbstractContext):
     def get_filters(self, until_position=None, origin_scope=None):
         yield ParserTreeFilter(self)
 
+    def py__name__(self):
+        return '<comprehension context>'
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self.tree_node)
+
 
 class CompiledContext(ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
@@ -440,14 +455,14 @@ def get_global_filters(context, until_position, origin_scope):
     [...]
     """
     base_context = context
-    from jedi.inference.value.function import FunctionExecutionContext
+    from jedi.inference.value.function import BaseFunctionExecutionContext
     while context is not None:
         # Names in methods cannot be resolved within the class.
         for filter in context.get_filters(
                 until_position=until_position,
                 origin_scope=origin_scope):
             yield filter
-        if isinstance(context, FunctionExecutionContext):
+        if isinstance(context, BaseFunctionExecutionContext):
             # The position should be reset if the current scope is a function.
             until_position = None
 

@@ -140,9 +140,12 @@ class HelperValueMixin(object):
 
 class Value(HelperValueMixin, BaseValue):
     """
-    To be defined by subclasses.
+    To be implemented by subclasses.
     """
     tree_node = None
+    # Possible values: None, tuple, list, dict and set. Here to deal with these
+    # very important containers.
+    array_type = None
 
     @property
     def api_type(self):
@@ -160,6 +163,9 @@ class Value(HelperValueMixin, BaseValue):
             message="TypeError: '%s' object is not subscriptable" % self
         )
         return NO_VALUES
+
+    def py__simple_getitem__(self, index):
+        raise SimpleGetItemNotFound
 
     def py__iter__(self, contextualized_node=None):
         if contextualized_node is not None:
@@ -323,70 +329,18 @@ class ContextualizedNode(object):
         return '<%s: %s in %s>' % (self.__class__.__name__, self.node, self.context)
 
 
-class ContextualizedName(ContextualizedNode):
-    # TODO merge with TreeNameDefinition?!
-    @property
-    def name(self):
-        return self.node
-
-    def assignment_indexes(self):
-        """
-        Returns an array of tuple(int, node) of the indexes that are used in
-        tuple assignments.
-
-        For example if the name is ``y`` in the following code::
-
-            x, (y, z) = 2, ''
-
-        would result in ``[(1, xyz_node), (0, yz_node)]``.
-
-        When searching for b in the case ``a, *b, c = [...]`` it will return::
-
-            [(slice(1, -1), abc_node)]
-        """
-        indexes = []
-        is_star_expr = False
-        node = self.node.parent
-        compare = self.node
-        while node is not None:
-            if node.type in ('testlist', 'testlist_comp', 'testlist_star_expr', 'exprlist'):
-                for i, child in enumerate(node.children):
-                    if child == compare:
-                        index = int(i / 2)
-                        if is_star_expr:
-                            from_end = int((len(node.children) - i) / 2)
-                            index = slice(index, -from_end)
-                        indexes.insert(0, (index, node))
-                        break
-                else:
-                    raise LookupError("Couldn't find the assignment.")
-                is_star_expr = False
-            elif node.type == 'star_expr':
-                is_star_expr = True
-            elif isinstance(node, (ExprStmt, SyncCompFor)):
-                break
-
-            compare = node
-            node = node.parent
-        return indexes
-
-
 def _getitem(value, index_values, contextualized_node):
     # The actual getitem call.
-    simple_getitem = getattr(value, 'py__simple_getitem__', None)
-
     result = NO_VALUES
     unused_values = set()
     for index_value in index_values:
-        if simple_getitem is not None:
-
-            index = index_value.get_safe_value(default=None)
-            if type(index) in (float, int, str, unicode, slice, bytes):
-                try:
-                    result |= simple_getitem(index)
-                    continue
-                except SimpleGetItemNotFound:
-                    pass
+        index = index_value.get_safe_value(default=None)
+        if type(index) in (float, int, str, unicode, slice, bytes):
+            try:
+                result |= value.py__simple_getitem__(index)
+                continue
+            except SimpleGetItemNotFound:
+                pass
 
         unused_values.add(index_value)
 

@@ -7,7 +7,7 @@ there should never be any errors.
 """
 
 # wait until keywords are out of definitions (pydoc function).
-##? 5 
+#? 5 
 's'()
 
 #? []
@@ -32,7 +32,7 @@ def wrong_indents():
      asdf
     asdf(
     # TODO this seems to be wrong now?
-    ##? int()
+    #? int()
     asdf
 def openbrace():
     asdf = 3

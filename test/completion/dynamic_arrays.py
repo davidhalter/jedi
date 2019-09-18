@@ -118,15 +118,15 @@ class D(): pass
 class E(): pass
 lst = [1]
 lst.append(1.0)
-lst += [C]
+lst += [C()]
 s = set(lst)
 s.add("")
-s += [D]
+s += [D()]
 lst = list(s)
 lst.append({})
-lst += [E]
+lst += [E()]
 
-##? dict() int() float() str() C D E
+#? dict() int() float() str() C() D() E()
 lst[0]
 
 # -----------------
@@ -307,3 +307,77 @@ lst.append('')
 #? float() int() str()
 lst[0]
 
+# -----------------
+# list setitem
+# -----------------
+
+some_lst = [int]
+some_lst[3] = str
+#? int
+some_lst[0]
+#? str
+some_lst[3]
+#? int str
+some_lst[2]
+
+some_lst[0] = tuple
+#? tuple
+some_lst[0]
+#? int str tuple
+some_lst[1]
+
+some_lst2 = list([1])
+some_lst2[3] = ''
+#? int() str()
+some_lst2[0]
+#? str()
+some_lst2[3]
+#? int() str()
+some_lst2[2]
+
+# -----------------
+# set setitem/other modifications (should not work)
+# -----------------
+
+some_set = {int}
+some_set[3] = str
+#? int
+some_set[0]
+#? int
+some_set[3]
+
+something = object()
+something[3] = str
+#? 
+something[0]
+#?
+something[3]
+
+# -----------------
+# dict setitem
+# -----------------
+
+some_dct = {'a': float, 1: int}
+some_dct['x'] = list
+some_dct['y'] = tuple
+#? list
+some_dct['x']
+#? int float list tuple
+some_dct['unknown']
+#? float
+some_dct['a']
+
+some_dct = dict({'a': 1, 1: ''})
+#? int() str()
+some_dct['la']
+#? int()
+some_dct['a']
+
+some_dct['x'] = list
+some_dct['y'] = tuple
+#? list
+some_dct['x']
+#? int() str() list tuple
+some_dct['unknown']
+#? int()
+some_dct['a']

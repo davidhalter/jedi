@@ -31,6 +31,7 @@ second = 1
 second = ""
 class TestClass(object):
     var_class = TestClass(1)
+    self.pseudo_var = 3
 
     def __init__(self2, first_param, second_param, third=1.0):
         self2.var_inst = first_param
@@ -85,6 +86,10 @@ TestClass.var
 inst.var_local
 #? []
 TestClass.var_local.
+#?
+TestClass.pseudo_var
+#?
+TestClass().pseudo_var
 
 #? int()
 TestClass().ret(1)

@@ -1,5 +1,7 @@
 from jedi._compatibility import Parameter
 from jedi.cache import memoize_method
+from jedi import debug
+from jedi import parser_utils
 
 
 class _SignatureMixin(object):
@@ -55,6 +57,8 @@ class AbstractSignature(_SignatureMixin):
         raise NotImplementedError
 
     def __repr__(self):
+        if self.value is self._function_value:
+            return '<%s: %s>' % (self.__class__.__name__, self.value)
         return '<%s: %s, %s>' % (self.__class__.__name__, self.value, self._function_value)
 
 
@@ -88,6 +92,26 @@ class TreeSignature(AbstractSignature):
             from jedi.inference.star_args import process_params
             params = process_params(params)
         return params
+
+    def matches_signature(self, arguments):
+        from jedi.inference.param import get_executed_param_names_and_issues
+        executed_param_names, issues = \
+            get_executed_param_names_and_issues(self._function_value, arguments)
+        if issues:
+            return False
+
+        matches = all(executed_param_name.matches_signature()
+                      for executed_param_name in executed_param_names)
+        if debug.enable_notice:
+            tree_node = self._function_value.tree_node
+            signature = parser_utils.get_call_signature(tree_node)
+            if matches:
+                debug.dbg("Overloading match: %s@%s (%s)",
+                          signature, tree_node.start_pos[0], arguments, color='BLUE')
+            else:
+                debug.dbg("Overloading no match: %s@%s (%s)",
+                          signature, tree_node.start_pos[0], arguments, color='BLUE')
+        return matches
 
 
 class BuiltinSignature(AbstractSignature):

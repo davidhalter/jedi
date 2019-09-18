@@ -1,5 +1,4 @@
 from jedi.inference import imports
-from jedi.inference.names import TreeNameDefinition
 
 
 def _resolve_names(definition_names, avoid_names=()):
@@ -27,8 +26,7 @@ def _dictionarize(names):
 
 
 def _find_names(module_context, tree_name):
-    context = module_context.create_context(tree_name)
-    name = TreeNameDefinition(context, tree_name)
+    name = module_context.create_name(tree_name)
     found_names = set(name.goto())
     found_names.add(name)
     return _dictionarize(_resolve_names(found_names))

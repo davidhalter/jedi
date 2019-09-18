@@ -8,11 +8,10 @@ from jedi.inference.utils import PushBackIterator
 from jedi.inference import analysis
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues, \
     LazyTreeValue, get_merged_lazy_value
-from jedi.inference.names import ParamName, TreeNameDefinition
+from jedi.inference.names import ParamName, TreeNameDefinition, AnonymousParamName
 from jedi.inference.base_value import NO_VALUES, ValueSet, ContextualizedNode
 from jedi.inference.value import iterable
 from jedi.inference.cache import inference_state_as_method_param_cache
-from jedi.inference.param import get_executed_param_names_and_issues
 
 
 def try_iter_content(types, depth=0):
@@ -84,7 +83,7 @@ def _iterate_argument_clinic(inference_state, arguments, parameters):
                     break
 
                 lazy_values.append(argument)
-            yield ValueSet([iterable.FakeSequence(inference_state, u'tuple', lazy_values)])
+            yield ValueSet([iterable.FakeTuple(inference_state, lazy_values)])
             lazy_values
             continue
         elif stars == 2:
@@ -144,9 +143,6 @@ class _AbstractArgumentsMixin(object):
     def unpack(self, funcdef=None):
         raise NotImplementedError
 
-    def get_executed_param_names_and_issues(self, execution_context):
-        return get_executed_param_names_and_issues(execution_context, self)
-
     def get_calling_nodes(self):
         return []
 
@@ -155,19 +151,6 @@ class AbstractArguments(_AbstractArgumentsMixin):
     context = None
     argument_node = None
     trailer = None
-
-
-class AnonymousArguments(AbstractArguments):
-    def get_executed_param_names_and_issues(self, execution_context):
-        from jedi.inference.dynamic import search_param_names
-        return search_param_names(
-            execution_context.inference_state,
-            execution_context,
-            execution_context.tree_node
-        ), []
-
-    def __repr__(self):
-        return '%s()' % self.__class__.__name__
 
 
 def unpack_arglist(arglist):
@@ -275,7 +258,6 @@ class TreeArguments(AbstractArguments):
         return '<%s: %s>' % (self.__class__.__name__, self.argument_node)
 
     def get_calling_nodes(self):
-        from jedi.inference.dynamic import DynamicExecutedParamName
         old_arguments_list = []
         arguments = self
 
@@ -288,15 +270,14 @@ class TreeArguments(AbstractArguments):
                 names = calling_name.goto()
                 if len(names) != 1:
                     break
+                if isinstance(names[0], AnonymousParamName):
+                    # Dynamic parameters should not have calling nodes, because
+                    # they are dynamic and extremely random.
+                    return []
                 if not isinstance(names[0], ParamName):
                     break
-                param = names[0].get_executed_param_name()
-                if isinstance(param, DynamicExecutedParamName):
-                    # For dynamic searches we don't even want to see errors.
-                    return []
-                if param.var_args is None:
-                    break
-                arguments = param.var_args
+                executed_param_name = names[0].get_executed_param_name()
+                arguments = executed_param_name.arguments
                 break
 
         if arguments.argument_node is not None:

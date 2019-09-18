@@ -3,7 +3,7 @@ import os
 from jedi._compatibility import unicode, force_unicode, all_suffixes
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ContextualizedNode
-from jedi.inference.helpers import is_string
+from jedi.inference.helpers import is_string, get_str_or_none
 from jedi.common.utils import traverse_parents
 from jedi.parser_utils import get_cached_code_lines
 from jedi.file_io import FileIO
@@ -86,10 +86,12 @@ def _paths_from_list_modifications(module_context, trailer1, trailer2):
         arg = arg.children[2]
 
     for value in module_context.create_context(arg).infer_node(arg):
-        if is_string(value):
-            abs_path = _abs_path(module_context, value.get_safe_value())
-            if abs_path is not None:
-                yield abs_path
+        p = get_str_or_none(value)
+        if p is None:
+            continue
+        abs_path = _abs_path(module_context, p)
+        if abs_path is not None:
+            yield abs_path
 
 
 @inference_state_method_cache(default=[])

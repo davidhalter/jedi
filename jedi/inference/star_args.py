@@ -47,8 +47,6 @@ def _iter_nodes_for_param(param_name):
                         )
                         for c in values:
                             yield c, args
-                    else:
-                        assert False
 
 
 def _goes_to_param_name(param_name, context, potential_name):
