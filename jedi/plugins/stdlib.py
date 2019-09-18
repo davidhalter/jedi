@@ -787,6 +787,69 @@ _implemented = {
 }
 
 
+def new_django_dict_filter(cls):
+    filter_ = ParserTreeFilter(parent_context=cls.as_context())
+    field, = filter_.values()
+    field_tree_instance, = field.infer()
+
+    if field_tree_instance.name.string_name in ('CharField', 'TextField', 'EmailField'):
+        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('str')
+        return [DictFilter({
+            field.string_name: DjangoModelField(builtin_str, field).name
+        })]
+
+    integer_field_classes = ('IntegerField', 'BigIntegerField', 'PositiveIntegerField', 'SmallIntegerField')
+    if field_tree_instance.name.string_name in integer_field_classes:
+        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('int')
+        return [DictFilter({
+            field.string_name: DjangoModelField(builtin_str, field).name
+        })]
+
+    if field_tree_instance.name.string_name == 'FloatField':
+        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('float')
+        return [DictFilter({
+            field.string_name: DjangoModelField(builtin_str, field).name
+        })]
+
+
+    if field_tree_instance.name.string_name == 'BinaryField':
+        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('bytes')
+        return [DictFilter({
+            field.string_name: DjangoModelField(builtin_str, field).name
+        })]
+
+    if field_tree_instance.name.string_name == 'BooleanField':
+        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('bool')
+        return [DictFilter({
+            field.string_name: DjangoModelField(builtin_str, field).name
+        })]
+
+    if field_tree_instance.name.string_name == 'DecimalField':
+        # TODO: make decimal.Decimal filter
+        return
+
+    if field_tree_instance.name.string_name == 'ForeignKey':
+        # TODO: infer related object class and make a filter for that class
+        return
+
+    if field_tree_instance.name.string_name == 'TimeField':
+        # TODO: make time.time filter
+        return
+
+    if field_tree_instance.name.string_name == 'DurationField':
+        # TODO: make datetime.timedelta filter
+        return
+
+    if field_tree_instance.name.string_name == 'DateField':
+        # TODO: make datetime.date filter
+        return
+
+    if field_tree_instance.name.string_name == 'DatetimeField':
+        # TODO: make datetime.datetime filter
+        return
+
+
+
 def get_metaclass_filters(func):
     def wrapper(cls, metaclasses):
         for metaclass in metaclasses:
@@ -796,8 +859,35 @@ def get_metaclass_filters(func):
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
                 })]
+
+            if metaclass.py__name__() == 'ModelBase' \
+                    and metaclass.get_root_context().py__name__() == 'django.db.models.base':
+                django_dict_filter = new_django_dict_filter(cls)
+                if django_dict_filter is not None:
+                    return django_dict_filter
+
         return func(cls, metaclasses)
     return wrapper
+
+
+class DjangoModelField(LazyValueWrapper):
+    def __init__(self, cls, name):
+        self.inference_state = cls.inference_state
+        self._cls = cls  # Corresponds to super().__self__
+        self._name = name
+        self.tree_node = self._name.tree_name
+
+    @safe_property
+    def name(self):
+        return ValueName(self, self._name.tree_name)
+
+    def _get_wrapped_value(self):
+        obj, = self._cls.execute_with_values()
+        return obj
+
+    def get_filters(self, origin_scope=None):
+        for f in self._get_wrapped_value().get_filters():
+            yield f
 
 
 class EnumInstance(LazyValueWrapper):
