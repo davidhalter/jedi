@@ -787,35 +787,35 @@ def new_django_dict_filter(cls):
     field_tree_instance, = field.infer()
 
     if field_tree_instance.name.string_name in ('CharField', 'TextField', 'EmailField'):
-        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('str')
+        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('str')
         return [DictFilter({
-            field.string_name: DjangoModelField(builtin_str, field).name
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
         })]
 
     integer_field_classes = ('IntegerField', 'BigIntegerField', 'PositiveIntegerField', 'SmallIntegerField')
     if field_tree_instance.name.string_name in integer_field_classes:
-        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('int')
+        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('int')
         return [DictFilter({
-            field.string_name: DjangoModelField(builtin_str, field).name
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
         })]
 
     if field_tree_instance.name.string_name == 'FloatField':
-        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('float')
+        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('float')
         return [DictFilter({
-            field.string_name: DjangoModelField(builtin_str, field).name
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
         })]
 
 
     if field_tree_instance.name.string_name == 'BinaryField':
-        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('bytes')
+        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bytes')
         return [DictFilter({
-            field.string_name: DjangoModelField(builtin_str, field).name
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
         })]
 
     if field_tree_instance.name.string_name == 'BooleanField':
-        builtin_str, = cls.inference_state.builtins_module.py__getattribute__('bool')
+        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bool')
         return [DictFilter({
-            field.string_name: DjangoModelField(builtin_str, field).name
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
         })]
 
     if field_tree_instance.name.string_name == 'DecimalField':
