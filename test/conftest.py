@@ -10,7 +10,6 @@ from . import refactor
 
 import jedi
 from jedi.api.environment import InterpreterEnvironment
-from jedi.inference.analysis import Warning
 
 
 def pytest_addoption(parser):
@@ -85,46 +84,7 @@ def collect_static_analysis_tests(base_dir, test_files):
         files_to_execute = [a for a in test_files.items() if a[0] in f_name]
         if f_name.endswith(".py") and (not test_files or files_to_execute):
             path = os.path.join(base_dir, f_name)
-            yield StaticAnalysisCase(path)
-
-
-class StaticAnalysisCase(object):
-    """
-    Static Analysis cases lie in the static_analysis folder.
-    The tests also start with `#!`, like the goto_definition tests.
-    """
-    def __init__(self, path):
-        self._path = path
-        self.name = os.path.basename(path)
-        with open(path) as f:
-            self._source = f.read()
-
-        self.skip = False
-        for line in self._source.splitlines():
-            self.skip = self.skip or run.skip_python_version(line)
-
-    def collect_comparison(self):
-        cases = []
-        for line_nr, line in enumerate(self._source.splitlines(), 1):
-            match = re.match(r'(\s*)#! (\d+ )?(.*)$', line)
-            if match is not None:
-                column = int(match.group(2) or 0) + len(match.group(1))
-                cases.append((line_nr + 1, column, match.group(3)))
-        return cases
-
-    def run(self, compare_cb, environment):
-        analysis = jedi.Script(
-            self._source,
-            path=self._path,
-            environment=environment,
-        )._analysis()
-        typ_str = lambda inst: 'warning ' if isinstance(inst, Warning) else ''
-        analysis = [(r.line, r.column, typ_str(r) + r.name)
-                    for r in analysis]
-        compare_cb(self, analysis, self.collect_comparison())
-
-    def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))
+            yield run.StaticAnalysisCase(path)
 
 
 @pytest.fixture(scope='session')
