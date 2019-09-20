@@ -45,8 +45,9 @@ def test_completion(case, monkeypatch, environment, has_typing):
 
 
 def test_static_analysis(static_analysis_case, environment):
-    if static_analysis_case.skip is not None:
-        pytest.skip(static_analysis_case.skip)
+    skip_reason = static_analysis_case.get_skip_reason(environment)
+    if skip_reason is not None:
+        pytest.skip(skip_reason)
     else:
         static_analysis_case.run(assert_static_analysis, environment)
 
