@@ -1,4 +1,4 @@
-from os.path import join, sep as s
+from os.path import join, sep as s, dirname
 import os
 import sys
 from textwrap import dedent
@@ -165,7 +165,7 @@ f2 = join(root_dir, 'test', 'example.py')
 os_path = 'from os.path import *\n'
 # os.path.sep escaped
 se = s * 2 if s == '\\' else s
-current_dirname = os.path.basename(os.path.abspath(os.path.curdir))
+current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
 
 
 @pytest.mark.parametrize(
