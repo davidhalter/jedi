@@ -193,6 +193,9 @@ class DictModification(_Modification):
             yield lazy_context
         yield self._contextualized_key
 
+    def get_key_values(self):
+        return self._wrapped_value.get_key_values() | self._contextualized_key.infer()
+
 
 class ListModification(_Modification):
     def py__iter__(self):

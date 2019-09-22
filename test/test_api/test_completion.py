@@ -269,22 +269,22 @@ def test_file_path_completions(Script, file, code, column, expected):
 
 @pytest.mark.parametrize(
     'added_code, column, expected', [
-        ('ints[', 5, ['1', '50']),
-        ('ints[]', 5, ['1', '50']),
-        ('ints[1]', 5, ['1']),
+        ('ints[', 5, ['1', '50', Ellipsis]),
+        ('ints[]', 5, ['1', '50', Ellipsis]),
+        ('ints[1]', 5, ['1', '50', Ellipsis]),
         ('ints[1]', 6, ['']),
-        ('ints[1', 5, ['1']),
+        ('ints[1', 5, ['1', Ellipsis]),
         ('ints[1', 6, ['']),
 
-        ('ints[5]', 5, ['1']),
+        ('ints[5]', 5, ['1', Ellipsis]),
         ('ints[5]', 6, ['0']),
-        ('ints[50', 5, ['50']),
+        ('ints[50', 5, ['50', Ellipsis]),
         ('ints[5', 6, ['0']),
         ('ints[50', 6, ['0']),
         ('ints[50', 7, ['']),
 
-        ('strs[', 5, ["'asdf'", "'foo'", "'fbar'"]),
-        ('strs[]', 5, ["'asdf'", "'foo'", "'fbar'"]),
+        ('strs[', 5, ["'asdf'", "'foo'", "'fbar'", Ellipsis]),
+        ('strs[]', 5, ["'asdf'", "'foo'", "'fbar'", Ellipsis]),
         ("strs[']", 6, ["asdf'", "foo'", "fbar'"]),
         ('strs["]', 6, ['asdf"', 'foo"', 'fbar"']),
         ('strs["""]', 6, ['asdf', 'foo', 'fbar']),
@@ -322,7 +322,10 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
         raise NotImplementedError
         line, column = column
     comps = Script(code + added_code, line=line, column=column).completions()
-    if expected == "A LOT":
-        assert len(comps) > 100  # This is basically global completions.
-    else:
-        assert [c.complete for c in comps] == expected
+    if Ellipsis in expected:
+        # This means that global completions are part of this, so filter all of
+        # that out.
+        comps = [c for c in comps if not c._name.is_value_name]
+        expected = [e for e in expected if e is not Ellipsis]
+
+    assert [c.complete for c in comps] == expected

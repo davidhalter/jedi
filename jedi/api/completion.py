@@ -10,6 +10,7 @@ from jedi import settings
 from jedi.api import classes
 from jedi.api import helpers
 from jedi.api import keywords
+from jedi.api.dicts import completions_for_dicts
 from jedi.api.file_name import file_name_completions
 from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
@@ -177,18 +178,19 @@ class Completion:
         if not current_line or current_line[-1] in ' \t.;':
             completion_names += self._get_keyword_completion_names(allowed_transitions)
 
+        nodes = _gather_nodes(stack)
+        if nodes[-1] == '[' and stack[-1].nonterminal == 'trailer':
+            bracket = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
+            context = self._module_context.create_context(bracket)
+
+            values = infer_call_of_leaf(context, bracket.get_previous_leaf())
+            completion_names += completions_for_dicts(values)
+
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
             # This means that we actually have to do type inference.
 
             nonterminals = [stack_node.nonterminal for stack_node in stack]
-
-            nodes = []
-            for stack_node in stack:
-                if stack_node.dfa.from_rule == 'small_stmt':
-                    nodes = []
-                else:
-                    nodes += stack_node.nodes
 
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
@@ -280,6 +282,16 @@ class Completion:
                 # TODO we should probably check here for properties
                 if (name.api_type == 'function') == is_function:
                     yield name
+
+
+def _gather_nodes(stack):
+    nodes = []
+    for stack_node in stack:
+        if stack_node.dfa.from_rule == 'small_stmt':
+            nodes = []
+        else:
+            nodes += stack_node.nodes
+    return nodes
 
 
 def _extract_string_while_in_string(leaf, position):
