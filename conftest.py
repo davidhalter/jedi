@@ -4,6 +4,7 @@ import os
 from functools import partial
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 
 import jedi
 from jedi.api.environment import get_system_environment, InterpreterEnvironment
@@ -16,6 +17,14 @@ collect_ignore = [
     'build/',
     'test/examples',
 ]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def clean_env():
+    mp = MonkeyPatch()
+    with mp.context() as m:
+        m.delenv('VIRTUAL_ENV')
+        yield
 
 
 # The following hooks (pytest_configure, pytest_unconfigure) are used
