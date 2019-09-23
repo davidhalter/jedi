@@ -88,7 +88,24 @@ class Completion:
     def completions(self):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
-        if string is not None:
+
+        prefixed_completions = []
+        if string is None:
+            string = ''
+        bracket_leaf = leaf
+        if bracket_leaf.type == 'number':
+            string = bracket_leaf.value
+            bracket_leaf = bracket_leaf.get_previous_leaf()
+
+        if bracket_leaf == '[':
+            context = self._module_context.create_context(bracket_leaf)
+            before_bracket_leaf = bracket_leaf.get_previous_leaf()
+            if before_bracket_leaf.type in ('atom', 'trailer', 'name'):
+                values = infer_call_of_leaf(context, before_bracket_leaf)
+                prefixed_completions += completions_for_dicts(
+                    self._inference_state, values, string)
+
+        if string is not None and not prefixed_completions:
             completions = list(file_name_completions(
                 self._inference_state, self._module_context, start_leaf, string,
                 self._like_name, self._call_signatures_callback,
@@ -102,9 +119,12 @@ class Completion:
         completions = filter_names(self._inference_state, completion_names,
                                    self.stack, self._like_name)
 
-        return sorted(completions, key=lambda x: (x.name.startswith('__'),
-                                                  x.name.startswith('_'),
-                                                  x.name.lower()))
+        return (
+            prefixed_completions +
+            sorted(completions, key=lambda x: (x.name.startswith('__'),
+                                               x.name.startswith('_'),
+                                               x.name.lower()))
+        )
 
     def _get_context_completions(self, leaf):
         """
@@ -178,24 +198,13 @@ class Completion:
         if not current_line or current_line[-1] in ' \t.;':
             completion_names += self._get_keyword_completion_names(allowed_transitions)
 
-        nodes = _gather_nodes(stack)
-        if any(n.nonterminal == 'trailer' and n.nodes[0] == '[' for n in stack):
-            bracket = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
-            string = ''
-            if bracket.type == 'number':
-                string = bracket.value
-                bracket = bracket.get_previous_leaf()
-            context = self._module_context.create_context(bracket)
-
-            values = infer_call_of_leaf(context, bracket.get_previous_leaf())
-            completion_names += completions_for_dicts(values, string)
-
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
             # This means that we actually have to do type inference.
 
             nonterminals = [stack_node.nonterminal for stack_node in stack]
 
+            nodes = _gather_nodes(stack)
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
