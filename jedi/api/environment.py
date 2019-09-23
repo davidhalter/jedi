@@ -283,7 +283,12 @@ def find_virtualenvs(paths=None, **kwargs):
                 continue
 
             directory = os.path.abspath(directory)
-            for path in [directory] + os.listdir(directory):
+            check_dirs = [directory]
+            for path in os.listdir(directory):
+                abspath = os.path.join(directory, path)
+                if os.path.isdir(path):
+                    check_dirs.append(abspath)
+            for path in check_dirs:
                 path = os.path.join(directory, path)
                 if path in _used_paths:
                     # A path shouldn't be inferred twice.
