@@ -108,6 +108,13 @@ def test_scanning_venvs(venv_path):
                for venv in find_virtualenvs([parent_dir]))
 
 
+def test_find_virtualenvs_finds_via_VIRTUAL_ENV_root(venv_path):
+    """Test that is checks the directory itself, not just childs."""
+    assert "VIRTUAL_ENV" not in os.environ
+    found_envs = find_virtualenvs([venv_path])
+    assert [venv.path for venv in found_envs] == [venv_path]
+
+
 def test_create_environment_venv_path(venv_path):
     environment = create_environment(venv_path)
     assert environment.path == venv_path
