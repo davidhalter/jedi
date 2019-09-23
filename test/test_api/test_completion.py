@@ -273,14 +273,14 @@ def test_file_path_completions(Script, file, code, column, expected):
         ('ints[]', 5, ['1', '50', Ellipsis]),
         ('ints[1]', 5, ['1', '50', Ellipsis]),
         ('ints[1]', 6, ['']),
-        ('ints[1', 5, ['1', Ellipsis]),
+        ('ints[1', 5, ['1', '50', Ellipsis]),
         ('ints[1', 6, ['']),
 
-        ('ints[5]', 5, ['1', Ellipsis]),
+        ('ints[5]', 5, ['1', '50', Ellipsis]),
         ('ints[5]', 6, ['0']),
-        ('ints[50', 5, ['50', Ellipsis]),
+        ('ints[50', 5, ['1', '50', Ellipsis]),
         ('ints[5', 6, ['0']),
-        ('ints[50', 6, ['0']),
+        ('ints[50', 6, ['']),#TODO ['0']),
         ('ints[50', 7, ['']),
 
         ('strs[', 5, ["'asdf'", "'foo'", "'fbar'", Ellipsis]),

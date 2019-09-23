@@ -179,12 +179,16 @@ class Completion:
             completion_names += self._get_keyword_completion_names(allowed_transitions)
 
         nodes = _gather_nodes(stack)
-        if nodes[-1] == '[' and stack[-1].nonterminal == 'trailer':
+        if any(n.nonterminal == 'trailer' and n.nodes[0] == '[' for n in stack):
             bracket = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
+            string = ''
+            if bracket.type == 'number':
+                string = bracket.value
+                bracket = bracket.get_previous_leaf()
             context = self._module_context.create_context(bracket)
 
             values = infer_call_of_leaf(context, bracket.get_previous_leaf())
-            completion_names += completions_for_dicts(values)
+            completion_names += completions_for_dicts(values, string)
 
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
