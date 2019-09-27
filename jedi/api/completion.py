@@ -10,7 +10,7 @@ from jedi import settings
 from jedi.api import classes
 from jedi.api import helpers
 from jedi.api import keywords
-from jedi.api.dicts import completions_for_dicts
+from jedi.api.strings import completions_for_dicts
 from jedi.api.file_name import file_name_completions
 from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
@@ -93,7 +93,7 @@ class Completion:
         if string is None:
             string = ''
         bracket_leaf = leaf
-        if bracket_leaf.type == 'number':
+        if bracket_leaf.type in ('number', 'error_leaf'):
             string = bracket_leaf.value
             bracket_leaf = bracket_leaf.get_previous_leaf()
 
@@ -113,6 +113,8 @@ class Completion:
             ))
             if completions:
                 return completions
+        if string is not None:
+            return prefixed_completions
 
         completion_names = self._get_context_completions(leaf)
 

@@ -1,10 +1,13 @@
 import os
 
 from jedi._compatibility import FileNotFoundError, force_unicode, scandir
-from jedi.inference.names import AbstractArbitraryName
 from jedi.api import classes
+from jedi.api.strings import StringName, get_quote_ending
 from jedi.inference.helpers import get_str_or_none
-from jedi.parser_utils import get_string_quote
+
+
+class PathName(StringName):
+    api_type = u'path'
 
 
 def file_name_completions(inference_state, module_context, start_leaf, string,
@@ -39,22 +42,13 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
         name = entry.name
         if name.startswith(must_start_with):
             if is_in_os_path_join or not entry.is_dir():
-                if start_leaf.type == 'string':
-                    quote = get_string_quote(start_leaf)
-                else:
-                    assert start_leaf.type == 'error_leaf'
-                    quote = start_leaf.value
-                potential_other_quote = \
-                    code_lines[position[0] - 1][position[1]:position[1] + len(quote)]
-                # Add a quote if it's not already there.
-                if quote != potential_other_quote:
-                    name += quote
+                name += get_quote_ending(start_leaf, code_lines, position)
             else:
                 name += os.path.sep
 
             yield classes.Completion(
                 inference_state,
-                FileName(inference_state, name[len(must_start_with) - like_name_length:]),
+                PathName(inference_state, name[len(must_start_with) - like_name_length:]),
                 stack=None,
                 like_name_length=like_name_length
             )
@@ -97,11 +91,6 @@ def _add_strings(context, nodes, add_slash=False):
         string += force_unicode(s)
         first = False
     return string
-
-
-class FileName(AbstractArbitraryName):
-    api_type = u'path'
-    is_value_name = False
 
 
 def _add_os_path_join(module_context, start_leaf, bracket_start):
