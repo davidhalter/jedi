@@ -31,10 +31,6 @@ def start_match(string, like_name):
     return string.startswith(like_name)
 
 
-def substr_match(string, like_name):
-    return like_name in string
-
-
 def fuzzy_match(string, like_name):
     if len(like_name) <= 1:
         return like_name in string
@@ -44,7 +40,7 @@ def fuzzy_match(string, like_name):
     return False
 
 
-def filter_names(inference_state, completion_names, stack, like_name, match_method):
+def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
     comp_dct = {}
     if settings.case_insensitive_completion:
         like_name = like_name.lower()
@@ -52,8 +48,11 @@ def filter_names(inference_state, completion_names, stack, like_name, match_meth
         string = name.string_name
         if settings.case_insensitive_completion:
             string = string.lower()
-
-        if match_method(string, like_name):
+        if fuzzy:
+            match = fuzzy_match(string, like_name)
+        else:
+            match = start_match(string, like_name)
+        if match:
             new = classes.Completion(
                 inference_state,
                 name,
@@ -103,7 +102,7 @@ class Completion:
     def completions(self, **kwargs):
         return self._completions(**kwargs)
 
-    def _completions(self, method=start_match):
+    def _completions(self, fuzzy=False):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
@@ -118,7 +117,7 @@ class Completion:
         completion_names = self._get_value_completions(leaf)
 
         completions = filter_names(self._inference_state, completion_names,
-                                   self.stack, self._like_name, method)
+                                   self.stack, self._like_name, fuzzy)
 
         return sorted(completions, key=lambda x: (x.name.startswith('__'),
                                                   x.name.startswith('_'),
