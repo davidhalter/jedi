@@ -201,7 +201,7 @@ class Script(object):
             self._inference_state.environment,
         )
 
-    def completions(self):
+    def completions(self, fuzzy=False):
         """
         Return :class:`classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
@@ -214,7 +214,7 @@ class Script(object):
                 self._inference_state, self._get_module_context(), self._code_lines,
                 self._pos, self.call_signatures
             )
-            return completion.completions()
+            return completion.completions(fuzzy)
 
     def goto_definitions(self, **kwargs):
         """

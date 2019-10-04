@@ -304,3 +304,10 @@ def test_goto_follow_builtin_imports(Script):
     assert d.in_builtin_module() is True
     d, = s.goto_assignments(follow_imports=True, follow_builtin_imports=True)
     assert d.in_builtin_module() is True
+
+
+def test_fuzzy_completion(Script):
+    script = Script('string =  "hello"\nstring.upper')
+    assert ['isupper', 'upper'] == [comp.name 
+                                    for comp in 
+                                    script.completions(fuzzy=True)]

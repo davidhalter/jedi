@@ -85,7 +85,7 @@ def get_flow_scope_node(module_node, position):
 
 class Completion:
     def __init__(self, inference_state, module_context, code_lines, position,
-                 call_signatures_callback):
+                 call_signatures_callback, fuzzy=False):
         self._inference_state = inference_state
         self._module_context = module_context
         self._module_node = module_context.tree_node
@@ -99,10 +99,12 @@ class Completion:
         self._position = position[0], position[1] - len(self._like_name)
         self._call_signatures_callback = call_signatures_callback
 
-    def completions(self, **kwargs):
-        return self._completions(**kwargs)
+        self._fuzzy = fuzzy
 
-    def _completions(self, fuzzy=False):
+    def completions(self, fuzzy=False, **kwargs):
+        return self._completions(fuzzy, **kwargs)
+
+    def _completions(self, fuzzy):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
