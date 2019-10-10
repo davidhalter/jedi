@@ -321,7 +321,7 @@ def test_math_fuzzy_completion(Script):
             'log2'] == [comp.name for comp in script.completions(fuzzy=True)]
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 3),
+@pytest.mark.skipif(sys.version_info > (2, 7),
                     reason="requires python3.3 or higher")
 def test_math_fuzzy_completion(Script):
     script = Script('import math\nmath.og')
