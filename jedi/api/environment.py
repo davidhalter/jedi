@@ -361,7 +361,11 @@ def _get_executable_path(path, safe=True):
     """
 
     if os.name == 'nt':
-        python = os.path.join(path, 'Scripts', 'python.exe')
+        intermediate_folders = ['Scripts', 'anaconda3']
+        for folder in intermediate_folders:
+            python = os.path.join(path, folder, 'python.exe')
+            if os.path.exists(python):
+                break
     else:
         python = os.path.join(path, 'bin', 'python')
     if not os.path.exists(python):
