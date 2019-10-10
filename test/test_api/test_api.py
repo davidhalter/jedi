@@ -307,10 +307,23 @@ def test_goto_follow_builtin_imports(Script):
     assert d.in_builtin_module() is True
 
 
-def test_fuzzy_completion(Script):
+def test_str_fuzzy_completion(Script):
     script = Script('string =  "hello"\nstring.upper')
     assert ['isupper',
             'upper'] == [comp.name for comp in script.completions(fuzzy=True)]
+
+
+@pytest.mark.skipif(sys.version_info < (3, 3),
+                    reason="requires python3.3 or higher")
+def test_math_fuzzy_completion(Script):
+    script = Script('import math\nmath.og')
+    assert ['copysign', 'log', 'log10',
+            'log1p'] == [comp.name for comp in script.completions(fuzzy=True)]
+
+
+@pytest.mark.skipif(sys.version_info >= (3, 3),
+                    reason="requires python3.3 or higher")
+def test_math_fuzzy_completion(Script):
     script = Script('import math\nmath.og')
     assert ['copysign', 'log', 'log10', 'log1p',
             'log2'] == [comp.name for comp in script.completions(fuzzy=True)]
