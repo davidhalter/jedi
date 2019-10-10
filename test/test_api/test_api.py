@@ -317,13 +317,13 @@ def test_str_fuzzy_completion(Script):
                     reason="requires python3.3 or higher")
 def test_math_fuzzy_completion(Script):
     script = Script('import math\nmath.og')
-    assert ['copysign', 'log', 'log10',
-            'log1p'] == [comp.name for comp in script.completions(fuzzy=True)]
+    assert ['copysign', 'log', 'log10', 'log1p',
+            'log2'] == [comp.name for comp in script.completions(fuzzy=True)]
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 3),
                     reason="requires python3.3 or higher")
 def test_math_fuzzy_completion(Script):
     script = Script('import math\nmath.og')
-    assert ['copysign', 'log', 'log10', 'log1p',
-            'log2'] == [comp.name for comp in script.completions(fuzzy=True)]
+    assert ['copysign', 'log', 'log10',
+            'log1p'] == [comp.name for comp in script.completions(fuzzy=True)]
