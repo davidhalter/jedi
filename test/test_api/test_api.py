@@ -23,7 +23,8 @@ def test_preload_modules():
         # Filter the typeshed parser cache.
         typeshed_cache_count = sum(
             1 for path in grammar_cache
-            if path is not None and path.startswith(typeshed.TYPESHED_PATH))
+            if path is not None and path.startswith(typeshed.TYPESHED_PATH)
+        )
         # +1 for None module (currently used)
         assert len(grammar_cache) - typeshed_cache_count == len(modules) + 1
         for i in modules:
@@ -34,8 +35,7 @@ def test_preload_modules():
 
     try:
         preload_module('sys')
-        check_loaded(
-        )  # compiled (c_builtin) modules shouldn't be in the cache.
+        check_loaded()  # compiled (c_builtin) modules shouldn't be in the cache.
         preload_module('types', 'token')
         check_loaded('types', 'token')
     finally:
@@ -117,9 +117,8 @@ def test_completion_on_complex_literals(Script):
     # However this has been disabled again, because it apparently annoyed
     # users. So no completion after j without a space :)
     assert not Script('4j').completions()
-    assert ({c.name
-             for c in Script('4j ').completions()
-             } == {'if', 'and', 'in', 'is', 'not', 'or'})
+    assert ({c.name for c in Script('4j ').completions()} ==
+            {'if', 'and', 'in', 'is', 'not', 'or'})
 
 
 def test_goto_assignments_on_non_name(Script, environment):
@@ -168,8 +167,7 @@ def test_usage_description(Script):
 
 def test_get_line_code(Script):
     def get_line_code(source, line=None, **kwargs):
-        return Script(source,
-                      line=line).completions()[0].get_line_code(**kwargs)
+        return Script(source, line=line).completions()[0].get_line_code(**kwargs)
 
     # On builtin
     assert get_line_code('') == ''
@@ -246,7 +244,8 @@ def test_goto_definition_cursor(Script):
          "                   b):\n"
          "        return\n"
          "A._something\n"
-         "A.different_line")
+         "A.different_line"
+         )
 
     in_name = 2, 9
     under_score = 2, 8
@@ -307,7 +306,7 @@ def test_goto_follow_builtin_imports(Script):
     assert d.in_builtin_module() is True
 
 
-def test_str_fuzzy_completion(Script):
+def test_fuzzy_completion(Script):
     script = Script('string =  "hello"\nstring.upper')
     assert ['isupper',
             'upper'] == [comp.name for comp in script.completions(fuzzy=True)]
