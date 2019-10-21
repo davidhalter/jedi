@@ -11,8 +11,8 @@ Changelog
 0.15.0 (2019-08-11)
 +++++++++++++++++++
 
-- Added file path completions, there's a **new ``Completion.type``** ``path``,
-  now. Example: ``'/ho`` -> ``'/home/``
+- Added file path completions, there's a **new** ``Completion.type`` now:
+  ``path``. Example: ``'/ho`` -> ``'/home/``
 - ``*args``/``**kwargs`` resolving. If possible Jedi replaces the parameters
   with the actual alternatives.
 - Better support for enums/dataclasses
@@ -28,7 +28,7 @@ New APIs:
   following additional attributes ``infer_default()``, ``infer_annotation()``,
   ``to_string()``, and ``kind``.
 - ``Definition.execute() -> List[Definition]``, makes it possible to infer
-    return values of functions.
+  return values of functions.
 
 
 0.14.1 (2019-07-13)
