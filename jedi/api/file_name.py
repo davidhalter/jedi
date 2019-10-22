@@ -3,12 +3,13 @@ import os
 from jedi._compatibility import FileNotFoundError, force_unicode, scandir
 from jedi.inference.names import AbstractArbitraryName
 from jedi.api import classes
+from jedi.api.helpers import fuzzy_match, start_match
 from jedi.inference.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
 
 
 def file_name_completions(inference_state, module_context, start_leaf, string,
-                          like_name, call_signatures_callback, code_lines, position):
+                          like_name, call_signatures_callback, code_lines, position, fuzzy):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
@@ -37,7 +38,11 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
         return
     for entry in listed:
         name = entry.name
-        if name.startswith(must_start_with):
+        if fuzzy:
+            match = fuzzy_match(name, must_start_with)
+        else:
+            match = start_match(name, must_start_with)
+        if match:
             if is_in_os_path_join or not entry.is_dir():
                 if start_leaf.type == 'string':
                     quote = get_string_quote(start_leaf)

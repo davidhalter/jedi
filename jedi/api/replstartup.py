@@ -21,7 +21,7 @@ import jedi.utils
 from jedi import __version__ as __jedi_version__
 
 print('REPL completion using Jedi %s' % __jedi_version__)
-jedi.utils.setup_readline()
+jedi.utils.setup_readline(fuzzy=False)
 
 del jedi
 

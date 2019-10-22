@@ -306,6 +306,18 @@ def test_goto_follow_builtin_imports(Script):
     assert d.in_builtin_module() is True
 
 
+def test_file_fuzzy_completion(Script, tmp_path):
+    folder0 = tmp_path / "inference"
+    folder0.mkdir()
+    file0_path0 = folder0 / "sys_path.py"
+    file0_path0.write_text('\n')
+    file0_path1 = folder0 / "syntax_tree.py"
+    file0_path1.write_text('\n')
+    script = Script('"{}/yt'.format(folder0))
+    assert ['sys_path.py"', 
+            'syntax_tree.py"' ] == [comp.name for comp in script.completions(fuzzy=True)]
+
+
 def test_fuzzy_completion(Script):
     script = Script('string =  "hello"\nstring.upper')
     assert ['isupper',
@@ -326,3 +338,5 @@ def test_math_fuzzy_completion(Script):
     script = Script('import math\nmath.og')
     assert ['copysign', 'log', 'log10',
             'log1p'] == [comp.name for comp in script.completions(fuzzy=True)]
+
+

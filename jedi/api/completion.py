@@ -27,18 +27,6 @@ def get_call_signature_param_names(call_signatures):
                                       Parameter.KEYWORD_ONLY):
                 yield p._name
 
-def start_match(string, like_name):
-    return string.startswith(like_name)
-
-
-def fuzzy_match(string, like_name):
-    if len(like_name) <= 1:
-        return like_name in string
-    pos = string.find(like_name[0])
-    if pos >= 0:
-        return fuzzy_match(string[pos + 1:], like_name[1:])
-    return False
-
 
 def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
     comp_dct = {}
@@ -49,9 +37,9 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
         if settings.case_insensitive_completion:
             string = string.lower()
         if fuzzy:
-            match = fuzzy_match(string, like_name)
+            match = helpers.fuzzy_match(string, like_name)
         else:
-            match = start_match(string, like_name)
+            match = helpers.start_match(string, like_name)
         if match:
             new = classes.Completion(
                 inference_state,
@@ -111,7 +99,8 @@ class Completion:
             completions = list(file_name_completions(
                 self._inference_state, self._module_context, start_leaf, string,
                 self._like_name, self._call_signatures_callback,
-                self._code_lines, self._original_position
+                self._code_lines, self._original_position,
+                fuzzy
             ))
             if completions:
                 return completions

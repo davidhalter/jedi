@@ -268,7 +268,7 @@ def test_file_path_completions(Script, file, code, column, expected):
     else:
         assert [c.complete for c in comps] == expected
 
-from jedi.api.completion import start_match, fuzzy_match
+from jedi.api.helpers import start_match, fuzzy_match
 
 def test_start_match():
     assert start_match('Condition', 'C')

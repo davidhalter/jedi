@@ -201,7 +201,7 @@ class Script(object):
             self._inference_state.environment,
         )
 
-    def completions(self, fuzzy=False):
+    def completions(self, fuzzy=True):
         """
         Return :class:`classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
