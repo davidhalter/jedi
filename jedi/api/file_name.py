@@ -33,7 +33,7 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
             string = to_be_added + string
     base_path = os.path.join(inference_state.project._path, string)
     try:
-        listed = scandir(base_path)
+        listed = sorted(scandir(base_path), key=lambda e:e.name)
     except FileNotFoundError:
         return
     for entry in listed:
