@@ -314,8 +314,8 @@ def test_file_fuzzy_completion(Script, tmp_path):
     file0_path1 = folder0 / "syntax_tree.py"
     file0_path1.write_text('\n')
     script = Script('"{}/yt'.format(folder0))
-    assert ['sys_path.py"', 
-            'syntax_tree.py"' ] == [comp.name for comp in script.completions(fuzzy=True)]
+    assert ['syntax_tree.py"', 
+            'sys_path.py"'] == [comp.name for comp in script.completions(fuzzy=True)]
 
 
 def test_fuzzy_completion(Script):
