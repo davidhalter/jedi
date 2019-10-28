@@ -433,7 +433,7 @@ class DirectObjectAccess(object):
                 default_string=repr(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
-                annotation_string=str(p.default),
+                annotation_string=str(p.annotation),
                 kind_name=str(p.kind)
             ) for p in self._get_signature().parameters.values()
         ]
