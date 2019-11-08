@@ -91,7 +91,7 @@ def _split_comment_param_declaration(decl_text):
         debug.warning('Comment annotation is not valid Python: %s' % decl_text)
         return []
 
-    if node.type == 'name':
+    if node.type in ['name', 'atom_expr', 'power']:
         return [node.get_code().strip()]
 
     params = []
