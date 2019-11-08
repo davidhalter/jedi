@@ -38,6 +38,20 @@ def test(a, b):
     #? str()
     e
 
+class AA:
+    class BB:
+        pass
+
+def test(a):
+    # type: (AA.BB) -> None
+    #? AA.BB()
+    a
+
+def test(a):
+    # type: (AA.BB,) -> None
+    #? AA.BB()
+    a
+
 a,b = 1, 2 # type: str, float
 #? str()
 a
