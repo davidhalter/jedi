@@ -179,7 +179,8 @@ def _calculate_sha256_for_file(path):
 
 def get_default_environment():
     """
-    Tries to return an active Virtualenv. If there is no VIRTUAL_ENV variable
+    Tries to return an active Virtualenv or conda environment.
+    If there is no VIRTUAL_ENV variable or no CONDA_PREFIX variable set
     set it will return the latest Python version installed on the system. This
     makes it possible to use as many new Python features as possible when using
     autocompletion and other functionality.
