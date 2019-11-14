@@ -147,13 +147,13 @@ class InterpreterEnvironment(_SameEnvironmentMixin, _BaseEnvironment):
         return sys.path
 
 
-def _get_virtual_env_from_var():
+def _get_virtual_env_from_var(env_var='VIRTUAL_ENV'):
     """Get virtualenv environment from VIRTUAL_ENV environment variable.
 
     It uses `safe=False` with ``create_environment``, because the environment
     variable is considered to be safe / controlled by the user solely.
     """
-    var = os.environ.get('VIRTUAL_ENV')
+    var = os.environ.get(env_var)
     if var:
         # Under macOS in some cases - notably when using Pipenv - the
         # sys.prefix of the virtualenv is /path/to/env/bin/.. instead of
@@ -256,7 +256,8 @@ def find_virtualenvs(paths=None, **kwargs):
     :param paths: A list of paths in your file system to be scanned for
         Virtualenvs. It will search in these paths and potentially execute the
         Python binaries. Also the VIRTUAL_ENV variable will be checked if it
-        contains a valid Virtualenv.
+        contains a valid Virtualenv.  And CONDA_PREFIX will be checked to see
+        if it contains a valid conda environment.
     :param safe: Default True. In case this is False, it will allow this
         function to execute potential `python` environments. An attacker might
         be able to drop an executable in a path this function is searching by
@@ -277,6 +278,11 @@ def find_virtualenvs(paths=None, **kwargs):
         if virtual_env is not None:
             yield virtual_env
             _used_paths.add(virtual_env.path)
+
+        conda_env = _get_virtual_env_from_var('CONDA_PREFIX')
+        if conda_env is not None:
+            yield conda_env
+            _used_paths.add(conda_env.path)
 
         for directory in paths:
             if not os.path.isdir(directory):
