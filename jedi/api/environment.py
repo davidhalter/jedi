@@ -19,6 +19,7 @@ _VersionInfo = namedtuple('VersionInfo', 'major minor micro')
 
 _SUPPORTED_PYTHONS = ['3.8', '3.7', '3.6', '3.5', '3.4', '2.7']
 _SAFE_PATHS = ['/usr/bin', '/usr/local/bin']
+_CONDA_VAR = 'CONDA_PREFIX'
 _CURRENT_VERSION = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
 
 
@@ -189,6 +190,10 @@ def get_default_environment():
     if virtual_env is not None:
         return virtual_env
 
+    conda_env = _get_virtual_env_from_var(_CONDA_VAR)
+    if conda_env is not None:
+        return conda_env
+
     return _try_get_same_env()
 
 
@@ -279,7 +284,7 @@ def find_virtualenvs(paths=None, **kwargs):
             yield virtual_env
             _used_paths.add(virtual_env.path)
 
-        conda_env = _get_virtual_env_from_var('CONDA_PREFIX')
+        conda_env = _get_virtual_env_from_var(_CONDA_VAR)
         if conda_env is not None:
             yield conda_env
             _used_paths.add(conda_env.path)
