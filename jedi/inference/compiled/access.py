@@ -96,10 +96,58 @@ def safe_getattr(obj, name, default=_sentinel):
     return attr
 
 
-SignatureParam = namedtuple(
-    'SignatureParam',
-    'name has_default default default_string has_annotation annotation annotation_string kind_name'
-)
+# SignatureParam = namedtuple(
+#     'SignatureParam',
+#     'name has_default default default_string has_annotation annotation annotation_string kind_name'
+# )
+
+class SignatureParam:
+    def __init__(self, name, has_default, default, default_string, has_annotation, annotation, annotation_string, kind_name, **kwargs):
+        import typing
+
+        self.name = name
+        self.has_default = has_default
+        self.default = default
+        self.default_string = default_string
+        self.has_annotation = has_annotation
+        self.annotation = annotation
+        self.annotation_string = annotation_string
+        self.kind_name = kind_name
+
+        if 'p' in kwargs:
+            p = kwargs['p']
+
+            if isinstance(p.annotation, type):
+                self.annotation_string = p.annotation.__name__
+
+            if p.default is None and p.annotation.__origin__ == typing.Union \
+                    and p.annotation.__args__[-1] is type(None):
+                self.annotation_string = 'Optional[{}]'.format(
+                    ', '.join([a.__name__ for a in p.annotation.__args__[:-1]]))
+                self.default_string = ''
+                self.has_default = False
+
+    def __len__(self):
+        return 8
+
+    def __getitem__(self, i):
+        if i == 0:
+            return self.name
+        if i == 1:
+            return self.has_default
+        if i == 2:
+            return self.default
+        if i == 3:
+            return self.default_string
+        if i == 4:
+            return self.has_annotation
+        if i == 5:
+            return self.annotation
+        if i == 6:
+            return self.annotation_string
+        if i == 7:
+            return self.kind_name
+        raise IndexError
 
 
 def compiled_objects_cache(attribute_name):
@@ -434,7 +482,8 @@ class DirectObjectAccess(object):
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
                 annotation_string=str(p.annotation),
-                kind_name=str(p.kind)
+                kind_name=str(p.kind),
+                p=p
             ) for p in self._get_signature().parameters.values()
         ]
 
