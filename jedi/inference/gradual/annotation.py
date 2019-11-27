@@ -271,8 +271,6 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
                     annotation_variable_results,
                     _infer_type_vars(ann, actual_value_set),
                 )
-    print(annotation_variable_results)
-
     return annotation_variable_results
 
 
