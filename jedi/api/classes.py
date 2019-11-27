@@ -553,7 +553,7 @@ class Definition(BaseDefinition):
                 typ = 'def'
             return typ + ' ' + self._name.get_public_name()
 
-        definition = tree_name.get_definition(include_setitem=True) or tree_name
+        definition = tree_name.get_definition() or tree_name
         # Remove the prefix, because that's not what we want for get_code
         # here.
         txt = definition.get_code(include_prefix=False)
