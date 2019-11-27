@@ -16,7 +16,7 @@ from jedi.inference.gradual.conversion import _stub_to_python_value_set
         ('str', "str(object='', /) -> str", ['object'], ge, (2, 7)),
 
         ('pow', 'pow(x, y, z=None, /) -> number', ['x', 'y', 'z'], lt, (3, 5)),
-        ('pow', 'pow(x, y, z=None, /)', ['x', 'y', 'z'], ge, (3, 5)),
+        ('pow', 'pow(base, exp, mod=None)', ['base', 'exp', 'mod'], ge, (3, 8)),
 
         ('bytes.partition', 'partition(self, sep, /) -> (head, sep, tail)', ['self', 'sep'], lt, (3, 5)),
         ('bytes.partition', 'partition(self, sep, /)', ['self', 'sep'], ge, (3, 5)),
