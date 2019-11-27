@@ -14,7 +14,8 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
     AbstractAnnotatedClass
-from jedi.inference.gradual.typing import GenericClass
+from jedi.inference.gradual.typing import GenericClass, \
+    TypingClassValueWithIndex
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.param import get_executed_param_names
@@ -270,7 +271,6 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
                     annotation_variable_results,
                     _infer_type_vars(ann, actual_value_set),
                 )
-
     return annotation_variable_results
 
 
@@ -283,7 +283,7 @@ def _merge_type_var_dicts(base_dict, new_dict):
                 base_dict[type_var_name] = values
 
 
-def _infer_type_vars(annotation_value, value_set):
+def _infer_type_vars(annotation_value, value_set, is_class_value=False):
     """
     This function tries to find information about undefined type vars and
     returns a dict from type var name to value set.
@@ -298,7 +298,23 @@ def _infer_type_vars(annotation_value, value_set):
     """
     type_var_dict = {}
     if isinstance(annotation_value, TypeVar):
-        return {annotation_value.py__name__(): value_set.py__class__()}
+        if not is_class_value:
+            return {annotation_value.py__name__(): value_set.py__class__()}
+        return {annotation_value.py__name__(): value_set}
+    elif isinstance(annotation_value, TypingClassValueWithIndex):
+        name = annotation_value.py__name__()
+        if name == 'Type':
+            given = annotation_value.get_generics()
+            if given:
+                for nested_annotation_value in given[0]:
+                    _merge_type_var_dicts(
+                        type_var_dict,
+                        _infer_type_vars(
+                            nested_annotation_value,
+                            value_set,
+                            is_class_value=True,
+                        )
+                    )
     elif isinstance(annotation_value, LazyGenericClass):
         name = annotation_value.py__name__()
         if name == 'Iterable':
