@@ -219,7 +219,10 @@ class _TypingClassMixin(ClassMixin):
 
 
 class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
-    pass
+
+    @inference_state_method_cache()
+    def get_generics(self):
+        return list(_iter_over_arguments(self._index_value, self._context_of_index))
 
 
 class TypingClassValue(_TypingClassMixin, TypingValue):
