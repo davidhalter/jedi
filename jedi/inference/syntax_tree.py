@@ -672,7 +672,7 @@ def tree_name_to_values(inference_state, context, tree_name):
             return value_set
 
     types = []
-    node = tree_name.get_definition(import_name_always=True)
+    node = tree_name.get_definition(import_name_always=True, include_setitem=True)
     if node is None:
         node = tree_name.parent
         if node.type == 'global_stmt':

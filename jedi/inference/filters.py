@@ -63,7 +63,7 @@ def _get_definition_names(used_names, name_key):
     except KeyError:
         names = used_names.get(name_key, ())
         result = for_module[name_key] = tuple(
-            name for name in names if name.is_definition()
+            name for name in names if name.is_definition(include_setitem=True)
         )
         return result
 
