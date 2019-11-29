@@ -33,7 +33,8 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
     base_path = os.path.join(inference_state.project._path, string)
     try:
         listed = scandir(base_path)
-    except FileNotFoundError:
+        # OSError: [Errno 36] File name too long: '...'
+    except (FileNotFoundError, OSError):
         return
     for entry in listed:
         name = entry.name
