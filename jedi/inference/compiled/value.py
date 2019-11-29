@@ -181,10 +181,12 @@ class CompiledObject(Value):
     def _ensure_one_filter(self, is_instance):
         return CompiledObjectFilter(self.inference_state, self, is_instance)
 
-    @CheckAttribute(u'__getitem__')
     def py__simple_getitem__(self, index):
         with reraise_getitem_errors(IndexError, KeyError, TypeError):
-            access = self.access_handle.py__simple_getitem__(index)
+            try:
+                access = self.access_handle.py__simple_getitem__(index)
+            except AttributeError:
+                return super(CompiledObject, self).py__simple_getitem__(index)
         if access is None:
             return NO_VALUES
 
