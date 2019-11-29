@@ -53,16 +53,6 @@ from jedi.inference.value.function import FunctionAndClassBase
 from jedi.plugins import plugin_manager
 
 
-def apply_py__get__(value, instance, class_value):
-    try:
-        method = value.py__get__
-    except AttributeError:
-        yield value
-    else:
-        for descriptor_value in method(instance, class_value):
-            yield descriptor_value
-
-
 class ClassName(TreeNameDefinition):
     def __init__(self, class_value, tree_name, name_context, apply_decorators):
         super(ClassName, self).__init__(class_value.as_context(), tree_name)
@@ -79,9 +69,7 @@ class ClassName(TreeNameDefinition):
 
         for result_value in inferred:
             if self._apply_decorators:
-                for c in apply_py__get__(result_value,
-                                         instance=None,
-                                         class_value=self._class_value):
+                for c in result_value.py__get__(instance=None, class_value=self._class_value):
                     yield c
             else:
                 yield result_value

@@ -335,7 +335,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
 
 
 class StaticMethodObject(ValueWrapper):
-    def py__get__(self, instance, klass):
+    def py__get__(self, instance, class_value):
         return ValueSet([self._wrapped_value])
 
 

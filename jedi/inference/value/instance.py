@@ -17,7 +17,7 @@ from jedi.inference.arguments import ValuesArguments, TreeArgumentsWrapper
 from jedi.inference.value.function import \
     FunctionValue, FunctionMixin, OverloadedFunctionValue, \
     BaseFunctionExecutionContext, FunctionExecutionContext
-from jedi.inference.value.klass import apply_py__get__, ClassFilter
+from jedi.inference.value.klass import ClassFilter
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
 
 
@@ -263,7 +263,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
 
         return ValueSet.from_sets(name.infer().execute(arguments) for name in names)
 
-    def py__get__(self, obj, class_value):
+    def py__get__(self, instance, class_value):
         """
         obj may be None.
         """
@@ -271,9 +271,9 @@ class _BaseTreeInstance(AbstractInstanceValue):
         # `method` is the new parent of the array, don't know if that's good.
         names = self.get_function_slot_names(u'__get__')
         if names:
-            if obj is None:
-                obj = compiled.builtin_from_name(self.inference_state, u'None')
-            return self.execute_function_slots(names, obj, class_value)
+            if instance is None:
+                instance = compiled.builtin_from_name(self.inference_state, u'None')
+            return self.execute_function_slots(names, instance, class_value)
         else:
             return ValueSet([self])
 
@@ -320,7 +320,8 @@ class TreeInstance(_BaseTreeInstance):
         for signature in self.class_value.py__getattribute__('__init__').get_signatures():
             # Just take the first result, it should always be one, because we
             # control the typeshed code.
-            if not signature.matches_signature(args):
+            if not signature.matches_signature(args) \
+                    or signature.value.tree_node is None:
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
                 continue
@@ -481,7 +482,7 @@ class LazyInstanceClassName(object):
     @iterator_to_value_set
     def infer(self):
         for result_value in self._class_member_name.infer():
-            for c in apply_py__get__(result_value, self._instance, self._instance.py__class__()):
+            for c in result_value.py__get__(self._instance, self._instance.py__class__()):
                 yield c
 
     def __getattr__(self, name):

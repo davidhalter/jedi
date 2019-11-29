@@ -239,6 +239,10 @@ class Value(HelperValueMixin, BaseValue):
         """
         return NO_VALUES
 
+    def py__get__(self, instance, class_value):
+        debug.warning("No __get__ defined on %s", self)
+        return ValueSet([self])
+
     def get_qualified_names(self):
         # Returns Optional[Tuple[str, ...]]
         return None
