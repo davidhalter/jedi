@@ -125,6 +125,10 @@ def test_in_comment(Script):
     assert not Script("max_attr_value = int(2) # Cast to int for spe").completions()
 
 
+def test_in_comment_before_string(Script):
+    assert not Script(" # Foo\n'asdf'", line=1).completions()
+
+
 def test_async(Script, environment):
     if environment.version_info < (3, 5):
         pytest.skip()

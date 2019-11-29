@@ -283,6 +283,9 @@ class Completion:
 
 
 def _extract_string_while_in_string(leaf, position):
+    if position < leaf.start_pos:
+        return None, None
+
     if leaf.type == 'string':
         match = re.match(r'^\w*(\'{3}|"{3}|\'|")', leaf.value)
         quote = match.group(1)
