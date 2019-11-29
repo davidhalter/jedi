@@ -365,7 +365,9 @@ class Importer(object):
                 # Non-modules are not completable.
                 if value.api_type != 'module':  # not a module
                     continue
-                names += value.sub_modules_dict().values()
+                if not value.is_compiled():
+                    # sub_modules_dict is not implemented for compiled modules.
+                    names += value.sub_modules_dict().values()
 
             if not only_modules:
                 from jedi.inference.gradual.conversion import convert_values
