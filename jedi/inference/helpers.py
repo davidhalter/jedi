@@ -72,6 +72,10 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
+        if leaf == ':':
+            # Basically happens with foo[:] when the cursor is on the colon
+            from jedi.inference.base_value import NO_VALUES
+            return NO_VALUES
         if trailer.type == 'atom':
             return context.infer_node(trailer)
         return context.infer_node(leaf)
