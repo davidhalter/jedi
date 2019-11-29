@@ -2,15 +2,31 @@ import os
 from contextlib import contextmanager
 
 
-def traverse_parents(path, include_current=False):
+def traverse_parents(path, root=None, include_current=False):
+    """Iterate directories from a path to search root
+
+    :path: the path of the script/directory to check.
+    :root: the root of the upward search. Assumes the system root if root is
+            None.
+    :include_current: includes the current file / directory.
+
+    If the root path is not a substring of the provided path, assume the root
+    search path as well.
+    """
     if not include_current:
         path = os.path.dirname(path)
 
     previous = None
-    while previous != path:
-        yield path
-        previous = path
-        path = os.path.dirname(path)
+    if root is None or not path.startswith(root):
+        while previous != path:
+            yield path
+            previous = path
+            path = os.path.dirname(path)
+    else:
+        while previous != root:
+            yield path
+            previous = path
+            path = os.path.dirname(path)
 
 
 @contextmanager
