@@ -276,21 +276,13 @@ class Importer(object):
         if self._fixed_sys_path is not None:
             return self._fixed_sys_path
 
-        sys_path_mod = (
+        return (
             # For import completions we don't want to see init paths, but for
             # inference we want to show the user as much as possible.
             # See GH #1446.
             self._inference_state.get_sys_path(add_init_paths=not is_completion)
             + sys_path.check_sys_path_modifications(self._module_context)
         )
-
-        if self._inference_state.environment.version_info.major == 2:
-            file_path = self._module_context.py__file__()
-            if file_path is not None:
-                # Python2 uses an old strange way of importing relative imports.
-                sys_path_mod.append(force_unicode(os.path.dirname(file_path)))
-
-        return sys_path_mod
 
     def follow(self):
         if not self.import_path or not self._infer_possible:
