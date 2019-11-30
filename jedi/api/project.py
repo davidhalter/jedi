@@ -94,7 +94,8 @@ class Project(object):
         return sys_path
 
     @inference_state_as_method_param_cache()
-    def _get_sys_path(self, inference_state, environment=None, add_parent_paths=True):
+    def _get_sys_path(self, inference_state, environment=None,
+                      add_parent_paths=True, add_init_paths=False):
         """
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
@@ -117,7 +118,8 @@ class Project(object):
                     for parent_path in traverse_parents(inference_state.script_path):
                         if not parent_path.startswith(self._path):
                             break
-                        if os.path.isfile(os.path.join(parent_path, "__init__.py")):
+                        if not add_init_paths \
+                                and os.path.isfile(os.path.join(parent_path, "__init__.py")):
                             continue
                         traversed.append(parent_path)
 

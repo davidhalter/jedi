@@ -20,8 +20,12 @@ def builtin_test():
 #? ['sqlite3']
 import sqlite3
 
-#? ['classes']
+# classes is a local module that has an __init__.py and can therefore not be
+# found. test can be found.
+#? []
 import classes
+#? ['test']
+import test
 
 #? ['timedelta']
 from datetime import timedel
