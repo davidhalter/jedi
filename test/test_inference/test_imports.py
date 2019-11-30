@@ -115,6 +115,8 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
 def test_import_not_in_sys_path(Script):
     """
     non-direct imports (not in sys.path)
+
+    This is in the end just a fallback.
     """
     a = Script(path='module.py', line=5).goto_definitions()
     assert a[0].name == 'int'
