@@ -110,10 +110,7 @@ class Project(object):
                 suffixed += discover_buildout_paths(inference_state, inference_state.script_path)
 
                 if add_parent_paths:
-                    traversed = list(traverse_parents(
-                        inference_state.script_path,
-                        root=self._path,
-                    ))
+                    traversed = list(traverse_parents(inference_state.script_path))
 
                     # AFAIK some libraries have imports like `foo.foo.bar`, which
                     # leads to the conclusion to by default prefer longer paths
