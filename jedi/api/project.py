@@ -110,7 +110,17 @@ class Project(object):
                 suffixed += discover_buildout_paths(inference_state, inference_state.script_path)
 
                 if add_parent_paths:
-                    traversed = list(traverse_parents(inference_state.script_path))
+                    # Collect directories in upward search until we:
+                    #   1. Hit any directory without an __init__.py, AND
+                    #   2. Are above self._path.
+                    traversed = []
+                    no_init = False
+                    for parent_path in traverse_parents(inference_state.script_path):
+                        if not os.path.isfile(os.path.join(parent_path, "__init__.py")):
+                            no_init = True
+                        if no_init and not parent_path.startswith(self._path):
+                            break
+                        traversed.append(parent_path)
 
                     # AFAIK some libraries have imports like `foo.foo.bar`, which
                     # leads to the conclusion to by default prefer longer paths
