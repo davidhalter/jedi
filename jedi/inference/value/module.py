@@ -87,7 +87,7 @@ class SubModuleDictMixin(object):
             mods = iter_module_names(self.inference_state, self.py__path__())
             for name in mods:
                 # It's obviously a relative import to the current module.
-                names[name] = SubModuleName(self, name)
+                names[name] = SubModuleName(self.as_context(), name)
 
         # In the case of an import like `from x.` we don't need to
         # add all the variables, this is only about submodules.

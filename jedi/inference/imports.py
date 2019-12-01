@@ -327,7 +327,7 @@ class Importer(object):
             if in_module is None:
                 n = ImportName(self._module_context, name)
             else:
-                n = SubModuleName(in_module, name)
+                n = SubModuleName(in_module.as_context(), name)
             names.append(n)
         return names
 

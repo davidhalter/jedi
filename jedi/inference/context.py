@@ -337,6 +337,9 @@ class NamespaceContext(TreeContextMixin, ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         return self._value.get_filters()
 
+    def get_value(self):
+        return self._value
+
     def py__file__(self):
         return self._value.py__file__()
 
