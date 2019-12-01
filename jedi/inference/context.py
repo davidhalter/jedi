@@ -378,8 +378,14 @@ class CompiledContext(ValueContext):
     def get_filters(self, until_position=None, origin_scope=None):
         return self._value.get_filters()
 
+
+class CompiledModuleContext(CompiledContext):
     def get_value(self):
         return self._value
+
+    @property
+    def string_names(self):
+        return self._value.string_names
 
     def py__file__(self):
         return self._value.py__file__()

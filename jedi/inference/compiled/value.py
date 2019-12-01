@@ -17,7 +17,7 @@ from jedi.inference.compiled.access import _sentinel
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference.helpers import reraise_getitem_errors
 from jedi.inference.signature import BuiltinSignature
-from jedi.inference.context import CompiledContext
+from jedi.inference.context import CompiledContext, CompiledModuleContext
 
 
 class CheckAttribute(object):
@@ -271,6 +271,8 @@ class CompiledObject(Value):
         return NO_VALUES
 
     def _as_context(self):
+        if self.parent_context is None:
+            return CompiledModuleContext(self)
         return CompiledContext(self)
 
 
