@@ -235,7 +235,7 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_value, 
         map_ = _cache_stub_file_map(inference_state.grammar.version_info)
         import_name = _IMPORT_MAP.get(import_name, import_name)
     elif isinstance(parent_module_value, ModuleValue):
-        if not parent_module_value.is_package:
+        if not parent_module_value.is_package():
             # Only if it's a package (= a folder) something can be
             # imported.
             return None

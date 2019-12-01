@@ -83,7 +83,7 @@ class SubModuleDictMixin(object):
         package).
         """
         names = {}
-        if self.is_package:
+        if self.is_package():
             mods = iter_module_names(self.inference_state, self.py__path__())
             for name in mods:
                 # It's obviously a relative import to the current module.
@@ -200,7 +200,7 @@ class ModuleValue(ModuleMixin, TreeValue):
             self._path = file_io.path
         self.string_names = string_names  # Optional[Tuple[str, ...]]
         self.code_lines = code_lines
-        self.is_package = is_package
+        self._is_package = is_package
 
     def is_stub(self):
         if self._path is not None and self._path.endswith('.pyi'):
@@ -224,8 +224,11 @@ class ModuleValue(ModuleMixin, TreeValue):
 
         return os.path.abspath(self._path)
 
+    def is_package(self):
+        return self._is_package
+
     def py__package__(self):
-        if self.is_package:
+        if self._is_package:
             return self.string_names
         return self.string_names[:-1]
 
@@ -235,7 +238,7 @@ class ModuleValue(ModuleMixin, TreeValue):
         is a list of paths (strings).
         Returns None if the module is not a package.
         """
-        if not self.is_package:
+        if not self._is_package:
             return None
 
         # A namespace package is typically auto generated and ~10 lines long.
