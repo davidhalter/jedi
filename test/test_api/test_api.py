@@ -170,7 +170,7 @@ def test_get_line_code(Script):
         return Script(source, line=line).completions()[0].get_line_code(**kwargs)
 
     # On builtin
-    assert get_line_code('') == ''
+    assert get_line_code('abs') == 'def abs(__n: SupportsAbs[_T]) -> _T: ...\n'
 
     # On custom code
     first_line = 'def foo():\n'
@@ -186,6 +186,13 @@ def test_get_line_code(Script):
     # Should just be the whole thing, since there are no more lines on both
     # sides.
     assert get_line_code(code, line=2, after=3, before=3) == code
+
+
+def test_get_line_code_on_builtin(Script, disable_typeshed):
+    abs_ = Script('abs').completions()[0]
+    assert abs_.name == 'abs'
+    assert abs_.get_line_code() == ''
+    assert abs_.line is None
 
 
 def test_goto_assignments_follow_imports(Script):

@@ -384,10 +384,13 @@ class BaseDefinition(object):
         :return str: Returns the line(s) of code or an empty string if it's a
                      builtin.
         """
-        if not self._name.is_value_name or self.in_builtin_module():
+        if not self._name.is_value_name:
             return ''
 
         lines = self._name.get_root_context().code_lines
+        if lines is None:
+            # Probably a builtin module, just ignore in that case.
+            return ''
 
         index = self._name.start_pos[0] - 1
         start_index = max(index - before, 0)

@@ -129,3 +129,9 @@ def inference_state(Script):
 @pytest.fixture
 def same_process_inference_state(Script):
     return Script('', environment=InterpreterEnvironment())._inference_state
+
+
+@pytest.fixture
+def disable_typeshed(monkeypatch):
+    from jedi.inference.gradual import typeshed
+    monkeypatch.setattr(typeshed, '_load_from_typeshed', lambda *args, **kwargs: None)

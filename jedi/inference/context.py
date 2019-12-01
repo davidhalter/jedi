@@ -380,6 +380,8 @@ class CompiledContext(ValueContext):
 
 
 class CompiledModuleContext(CompiledContext):
+    code_lines = None
+
     def get_value(self):
         return self._value
 
