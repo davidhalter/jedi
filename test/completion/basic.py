@@ -188,6 +188,14 @@ def init_global_var_predefined():
 global_var_predefined
 
 
+def global_as_import():
+    from import_tree import globals
+    #? ['foo']
+    globals.foo
+    #? int()
+    globals.foo
+
+
 # -----------------
 # within docstrs
 # -----------------
