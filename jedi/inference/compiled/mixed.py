@@ -21,7 +21,8 @@ from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.inference.compiled.value import create_cached_compiled_object
 from jedi.inference.gradual.conversion import to_stub
-from jedi.inference.context import CompiledContext, TreeContextMixin
+from jedi.inference.context import CompiledContext, CompiledModuleContext, \
+    TreeContextMixin
 
 _sentinel = object()
 
@@ -72,6 +73,8 @@ class MixedObject(ValueWrapper):
         raise SimpleGetItemNotFound
 
     def _as_context(self):
+        if self.parent_context is None:
+            return MixedModuleContext(self)
         return MixedContext(self)
 
     def __repr__(self):
@@ -85,6 +88,10 @@ class MixedContext(CompiledContext, TreeContextMixin):
     @property
     def compiled_object(self):
         return self._value.compiled_object
+
+
+class MixedModuleContext(CompiledModuleContext, MixedContext):
+    pass
 
 
 class MixedName(compiled.CompiledName):
