@@ -406,7 +406,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
 
         if is_setitem:
             def to_mod(v):
-                c = ContextualizedNode(context, subscriptlist)
+                c = ContextualizedSubscriptListNode(context, subscriptlist)
                 if v.array_type == 'dict':
                     return DictModification(v, value_set, c)
                 elif v.array_type == 'list':
@@ -801,6 +801,11 @@ def check_tuple_assignments(name, value_set):
                 return NO_VALUES
         value_set = lazy_value.infer()
     return value_set
+
+
+class ContextualizedSubscriptListNode(ContextualizedNode):
+    def infer(self):
+        return _infer_subscript_list(self.context, self.node)
 
 
 def _infer_subscript_list(context, index):
