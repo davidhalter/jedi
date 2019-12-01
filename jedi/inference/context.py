@@ -298,10 +298,6 @@ class ModuleContext(TreeContextMixin, ValueContext):
     def py__file__(self):
         return self._value.py__file__()
 
-    @property
-    def py__package__(self):
-        return self._value.py__package__
-
     def is_package(self):
         return self._value.is_package
 
@@ -390,10 +386,6 @@ class CompiledModuleContext(CompiledContext):
 
     def py__file__(self):
         return self._value.py__file__()
-
-    @property
-    def py__package__(self):
-        return self._value.py__package__
 
     def is_package(self):
         return self._value.is_package()

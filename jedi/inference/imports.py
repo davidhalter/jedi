@@ -216,7 +216,7 @@ class Importer(object):
         self._fixed_sys_path = None
         self._infer_possible = True
         if level:
-            base = module_context.py__package__()
+            base = module_context.get_value().py__package__()
             # We need to care for two cases, the first one is if it's a valid
             # Python import. This import has a properly defined module name
             # chain like `foo.bar.baz` and an import in baz is made for
@@ -553,7 +553,7 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
                 used_mod_paths.add(path)
                 folders_with_names_to_be_checked.append((
                     file_io.get_parent_folder(),
-                    module_context.py__package__()
+                    module_context.get_value().py__package__()
                 ))
         yield module_context
 
