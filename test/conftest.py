@@ -10,6 +10,7 @@ from . import refactor
 
 import jedi
 from jedi.api.environment import InterpreterEnvironment
+from jedi.inference.compiled.value import create_from_access_path
 
 
 def pytest_addoption(parser):
@@ -135,3 +136,11 @@ def same_process_inference_state(Script):
 def disable_typeshed(monkeypatch):
     from jedi.inference.gradual import typeshed
     monkeypatch.setattr(typeshed, '_load_from_typeshed', lambda *args, **kwargs: None)
+
+
+@pytest.fixture
+def create_compiled_object(inference_state):
+    return lambda obj: create_from_access_path(
+        inference_state,
+        inference_state.compiled_subprocess.create_simple_object(obj)
+    )

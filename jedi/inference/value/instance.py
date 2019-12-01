@@ -112,6 +112,8 @@ class AbstractInstanceValue(Value):
 
 
 class CompiledInstance(AbstractInstanceValue):
+    # This is not really a compiled class, it's just an instance from a
+    # compiled class.
     def __init__(self, inference_state, parent_context, class_value, arguments):
         super(CompiledInstance, self).__init__(inference_state, parent_context,
                                                class_value)
@@ -129,9 +131,6 @@ class CompiledInstance(AbstractInstanceValue):
     @property
     def name(self):
         return compiled.CompiledValueName(self, self.class_value.name.string_name)
-
-    def is_compiled(self):
-        return True
 
     def is_stub(self):
         return False
