@@ -298,9 +298,6 @@ class ModuleContext(TreeContextMixin, ValueContext):
     def py__file__(self):
         return self._value.py__file__()
 
-    def is_package(self):
-        return self._value.is_package
-
     def get_filters(self, until_position=None, origin_scope=None):
         filters = self._value.get_filters(origin_scope)
         # Skip the first filter and replace it.
@@ -389,9 +386,6 @@ class CompiledModuleContext(CompiledContext):
 
     def py__file__(self):
         return self._value.py__file__()
-
-    def is_package(self):
-        return self._value.is_package()
 
 
 def _get_global_filters_for_name(context, name_or_none, position):

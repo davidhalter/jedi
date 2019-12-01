@@ -89,7 +89,6 @@ class CompiledObject(Value):
             return None
         return map(cast_path, paths)
 
-    @property
     def is_package(self):
         return self.py__path__() is not None
 
