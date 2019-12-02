@@ -27,13 +27,13 @@ def test_get_typeshed_directories():
     assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'third_party/2and3', 'third_party/3'})
 
     dirs = get_dirs(PythonVersionInfo(3, 5))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'stdlib/3.5',
-                              'third_party/2and3', 'third_party/3', 'third_party/3.5'})
+    assert dirs == transform({'stdlib/2and3', 'stdlib/3',
+                              'third_party/2and3', 'third_party/3'})
 
     dirs = get_dirs(PythonVersionInfo(3, 6))
-    assert dirs == transform({'stdlib/2and3', 'stdlib/3', 'stdlib/3.5',
+    assert dirs == transform({'stdlib/2and3', 'stdlib/3',
                               'stdlib/3.6', 'third_party/2and3',
-                              'third_party/3', 'third_party/3.5', 'third_party/3.6'})
+                              'third_party/3', 'third_party/3.6'})
 
 
 def test_get_stub_files():

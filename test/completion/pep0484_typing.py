@@ -214,7 +214,7 @@ def union(p, q, r, s, t):
     r
     #? int() str() float() dict()
     s
-    #? int()
+    #? int() None
     t
 
 def optional(p):

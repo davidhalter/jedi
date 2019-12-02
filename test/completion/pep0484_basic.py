@@ -44,7 +44,7 @@ def return_none() -> None:
     """
     pass
 
-#?
+#? None
 return_none()
 
 
