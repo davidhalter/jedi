@@ -397,7 +397,7 @@ class CompiledObjectFilter(AbstractFilter):
     def get(self, name):
         return self._get(
             name,
-            lambda: self.compiled_object.access_handle.is_allowed_getattr(name),
+            lambda: self.compiled_object.access_handle.is_allowed_getattr(force_unicode(name)),
             lambda: self.compiled_object.access_handle.dir(),
             check_has_attribute=True
         )
