@@ -414,3 +414,13 @@ def test_decorator(Script):
 
     d, = Script(code).goto_definitions()
     assert d.docstring(raw=True) == 'Nice docstring'
+
+
+def test_basic_str_init_signature(Script, disable_typeshed):
+    # See GH #1414 and GH #1426
+    code = dedent('''
+        class Foo(str):
+            pass
+        Foo(''')
+    c, = Script(code).call_signatures()
+    assert c.name == 'Foo'

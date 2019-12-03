@@ -131,7 +131,6 @@ class BuiltinSignature(AbstractSignature):
         return self.value
 
     def bind(self, value):
-        assert not self.is_bound
         return BuiltinSignature(value, self._return_string, is_bound=True)
 
 
