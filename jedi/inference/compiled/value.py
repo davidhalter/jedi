@@ -268,7 +268,7 @@ class CompiledObject(Value):
         if self.access_handle.get_repr() == 'None':
             # None as an annotation doesn't need to be executed.
             return ValueSet([self])
-        return super().execute_annotation()
+        return super(CompiledObject, self).execute_annotation()
 
     def negate(self):
         return create_from_access_path(self.inference_state, self.access_handle.negate())
