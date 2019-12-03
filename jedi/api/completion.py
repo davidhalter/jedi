@@ -212,13 +212,13 @@ class Completion:
 
             # Apparently this looks like it's good enough to filter most cases
             # so that signature completions don't randomly appear.
-            # To understand why this works, two things are important:
+            # To understand why this works, three things are important:
             # 1. trailer with a `,` in it is either a subscript or an arglist.
             # 2. If there's no `,`, it's at the start and only signatures start
             #    with `(`. Other trailers could start with `.` or `[`.
-            # One thing that might not work is completion in decorator
-            # executions, but most people won't care about that.
-            if nodes[-1] in ['(', ','] and nonterminals[-1] in ('trailer', 'arglist'):
+            # 3. Decorators are very primitive and have an optional `(` with
+            #    optional arglist in them.
+            if nodes[-1] in ['(', ','] and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
                 call_signatures = self._call_signatures_callback()
                 completion_names += get_call_signature_param_names(call_signatures)
 

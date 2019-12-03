@@ -80,3 +80,12 @@ x = " "; foo(z[xyz)
 x = " "; foo(xyz[xyz)
 #? 20 []
 x = " "; foo(xyz[(xyz)
+
+#? 8 ['xyz']
+@foo(xyz)
+def x(): pass
+
+@str
+#? 8 ['xyz']
+@foo(xyz)
+def x(): pass
