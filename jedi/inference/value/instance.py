@@ -107,6 +107,16 @@ class AbstractInstanceValue(Value):
         call_funcs = self.py__getattribute__('__call__').py__get__(self, self.class_value)
         return [s.bind(self) for s in call_funcs.get_signatures()]
 
+    def get_function_slot_names(self, name):
+        # Searches for Python functions in classes.
+        return []
+
+    def execute_function_slots(self, names, *inferred_args):
+        return ValueSet.from_sets(
+            name.infer().execute_with_values(*inferred_args)
+            for name in names
+        )
+
     def __repr__(self):
         return "<%s of %s>" % (self.__class__.__name__, self.class_value)
 
@@ -285,12 +295,6 @@ class _BaseTreeInstance(AbstractInstanceValue):
             if names:
                 return names
         return []
-
-    def execute_function_slots(self, names, *inferred_args):
-        return ValueSet.from_sets(
-            name.infer().execute_with_values(*inferred_args)
-            for name in names
-        )
 
 
 class TreeInstance(_BaseTreeInstance):
