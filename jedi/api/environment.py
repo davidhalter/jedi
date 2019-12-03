@@ -239,7 +239,7 @@ def _try_get_same_env():
 
 
 def get_cached_default_environment():
-    var = os.environ.get('VIRTUAL_ENV')
+    var = os.environ.get('VIRTUAL_ENV') or os.environ.get(_CONDA_VAR)
     environment = _get_cached_default_environment()
 
     # Under macOS in some cases - notably when using Pipenv - the
