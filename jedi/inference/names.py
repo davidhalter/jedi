@@ -165,7 +165,7 @@ class AbstractTreeName(AbstractNameDefinition):
                 new_dotted.children[index - 1:] = []
                 values = context.infer_node(new_dotted)
                 return unite(
-                    value.goto(name, name_context=value.as_context())
+                    value.goto(name, name_context=context)
                     for value in values
                 )
 

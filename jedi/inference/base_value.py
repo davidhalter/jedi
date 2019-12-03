@@ -252,7 +252,7 @@ class Value(HelperValueMixin, BaseValue):
         return self.parent_context.is_stub()
 
     def _as_context(self):
-        raise NotImplementedError('Not all values need to be converted to contexts')
+        raise NotImplementedError('Not all values need to be converted to contexts: %s', self)
 
 
 def iterate_values(values, contextualized_node=None, is_async=False):
