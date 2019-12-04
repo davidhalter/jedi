@@ -330,16 +330,13 @@ def _get_call_signature_details_from_error_node(node, additional_children, posit
 
 def get_call_signature_details(module, position):
     leaf = module.get_leaf_for_position(position, include_prefixes=True)
+    # It's easier to deal with the previous token than the next one in this
+    # case.
     if leaf.start_pos >= position:
         # Whitespace / comments after the leaf count towards the previous leaf.
         leaf = leaf.get_previous_leaf()
         if leaf is None:
             return None
-
-    if leaf == ')':
-        # TODO is this ok?
-        if leaf.end_pos == position:
-            leaf = leaf.get_next_leaf()
 
     # Now that we know where we are in the syntax tree, we start to look at
     # parents for possible function definitions.
@@ -364,11 +361,17 @@ def get_call_signature_details(module, position):
                     continue
                 additional_children.insert(0, n)
 
+        # Find a valid trailer
         if node.type == 'trailer' and node.children[0] == '(':
-            leaf = node.get_previous_leaf()
-            if leaf is None:
-                return None
-            return CallDetails(node.children[0], node.children, position)
+            # Additionally we have to check that an ending parenthesis isn't
+            # interpreted wrong. There are two cases:
+            # 1. Cursor before paren -> The current signature is good
+            # 2. Cursor after paren -> We need to skip the current signature
+            if not (leaf is node.children[-1] and position >= leaf.end_pos):
+                leaf = node.get_previous_leaf()
+                if leaf is None:
+                    return None
+                return CallDetails(node.children[0], node.children, position)
 
         node = node.parent
 

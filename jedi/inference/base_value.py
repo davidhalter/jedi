@@ -8,7 +8,7 @@ just one.
 """
 from functools import reduce
 from operator import add
-from parso.python.tree import ExprStmt, SyncCompFor, Name
+from parso.python.tree import Name
 
 from jedi import debug
 from jedi._compatibility import zip_longest, unicode

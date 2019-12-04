@@ -491,6 +491,13 @@ _calls = [
     (code4, 'i(?b,*r,c', 1),
     (code4, 'i(?*', 0),
     (code4, 'i(?**', (0, 1)),
+
+    # Random
+    (code4, 'i(()', 0),
+    (code4, 'i((),', 1),
+    (code4, 'i([(),', 0),
+    (code4, 'i([(,', 1),
+    (code4, 'i(x,()', 1),
 ]
 
 
@@ -625,3 +632,36 @@ def test_call_magic_method(Script):
     assert [p.name for p in sig.params] == ['self', 'baz']
     sig, = Script(code + 'X().__call__(').call_signatures()
     assert [p.name for p in sig.params] == ['baz']
+
+
+@pytest.mark.parametrize('column', [6, 9])
+def test_cursor_after_signature(Script, column):
+    source = dedent("""
+        def foo(*args):
+            pass
+        foo()  # _
+        """)
+
+    script = Script(source, 4, column)
+
+    assert not script.call_signatures()
+
+
+@pytest.mark.parametrize(
+    'code, line, column, name, index', [
+        ('abs(()\ndef foo(): pass', 1, None, 'abs', 0),
+        ('abs(chr()  \ndef foo(): pass', 1, 10, 'abs', 0),
+        ('abs(chr()\ndef foo(): pass', 1, None, 'abs', 0),
+        ('abs(chr()\ndef foo(): pass', 1, 8, 'chr', 0),
+        ('abs(chr()\ndef foo(): pass', 1, 7, 'abs', 0),
+        ('abs(chr  ( \nclass y: pass', 1, None, 'chr', 0),
+        ('abs(chr  ( \nclass y: pass', 1, 8, 'abs', 0),
+        ('abs(chr  ( \nclass y: pass', 1, 9, 'abs', 0),
+        ('abs(chr  ( \nclass y: pass', 1, 10, 'chr', 0),
+    ]
+)
+def test_base_signatures(Script, code, line, column, name, index):
+    sig, = Script(code, line=line, column=column).call_signatures()
+
+    assert sig.name == name
+    assert sig.index == index
