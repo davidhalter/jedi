@@ -3,6 +3,13 @@
 Changelog
 ---------
 
+0.15.2 (2019-08-13)
++++++++++++++++++++
+
+- Call signatures are now detected a lot better
+- Many small Bugfixes
+- A big refactoring around contexts/values
+
 0.15.1 (2019-08-13)
 +++++++++++++++++++
 
