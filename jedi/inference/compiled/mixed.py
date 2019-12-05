@@ -8,6 +8,7 @@ import sys
 
 from jedi.parser_utils import get_cached_code_lines
 
+from jedi._compatibility import unwrap
 from jedi import settings
 from jedi.inference import compiled
 from jedi.cache import underscore_memoization
@@ -160,7 +161,11 @@ def _load_module(inference_state, path):
 def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
     if sys.version_info[0] > 2:
-        python_object = inspect.unwrap(python_object)
+        try:
+            python_object = unwrap(python_object)
+        except ValueError:
+            # Can return a ValueError when it wraps around
+            pass
 
     if (inspect.ismodule(python_object) or
             inspect.isclass(python_object) or

@@ -684,3 +684,45 @@ if not is_py3:
 
     atexit.register(finalize._exitfunc)
     weakref.finalize = finalize
+
+
+if is_py3 and sys.version_info[1] > 5:
+    from inspect import unwrap
+else:
+    # Only Python >=3.6 does properly limit the amount of unwraps. This is very
+    # relevant in the case of unittest.mock.patch.
+    # Below is the implementation of Python 3.7.
+    def unwrap(func, stop=None):
+        """Get the object wrapped by *func*.
+
+       Follows the chain of :attr:`__wrapped__` attributes returning the last
+       object in the chain.
+
+       *stop* is an optional callback accepting an object in the wrapper chain
+       as its sole argument that allows the unwrapping to be terminated early if
+       the callback returns a true value. If the callback never returns a true
+       value, the last object in the chain is returned as usual. For example,
+       :func:`signature` uses this to stop unwrapping if any object in the
+       chain has a ``__signature__`` attribute defined.
+
+       :exc:`ValueError` is raised if a cycle is encountered.
+
+        """
+        if stop is None:
+            def _is_wrapper(f):
+                return hasattr(f, '__wrapped__')
+        else:
+            def _is_wrapper(f):
+                return hasattr(f, '__wrapped__') and not stop(f)
+        f = func  # remember the original func for error reporting
+        # Memoise by id to tolerate non-hashable objects, but store objects to
+        # ensure they aren't destroyed, which would allow their IDs to be reused.
+        memo = {id(f): f}
+        recursion_limit = sys.getrecursionlimit()
+        while _is_wrapper(func):
+            func = func.__wrapped__
+            id_func = id(func)
+            if (id_func in memo) or (len(memo) >= recursion_limit):
+                raise ValueError('wrapper loop when unwrapping {!r}'.format(f))
+            memo[id_func] = func
+        return func

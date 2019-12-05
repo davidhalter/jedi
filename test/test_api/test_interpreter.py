@@ -466,10 +466,10 @@ def test__wrapped__():
     assert c.line == syslogs_to_df.__wrapped__.__code__.co_firstlineno + 1
 
 
-@pytest.mark.parametrize('module_name', ['sys', 'time'])
+@pytest.mark.parametrize('module_name', ['sys', 'time', 'unittest.mock'])
 def test_core_module_completes(module_name):
     module = import_module(module_name)
-    assert jedi.Interpreter(module_name + '.\n', [locals()]).completions()
+    assert jedi.Interpreter('module.', [locals()]).completions()
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
