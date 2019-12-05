@@ -99,6 +99,8 @@ def tuple(p, q, r):
     """
     #? int()
     p[0]
+    #? ['index']
+    p.index
     #? int()
     q[0]
     #? str()

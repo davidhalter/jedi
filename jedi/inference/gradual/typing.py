@@ -286,7 +286,7 @@ class TypeAlias(LazyValueWrapper):
         return cls
 
 
-class _ContainerBase(_WithIndexBase):
+class _GetItemMixin(object):
     def _get_getitem_values(self, index):
         args = _iter_over_arguments(self._index_value, self._context_of_index)
         for i, values in enumerate(args):
@@ -297,13 +297,19 @@ class _ContainerBase(_WithIndexBase):
         return NO_VALUES
 
 
-class Callable(_ContainerBase):
+class Callable(_WithIndexBase, _GetItemMixin):
     def py__call__(self, arguments):
         # The 0th index are the arguments.
         return self._get_getitem_values(1).execute_annotation()
 
 
-class Tuple(_ContainerBase):
+class Tuple(LazyValueWrapper, _GetItemMixin):
+    def __init__(self, inference_state, parent_context, name, index_value, value_of_index):
+        self.inference_state = inference_state
+        self.parent_context = parent_context
+        self._index_value = index_value
+        self._context_of_index = value_of_index
+
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
@@ -339,12 +345,17 @@ class Tuple(_ContainerBase):
             _iter_over_arguments(self._index_value, self._context_of_index)
         ).execute_annotation()
 
+    def _get_wrapped_value(self):
+        tuple_, = self.inference_state.builtins_module \
+            .py__getattribute__('tuple').execute_annotation()
+        return tuple_
 
-class Generic(_ContainerBase):
+
+class Generic(_WithIndexBase, _GetItemMixin):
     pass
 
 
-class Protocol(_ContainerBase):
+class Protocol(_WithIndexBase, _GetItemMixin):
     pass
 
 
