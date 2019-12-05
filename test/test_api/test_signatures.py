@@ -12,7 +12,7 @@ _tuple_code = 'from typing import Tuple\ndef f(x: Tuple[int]): ...\nf'
         ('def f(x: int): ...\nf', ['instance int'], True),
         ('from typing import List\ndef f(x: List[int]): ...\nf', ['instance list'], True),
         ('from typing import List\ndef f(x: List[int]): ...\nf', ['class list'], False),
-        (_tuple_code, ['Tuple: _SpecialForm = ...'], True),
+        (_tuple_code, ['instance tuple'], True),
         (_tuple_code, ['Tuple: _SpecialForm = ...'], False),
         ('x=str\ndef f(p: x): ...\nx=int\nf', ['instance int'], True),
 
