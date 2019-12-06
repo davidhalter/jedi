@@ -18,7 +18,8 @@ from jedi.inference.gradual.conversion import _stub_to_python_value_set
         ('pow', 'pow(x, y, z=None, /) -> number', ['x', 'y', 'z'], lt, (3, 5)),
         ('pow', 'pow(base, exp, mod=None)', ['base', 'exp', 'mod'], ge, (3, 8)),
 
-        ('bytes.partition', 'partition(self, sep, /) -> (head, sep, tail)', ['self', 'sep'], lt, (3, 5)),
+        ('bytes.partition', 'partition(self, sep, /) -> (head, sep, tail)',
+         ['self', 'sep'], lt, (3, 5)),
         ('bytes.partition', 'partition(self, sep, /)', ['self', 'sep'], ge, (3, 5)),
 
         ('bytes().partition', 'partition(sep, /) -> (head, sep, tail)', ['sep'], lt, (3, 5)),
