@@ -1,10 +1,12 @@
 from textwrap import dedent
 from operator import ge, lt
 import re
+import os
 
 import pytest
 
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
+from ..helpers import get_example_dir
 
 
 @pytest.mark.parametrize(
@@ -289,3 +291,11 @@ def test_param_resolving_to_static(Script, stmt, expected, skip_pre_python35):
 
     sig, = Script(code).call_signatures()
     assert sig.to_string() == expected
+
+
+def test_overload(Script):
+    dir_ = get_example_dir('typing_overload')
+    code = 'from file import with_overload; with_overload('
+    x1, x2 = Script(code, path=os.path.join(dir_, 'foo.py')).call_signatures()
+    assert x1.to_string() == 'with_overload(x: int, y: int) -> float'
+    assert x2.to_string() == 'with_overload(x: str, y: list) -> float'
