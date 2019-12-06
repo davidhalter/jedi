@@ -781,47 +781,33 @@ _implemented = {
 }
 
 
-def new_django_dict_filter(cls):
-    filter_ = ParserTreeFilter(parent_context=cls.as_context())
-    field, = filter_.values()
+def infer_django_field(cls, field):
     field_tree_instance, = field.infer()
 
     if field_tree_instance.name.string_name in ('CharField', 'TextField', 'EmailField'):
         model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('str')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     integer_field_classes = ('IntegerField', 'BigIntegerField', 'PositiveIntegerField', 'SmallIntegerField')
     if field_tree_instance.name.string_name in integer_field_classes:
         model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('int')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'FloatField':
         model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('float')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'BinaryField':
         model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bytes')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'BooleanField':
         model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bool')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'DecimalField':
         model_instance_field_type, = cls.inference_state.import_module(('decimal',)).py__getattribute__('Decimal')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'ForeignKey':
         # TODO: infer related object class and make a filter for that class
@@ -829,28 +815,27 @@ def new_django_dict_filter(cls):
 
     if field_tree_instance.name.string_name == 'TimeField':
         model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('time')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'DurationField':
         model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('timedelta')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'DateField':
         model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('date')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
     if field_tree_instance.name.string_name == 'DateTimeField':
         model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('datetime')
-        return [DictFilter({
-            field.string_name: DjangoModelField(model_instance_field_type, field).name
-        })]
+        return DjangoModelField(model_instance_field_type, field).name
 
+
+
+def new_django_dict_filter(cls):
+    filter_ = ParserTreeFilter(parent_context=cls.as_context())
+    return [DictFilter({
+        f.string_name: infer_django_field(cls, f) for f in filter_.values()
+    })]
 
 
 def get_metaclass_filters(func):
