@@ -805,7 +805,6 @@ def new_django_dict_filter(cls):
             field.string_name: DjangoModelField(model_instance_field_type, field).name
         })]
 
-
     if field_tree_instance.name.string_name == 'BinaryField':
         model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bytes')
         return [DictFilter({
@@ -819,28 +818,38 @@ def new_django_dict_filter(cls):
         })]
 
     if field_tree_instance.name.string_name == 'DecimalField':
-        # TODO: make decimal.Decimal filter
-        return
+        model_instance_field_type, = cls.inference_state.import_module(('decimal',)).py__getattribute__('Decimal')
+        return [DictFilter({
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
+        })]
 
     if field_tree_instance.name.string_name == 'ForeignKey':
         # TODO: infer related object class and make a filter for that class
         return
 
     if field_tree_instance.name.string_name == 'TimeField':
-        # TODO: make time.time filter
-        return
+        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('time')
+        return [DictFilter({
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
+        })]
 
     if field_tree_instance.name.string_name == 'DurationField':
-        # TODO: make datetime.timedelta filter
-        return
+        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('timedelta')
+        return [DictFilter({
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
+        })]
 
     if field_tree_instance.name.string_name == 'DateField':
-        # TODO: make datetime.date filter
-        return
+        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('date')
+        return [DictFilter({
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
+        })]
 
-    if field_tree_instance.name.string_name == 'DatetimeField':
-        # TODO: make datetime.datetime filter
-        return
+    if field_tree_instance.name.string_name == 'DateTimeField':
+        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('datetime')
+        return [DictFilter({
+            field.string_name: DjangoModelField(model_instance_field_type, field).name
+        })]
 
 
 
