@@ -37,15 +37,6 @@ _TYPE_ALIAS_TYPES = {
 _PROXY_TYPES = 'Optional Union ClassVar'.split()
 
 
-class TypingName(AbstractTreeName):
-    def __init__(self, value, other_name):
-        super(TypingName, self).__init__(value.parent_context, other_name.tree_name)
-        self._value = value
-
-    def infer(self):
-        return ValueSet([self._value])
-
-
 class TypingModuleName(NameWrapper):
     def infer(self):
         return ValueSet(self._remap())
