@@ -51,10 +51,10 @@ class TypingModuleName(NameWrapper):
             return
 
         if name in _PROXY_CLASS_TYPES:
-            yield TypingClassValue.create_cached(
+            yield ProxyTypingClassValue.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name in _PROXY_TYPES:
-            yield TypingValue.create_cached(
+            yield ProxyTypingValue.create_cached(
                 inference_state, self.parent_context, self.tree_name)
         elif name == 'runtime':
             # We don't want anything here, not sure what this function is
@@ -147,7 +147,7 @@ class TypingValueWithIndex(_WithIndexBase):
         )
 
 
-class TypingValue(BaseTypingValue):
+class ProxyTypingValue(BaseTypingValue):
     index_class = TypingValueWithIndex
     py__simple_getitem__ = None
 
@@ -184,7 +184,7 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
         return list(iter_over_arguments(self._index_value, self._context_of_index))
 
 
-class TypingClassValue(_TypingClassMixin, TypingValue):
+class ProxyTypingClassValue(_TypingClassMixin, ProxyTypingValue):
     index_class = TypingClassValueWithIndex
 
 
