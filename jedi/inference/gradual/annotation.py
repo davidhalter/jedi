@@ -162,7 +162,6 @@ def _infer_param(function_value, param):
                 "Comments length != Params length %s %s",
                 params_comments, all_params
             )
-        from jedi.inference.value.instance import InstanceArguments
         if function_value.is_bound_method():
             if index == 0:
                 # Assume it's self, which is already handled
