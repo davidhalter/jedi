@@ -42,7 +42,7 @@ setup(name='jedi',
               # docopt for sith doctests
               'docopt',
               # coloroma for colored debug output
-              'colorama',
+              'colorama==0.4.1',  # Pinned so it works for Python 3.4
           ],
       },
       package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',
