@@ -5,7 +5,6 @@ values.
 
 This file deals with all the typing.py cases.
 """
-from jedi._compatibility import unicode, force_unicode
 from jedi import debug
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.compiled import builtin_from_name
@@ -19,8 +18,10 @@ from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, AbstractTreeName, \
     AbstractNameDefinition, ValueName
 from jedi.inference.helpers import is_string
-from jedi.inference.value.klass import ClassMixin, ClassFilter
+from jedi.inference.value.klass import ClassMixin
 from jedi.inference.context import ClassContext
+from jedi.inference.gradual.base import BaseTypingValue
+from jedi.inference.gradual.type_var import TypeVarClass, TypeVar
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -43,43 +44,6 @@ class TypingName(AbstractTreeName):
 
     def infer(self):
         return ValueSet([self._value])
-
-
-class _BaseTypingValue(Value):
-    def __init__(self, inference_state, parent_context, tree_name):
-        super(_BaseTypingValue, self).__init__(inference_state, parent_context)
-        self._tree_name = tree_name
-
-    @property
-    def tree_node(self):
-        return self._tree_name
-
-    def get_filters(self, *args, **kwargs):
-        # TODO this is obviously wrong. Is it though?
-        class EmptyFilter(ClassFilter):
-            def __init__(self):
-                pass
-
-            def get(self, name, **kwargs):
-                return []
-
-            def values(self, **kwargs):
-                return []
-
-        yield EmptyFilter()
-
-    def py__class__(self):
-        # TODO this is obviously not correct, but at least gives us a class if
-        # we have none. Some of these objects don't really have a base class in
-        # typeshed.
-        return builtin_from_name(self.inference_state, u'object')
-
-    @property
-    def name(self):
-        return ValueName(self, self._tree_name)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
 
 
 class TypingModuleName(NameWrapper):
@@ -138,7 +102,7 @@ class TypingModuleFilterWrapper(FilterWrapper):
     name_wrapper_class = TypingModuleName
 
 
-class _WithIndexBase(_BaseTypingValue):
+class _WithIndexBase(BaseTypingValue):
     def __init__(self, inference_state, parent_context, name, index_value, value_of_index):
         super(_WithIndexBase, self).__init__(inference_state, parent_context, name)
         self._index_value = index_value
@@ -187,7 +151,7 @@ class TypingValueWithIndex(_WithIndexBase):
         )
 
 
-class TypingValue(_BaseTypingValue):
+class TypingValue(BaseTypingValue):
     index_class = TypingValueWithIndex
     py__simple_getitem__ = None
 
@@ -358,127 +322,20 @@ class Protocol(_WithIndexBase, _GetItemMixin):
     pass
 
 
-class Any(_BaseTypingValue):
+class Any(BaseTypingValue):
     def execute_annotation(self):
         debug.warning('Used Any - returned no results')
         return NO_VALUES
 
 
-class TypeVarClass(_BaseTypingValue):
-    def py__call__(self, arguments):
-        unpacked = arguments.unpack()
-
-        key, lazy_value = next(unpacked, (None, None))
-        var_name = self._find_string_name(lazy_value)
-        # The name must be given, otherwise it's useless.
-        if var_name is None or key is not None:
-            debug.warning('Found a variable without a name %s', arguments)
-            return NO_VALUES
-
-        return ValueSet([TypeVar.create_cached(
-            self.inference_state,
-            self.parent_context,
-            self._tree_name,
-            var_name,
-            unpacked
-        )])
-
-    def _find_string_name(self, lazy_value):
-        if lazy_value is None:
-            return None
-
-        value_set = lazy_value.infer()
-        if not value_set:
-            return None
-        if len(value_set) > 1:
-            debug.warning('Found multiple values for a type variable: %s', value_set)
-
-        name_value = next(iter(value_set))
-        try:
-            method = name_value.get_safe_value
-        except AttributeError:
-            return None
-        else:
-            safe_value = method(default=None)
-            if self.inference_state.environment.version_info.major == 2:
-                if isinstance(safe_value, bytes):
-                    return force_unicode(safe_value)
-            if isinstance(safe_value, (str, unicode)):
-                return safe_value
-            return None
-
-
-class TypeVar(_BaseTypingValue):
-    def __init__(self, inference_state, parent_context, tree_name, var_name, unpacked_args):
-        super(TypeVar, self).__init__(inference_state, parent_context, tree_name)
-        self._var_name = var_name
-
-        self._constraints_lazy_values = []
-        self._bound_lazy_value = None
-        self._covariant_lazy_value = None
-        self._contravariant_lazy_value = None
-        for key, lazy_value in unpacked_args:
-            if key is None:
-                self._constraints_lazy_values.append(lazy_value)
-            else:
-                if key == 'bound':
-                    self._bound_lazy_value = lazy_value
-                elif key == 'covariant':
-                    self._covariant_lazy_value = lazy_value
-                elif key == 'contravariant':
-                    self._contra_variant_lazy_value = lazy_value
-                else:
-                    debug.warning('Invalid TypeVar param name %s', key)
-
-    def py__name__(self):
-        return self._var_name
-
-    def get_filters(self, *args, **kwargs):
-        return iter([])
-
-    def _get_classes(self):
-        if self._bound_lazy_value is not None:
-            return self._bound_lazy_value.infer()
-        if self._constraints_lazy_values:
-            return self.constraints
-        debug.warning('Tried to infer the TypeVar %s without a given type', self._var_name)
-        return NO_VALUES
-
-    def is_same_class(self, other):
-        # Everything can match an undefined type var.
-        return True
-
-    @property
-    def constraints(self):
-        return ValueSet.from_sets(
-            lazy.infer() for lazy in self._constraints_lazy_values
-        )
-
-    def define_generics(self, type_var_dict):
-        try:
-            found = type_var_dict[self.py__name__()]
-        except KeyError:
-            pass
-        else:
-            if found:
-                return found
-        return self._get_classes() or ValueSet({self})
-
-    def execute_annotation(self):
-        return self._get_classes().execute_annotation()
-
-    def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.py__name__())
-
-
-class OverloadFunction(_BaseTypingValue):
+class OverloadFunction(BaseTypingValue):
     @repack_with_argument_clinic('func, /')
     def py__call__(self, func_value_set):
         # Just pass arguments through.
         return func_value_set
 
 
-class NewTypeFunction(_BaseTypingValue):
+class NewTypeFunction(BaseTypingValue):
     def py__call__(self, arguments):
         ordered_args = arguments.unpack()
         next(ordered_args, (None, None))
@@ -504,7 +361,7 @@ class NewType(Value):
         return self._type_value_set.execute_annotation()
 
 
-class CastFunction(_BaseTypingValue):
+class CastFunction(BaseTypingValue):
     @repack_with_argument_clinic('type, object, /')
     def py__call__(self, type_value_set, object_value_set):
         return type_value_set.execute_annotation()
