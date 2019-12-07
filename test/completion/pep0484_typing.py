@@ -402,6 +402,15 @@ type_in_out2()
 #? float()
 type_in_out2(float)
 
+def ma(a: typing.Callable[[str], TYPE_VARX]) -> typing.Callable[[str], TYPE_VARX]:
+    return a
+
+def mf(s: str) -> int:
+    return int(s)
+
+#? int()
+ma(mf)('2')
+
 # -------------------------
 # TYPE_CHECKING
 # -------------------------

@@ -315,6 +315,17 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                             is_class_value=True,
                         )
                     )
+        elif name == 'Callable':
+            given = annotation_value.get_generics()
+            if len(given) == 2:
+                for nested_annotation_value in given[1]:
+                    _merge_type_var_dicts(
+                        type_var_dict,
+                        _infer_type_vars(
+                            nested_annotation_value,
+                            value_set.execute_annotation(),
+                        )
+                    )
     elif isinstance(annotation_value, LazyGenericClass):
         name = annotation_value.py__name__()
         if name == 'Iterable':
