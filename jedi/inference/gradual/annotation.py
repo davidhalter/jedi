@@ -12,10 +12,10 @@ from parso import ParserSyntaxError, parse
 from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
-from jedi.inference.gradual.typing import TypeVar, LazyGenericClass, \
-    AbstractAnnotatedClass
-from jedi.inference.gradual.typing import GenericClass, \
-    TypingClassValueWithIndex
+from jedi.inference.gradual.base import LazyGenericClass, \
+    AbstractAnnotatedClass, GenericClass
+from jedi.inference.gradual.typing import TypingClassValueWithIndex
+from jedi.inference.gradual.type_var import TypeVar
 from jedi.inference.helpers import is_string
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.param import get_executed_param_names

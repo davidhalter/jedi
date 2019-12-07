@@ -283,7 +283,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
         inference_state = self.inference_state
         is_coroutine = self.tree_node.parent.type in ('async_stmt', 'async_funcdef')
         is_generator = bool(get_yield_exprs(inference_state, self.tree_node))
-        from jedi.inference.gradual.typing import GenericClass
+        from jedi.inference.gradual.base import GenericClass
 
         if is_coroutine:
             if is_generator:

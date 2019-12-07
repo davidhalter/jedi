@@ -266,7 +266,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         )]
 
     def py__getitem__(self, index_value_set, contextualized_node):
-        from jedi.inference.gradual.typing import LazyGenericClass
+        from jedi.inference.gradual.base import LazyGenericClass
         if not index_value_set:
             return ValueSet([self])
         return ValueSet(
@@ -279,7 +279,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         )
 
     def define_generics(self, type_var_dict):
-        from jedi.inference.gradual.typing import GenericClass
+        from jedi.inference.gradual.base import GenericClass
 
         def remap_type_vars():
             """

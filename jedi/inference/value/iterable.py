@@ -194,7 +194,7 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
         return (self.merge_types_of_iterate().py__class__(),)
 
     def _get_wrapped_value(self):
-        from jedi.inference.gradual.typing import GenericClass
+        from jedi.inference.gradual.base import GenericClass
         klass = compiled.builtin_from_name(self.inference_state, self.array_type)
         c, = GenericClass(klass, self._get_generics()).execute_annotation()
         return c
