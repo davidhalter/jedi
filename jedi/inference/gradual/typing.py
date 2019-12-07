@@ -46,32 +46,40 @@ class TypingModuleName(NameWrapper):
         except KeyError:
             pass
         else:
-            yield TypeAlias.create_cached(inference_state, self.parent_context, self.tree_name, actual)
+            yield TypeAlias.create_cached(
+                inference_state, self.parent_context, self.tree_name, actual)
             return
 
         if name in _PROXY_CLASS_TYPES:
-            yield TypingClassValue.create_cached(inference_state, self.parent_context, self.tree_name)
+            yield TypingClassValue.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name in _PROXY_TYPES:
-            yield TypingValue.create_cached(inference_state, self.parent_context, self.tree_name)
+            yield TypingValue.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name == 'runtime':
             # We don't want anything here, not sure what this function is
             # supposed to do, since it just appears in the stubs and shouldn't
             # have any effects there (because it's never executed).
             return
         elif name == 'TypeVar':
-            yield TypeVarClass.create_cached(inference_state, self.parent_context, self.tree_name)
+            yield TypeVarClass.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name == 'Any':
-            yield Any.create_cached(inference_state, self.parent_context, self.tree_name)
+            yield Any.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name == 'TYPE_CHECKING':
             # This is needed for e.g. imports that are only available for type
             # checking or are in cycles. The user can then check this variable.
             yield builtin_from_name(inference_state, u'True')
         elif name == 'overload':
-            yield OverloadFunction.create_cached(inference_state, self.parent_context, self.tree_name)
+            yield OverloadFunction.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name == 'NewType':
-            yield NewTypeFunction.create_cached(inference_state, self.parent_context, self.tree_name)
+            yield NewTypeFunction.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name == 'cast':
-            yield CastFunction.create_cached(inference_state, self.parent_context, self.tree_name)
+            yield CastFunction.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
