@@ -119,7 +119,6 @@ class TypingModuleName(NameWrapper):
         elif name == 'NewType':
             yield NewTypeFunction.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'cast':
-            # TODO implement cast
             yield CastFunction.create_cached(inference_state, self.parent_context, self.tree_name)
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
