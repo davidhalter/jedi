@@ -132,7 +132,7 @@ class DefineGenericBase(LazyValueWrapper):
         for generic_set in self.get_generics():
             values = NO_VALUES
             for generic in generic_set:
-                if isinstance(generic, (_AbstractAnnotatedClass, TypeVar)):
+                if isinstance(generic, (GenericClass, TypeVar)):
                     result = generic.define_generics(type_var_dict)
                     values |= result
                     if result != ValueSet({generic}):
@@ -185,18 +185,19 @@ class DefineGenericBase(LazyValueWrapper):
         )
 
 
-class _AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
-    def __init__(self, wrapped_class):
-        self._wrapped_class = wrapped_class
+class GenericClass(ClassMixin, DefineGenericBase):
+    def __init__(self, class_value, generics_manager):
+        self._class_value = class_value
+        self._generics_manager = generics_manager
 
     def _get_wrapped_value(self):
-        return self._wrapped_class
+        return self._class_value
 
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_generics(), self.list_type_vars())
 
     def py__call__(self, arguments):
-        instance, = super(_AbstractAnnotatedClass, self).py__call__(arguments)
+        instance, = super(GenericClass, self).py__call__(arguments)
         return ValueSet([_InstanceWrapper(instance)])
 
     def _as_context(self):
@@ -206,12 +207,6 @@ class _AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
     def py__bases__(self):
         for base in self._wrapped_value.py__bases__():
             yield _LazyAnnotatedBaseClass(self, base)
-
-
-class GenericClass(_AbstractAnnotatedClass):
-    def __init__(self, class_value, generics_manager):
-        super(GenericClass, self).__init__(class_value)
-        self._generics_manager = generics_manager
 
     @inference_state_method_cache()
     def get_generics(self):
@@ -226,7 +221,7 @@ class _LazyAnnotatedBaseClass(object):
     @iterator_to_value_set
     def infer(self):
         for base in self._lazy_base_class.infer():
-            if isinstance(base, _AbstractAnnotatedClass):
+            if isinstance(base, GenericClass):
                 # Here we have to recalculate the given types.
                 yield GenericClass.create_cached(
                     base.inference_state,
