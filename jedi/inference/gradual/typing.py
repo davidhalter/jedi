@@ -11,14 +11,13 @@ from jedi.inference.compiled import builtin_from_name
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
     LazyValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues
-from jedi.inference.value.iterable import SequenceLiteralValue
 from jedi.inference.arguments import repack_with_argument_clinic
 from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import BaseTypingValue
 from jedi.inference.gradual.type_var import TypeVarClass
-from jedi.inference.gradual.generics import iter_over_arguments
+from jedi.inference.gradual.generics import LazyGenericManager
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -99,16 +98,15 @@ class TypingModuleFilterWrapper(FilterWrapper):
 
 
 class _WithIndexBase(BaseTypingValue):
-    def __init__(self, inference_state, parent_context, name, index_value, context_of_index):
+    def __init__(self, inference_state, parent_context, name, generics_manager):
         super(_WithIndexBase, self).__init__(inference_state, parent_context, name)
-        self._index_value = index_value
-        self._context_of_index = context_of_index
+        self._generics_manager = generics_manager
 
     def __repr__(self):
         return '<%s: %s[%s]>' % (
             self.__class__.__name__,
             self._tree_name.value,
-            self._index_value,
+            self._generics_manager,
         )
 
 
@@ -127,24 +125,21 @@ class TypingValueWithIndex(_WithIndexBase):
                 | ValueSet([builtin_from_name(self.inference_state, u'None')])
         elif string_name == 'Type':
             # The type is actually already given in the index_value
-            return ValueSet([self._index_value])
+            return self._generics_manager[0]
         elif string_name == 'ClassVar':
             # For now don't do anything here, ClassVars are always used.
-            return self._index_value.execute_annotation()
+            return self._generics_manager[0].execute_annotation()
 
         cls = globals()[string_name]
         return ValueSet([cls(
             self.inference_state,
             self.parent_context,
             self._tree_name,
-            self._index_value,
-            self._context_of_index
+            generics_manager=self._generics_manager,
         )])
 
     def gather_annotation_classes(self):
-        return ValueSet.from_sets(
-            iter_over_arguments(self._index_value, self._context_of_index)
-        )
+        return ValueSet.from_sets(self._generics_manager.to_tuple())
 
 
 class ProxyTypingValue(BaseTypingValue):
@@ -157,9 +152,11 @@ class ProxyTypingValue(BaseTypingValue):
                 self.inference_state,
                 self.parent_context,
                 self._tree_name,
-                index_value,
-                context_of_index=contextualized_node.context)
-            for index_value in index_value_set
+                generics_manager=LazyGenericManager(
+                    context_of_index=contextualized_node.context,
+                    index_value=index_value,
+                )
+            ) for index_value in index_value_set
         )
 
 
@@ -181,7 +178,7 @@ class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
 
     @inference_state_method_cache()
     def get_generics(self):
-        return list(iter_over_arguments(self._index_value, self._context_of_index))
+        return self._generics_manager.to_tuple()
 
 
 class ProxyTypingClassValue(_TypingClassMixin, ProxyTypingValue):
@@ -224,13 +221,11 @@ class TypeAlias(LazyValueWrapper):
 
 class _GetItemMixin(object):
     def _get_getitem_values(self, index):
-        args = iter_over_arguments(self._index_value, self._context_of_index)
-        for i, values in enumerate(args):
-            if i == index:
-                return values
-
-        debug.warning('No param #%s found for annotation %s', index, self._index_value)
-        return NO_VALUES
+        try:
+            return self._generics_manager[index]
+        except IndexError:
+            debug.warning('No param #%s found for annotation %s', index, self._generics_manager)
+            return NO_VALUES
 
 
 class Callable(_WithIndexBase, _GetItemMixin):
@@ -240,20 +235,15 @@ class Callable(_WithIndexBase, _GetItemMixin):
 
 
 class Tuple(LazyValueWrapper, _GetItemMixin):
-    def __init__(self, inference_state, parent_context, name, index_value, context_of_index):
+    def __init__(self, inference_state, parent_context, name, generics_manager):
         self.inference_state = inference_state
         self.parent_context = parent_context
-        self._index_value = index_value
-        self._context_of_index = context_of_index
+        self._generics_manager = generics_manager
 
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]
         # is used.
-        if isinstance(self._index_value, SequenceLiteralValue):
-            entries = self._index_value.get_tree_entries()
-            if len(entries) == 2 and entries[1] == '...':
-                return True
-        return False
+        return self._generics_manager.is_homogenous_tuple()
 
     def py__simple_getitem__(self, index):
         if self._is_homogenous():
@@ -269,16 +259,15 @@ class Tuple(LazyValueWrapper, _GetItemMixin):
         if self._is_homogenous():
             yield LazyKnownValues(self._get_getitem_values(0).execute_annotation())
         else:
-            if isinstance(self._index_value, SequenceLiteralValue):
-                for i in range(self._index_value.py__len__()):
-                    yield LazyKnownValues(self._get_getitem_values(i).execute_annotation())
+            for v in self._generics_manager.to_tuple():
+                yield LazyKnownValues(v.execute_annotation())
 
     def py__getitem__(self, index_value_set, contextualized_node):
         if self._is_homogenous():
             return self._get_getitem_values(0).execute_annotation()
 
         return ValueSet.from_sets(
-            iter_over_arguments(self._index_value, self._context_of_index)
+            self._generics_manager.to_tuple()
         ).execute_annotation()
 
     def _get_wrapped_value(self):

@@ -10,18 +10,6 @@ from jedi.inference.value.iterable import SequenceLiteralValue
 from jedi.inference.helpers import is_string
 
 
-def iter_over_arguments(maybe_tuple_value, defining_context):
-    def iterate():
-        if isinstance(maybe_tuple_value, SequenceLiteralValue):
-            for lazy_value in maybe_tuple_value.py__iter__(contextualized_node=None):
-                yield lazy_value.infer()
-        else:
-            yield ValueSet([maybe_tuple_value])
-
-    for value_set in iterate():
-        yield ValueSet(_resolve_forward_references(defining_context, value_set))
-
-
 def _resolve_forward_references(context, value_set):
     for value in value_set:
         if is_string(value):
@@ -69,8 +57,12 @@ class LazyGenericManager(object):
         for callable_ in self._tuple():
             yield callable_()
 
-    #def __iter__(self):
-    #    return iter(self._iterate())
+    def is_homogenous_tuple(self):
+        if isinstance(self._index_value, SequenceLiteralValue):
+            entries = self._index_value.get_tree_entries()
+            if len(entries) == 2 and entries[1] == '...':
+                return True
+        return False
 
 
 class TupleGenericManager(object):
@@ -83,9 +75,8 @@ class TupleGenericManager(object):
     def __len__(self):
         return len(self._tuple)
 
-    #def __iter__(self):
-    #    for value_set in self._tuple:
-    #        yield lambda: value_set
-
     def to_tuple(self):
         return self._tuple
+
+    def is_homogenous_tuple(self):
+        return False
