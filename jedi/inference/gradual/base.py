@@ -230,6 +230,15 @@ class _GenericInstanceWrapper(ValueWrapper):
 
 
 class _PseudoTreeNameClass(Value):
+    """
+    In typeshed, some classes are defined like this:
+
+        Tuple: _SpecialForm = ...
+
+    Now this is not a real class, therefore we have to do some workarounds like
+    this class. Essentially this class makes it possible to goto that `Tuple`
+    name, without affecting anything else negatively.
+    """
     def __init__(self, parent_context, tree_name):
         super(_PseudoTreeNameClass, self).__init__(
             parent_context.inference_state,
