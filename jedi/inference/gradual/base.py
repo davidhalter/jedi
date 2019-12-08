@@ -119,11 +119,15 @@ class AnnotatedClassContext(ClassContext):
 
 
 class DefineGenericBase(LazyValueWrapper):
+    def __init__(self, generics_manager):
+        self._generics_manager = generics_manager
+
     def _get_fixed_generics_cls(self):
         return GenericClass
 
+    @inference_state_method_cache()
     def get_generics(self):
-        raise NotImplementedError
+        return self._generics_manager.to_tuple()
 
     def define_generics(self, type_var_dict):
         from jedi.inference.gradual.type_var import TypeVar
@@ -187,8 +191,8 @@ class DefineGenericBase(LazyValueWrapper):
 
 class GenericClass(ClassMixin, DefineGenericBase):
     def __init__(self, class_value, generics_manager):
+        super(GenericClass, self).__init__(generics_manager)
         self._class_value = class_value
-        self._generics_manager = generics_manager
 
     def _get_wrapped_value(self):
         return self._class_value
@@ -207,10 +211,6 @@ class GenericClass(ClassMixin, DefineGenericBase):
     def py__bases__(self):
         for base in self._wrapped_value.py__bases__():
             yield _LazyGenericBaseClass(self, base)
-
-    @inference_state_method_cache()
-    def get_generics(self):
-        return self._generics_manager.to_tuple()
 
 
 class _LazyGenericBaseClass(object):
