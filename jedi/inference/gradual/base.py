@@ -122,8 +122,8 @@ class DefineGenericBase(LazyValueWrapper):
     def __init__(self, generics_manager):
         self._generics_manager = generics_manager
 
-    def _get_fixed_generics_cls(self):
-        return GenericClass
+    def _create_instance_with_generics(self, generics_manager):
+        raise NotImplementedError
 
     @inference_state_method_cache()
     def get_generics(self):
@@ -151,8 +151,7 @@ class DefineGenericBase(LazyValueWrapper):
             # cached results.
             return ValueSet([self])
 
-        return ValueSet([self._get_fixed_generics_cls()(
-            self._wrapped_value,
+        return ValueSet([self._create_instance_with_generics(
             TupleGenericManager(tuple(new_generics))
         )])
 
@@ -211,6 +210,9 @@ class GenericClass(ClassMixin, DefineGenericBase):
     def py__bases__(self):
         for base in self._wrapped_value.py__bases__():
             yield _LazyGenericBaseClass(self, base)
+
+    def _create_instance_with_generics(self, generics_manager):
+        return GenericClass(self._class_value, generics_manager)
 
 
 class _LazyGenericBaseClass(object):
