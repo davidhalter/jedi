@@ -411,6 +411,15 @@ def mf(s: str) -> int:
 #? int()
 ma(mf)('2')
 
+def xxx(x: typing.Iterable[TYPE_VARX]) -> typing.Tuple[str, TYPE_VARX]: ...
+
+#? str()
+xxx([0])[0]
+#? int()
+xxx([0])[1]
+#?
+xxx([0])[2]
+
 # -------------------------
 # TYPE_CHECKING
 # -------------------------
