@@ -116,7 +116,13 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
             # For now don't do anything here, ClassVars are always used.
             return self._generics_manager[0].execute_annotation()
 
-        cls = globals()[string_name]
+        mapped = {
+            'Tuple': Tuple,
+            'Generic': Generic,
+            'Protocol': Protocol,
+            'Callable': Callable,
+        }
+        cls = mapped[string_name]
         return ValueSet([cls(
             self.parent_context,
             self._tree_name,
