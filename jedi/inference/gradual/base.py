@@ -206,14 +206,14 @@ class GenericClass(ClassMixin, DefineGenericBase):
     @to_list
     def py__bases__(self):
         for base in self._wrapped_value.py__bases__():
-            yield _LazyAnnotatedBaseClass(self, base)
+            yield _LazyGenericBaseClass(self, base)
 
     @inference_state_method_cache()
     def get_generics(self):
         return self._generics_manager.to_tuple()
 
 
-class _LazyAnnotatedBaseClass(object):
+class _LazyGenericBaseClass(object):
     def __init__(self, class_value, lazy_base_class):
         self._class_value = class_value
         self._lazy_base_class = lazy_base_class
