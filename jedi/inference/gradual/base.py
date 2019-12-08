@@ -233,10 +233,10 @@ class _AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
 
 
 class LazyGenericClass(_AbstractAnnotatedClass):
-    def __init__(self, class_value, index_value, value_of_index):
+    def __init__(self, class_value, index_value, context_of_index):
         super(LazyGenericClass, self).__init__(class_value)
         self._index_value = index_value
-        self._context_of_index = value_of_index
+        self._context_of_index = context_of_index
 
     @inference_state_method_cache()
     def get_generics(self):

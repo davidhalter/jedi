@@ -99,10 +99,10 @@ class TypingModuleFilterWrapper(FilterWrapper):
 
 
 class _WithIndexBase(BaseTypingValue):
-    def __init__(self, inference_state, parent_context, name, index_value, value_of_index):
+    def __init__(self, inference_state, parent_context, name, index_value, context_of_index):
         super(_WithIndexBase, self).__init__(inference_state, parent_context, name)
         self._index_value = index_value
-        self._context_of_index = value_of_index
+        self._context_of_index = context_of_index
 
     def __repr__(self):
         return '<%s: %s[%s]>' % (
@@ -158,7 +158,7 @@ class ProxyTypingValue(BaseTypingValue):
                 self.parent_context,
                 self._tree_name,
                 index_value,
-                value_of_index=contextualized_node.context)
+                context_of_index=contextualized_node.context)
             for index_value in index_value_set
         )
 
@@ -240,11 +240,11 @@ class Callable(_WithIndexBase, _GetItemMixin):
 
 
 class Tuple(LazyValueWrapper, _GetItemMixin):
-    def __init__(self, inference_state, parent_context, name, index_value, value_of_index):
+    def __init__(self, inference_state, parent_context, name, index_value, context_of_index):
         self.inference_state = inference_state
         self.parent_context = parent_context
         self._index_value = index_value
-        self._context_of_index = value_of_index
+        self._context_of_index = context_of_index
 
     def _is_homogenous(self):
         # To specify a variable-length tuple of homogeneous type, Tuple[T, ...]

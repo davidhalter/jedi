@@ -273,7 +273,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
             LazyGenericClass(
                 self,
                 index_value,
-                value_of_index=contextualized_node.context,
+                context_of_index=contextualized_node.context,
             )
             for index_value in index_value_set
         )
