@@ -6,7 +6,6 @@ values.
 This file deals with all the typing.py cases.
 """
 from jedi import debug
-from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
     LazyValueWrapper
@@ -168,10 +167,7 @@ class _TypingClassMixin(ClassMixin):
 
 
 class TypingClassValueWithIndex(_TypingClassMixin, TypingValueWithIndex):
-
-    @inference_state_method_cache()
-    def get_generics(self):
-        return self._generics_manager.to_tuple()
+    pass
 
 
 class ProxyTypingClassValue(_TypingClassMixin, ProxyTypingValue):
