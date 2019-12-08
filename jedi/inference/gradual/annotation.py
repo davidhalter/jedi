@@ -13,7 +13,7 @@ from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference.gradual.base import LazyGenericClass, \
-    AbstractAnnotatedClass, GenericClass
+    DefineGenericBase, GenericClass
 from jedi.inference.gradual.typing import TypingClassValueWithIndex
 from jedi.inference.gradual.type_var import TypeVar
 from jedi.inference.helpers import is_string
@@ -229,7 +229,7 @@ def infer_return_types(function, arguments):
 
     return ValueSet.from_sets(
         ann.define_generics(type_var_dict)
-        if isinstance(ann, (AbstractAnnotatedClass, TypeVar)) else ValueSet({ann})
+        if isinstance(ann, (DefineGenericBase, TypeVar)) else ValueSet({ann})
         for ann in annotation_values
     ).execute_annotation()
 

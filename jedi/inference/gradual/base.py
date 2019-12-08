@@ -153,7 +153,7 @@ class DefineGenericBase(ValueWrapper):
         for generic_set in self.get_generics():
             values = NO_VALUES
             for generic in generic_set:
-                if isinstance(generic, (AbstractAnnotatedClass, TypeVar)):
+                if isinstance(generic, (_AbstractAnnotatedClass, TypeVar)):
                     result = generic.define_generics(type_var_dict)
                     values |= result
                     if result != ValueSet({generic}):
@@ -206,12 +206,12 @@ class DefineGenericBase(ValueWrapper):
         )
 
 
-class AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
+class _AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_generics(), self.list_type_vars())
 
     def py__call__(self, arguments):
-        instance, = super(AbstractAnnotatedClass, self).py__call__(arguments)
+        instance, = super(_AbstractAnnotatedClass, self).py__call__(arguments)
         return ValueSet([InstanceWrapper(instance)])
 
     def _as_context(self):
@@ -223,7 +223,7 @@ class AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
             yield LazyAnnotatedBaseClass(self, base)
 
 
-class LazyGenericClass(AbstractAnnotatedClass):
+class LazyGenericClass(_AbstractAnnotatedClass):
     def __init__(self, class_value, index_value, value_of_index):
         super(LazyGenericClass, self).__init__(class_value)
         self._index_value = index_value
@@ -234,7 +234,7 @@ class LazyGenericClass(AbstractAnnotatedClass):
         return list(iter_over_arguments(self._index_value, self._context_of_index))
 
 
-class GenericClass(AbstractAnnotatedClass):
+class GenericClass(_AbstractAnnotatedClass):
     def __init__(self, class_value, generics):
         super(GenericClass, self).__init__(class_value)
         self._generics = generics
@@ -251,7 +251,7 @@ class LazyAnnotatedBaseClass(object):
     @iterator_to_value_set
     def infer(self):
         for base in self._lazy_base_class.infer():
-            if isinstance(base, AbstractAnnotatedClass):
+            if isinstance(base, _AbstractAnnotatedClass):
                 # Here we have to recalculate the given types.
                 yield GenericClass.create_cached(
                     base.inference_state,
