@@ -47,7 +47,7 @@ class BaseTypingValue(Value):
         return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
 
 
-class BoundTypeVarName(AbstractNameDefinition):
+class _BoundTypeVarName(AbstractNameDefinition):
     """
     This type var was bound to a certain type, e.g. int.
     """
@@ -75,7 +75,7 @@ class BoundTypeVarName(AbstractNameDefinition):
         return '<%s %s -> %s>' % (self.__class__.__name__, self.py__name__(), self._value_set)
 
 
-class TypeVarFilter(object):
+class _TypeVarFilter(object):
     """
     A filter for all given variables in a class.
 
@@ -94,7 +94,7 @@ class TypeVarFilter(object):
         for i, type_var in enumerate(self._type_vars):
             if type_var.py__name__() == name:
                 try:
-                    return [BoundTypeVarName(type_var, self._generics[i])]
+                    return [_BoundTypeVarName(type_var, self._generics[i])]
                 except IndexError:
                     return [type_var.name]
         return []
@@ -105,9 +105,9 @@ class TypeVarFilter(object):
         return []
 
 
-class AnnotatedClassContext(ClassContext):
+class _AnnotatedClassContext(ClassContext):
     def get_filters(self, *args, **kwargs):
-        filters = super(AnnotatedClassContext, self).get_filters(
+        filters = super(_AnnotatedClassContext, self).get_filters(
             *args, **kwargs
         )
         for f in filters:
@@ -197,14 +197,14 @@ class GenericClass(ClassMixin, DefineGenericBase):
         return self._class_value
 
     def get_type_var_filter(self):
-        return TypeVarFilter(self.get_generics(), self.list_type_vars())
+        return _TypeVarFilter(self.get_generics(), self.list_type_vars())
 
     def py__call__(self, arguments):
         instance, = super(GenericClass, self).py__call__(arguments)
         return ValueSet([_GenericInstanceWrapper(instance)])
 
     def _as_context(self):
-        return AnnotatedClassContext(self)
+        return _AnnotatedClassContext(self)
 
     @to_list
     def py__bases__(self):
