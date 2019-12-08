@@ -198,7 +198,7 @@ class GenericClass(ClassMixin, DefineGenericBase):
 
     def py__call__(self, arguments):
         instance, = super(GenericClass, self).py__call__(arguments)
-        return ValueSet([_InstanceWrapper(instance)])
+        return ValueSet([_GenericInstanceWrapper(instance)])
 
     def _as_context(self):
         return AnnotatedClassContext(self)
@@ -250,7 +250,7 @@ class _LazyGenericBaseClass(object):
             yield new
 
 
-class _InstanceWrapper(ValueWrapper):
+class _GenericInstanceWrapper(ValueWrapper):
     def py__stop_iteration_returns(self):
         for cls in self._wrapped_value.class_value.py__mro__():
             if cls.py__name__() == 'Generator':
