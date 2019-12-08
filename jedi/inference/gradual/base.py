@@ -152,6 +152,12 @@ class DefineGenericBase(LazyValueWrapper):
 
 
 class GenericClass(ClassMixin, DefineGenericBase):
+    """
+    A class that is defined with generics, might be something simple like:
+
+        class Foo(Generic[T]): ...
+        my_foo_int_cls = Foo[int]
+    """
     def __init__(self, class_value, generics_manager):
         super(GenericClass, self).__init__(generics_manager)
         self._class_value = class_value
