@@ -1,6 +1,6 @@
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
-    iterator_to_value_set, ValueWrapper
+    iterator_to_value_set, LazyValueWrapper, ValueWrapper
 from jedi.inference.compiled import builtin_from_name
 from jedi.inference.value.klass import ClassFilter
 from jedi.inference.value.iterable import SequenceLiteralValue
@@ -142,7 +142,10 @@ class AnnotatedClassContext(ClassContext):
         yield self._value.get_type_var_filter()
 
 
-class DefineGenericBase(ValueWrapper):
+class DefineGenericBase(LazyValueWrapper):
+    def _get_fixed_generics_cls(self):
+        return GenericClass
+
     def get_generics(self):
         raise NotImplementedError
 
@@ -168,7 +171,7 @@ class DefineGenericBase(ValueWrapper):
             # cached results.
             return ValueSet([self])
 
-        return ValueSet([GenericClass(
+        return ValueSet([self._get_fixed_generics_cls()(
             self._wrapped_value,
             generics=tuple(new_generics)
         )])
@@ -207,6 +210,12 @@ class DefineGenericBase(ValueWrapper):
 
 
 class _AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
+    def __init__(self, wrapped_class):
+        self._wrapped_class = wrapped_class
+
+    def _get_wrapped_value(self):
+        return self._wrapped_class
+
     def get_type_var_filter(self):
         return TypeVarFilter(self.get_generics(), self.list_type_vars())
 
