@@ -50,6 +50,7 @@ from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
     NO_VALUES
 from jedi.inference.context import ClassContext
 from jedi.inference.value.function import FunctionAndClassBase
+from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 from jedi.plugins import plugin_manager
 
 
@@ -266,14 +267,16 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         )]
 
     def py__getitem__(self, index_value_set, contextualized_node):
-        from jedi.inference.gradual.base import LazyGenericClass
+        from jedi.inference.gradual.base import GenericClass
         if not index_value_set:
             return ValueSet([self])
         return ValueSet(
-            LazyGenericClass(
+            GenericClass(
                 self,
-                index_value,
-                context_of_index=contextualized_node.context,
+                LazyGenericManager(
+                    context_of_index=contextualized_node.context,
+                    index_value=index_value,
+                )
             )
             for index_value in index_value_set
         )
@@ -297,7 +300,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         if type_var_dict:
             return ValueSet([GenericClass(
                 self,
-                generics=tuple(remap_type_vars())
+                TupleGenericManager(tuple(remap_type_vars()))
             )])
         return ValueSet({self})
 

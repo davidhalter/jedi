@@ -21,6 +21,12 @@ def to_list(func):
     return wrapper
 
 
+def to_tuple(func):
+    def wrapper(*args, **kwargs):
+        return tuple(func(*args, **kwargs))
+    return wrapper
+
+
 def unite(iterable):
     """Turns a two dimensional array into a one dimensional."""
     return set(typ for types in iterable for typ in types)

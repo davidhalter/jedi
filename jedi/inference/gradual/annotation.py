@@ -12,8 +12,8 @@ from parso import ParserSyntaxError, parse
 from jedi._compatibility import force_unicode, Parameter
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.base_value import ValueSet, NO_VALUES
-from jedi.inference.gradual.base import LazyGenericClass, \
-    DefineGenericBase, GenericClass
+from jedi.inference.gradual.base import DefineGenericBase, GenericClass
+from jedi.inference.gradual.generics import TupleGenericManager
 from jedi.inference.gradual.typing import TypingClassValueWithIndex
 from jedi.inference.gradual.type_var import TypeVar
 from jedi.inference.helpers import is_string
@@ -118,13 +118,17 @@ def infer_param(function_value, param, ignore_stars=False):
         tuple_ = builtin_from_name(inference_state, 'tuple')
         return ValueSet([GenericClass(
             tuple_,
-            generics=(values,),
+            TupleGenericManager((values,)),
         ) for c in values])
     elif param.star_count == 2:
         dct = builtin_from_name(inference_state, 'dict')
+        generics = (
+            ValueSet([builtin_from_name(inference_state, 'str')]),
+            values
+        )
         return ValueSet([GenericClass(
             dct,
-            generics=(ValueSet([builtin_from_name(inference_state, 'str')]), values),
+            TupleGenericManager(generics),
         ) for c in values])
         pass
     return values
@@ -325,7 +329,7 @@ def _infer_type_vars(annotation_value, value_set, is_class_value=False):
                             value_set.execute_annotation(),
                         )
                     )
-    elif isinstance(annotation_value, LazyGenericClass):
+    elif isinstance(annotation_value, GenericClass):
         name = annotation_value.py__name__()
         if name == 'Iterable':
             given = annotation_value.get_generics()

@@ -195,8 +195,12 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
 
     def _get_wrapped_value(self):
         from jedi.inference.gradual.base import GenericClass
+        from jedi.inference.gradual.generics import TupleGenericManager
         klass = compiled.builtin_from_name(self.inference_state, self.array_type)
-        c, = GenericClass(klass, self._get_generics()).execute_annotation()
+        c, = GenericClass(
+            klass,
+            TupleGenericManager(self._get_generics())
+        ).execute_annotation()
         return c
 
     def py__bool__(self):

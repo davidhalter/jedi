@@ -1,5 +1,10 @@
+"""
+This module is about generics, like the `int` in `List[int]`. It's not about
+the Generic class.
+"""
+
 from jedi.cache import memoize_method
-from jedi.inference.utils import to_list
+from jedi.inference.utils import to_tuple
 from jedi.inference.base_value import ValueSet
 from jedi.inference.value.iterable import SequenceLiteralValue
 from jedi.inference.helpers import is_string
@@ -36,39 +41,51 @@ class LazyGenericManager(object):
 
     @memoize_method
     def __getitem__(self, index):
-        return self._list()[index]()
+        return self._tuple()[index]()
 
     def __len__(self):
-        return len(self._list())
+        return len(self._tuple())
 
     @memoize_method
-    @to_list
-    def _list(self):
+    @to_tuple
+    def _tuple(self):
+        def lambda_scoping_in_for_loop_sucks(lazy_value):
+            return lambda: ValueSet(_resolve_forward_references(
+                self._context_of_index,
+                lazy_value.infer()
+            ))
+
         if isinstance(self._index_value, SequenceLiteralValue):
             for lazy_value in self._index_value.py__iter__(contextualized_node=None):
-                yield lambda: _resolve_forward_references(
-                    self._context_of_index,
-                    lazy_value.infer()
-                )
+                yield lambda_scoping_in_for_loop_sucks(lazy_value)
         else:
-            yield lambda: ValueSet([
-                _resolve_forward_references(self._context_of_index, self._index_value)
-            ])
+            yield lambda: ValueSet(_resolve_forward_references(
+                self._context_of_index,
+                ValueSet([self._index_value])
+            ))
 
-    def __iter__(self):
-        return iter(self._iterate())
+    @to_tuple
+    def to_tuple(self):
+        for callable_ in self._tuple():
+            yield callable_()
+
+    #def __iter__(self):
+    #    return iter(self._iterate())
 
 
-class ListGenericManager(object):
-    def __init__(self, lst):
-        self._lst = lst
+class TupleGenericManager(object):
+    def __init__(self, tup):
+        self._tuple = tup
 
     def __getitem__(self, index):
-        return self._lst[index]
+        return self._tuple[index]
 
     def __len__(self):
-        return len(self._lst)
+        return len(self._tuple)
 
-    def __iter__(self):
-        for value_set in self._lst:
-            yield lambda: value_set
+    #def __iter__(self):
+    #    for value_set in self._tuple:
+    #        yield lambda: value_set
+
+    def to_tuple(self):
+        return self._tuple

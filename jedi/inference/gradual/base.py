@@ -7,7 +7,7 @@ from jedi.inference.value.klass import ClassMixin
 from jedi.inference.utils import to_list
 from jedi.inference.names import AbstractNameDefinition, ValueName
 from jedi.inference.context import ClassContext
-from jedi.inference.gradual.generics import iter_over_arguments
+from jedi.inference.gradual.generics import TupleGenericManager
 
 
 class BaseTypingValue(Value):
@@ -149,7 +149,7 @@ class DefineGenericBase(LazyValueWrapper):
 
         return ValueSet([self._get_fixed_generics_cls()(
             self._wrapped_value,
-            generics=tuple(new_generics)
+            TupleGenericManager(tuple(new_generics))
         )])
 
     def is_same_class(self, other):
@@ -197,7 +197,7 @@ class _AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
 
     def py__call__(self, arguments):
         instance, = super(_AbstractAnnotatedClass, self).py__call__(arguments)
-        return ValueSet([InstanceWrapper(instance)])
+        return ValueSet([_InstanceWrapper(instance)])
 
     def _as_context(self):
         return AnnotatedClassContext(self)
@@ -205,30 +205,20 @@ class _AbstractAnnotatedClass(ClassMixin, DefineGenericBase):
     @to_list
     def py__bases__(self):
         for base in self._wrapped_value.py__bases__():
-            yield LazyAnnotatedBaseClass(self, base)
-
-
-class LazyGenericClass(_AbstractAnnotatedClass):
-    def __init__(self, class_value, index_value, context_of_index):
-        super(LazyGenericClass, self).__init__(class_value)
-        self._index_value = index_value
-        self._context_of_index = context_of_index
-
-    @inference_state_method_cache()
-    def get_generics(self):
-        return list(iter_over_arguments(self._index_value, self._context_of_index))
+            yield _LazyAnnotatedBaseClass(self, base)
 
 
 class GenericClass(_AbstractAnnotatedClass):
-    def __init__(self, class_value, generics):
+    def __init__(self, class_value, generics_manager):
         super(GenericClass, self).__init__(class_value)
-        self._generics = generics
+        self._generics_manager = generics_manager
 
+    @inference_state_method_cache()
     def get_generics(self):
-        return self._generics
+        return self._generics_manager.to_tuple()
 
 
-class LazyAnnotatedBaseClass(object):
+class _LazyAnnotatedBaseClass(object):
     def __init__(self, class_value, lazy_base_class):
         self._class_value = class_value
         self._lazy_base_class = lazy_base_class
@@ -241,7 +231,7 @@ class LazyAnnotatedBaseClass(object):
                 yield GenericClass.create_cached(
                     base.inference_state,
                     base._wrapped_value,
-                    tuple(self._remap_type_vars(base)),
+                    TupleGenericManager(tuple(self._remap_type_vars(base))),
                 )
             else:
                 yield base
@@ -265,7 +255,7 @@ class LazyAnnotatedBaseClass(object):
             yield new
 
 
-class InstanceWrapper(ValueWrapper):
+class _InstanceWrapper(ValueWrapper):
     def py__stop_iteration_returns(self):
         for cls in self._wrapped_value.class_value.py__mro__():
             if cls.py__name__() == 'Generator':

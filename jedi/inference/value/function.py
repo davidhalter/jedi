@@ -21,6 +21,7 @@ from jedi.inference.value import iterable
 from jedi import parser_utils
 from jedi.inference.parser_cache import get_yield_exprs
 from jedi.inference.helpers import values_from_qualified_names
+from jedi.inference.gradual.generics import TupleGenericManager
 
 
 class LambdaName(AbstractNameDefinition):
@@ -297,7 +298,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                 generics = (yield_values.py__class__(), NO_VALUES)
                 return ValueSet(
                     # In Python 3.6 AsyncGenerator is still a class.
-                    GenericClass(c, generics)
+                    GenericClass(c, TupleGenericManager(generics))
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
@@ -308,7 +309,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                 # Only the first generic is relevant.
                 generics = (return_values.py__class__(), NO_VALUES, NO_VALUES)
                 return ValueSet(
-                    GenericClass(c, generics) for c in async_classes
+                    GenericClass(c, TupleGenericManager(generics)) for c in async_classes
                 ).execute_annotation()
         else:
             if is_generator:
