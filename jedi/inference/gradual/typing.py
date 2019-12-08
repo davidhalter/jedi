@@ -15,7 +15,7 @@ from jedi.inference.arguments import repack_with_argument_clinic
 from jedi.inference.filters import FilterWrapper
 from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
-from jedi.inference.gradual.base import BaseTypingValue
+from jedi.inference.gradual.base import BaseTypingValue, BaseTypingValueWithGenerics
 from jedi.inference.gradual.type_var import TypeVarClass
 from jedi.inference.gradual.generics import LazyGenericManager
 
@@ -97,20 +97,7 @@ class TypingModuleFilterWrapper(FilterWrapper):
     name_wrapper_class = TypingModuleName
 
 
-class _WithIndexBase(BaseTypingValue):
-    def __init__(self, inference_state, parent_context, name, generics_manager):
-        super(_WithIndexBase, self).__init__(inference_state, parent_context, name)
-        self._generics_manager = generics_manager
-
-    def __repr__(self):
-        return '<%s: %s[%s]>' % (
-            self.__class__.__name__,
-            self._tree_name.value,
-            self._generics_manager,
-        )
-
-
-class TypingValueWithIndex(_WithIndexBase):
+class TypingValueWithIndex(BaseTypingValueWithGenerics):
     def execute_annotation(self):
         string_name = self._tree_name.value
 
@@ -132,7 +119,6 @@ class TypingValueWithIndex(_WithIndexBase):
 
         cls = globals()[string_name]
         return ValueSet([cls(
-            self.inference_state,
             self.parent_context,
             self._tree_name,
             generics_manager=self._generics_manager,
@@ -140,6 +126,13 @@ class TypingValueWithIndex(_WithIndexBase):
 
     def gather_annotation_classes(self):
         return ValueSet.from_sets(self._generics_manager.to_tuple())
+
+    def _create_instance_with_generics(self, generics_manager):
+        return TypingValueWithIndex(
+            self.parent_context,
+            self._tree_name,
+            generics_manager
+        )
 
 
 class ProxyTypingValue(BaseTypingValue):
@@ -219,15 +212,15 @@ class TypeAlias(LazyValueWrapper):
         return cls
 
 
-class Callable(_WithIndexBase):
+class Callable(BaseTypingValueWithGenerics):
     def py__call__(self, arguments):
         # The 0th index are the arguments.
         return self._generics_manager.get_index_and_execute(1)
 
 
 class Tuple(LazyValueWrapper):
-    def __init__(self, inference_state, parent_context, name, generics_manager):
-        self.inference_state = inference_state
+    def __init__(self, parent_context, name, generics_manager):
+        self.inference_state = parent_context.inference_state
         self.parent_context = parent_context
         self._generics_manager = generics_manager
 
@@ -267,11 +260,11 @@ class Tuple(LazyValueWrapper):
         return tuple_
 
 
-class Generic(_WithIndexBase):
+class Generic(BaseTypingValueWithGenerics):
     pass
 
 
-class Protocol(_WithIndexBase):
+class Protocol(BaseTypingValueWithGenerics):
     pass
 
 

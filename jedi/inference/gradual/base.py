@@ -10,43 +10,6 @@ from jedi.inference.context import ClassContext
 from jedi.inference.gradual.generics import TupleGenericManager
 
 
-class BaseTypingValue(Value):
-    def __init__(self, inference_state, parent_context, tree_name):
-        super(BaseTypingValue, self).__init__(inference_state, parent_context)
-        self._tree_name = tree_name
-
-    @property
-    def tree_node(self):
-        return self._tree_name
-
-    def get_filters(self, *args, **kwargs):
-        # TODO this is obviously wrong. Is it though?
-        class EmptyFilter(ClassFilter):
-            def __init__(self):
-                pass
-
-            def get(self, name, **kwargs):
-                return []
-
-            def values(self, **kwargs):
-                return []
-
-        yield EmptyFilter()
-
-    def py__class__(self):
-        # TODO this is obviously not correct, but at least gives us a class if
-        # we have none. Some of these objects don't really have a base class in
-        # typeshed.
-        return builtin_from_name(self.inference_state, u'object')
-
-    @property
-    def name(self):
-        return ValueName(self, self._tree_name)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
-
-
 class _BoundTypeVarName(AbstractNameDefinition):
     """
     This type var was bound to a certain type, e.g. int.
@@ -264,3 +227,68 @@ class _GenericInstanceWrapper(ValueWrapper):
             elif cls.py__name__() == 'Iterator':
                 return ValueSet([builtin_from_name(self.inference_state, u'None')])
         return self._wrapped_value.py__stop_iteration_returns()
+
+
+class _PseudoTreeNameClass(Value):
+    def __init__(self, parent_context, tree_name):
+        super(_PseudoTreeNameClass, self).__init__(
+            parent_context.inference_state,
+            parent_context
+        )
+        self._tree_name = tree_name
+
+    @property
+    def tree_node(self):
+        return self._tree_name
+
+    def get_filters(self, *args, **kwargs):
+        # TODO this is obviously wrong. Is it though?
+        class EmptyFilter(ClassFilter):
+            def __init__(self):
+                pass
+
+            def get(self, name, **kwargs):
+                return []
+
+            def values(self, **kwargs):
+                return []
+
+        yield EmptyFilter()
+
+    def py__class__(self):
+        # TODO this is obviously not correct, but at least gives us a class if
+        # we have none. Some of these objects don't really have a base class in
+        # typeshed.
+        return builtin_from_name(self.inference_state, u'object')
+
+    @property
+    def name(self):
+        return ValueName(self, self._tree_name)
+
+    def __repr__(self):
+        return '%s(%s)' % (self.__class__.__name__, self._tree_name.value)
+
+
+class BaseTypingValue(LazyValueWrapper):
+    def __init__(self, parent_context, tree_name):
+        self.inference_state = parent_context.inference_state
+        self.parent_context = parent_context
+        self._tree_name = tree_name
+
+    @property
+    def name(self):
+        return ValueName(self, self._tree_name)
+
+    def _get_wrapped_value(self):
+        return _PseudoTreeNameClass(self.parent_context, self._tree_name)
+
+
+class BaseTypingValueWithGenerics(DefineGenericBase):
+    def __init__(self, parent_context, tree_name, generics_manager):
+        super(BaseTypingValueWithGenerics, self).__init__(generics_manager)
+        self.inference_state = parent_context.inference_state
+        self.parent_context = parent_context
+        self._tree_name = tree_name
+
+    def _get_wrapped_value(self):
+        return _PseudoTreeNameClass(self.parent_context, self._tree_name)

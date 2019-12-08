@@ -49,8 +49,8 @@ class TypeVarClass(BaseTypingValue):
 
 
 class TypeVar(BaseTypingValue):
-    def __init__(self, inference_state, parent_context, tree_name, var_name, unpacked_args):
-        super(TypeVar, self).__init__(inference_state, parent_context, tree_name)
+    def __init__(self, parent_context, tree_name, var_name, unpacked_args):
+        super(TypeVar, self).__init__(parent_context, tree_name)
         self._var_name = var_name
 
         self._constraints_lazy_values = []
