@@ -219,22 +219,13 @@ class TypeAlias(LazyValueWrapper):
         return cls
 
 
-class _GetItemMixin(object):
-    def _get_getitem_values(self, index):
-        try:
-            return self._generics_manager[index]
-        except IndexError:
-            debug.warning('No param #%s found for annotation %s', index, self._generics_manager)
-            return NO_VALUES
-
-
-class Callable(_WithIndexBase, _GetItemMixin):
+class Callable(_WithIndexBase):
     def py__call__(self, arguments):
         # The 0th index are the arguments.
-        return self._get_getitem_values(1).execute_annotation()
+        return self._generics_manager.get_index_and_execute(1)
 
 
-class Tuple(LazyValueWrapper, _GetItemMixin):
+class Tuple(LazyValueWrapper):
     def __init__(self, inference_state, parent_context, name, generics_manager):
         self.inference_state = inference_state
         self.parent_context = parent_context
@@ -247,24 +238,24 @@ class Tuple(LazyValueWrapper, _GetItemMixin):
 
     def py__simple_getitem__(self, index):
         if self._is_homogenous():
-            return self._get_getitem_values(0).execute_annotation()
+            return self._generics_manager.get_index_and_execute(0)
         else:
             if isinstance(index, int):
-                return self._get_getitem_values(index).execute_annotation()
+                return self._generics_manager.get_index_and_execute(index)
 
             debug.dbg('The getitem type on Tuple was %s' % index)
             return NO_VALUES
 
     def py__iter__(self, contextualized_node=None):
         if self._is_homogenous():
-            yield LazyKnownValues(self._get_getitem_values(0).execute_annotation())
+            yield LazyKnownValues(self._generics_manager.get_index_and_execute(0))
         else:
             for v in self._generics_manager.to_tuple():
                 yield LazyKnownValues(v.execute_annotation())
 
     def py__getitem__(self, index_value_set, contextualized_node):
         if self._is_homogenous():
-            return self._get_getitem_values(0).execute_annotation()
+            return self._generics_manager.get_index_and_execute(0)
 
         return ValueSet.from_sets(
             self._generics_manager.to_tuple()
@@ -276,11 +267,11 @@ class Tuple(LazyValueWrapper, _GetItemMixin):
         return tuple_
 
 
-class Generic(_WithIndexBase, _GetItemMixin):
+class Generic(_WithIndexBase):
     pass
 
 
-class Protocol(_WithIndexBase, _GetItemMixin):
+class Protocol(_WithIndexBase):
     pass
 
 
