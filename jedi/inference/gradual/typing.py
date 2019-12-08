@@ -18,7 +18,7 @@ from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import BaseTypingValue
 from jedi.inference.gradual.type_var import TypeVarClass
-from jedi.inference.gradual.base import iter_over_arguments
+from jedi.inference.gradual.generics import iter_over_arguments
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
