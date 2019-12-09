@@ -56,8 +56,7 @@ from jedi.plugins import plugin_manager
 
 class ClassName(TreeNameDefinition):
     def __init__(self, class_value, tree_name, name_context, apply_decorators):
-        super(ClassName, self).__init__(class_value.as_context(), tree_name)
-        self._name_context = name_context
+        super(ClassName, self).__init__(name_context, tree_name)
         self._apply_decorators = apply_decorators
         self._class_value = class_value
 
@@ -66,7 +65,7 @@ class ClassName(TreeNameDefinition):
         # We're using a different value to infer, so we cannot call super().
         from jedi.inference.syntax_tree import tree_name_to_values
         inferred = tree_name_to_values(
-            self.parent_context.inference_state, self._name_context, self.tree_name)
+            self.parent_context.inference_state, self.parent_context, self.tree_name)
 
         for result_value in inferred:
             if self._apply_decorators:

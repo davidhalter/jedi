@@ -3,12 +3,14 @@
 
 from textwrap import dedent
 from inspect import cleandoc
+import os
 
 import pytest
 
 import jedi
 from jedi import __doc__ as jedi_doc
 from jedi.inference.compiled import CompiledValueName
+from ..helpers import get_example_dir
 
 
 def test_is_keyword(Script):
@@ -473,3 +475,25 @@ def test_execute(Script, code, description):
     else:
         d, = definitions
         assert d.description == description
+
+
+@pytest.mark.parametrize('goto_assignment', [False, True, None])
+@pytest.mark.parametrize(
+    'code, name, file_name', [
+        ('from pkg import Foo; Foo.foo', 'foo', '__init__.py'),
+        ('from pkg import Foo; Foo().foo', 'foo', '__init__.py'),
+        ('from pkg import Foo; Foo.bar', 'bar', 'module.py'),
+        ('from pkg import Foo; Foo().bar', 'bar', 'module.py'),
+    ])
+def test_inheritance_module_path(Script, goto_assignment, code, name, file_name):
+    base_path = os.path.join(get_example_dir('inheritance'), 'pkg')
+    whatever_path = os.path.join(base_path, 'NOT_EXISTING.py')
+
+    script = Script(code, path=whatever_path)
+    if goto_assignment is None:
+        func, = script.goto_definitions()
+    else:
+        func, = script.goto_assignments(follow_imports=goto_assignment)
+    assert func.type == 'function'
+    assert func.name == name
+    assert func.module_path == os.path.join(base_path, file_name)
