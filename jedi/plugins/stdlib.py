@@ -363,7 +363,7 @@ class ClassMethodGet(ValueWrapper):
         self._function = function
 
     def get_signatures(self):
-        return self._function.get_signatures()
+        return [sig.bind(self._function) for sig in self._function.get_signatures()]
 
     def py__call__(self, arguments):
         return self._function.execute(ClassMethodArguments(self._class, arguments))

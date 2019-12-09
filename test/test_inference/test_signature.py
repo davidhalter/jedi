@@ -73,8 +73,8 @@ d = functools.partial()
         ('def f(x,/,y,* ,z): pass\n f(', 'f(x, /, y, *, z)'),
         ('def f(a, /, *, x=3, **kwargs): pass\n f(', 'f(a, /, *, x=3, **kwargs)'),
 
-        (classmethod_code + 'X.x(', 'x(cls, a, b)'),
-        (classmethod_code + 'X().x(', 'x(cls, a, b)'),
+        (classmethod_code + 'X.x(', 'x(a, b)'),
+        (classmethod_code + 'X().x(', 'x(a, b)'),
         (classmethod_code + 'X.static(', 'static(a, b)'),
         (classmethod_code + 'X().static(', 'static(a, b)'),
 
