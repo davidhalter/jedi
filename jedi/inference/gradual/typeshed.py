@@ -163,6 +163,7 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
     if len(import_names) == 1:
         # foo-stubs
         for p in sys_path:
+            p = cast_path(p)
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
             m = _try_to_load_stub_from_file(
                 inference_state,
