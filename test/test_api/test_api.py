@@ -10,6 +10,7 @@ import pytest
 from pytest import raises
 from parso import cache
 
+from jedi._compatibility import unicode
 from jedi import preload_module
 from jedi.inference.gradual import typeshed
 
@@ -311,3 +312,8 @@ def test_goto_follow_builtin_imports(Script):
     assert d.in_builtin_module() is True
     d, = s.goto_assignments(follow_imports=True, follow_builtin_imports=True)
     assert d.in_builtin_module() is True
+
+
+def test_docstrings_for_completions(Script):
+    for c in Script('').completions():
+        assert isinstance(c.docstring(), (str, unicode))
