@@ -196,6 +196,13 @@ def global_as_import():
     globals.foo
 
 
+global r
+r = r[r]
+if r:
+    r += r + 2
+    #? int()
+    r
+
 # -----------------
 # within docstrs
 # -----------------

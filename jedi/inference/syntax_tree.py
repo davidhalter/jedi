@@ -686,6 +686,11 @@ def tree_name_to_values(inference_state, context, tree_name):
         node = tree_name.parent
         if node.type == 'global_stmt':
             c = context.create_context(tree_name)
+            if c.is_module():
+                # In case we are already part of the module, there is no point
+                # in looking up the global statement anymore, because it's not
+                # valid at that point anyway.
+                return NO_VALUES
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             filter = next(c.get_filters())
