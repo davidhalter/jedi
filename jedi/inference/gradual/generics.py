@@ -74,6 +74,9 @@ class LazyGenericManager(_AbstractGenericManager):
                 return True
         return False
 
+    def __repr__(self):
+        return '<LazyG>[%s]' % (', '.join(repr(x) for x in self.to_tuple()))
+
 
 class TupleGenericManager(_AbstractGenericManager):
     def __init__(self, tup):
@@ -90,3 +93,6 @@ class TupleGenericManager(_AbstractGenericManager):
 
     def is_homogenous_tuple(self):
         return False
+
+    def __repr__(self):
+        return '<TupG>[%s]' % (', '.join(repr(x) for x in self.to_tuple()))

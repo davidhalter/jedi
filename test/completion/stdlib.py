@@ -329,3 +329,24 @@ X.attr_y.value
 X().name
 #? float()
 X().attr_x.attr_y.value
+
+
+# -----------------
+# functools Python 3.8
+# -----------------
+
+# python >= 3.8
+
+@functools.lru_cache
+def x() -> int: ...
+@functools.lru_cache()
+def y() -> float: ...
+@functools.lru_cache(8)
+def z() -> str: ...
+
+#? int()
+x()
+#? float()
+y()
+#? str()
+z()

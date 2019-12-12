@@ -216,8 +216,19 @@ class TypeAlias(LazyValueWrapper):
 
 class Callable(BaseTypingValueWithGenerics):
     def py__call__(self, arguments):
+        """
+            def x() -> Callable[[Callable[..., _T]], _T]: ...
+        """
         # The 0th index are the arguments.
-        return self._generics_manager.get_index_and_execute(1)
+        try:
+            param_values = self._generics_manager[0]
+            result_values = self._generics_manager[1]
+        except IndexError:
+            debug.warning('Callable[...] defined without two arguments')
+            return NO_VALUES
+        else:
+            from jedi.inference.gradual.annotation import infer_return_for_callable
+            return infer_return_for_callable(arguments, param_values, result_values)
 
 
 class Tuple(LazyValueWrapper):

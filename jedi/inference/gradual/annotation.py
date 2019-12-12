@@ -277,6 +277,39 @@ def infer_type_vars_for_execution(function, arguments, annotation_dict):
     return annotation_variable_results
 
 
+def infer_return_for_callable(arguments, param_values, result_values):
+    result = NO_VALUES
+    for pv in param_values:
+        if pv.array_type == 'list':
+            type_var_dict = infer_type_vars_for_callable(arguments, pv.py__iter__())
+
+            result |= ValueSet.from_sets(
+                v.define_generics(type_var_dict)
+                if isinstance(v, (DefineGenericBase, TypeVar)) else ValueSet({v})
+                for v in result_values
+            ).execute_annotation()
+    return result
+
+
+def infer_type_vars_for_callable(arguments, lazy_params):
+    """
+    Infers type vars for the Calllable class:
+
+        def x() -> Callable[[Callable[..., _T]], _T]: ...
+    """
+    annotation_variable_results = {}
+    for (_, lazy_value), lazy_callable_param in zip(arguments.unpack(), lazy_params):
+        callable_param_values = lazy_callable_param.infer()
+        # Infer unknown type var
+        actual_value_set = lazy_value.infer()
+        for v in callable_param_values:
+            _merge_type_var_dicts(
+                annotation_variable_results,
+                _infer_type_vars(v, actual_value_set),
+            )
+    return annotation_variable_results
+
+
 def _merge_type_var_dicts(base_dict, new_dict):
     for type_var_name, values in new_dict.items():
         if values:
@@ -419,14 +452,19 @@ def find_unknown_type_vars(context, node):
                 for subscript_node in _unpack_subscriptlist(trailer.children[1]):
                     check_node(subscript_node)
         else:
-            type_var_set = context.infer_node(node)
-            for type_var in type_var_set:
-                if isinstance(type_var, TypeVar) and type_var not in found:
-                    found.append(type_var)
+            found[:] = _filter_type_vars(context.infer_node(node), found)
 
     found = []  # We're not using a set, because the order matters.
     check_node(node)
     return found
+
+
+def _filter_type_vars(value_set, found=()):
+    new_found = list(found)
+    for type_var in value_set:
+        if isinstance(type_var, TypeVar) and type_var not in found:
+            new_found.append(type_var)
+    return new_found
 
 
 def _unpack_subscriptlist(subscriptlist):

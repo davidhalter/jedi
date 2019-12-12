@@ -420,6 +420,19 @@ xxx([0])[1]
 #?
 xxx([0])[2]
 
+def call_pls() -> typing.Callable[[TYPE_VARX], TYPE_VARX]: ...
+#? int()
+call_pls()(1)
+
+def call2_pls() -> typing.Callable[[str, typing.Callable[[int], TYPE_VARX]], TYPE_VARX]: ...
+#? float()
+call2_pls('')(1, lambda x: 3.0)
+
+def call3_pls() -> typing.Callable[[typing.Callable[[int], TYPE_VARX]], typing.List[TYPE_VARX]]: ...
+def the_callable() -> float: ...
+#? float()
+call3_pls()(the_callable)[0]
+
 # -------------------------
 # TYPE_CHECKING
 # -------------------------
