@@ -213,6 +213,7 @@ def test_property_warnings(stacklevel, allow_unsafe_getattr):
     _assert_interpreter_complete('foo.prop.uppe', locals(), expected)
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize('class_is_findable', [False, True])
 def test__getattr__completions(allow_unsafe_getattr, class_is_findable):
     class CompleteGetattr(object):
