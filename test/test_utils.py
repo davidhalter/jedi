@@ -80,7 +80,7 @@ class TestSetupReadline(unittest.TestCase):
         difference = {
             x for x in difference
             if all(not x.startswith('from os import ' + s)
-                   for s in ['_', 'O_', 'EX_', 'MFD_', 'SF_'])
+                   for s in ['_', 'O_', 'EX_', 'MFD_', 'SF_', 'ST_'])
         }
         # There are quite a few differences, because both Windows and Linux
         # (posix and nt) librariesare included.
