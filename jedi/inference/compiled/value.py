@@ -399,7 +399,7 @@ class CompiledObjectFilter(AbstractFilter):
     def get(self, name):
         return self._get(
             name,
-            lambda name: self.compiled_object.access_handle.is_allowed_getattr(name),
+            lambda name, unsafe: self.compiled_object.access_handle.is_allowed_getattr(name, unsafe),
             lambda name: name in self.compiled_object.access_handle.dir(),
             check_has_attribute=True
         )
@@ -411,12 +411,18 @@ class CompiledObjectFilter(AbstractFilter):
         # Always use unicode objects in Python 2 from here.
         name = force_unicode(name)
 
-        has_attribute, is_descriptor = allowed_getattr_callback(name)
+        if self._inference_state.allow_descriptor_getattr:
+            pass
+
+        has_attribute, is_descriptor = allowed_getattr_callback(
+            name,
+            unsafe=self._inference_state.allow_descriptor_getattr
+        )
         if check_has_attribute and not has_attribute:
             return []
 
-        if (is_descriptor and not self._inference_state.allow_descriptor_getattr) \
-                or not has_attribute:
+        if (is_descriptor or not has_attribute) \
+                and not self._inference_state.allow_descriptor_getattr:
             return [self._get_cached_name(name, is_empty=True)]
 
         if self.is_instance and not in_dir_callback(name):
@@ -434,10 +440,15 @@ class CompiledObjectFilter(AbstractFilter):
         from jedi.inference.compiled import builtin_from_name
         names = []
         needs_type_completions, dir_infos = self.compiled_object.access_handle.get_dir_infos()
+        # We could use `unsafe` here as well, especially as a parameter to
+        # get_dir_infos. But this would lead to a lot of property executions
+        # that are probably not wanted. The drawback for this is that we
+        # have a different name for `get` and `values`. For `get` we always
+        # execute.
         for name in dir_infos:
             names += self._get(
                 name,
-                lambda name: dir_infos[name],
+                lambda name, unsafe: dir_infos[name],
                 lambda name: name in dir_infos,
             )
 

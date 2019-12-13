@@ -200,7 +200,7 @@ def test_getitem_side_effects():
 
 @pytest.mark.parametrize('stacklevel', [1, 2])
 @pytest.mark.filterwarnings("error")
-def test_property_warnings(stacklevel):
+def test_property_warnings(stacklevel, allow_unsafe_getattr):
     class Foo3:
         @property
         def prop(self):
@@ -209,16 +209,50 @@ def test_property_warnings(stacklevel):
             return ''
 
     foo = Foo3()
-    _assert_interpreter_complete('foo.prop.uppe', locals(), ['upper'])
+    expected = ['upper'] if allow_unsafe_getattr else []
+    _assert_interpreter_complete('foo.prop.uppe', locals(), expected)
+
+
+@pytest.mark.parametrize('class_is_findable', [False, True])
+def test__getattr__completions(allow_unsafe_getattr, class_is_findable):
+    class CompleteGetattr(object):
+        def __getattr__(self, name):
+            if name == 'foo':
+                return self
+            if name == 'fbar':
+                return ''
+            raise AttributeError(name)
+
+        def __dir__(self):
+            return ['foo', 'fbar'] + object.__dir__(self)
+
+    if not class_is_findable:
+        CompleteGetattr.__name__ = "something_somewhere"
+    namespace = {'c': CompleteGetattr()}
+    expected = ['foo', 'fbar']
+    _assert_interpreter_complete('c.f', namespace, expected)
+
+    # Completions don't work for class_is_findable, because __dir__ is checked
+    # for interpreter analysis, but if the static analysis part tries to help
+    # it will not work. However static analysis is pretty good and understands
+    # how gettatr works (even the ifs/comparisons).
+    if not allow_unsafe_getattr:
+        expected = []
+    _assert_interpreter_complete('c.foo.f', namespace, expected)
+    _assert_interpreter_complete('c.foo.foo.f', namespace, expected)
+    _assert_interpreter_complete('c.foo.uppe', namespace, [])
+
+    expected_int = ['upper'] if allow_unsafe_getattr or class_is_findable else []
+    _assert_interpreter_complete('c.foo.fbar.uppe', namespace, expected_int)
 
 
 @pytest.fixture(params=[False, True])
-def allow_descriptor_access_or_not(request, monkeypatch):
+def allow_unsafe_getattr(request, monkeypatch):
     monkeypatch.setattr(jedi.Interpreter, '_allow_descriptor_getattr_default', request.param)
     return request.param
 
 
-def test_property_error_oldstyle(allow_descriptor_access_or_not):
+def test_property_error_oldstyle(allow_unsafe_getattr):
     lst = []
     class Foo3:
         @property
@@ -230,14 +264,14 @@ def test_property_error_oldstyle(allow_descriptor_access_or_not):
     _assert_interpreter_complete('foo.bar', locals(), ['bar'])
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
 
-    if allow_descriptor_access_or_not:
+    if allow_unsafe_getattr:
         assert lst == [1, 1]
     else:
         # There should not be side effects
         assert lst == []
 
 
-def test_property_error_newstyle(allow_descriptor_access_or_not):
+def test_property_error_newstyle(allow_unsafe_getattr):
     lst = []
     class Foo3(object):
         @property
@@ -249,7 +283,7 @@ def test_property_error_newstyle(allow_descriptor_access_or_not):
     _assert_interpreter_complete('foo.bar', locals(), ['bar'])
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
 
-    if allow_descriptor_access_or_not:
+    if allow_unsafe_getattr:
         assert lst == [1, 1]
     else:
         # There should not be side effects
@@ -367,7 +401,7 @@ def test_repr_execution_issue():
     assert d.type == 'instance'
 
 
-def test_dir_magic_method():
+def test_dir_magic_method(allow_unsafe_getattr):
     class CompleteAttrs(object):
         def __getattr__(self, name):
             if name == 'foo':
@@ -392,7 +426,12 @@ def test_dir_magic_method():
     assert 'bar' in names
 
     foo = [c for c in completions if c.name == 'foo'][0]
-    assert foo.infer() == []
+    if allow_unsafe_getattr:
+        inst, = foo.infer()
+        assert inst.name == 'int'
+        assert inst.type == 'instance'
+    else:
+        assert foo.infer() == []
 
 
 def test_name_not_findable():

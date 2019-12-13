@@ -336,8 +336,23 @@ class DirectObjectAccess(object):
         except TypeError:
             return False
 
-    def is_allowed_getattr(self, name):
+    def is_allowed_getattr(self, name, unsafe=False):
         # TODO this API is ugly.
+        if unsafe:
+            # Unsafe is mostly used to check for __getattr__/__getattribute__.
+            # getattr_static works for properties, but the underscore methods
+            # are just ignored (because it's safer and avoids more code
+            # execution). See also GH #1378.
+
+            # Avoid warnings, see comment in the next function.
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("always")
+                try:
+                    return hasattr(self._obj, name), False
+                except Exception:
+                    # Obviously has an attribute (propably a property) that
+                    # gets executed, so just avoid all exceptions here.
+                    return False, False
         try:
             attr, is_get_descriptor = getattr_static(self._obj, name)
         except AttributeError:
@@ -490,7 +505,6 @@ class DirectObjectAccess(object):
         Used to return a couple of infos that are needed when accessing the sub
         objects of an objects
         """
-        # TODO is_allowed_getattr might raise an AttributeError
         tuples = dict(
             (force_unicode(name), self.is_allowed_getattr(name))
             for name in self.dir()
