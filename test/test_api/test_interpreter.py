@@ -2,6 +2,7 @@
 Tests of ``jedi.api.Interpreter``.
 """
 import sys
+import warnings
 
 import pytest
 
@@ -195,6 +196,20 @@ def test_getitem_side_effects():
 
     foo = Foo2()
     _assert_interpreter_complete('foo["asdf"].upper', locals(), ['upper'])
+
+
+@pytest.mark.parametrize('stacklevel', [1, 2])
+@pytest.mark.filterwarnings("error")
+def test_property_warnings(stacklevel):
+    class Foo3:
+        @property
+        def prop(self):
+            # Possible side effects here, should therefore not call this.
+            warnings.warn("foo", DeprecationWarning, stacklevel=stacklevel)
+            return ''
+
+    foo = Foo3()
+    _assert_interpreter_complete('foo.prop.uppe', locals(), ['upper'])
 
 
 @pytest.fixture(params=[False, True])

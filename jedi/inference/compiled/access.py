@@ -4,6 +4,7 @@ import types
 import sys
 import operator as op
 from collections import namedtuple
+import warnings
 
 from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode
@@ -350,7 +351,11 @@ class DirectObjectAccess(object):
 
     def getattr_paths(self, name, default=_sentinel):
         try:
-            return_obj = getattr(self._obj, name)
+            # Make sure no warnings are printed here, this is autocompletion,
+            # warnings should not be shown. See also GH #1383.
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("always")
+                return_obj = getattr(self._obj, name)
         except Exception as e:
             if default is _sentinel:
                 if isinstance(e, AttributeError):
