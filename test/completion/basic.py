@@ -341,3 +341,19 @@ with open('') as f1, open('') as f2:
     f1.closed
     #? ['closed']
     f2.closed
+
+
+class Foo():
+    def __enter__(self):
+        return ''
+
+#? 14 str()
+with Foo() as f3:
+    #? str()
+    f3
+#! 14 ['with Foo() as f3: f3']
+with Foo() as f3:
+    f3
+#? 6 Foo
+with Foo() as f3:
+    f3

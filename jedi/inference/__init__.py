@@ -76,7 +76,7 @@ from jedi.inference.base_value import ContextualizedNode, \
     ValueSet, iterate_values
 from jedi.inference.value import ClassValue, FunctionValue
 from jedi.inference.syntax_tree import infer_expr_stmt, \
-    check_tuple_assignments
+    check_tuple_assignments, tree_name_to_values
 from jedi.inference.imports import follow_error_node_imports_if_possible
 from jedi.plugins import plugin_manager
 
@@ -170,6 +170,8 @@ class InferenceState(object):
                 return check_tuple_assignments(n, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
+            if type_ == 'with_stmt':
+                return tree_name_to_values(self, context, name)
         else:
             result = follow_error_node_imports_if_possible(context, name)
             if result is not None:
