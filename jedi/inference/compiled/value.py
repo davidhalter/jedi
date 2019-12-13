@@ -290,6 +290,8 @@ class CompiledName(AbstractNameDefinition):
 
     def _get_qualified_names(self):
         parent_qualified_names = self.parent_context.get_qualified_names()
+        if parent_qualified_names is None:
+            return None
         return parent_qualified_names + (self.string_name,)
 
     def __repr__(self):
