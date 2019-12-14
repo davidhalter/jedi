@@ -561,3 +561,17 @@ def test_type_var():
     x = typing.TypeVar('myvar')
     def_, = jedi.Interpreter('x', [locals()]).goto_definitions()
     assert def_.name == 'TypeVar'
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize('class_is_findable', [False, True])
+def test_param_annotation_completion(class_is_findable):
+    class Foo:
+        bar = 3
+
+    if not class_is_findable:
+        Foo.__name__ = 'asdf'
+
+    code = 'def CallFoo(x: Foo):\n x.ba'
+    def_, = jedi.Interpreter(code, [locals()]).completions()
+    assert def_.name == 'bar'
