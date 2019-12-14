@@ -190,6 +190,10 @@ def huhu(db):
     #? sqlite3.Connection()
     db
 
+with sqlite3.connect() as c:
+    #? sqlite3.Connection()
+    c
+
 # -----------------
 # hashlib
 # -----------------
