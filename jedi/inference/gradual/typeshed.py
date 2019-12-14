@@ -44,7 +44,7 @@ def _create_stub_map(directory):
                 if os.path.isfile(init):
                     yield entry, init
             elif entry.endswith('.pyi') and os.path.isfile(path):
-                name = entry.rstrip('.pyi')
+                name = entry[:-4]
                 if name != '__init__':
                     yield name, path
 
