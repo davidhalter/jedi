@@ -67,6 +67,7 @@ from parso import python_bytes_to_unicode
 from jedi.file_io import FileIO
 
 from jedi import debug
+from jedi import settings
 from jedi.inference import imports
 from jedi.inference import recursion
 from jedi.inference.cache import inference_state_function_cache
@@ -105,7 +106,6 @@ class InferenceState(object):
         self.allow_descriptor_getattr = False
 
         self.reset_recursion_limitations()
-        self.allow_different_encoding = True
 
     def import_module(self, import_names, parent_module_value=None,
                       sys_path=None, prefer_stubs=True):
@@ -181,12 +181,15 @@ class InferenceState(object):
 
     def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
                            use_latest_grammar=False, file_io=None, **kwargs):
-        if self.allow_different_encoding:
-            if code is None:
-                if file_io is None:
-                    file_io = FileIO(path)
-                code = file_io.read()
-            code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
+        if code is None:
+            if file_io is None:
+                file_io = FileIO(path)
+            code = file_io.read()
+        # We cannot just use parso, because it doesn't use errors='replace'.
+        code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
+
+        if len(code) > settings._cropped_file_size:
+            code = code[:settings._cropped_file_size]
 
         grammar = self.latest_grammar if use_latest_grammar else self.grammar
         return grammar.parse(code=code, path=path, file_io=file_io, **kwargs), code

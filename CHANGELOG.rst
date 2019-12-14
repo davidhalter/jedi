@@ -3,12 +3,14 @@
 Changelog
 ---------
 
-0.15.2 (2019-08-13)
+0.15.2 (2019--)
 +++++++++++++++++++
 
 - Call signatures are now detected a lot better
 - Many small Bugfixes
 - A big refactoring around contexts/values
+- Files bigger than one MB (about 20kLOC) get cropped to avoid getting
+  stuck completely.
 
 0.15.1 (2019-08-13)
 +++++++++++++++++++

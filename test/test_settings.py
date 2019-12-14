@@ -32,3 +32,20 @@ def test_additional_dynamic_modules(monkeypatch, Script):
         ['/foo/bar/jedi_not_existing_file.py']
     )
     assert not Script('def some_func(f):\n f.').completions()
+
+
+def test_cropped_file_size(monkeypatch, names, Script):
+    code = 'class Foo(): pass\n'
+    monkeypatch.setattr(
+        settings,
+        '_cropped_file_size',
+        len(code)
+    )
+
+    foo, = names(code + code)
+    assert foo.line == 1
+
+    # It should just not crash if we are outside of the cropped range.
+    script = Script(code + code + 'Foo')
+    assert not script.goto_definitions()
+    assert 'Foo' in [c.name for c in script.completions()]
