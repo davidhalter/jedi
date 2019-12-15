@@ -391,15 +391,16 @@ class DirectObjectAccess(object):
         except AttributeError:
             pass
         else:
-            try:
-                __import__(module)
-                # For some modules like _sqlite3, the __module__ for classes is
-                # different, in this case it's sqlite3. So we have to try to
-                # load that "original" module, because it's not loaded yet. If
-                # we don't do that, we don't really have a "parent" module and
-                # we would fall back to builtins.
-            except ImportError:
-                pass
+            if module is not None:
+                try:
+                    __import__(module)
+                    # For some modules like _sqlite3, the __module__ for classes is
+                    # different, in this case it's sqlite3. So we have to try to
+                    # load that "original" module, because it's not loaded yet. If
+                    # we don't do that, we don't really have a "parent" module and
+                    # we would fall back to builtins.
+                except ImportError:
+                    pass
 
         module = inspect.getmodule(return_obj)
         if module is None:

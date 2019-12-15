@@ -28,12 +28,12 @@ from test.helpers import root_dir
          {'goto_has_python': True}],
 
         ['from keyword import kwlist; kwlist', 'typing.Sequence', True, True,
-         {'full_name': 'keyword.kwlist'}],
+         {'goto_full_name': 'keyword.kwlist'}],
         ['from keyword import kwlist', 'typing.Sequence', True, True,
-         {'full_name': 'keyword.kwlist'}],
+         {'goto_full_name': 'keyword.kwlist'}],
 
         ['from socket import AF_INET', 'socket.AddressFamily', True, False,
-         {'full_name': 'socket.AF_INET'}],
+         {'goto_full_name': 'socket.AF_INET'}],
         ['from socket import socket', 'socket.socket', True, True, {}],
 
         ['import with_stub', 'with_stub', True, True, {}],

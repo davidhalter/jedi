@@ -288,26 +288,11 @@ class Importer(object):
         if not self.import_path or not self._infer_possible:
             return NO_VALUES
 
-        import_names = tuple(
-            force_unicode(i.value if isinstance(i, tree.Name) else i)
-            for i in self.import_path
-        )
         sys_path = self._sys_path_with_modifications(is_completion=False)
 
-        value_set = [None]
-        for i, name in enumerate(self.import_path):
-            value_set = ValueSet.from_sets([
-                self._inference_state.import_module(
-                    import_names[:i+1],
-                    parent_module_value,
-                    sys_path
-                ) for parent_module_value in value_set
-            ])
-            if not value_set:
-                message = 'No module named ' + '.'.join(import_names)
-                _add_error(self._module_context, name, message)
-                return NO_VALUES
-        return value_set
+        return import_module_by_names(
+            self._inference_state, self.import_path, sys_path, self._module_context
+        )
 
     def _get_module_names(self, search_path=None, in_module=None):
         """
@@ -379,6 +364,36 @@ class Importer(object):
                 # This is just the list of global imports.
                 names += self._get_module_names()
         return names
+
+
+def import_module_by_names(inference_state, import_names, sys_path=None,
+                           module_context=None, prefer_stubs=True):
+    if sys_path is None:
+        sys_path = inference_state.get_sys_path()
+
+    str_import_names = tuple(
+        force_unicode(i.value if isinstance(i, tree.Name) else i)
+        for i in import_names
+    )
+    value_set = [None]
+    for i, name in enumerate(import_names):
+        value_set = ValueSet.from_sets([
+            import_module(
+                inference_state,
+                str_import_names[:i+1],
+                parent_module_value,
+                sys_path,
+                prefer_stubs=prefer_stubs,
+            ) for parent_module_value in value_set
+        ])
+        if not value_set:
+            message = 'No module named ' + '.'.join(str_import_names)
+            if module_context is not None:
+                _add_error(module_context, name, message)
+            else:
+                debug.warning(message)
+            return NO_VALUES
+    return value_set
 
 
 @plugin_manager.decorate()
