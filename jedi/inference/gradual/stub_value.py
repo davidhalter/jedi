@@ -51,6 +51,16 @@ class StubModuleValue(ModuleValue):
         for f in filters:
             yield f
 
+    def _as_context(self):
+        return StubModuleContext(self)
+
+
+class StubModuleContext(ModuleContext):
+    def get_filters(self, until_position=None, origin_scope=None):
+        # Make sure to ignore the position, because positions are not relevant
+        # for stubs.
+        return super(StubModuleContext, self).get_filters(origin_scope=origin_scope)
+
 
 class TypingModuleWrapper(StubModuleValue):
     def get_filters(self, *args, **kwargs):

@@ -38,3 +38,19 @@ def test_conversion_of_stub_only(Script):
     assert d2.line == d1.line
     assert d2.column == d1.column
     assert d2.name == 'in_stub_only'
+
+
+def test_goto_on_file(Script):
+    project = Project(os.path.join(root_dir, 'test', 'completion', 'stub_folder'))
+    script = Script('import stub_only; stub_only.Foo', _project=project)
+    d1, = script.goto_assignments()
+    v, = d1._name.infer()
+    foo, bar, obj = v.py__mro__()
+    assert foo.py__name__() == 'Foo'
+    assert bar.py__name__() == 'Bar'
+    assert obj.py__name__() == 'object'
+
+    # Make sure we go to Bar, because Foo is a bit before: `class Foo(Bar):`
+    script = Script(path=d1.module_path, line=d1.line, column=d1.column + 4, _project=project)
+    d2, = script.goto_assignments()
+    assert d2.name == 'Bar'
