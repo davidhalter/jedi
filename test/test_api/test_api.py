@@ -13,6 +13,7 @@ from parso import cache
 from jedi._compatibility import unicode
 from jedi import preload_module
 from jedi.inference.gradual import typeshed
+from test.helpers import test_dir
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, EoL")
@@ -325,43 +326,16 @@ def test_fuzzy_completion(Script):
             'upper'] == [comp.name for comp in script.completions(fuzzy=True)]
 
 
-@pytest.mark.skipif(sys.version_info < (3, 3),
-                    reason="requires python3.3 or higher")
-def test_math_fuzzy_completion(Script):
+def test_math_fuzzy_completion(Script, environment):
     script = Script('import math\nmath.og')
-    assert ['copysign', 'log', 'log10', 'log1p',
-            'log2'] == [comp.name for comp in script.completions(fuzzy=True)]
-
-@pytest.mark.skipif(sys.version_info < (3, 3),
-                    reason="requires python3.3 or higher")
-def test_file_fuzzy_completion(Script, tmp_path):
-    folder0 = tmp_path / "inference"
-    folder0.mkdir()
-    file0_path0 = folder0 / "sys_path.py"
-    file0_path0.write_text('\n')
-    file0_path1 = folder0 / "syntax_tree.py"
-    file0_path1.write_text('\n')
-    script = Script('"{}/yt'.format(folder0))
-    assert ['syntax_tree.py"', 'sys_path.py"'] \
-        == [comp.name for comp in script.completions(fuzzy=True)]
+    expected = ['copysign', 'log', 'log10', 'log1p']
+    if environment.version_info.major >= 3:
+        expected.append('log2')
+    assert expected == [comp.name for comp in script.completions(fuzzy=True)]
 
 
-@pytest.mark.skipif(sys.version_info > (2, 7),
-                    reason="requires python3.3 or higher")
-def test_math_fuzzy_completion(Script):
-    script = Script('import math\nmath.og')
-    assert ['copysign', 'log', 'log10',
-            'log1p'] == [comp.name for comp in script.completions(fuzzy=True)]
-
-@pytest.mark.skipif(sys.version_info > (2, 7),
-                    reason="requires python3.3 or higher")
-def test_file_fuzzy_completion(Script, tmp_path):
-    folder0 = tmp_path / u"inference"
-    folder0.mkdir()
-    file0_path0 = folder0 / u"sys_path.py"
-    file0_path0.write_text('\n')
-    file0_path1 = folder0 / u"syntax_tree.py"
-    file0_path1.write_text('\n')
-    script = Script('"{}/yt'.format(folder0))
-    assert ['syntax_tree.py"', 'sys_path.py"'] \
+def test_file_fuzzy_completion(Script):
+    path = os.path.join(test_dir, 'completion')
+    script = Script('"{}/ep08_i'.format(path))
+    assert ['pep0484_basic.py"', 'pep0484_typing.py"'] \
         == [comp.name for comp in script.completions(fuzzy=True)]
