@@ -19,6 +19,19 @@ from jedi.cache import call_signature_time_cache
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
 
 
+def start_match(string, like_name):
+    return string.startswith(like_name)
+
+
+def fuzzy_match(string, like_name):
+    if len(like_name) <= 1:
+        return like_name in string
+    pos = string.find(like_name[0])
+    if pos >= 0:
+        return fuzzy_match(string[pos + 1:], like_name[1:])
+    return False
+
+
 def sorted_definitions(defs):
     # Note: `or ''` below is required because `module_path` could be
     return sorted(defs, key=lambda x: (x.module_path or '', x.line or 0, x.column or 0, x.name))
