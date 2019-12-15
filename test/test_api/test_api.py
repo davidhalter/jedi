@@ -331,7 +331,10 @@ def test_math_fuzzy_completion(Script, environment):
     expected = ['copysign', 'log', 'log10', 'log1p']
     if environment.version_info.major >= 3:
         expected.append('log2')
-    assert expected == [comp.name for comp in script.completions(fuzzy=True)]
+    completions = script.completions(fuzzy=True)
+    assert expected == [comp.name for comp in completions]
+    for c in completions:
+        assert c.complete is None
 
 
 def test_file_fuzzy_completion(Script):

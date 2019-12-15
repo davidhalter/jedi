@@ -408,11 +408,12 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.completions`. They
     provide additional information about a completion.
     """
-    def __init__(self, inference_state, name, stack, like_name_length):
+    def __init__(self, inference_state, name, stack, like_name_length, is_fuzzy):
         super(Completion, self).__init__(inference_state, name)
 
         self._like_name_length = like_name_length
         self._stack = stack
+        self._is_fuzzy = is_fuzzy
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
@@ -438,6 +439,9 @@ class Completion(BaseDefinition):
     @property
     def complete(self):
         """
+        Only works with non-fuzzy completions. Returns None if fuzzy
+        completions are used.
+
         Return the rest of the word, e.g. completing ``isinstance``::
 
             isinstan# <-- Cursor is here
@@ -452,9 +456,9 @@ class Completion(BaseDefinition):
 
         completing ``foo(par`` would give a ``Completion`` which `complete`
         would be `am=`
-
-
         """
+        if self._is_fuzzy:
+            return None
         return self._complete(True)
 
     @property

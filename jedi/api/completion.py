@@ -45,7 +45,8 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
                 inference_state,
                 name,
                 stack,
-                len(like_name)
+                len(like_name),
+                is_fuzzy=fuzzy,
             )
             k = (new.name, new.complete)  # key
             if k in comp_dct and settings.no_completion_duplicates:

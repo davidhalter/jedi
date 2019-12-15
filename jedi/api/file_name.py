@@ -62,7 +62,8 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
                 inference_state,
                 FileName(inference_state, name[len(must_start_with) - like_name_length:]),
                 stack=None,
-                like_name_length=like_name_length
+                like_name_length=like_name_length,
+                is_fuzzy=fuzzy,
             )
 
 
