@@ -324,7 +324,7 @@ class DirectObjectAccess(object):
             name = try_to_get_name(type(self._obj))
             if name is None:
                 return ()
-        return tuple(name.split('.'))
+        return tuple(force_unicode(n) for n in name.split('.'))
 
     def dir(self):
         return list(map(force_unicode, dir(self._obj)))
