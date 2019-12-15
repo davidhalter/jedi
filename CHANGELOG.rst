@@ -7,10 +7,11 @@ Changelog
 +++++++++++++++++++
 
 - Call signatures are now detected a lot better
-- Many small Bugfixes
-- A big refactoring around contexts/values
+- Add fuzzy completions with ``Script(...).completions(fuzzy=True)``
 - Files bigger than one MB (about 20kLOC) get cropped to avoid getting
   stuck completely.
+- Many small Bugfixes
+- A big refactoring around contexts/values
 
 0.15.1 (2019-08-13)
 +++++++++++++++++++
