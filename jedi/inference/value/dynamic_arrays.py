@@ -10,7 +10,7 @@ current module will be checked for appearances of ``arr.append``,
 content will be added
 
 This can be really cpu intensive, as you can imagine. Because |jedi| has to
-follow **every** ``append`` and check wheter it's the right array. However this
+follow **every** ``append`` and check whether it's the right array. However this
 works pretty good, because in *slow* cases, the recursion detector and other
 settings will stop this process.
 
