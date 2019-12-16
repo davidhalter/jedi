@@ -531,7 +531,8 @@ class DirectObjectAccess(object):
 
     def get_return_annotation(self):
         try:
-            o = self._obj.__annotations__.get('return')
+            import typing
+            o = typing.get_type_hints(self._obj).get('return')
         except AttributeError:
             return None
 

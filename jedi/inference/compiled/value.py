@@ -49,7 +49,6 @@ class CompiledObject(Value):
     def py__call__(self, arguments):
         return_annotation = self.access_handle.get_return_annotation()
         if return_annotation is not None:
-            # TODO the return annotation may also be a string.
             return create_from_access_path(
                 self.inference_state,
                 return_annotation
