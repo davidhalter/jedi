@@ -13,10 +13,11 @@ from jedi import settings
 from jedi.inference import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
-from jedi.inference.base_value import ValueSet, ValueWrapper
+from jedi.inference.base_value import ValueSet, ValueWrapper, NO_VALUES
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.value import ModuleValue
-from jedi.inference.cache import inference_state_function_cache
+from jedi.inference.cache import inference_state_function_cache, \
+    inference_state_method_cache
 from jedi.inference.compiled.getattr_static import getattr_static
 from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
@@ -58,8 +59,13 @@ class MixedObject(ValueWrapper):
         # should be very precise, especially for stuff like `partial`.
         return self.compiled_object.get_signatures()
 
+    @inference_state_method_cache(default=NO_VALUES)
     def py__call__(self, arguments):
-        return (to_stub(self._wrapped_value) or self._wrapped_value).py__call__(arguments)
+        # Fallback to the wrapped value if to stub returns no values.
+        values = to_stub(self._wrapped_value)
+        if not values:# or self in values:
+            values = self._wrapped_value
+        return values.py__call__(arguments)
 
     def get_safe_value(self, default=_sentinel):
         if default is _sentinel:
