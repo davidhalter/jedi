@@ -213,6 +213,9 @@ class TypeAlias(LazyValueWrapper):
         cls = next(iter(classes))
         return cls
 
+    def gather_annotation_classes(self):
+        return ValueSet([self._get_wrapped_value()])
+
 
 class Callable(BaseTypingValueWithGenerics):
     def py__call__(self, arguments):
