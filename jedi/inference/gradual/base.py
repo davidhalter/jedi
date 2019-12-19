@@ -183,6 +183,11 @@ class GenericClass(ClassMixin, DefineGenericBase):
     def _create_instance_with_generics(self, generics_manager):
         return GenericClass(self._class_value, generics_manager)
 
+    def is_sub_class_of(self, class_value):
+        if super(GenericClass, self).is_sub_class_of(class_value):
+            return True
+        return self._class_value.is_sub_class_of(class_value)
+
 
 class _LazyGenericBaseClass(object):
     def __init__(self, class_value, lazy_base_class):
