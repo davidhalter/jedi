@@ -650,15 +650,15 @@ class Signature(Definition):
         return self._signature.to_string()
 
 
-class CallSignature(Signature):
+class Signature(Signature):
     """
-    `CallSignature` objects is the return value of `Script.call_signatures`.
+    `Signature` objects is the return value of `Script.call_signatures`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function with its params. Without `(` it would
     return nothing.
     """
     def __init__(self, inference_state, signature, call_details):
-        super(CallSignature, self).__init__(inference_state, signature)
+        super(Signature, self).__init__(inference_state, signature)
         self._call_details = call_details
         self._signature = signature
 

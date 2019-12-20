@@ -371,6 +371,9 @@ class Script(object):
         return _usages(**kwargs)
 
     def call_signatures(self):
+        return self.find_signatures(*self._pos)
+
+    def find_signatures(self, line=None, column=None):
         """
         Return the function object of the call you're currently in.
 
@@ -384,9 +387,10 @@ class Script(object):
 
         This would return an empty list..
 
-        :rtype: list of :class:`classes.CallSignature`
+        :rtype: list of :class:`classes.Signature`
         """
-        call_details = helpers.get_call_signature_details(self._module_node, self._pos)
+        pos = line, column
+        call_details = helpers.get_call_signature_details(self._module_node, pos)
         if call_details is None:
             return []
 
@@ -396,13 +400,13 @@ class Script(object):
             context,
             call_details.bracket_leaf,
             self._code_lines,
-            self._pos
+            pos
         )
         debug.speed('func_call followed')
 
         # TODO here we use stubs instead of the actual values. We should use
         # the signatures from stubs, but the actual values, probably?!
-        return [classes.CallSignature(self._inference_state, signature, call_details)
+        return [classes.Signature(self._inference_state, signature, call_details)
                 for signature in definitions.get_signatures()]
 
     def _analysis(self):
