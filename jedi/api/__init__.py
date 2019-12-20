@@ -201,20 +201,28 @@ class Script(object):
             self._inference_state.environment,
         )
 
-    def completions(self, fuzzy=False):
+    def complete(self, line=None, column=None, **kwargs):
         """
         Return :class:`classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
 
-        :return: Completion objects, sorted by name and __ comes last.
+        :param fuzzy: Default False. Will return fuzzy completions, which means
+            that e.g. ``ooa`` will match ``foobar``.
+        :return: Completion objects, sorted by name and ``__`` comes last.
         :rtype: list of :class:`classes.Completion`
         """
+        return self._complete(line, column, **kwargs)
+
+    def _complete(self, line, column, fuzzy):  # Python 2...
         with debug.increase_indent_cm('completions'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
-                self._pos, self.call_signatures
+                (line, column), self.call_signatures
             )
             return completion.completions(fuzzy)
+
+    def completions(self, fuzzy=False):
+        return self.complete(*self._pos, fuzzy=fuzzy)
 
     def goto_definitions(self, **kwargs):
         """
