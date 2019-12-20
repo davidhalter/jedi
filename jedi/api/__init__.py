@@ -238,7 +238,7 @@ class Script(object):
         leaf = self._module_node.get_name_of_position(self._pos)
         if leaf is None:
             leaf = self._module_node.get_leaf_for_position(self._pos)
-            if leaf is None:
+            if leaf is None or leaf.type == 'string':
                 return []
 
         context = self._get_module_context().create_context(leaf)

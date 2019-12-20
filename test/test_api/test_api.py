@@ -342,3 +342,19 @@ def test_file_fuzzy_completion(Script):
     script = Script('"{}/ep08_i'.format(path))
     assert ['pep0484_basic.py"', 'pep0484_typing.py"'] \
         == [comp.name for comp in script.completions(fuzzy=True)]
+
+
+@pytest.mark.parametrize(
+    'code, column', [
+        ('"foo"', 0),
+        ('"foo"', 3),
+        ('"foo"', None),
+        ('"""foo"""', 5),
+        ('"""foo"""', 1),
+        ('"""foo"""', 2),
+    ]
+)
+def test_goto_on_string(Script, code, column):
+    script = Script(code, column=column)
+    assert not script.goto_definitions()
+    assert not script.goto_assignments()
