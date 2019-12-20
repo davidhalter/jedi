@@ -289,11 +289,11 @@ def test_parent_on_completion(Script):
     assert parent.type == 'class'
 
 
-def test_parent_on_comprehension():
-    ns = jedi.names('''\
+def test_parent_on_comprehension(Script):
+    ns = Script('''\
     def spam():
         return [i for i in range(5)]
-    ''', all_scopes=True)
+    ''').names(all_scopes=True)
 
     assert [name.name for name in ns] == ['spam', 'i']
 

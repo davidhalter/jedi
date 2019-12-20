@@ -149,8 +149,9 @@ This means that in Python you can enable tab completion in a `REPL
 Static Analysis
 ------------------------
 
-To do all forms of static analysis, please try to use ``jedi.names``. It will
-return a list of names that you can use to infer types and so on.
+To do all forms of static analysis, please try to use
+``jedi.Script(...).names``. It will return a list of names that you can use to
+infer types and so on.
 
 
 Refactoring

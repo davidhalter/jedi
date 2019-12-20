@@ -6,7 +6,7 @@ Features and Caveats
 Jedi obviously supports autocompletion. It's also possible to get it working in
 (:ref:`your REPL (IPython, etc.) <repl-completion>`).
 
-Static analysis is also possible by using the command ``jedi.names``.
+Static analysis is also possible by using ``jedi.Script(...).names``.
 
 Jedi would in theory support refactoring, but we have never publicized it,
 because it's not production ready. If you're interested in helping out here,

@@ -71,7 +71,8 @@ class TestFullDefinedName(TestCase):
         self.environment = environment
 
     def check(self, source, desired):
-        definitions = jedi.names(textwrap.dedent(source), environment=self.environment)
+        script = jedi.Script(textwrap.dedent(source), environment=self.environment)
+        definitions = script.names()
         full_names = [d.full_name for d in definitions]
         self.assertEqual(full_names, desired)
 

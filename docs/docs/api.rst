@@ -30,8 +30,7 @@ API Documentation
 The API consists of a few different parts:
 
 - The main starting points for complete/goto: :class:`.Script` and :class:`.Interpreter`
-- Helpful functions: :func:`.names`, :func:`.preload_module` and
-  :func:`.set_debug_function`
+- Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
 - :ref:`API Result Classes <api-classes>`
 - :ref:`Python Versions/Virtualenv Support <environments>` with functions like
   :func:`.find_system_environments` and :func:`.find_virtualenvs`
@@ -47,7 +46,6 @@ Static Analysis Interface
     :members:
 .. autoclass:: jedi.Interpreter
     :members:
-.. autofunction:: jedi.names
 .. autofunction:: jedi.preload_module
 .. autofunction:: jedi.set_debug_function
 
