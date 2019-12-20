@@ -90,10 +90,10 @@ class Completion:
 
         self._fuzzy = fuzzy
 
-    def completions(self, fuzzy=False, **kwargs):
-        return self._completions(fuzzy, **kwargs)
+    def complete(self, fuzzy=False, **kwargs):
+        return self._complete(fuzzy, **kwargs)
 
-    def _completions(self, fuzzy):
+    def _complete(self, fuzzy):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:

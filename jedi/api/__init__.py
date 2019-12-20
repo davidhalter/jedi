@@ -199,12 +199,12 @@ class Script(object):
         return self._complete(line, column, **kwargs)
 
     def _complete(self, line, column, fuzzy=False):  # Python 2...
-        with debug.increase_indent_cm('completions'):
+        with debug.increase_indent_cm('complete'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
                 (line, column), self.find_signatures
             )
-            return completion.completions(fuzzy)
+            return completion.complete(fuzzy)
 
     def completions(self, fuzzy=False):
         # Deprecated, will be removed.
@@ -215,8 +215,8 @@ class Script(object):
         """
         Return the definitions of a the path under the cursor.  goto function!
         This follows complicated paths and returns the end, not the first
-        definition. The big difference between :meth:`goto_assignments` and
-        :meth:`goto_definitions` is that :meth:`goto_assignments` doesn't
+        definition. The big difference between :meth:`goto` and
+        :meth:`infer` is that :meth:`goto` doesn't
         follow imports and statements. Multiple objects may be returned,
         because Python itself is a dynamic language, which means depending on
         an option you can have two different versions of a function.
@@ -226,14 +226,14 @@ class Script(object):
             inference call.
         :rtype: list of :class:`classes.Definition`
         """
-        with debug.increase_indent_cm('goto_definitions'):
-            return self._goto_definitions(line, column, **kwargs)
+        with debug.increase_indent_cm('infer'):
+            return self._infer(line, column, **kwargs)
 
     def goto_definitions(self, **kwargs):
         # Deprecated, will be removed.
         return self.infer(*self._pos, **kwargs)
 
-    def _goto_definitions(self, line, column, only_stubs=False, prefer_stubs=False):
+    def _infer(self, line, column, only_stubs=False, prefer_stubs=False):
         pos = line, column
         leaf = self._module_node.get_name_of_position(pos)
         if leaf is None:
@@ -280,12 +280,11 @@ class Script(object):
         :param prefer_stubs: Prefer stubs to Python objects for this goto call.
         :rtype: list of :class:`classes.Definition`
         """
-        with debug.increase_indent_cm('goto_assignments'):
-            return self._goto_assignments(line, column, **kwargs)
+        with debug.increase_indent_cm('goto'):
+            return self._goto(line, column, **kwargs)
 
-    def _goto_assignments(self, line, column, follow_imports=False,
-                          follow_builtin_imports=False,
-                          only_stubs=False, prefer_stubs=False):
+    def _goto(self, line, column, follow_imports=False, follow_builtin_imports=False,
+              only_stubs=False, prefer_stubs=False):
         def filter_follow_imports(names):
             for name in names:
                 if name.is_import():
@@ -308,7 +307,7 @@ class Script(object):
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
-            return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
+            return self.infer(line, column, only_stubs=only_stubs, prefer_stubs=prefer_stubs)
         name = self._get_module_context().create_name(tree_name)
         names = list(name.goto())
 
@@ -440,7 +439,7 @@ class Interpreter(Script):
     >>> from os.path import join
     >>> namespace = locals()
     >>> script = Interpreter('join("").up', [namespace])
-    >>> print(script.completions()[0].name)
+    >>> print(script.complete()[0].name)
     upper
     """
     _allow_descriptor_getattr_default = True
@@ -494,7 +493,7 @@ def names(source=None, path=None, encoding='utf-8', all_scopes=False,
           definitions=True, references=False, environment=None):
     """
     Returns a list of `Definition` objects, containing name parts.
-    This means you can call ``Definition.goto_assignments()`` and get the
+    This means you can call ``Definition.goto()`` and get the
     reference of a name.
     The parameters are the same as in :py:class:`Script`, except or the
     following ones:
@@ -531,7 +530,7 @@ def preload_module(*modules):
     """
     for m in modules:
         s = "import %s as x; x." % m
-        Script(s, 1, len(s), None).completions()
+        Script(s, path=None).complete(1, len(s))
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,
