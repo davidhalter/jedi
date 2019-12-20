@@ -3,6 +3,11 @@
 Changelog
 ---------
 
+0.16.0 (2020--)
++++++++++++++++++++
+
+- ``BaseDefinition.goto_assignments`` renamed to ``BaseDefinition.goto``
+
 0.15.2 (2019-12-20)
 +++++++++++++++++++
 
