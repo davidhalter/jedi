@@ -159,7 +159,7 @@ def test_math_is_stub(Script, code, full_name):
     assert cos.goto(only_stubs=True) == [cos]
     assert cos.full_name == full_name
 
-    cos, = s.goto_assignments()
+    cos, = s.goto()
     assert cos.module_path.endswith(wanted)
     assert cos.goto(only_stubs=True) == [cos]
     assert cos.is_stub() is True
@@ -174,7 +174,7 @@ def test_goto_stubs(Script):
     stub, = os_module.goto(only_stubs=True)
     assert stub.is_stub() is True
 
-    os_module, = s.goto_assignments()
+    os_module, = s.goto()
 
 
 def _assert_is_same(d1, d2):
@@ -201,7 +201,7 @@ def test_goto_stubs_on_itself(Script, code, type_):
     if type_ == 'infer':
         def_, = s.infer()
     else:
-        def_, = s.goto_assignments(follow_imports=True)
+        def_, = s.goto(follow_imports=True)
     stub, = def_.goto(only_stubs=True)
 
     script_on_source = Script(path=def_.module_path)

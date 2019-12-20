@@ -55,8 +55,8 @@ def test_basedefinition_type(Script, names):
         definitions += script2.usages()
 
         source_param = "def f(a): return a"
-        script_param = Script(source_param, 1, len(source_param), None)
-        definitions += script_param.goto_assignments()
+        script_param = Script(source_param, path=None)
+        definitions += script_param.goto(1, len(source_param))
 
         return definitions
 
@@ -118,7 +118,7 @@ def test_class_call_signature(Script):
 
 
 def test_position_none_if_builtin(Script):
-    gotos = Script('import sys; sys.path').goto_assignments()
+    gotos = Script('import sys; sys.path').goto()
     assert gotos[0].in_builtin_module()
     assert gotos[0].line is not None
     assert gotos[0].column is not None
@@ -206,8 +206,8 @@ def test_signature_params(Script):
 
     check(Script(s).infer())
 
-    check(Script(s).goto_assignments())
-    check(Script(s + '\nbar=foo\nbar').goto_assignments())
+    check(Script(s).goto())
+    check(Script(s + '\nbar=foo\nbar').goto())
 
 
 def test_param_endings(Script):
@@ -253,7 +253,7 @@ def test_is_definition_import(names, code, expected):
 
 def test_parent(Script):
     def _parent(source, line=None, column=None):
-        def_, = Script(dedent(source), line, column).goto_assignments()
+        def_, = Script(dedent(source)).goto(line, column)
         return def_.parent()
 
     parent = _parent('foo=1\nfoo')
@@ -270,7 +270,7 @@ def test_parent(Script):
 
 def test_parent_on_function(Script):
     code = 'def spam():\n pass'
-    def_, = Script(code, line=1, column=len('def spam')).goto_assignments()
+    def_, = Script(code).goto(line=1, column=len('def spam'))
     parent = def_.parent()
     assert parent.name == ''
     assert parent.type == 'module'
@@ -328,13 +328,13 @@ def test_type_II(Script):
 
 
 """
-This tests the BaseDefinition.goto_assignments function, not the jedi
+This tests the BaseDefinition.goto function, not the jedi
 function. They are not really different in functionality, but really
 different as an implementation.
 """
 
 
-def test_goto_assignment_repetition(names):
+def test_goto_repetition(names):
     defs = names('a = 1; a', references=True, definitions=False)
     # Repeat on the same variable. Shouldn't change once we're on a
     # definition.
@@ -344,7 +344,7 @@ def test_goto_assignment_repetition(names):
         assert ass[0].description == 'a = 1'
 
 
-def test_goto_assignments_named_params(names):
+def test_goto_named_params(names):
     src = """\
             def foo(a=1, bar=2):
                 pass
@@ -468,7 +468,7 @@ def test_builtin_module_with_path(Script):
     ]
 )
 def test_execute(Script, code, description):
-    definition, = Script(code).goto_assignments()
+    definition, = Script(code).goto()
     definitions = definition.execute()
     if description is None:
         assert not definitions
@@ -477,7 +477,7 @@ def test_execute(Script, code, description):
         assert d.description == description
 
 
-@pytest.mark.parametrize('goto_assignment', [False, True, None])
+@pytest.mark.parametrize('goto', [False, True, None])
 @pytest.mark.parametrize(
     'code, name, file_name', [
         ('from pkg import Foo; Foo.foo', 'foo', '__init__.py'),
@@ -485,15 +485,15 @@ def test_execute(Script, code, description):
         ('from pkg import Foo; Foo.bar', 'bar', 'module.py'),
         ('from pkg import Foo; Foo().bar', 'bar', 'module.py'),
     ])
-def test_inheritance_module_path(Script, goto_assignment, code, name, file_name):
+def test_inheritance_module_path(Script, goto, code, name, file_name):
     base_path = os.path.join(get_example_dir('inheritance'), 'pkg')
     whatever_path = os.path.join(base_path, 'NOT_EXISTING.py')
 
     script = Script(code, path=whatever_path)
-    if goto_assignment is None:
+    if goto is None:
         func, = script.infer()
     else:
-        func, = script.goto_assignments(follow_imports=goto_assignment)
+        func, = script.goto(follow_imports=goto)
     assert func.type == 'function'
     assert func.name == name
     assert func.module_path == os.path.join(base_path, file_name)

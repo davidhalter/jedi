@@ -244,13 +244,13 @@ def test_named_import(Script):
 @pytest.mark.skipif('True', reason='The nested import stuff is still very messy.')
 def test_goto_following_on_imports(Script):
     s = "import multiprocessing.dummy; multiprocessing.dummy"
-    g = Script(s).goto_assignments()
+    g = Script(s).goto()
     assert len(g) == 1
     assert (g[0].line, g[0].column) != (0, 0)
 
 
-def test_goto_assignments(Script):
-    sys, = Script("import sys", 1, 10).goto_assignments(follow_imports=True)
+def test_goto(Script):
+    sys, = Script("import sys", 1, 10).goto(follow_imports=True)
     assert sys.type == 'module'
 
 

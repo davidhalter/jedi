@@ -166,7 +166,7 @@ def inline(script):
 
     dct = {}
 
-    definitions = script.goto_assignments()
+    definitions = script.goto()
     assert len(definitions) == 1
     stmt = definitions[0]._definition
     usages = script.usages()

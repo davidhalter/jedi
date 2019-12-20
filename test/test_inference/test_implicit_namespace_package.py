@@ -27,7 +27,7 @@ def test_implicit_namespace_package(Script):
         'from pkg.ns1_file import foo': 'ns1_file!',
     }
     for source, solution in tests.items():
-        ass = script_with_path(source).goto_assignments()
+        ass = script_with_path(source).goto()
         assert len(ass) == 1
         assert ass[0].description == "foo = '%s'" % solution
 

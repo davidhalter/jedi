@@ -123,11 +123,11 @@ def test_completion_on_complex_literals(Script):
             {'if', 'and', 'in', 'is', 'not', 'or'})
 
 
-def test_goto_assignments_on_non_name(Script, environment):
-    assert Script('for').goto_assignments() == []
+def test_goto_non_name(Script, environment):
+    assert Script('for').goto() == []
 
-    assert Script('assert').goto_assignments() == []
-    assert Script('True').goto_assignments() == []
+    assert Script('assert').goto() == []
+    assert Script('True').goto() == []
 
 
 def test_infer_on_non_name(Script):
@@ -197,23 +197,23 @@ def test_get_line_code_on_builtin(Script, disable_typeshed):
     assert abs_.line is None
 
 
-def test_goto_assignments_follow_imports(Script):
+def test_goto_follow_imports(Script):
     code = dedent("""
     import inspect
     inspect.isfunction""")
-    definition, = Script(code, column=0).goto_assignments(follow_imports=True)
+    definition, = Script(code).goto(column=0, follow_imports=True)
     assert 'inspect.py' in definition.module_path
     assert (definition.line, definition.column) == (1, 0)
 
-    definition, = Script(code).goto_assignments(follow_imports=True)
+    definition, = Script(code).goto(follow_imports=True)
     assert 'inspect.py' in definition.module_path
     assert (definition.line, definition.column) > (1, 0)
 
     code = '''def param(p): pass\nparam(1)'''
     start_pos = 1, len('def param(')
 
-    script = Script(code, *start_pos)
-    definition, = script.goto_assignments(follow_imports=True)
+    script = Script(code)
+    definition, = script.goto(*start_pos, follow_imports=True)
     assert (definition.line, definition.column) == start_pos
     assert definition.name == 'p'
     result, = definition.goto()
@@ -223,17 +223,17 @@ def test_goto_assignments_follow_imports(Script):
     result, = result.infer()
     assert result.name == 'int'
 
-    definition, = script.goto_assignments()
+    definition, = script.goto(*start_pos)
     assert (definition.line, definition.column) == start_pos
 
-    d, = Script('a = 1\na').goto_assignments(follow_imports=True)
+    d, = Script('a = 1\na').goto(follow_imports=True)
     assert d.name == 'a'
 
 
 def test_goto_module(Script):
     def check(line, expected, follow_imports=False):
-        script = Script(path=path, line=line)
-        module, = script.goto_assignments(follow_imports=follow_imports)
+        script = Script(path=path)
+        module, = script.goto(line=line, follow_imports=follow_imports)
         assert module.module_path == expected
 
     base_path = os.path.join(os.path.dirname(__file__), 'simple_import')
@@ -309,9 +309,9 @@ def test_backslash_continuation_and_bracket(Script):
 
 def test_goto_follow_builtin_imports(Script):
     s = Script('import sys; sys')
-    d, = s.goto_assignments(follow_imports=True)
+    d, = s.goto(follow_imports=True)
     assert d.in_builtin_module() is True
-    d, = s.goto_assignments(follow_imports=True, follow_builtin_imports=True)
+    d, = s.goto(follow_imports=True, follow_builtin_imports=True)
     assert d.in_builtin_module() is True
 
 

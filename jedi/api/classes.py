@@ -525,7 +525,7 @@ class Completion(BaseDefinition):
 
 class Definition(BaseDefinition):
     """
-    *Definition* objects are returned from :meth:`api.Script.goto_assignments`
+    *Definition* objects are returned from :meth:`api.Script.goto`
     or :meth:`api.Script.infer`.
     """
     def __init__(self, inference_state, definition):

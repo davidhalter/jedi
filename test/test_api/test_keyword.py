@@ -5,13 +5,13 @@ Test of keywords and ``jedi.keywords``
 import pytest
 
 
-def test_goto_assignments_keyword(Script):
+def test_goto_keyword(Script):
     """
     Bug: goto assignments on ``in`` used to raise AttributeError::
 
       'unicode' object has no attribute 'generate_call_path'
     """
-    Script('in').goto_assignments()
+    Script('in').goto()
 
 
 def test_keyword(Script, environment):
@@ -22,7 +22,7 @@ def test_keyword(Script, environment):
     else:
         assert [d.docstring() for d in defs]
 
-    assert Script("import").goto_assignments() == []
+    assert Script("import").goto() == []
 
     completions = Script("import").complete(1, 1)
     assert len(completions) > 10 and 'if' in [c.name for c in completions]
