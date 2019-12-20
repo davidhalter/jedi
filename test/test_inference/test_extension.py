@@ -10,7 +10,7 @@ import pytest
 
 def test_completions(Script):
     s = Script('import _ctypes; _ctypes.')
-    assert len(s.completions()) >= 15
+    assert len(s.complete()) >= 15
 
 
 def test_call_signatures_extension(Script):
@@ -51,7 +51,7 @@ def test_init_extension_module(Script):
     This is also why this test only runs on certain systems (and Python 3.4).
     """
     s = jedi.Script('import init_extension_module as i\ni.', path='not_existing.py')
-    assert 'foo' in [c.name for c in s.completions()]
+    assert 'foo' in [c.name for c in s.complete()]
 
     s = jedi.Script('from init_extension_module import foo\nfoo', path='not_existing.py')
-    assert ['foo'] == [c.name for c in s.completions()]
+    assert ['foo'] == [c.name for c in s.complete()]

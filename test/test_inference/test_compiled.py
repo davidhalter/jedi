@@ -83,12 +83,12 @@ def test_method_completion(Script, environment):
 
     foo = Foo()
     foo.bar.__func__''')
-    assert [c.name for c in Script(code).completions()] == ['__func__']
+    assert [c.name for c in Script(code).complete()] == ['__func__']
 
 
 def test_time_docstring(Script):
     import time
-    comp, = Script('import time\ntime.sleep').completions()
+    comp, = Script('import time\ntime.sleep').complete()
     assert comp.docstring(raw=True) == time.sleep.__doc__
     expected = 'sleep(secs: float) -> None\n\n' + time.sleep.__doc__
     assert comp.docstring() == expected

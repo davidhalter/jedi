@@ -31,7 +31,7 @@ class MixinTestFullName(object):
 
     def check(self, source, desired):
         script = self.Script(textwrap.dedent(source))
-        definitions = getattr(script, type(self).operation)()
+        definitions = getattr(script, self.operation)()
         for d in definitions:
             self.assertEqual(d.full_name, desired)
 
@@ -59,7 +59,7 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
 
 
 class TestFullNameWithCompletions(MixinTestFullName, TestCase):
-    operation = 'completions'
+    operation = 'complete'
 
 
 class TestFullDefinedName(TestCase):

@@ -111,7 +111,7 @@ def test_side_effect_completion():
 def _assert_interpreter_complete(source, namespace, completions,
                                  **kwds):
     script = jedi.Interpreter(source, [namespace], **kwds)
-    cs = script.completions()
+    cs = script.complete()
     actual = [c.name for c in cs]
     assert sorted(actual) == sorted(completions)
 

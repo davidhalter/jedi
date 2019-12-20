@@ -91,7 +91,7 @@ def test_completion(Script):
     assert Script('''
     class DocstringCompletion():
         #? []
-        """ asdfas """''').completions()
+        """ asdfas """''').complete()
 
 
 def test_docstrings_type_dotted_import(Script):
@@ -101,7 +101,7 @@ def test_docstrings_type_dotted_import(Script):
                 :type arg: random.Random
                 '''
                 arg."""
-    names = [c.name for c in Script(s).completions()]
+    names = [c.name for c in Script(s).complete()]
     assert 'seed' in names
 
 
@@ -112,7 +112,7 @@ def test_docstrings_param_type(Script):
                 :param str arg: some description
                 '''
                 arg."""
-    names = [c.name for c in Script(s).completions()]
+    names = [c.name for c in Script(s).complete()]
     assert 'join' in names
 
 
@@ -124,7 +124,7 @@ def test_docstrings_type_str(Script):
                 '''
                 arg."""
 
-    names = [c.name for c in Script(s).completions()]
+    names = [c.name for c in Script(s).complete()]
     assert 'join' in names
 
 
@@ -150,14 +150,14 @@ def test_docstring_instance(Script):
 
             c.""")
 
-    names = [c.name for c in Script(s).completions()]
+    names = [c.name for c in Script(s).complete()]
     assert 'a' in names
     assert '__init__' in names
     assert 'mro' not in names  # Exists only for types.
 
 
 def test_docstring_keyword(Script):
-    completions = Script('assert').completions()
+    completions = Script('assert').complete()
     assert 'assert' in completions[0].docstring()
 
 
@@ -185,7 +185,7 @@ def test_numpydoc_parameters():
         y : str
         """
         y.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'isupper' in names
     assert 'capitalize' in names
 
@@ -201,7 +201,7 @@ def test_numpydoc_parameters_set_of_values():
         x : {'foo', 'bar', 100500}, optional
         """
         x.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'isupper' in names
     assert 'capitalize' in names
     assert 'numerator' in names
@@ -218,7 +218,7 @@ def test_numpydoc_parameters_alternative_types():
         x : int or str or list
         """
         x.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'isupper' in names
     assert 'capitalize' in names
     assert 'numerator' in names
@@ -237,7 +237,7 @@ def test_numpydoc_invalid():
         """
         x.''')
 
-    assert not jedi.Script(s).completions()
+    assert not jedi.Script(s).complete()
 
 
 @pytest.mark.skipif(numpydoc_unavailable,
@@ -256,7 +256,7 @@ def test_numpydoc_returns():
     def bazbiz():
         z = foobar()
         z.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'isupper' in names
     assert 'capitalize' in names
     assert 'numerator' in names
@@ -277,7 +277,7 @@ def test_numpydoc_returns_set_of_values():
     def bazbiz():
         z = foobar()
         z.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'isupper' in names
     assert 'capitalize' in names
     assert 'numerator' in names
@@ -298,7 +298,7 @@ def test_numpydoc_returns_alternative_types():
     def bazbiz():
         z = foobar()
         z.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'isupper' not in names
     assert 'capitalize' not in names
     assert 'numerator' in names
@@ -320,7 +320,7 @@ def test_numpydoc_returns_list_of():
     def bazbiz():
         z = foobar()
         z.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'append' in names
     assert 'isupper' not in names
     assert 'capitalize' not in names
@@ -342,7 +342,7 @@ def test_numpydoc_returns_obj():
         z = foobar(x, y)
         z.''')
     script = jedi.Script(s)
-    names = [c.name for c in script.completions()]
+    names = [c.name for c in script.complete()]
     assert 'numerator' in names
     assert 'seed' in names
 
@@ -363,7 +363,7 @@ def test_numpydoc_yields():
     def bazbiz():
         z = foobar():
         z.''')
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'isupper' in names
     assert 'capitalize' in names
     assert 'numerator' in names
@@ -377,7 +377,7 @@ def test_numpy_returns():
         x = numpy.asarray([])
         x.d'''
     )
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'diagonal' in names
 
 
@@ -389,7 +389,7 @@ def test_numpy_comp_returns():
         x = numpy.array([])
         x.d'''
     )
-    names = [c.name for c in jedi.Script(s).completions()]
+    names = [c.name for c in jedi.Script(s).complete()]
     assert 'diagonal' in names
 
 

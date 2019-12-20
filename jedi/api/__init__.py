@@ -202,7 +202,7 @@ class Script(object):
         with debug.increase_indent_cm('completions'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
-                (line, column), self.call_signatures
+                (line, column), self.find_signatures
             )
             return completion.completions(fuzzy)
 

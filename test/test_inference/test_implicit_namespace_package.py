@@ -32,7 +32,7 @@ def test_implicit_namespace_package(Script):
         assert ass[0].description == "foo = '%s'" % solution
 
     # completion
-    completions = script_with_path('from pkg import ').completions()
+    completions = script_with_path('from pkg import ').complete()
     names = [c.name for c in completions]
     compare = ['ns1_file', 'ns2_file']
     # must at least contain these items, other items are not important
@@ -43,7 +43,7 @@ def test_implicit_namespace_package(Script):
         'from pkg import ns1_file as x': 'ns1_file!'
     }
     for source, solution in tests.items():
-        for c in script_with_path(source + '; x.').completions():
+        for c in script_with_path(source + '; x.').complete():
             if c.name == 'foo':
                 completion = c
         solution = "foo = '%s'" % solution
@@ -72,7 +72,7 @@ def test_implicit_namespace_package_import_autocomplete(Script):
     sys_path = [dirname(__file__)]
 
     script = Script(sys_path=sys_path, source=CODE)
-    compl = script.completions()
+    compl = script.complete()
     assert [c.name for c in compl] == ['implicit_namespace_package']
 
 
@@ -82,7 +82,7 @@ def test_namespace_package_in_multiple_directories_autocompletion(Script):
                 for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
 
     script = Script(sys_path=sys_path, source=CODE)
-    compl = script.completions()
+    compl = script.complete()
     assert set(c.name for c in compl) == set(['ns1_file', 'ns2_file'])
 
 
@@ -101,5 +101,5 @@ def test_namespace_name_autocompletion_full_name(Script):
                 for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
 
     script = Script(sys_path=sys_path, source=CODE)
-    compl = script.completions()
+    compl = script.complete()
     assert set(c.full_name for c in compl) == set(['pkg'])

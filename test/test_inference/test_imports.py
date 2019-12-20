@@ -46,7 +46,7 @@ pkg_zip_path = os.path.join(os.path.dirname(__file__),
 def test_find_module_package_zipped(Script, inference_state, environment):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
     script = Script('import pkg; pkg.mod', sys_path=sys_path)
-    assert len(script.completions()) == 1
+    assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
         sys_path=sys_path,
@@ -100,7 +100,7 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
     path = os.path.join(os.path.dirname(__file__), 'zipped_imports/not_pkg.zip')
     sys_path = environment.get_sys_path() + [path]
     script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
-    assert len(script.completions()) == 1
+    assert len(script.complete()) == 1
 
     file_io, is_package = inference_state.compiled_subprocess.get_module_info(
         sys_path=sys_path,
@@ -145,14 +145,14 @@ def test_flask_ext(Script, code, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
     path = os.path.join(os.path.dirname(__file__), 'flask-site-packages')
-    completions = Script(code, sys_path=[path]).completions()
+    completions = Script(code, sys_path=[path]).complete()
     assert name in [c.name for c in completions]
 
 
 @cwd_at('test/test_inference/')
 def test_not_importable_file(Script):
     src = 'import not_importable_file as x; x.'
-    assert not Script(src, path='example.py').completions()
+    assert not Script(src, path='example.py').complete()
 
 
 def test_import_unique(Script):
@@ -168,9 +168,9 @@ def test_cache_works_with_sys_path_param(Script, tmpdir):
     foo_path.join('module.py').write('foo = 123', ensure=True)
     bar_path.join('module.py').write('bar = 123', ensure=True)
     foo_completions = Script('import module; module.',
-                             sys_path=[foo_path.strpath]).completions()
+                             sys_path=[foo_path.strpath]).complete()
     bar_completions = Script('import module; module.',
-                             sys_path=[bar_path.strpath]).completions()
+                             sys_path=[bar_path.strpath]).complete()
     assert 'foo' in [c.name for c in foo_completions]
     assert 'bar' not in [c.name for c in foo_completions]
 
@@ -181,7 +181,7 @@ def test_cache_works_with_sys_path_param(Script, tmpdir):
 def test_import_completion_docstring(Script):
     import abc
     s = Script('"""test"""\nimport ab')
-    abc_completions = [c for c in s.completions() if c.name == 'abc']
+    abc_completions = [c for c in s.complete() if c.name == 'abc']
     assert len(abc_completions) == 1
     assert abc_completions[0].docstring(fast=False) == abc.__doc__
 
@@ -197,40 +197,40 @@ def test_goto_definition_on_import(Script):
 
 @cwd_at('jedi')
 def test_complete_on_empty_import(Script):
-    assert Script("from datetime import").completions()[0].name == 'import'
+    assert Script("from datetime import").complete()[0].name == 'import'
     # should just list the files in the directory
-    assert 10 < len(Script("from .", path='whatever.py').completions()) < 30
+    assert 10 < len(Script("from .", path='whatever.py').complete()) < 30
 
     # Global import
-    assert len(Script("from . import", 1, 5, 'whatever.py').completions()) > 30
+    assert len(Script("from . import", 'whatever.py').complete(1, 5)) > 30
     # relative import
-    assert 10 < len(Script("from . import", 1, 6, 'whatever.py').completions()) < 30
+    assert 10 < len(Script("from . import", 'whatever.py').complete(1, 6)) < 30
 
     # Global import
-    assert len(Script("from . import classes", 1, 5, 'whatever.py').completions()) > 30
+    assert len(Script("from . import classes", 'whatever.py').complete(1, 5)) > 30
     # relative import
-    assert 10 < len(Script("from . import classes", 1, 6, 'whatever.py').completions()) < 30
+    assert 10 < len(Script("from . import classes", 'whatever.py').complete(1, 6)) < 30
 
     wanted = {'ImportError', 'import', 'ImportWarning'}
-    assert {c.name for c in Script("import").completions()} == wanted
-    assert len(Script("import import", path='').completions()) > 0
+    assert {c.name for c in Script("import").complete()} == wanted
+    assert len(Script("import import", path='').complete()) > 0
 
     # 111
-    assert Script("from datetime import").completions()[0].name == 'import'
-    assert Script("from datetime import ").completions()
+    assert Script("from datetime import").complete()[0].name == 'import'
+    assert Script("from datetime import ").complete()
 
 
 def test_imports_on_global_namespace_without_path(Script):
     """If the path is None, there shouldn't be any import problem"""
-    completions = Script("import operator").completions()
+    completions = Script("import operator").complete()
     assert [c.name for c in completions] == ['operator']
-    completions = Script("import operator", path='example.py').completions()
+    completions = Script("import operator", path='example.py').complete()
     assert [c.name for c in completions] == ['operator']
 
     # the first one has a path the second doesn't
-    completions = Script("import keyword", path='example.py').completions()
+    completions = Script("import keyword", path='example.py').complete()
     assert [c.name for c in completions] == ['keyword']
-    completions = Script("import keyword").completions()
+    completions = Script("import keyword").complete()
     assert [c.name for c in completions] == ['keyword']
 
 
@@ -256,7 +256,7 @@ def test_goto_assignments(Script):
 
 def test_os_after_from(Script):
     def check(source, result, column=None):
-        completions = Script(source, column=column).completions()
+        completions = Script(source).complete(column=column)
         assert [c.name for c in completions] == result
 
     check('\nfrom os. ', ['path'])
@@ -270,7 +270,7 @@ def test_os_after_from(Script):
 
 def test_os_issues(Script):
     def import_names(*args, **kwargs):
-        return [d.name for d in Script(*args, **kwargs).completions()]
+        return [d.name for d in Script(*args).complete(**kwargs)]
 
     # Github issue #759
     s = 'import os, s'
@@ -291,7 +291,7 @@ def test_path_issues(Script):
     See pull request #684 for details.
     """
     source = '''from datetime import '''
-    assert Script(source).completions()
+    assert Script(source).complete()
 
 
 def test_compiled_import_none(monkeypatch, Script):
@@ -361,7 +361,7 @@ def test_relative_imports_with_multiple_similar_directories(Script, path, empty_
         path=os.path.join(dir, path),
         _project=project,
     )
-    name, import_ = script.completions()
+    name, import_ = script.complete()
     assert import_.name == 'import'
     assert name.name == 'api_test1'
 
@@ -374,37 +374,37 @@ def test_relative_imports_with_outside_paths(Script):
         path=os.path.join(dir, 'api/whatever/test_this.py'),
         _project=project,
     )
-    assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']
+    assert [c.name for c in script.complete()] == ['api', 'import', 'whatever']
 
     script = Script(
         "from " + '.' * 100,
         path=os.path.join(dir, 'api/whatever/test_this.py'),
         _project=project,
     )
-    assert [c.name for c in script.completions()] == ['import']
+    assert [c.name for c in script.complete()] == ['import']
 
 
 @cwd_at('test/examples/issue1209/api/whatever/')
 def test_relative_imports_without_path(Script):
     project = Project('.', sys_path=[], smart_sys_path=False)
     script = Script("from . ", _project=project)
-    assert [c.name for c in script.completions()] == ['api_test1', 'import']
+    assert [c.name for c in script.complete()] == ['api_test1', 'import']
 
     script = Script("from .. ", _project=project)
-    assert [c.name for c in script.completions()] == ['import', 'whatever']
+    assert [c.name for c in script.complete()] == ['import', 'whatever']
 
     script = Script("from ... ", _project=project)
-    assert [c.name for c in script.completions()] == ['api', 'import', 'whatever']
+    assert [c.name for c in script.complete()] == ['api', 'import', 'whatever']
 
 
 def test_relative_import_out_of_file_system(Script):
     script = Script("from " + '.' * 100)
-    import_, = script.completions()
+    import_, = script.complete()
     assert import_.name == 'import'
 
     script = Script("from " + '.' * 100 + 'abc import ABCMeta')
     assert not script.goto_definitions()
-    assert not script.completions()
+    assert not script.complete()
 
 
 @pytest.mark.parametrize(
@@ -462,7 +462,7 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
 
 
 def test_import_with_semicolon(Script):
-    names = [c.name for c in Script('xzy; from abc import ').completions()]
+    names = [c.name for c in Script('xzy; from abc import ').complete()]
     assert 'ABCMeta' in names
     assert 'abc' not in names
 
@@ -475,6 +475,6 @@ def test_relative_import_star(Script):
     from . import *
     furl.c
     """
-    script = jedi.Script(source, 3, len("furl.c"), 'export.py')
+    script = jedi.Script(source, 'export.py')
 
-    assert script.completions()
+    assert script.complete(3, len("furl.c"))

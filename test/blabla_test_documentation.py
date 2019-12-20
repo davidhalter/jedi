@@ -6,7 +6,7 @@ def test_keyword_doc(Script):
     r = list(Script("asfdasfd").infer(1, 1))
     assert len(r) == 0
 
-    k = Script("fro").completions()[0]
+    k = Script("fro").complete()[0]
     imp_start = '\nThe ``import'
     assert k.raw_doc.startswith(imp_start)
     assert k.doc.startswith(imp_start)

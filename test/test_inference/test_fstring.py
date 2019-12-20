@@ -15,5 +15,5 @@ def test_fstring_multiline(Script):
         '''
         """
     )
-    c, = Script(code, line=2, column=9).completions()
+    c, = Script(code).complete(line=2, column=9)
     assert c.name == 'upper'

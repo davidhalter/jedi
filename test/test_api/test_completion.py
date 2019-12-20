@@ -4,7 +4,9 @@ import sys
 from textwrap import dedent
 
 import pytest
+
 from ..helpers import root_dir
+from jedi.api.helpers import start_match, fuzzy_match
 
 
 def test_in_whitespace(Script):
@@ -19,7 +21,7 @@ def test_empty_init(Script):
     code = dedent('''\
     class X(object): pass
     X(''')
-    assert Script(code).completions()
+    assert Script(code).complete()
 
 
 def test_in_empty_space(Script):
@@ -28,7 +30,7 @@ def test_in_empty_space(Script):
         def __init__(self):
             hello
             ''')
-    comps = Script(code, 3, 7).completions()
+    comps = Script(code).complete(3, 7)
     self, = [c for c in comps if c.name == 'self']
     assert self.name == 'self'
     def_, = self.infer()
@@ -41,13 +43,13 @@ def test_indent_value(Script):
     complete.
     """
     code = 'if 1:\nisinstanc'
-    comp, = Script(code).completions()
+    comp, = Script(code).complete()
     assert comp.name == 'isinstance'
 
 
 def test_keyword_value(Script):
     def get_names(*args, **kwargs):
-        return [d.name for d in Script(*args, **kwargs).completions()]
+        return [d.name for d in Script(*args, **kwargs).complete()]
 
     names = get_names('if 1:\n pass\n')
     assert 'if' in names
@@ -56,7 +58,7 @@ def test_keyword_value(Script):
 
 def test_os_nowait(Script):
     """ github issue #45 """
-    s = Script("import os; os.P_").completions()
+    s = Script("import os; os.P_").complete()
     assert 'P_NOWAIT' in [i.name for i in s]
 
 
@@ -64,7 +66,7 @@ def test_points_in_completion(Script):
     """At some point, points were inserted into the completions, this
     caused problems, sometimes.
     """
-    c = Script("if IndentationErr").completions()
+    c = Script("if IndentationErr").complete()
     assert c[0].name == 'IndentationError'
     assert c[0].complete == 'or'
 
@@ -80,9 +82,8 @@ def test_loading_unicode_files_with_bad_global_charset(Script, monkeypatch, tmpd
 
     with open(filename1, "wb") as f:
         f.write(data)
-    s = Script("from test1 import foo\nfoo.",
-               line=2, column=4, path=filename2)
-    s.completions()
+    s = Script("from test1 import foo\nfoo.", path=filename2)
+    s.complete(line=2, column=4)
 
 
 def test_fake_subnodes(Script):
@@ -100,7 +101,7 @@ def test_fake_subnodes(Script):
                 return c
     limit = None
     for i in range(2):
-        completions = Script('').completions()
+        completions = Script('').complete()
         c = get_str_completion(completions)
         str_value, = c._name.infer()
         n = len(str_value.tree_node.children[-1].children)
@@ -116,17 +117,17 @@ def test_generator(Script):
     s = "def abc():\n" \
         "    yield 1\n" \
         "abc()."
-    assert Script(s).completions()
+    assert Script(s).complete()
 
 
 def test_in_comment(Script):
-    assert Script(" # Comment").completions()
+    assert Script(" # Comment").complete()
     # TODO this is a bit ugly, that the behaviors in comments are different.
-    assert not Script("max_attr_value = int(2) # Cast to int for spe").completions()
+    assert not Script("max_attr_value = int(2) # Cast to int for spe").complete()
 
 
 def test_in_comment_before_string(Script):
-    assert not Script(" # Foo\n'asdf'", line=1).completions()
+    assert not Script(" # Foo\n'asdf'").complete(line=1)
 
 
 def test_async(Script, environment):
@@ -137,16 +138,15 @@ def test_async(Script, environment):
         foo = 3
         async def x():
             hey = 3
-              ho'''
-    )
-    comps = Script(code, column=4).completions()
+              ho''')
+    comps = Script(code).complete(column=4)
     names = [c.name for c in comps]
     assert 'foo' in names
     assert 'hey' in names
 
 
 def test_with_stmt_error_recovery(Script):
-    assert Script('with open('') as foo: foo.\na', line=1).completions()
+    assert Script('with open('') as foo: foo.\na').complete(line=1)
 
 
 @pytest.mark.parametrize(
@@ -161,7 +161,7 @@ def test_with_stmt_error_recovery(Script):
     )
 )
 def test_keyword_completion(Script, code, has_keywords):
-    assert has_keywords == any(x.is_keyword for x in Script(code).completions())
+    assert has_keywords == any(x.is_keyword for x in Script(code).complete())
 
 
 f1 = join(root_dir, 'example.py')
@@ -187,7 +187,7 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
         ('test%sexample.py' % se, 'r"test%scomp"' % s, 5, ['t' + s]),
         ('test%sexample.py' % se, 'r"test%scomp"' % s, 11, ['letion' + s]),
         ('test%sexample.py' % se, '"%s"' % join('test', 'completion', 'basi'), 21, ['c.py']),
-        ('example.py', 'rb"'+ join('..', current_dirname, 'tes'), None, ['t' + s]),
+        ('example.py', 'rb"' + join('..', current_dirname, 'tes'), None, ['t' + s]),
 
         # Absolute paths
         (None, '"' + join(root_dir, 'test', 'test_ca'), None, ['che.py"']),
@@ -266,17 +266,17 @@ def test_file_path_completions(Script, file, code, column, expected):
     line = None
     if isinstance(column, tuple):
         line, column = column
-    comps = Script(code, path=file, line=line, column=column).completions()
+    comps = Script(code, path=file).complete(line=line, column=column)
     if expected == "A LOT":
         assert len(comps) > 100  # This is basically global completions.
     else:
         assert [c.complete for c in comps] == expected
 
-from jedi.api.helpers import start_match, fuzzy_match
 
 def test_start_match():
     assert start_match('Condition', 'C')
-    
+
+
 def test_fuzzy_match():
     assert fuzzy_match('Condition', 'i')
     assert not fuzzy_match('Condition', 'p')

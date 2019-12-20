@@ -31,7 +31,7 @@ def test_additional_dynamic_modules(monkeypatch, Script):
         'additional_dynamic_modules',
         ['/foo/bar/jedi_not_existing_file.py']
     )
-    assert not Script('def some_func(f):\n f.').completions()
+    assert not Script('def some_func(f):\n f.').complete()
 
 
 def test_cropped_file_size(monkeypatch, names, Script):
@@ -48,4 +48,4 @@ def test_cropped_file_size(monkeypatch, names, Script):
     # It should just not crash if we are outside of the cropped range.
     script = Script(code + code + 'Foo')
     assert not script.goto_definitions()
-    assert 'Foo' in [c.name for c in script.completions()]
+    assert 'Foo' in [c.name for c in script.complete()]

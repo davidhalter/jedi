@@ -70,8 +70,8 @@ def test_add_to_end(Script):
         "        self."
 
     def complete(code, line=None, column=None):
-        script = Script(code, line, column, 'example.py')
-        assert script.completions()
+        script = Script(code, 'example.py')
+        assert script.complete(line, column)
 
     complete(a, 7, 12)
     complete(a + b)

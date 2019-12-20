@@ -229,7 +229,7 @@ class Completion:
             # 3. Decorators are very primitive and have an optional `(` with
             #    optional arglist in them.
             if nodes[-1] in ['(', ','] and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
-                call_signatures = self._call_signatures_callback()
+                call_signatures = self._call_signatures_callback(*self._position)
                 completion_names += get_call_signature_param_names(call_signatures)
 
         return completion_names

@@ -38,7 +38,7 @@ def test_goto_assignment(Script, source, solution):
 
 def test_simple_completions(Script):
     # completion
-    completions = script_with_path(Script, 'from pkg import ').completions()
+    completions = script_with_path(Script, 'from pkg import ').complete()
     names = [str(c.name) for c in completions]  # str because of unicode
     compare = ['foo', 'ns1_file', 'ns1_folder', 'ns2_folder', 'ns2_file',
                'pkg_resources', 'pkgutil', '__name__', '__path__',
@@ -58,7 +58,7 @@ def test_simple_completions(Script):
     ]
 )
 def test_completions(Script, source, solution):
-    for c in script_with_path(Script, source + '; x.').completions():
+    for c in script_with_path(Script, source + '; x.').complete():
         if c.name == 'foo':
             completion = c
     solution = "foo = '%s'" % solution

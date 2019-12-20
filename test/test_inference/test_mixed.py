@@ -39,4 +39,4 @@ def test_generics():
             self.stack.push(1)
 
     s = StackWrapper()
-    print(interpreter('s.stack.pop().', locals()).completions())
+    print(interpreter('s.stack.pop().', locals()).complete())

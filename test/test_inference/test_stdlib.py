@@ -17,7 +17,7 @@ def test_namedtuple_str(letter, expected, Script):
         Person = collections.namedtuple('Person', 'name smart')
         dave = Person('Dave', False)
         dave.%s""") % letter
-    result = Script(source).completions()
+    result = Script(source).complete()
     completions = set(r.name for r in result)
     assert completions == set(expected)
 
@@ -28,7 +28,7 @@ def test_namedtuple_list(Script):
         Cat = collections.namedtuple('Person', ['legs', u'length', 'large'])
         garfield = Cat(4, '85cm', True)
         garfield.l""")
-    result = Script(source).completions()
+    result = Script(source).complete()
     completions = set(r.name for r in result)
     assert completions == {'legs', 'length', 'large'}
 
@@ -62,7 +62,7 @@ def test_nested_namedtuples(Script):
         train_x = Datasets(train=Dataset('data_value'))
         train_x.train.'''
     ))
-    assert 'data' in [c.name for c in s.completions()]
+    assert 'data' in [c.name for c in s.complete()]
 
 
 def test_namedtuple_goto_definitions(Script):

@@ -2,7 +2,7 @@ from jedi._compatibility import force_unicode
 
 
 def test_module_attributes(Script):
-    def_, = Script('__name__').completions()
+    def_, = Script('__name__').complete()
     assert def_.name == '__name__'
     assert def_.line is None
     assert def_.column is None
