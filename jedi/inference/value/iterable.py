@@ -206,9 +206,6 @@ class Sequence(LazyAttributeOverwrite, IterableMixin):
     def py__bool__(self):
         return None  # We don't know the length, because of appends.
 
-    def py__class__(self):
-        return compiled.builtin_from_name(self.inference_state, self.array_type)
-
     @safe_property
     def parent(self):
         return self.inference_state.builtins_module
