@@ -25,6 +25,7 @@ from jedi.file_io import KnownContentFileIO
 from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
+from jedi.api.helpers import validate_line_column
 from jedi.api.completion import Completion
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
@@ -126,22 +127,6 @@ class Script(object):
         debug.speed('parsed')
         self._code_lines = parso.split_lines(source, keepends=True)
         self._code = source
-        line = max(len(self._code_lines), 1) if line is None else line
-        if not (0 < line <= len(self._code_lines)):
-            raise ValueError('`line` parameter is not in a valid range.')
-
-        line_string = self._code_lines[line - 1]
-        line_len = len(line_string)
-        if line_string.endswith('\r\n'):
-            line_len -= 1
-        if line_string.endswith('\n'):
-            line_len -= 1
-
-        column = line_len if column is None else column
-        if not (0 <= column <= line_len):
-            raise ValueError('`column` parameter (%d) is not in a valid range '
-                             '(0-%d) for line %d (%r).' % (
-                                 column, line_len, line, line_string))
         self._pos = line, column
 
         cache.clear_time_caches()
@@ -201,6 +186,7 @@ class Script(object):
             self._inference_state.environment,
         )
 
+    @validate_line_column
     def complete(self, line=None, column=None, **kwargs):
         """
         Return :class:`classes.Completion` objects. Those objects contain
@@ -213,7 +199,7 @@ class Script(object):
         """
         return self._complete(line, column, **kwargs)
 
-    def _complete(self, line, column, fuzzy):  # Python 2...
+    def _complete(self, line, column, fuzzy=False):  # Python 2...
         with debug.increase_indent_cm('completions'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
@@ -225,6 +211,7 @@ class Script(object):
         # Deprecated, will be removed.
         return self.complete(*self._pos, fuzzy=fuzzy)
 
+    @validate_line_column
     def infer(self, line=None, column=None, **kwargs):
         """
         Return the definitions of a the path under the cursor.  goto function!
@@ -276,6 +263,7 @@ class Script(object):
                          follow_builtin_imports=follow_builtin_imports,
                          **kwargs)
 
+    @validate_line_column
     def goto(self, line=None, column=None, **kwargs):
         """
         Return the first definition found, while optionally following imports.
@@ -338,6 +326,7 @@ class Script(object):
     def usages(self, **kwargs):
         return self.find_references(*self._pos, **kwargs)
 
+    @validate_line_column
     def find_references(self, line=None, column=None, **kwargs):
         """
         Return :class:`classes.Definition` objects, which contain all
@@ -367,6 +356,7 @@ class Script(object):
     def call_signatures(self):
         return self.find_signatures(*self._pos)
 
+    @validate_line_column
     def find_signatures(self, line=None, column=None):
         """
         Return the function object of the call you're currently in.

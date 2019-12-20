@@ -4,6 +4,7 @@ Helpers for the API
 import re
 from collections import namedtuple
 from textwrap import dedent
+from functools import wraps
 
 from parso.python.parser import Parser
 from parso.python import tree
@@ -411,3 +412,26 @@ def cache_call_signatures(inference_state, context, bracket_leaf, code_lines, us
         context,
         bracket_leaf.get_previous_leaf(),
     )
+
+
+def validate_line_column(func):
+    @wraps(func)
+    def wrapper(self, line=None, column=None, *args, **kwargs):
+        line = max(len(self._code_lines), 1) if line is None else line
+        if not (0 < line <= len(self._code_lines)):
+            raise ValueError('`line` parameter is not in a valid range.')
+
+        line_string = self._code_lines[line - 1]
+        line_len = len(line_string)
+        if line_string.endswith('\r\n'):
+            line_len -= 1
+        if line_string.endswith('\n'):
+            line_len -= 1
+
+        column = line_len if column is None else column
+        if not (0 <= column <= line_len):
+            raise ValueError('`column` parameter (%d) is not in a valid range '
+                             '(0-%d) for line %d (%r).' % (
+                                 column, line_len, line, line_string))
+        return func(self, line, column, *args, **kwargs)
+    return wrapper
