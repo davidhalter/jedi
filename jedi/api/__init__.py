@@ -11,7 +11,6 @@ arguments.
 """
 import os
 import sys
-import warnings
 
 import parso
 from parso.python import tree

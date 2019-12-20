@@ -405,7 +405,10 @@ class BaseDefinition(object):
         return ''.join(lines[start_index:index + after + 1])
 
     def get_signatures(self):
-        return [Signature(self._inference_state, s) for s in self._name.infer().get_signatures()]
+        return [
+            BaseSignature(self._inference_state, s)
+            for s in self._name.infer().get_signatures()
+        ]
 
     def execute(self):
         return _values_to_definitions(self._name.infer().execute_with_values())
@@ -628,14 +631,14 @@ class Definition(BaseDefinition):
         return hash((self._name.start_pos, self.module_path, self.name, self._inference_state))
 
 
-class Signature(Definition):
+class BaseSignature(Definition):
     """
-    `Signature` objects is the return value of `Script.function_definition`.
+    `BaseSignature` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
     def __init__(self, inference_state, signature):
-        super(Signature, self).__init__(inference_state, signature.name)
+        super(BaseSignature, self).__init__(inference_state, signature.name)
         self._signature = signature
 
     @property
@@ -650,9 +653,9 @@ class Signature(Definition):
         return self._signature.to_string()
 
 
-class Signature(Signature):
+class Signature(BaseSignature):
     """
-    `Signature` objects is the return value of `Script.call_signatures`.
+    `Signature` objects is the return value of `Script.find_signatures`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function with its params. Without `(` it would
     return nothing.
