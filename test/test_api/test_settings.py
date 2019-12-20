@@ -30,5 +30,5 @@ def test_add_bracket_after_function(monkeypatch, Script):
 def foo():
     pass
 foo''')
-    completions = script.completions()
+    completions = script.complete()
     assert completions[0].complete == '('

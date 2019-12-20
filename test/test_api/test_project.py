@@ -11,7 +11,7 @@ def test_django_default_project(Script):
         "from app import models\nmodels.SomeMo",
         path=os.path.join(dir, 'models/x.py')
     )
-    c, = script.completions()
+    c, = script.complete()
     assert c.name == "SomeModel"
     assert script._inference_state.project._django is True
 

@@ -56,29 +56,29 @@ def test_line_number_errors(Script):
     s = 'hello'
     # lines
     with raises(ValueError):
-        Script(s, 2, 0)
+        Script(s).complete(2, 0)
     with raises(ValueError):
-        Script(s, 0, 0)
+        Script(s).complete(0, 0)
 
     # columns
     with raises(ValueError):
-        Script(s, 1, len(s) + 1)
+        Script(s).infer(1, len(s) + 1)
     with raises(ValueError):
-        Script(s, 1, -1)
+        Script(s).goto(1, -1)
 
     # ok
-    Script(s, 1, 0)
-    Script(s, 1, len(s))
+    Script(s).find_signatures(1, 0)
+    Script(s).find_references(1, len(s))
 
 
 def _check_number(Script, source, result='float'):
-    completions = Script(source).completions()
+    completions = Script(source).complete()
     assert completions[0].parent().name == result
 
 
 def test_completion_on_number_literals(Script):
     # No completions on an int literal (is a float).
-    assert [c.name for c in Script('1. ').completions()] \
+    assert [c.name for c in Script('1. ').complete()] \
         == ['and', 'if', 'in', 'is', 'not', 'or']
 
     # Multiple points after an int literal basically mean that there's a float
@@ -90,27 +90,27 @@ def test_completion_on_number_literals(Script):
     _check_number(Script, '1.e14.')
     _check_number(Script, '1.e-3.')
     _check_number(Script, '9e3.')
-    assert Script('1.e3..').completions() == []
-    assert Script('1.e-13..').completions() == []
+    assert Script('1.e3..').complete() == []
+    assert Script('1.e-13..').complete() == []
 
 
 def test_completion_on_hex_literals(Script):
-    assert Script('0x1..').completions() == []
+    assert Script('0x1..').complete() == []
     _check_number(Script, '0x1.', 'int')  # hexdecimal
     # Completing binary literals doesn't work if they are not actually binary
     # (invalid statements).
-    assert Script('0b2.b').completions() == []
+    assert Script('0b2.b').complete() == []
     _check_number(Script, '0b1.', 'int')  # binary
 
     _check_number(Script, '0x2e.', 'int')
     _check_number(Script, '0xE7.', 'int')
     _check_number(Script, '0xEa.', 'int')
     # theoretically, but people can just check for syntax errors:
-    assert Script('0x.').completions() == []
+    assert Script('0x.').complete() == []
 
 
 def test_completion_on_complex_literals(Script):
-    assert Script('1j..').completions() == []
+    assert Script('1j..').complete() == []
     _check_number(Script, '1j.', 'complex')
     _check_number(Script, '44.j.', 'complex')
     _check_number(Script, '4.0j.', 'complex')
@@ -118,8 +118,8 @@ def test_completion_on_complex_literals(Script):
     # which a keyword like or is allowed. Good times, haha!
     # However this has been disabled again, because it apparently annoyed
     # users. So no completion after j without a space :)
-    assert not Script('4j').completions()
-    assert ({c.name for c in Script('4j ').completions()} ==
+    assert not Script('4j').complete()
+    assert ({c.name for c in Script('4j ').complete()} ==
             {'if', 'and', 'in', 'is', 'not', 'or'})
 
 
@@ -169,7 +169,7 @@ def test_usage_description(Script):
 
 def test_get_line_code(Script):
     def get_line_code(source, line=None, **kwargs):
-        return Script(source, line=line).completions()[0].get_line_code(**kwargs)
+        return Script(source).complete(line=line)[0].get_line_code(**kwargs)
 
     # On builtin
     assert get_line_code('abs') == 'def abs(__n: SupportsAbs[_T]) -> _T: ...\n'
@@ -191,7 +191,7 @@ def test_get_line_code(Script):
 
 
 def test_get_line_code_on_builtin(Script, disable_typeshed):
-    abs_ = Script('abs').completions()[0]
+    abs_ = Script('abs').complete()[0]
     assert abs_.name == 'abs'
     assert abs_.get_line_code() == ''
     assert abs_.line is None
@@ -316,14 +316,14 @@ def test_goto_follow_builtin_imports(Script):
 
 
 def test_docstrings_for_completions(Script):
-    for c in Script('').completions():
+    for c in Script('').complete():
         assert isinstance(c.docstring(), (str, unicode))
 
 
 def test_fuzzy_completion(Script):
     script = Script('string =  "hello"\nstring.upper')
     assert ['isupper',
-            'upper'] == [comp.name for comp in script.completions(fuzzy=True)]
+            'upper'] == [comp.name for comp in script.complete(fuzzy=True)]
 
 
 def test_math_fuzzy_completion(Script, environment):
@@ -331,7 +331,7 @@ def test_math_fuzzy_completion(Script, environment):
     expected = ['copysign', 'log', 'log10', 'log1p']
     if environment.version_info.major >= 3:
         expected.append('log2')
-    completions = script.completions(fuzzy=True)
+    completions = script.complete(fuzzy=True)
     assert expected == [comp.name for comp in completions]
     for c in completions:
         assert c.complete is None
@@ -341,7 +341,7 @@ def test_file_fuzzy_completion(Script):
     path = os.path.join(test_dir, 'completion')
     script = Script('"{}/ep08_i'.format(path))
     assert ['pep0484_basic.py"', 'pep0484_typing.py"'] \
-        == [comp.name for comp in script.completions(fuzzy=True)]
+        == [comp.name for comp in script.complete(fuzzy=True)]
 
 
 @pytest.mark.parametrize(

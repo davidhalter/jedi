@@ -28,7 +28,7 @@ def test_valid_call(Script):
     assert_signature(Script, 'bool()', 'bool', column=5)
 
 
-class TestCallSignatures(TestCase):
+class TestSignatures(TestCase):
     @pytest.fixture(autouse=True)
     def init(self, Script):
         self.Script = Script
@@ -313,7 +313,7 @@ def test_signature_is_definition(Script):
     signature.line == 1
     signature.column == 6
 
-    # Now compare all the attributes that a CallSignature must also have.
+    # Now compare all the attributes that a Signature must also have.
     for attr_name in dir(definition):
         dont_scan = ['defined_names', 'parent', 'goto_assignments', 'infer',
                      'params', 'get_signatures', 'execute', 'goto']
@@ -364,7 +364,7 @@ def test_completion_interference(Script):
     assert Script('open(').call_signatures()
 
     # complete something usual, before doing the same call_signatures again.
-    assert Script('from datetime import ').completions()
+    assert Script('from datetime import ').complete()
 
     assert Script('open(').call_signatures()
 

@@ -11,7 +11,7 @@ def test_in_whitespace(Script):
     code = dedent('''
     def x():
         pass''')
-    assert len(Script(code, column=2).completions()) > 20
+    assert len(Script(code).complete(column=2)) > 20
 
 
 def test_empty_init(Script):

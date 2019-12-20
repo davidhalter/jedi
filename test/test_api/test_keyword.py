@@ -24,13 +24,13 @@ def test_keyword(Script, environment):
 
     assert Script("import").goto_assignments() == []
 
-    completions = Script("import", 1, 1).completions()
+    completions = Script("import").complete(1, 1)
     assert len(completions) > 10 and 'if' in [c.name for c in completions]
     assert Script("assert").goto_definitions() == []
 
 
 def test_keyword_attributes(Script):
-    def_, = Script('def').completions()
+    def_, = Script('def').complete()
     assert def_.name == 'def'
     assert def_.complete == ''
     assert def_.is_keyword is True
@@ -55,6 +55,6 @@ def test_none_keyword(Script, environment):
         # Just don't care about Python 2 anymore, it's almost gone.
         pytest.skip()
 
-    none, = Script('None').completions()
+    none, = Script('None').complete()
     assert not none.docstring()
     assert none.name == 'None'

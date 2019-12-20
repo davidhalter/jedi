@@ -26,7 +26,7 @@ class _GlobalNameSpace:
 
 def get_completion(source, namespace):
     i = jedi.Interpreter(source, [namespace])
-    completions = i.completions()
+    completions = i.complete()
     assert len(completions) == 1
     return completions[0]
 
@@ -310,7 +310,7 @@ def test_param_completion():
     lambd = lambda xyz: 3
 
     _assert_interpreter_complete('foo(bar', locals(), ['bar'])
-    assert bool(jedi.Interpreter('lambd(xyz', [locals()]).completions()) == is_py3
+    assert bool(jedi.Interpreter('lambd(xyz', [locals()]).complete()) == is_py3
 
 
 def test_endless_yield():
@@ -325,7 +325,7 @@ def test_completion_params():
     foo = lambda a, b=3: None
 
     script = jedi.Interpreter('foo', [locals()])
-    c, = script.completions()
+    c, = script.complete()
     assert [p.name for p in c.params] == ['a', 'b']
     assert c.params[0].infer() == []
     t, = c.params[1].infer()
@@ -339,7 +339,7 @@ def test_completion_param_annotations():
     code = 'def foo(a: 1, b: str, c: int = 1.0) -> bytes: pass'
     exec_(code, locals())
     script = jedi.Interpreter('foo', [locals()])
-    c, = script.completions()
+    c, = script.complete()
     a, b, c = c.params
     assert a.infer() == []
     assert [d.name for d in b.infer()] == ['str']
@@ -354,7 +354,7 @@ def test_keyword_argument():
     def f(some_keyword_argument):
         pass
 
-    c, = jedi.Interpreter("f(some_keyw", [{'f': f}]).completions()
+    c, = jedi.Interpreter("f(some_keyw", [{'f': f}]).complete()
     assert c.name == 'some_keyword_argument'
     assert c.complete == 'ord_argument='
 
@@ -362,7 +362,7 @@ def test_keyword_argument():
     if is_py3:
         # Make it impossible for jedi to find the source of the function.
         f.__name__ = 'xSOMETHING'
-        c, = jedi.Interpreter("x(some_keyw", [{'x': f}]).completions()
+        c, = jedi.Interpreter("x(some_keyw", [{'x': f}]).complete()
         assert c.name == 'some_keyword_argument'
 
 
@@ -376,12 +376,12 @@ def test_more_complex_instances():
             return Something()
 
     #script = jedi.Interpreter('Base().wow().foo', [locals()])
-    #c, = script.completions()
+    #c, = script.complete()
     #assert c.name == 'foo'
 
     x = Base()
     script = jedi.Interpreter('x.wow().foo', [locals()])
-    c, = script.completions()
+    c, = script.complete()
     assert c.name == 'foo'
 
 
@@ -419,7 +419,7 @@ def test_dir_magic_method(allow_unsafe_getattr):
             return ['foo', 'bar'] + names
 
     itp = jedi.Interpreter("ca.", [{'ca': CompleteAttrs()}])
-    completions = itp.completions()
+    completions = itp.complete()
     names = [c.name for c in completions]
     assert ('__dir__' in names) == is_py3
     assert '__class__' in names
@@ -447,7 +447,7 @@ def test_name_not_findable():
 
     setattr(X, 'NOT_FINDABLE', X.hidden)
 
-    assert jedi.Interpreter("X.NOT_FINDA", [locals()]).completions()
+    assert jedi.Interpreter("X.NOT_FINDA", [locals()]).complete()
 
 
 def test_stubs_working():
@@ -458,8 +458,8 @@ def test_stubs_working():
 
 def test_sys_path_docstring():  # Was an issue in #1298
     import jedi
-    s = jedi.Interpreter("from sys import path\npath", line=2, column=4, namespaces=[locals()])
-    s.completions()[0].docstring()
+    s = jedi.Interpreter("from sys import path\npath", namespaces=[locals()])
+    s.complete(line=2, column=4)[0].docstring()
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
@@ -504,7 +504,7 @@ def test_simple_completions(code, completions):
     counter = collections.Counter(['asdf'])
     string = ''
 
-    defs = jedi.Interpreter(code, [locals()]).completions()
+    defs = jedi.Interpreter(code, [locals()]).complete()
     assert [d.name for d in defs] == completions
 
 
@@ -516,7 +516,7 @@ def test__wrapped__():
     def syslogs_to_df():
             pass
 
-    c, = jedi.Interpreter('syslogs_to_df', [locals()]).completions()
+    c, = jedi.Interpreter('syslogs_to_df', [locals()]).complete()
     # Apparently the function starts on the line where the decorator starts.
     assert c.line == syslogs_to_df.__wrapped__.__code__.co_firstlineno + 1
 
@@ -525,7 +525,7 @@ def test__wrapped__():
 @pytest.mark.parametrize('module_name', ['sys', 'time', 'unittest.mock'])
 def test_core_module_completes(module_name):
     module = import_module(module_name)
-    assert jedi.Interpreter('module.', [locals()]).completions()
+    assert jedi.Interpreter('module.', [locals()]).complete()
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
@@ -573,5 +573,5 @@ def test_param_annotation_completion(class_is_findable):
         Foo.__name__ = 'asdf'
 
     code = 'def CallFoo(x: Foo):\n x.ba'
-    def_, = jedi.Interpreter(code, [locals()]).completions()
+    def_, = jedi.Interpreter(code, [locals()]).complete()
     assert def_.name == 'bar'

@@ -103,12 +103,12 @@ def test_sub_module(Script, jedi_path):
 
 
 def test_os_path(Script):
-    d, = Script('from os.path import join').completions()
+    d, = Script('from os.path import join').complete()
     assert d.full_name == 'os.path.join'
-    d, = Script('import os.p').completions()
+    d, = Script('import os.p').complete()
     assert d.full_name == 'os.path'
 
 
 def test_os_issues(Script):
     """Issue #873"""
-    assert [c.name for c in Script('import os\nos.nt''').completions()] == ['nt']
+    assert [c.name for c in Script('import os\nos.nt''').complete()] == ['nt']

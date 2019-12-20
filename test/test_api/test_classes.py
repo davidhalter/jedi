@@ -88,7 +88,7 @@ def test_basedefinition_type(Script, names):
 
 )
 def test_basedefinition_type_import(Script, src, expected_result, column):
-    types = {t.type for t in Script(src, column=column).completions()}
+    types = {t.type for t in Script(src).complete(column=column)}
     assert types == {expected_result}
 
 
@@ -129,10 +129,10 @@ def test_completion_docstring(Script, jedi_path):
     Jedi should follow imports in certain conditions
     """
     def docstr(src, result):
-        c = Script(src, sys_path=[jedi_path]).completions()[0]
+        c = Script(src, sys_path=[jedi_path]).complete()[0]
         assert c.docstring(raw=True, fast=False) == cleandoc(result)
 
-    c = Script('import jedi\njed', sys_path=[jedi_path]).completions()[0]
+    c = Script('import jedi\njed', sys_path=[jedi_path]).complete()[0]
     assert c.docstring(fast=False) == cleandoc(jedi_doc)
 
     docstr('import jedi\njedi.Scr', cleandoc(jedi.Script.__doc__))
@@ -174,12 +174,12 @@ def test_completion_docstring(Script, jedi_path):
 
 
 def test_completion_params(Script):
-    c = Script('import string; string.capwords').completions()[0]
+    c = Script('import string; string.capwords').complete()[0]
     assert [p.name for p in c.params] == ['s', 'sep']
 
 
 def test_functions_should_have_params(Script):
-    for c in Script('bool.').completions():
+    for c in Script('bool.').complete():
         if c.type == 'function':
             assert isinstance(c.params, list)
 
@@ -189,7 +189,7 @@ def test_hashlib_params(Script, environment):
         pytest.skip()
 
     script = Script(source='from hashlib import sha256')
-    c, = script.completions()
+    c, = script.complete()
     assert [p.name for p in c.params] == ['arg']
 
 
@@ -280,11 +280,11 @@ def test_parent_on_completion(Script):
     parent = Script(dedent('''\
         class Foo():
             def bar(): pass
-        Foo().bar''')).completions()[0].parent()
+        Foo().bar''')).complete()[0].parent()
     assert parent.name == 'Foo'
     assert parent.type == 'class'
 
-    parent = Script('str.join').completions()[0].parent()
+    parent = Script('str.join').complete()[0].parent()
     assert parent.name == 'str'
     assert parent.type == 'class'
 
@@ -304,17 +304,17 @@ def test_parent_on_comprehension():
 
 
 def test_type(Script):
-    for c in Script('a = [str()]; a[0].').completions():
+    for c in Script('a = [str()]; a[0].').complete():
         if c.name == '__class__' and False:  # TODO fix.
             assert c.type == 'class'
         else:
             assert c.type in ('function', 'statement')
 
-    for c in Script('list.').completions():
+    for c in Script('list.').complete():
         assert c.type
 
     # Github issue #397, type should never raise an error.
-    for c in Script('import os; os.path.').completions():
+    for c in Script('import os; os.path.').complete():
         assert c.type
 
 
@@ -322,7 +322,7 @@ def test_type_II(Script):
     """
     GitHub Issue #833, `keyword`s are seen as `module`s
     """
-    for c in Script('f').completions():
+    for c in Script('f').complete():
         if c.name == 'for':
             assert c.type == 'keyword'
 
@@ -432,7 +432,7 @@ def test_added_equals_to_params(Script):
         def foo(bar, baz):
             pass
         """)
-        results = Script(source + rest_source).completions()
+        results = Script(source + rest_source).complete()
         assert len(results) == 1
         return results[0]
 
