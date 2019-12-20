@@ -8,8 +8,8 @@ from jedi.inference.helpers import get_str_or_none
 from jedi.parser_utils import get_string_quote
 
 
-def file_name_completions(inference_state, module_context, start_leaf, string,
-                          like_name, call_signatures_callback, code_lines, position, fuzzy):
+def complete_file_name(inference_state, module_context, start_leaf, string,
+                       like_name, signatures_callback, code_lines, position, fuzzy):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
@@ -23,7 +23,7 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
     must_start_with = os.path.basename(string) + like_name
     string = os.path.dirname(string)
 
-    sigs = call_signatures_callback()
+    sigs = signatures_callback(*position)
     is_in_os_path_join = sigs and all(s.full_name == 'os.path.join' for s in sigs)
     if is_in_os_path_join:
         to_be_added = _add_os_path_join(module_context, start_leaf, sigs[0].bracket_start)

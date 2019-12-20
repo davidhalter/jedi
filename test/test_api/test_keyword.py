@@ -5,38 +5,38 @@ Test of keywords and ``jedi.keywords``
 import pytest
 
 
-def test_goto_assignments_keyword(Script):
+def test_goto_keyword(Script):
     """
     Bug: goto assignments on ``in`` used to raise AttributeError::
 
       'unicode' object has no attribute 'generate_call_path'
     """
-    Script('in').goto_assignments()
+    Script('in').goto()
 
 
 def test_keyword(Script, environment):
     """ github jedi-vim issue #44 """
-    defs = Script("print").goto_definitions()
+    defs = Script("print").infer()
     if environment.version_info.major < 3:
         assert defs == []
     else:
         assert [d.docstring() for d in defs]
 
-    assert Script("import").goto_assignments() == []
+    assert Script("import").goto() == []
 
-    completions = Script("import", 1, 1).completions()
+    completions = Script("import").complete(1, 1)
     assert len(completions) > 10 and 'if' in [c.name for c in completions]
-    assert Script("assert").goto_definitions() == []
+    assert Script("assert").infer() == []
 
 
 def test_keyword_attributes(Script):
-    def_, = Script('def').completions()
+    def_, = Script('def').complete()
     assert def_.name == 'def'
     assert def_.complete == ''
     assert def_.is_keyword is True
     assert def_.is_stub() is False
-    assert def_.goto_assignments(only_stubs=True) == []
-    assert def_.goto_assignments() == []
+    assert def_.goto(only_stubs=True) == []
+    assert def_.goto() == []
     assert def_.infer() == []
     assert def_.parent() is None
     assert def_.docstring()
@@ -55,6 +55,6 @@ def test_none_keyword(Script, environment):
         # Just don't care about Python 2 anymore, it's almost gone.
         pytest.skip()
 
-    none, = Script('None').completions()
+    none, = Script('None').complete()
     assert not none.docstring()
     assert none.name == 'None'

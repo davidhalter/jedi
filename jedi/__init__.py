@@ -4,7 +4,7 @@ Jedi has a focus on autocompletion and goto functionality. Jedi is fast and is
 very well tested. It understands Python and stubs on a deep level.
 
 Jedi has support for different goto functions. It's possible to search for
-usages and list names in a Python file to get information about them.
+references and list names in a Python file to get information about them.
 
 Jedi uses a very simple API to connect with IDE's. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
@@ -18,10 +18,10 @@ Here's a simple example of the autocompletion feature:
 >>> source = '''
 ... import json
 ... json.lo'''
->>> script = jedi.Script(source, 3, len('json.lo'), 'example.py')
+>>> script = jedi.Script(source, path='example.py')
 >>> script
 <Script: 'example.py' ...>
->>> completions = script.completions()
+>>> completions = script.complete(3, len('json.lo'))
 >>> completions
 [<Completion: load>, <Completion: loads>]
 >>> print(completions[0].complete)
@@ -33,7 +33,7 @@ As you see Jedi is pretty simple and allows you to concentrate on writing a
 good text editor, while still having very good IDE features for Python.
 """
 
-__version__ = '0.15.2'
+__version__ = '0.16.0'
 
 from jedi.api import Script, Interpreter, set_debug_function, \
     preload_module, names

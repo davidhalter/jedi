@@ -143,7 +143,7 @@ class InferenceState(object):
         """Convenience function"""
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
-    def goto_definitions(self, context, name):
+    def infer(self, context, name):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type

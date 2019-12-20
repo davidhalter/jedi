@@ -1,4 +1,4 @@
-# goto_assignments command tests are different in syntax
+# goto command tests are different in syntax
 
 definition = 3
 #! 0 ['a = definition']

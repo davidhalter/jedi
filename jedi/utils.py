@@ -83,7 +83,7 @@ def setup_readline(namespace_module=__main__, fuzzy=False):
                     logging.debug("Start REPL completion: " + repr(text))
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                    completions = interpreter.completions(fuzzy=fuzzy)
+                    completions = interpreter.complete(fuzzy=fuzzy)
                     logging.debug("REPL completions: %s", completions)
 
                     self.matches = [

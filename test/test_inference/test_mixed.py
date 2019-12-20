@@ -14,7 +14,7 @@ def interpreter(code, namespace, *args, **kwargs):
 def test_on_code():
     from functools import wraps
     i = interpreter("wraps.__code__", {'wraps': wraps})
-    assert i.goto_definitions()
+    assert i.infer()
 
 
 @pytest.mark.skipif('sys.version_info < (3,5)')
@@ -39,4 +39,4 @@ def test_generics():
             self.stack.push(1)
 
     s = StackWrapper()
-    print(interpreter('s.stack.pop().', locals()).completions())
+    print(interpreter('s.stack.pop().', locals()).complete())

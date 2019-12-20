@@ -106,8 +106,8 @@ def Script(environment):
 
 
 @pytest.fixture(scope='session')
-def names(environment):
-    return partial(jedi.names, environment=environment)
+def names(Script):
+    return lambda code, **kwargs: Script(code).names(**kwargs)
 
 
 @pytest.fixture(scope='session')
@@ -118,7 +118,7 @@ def has_typing(environment):
         return True
 
     script = jedi.Script('import typing', environment=environment)
-    return bool(script.goto_definitions())
+    return bool(script.infer())
 
 
 @pytest.fixture(scope='session')

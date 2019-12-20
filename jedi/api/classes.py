@@ -104,7 +104,7 @@ class BaseDefinition(object):
 
         Here is an example of the value of this attribute.  Let's consider
         the following source.  As what is in ``variable`` is unambiguous
-        to Jedi, :meth:`jedi.Script.goto_definitions` should return a list of
+        to Jedi, :meth:`jedi.Script.infer` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
         >>> from jedi._compatibility import no_unicode_pprint
@@ -127,7 +127,7 @@ class BaseDefinition(object):
         ...     variable'''
 
         >>> script = Script(source)
-        >>> defs = script.goto_definitions()
+        >>> defs = script.infer()
 
         Before showing what is in ``defs``, let's sort it by :attr:`line`
         so that it is easy to relate the result to the source code.
@@ -177,7 +177,7 @@ class BaseDefinition(object):
         >>> from jedi import Script
         >>> source = 'import json'
         >>> script = Script(source, path='example.py')
-        >>> d = script.goto_definitions()[0]
+        >>> d = script.infer()[0]
         >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
@@ -217,18 +217,18 @@ class BaseDefinition(object):
         ... def f(a, b=1):
         ...     "Document for function f."
         ... '''
-        >>> script = Script(source, 1, len('def f'), 'example.py')
-        >>> doc = script.goto_definitions()[0].docstring()
+        >>> script = Script(source, path='example.py')
+        >>> doc = script.infer(1, len('def f'))[0].docstring()
         >>> print(doc)
         f(a, b=1)
         <BLANKLINE>
         Document for function f.
 
         Notice that useful extra information is added to the actual
-        docstring.  For function, it is call signature.  If you need
+        docstring.  For function, it is signature.  If you need
         actual docstring, use ``raw=True`` instead.
 
-        >>> print(script.goto_definitions()[0].docstring(raw=True))
+        >>> print(script.infer(1, len('def f'))[0].docstring(raw=True))
         Document for function f.
 
         :param fast: Don't follow imports that are only one level deep like
@@ -259,8 +259,8 @@ class BaseDefinition(object):
         >>> source = '''
         ... import os
         ... os.path.join'''
-        >>> script = Script(source, 3, len('os.path.join'), 'example.py')
-        >>> print(script.goto_definitions()[0].full_name)
+        >>> script = Script(source, path='example.py')
+        >>> print(script.infer(3, len('os.path.join'))[0].full_name)
         os.path.join
 
         Notice that it returns ``'os.path.join'`` instead of (for example)
@@ -289,11 +289,19 @@ class BaseDefinition(object):
 
         return self._name.get_root_context().is_stub()
 
-    def goto_assignments(self, **kwargs):  # Python 2...
+    def goto(self, **kwargs):
         with debug.increase_indent_cm('goto for %s' % self._name):
-            return self._goto_assignments(**kwargs)
+            return self._goto(**kwargs)
 
-    def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
+    def goto_assignments(self, **kwargs):  # Python 2...
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use .goto.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.goto(**kwargs)
+
+    def _goto(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
         if not self._name.is_value_name:
@@ -397,7 +405,10 @@ class BaseDefinition(object):
         return ''.join(lines[start_index:index + after + 1])
 
     def get_signatures(self):
-        return [Signature(self._inference_state, s) for s in self._name.infer().get_signatures()]
+        return [
+            BaseSignature(self._inference_state, s)
+            for s in self._name.infer().get_signatures()
+        ]
 
     def execute(self):
         return _values_to_definitions(self._name.infer().execute_with_values())
@@ -405,7 +416,7 @@ class BaseDefinition(object):
 
 class Completion(BaseDefinition):
     """
-    `Completion` objects are returned from :meth:`api.Script.completions`. They
+    `Completion` objects are returned from :meth:`api.Script.complete`. They
     provide additional information about a completion.
     """
     def __init__(self, inference_state, name, stack, like_name_length, is_fuzzy):
@@ -514,8 +525,8 @@ class Completion(BaseDefinition):
 
 class Definition(BaseDefinition):
     """
-    *Definition* objects are returned from :meth:`api.Script.goto_assignments`
-    or :meth:`api.Script.goto_definitions`.
+    *Definition* objects are returned from :meth:`api.Script.goto`
+    or :meth:`api.Script.infer`.
     """
     def __init__(self, inference_state, definition):
         super(Definition, self).__init__(inference_state, definition)
@@ -538,8 +549,8 @@ class Definition(BaseDefinition):
         ...     pass
         ...
         ... variable = f if random.choice([0,1]) else C'''
-        >>> script = Script(source, column=3)  # line is maximum by default
-        >>> defs = script.goto_definitions()
+        >>> script = Script(source)  # line is maximum by default
+        >>> defs = script.infer(column=3)
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Definition full_name='__main__.f', description='def f'>,
@@ -620,14 +631,14 @@ class Definition(BaseDefinition):
         return hash((self._name.start_pos, self.module_path, self.name, self._inference_state))
 
 
-class Signature(Definition):
+class BaseSignature(Definition):
     """
-    `Signature` objects is the return value of `Script.function_definition`.
+    `BaseSignature` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
     def __init__(self, inference_state, signature):
-        super(Signature, self).__init__(inference_state, signature.name)
+        super(BaseSignature, self).__init__(inference_state, signature.name)
         self._signature = signature
 
     @property
@@ -642,15 +653,15 @@ class Signature(Definition):
         return self._signature.to_string()
 
 
-class CallSignature(Signature):
+class Signature(BaseSignature):
     """
-    `CallSignature` objects is the return value of `Script.call_signatures`.
+    `Signature` objects is the return value of `Script.find_signatures`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function with its params. Without `(` it would
     return nothing.
     """
     def __init__(self, inference_state, signature, call_details):
-        super(CallSignature, self).__init__(inference_state, signature)
+        super(Signature, self).__init__(inference_state, signature)
         self._call_details = call_details
         self._signature = signature
 

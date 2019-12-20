@@ -107,7 +107,7 @@ class TreeSignature(AbstractSignature):
                       for executed_param_name in executed_param_names)
         if debug.enable_notice:
             tree_node = self._function_value.tree_node
-            signature = parser_utils.get_call_signature(tree_node)
+            signature = parser_utils.get_signature(tree_node)
             if matches:
                 debug.dbg("Overloading match: %s@%s (%s)",
                           signature, tree_node.start_pos[0], arguments, color='BLUE')

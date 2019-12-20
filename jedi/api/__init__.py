@@ -25,12 +25,13 @@ from jedi.file_io import KnownContentFileIO
 from jedi.api import classes
 from jedi.api import interpreter
 from jedi.api import helpers
+from jedi.api.helpers import validate_line_column
 from jedi.api.completion import Completion
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
 from jedi.inference import InferenceState
 from jedi.inference import imports
-from jedi.inference import usages
+from jedi.inference.references import find_references
 from jedi.inference.arguments import try_iter_content
 from jedi.inference.helpers import get_module_names, infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
@@ -68,9 +69,9 @@ class Script(object):
 
     :param source: The source code of the current file, separated by newlines.
     :type source: str
-    :param line: The line to perform actions on (starting with 1).
+    :param line: Deprecated, please use it directly on e.g. `.complete`
     :type line: int
-    :param column: The column of the cursor (starting with 0).
+    :param column: Deprecated, please use it directly on e.g. `.complete`
     :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
@@ -126,22 +127,6 @@ class Script(object):
         debug.speed('parsed')
         self._code_lines = parso.split_lines(source, keepends=True)
         self._code = source
-        line = max(len(self._code_lines), 1) if line is None else line
-        if not (0 < line <= len(self._code_lines)):
-            raise ValueError('`line` parameter is not in a valid range.')
-
-        line_string = self._code_lines[line - 1]
-        line_len = len(line_string)
-        if line_string.endswith('\r\n'):
-            line_len -= 1
-        if line_string.endswith('\n'):
-            line_len -= 1
-
-        column = line_len if column is None else column
-        if not (0 <= column <= line_len):
-            raise ValueError('`column` parameter (%d) is not in a valid range '
-                             '(0-%d) for line %d (%r).' % (
-                                 column, line_len, line, line_string))
         self._pos = line, column
 
         cache.clear_time_caches()
@@ -201,27 +186,38 @@ class Script(object):
             self._inference_state.environment,
         )
 
-    def completions(self, fuzzy=False):
+    @validate_line_column
+    def complete(self, line=None, column=None, **kwargs):
         """
         Return :class:`classes.Completion` objects. Those objects contain
         information about the completions, more than just names.
 
-        :return: Completion objects, sorted by name and __ comes last.
+        :param fuzzy: Default False. Will return fuzzy completions, which means
+            that e.g. ``ooa`` will match ``foobar``.
+        :return: Completion objects, sorted by name and ``__`` comes last.
         :rtype: list of :class:`classes.Completion`
         """
-        with debug.increase_indent_cm('completions'):
+        return self._complete(line, column, **kwargs)
+
+    def _complete(self, line, column, fuzzy=False):  # Python 2...
+        with debug.increase_indent_cm('complete'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
-                self._pos, self.call_signatures
+                (line, column), self.find_signatures
             )
-            return completion.completions(fuzzy)
+            return completion.complete(fuzzy)
 
-    def goto_definitions(self, **kwargs):
+    def completions(self, fuzzy=False):
+        # Deprecated, will be removed.
+        return self.complete(*self._pos, fuzzy=fuzzy)
+
+    @validate_line_column
+    def infer(self, line=None, column=None, **kwargs):
         """
         Return the definitions of a the path under the cursor.  goto function!
         This follows complicated paths and returns the end, not the first
-        definition. The big difference between :meth:`goto_assignments` and
-        :meth:`goto_definitions` is that :meth:`goto_assignments` doesn't
+        definition. The big difference between :meth:`goto` and
+        :meth:`infer` is that :meth:`goto` doesn't
         follow imports and statements. Multiple objects may be returned,
         because Python itself is a dynamic language, which means depending on
         an option you can have two different versions of a function.
@@ -231,19 +227,24 @@ class Script(object):
             inference call.
         :rtype: list of :class:`classes.Definition`
         """
-        with debug.increase_indent_cm('goto_definitions'):
-            return self._goto_definitions(**kwargs)
+        with debug.increase_indent_cm('infer'):
+            return self._infer(line, column, **kwargs)
 
-    def _goto_definitions(self, only_stubs=False, prefer_stubs=False):
-        leaf = self._module_node.get_name_of_position(self._pos)
+    def goto_definitions(self, **kwargs):
+        # Deprecated, will be removed.
+        return self.infer(*self._pos, **kwargs)
+
+    def _infer(self, line, column, only_stubs=False, prefer_stubs=False):
+        pos = line, column
+        leaf = self._module_node.get_name_of_position(pos)
         if leaf is None:
-            leaf = self._module_node.get_leaf_for_position(self._pos)
+            leaf = self._module_node.get_leaf_for_position(pos)
             if leaf is None or leaf.type == 'string':
                 return []
 
         context = self._get_module_context().create_context(leaf)
 
-        values = helpers.infer_goto_definition(self._inference_state, context, leaf)
+        values = helpers.infer(self._inference_state, context, leaf)
         values = convert_values(
             values,
             only_stubs=only_stubs,
@@ -257,6 +258,14 @@ class Script(object):
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
+        # Deprecated, will be removed.
+        return self.goto(*self._pos,
+                         follow_imports=follow_imports,
+                         follow_builtin_imports=follow_builtin_imports,
+                         **kwargs)
+
+    @validate_line_column
+    def goto(self, line=None, column=None, **kwargs):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
@@ -273,11 +282,11 @@ class Script(object):
         :param prefer_stubs: Prefer stubs to Python objects for this goto call.
         :rtype: list of :class:`classes.Definition`
         """
-        with debug.increase_indent_cm('goto_assignments'):
-            return self._goto_assignments(follow_imports, follow_builtin_imports, **kwargs)
+        with debug.increase_indent_cm('goto'):
+            return self._goto(line, column, **kwargs)
 
-    def _goto_assignments(self, follow_imports, follow_builtin_imports,
-                          only_stubs=False, prefer_stubs=False):
+    def _goto(self, line, column, follow_imports=False, follow_builtin_imports=False,
+              only_stubs=False, prefer_stubs=False):
         def filter_follow_imports(names):
             for name in names:
                 if name.is_import():
@@ -296,11 +305,11 @@ class Script(object):
                 else:
                     yield name
 
-        tree_name = self._module_node.get_name_of_position(self._pos)
+        tree_name = self._module_node.get_name_of_position((line, column))
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
-            return self.goto_definitions(only_stubs=only_stubs, prefer_stubs=prefer_stubs)
+            return self.infer(line, column, only_stubs=only_stubs, prefer_stubs=prefer_stubs)
         name = self._get_module_context().create_name(tree_name)
         names = list(name.goto())
 
@@ -315,42 +324,43 @@ class Script(object):
         defs = [classes.Definition(self._inference_state, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
-    def usages(self, additional_module_paths=(), **kwargs):
+    def usages(self, **kwargs):
+        # Deprecated, will be removed.
+        return self.find_references(*self._pos, **kwargs)
+
+    @validate_line_column
+    def find_references(self, line=None, column=None, **kwargs):
         """
         Return :class:`classes.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
-        is very useful for refactoring (renaming), or to show all usages of a
-        variable.
+        is very useful for refactoring (renaming), or to show all references of
+        a variable.
 
-        .. todo:: Implement additional_module_paths
-
-        :param additional_module_paths: Deprecated, never ever worked.
-        :param include_builtins: Default True, checks if a usage is a builtin
-            (e.g. ``sys``) and in that case does not return it.
+        :param include_builtins: Default True, checks if a reference is a
+            builtin (e.g. ``sys``) and in that case does not return it.
         :rtype: list of :class:`classes.Definition`
         """
-        if additional_module_paths:
-            warnings.warn(
-                "Deprecated since version 0.12.0. This never even worked, just ignore it.",
-                DeprecationWarning,
-                stacklevel=2
-            )
 
-        def _usages(include_builtins=True):
-            tree_name = self._module_node.get_name_of_position(self._pos)
+        def _references(include_builtins=True):
+            tree_name = self._module_node.get_name_of_position((line, column))
             if tree_name is None:
                 # Must be syntax
                 return []
 
-            names = usages.usages(self._get_module_context(), tree_name)
+            names = find_references(self._get_module_context(), tree_name)
 
             definitions = [classes.Definition(self._inference_state, n) for n in names]
             if not include_builtins:
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
-        return _usages(**kwargs)
+        return _references(**kwargs)
 
     def call_signatures(self):
+        # Deprecated, will be removed.
+        return self.find_signatures(*self._pos)
+
+    @validate_line_column
+    def find_signatures(self, line=None, column=None):
         """
         Return the function object of the call you're currently in.
 
@@ -364,25 +374,26 @@ class Script(object):
 
         This would return an empty list..
 
-        :rtype: list of :class:`classes.CallSignature`
+        :rtype: list of :class:`classes.Signature`
         """
-        call_details = helpers.get_call_signature_details(self._module_node, self._pos)
+        pos = line, column
+        call_details = helpers.get_signature_details(self._module_node, pos)
         if call_details is None:
             return []
 
         context = self._get_module_context().create_context(call_details.bracket_leaf)
-        definitions = helpers.cache_call_signatures(
+        definitions = helpers.cache_signatures(
             self._inference_state,
             context,
             call_details.bracket_leaf,
             self._code_lines,
-            self._pos
+            pos
         )
         debug.speed('func_call followed')
 
         # TODO here we use stubs instead of the actual values. We should use
         # the signatures from stubs, but the actual values, probably?!
-        return [classes.CallSignature(self._inference_state, signature, call_details)
+        return [classes.Signature(self._inference_state, signature, call_details)
                 for signature in definitions.get_signatures()]
 
     def _analysis(self):
@@ -408,7 +419,7 @@ class Script(object):
                         unpack_tuple_to_dict(context, types, testlist)
                 else:
                     if node.type == 'name':
-                        defs = self._inference_state.goto_definitions(context, node)
+                        defs = self._inference_state.infer(context, node)
                     else:
                         defs = infer_call_of_leaf(context, node)
                     try_iter_content(defs)
@@ -418,6 +429,36 @@ class Script(object):
             return sorted(set(ana), key=lambda x: x.line)
         finally:
             self._inference_state.is_analysis = False
+
+    def names(self, **kwargs):
+        """
+        Returns a list of `Definition` objects, containing name parts.
+        This means you can call ``Definition.goto()`` and get the
+        reference of a name.
+
+        :param all_scopes: If True lists the names of all scopes instead of only
+            the module namespace.
+        :param definitions: If True lists the names that have been defined by a
+            class, function or a statement (``a = b`` returns ``a``).
+        :param references: If True lists all the names that are not listed by
+            ``definitions=True``. E.g. ``a = b`` returns ``b``.
+        """
+        return self._names(**kwargs)  # Python 2...
+
+    def _names(self, all_scopes=False, definitions=True, references=False):
+        def def_ref_filter(_def):
+            is_def = _def._name.tree_name.is_definition()
+            return definitions and is_def or references and not is_def
+
+        # Set line/column to a random position, because they don't matter.
+        module_context = self._get_module_context()
+        defs = [
+            classes.Definition(
+                self._inference_state,
+                module_context.create_name(name)
+            ) for name in get_module_names(self._module_node, all_scopes)
+        ]
+        return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
 
 
 class Interpreter(Script):
@@ -432,7 +473,7 @@ class Interpreter(Script):
     >>> from os.path import join
     >>> namespace = locals()
     >>> script = Interpreter('join("").up', [namespace])
-    >>> print(script.completions()[0].name)
+    >>> print(script.complete()[0].name)
     upper
     """
     _allow_descriptor_getattr_default = True
@@ -484,34 +525,17 @@ class Interpreter(Script):
 
 def names(source=None, path=None, encoding='utf-8', all_scopes=False,
           definitions=True, references=False, environment=None):
-    """
-    Returns a list of `Definition` objects, containing name parts.
-    This means you can call ``Definition.goto_assignments()`` and get the
-    reference of a name.
-    The parameters are the same as in :py:class:`Script`, except or the
-    following ones:
+    warnings.warn(
+        "Deprecated since version 0.16.0. Use Script(...).names instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
 
-    :param all_scopes: If True lists the names of all scopes instead of only
-        the module namespace.
-    :param definitions: If True lists the names that have been defined by a
-        class, function or a statement (``a = b`` returns ``a``).
-    :param references: If True lists all the names that are not listed by
-        ``definitions=True``. E.g. ``a = b`` returns ``b``.
-    """
-    def def_ref_filter(_def):
-        is_def = _def._name.tree_name.is_definition()
-        return definitions and is_def or references and not is_def
-
-    # Set line/column to a random position, because they don't matter.
-    script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
-    module_context = script._get_module_context()
-    defs = [
-        classes.Definition(
-            script._inference_state,
-            module_context.create_name(name)
-        ) for name in get_module_names(script._module_node, all_scopes)
-    ]
-    return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
+    return Script(source, path=path, encoding=encoding).names(
+        all_scopes=all_scopes,
+        definitions=definitions,
+        references=references,
+    )
 
 
 def preload_module(*modules):
@@ -523,7 +547,7 @@ def preload_module(*modules):
     """
     for m in modules:
         s = "import %s as x; x." % m
-        Script(s, 1, len(s), None).completions()
+        Script(s, path=None).complete(1, len(s))
 
 
 def set_debug_function(func_cb=debug.print_to_stdout, warnings=True,

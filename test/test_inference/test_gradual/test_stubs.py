@@ -64,17 +64,17 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
 
     if way == 'direct':
         if type_ == 'goto':
-            defs = s.goto_assignments(follow_imports=True, **kwargs)
+            defs = s.goto(follow_imports=True, **kwargs)
         else:
-            defs = s.goto_definitions(**kwargs)
+            defs = s.infer(**kwargs)
     else:
-        goto_defs = s.goto_assignments(
+        goto_defs = s.goto(
             # Prefering stubs when we want to go to python and vice versa
             prefer_stubs=not (prefer_stubs or only_stubs),
             follow_imports=True,
         )
         if type_ == 'goto':
-            defs = [d for goto_def in goto_defs for d in goto_def.goto_assignments(**kwargs)]
+            defs = [d for goto_def in goto_defs for d in goto_def.goto(**kwargs)]
         else:
             defs = [d for goto_def in goto_defs for d in goto_def.infer(**kwargs)]
 

@@ -31,7 +31,7 @@ class MixinTestFullName(object):
 
     def check(self, source, desired):
         script = self.Script(textwrap.dedent(source))
-        definitions = getattr(script, type(self).operation)()
+        definitions = getattr(script, self.operation)()
         for d in definitions:
             self.assertEqual(d.full_name, desired)
 
@@ -43,7 +43,7 @@ class MixinTestFullName(object):
 
 
 class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
-    operation = 'goto_definitions'
+    operation = 'infer'
 
     def test_tuple_mapping(self):
         if self.environment.version_info.major == 2:
@@ -59,7 +59,7 @@ class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
 
 
 class TestFullNameWithCompletions(MixinTestFullName, TestCase):
-    operation = 'completions'
+    operation = 'complete'
 
 
 class TestFullDefinedName(TestCase):
@@ -71,7 +71,8 @@ class TestFullDefinedName(TestCase):
         self.environment = environment
 
     def check(self, source, desired):
-        definitions = jedi.names(textwrap.dedent(source), environment=self.environment)
+        script = jedi.Script(textwrap.dedent(source), environment=self.environment)
+        definitions = script.names()
         full_names = [d.full_name for d in definitions]
         self.assertEqual(full_names, desired)
 
@@ -96,19 +97,19 @@ def test_sub_module(Script, jedi_path):
     path.
     """
     sys_path = [jedi_path]
-    defs = Script('from jedi.api import classes; classes', sys_path=sys_path).goto_definitions()
+    defs = Script('from jedi.api import classes; classes', sys_path=sys_path).infer()
     assert [d.full_name for d in defs] == ['jedi.api.classes']
-    defs = Script('import jedi.api; jedi.api', sys_path=sys_path).goto_definitions()
+    defs = Script('import jedi.api; jedi.api', sys_path=sys_path).infer()
     assert [d.full_name for d in defs] == ['jedi.api']
 
 
 def test_os_path(Script):
-    d, = Script('from os.path import join').completions()
+    d, = Script('from os.path import join').complete()
     assert d.full_name == 'os.path.join'
-    d, = Script('import os.p').completions()
+    d, = Script('import os.p').complete()
     assert d.full_name == 'os.path'
 
 
 def test_os_issues(Script):
     """Issue #873"""
-    assert [c.name for c in Script('import os\nos.nt''').completions()] == ['nt']
+    assert [c.name for c in Script('import os\nos.nt''').complete()] == ['nt']

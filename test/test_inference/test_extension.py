@@ -10,10 +10,10 @@ import pytest
 
 def test_completions(Script):
     s = Script('import _ctypes; _ctypes.')
-    assert len(s.completions()) >= 15
+    assert len(s.complete()) >= 15
 
 
-def test_call_signatures_extension(Script):
+def test_find_signatures_extension(Script):
     if os.name == 'nt':
         func = 'LoadLibrary'
         params = 1
@@ -21,14 +21,14 @@ def test_call_signatures_extension(Script):
         func = 'dlopen'
         params = 2
     s = Script('import _ctypes; _ctypes.%s(' % (func,))
-    sigs = s.call_signatures()
+    sigs = s.find_signatures()
     assert len(sigs) == 1
     assert len(sigs[0].params) == params
 
 
-def test_call_signatures_stdlib(Script):
+def test_find_signatures_stdlib(Script):
     s = Script('import math; math.cos(')
-    sigs = s.call_signatures()
+    sigs = s.find_signatures()
     assert len(sigs) == 1
     assert len(sigs[0].params) == 1
 
@@ -51,7 +51,7 @@ def test_init_extension_module(Script):
     This is also why this test only runs on certain systems (and Python 3.4).
     """
     s = jedi.Script('import init_extension_module as i\ni.', path='not_existing.py')
-    assert 'foo' in [c.name for c in s.completions()]
+    assert 'foo' in [c.name for c in s.complete()]
 
     s = jedi.Script('from init_extension_module import foo\nfoo', path='not_existing.py')
-    assert ['foo'] == [c.name for c in s.completions()]
+    assert ['foo'] == [c.name for c in s.complete()]

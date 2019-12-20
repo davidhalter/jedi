@@ -61,7 +61,7 @@ def test_doc(inference_state):
 
 def test_string_literals(Script, environment):
     def typ(string):
-        d = Script("a = %s; a" % string).goto_definitions()[0]
+        d = Script("a = %s; a" % string).infer()[0]
         return d.name
 
     assert typ('""') == 'str'
@@ -83,12 +83,12 @@ def test_method_completion(Script, environment):
 
     foo = Foo()
     foo.bar.__func__''')
-    assert [c.name for c in Script(code).completions()] == ['__func__']
+    assert [c.name for c in Script(code).complete()] == ['__func__']
 
 
 def test_time_docstring(Script):
     import time
-    comp, = Script('import time\ntime.sleep').completions()
+    comp, = Script('import time\ntime.sleep').complete()
     assert comp.docstring(raw=True) == time.sleep.__doc__
     expected = 'sleep(secs: float) -> None\n\n' + time.sleep.__doc__
     assert comp.docstring() == expected
@@ -98,12 +98,12 @@ def test_dict_values(Script, environment):
     if environment.version_info.major == 2:
         # It looks like typeshed for Python 2 returns Any.
         pytest.skip()
-    assert Script('import sys\nsys.modules["alshdb;lasdhf"]').goto_definitions()
+    assert Script('import sys\nsys.modules["alshdb;lasdhf"]').infer()
 
 
 def test_getitem_on_none(Script):
     script = Script('None[1j]')
-    assert not script.goto_definitions()
+    assert not script.infer()
     issue, = script._inference_state.analysis
     assert issue.name == 'type-error-not-subscriptable'
 
