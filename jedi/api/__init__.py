@@ -335,29 +335,23 @@ class Script(object):
         defs = [classes.Definition(self._inference_state, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
 
-    def usages(self, additional_module_paths=(), **kwargs):
+    def usages(self, **kwargs):
+        return self.find_references(*self._pos, **kwargs)
+
+    def find_references(self, line=None, column=None, **kwargs):
         """
         Return :class:`classes.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
         is very useful for refactoring (renaming), or to show all usages of a
         variable.
 
-        .. todo:: Implement additional_module_paths
-
-        :param additional_module_paths: Deprecated, never ever worked.
         :param include_builtins: Default True, checks if a usage is a builtin
             (e.g. ``sys``) and in that case does not return it.
         :rtype: list of :class:`classes.Definition`
         """
-        if additional_module_paths:
-            warnings.warn(
-                "Deprecated since version 0.12.0. This never even worked, just ignore it.",
-                DeprecationWarning,
-                stacklevel=2
-            )
 
         def _usages(include_builtins=True):
-            tree_name = self._module_node.get_name_of_position(self._pos)
+            tree_name = self._module_node.get_name_of_position((line, column))
             if tree_name is None:
                 # Must be syntax
                 return []
