@@ -26,13 +26,9 @@ def test_f_strings(Script, environment):
     assert _infer_literal(Script, 'rF"{asdf} "', is_fstring=True) == ''
 
 
-def test_rb_strings(Script, environment):
-    assert _infer_literal(Script, 'br"asdf"') == b'asdf'
-    obj = _infer_literal(Script, 'rb"asdf"')
-
-    # rb is not valid in Python 2. Due to error recovery we just get a
-    # string.
-    assert obj == b'asdf'
+def test_rb_strings(Script, environment, skip_python2):
+    assert _infer_literal(Script, 'x = br"asdf"; x') == b'asdf'
+    assert _infer_literal(Script, 'x = rb"asdf"; x') == b'asdf'
 
 
 def test_thousand_separators(Script, environment):
