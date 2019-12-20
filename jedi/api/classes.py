@@ -289,11 +289,19 @@ class BaseDefinition(object):
 
         return self._name.get_root_context().is_stub()
 
-    def goto_assignments(self, **kwargs):  # Python 2...
+    def goto(self, **kwargs):
         with debug.increase_indent_cm('goto for %s' % self._name):
-            return self._goto_assignments(**kwargs)
+            return self._goto(**kwargs)
 
-    def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
+    def goto_assignments(self, **kwargs):  # Python 2...
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use .goto.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.goto(**kwargs)
+
+    def _goto(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
         if not self._name.is_value_name:
