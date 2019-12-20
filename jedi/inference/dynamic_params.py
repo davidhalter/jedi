@@ -74,7 +74,7 @@ def dynamic_param_lookup(function_value, param_index):
 
     path = function_value.get_root_context().py__file__()
     if path is not None and is_stdlib_path(path):
-        # We don't want to search for usages in the stdlib. Usually people
+        # We don't want to search for references in the stdlib. Usually people
         # don't work with it (except if you are a core maintainer, sorry).
         # This makes everything slower. Just disable it and run the tests,
         # you will see the slowdown, especially in 3.6.

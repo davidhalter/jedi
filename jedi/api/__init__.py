@@ -333,27 +333,27 @@ class Script(object):
         """
         Return :class:`classes.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This
-        is very useful for refactoring (renaming), or to show all usages of a
-        variable.
+        is very useful for refactoring (renaming), or to show all references of
+        a variable.
 
-        :param include_builtins: Default True, checks if a usage is a builtin
-            (e.g. ``sys``) and in that case does not return it.
+        :param include_builtins: Default True, checks if a reference is a
+            builtin (e.g. ``sys``) and in that case does not return it.
         :rtype: list of :class:`classes.Definition`
         """
 
-        def _usages(include_builtins=True):
+        def _references(include_builtins=True):
             tree_name = self._module_node.get_name_of_position((line, column))
             if tree_name is None:
                 # Must be syntax
                 return []
 
-            names = usages.usages(self._get_module_context(), tree_name)
+            names = usages.find_references(self._get_module_context(), tree_name)
 
             definitions = [classes.Definition(self._inference_state, n) for n in names]
             if not include_builtins:
                 definitions = [d for d in definitions if not d.in_builtin_module()]
             return helpers.sorted_definitions(definitions)
-        return _usages(**kwargs)
+        return _references(**kwargs)
 
     def call_signatures(self):
         # Deprecated, will be removed.

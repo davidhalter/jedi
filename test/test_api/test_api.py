@@ -162,8 +162,8 @@ def test_goto_definition_not_multiple(Script):
     assert len(Script(s).infer()) == 1
 
 
-def test_usage_description(Script):
-    descs = [u.description for u in Script("foo = ''; foo").usages()]
+def test_reference_description(Script):
+    descs = [u.description for u in Script("foo = ''; foo").find_references()]
     assert set(descs) == {"foo = ''", 'foo'}
 
 

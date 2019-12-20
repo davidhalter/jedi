@@ -32,7 +32,7 @@ Jedi has a focus on autocompletion and goto functionality. Jedi is fast and is
 very well tested. It understands Python and stubs on a deep level.
 
 Jedi has support for different goto functions. It's possible to search for
-usages and list names in a Python file to get information about them.
+references and list names in a Python file to get information about them.
 
 Jedi uses a very simple API to connect with IDE's. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,

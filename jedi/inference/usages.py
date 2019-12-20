@@ -32,7 +32,7 @@ def _find_names(module_context, tree_name):
     return _dictionarize(_resolve_names(found_names))
 
 
-def usages(module_context, tree_name):
+def find_references(module_context, tree_name):
     search_name = tree_name.value
     found_names = _find_names(module_context, tree_name)
     module_contexts = set(d.get_root_context() for d in found_names.values())
