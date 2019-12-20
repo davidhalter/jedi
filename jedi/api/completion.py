@@ -10,7 +10,7 @@ from jedi import settings
 from jedi.api import classes
 from jedi.api import helpers
 from jedi.api import keywords
-from jedi.api.file_name import file_name_completions
+from jedi.api.file_name import complete_file_name
 from jedi.inference import imports
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
@@ -90,14 +90,11 @@ class Completion:
 
         self._fuzzy = fuzzy
 
-    def complete(self, fuzzy=False, **kwargs):
-        return self._complete(fuzzy, **kwargs)
-
-    def _complete(self, fuzzy):
+    def complete(self, fuzzy):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
         if string is not None:
-            completions = list(file_name_completions(
+            completions = list(complete_file_name(
                 self._inference_state, self._module_context, start_leaf, string,
                 self._like_name, self._call_signatures_callback,
                 self._code_lines, self._original_position,
@@ -106,7 +103,7 @@ class Completion:
             if completions:
                 return completions
 
-        completion_names = self._get_value_completions(leaf)
+        completion_names = self._complete_python(leaf)
 
         completions = filter_names(self._inference_state, completion_names,
                                    self.stack, self._like_name, fuzzy)
@@ -115,7 +112,7 @@ class Completion:
                                                   x.name.startswith('_'),
                                                   x.name.lower()))
 
-    def _get_value_completions(self, leaf):
+    def _complete_python(self, leaf):
         """
         Analyzes the value that a completion is made in and decides what to
         return.
@@ -145,7 +142,7 @@ class Completion:
                 return []
 
             # If we don't have a value, just use global completion.
-            return self._global_completions()
+            return self._complete_global_scope()
 
         allowed_transitions = \
             list(stack._allowed_transition_names_and_token_types())
@@ -185,7 +182,7 @@ class Completion:
         completion_names = []
         current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
         if not current_line or current_line[-1] in ' \t.;':
-            completion_names += self._get_keyword_completion_names(allowed_transitions)
+            completion_names += self._complete_keywords(allowed_transitions)
 
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
@@ -203,7 +200,7 @@ class Completion:
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
-                return list(self._get_class_value_completions(is_function=True))
+                return list(self._complete_inherited(is_function=True))
             elif "import_stmt" in nonterminals:
                 level, names = parse_dotted_names(nodes, "import_from" in nonterminals)
 
@@ -215,10 +212,10 @@ class Completion:
                 )
             elif nonterminals[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
-                completion_names += self._trailer_completions(dot.get_previous_leaf())
+                completion_names += self._complete_trailer(dot.get_previous_leaf())
             else:
-                completion_names += self._global_completions()
-                completion_names += self._get_class_value_completions(is_function=False)
+                completion_names += self._complete_global_scope()
+                completion_names += self._complete_inherited(is_function=False)
 
             # Apparently this looks like it's good enough to filter most cases
             # so that signature completions don't randomly appear.
@@ -234,12 +231,12 @@ class Completion:
 
         return completion_names
 
-    def _get_keyword_completion_names(self, allowed_transitions):
+    def _complete_keywords(self, allowed_transitions):
         for k in allowed_transitions:
             if isinstance(k, str) and k.isalpha():
                 yield keywords.KeywordName(self._inference_state, k)
 
-    def _global_completions(self):
+    def _complete_global_scope(self):
         context = get_user_context(self._module_context, self._position)
         debug.dbg('global completion scope: %s', context)
         flow_scope_node = get_flow_scope_node(self._module_node, self._position)
@@ -253,7 +250,7 @@ class Completion:
             completion_names += filter.values()
         return completion_names
 
-    def _trailer_completions(self, previous_leaf):
+    def _complete_trailer(self, previous_leaf):
         user_value = get_user_context(self._module_context, self._position)
         inferred_context = self._module_context.create_context(previous_leaf)
         values = infer_call_of_leaf(inferred_context, previous_leaf)
@@ -275,7 +272,7 @@ class Completion:
         i = imports.Importer(self._inference_state, names, self._module_context, level)
         return i.completion_names(self._inference_state, only_modules=only_modules)
 
-    def _get_class_value_completions(self, is_function=True):
+    def _complete_inherited(self, is_function=True):
         """
         Autocomplete inherited methods when overriding in child class.
         """

@@ -416,7 +416,7 @@ class BaseDefinition(object):
 
 class Completion(BaseDefinition):
     """
-    `Completion` objects are returned from :meth:`api.Script.completions`. They
+    `Completion` objects are returned from :meth:`api.Script.complete`. They
     provide additional information about a completion.
     """
     def __init__(self, inference_state, name, stack, like_name_length, is_fuzzy):

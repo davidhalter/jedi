@@ -18,10 +18,10 @@ Here's a simple example of the autocompletion feature:
 >>> source = '''
 ... import json
 ... json.lo'''
->>> script = jedi.Script(source, 3, len('json.lo'), 'example.py')
+>>> script = jedi.Script(source, path='example.py')
 >>> script
 <Script: 'example.py' ...>
->>> completions = script.completions()
+>>> completions = script.complete(3, len('json.lo'))
 >>> completions
 [<Completion: load>, <Completion: loads>]
 >>> print(completions[0].complete)
