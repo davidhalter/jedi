@@ -244,7 +244,7 @@ class Script(object):
 
         context = self._get_module_context().create_context(leaf)
 
-        values = helpers.infer_goto_definition(self._inference_state, context, leaf)
+        values = helpers.infer(self._inference_state, context, leaf)
         values = convert_values(
             values,
             only_stubs=only_stubs,
@@ -419,7 +419,7 @@ class Script(object):
                         unpack_tuple_to_dict(context, types, testlist)
                 else:
                     if node.type == 'name':
-                        defs = self._inference_state.goto_definitions(context, node)
+                        defs = self._inference_state.infer(context, node)
                     else:
                         defs = infer_call_of_leaf(context, node)
                     try_iter_content(defs)

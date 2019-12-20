@@ -104,7 +104,7 @@ class BaseDefinition(object):
 
         Here is an example of the value of this attribute.  Let's consider
         the following source.  As what is in ``variable`` is unambiguous
-        to Jedi, :meth:`jedi.Script.goto_definitions` should return a list of
+        to Jedi, :meth:`jedi.Script.infer` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
         >>> from jedi._compatibility import no_unicode_pprint
@@ -127,7 +127,7 @@ class BaseDefinition(object):
         ...     variable'''
 
         >>> script = Script(source)
-        >>> defs = script.goto_definitions()
+        >>> defs = script.infer()
 
         Before showing what is in ``defs``, let's sort it by :attr:`line`
         so that it is easy to relate the result to the source code.
@@ -177,7 +177,7 @@ class BaseDefinition(object):
         >>> from jedi import Script
         >>> source = 'import json'
         >>> script = Script(source, path='example.py')
-        >>> d = script.goto_definitions()[0]
+        >>> d = script.infer()[0]
         >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
@@ -217,8 +217,8 @@ class BaseDefinition(object):
         ... def f(a, b=1):
         ...     "Document for function f."
         ... '''
-        >>> script = Script(source, 1, len('def f'), 'example.py')
-        >>> doc = script.goto_definitions()[0].docstring()
+        >>> script = Script(source, path='example.py')
+        >>> doc = script.infer(1, len('def f'))[0].docstring()
         >>> print(doc)
         f(a, b=1)
         <BLANKLINE>
@@ -228,7 +228,7 @@ class BaseDefinition(object):
         docstring.  For function, it is call signature.  If you need
         actual docstring, use ``raw=True`` instead.
 
-        >>> print(script.goto_definitions()[0].docstring(raw=True))
+        >>> print(script.infer(1, len('def f'))[0].docstring(raw=True))
         Document for function f.
 
         :param fast: Don't follow imports that are only one level deep like
@@ -259,8 +259,8 @@ class BaseDefinition(object):
         >>> source = '''
         ... import os
         ... os.path.join'''
-        >>> script = Script(source, 3, len('os.path.join'), 'example.py')
-        >>> print(script.goto_definitions()[0].full_name)
+        >>> script = Script(source, path='example.py')
+        >>> print(script.infer(3, len('os.path.join'))[0].full_name)
         os.path.join
 
         Notice that it returns ``'os.path.join'`` instead of (for example)
@@ -526,7 +526,7 @@ class Completion(BaseDefinition):
 class Definition(BaseDefinition):
     """
     *Definition* objects are returned from :meth:`api.Script.goto_assignments`
-    or :meth:`api.Script.goto_definitions`.
+    or :meth:`api.Script.infer`.
     """
     def __init__(self, inference_state, definition):
         super(Definition, self).__init__(inference_state, definition)
@@ -549,8 +549,8 @@ class Definition(BaseDefinition):
         ...     pass
         ...
         ... variable = f if random.choice([0,1]) else C'''
-        >>> script = Script(source, column=3)  # line is maximum by default
-        >>> defs = script.goto_definitions()
+        >>> script = Script(source)  # line is maximum by default
+        >>> defs = script.infer(column=3)
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Definition full_name='__main__.f', description='def f'>,

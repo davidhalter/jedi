@@ -108,7 +108,7 @@ def infer_node(context, element):
             str_element_names = [e.value for e in element_names]
             if any(i.value in str_element_names for i in if_names):
                 for if_name in if_names:
-                    definitions = context.inference_state.goto_definitions(context, if_name)
+                    definitions = context.inference_state.infer(context, if_name)
                     # Every name that has multiple different definitions
                     # causes the complexity to rise. The complexity should
                     # never fall below 1.

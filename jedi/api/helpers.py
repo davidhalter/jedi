@@ -150,11 +150,9 @@ def get_stack_at_position(grammar, code_lines, leaf, pos):
     )
 
 
-def infer_goto_definition(inference_state, context, leaf):
+def infer(inference_state, context, leaf):
     if leaf.type == 'name':
-        # In case of a name we can just use goto_definition which does all the
-        # magic itself.
-        return inference_state.goto_definitions(context, leaf)
+        return inference_state.infer(context, leaf)
 
     parent = leaf.parent
     definitions = NO_VALUES
@@ -407,7 +405,7 @@ def cache_call_signatures(inference_state, context, bracket_leaf, code_lines, us
         yield None  # Don't cache!
     else:
         yield (module_path, before_bracket, bracket_leaf.start_pos)
-    yield infer_goto_definition(
+    yield infer(
         inference_state,
         context,
         bracket_leaf.get_previous_leaf(),

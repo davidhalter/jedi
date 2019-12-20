@@ -186,7 +186,7 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
                 args = InstanceArguments(value.instance, args)
             return args
 
-    for value in inference_state.goto_definitions(context, name):
+    for value in inference_state.infer(context, name):
         value_node = value.tree_node
         if compare_node == value_node:
             yield create_args(value)
