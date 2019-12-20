@@ -11,6 +11,7 @@ arguments.
 """
 import os
 import sys
+import warnings
 
 import parso
 from parso.python import tree
@@ -68,9 +69,9 @@ class Script(object):
 
     :param source: The source code of the current file, separated by newlines.
     :type source: str
-    :param line: The line to perform actions on (starting with 1).
+    :param line: Deprecated, please use it directly on e.g. `.complete`
     :type line: int
-    :param column: The column of the cursor (starting with 0).
+    :param column: Deprecated, please use it directly on e.g. `.complete`
     :type column: int
     :param path: The path of the file in the file system, or ``''`` if
         it hasn't been saved yet.
@@ -257,6 +258,7 @@ class Script(object):
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
+        # Deprecated, will be removed.
         return self.goto(*self._pos,
                          follow_imports=follow_imports,
                          follow_builtin_imports=follow_builtin_imports,
@@ -323,6 +325,7 @@ class Script(object):
         return helpers.sorted_definitions(defs)
 
     def usages(self, **kwargs):
+        # Deprecated, will be removed.
         return self.find_references(*self._pos, **kwargs)
 
     @validate_line_column
@@ -353,6 +356,7 @@ class Script(object):
         return _usages(**kwargs)
 
     def call_signatures(self):
+        # Deprecated, will be removed.
         return self.find_signatures(*self._pos)
 
     @validate_line_column
@@ -426,6 +430,36 @@ class Script(object):
         finally:
             self._inference_state.is_analysis = False
 
+    def names(self, **kwargs):
+        """
+        Returns a list of `Definition` objects, containing name parts.
+        This means you can call ``Definition.goto()`` and get the
+        reference of a name.
+
+        :param all_scopes: If True lists the names of all scopes instead of only
+            the module namespace.
+        :param definitions: If True lists the names that have been defined by a
+            class, function or a statement (``a = b`` returns ``a``).
+        :param references: If True lists all the names that are not listed by
+            ``definitions=True``. E.g. ``a = b`` returns ``b``.
+        """
+        return self._names(**kwargs)  # Python 2...
+
+    def _names(self, all_scopes=False, definitions=True, references=False):
+        def def_ref_filter(_def):
+            is_def = _def._name.tree_name.is_definition()
+            return definitions and is_def or references and not is_def
+
+        # Set line/column to a random position, because they don't matter.
+        module_context = self._get_module_context()
+        defs = [
+            classes.Definition(
+                self._inference_state,
+                module_context.create_name(name)
+            ) for name in get_module_names(self._module_node, all_scopes)
+        ]
+        return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
+
 
 class Interpreter(Script):
     """
@@ -491,34 +525,17 @@ class Interpreter(Script):
 
 def names(source=None, path=None, encoding='utf-8', all_scopes=False,
           definitions=True, references=False, environment=None):
-    """
-    Returns a list of `Definition` objects, containing name parts.
-    This means you can call ``Definition.goto()`` and get the
-    reference of a name.
-    The parameters are the same as in :py:class:`Script`, except or the
-    following ones:
+    warnings.warn(
+        "Deprecated since version 0.16.0. Use Script(...).names instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
 
-    :param all_scopes: If True lists the names of all scopes instead of only
-        the module namespace.
-    :param definitions: If True lists the names that have been defined by a
-        class, function or a statement (``a = b`` returns ``a``).
-    :param references: If True lists all the names that are not listed by
-        ``definitions=True``. E.g. ``a = b`` returns ``b``.
-    """
-    def def_ref_filter(_def):
-        is_def = _def._name.tree_name.is_definition()
-        return definitions and is_def or references and not is_def
-
-    # Set line/column to a random position, because they don't matter.
-    script = Script(source, line=1, column=0, path=path, encoding=encoding, environment=environment)
-    module_context = script._get_module_context()
-    defs = [
-        classes.Definition(
-            script._inference_state,
-            module_context.create_name(name)
-        ) for name in get_module_names(script._module_node, all_scopes)
-    ]
-    return sorted(filter(def_ref_filter, defs), key=lambda x: (x.line, x.column))
+    return Script(source, path=path, encoding=encoding).names(
+        all_scopes=all_scopes,
+        definitions=definitions,
+        references=references,
+    )
 
 
 def preload_module(*modules):
