@@ -47,7 +47,7 @@ def run(code, index, infer=False):
     if infer:
         result = script.goto_definitions()
     else:
-        result = script.completions()
+        result = script.complete()
     print('Used %ss for the %sth run.' % (time.time() - start, index + 1))
     return result
 
