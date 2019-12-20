@@ -3,7 +3,7 @@
 Changelog
 ---------
 
-0.15.2 (2019--)
+0.15.2 (2019-12-20)
 +++++++++++++++++++
 
 - Call signatures are now detected a lot better
