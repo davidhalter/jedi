@@ -31,7 +31,7 @@ from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
 from jedi.inference import InferenceState
 from jedi.inference import imports
-from jedi.inference import usages
+from jedi.inference.references import find_references
 from jedi.inference.arguments import try_iter_content
 from jedi.inference.helpers import get_module_names, infer_call_of_leaf
 from jedi.inference.sys_path import transform_path_to_dotted
@@ -347,7 +347,7 @@ class Script(object):
                 # Must be syntax
                 return []
 
-            names = usages.find_references(self._get_module_context(), tree_name)
+            names = find_references(self._get_module_context(), tree_name)
 
             definitions = [classes.Definition(self._inference_state, n) for n in names]
             if not include_builtins:
