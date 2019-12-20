@@ -222,9 +222,10 @@ class Script(object):
             return completion.completions(fuzzy)
 
     def completions(self, fuzzy=False):
+        # Deprecated, will be removed.
         return self.complete(*self._pos, fuzzy=fuzzy)
 
-    def goto_definitions(self, **kwargs):
+    def infer(self, line=None, column=None, **kwargs):
         """
         Return the definitions of a the path under the cursor.  goto function!
         This follows complicated paths and returns the end, not the first
@@ -240,12 +241,17 @@ class Script(object):
         :rtype: list of :class:`classes.Definition`
         """
         with debug.increase_indent_cm('goto_definitions'):
-            return self._goto_definitions(**kwargs)
+            return self._goto_definitions(line, column, **kwargs)
 
-    def _goto_definitions(self, only_stubs=False, prefer_stubs=False):
-        leaf = self._module_node.get_name_of_position(self._pos)
+    def goto_definitions(self, **kwargs):
+        # Deprecated, will be removed.
+        return self.infer(*self._pos, **kwargs)
+
+    def _goto_definitions(self, line, column, only_stubs=False, prefer_stubs=False):
+        pos = line, column
+        leaf = self._module_node.get_name_of_position(pos)
         if leaf is None:
-            leaf = self._module_node.get_leaf_for_position(self._pos)
+            leaf = self._module_node.get_leaf_for_position(pos)
             if leaf is None or leaf.type == 'string':
                 return []
 
@@ -265,6 +271,12 @@ class Script(object):
         return helpers.sorted_definitions(set(defs))
 
     def goto_assignments(self, follow_imports=False, follow_builtin_imports=False, **kwargs):
+        return self.goto(*self._pos,
+                         follow_imports=follow_imports,
+                         follow_builtin_imports=follow_builtin_imports,
+                         **kwargs)
+
+    def goto(self, line=None, column=None, **kwargs):
         """
         Return the first definition found, while optionally following imports.
         Multiple objects may be returned, because Python itself is a
@@ -282,9 +294,9 @@ class Script(object):
         :rtype: list of :class:`classes.Definition`
         """
         with debug.increase_indent_cm('goto_assignments'):
-            return self._goto_assignments(follow_imports, follow_builtin_imports, **kwargs)
+            return self._goto_assignments(line, column, **kwargs)
 
-    def _goto_assignments(self, follow_imports, follow_builtin_imports,
+    def _goto_assignments(self, line, column, follow_imports, follow_builtin_imports,
                           only_stubs=False, prefer_stubs=False):
         def filter_follow_imports(names):
             for name in names:
@@ -304,7 +316,7 @@ class Script(object):
                 else:
                     yield name
 
-        tree_name = self._module_node.get_name_of_position(self._pos)
+        tree_name = self._module_node.get_name_of_position((line, column))
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
             # executed by `foo()`, if we the cursor is after `)`.
