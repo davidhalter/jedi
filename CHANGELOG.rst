@@ -11,7 +11,7 @@ Changelog
 0.15.2 (2019-12-20)
 +++++++++++++++++++
 
-- Call signatures are now detected a lot better
+- Signatures are now detected a lot better
 - Add fuzzy completions with ``Script(...).completions(fuzzy=True)``
 - Files bigger than one MB (about 20kLOC) get cropped to avoid getting
   stuck completely.
@@ -38,7 +38,7 @@ New APIs:
 
 - ``Definition.get_signatures() -> List[Signature]``. Signatures are similar to
   ``CallSignature``. ``Definition.params`` is therefore deprecated.
-- ``Signature.to_string()`` to format call signatures.
+- ``Signature.to_string()`` to format signatures.
 - ``Signature.params -> List[ParamDefinition]``, ParamDefinition has the
   following additional attributes ``infer_default()``, ``infer_annotation()``,
   ``to_string()``, and ``kind``.

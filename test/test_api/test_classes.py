@@ -92,7 +92,7 @@ def test_basedefinition_type_import(Script, src, expected_result, column):
     assert types == {expected_result}
 
 
-def test_function_call_signature_in_doc(Script):
+def test_function_signature_in_doc(Script):
     defs = Script("""
     def f(x, y=1, z='a'):
         pass
@@ -107,7 +107,7 @@ def test_param_docstring(names):
     assert param.docstring() == ''
 
 
-def test_class_call_signature(Script):
+def test_class_signature(Script):
     defs = Script("""
     class Foo:
         def __init__(self, x, y=1, z='a'):
@@ -215,7 +215,7 @@ def test_param_endings(Script):
     Params should be represented without the comma and whitespace they have
     around them.
     """
-    sig = Script('def x(a, b=5, c=""): pass\n x(').call_signatures()[0]
+    sig = Script('def x(a, b=5, c=""): pass\n x(').find_signatures()[0]
     assert [p.description for p in sig.params] == ['param a', 'param b=5', 'param c=""']
 
 

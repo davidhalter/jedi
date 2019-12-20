@@ -225,7 +225,7 @@ class BaseDefinition(object):
         Document for function f.
 
         Notice that useful extra information is added to the actual
-        docstring.  For function, it is call signature.  If you need
+        docstring.  For function, it is signature.  If you need
         actual docstring, use ``raw=True`` instead.
 
         >>> print(script.infer(1, len('def f'))[0].docstring(raw=True))

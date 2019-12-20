@@ -39,8 +39,8 @@ def test_os_path_join(Script):
 @_check_speed(0.15)
 def test_scipy_speed(Script):
     s = 'import scipy.weave; scipy.weave.inline('
-    script = Script(s, 1, len(s), '')
-    script.call_signatures()
+    script = Script(s, path='')
+    script.find_signatures(1, len(s))
 
 
 @_check_speed(0.8)

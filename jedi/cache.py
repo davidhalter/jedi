@@ -75,7 +75,7 @@ def clear_time_caches(delete_all=False):
                     del tc[key]
 
 
-def call_signature_time_cache(time_add_setting):
+def signature_time_cache(time_add_setting):
     """
     This decorator works as follows: Call it with a setting and after that
     use the function with a callable that returns the key.

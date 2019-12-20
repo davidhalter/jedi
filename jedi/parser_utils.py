@@ -127,10 +127,10 @@ def safe_literal_eval(value):
         return ''
 
 
-def get_call_signature(funcdef, width=72, call_string=None,
-                       omit_first_param=False, omit_return_annotation=False):
+def get_signature(funcdef, width=72, call_string=None,
+                  omit_first_param=False, omit_return_annotation=False):
     """
-    Generate call signature of this function.
+    Generate a string signature of a function.
 
     :param width: Fold lines if a line is longer than this value.
     :type width: int

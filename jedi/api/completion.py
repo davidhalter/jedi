@@ -18,9 +18,9 @@ from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
 
 
-def get_call_signature_param_names(call_signatures):
+def get_signature_param_names(signatures):
     # add named params
-    for call_sig in call_signatures:
+    for call_sig in signatures:
         for p in call_sig.params:
             # Allow protected access, because it's a public API.
             if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
@@ -74,7 +74,7 @@ def get_flow_scope_node(module_node, position):
 
 class Completion:
     def __init__(self, inference_state, module_context, code_lines, position,
-                 call_signatures_callback, fuzzy=False):
+                 signatures_callback, fuzzy=False):
         self._inference_state = inference_state
         self._module_context = module_context
         self._module_node = module_context.tree_node
@@ -86,7 +86,7 @@ class Completion:
         # everything. We want the start of the name we're on.
         self._original_position = position
         self._position = position[0], position[1] - len(self._like_name)
-        self._call_signatures_callback = call_signatures_callback
+        self._signatures_callback = signatures_callback
 
         self._fuzzy = fuzzy
 
@@ -96,7 +96,7 @@ class Completion:
         if string is not None:
             completions = list(complete_file_name(
                 self._inference_state, self._module_context, start_leaf, string,
-                self._like_name, self._call_signatures_callback,
+                self._like_name, self._signatures_callback,
                 self._code_lines, self._original_position,
                 fuzzy
             ))
@@ -226,8 +226,8 @@ class Completion:
             # 3. Decorators are very primitive and have an optional `(` with
             #    optional arglist in them.
             if nodes[-1] in ['(', ','] and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
-                call_signatures = self._call_signatures_callback(*self._position)
-                completion_names += get_call_signature_param_names(call_signatures)
+                signatures = self._signatures_callback(*self._position)
+                completion_names += get_signature_param_names(signatures)
 
         return completion_names
 

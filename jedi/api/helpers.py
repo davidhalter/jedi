@@ -14,7 +14,7 @@ from jedi.inference.base_value import NO_VALUES
 from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf
 from jedi.inference.compiled import get_string_value_set
-from jedi.cache import call_signature_time_cache
+from jedi.cache import signature_time_cache
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
@@ -326,7 +326,7 @@ def _get_index_and_key(nodes, position):
     return nodes_before.count(','), key_str
 
 
-def _get_call_signature_details_from_error_node(node, additional_children, position):
+def _get_signature_details_from_error_node(node, additional_children, position):
     for index, element in reversed(list(enumerate(node.children))):
         # `index > 0` means that it's a trailer and not an atom.
         if element == '(' and element.end_pos <= position and index > 0:
@@ -340,7 +340,7 @@ def _get_call_signature_details_from_error_node(node, additional_children, posit
                 return CallDetails(element, children + additional_children, position)
 
 
-def get_call_signature_details(module, position):
+def get_signature_details(module, position):
     leaf = module.get_leaf_for_position(position, include_prefixes=True)
     # It's easier to deal with the previous token than the next one in this
     # case.
@@ -355,15 +355,15 @@ def get_call_signature_details(module, position):
     node = leaf.parent
     while node is not None:
         if node.type in ('funcdef', 'classdef'):
-            # Don't show call signatures if there's stuff before it that just
-            # makes it feel strange to have a call signature.
+            # Don't show signatures if there's stuff before it that just
+            # makes it feel strange to have a signature.
             return None
 
         additional_children = []
         for n in reversed(node.children):
             if n.start_pos < position:
                 if n.type == 'error_node':
-                    result = _get_call_signature_details_from_error_node(
+                    result = _get_signature_details_from_error_node(
                         n, additional_children, position
                     )
                     if result is not None:
@@ -390,8 +390,8 @@ def get_call_signature_details(module, position):
     return None
 
 
-@call_signature_time_cache("call_signatures_validity")
-def cache_call_signatures(inference_state, context, bracket_leaf, code_lines, user_pos):
+@signature_time_cache("call_signatures_validity")
+def cache_signatures(inference_state, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
     line_index = user_pos[0] - 1
 

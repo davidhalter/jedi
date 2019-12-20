@@ -377,12 +377,12 @@ class Script(object):
         :rtype: list of :class:`classes.Signature`
         """
         pos = line, column
-        call_details = helpers.get_call_signature_details(self._module_node, pos)
+        call_details = helpers.get_signature_details(self._module_node, pos)
         if call_details is None:
             return []
 
         context = self._get_module_context().create_context(call_details.bracket_leaf)
-        definitions = helpers.cache_call_signatures(
+        definitions = helpers.cache_signatures(
             self._inference_state,
             context,
             call_details.bracket_leaf,
