@@ -32,7 +32,7 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
     if not op(environment.version_info, version):
         return  # The test right next to it should take over.
 
-    d, = Script(code).goto_definitions()
+    d, = Script(code).infer()
     value, = d._name.infer()
     compiled, = _stub_to_python_value_set(value)
     signature, = compiled.get_signatures()

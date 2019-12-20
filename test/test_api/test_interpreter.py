@@ -298,7 +298,7 @@ def test_property_content():
             return 1
 
     foo = Foo3()
-    def_, = jedi.Interpreter('foo.bar', [locals()]).goto_definitions()
+    def_, = jedi.Interpreter('foo.bar', [locals()]).infer()
     assert def_.name == 'int'
 
 
@@ -345,7 +345,7 @@ def test_completion_param_annotations():
     assert [d.name for d in b.infer()] == ['str']
     assert {d.name for d in c.infer()} == {'int', 'float'}
 
-    d, = jedi.Interpreter('foo()', [locals()]).goto_definitions()
+    d, = jedi.Interpreter('foo()', [locals()]).infer()
     assert d.name == 'bytes'
 
 
@@ -397,7 +397,7 @@ def test_repr_execution_issue():
     er = ErrorRepr()
 
     script = jedi.Interpreter('er', [locals()])
-    d, = script.goto_definitions()
+    d, = script.infer()
     assert d.name == 'ErrorRepr'
     assert d.type == 'instance'
 
@@ -452,7 +452,7 @@ def test_name_not_findable():
 
 def test_stubs_working():
     from multiprocessing import cpu_count
-    defs = jedi.Interpreter("cpu_count()", [locals()]).goto_definitions()
+    defs = jedi.Interpreter("cpu_count()", [locals()]).infer()
     assert [d.name for d in defs] == ['int']
 
 
@@ -559,7 +559,7 @@ def test_type_var():
     """This was an issue before, see Github #1369"""
     import typing
     x = typing.TypeVar('myvar')
-    def_, = jedi.Interpreter('x', [locals()]).goto_definitions()
+    def_, = jedi.Interpreter('x', [locals()]).infer()
     assert def_.name == 'TypeVar'
 
 

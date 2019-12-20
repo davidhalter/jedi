@@ -17,9 +17,9 @@ def test_implicit_namespace_package(Script):
         return Script(sys_path=sys_path, *args, **kwargs)
 
     # goto definition
-    assert script_with_path('from pkg import ns1_file').goto_definitions()
-    assert script_with_path('from pkg import ns2_file').goto_definitions()
-    assert not script_with_path('from pkg import ns3_file').goto_definitions()
+    assert script_with_path('from pkg import ns1_file').infer()
+    assert script_with_path('from pkg import ns2_file').infer()
+    assert not script_with_path('from pkg import ns3_file').infer()
 
     # goto assignment
     tests = {
@@ -57,11 +57,11 @@ def test_implicit_nested_namespace_package(Script):
 
     script = Script(sys_path=sys_path, source=code, line=1, column=61)
 
-    result = script.goto_definitions()
+    result = script.infer()
 
     assert len(result) == 1
 
-    implicit_pkg, = Script(code, column=10, sys_path=sys_path).goto_definitions()
+    implicit_pkg, = Script(code, sys_path=sys_path).infer(column=10)
     assert implicit_pkg.type == 'module'
     assert implicit_pkg.module_path is None
 
@@ -91,7 +91,7 @@ def test_namespace_package_in_multiple_directories_goto_definition(Script):
     sys_path = [join(dirname(__file__), d)
                 for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
     script = Script(sys_path=sys_path, source=CODE)
-    result = script.goto_definitions()
+    result = script.infer()
     assert len(result) == 1
 
 

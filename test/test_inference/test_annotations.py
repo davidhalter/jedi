@@ -18,7 +18,7 @@ def test_simple_annotations(Script, environment):
 
     annot('')""")
 
-    assert [d.name for d in Script(source).goto_definitions()] == ['str']
+    assert [d.name for d in Script(source).infer()] == ['str']
 
     source = dedent("""\
 
@@ -26,7 +26,7 @@ def test_simple_annotations(Script, environment):
         return a
 
     annot_ret('')""")
-    assert [d.name for d in Script(source).goto_definitions()] == ['str']
+    assert [d.name for d in Script(source).infer()] == ['str']
 
     source = dedent("""\
     def annot(a:int):
@@ -34,7 +34,7 @@ def test_simple_annotations(Script, environment):
 
     annot('')""")
 
-    assert [d.name for d in Script(source).goto_definitions()] == ['int']
+    assert [d.name for d in Script(source).infer()] == ['int']
 
 
 @pytest.mark.parametrize('reference', [
@@ -50,7 +50,7 @@ def test_illegal_forward_references(Script, environment, reference):
 
     source = 'def foo(bar: "%s"): bar' % reference
 
-    assert not Script(source).goto_definitions()
+    assert not Script(source).infer()
 
 
 def test_lambda_forward_references(Script, environment):
@@ -61,4 +61,4 @@ def test_lambda_forward_references(Script, environment):
 
     # For now just receiving the 3 is ok. I'm doubting that this is what we
     # want. We also execute functions. Should we only execute classes?
-    assert Script(source).goto_definitions()
+    assert Script(source).infer()

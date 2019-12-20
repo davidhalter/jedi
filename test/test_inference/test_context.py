@@ -11,11 +11,11 @@ def test_module_attributes(Script):
 
 
 def test_module__file__(Script, environment):
-    assert not Script('__file__').goto_definitions()
-    def_, = Script('__file__', path='example.py').goto_definitions()
+    assert not Script('__file__').infer()
+    def_, = Script('__file__', path='example.py').infer()
     value = force_unicode(def_._name._value.get_safe_value())
     assert value.endswith('example.py')
 
-    def_, = Script('import antigravity; antigravity.__file__').goto_definitions()
+    def_, = Script('import antigravity; antigravity.__file__').infer()
     value = force_unicode(def_._name._value.get_safe_value())
     assert value.endswith('.py')

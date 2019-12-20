@@ -309,7 +309,7 @@ def test_signature_is_definition(Script):
     """
     s = """class Spam(): pass\nSpam"""
     signature = Script(s + '(').call_signatures()[0]
-    definition = Script(s + '(', column=0).goto_definitions()[0]
+    definition = Script(s + '(').infer(column=0)[0]
     signature.line == 1
     signature.column == 6
 

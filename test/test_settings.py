@@ -12,14 +12,14 @@ def auto_import_json(monkeypatch):
 
 
 def test_base_auto_import_modules(auto_import_json, Script):
-    loads, = Script('import json; json.loads').goto_definitions()
+    loads, = Script('import json; json.loads').infer()
     assert isinstance(loads._name, ValueName)
     value, = loads._name.infer()
     assert isinstance(value.parent_context._value, StubModuleValue)
 
 
 def test_auto_import_modules_imports(auto_import_json, Script):
-    main, = Script('from json import tool; tool.main').goto_definitions()
+    main, = Script('from json import tool; tool.main').infer()
     assert isinstance(main._name, CompiledValueName)
 
 
@@ -47,5 +47,5 @@ def test_cropped_file_size(monkeypatch, names, Script):
 
     # It should just not crash if we are outside of the cropped range.
     script = Script(code + code + 'Foo')
-    assert not script.goto_definitions()
+    assert not script.infer()
     assert 'Foo' in [c.name for c in script.complete()]

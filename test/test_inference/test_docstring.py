@@ -32,7 +32,7 @@ def test_function_doc(Script):
     defs = Script("""
     def func():
         '''Docstring of `func`.'''
-    func""").goto_definitions()
+    func""").infer()
     assert defs[0].docstring() == 'func()\n\nDocstring of `func`.'
 
 
@@ -40,7 +40,7 @@ def test_class_doc(Script):
     defs = Script("""
     class TestClass():
         '''Docstring of `TestClass`.'''
-    TestClass""").goto_definitions()
+    TestClass""").infer()
 
     expected = 'Docstring of `TestClass`.'
     assert defs[0].docstring(raw=True) == expected
@@ -52,7 +52,7 @@ def test_class_doc_with_init(Script):
     class TestClass():
         '''Docstring'''
         def __init__(self, foo, bar=3): pass
-    TestClass""").goto_definitions()
+    TestClass""").infer()
 
     assert d.docstring() == 'TestClass(foo, bar=3)\n\nDocstring'
 
@@ -62,7 +62,7 @@ def test_instance_doc(Script):
     class TestClass():
         '''Docstring of `TestClass`.'''
     tc = TestClass()
-    tc""").goto_definitions()
+    tc""").infer()
     assert defs[0].docstring() == 'Docstring of `TestClass`.'
 
 
@@ -71,7 +71,7 @@ def test_attribute_docstring(Script):
     defs = Script("""
     x = None
     '''Docstring of `x`.'''
-    x""").goto_definitions()
+    x""").infer()
     assert defs[0].docstring() == 'Docstring of `x`.'
 
 
@@ -82,7 +82,7 @@ def test_multiple_docstrings(Script):
         '''Original docstring.'''
     x = func
     '''Docstring of `x`.'''
-    x""").goto_definitions()
+    x""").infer()
     docs = [d.docstring() for d in defs]
     assert docs == ['Original docstring.', 'Docstring of `x`.']
 
@@ -167,7 +167,7 @@ def test_docstring_params_formatting(Script):
              param2,
              param3):
         pass
-    func""").goto_definitions()
+    func""").infer()
     assert defs[0].docstring() == 'func(param1, param2, param3)'
 
 
@@ -412,7 +412,7 @@ def test_decorator(Script):
 
         check_user''')
 
-    d, = Script(code).goto_definitions()
+    d, = Script(code).infer()
     assert d.docstring(raw=True) == 'Nice docstring'
 
 

@@ -130,12 +130,12 @@ def test_goto_assignments_on_non_name(Script, environment):
     assert Script('True').goto_assignments() == []
 
 
-def test_goto_definitions_on_non_name(Script):
-    assert Script('import x', column=0).goto_definitions() == []
+def test_infer_on_non_name(Script):
+    assert Script('import x').infer(column=0) == []
 
 
-def test_goto_definitions_on_generator(Script):
-    def_, = Script('def x(): yield 1\ny=x()\ny').goto_definitions()
+def test_infer_on_generator(Script):
+    def_, = Script('def x(): yield 1\ny=x()\ny').infer()
     assert def_.name == 'Generator'
 
 
@@ -159,7 +159,7 @@ def test_goto_definition_not_multiple(Script):
             else:
                 a = A(1)
             a''')
-    assert len(Script(s).goto_definitions()) == 1
+    assert len(Script(s).infer()) == 1
 
 
 def test_usage_description(Script):
@@ -264,7 +264,7 @@ def test_goto_definition_cursor(Script):
     should2 = 8, 10
 
     def get_def(pos):
-        return [d.description for d in Script(s, *pos).goto_definitions()]
+        return [d.description for d in Script(s).infer(*pos)]
 
     in_name = get_def(in_name)
     under_score = get_def(under_score)
@@ -290,7 +290,7 @@ def test_no_statement_parent(Script):
         pass
 
     variable = f if random.choice([0, 1]) else C""")
-    defs = Script(source, column=3).goto_definitions()
+    defs = Script(source).infer(column=3)
     defs = sorted(defs, key=lambda d: d.line)
     assert [d.description for d in defs] == ['def f', 'class C']
 
@@ -303,7 +303,7 @@ def test_backslash_continuation_and_bracket(Script):
 
     lines = code.splitlines()
     column = lines[-1].index('(')
-    def_, = Script(code, line=len(lines), column=column).goto_definitions()
+    def_, = Script(code).infer(line=len(lines), column=column)
     assert def_.name == 'int'
 
 
@@ -355,6 +355,6 @@ def test_file_fuzzy_completion(Script):
     ]
 )
 def test_goto_on_string(Script, code, column):
-    script = Script(code, column=column)
-    assert not script.goto_definitions()
-    assert not script.goto_assignments()
+    script = Script(code)
+    assert not script.infer(column=column)
+    assert not script.goto(column=column)

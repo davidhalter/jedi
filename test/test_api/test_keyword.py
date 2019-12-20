@@ -16,7 +16,7 @@ def test_goto_assignments_keyword(Script):
 
 def test_keyword(Script, environment):
     """ github jedi-vim issue #44 """
-    defs = Script("print").goto_definitions()
+    defs = Script("print").infer()
     if environment.version_info.major < 3:
         assert defs == []
     else:
@@ -26,7 +26,7 @@ def test_keyword(Script, environment):
 
     completions = Script("import").complete(1, 1)
     assert len(completions) > 10 and 'if' in [c.name for c in completions]
-    assert Script("assert").goto_definitions() == []
+    assert Script("assert").infer() == []
 
 
 def test_keyword_attributes(Script):

@@ -45,7 +45,7 @@ def run(code, index, infer=False):
     start = time.time()
     script = jedi.Script(code)
     if infer:
-        result = script.goto_definitions()
+        result = script.infer()
     else:
         result = script.complete()
     print('Used %ss for the %sth run.' % (time.time() - start, index + 1))

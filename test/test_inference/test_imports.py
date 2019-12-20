@@ -87,7 +87,7 @@ def test_find_module_package_zipped(Script, inference_state, environment):
 def test_correct_zip_package_behavior(Script, inference_state, environment, code,
                                       file, package, path, skip_python2):
     sys_path = environment.get_sys_path() + [pkg_zip_path]
-    pkg, = Script(code, sys_path=sys_path).goto_definitions()
+    pkg, = Script(code, sys_path=sys_path).infer()
     value, = pkg._name.infer()
     assert value.py__file__() == os.path.join(pkg_zip_path, 'pkg', file)
     assert '.'.join(value.py__package__()) == package
@@ -118,12 +118,12 @@ def test_import_not_in_sys_path(Script):
 
     This is in the end just a fallback.
     """
-    a = Script(path='module.py', line=5).goto_definitions()
+    a = Script(path='module.py').infer(line=5)
     assert a[0].name == 'int'
 
-    a = Script(path='module.py', line=6).goto_definitions()
+    a = Script(path='module.py').infer(line=6)
     assert a[0].name == 'str'
-    a = Script(path='module.py', line=7).goto_definitions()
+    a = Script(path='module.py').infer(line=7)
     assert a[0].name == 'str'
 
 
@@ -157,7 +157,7 @@ def test_not_importable_file(Script):
 
 def test_import_unique(Script):
     src = "import os; os.path"
-    defs = Script(src, path='example.py').goto_definitions()
+    defs = Script(src, path='example.py').infer()
     parent_contexts = [d._name._value for d in defs]
     assert len(parent_contexts) == len(set(parent_contexts))
 
@@ -191,8 +191,8 @@ def test_import_completion_docstring(Script):
 
 
 def test_goto_definition_on_import(Script):
-    assert Script("import sys_blabla", 1, 8).goto_definitions() == []
-    assert len(Script("import sys", 1, 8).goto_definitions()) == 1
+    assert Script("import sys_blabla").infer(1, 8) == []
+    assert len(Script("import sys").infer(1, 8)) == 1
 
 
 @cwd_at('jedi')
@@ -237,8 +237,8 @@ def test_imports_on_global_namespace_without_path(Script):
 def test_named_import(Script):
     """named import - jedi-vim issue #8"""
     s = "import time as dt"
-    assert len(Script(s, 1, 15, '/').goto_definitions()) == 1
-    assert len(Script(s, 1, 10, '/').goto_definitions()) == 1
+    assert len(Script(s, path='/').infer(1, 15)) == 1
+    assert len(Script(s, path='/').infer(1, 10)) == 1
 
 
 @pytest.mark.skipif('True', reason='The nested import stuff is still very messy.')
@@ -300,7 +300,7 @@ def test_compiled_import_none(monkeypatch, Script):
     """
     script = Script('import sys')
     monkeypatch.setattr(compiled, 'load_module', lambda *args, **kwargs: None)
-    def_, = script.goto_definitions()
+    def_, = script.infer()
     assert def_.type == 'module'
     value, = def_._name.infer()
     assert not _stub_to_python_value_set(value)
@@ -403,7 +403,7 @@ def test_relative_import_out_of_file_system(Script):
     assert import_.name == 'import'
 
     script = Script("from " + '.' * 100 + 'abc import ABCMeta')
-    assert not script.goto_definitions()
+    assert not script.infer()
     assert not script.complete()
 
 
@@ -456,7 +456,7 @@ def test_import_needed_modules_by_jedi(Script, environment, tmpdir, name):
         path=tmpdir.join('something.py').strpath,
         sys_path=[tmpdir.strpath] + environment.get_sys_path(),
     )
-    module, = script.goto_definitions()
+    module, = script.infer()
     assert module._inference_state.builtins_module.py__file__() != module_path
     assert module._inference_state.typing_module.py__file__() != module_path
 

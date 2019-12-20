@@ -49,11 +49,11 @@ def test_multibyte_script(Script):
 
 def test_goto_definition_at_zero(Script):
     """At zero usually sometimes raises unicode issues."""
-    assert Script("a", 1, 1).goto_definitions() == []
-    s = Script("str", 1, 1).goto_definitions()
+    assert Script("a").infer(1, 1) == []
+    s = Script("str").infer(1, 1)
     assert len(s) == 1
     assert list(s)[0].description == 'class str'
-    assert Script("", 1, 0).goto_definitions() == []
+    assert Script("").infer(1, 0) == []
 
 
 def test_complete_at_zero(Script):

@@ -3,7 +3,7 @@ from jedi.inference.value import TreeInstance
 
 
 def _infer_literal(Script, code, is_fstring=False):
-    def_, = Script(code).goto_definitions()
+    def_, = Script(code).infer()
     if is_fstring:
         assert def_.name == 'str'
         assert isinstance(def_._name._value, TreeInstance)

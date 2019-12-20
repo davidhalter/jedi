@@ -23,5 +23,5 @@ def ScriptInStubFolder(Script):
     ]
 )
 def test_find_stubs_infer(ScriptInStubFolder, code, expected):
-    defs = ScriptInStubFolder(code).goto_definitions()
+    defs = ScriptInStubFolder(code).infer()
     assert [d.name for d in defs] == expected

@@ -43,7 +43,7 @@ class MixinTestFullName(object):
 
 
 class TestFullNameWithGotoDefinitions(MixinTestFullName, TestCase):
-    operation = 'goto_definitions'
+    operation = 'infer'
 
     def test_tuple_mapping(self):
         if self.environment.version_info.major == 2:
@@ -97,9 +97,9 @@ def test_sub_module(Script, jedi_path):
     path.
     """
     sys_path = [jedi_path]
-    defs = Script('from jedi.api import classes; classes', sys_path=sys_path).goto_definitions()
+    defs = Script('from jedi.api import classes; classes', sys_path=sys_path).infer()
     assert [d.full_name for d in defs] == ['jedi.api.classes']
-    defs = Script('import jedi.api; jedi.api', sys_path=sys_path).goto_definitions()
+    defs = Script('import jedi.api; jedi.api', sys_path=sys_path).infer()
     assert [d.full_name for d in defs] == ['jedi.api']
 
 

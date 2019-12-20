@@ -14,7 +14,7 @@ from ..helpers import get_example_dir
 
 
 def test_is_keyword(Script):
-    results = Script('str', 1, 1, None).goto_definitions()
+    results = Script('str', path=None).infer(1, 1)
     assert len(results) == 1 and results[0].is_keyword is False
 
 
@@ -48,8 +48,8 @@ def test_basedefinition_type(Script, names):
         source += dedent("""
         variable = sys or C or x or f or g or g() or h""")
         lines = source.splitlines()
-        script = Script(source, len(lines), len('variable'), None)
-        definitions += script.goto_definitions()
+        script = Script(source, path=None)
+        definitions += script.infer(len(lines), len('variable'))
 
         script2 = Script(source, 4, len('class C'), None)
         definitions += script2.usages()
@@ -96,7 +96,7 @@ def test_function_call_signature_in_doc(Script):
     defs = Script("""
     def f(x, y=1, z='a'):
         pass
-    f""").goto_definitions()
+    f""").infer()
     doc = defs[0].docstring()
     assert "f(x, y=1, z='a')" in str(doc)
 
@@ -112,7 +112,7 @@ def test_class_call_signature(Script):
     class Foo:
         def __init__(self, x, y=1, z='a'):
             pass
-    Foo""").goto_definitions()
+    Foo""").infer()
     doc = defs[0].docstring()
     assert doc == "Foo(x, y=1, z='a')"
 
@@ -204,7 +204,7 @@ def test_signature_params(Script):
         pass
     foo''')
 
-    check(Script(s).goto_definitions())
+    check(Script(s).infer())
 
     check(Script(s).goto_assignments())
     check(Script(s + '\nbar=foo\nbar').goto_assignments())
@@ -451,7 +451,7 @@ def test_builtin_module_with_path(Script):
     a path or not. It shouldn't have a module_path, because that is just
     confusing.
     """
-    semlock, = Script('from _multiprocessing import SemLock').goto_definitions()
+    semlock, = Script('from _multiprocessing import SemLock').infer()
     assert isinstance(semlock._name, CompiledValueName)
     assert semlock.module_path is None
     assert semlock.in_builtin_module() is True
@@ -491,7 +491,7 @@ def test_inheritance_module_path(Script, goto_assignment, code, name, file_name)
 
     script = Script(code, path=whatever_path)
     if goto_assignment is None:
-        func, = script.goto_definitions()
+        func, = script.infer()
     else:
         func, = script.goto_assignments(follow_imports=goto_assignment)
     assert func.type == 'function'

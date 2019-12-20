@@ -14,7 +14,7 @@ def interpreter(code, namespace, *args, **kwargs):
 def test_on_code():
     from functools import wraps
     i = interpreter("wraps.__code__", {'wraps': wraps})
-    assert i.goto_definitions()
+    assert i.infer()
 
 
 @pytest.mark.skipif('sys.version_info < (3,5)')

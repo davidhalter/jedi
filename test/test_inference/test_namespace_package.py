@@ -15,9 +15,9 @@ def script_with_path(Script, *args, **kwargs):
 
 
 def test_goto_definition(Script):
-    assert script_with_path(Script, 'from pkg import ns1_file').goto_definitions()
-    assert script_with_path(Script, 'from pkg import ns2_file').goto_definitions()
-    assert not script_with_path(Script, 'from pkg import ns3_file').goto_definitions()
+    assert script_with_path(Script, 'from pkg import ns1_file').infer()
+    assert script_with_path(Script, 'from pkg import ns2_file').infer()
+    assert not script_with_path(Script, 'from pkg import ns3_file').infer()
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ def test_goto_definition(Script):
     ]
 )
 def test_goto_assignment(Script, source, solution):
-    ass = script_with_path(Script, source).goto_assignments()
+    ass = script_with_path(Script, source).goto()
     assert len(ass) == 1
     assert ass[0].description == "foo = '%s'" % solution
 
@@ -70,9 +70,9 @@ def test_nested_namespace_package(Script):
 
     sys_path = [dirname(__file__)]
 
-    script = Script(sys_path=sys_path, source=code, line=1, column=45)
+    script = Script(sys_path=sys_path, source=code)
 
-    result = script.goto_definitions()
+    result = script.infer(line=1, column=45)
 
     assert len(result) == 1
 
@@ -88,9 +88,9 @@ def test_relative_import(Script, environment, tmpdir):
     # Need to copy the content in a directory where there's no __init__.py.
     py.path.local(directory).copy(tmpdir)
     file_path = join(tmpdir.strpath, "rel1.py")
-    script = Script(path=file_path, line=1)
-    d, = script.goto_definitions()
+    script = Script(path=file_path)
+    d, = script.infer(line=1)
     assert d.name == 'int'
-    d, = script.goto_assignments()
+    d, = script.goto(line=1)
     assert d.name == 'name'
     assert d.module_name == 'rel2'

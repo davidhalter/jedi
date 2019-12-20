@@ -52,7 +52,7 @@ def test_precedence_slowdown(Script):
     """
     with open('speed/precedence.py') as f:
         line = len(f.read().splitlines())
-    assert Script(line=line, path='speed/precedence.py').goto_definitions()
+    assert Script(path='speed/precedence.py').infer(line=line)
 
 
 @_check_speed(0.1)

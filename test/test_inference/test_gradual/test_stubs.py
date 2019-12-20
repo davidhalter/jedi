@@ -66,7 +66,7 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
         if type_ == 'goto':
             defs = s.goto_assignments(follow_imports=True, **kwargs)
         else:
-            defs = s.goto_definitions(**kwargs)
+            defs = s.infer(**kwargs)
     else:
         goto_defs = s.goto_assignments(
             # Prefering stubs when we want to go to python and vice versa
