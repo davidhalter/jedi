@@ -38,7 +38,7 @@ def find_references(module_context, tree_name):
     module_contexts = set(d.get_root_context() for d in found_names.values())
     module_contexts = set(m for m in module_contexts if not m.is_compiled())
 
-    non_matching_usage_maps = {}
+    non_matching_reference_maps = {}
     inf = module_context.inference_state
     potential_modules = imports.get_module_contexts_containing_name(
         inf, module_contexts, search_name
@@ -49,15 +49,15 @@ def find_references(module_context, tree_name):
             if any(tree_name in found_names for tree_name in new):
                 found_names.update(new)
                 for tree_name in new:
-                    for dct in non_matching_usage_maps.get(tree_name, []):
-                        # A usage that was previously searched for matches with
-                        # a now found name. Merge.
+                    for dct in non_matching_reference_maps.get(tree_name, []):
+                        # A reference that was previously searched for matches
+                        # with a now found name. Merge.
                         found_names.update(dct)
                     try:
-                        del non_matching_usage_maps[tree_name]
+                        del non_matching_reference_maps[tree_name]
                     except KeyError:
                         pass
             else:
                 for name in new:
-                    non_matching_usage_maps.setdefault(name, []).append(new)
+                    non_matching_reference_maps.setdefault(name, []).append(new)
     return found_names.values()
