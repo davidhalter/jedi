@@ -283,7 +283,8 @@ class Script(object):
         with debug.increase_indent_cm('goto_assignments'):
             return self._goto_assignments(line, column, **kwargs)
 
-    def _goto_assignments(self, line, column, follow_imports, follow_builtin_imports,
+    def _goto_assignments(self, line, column, follow_imports=False,
+                          follow_builtin_imports=False,
                           only_stubs=False, prefer_stubs=False):
         def filter_follow_imports(names):
             for name in names:
