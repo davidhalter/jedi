@@ -358,3 +358,11 @@ def test_goto_on_string(Script, code, column):
     script = Script(code)
     assert not script.infer(column=column)
     assert not script.goto(column=column)
+
+
+def test_multi_goto(Script):
+    script = Script('x = 1\ny = 1.0\nx\ny')
+    x, = script.goto(line=3)
+    y, = script.goto(line=4)
+    assert x.line == 1
+    assert y.line == 2
