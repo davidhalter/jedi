@@ -74,7 +74,7 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
             follow_imports=True,
         )
         if type_ == 'goto':
-            defs = [d for goto_def in goto_defs for d in goto_def.goto_assignments(**kwargs)]
+            defs = [d for goto_def in goto_defs for d in goto_def.goto(**kwargs)]
         else:
             defs = [d for goto_def in goto_defs for d in goto_def.infer(**kwargs)]
 

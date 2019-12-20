@@ -216,7 +216,7 @@ def test_goto_assignments_follow_imports(Script):
     definition, = script.goto_assignments(follow_imports=True)
     assert (definition.line, definition.column) == start_pos
     assert definition.name == 'p'
-    result, = definition.goto_assignments()
+    result, = definition.goto()
     assert result.name == 'p'
     result, = definition.infer()
     assert result.name == 'int'

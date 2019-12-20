@@ -35,8 +35,8 @@ def test_keyword_attributes(Script):
     assert def_.complete == ''
     assert def_.is_keyword is True
     assert def_.is_stub() is False
-    assert def_.goto_assignments(only_stubs=True) == []
-    assert def_.goto_assignments() == []
+    assert def_.goto(only_stubs=True) == []
+    assert def_.goto() == []
     assert def_.infer() == []
     assert def_.parent() is None
     assert def_.docstring()

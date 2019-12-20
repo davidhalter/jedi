@@ -166,4 +166,4 @@ def test_no_error(names):
     assert a.name == 'a'
     assert b.name == 'b'
     assert a20.name == 'a'
-    assert a20.goto_assignments() == [a20]
+    assert a20.goto() == [a20]

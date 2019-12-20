@@ -63,7 +63,7 @@ def test_keywords_variable(Script):
     for seq in Script(code).goto_definitions():
         assert seq.name == 'Sequence'
         # This points towards the typeshed implementation
-        stub_seq, = seq.goto_assignments(only_stubs=True)
+        stub_seq, = seq.goto(only_stubs=True)
         assert typeshed.TYPESHED_PATH in stub_seq.module_path
 
 
@@ -156,12 +156,12 @@ def test_math_is_stub(Script, code, full_name):
     wanted = os.path.join('typeshed', 'stdlib', '2and3', 'math.pyi')
     assert cos.module_path.endswith(wanted)
     assert cos.is_stub() is True
-    assert cos.goto_assignments(only_stubs=True) == [cos]
+    assert cos.goto(only_stubs=True) == [cos]
     assert cos.full_name == full_name
 
     cos, = s.goto_assignments()
     assert cos.module_path.endswith(wanted)
-    assert cos.goto_assignments(only_stubs=True) == [cos]
+    assert cos.goto(only_stubs=True) == [cos]
     assert cos.is_stub() is True
     assert cos.full_name == full_name
 
@@ -171,7 +171,7 @@ def test_goto_stubs(Script):
     os_module, = s.goto_definitions()
     assert os_module.full_name == 'os'
     assert os_module.is_stub() is False
-    stub, = os_module.goto_assignments(only_stubs=True)
+    stub, = os_module.goto(only_stubs=True)
     assert stub.is_stub() is True
 
     os_module, = s.goto_assignments()
@@ -202,7 +202,7 @@ def test_goto_stubs_on_itself(Script, code, type_):
         def_, = s.goto_definitions()
     else:
         def_, = s.goto_assignments(follow_imports=True)
-    stub, = def_.goto_assignments(only_stubs=True)
+    stub, = def_.goto(only_stubs=True)
 
     script_on_source = Script(
         path=def_.module_path,
@@ -213,7 +213,7 @@ def test_goto_stubs_on_itself(Script, code, type_):
         definition, = script_on_source.goto_definitions()
     else:
         definition, = script_on_source.goto_assignments()
-    same_stub, = definition.goto_assignments(only_stubs=True)
+    same_stub, = definition.goto(only_stubs=True)
     _assert_is_same(same_stub, stub)
     _assert_is_same(definition, def_)
     assert same_stub.module_path != def_.module_path
@@ -230,7 +230,7 @@ def test_goto_stubs_on_itself(Script, code, type_):
         same_definition2, = same_stub.infer()
     else:
         same_definition, = script_on_stub.goto_assignments()
-        same_definition2, = same_stub.goto_assignments()
+        same_definition2, = same_stub.goto()
 
     _assert_is_same(same_definition, definition)
     _assert_is_same(same_definition, same_definition2)

@@ -340,7 +340,7 @@ def test_goto_assignment_repetition(names):
     # definition.
     for _ in range(3):
         assert len(defs) == 1
-        ass = defs[0].goto_assignments()
+        ass = defs[0].goto()
         assert ass[0].description == 'a = 1'
 
 
@@ -351,7 +351,7 @@ def test_goto_assignments_named_params(names):
             foo(bar=1)
           """
     bar = names(dedent(src), references=True)[-1]
-    param = bar.goto_assignments()[0]
+    param = bar.goto()[0]
     assert (param.line, param.column) == (1, 13)
     assert param.type == 'param'
 
@@ -360,46 +360,46 @@ def test_class_call(names):
     src = 'from threading import Thread; Thread(group=1)'
     n = names(src, references=True)[-1]
     assert n.name == 'group'
-    param_def = n.goto_assignments()[0]
+    param_def = n.goto()[0]
     assert param_def.name == 'group'
     assert param_def.type == 'param'
 
 
 def test_parentheses(names):
     n = names('("").upper', references=True)[-1]
-    assert n.goto_assignments()[0].name == 'upper'
+    assert n.goto()[0].name == 'upper'
 
 
 def test_import(names):
     nms = names('from json import load', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
-    n = nms[0].goto_assignments()[0]
+    n = nms[0].goto()[0]
     assert n.name == 'json'
     assert n.type == 'module'
 
     assert nms[1].name == 'load'
     assert nms[1].type == 'function'
-    n = nms[1].goto_assignments()[0]
+    n = nms[1].goto()[0]
     assert n.name == 'load'
     assert n.type == 'function'
 
     nms = names('import os; os.path', references=True)
     assert nms[0].name == 'os'
     assert nms[0].type == 'module'
-    n = nms[0].goto_assignments()[0]
+    n = nms[0].goto()[0]
     assert n.name == 'os'
     assert n.type == 'module'
 
-    n = nms[2].goto_assignments()[0]
+    n = nms[2].goto()[0]
     assert n.name == 'path'
     assert n.type == 'module'
 
     nms = names('import os.path', references=True)
-    n = nms[0].goto_assignments()[0]
+    n = nms[0].goto()[0]
     assert n.name == 'os'
     assert n.type == 'module'
-    n = nms[1].goto_assignments()[0]
+    n = nms[1].goto()[0]
     # This is very special, normally the name doesn't chance, but since
     # os.path is a sys.modules hack, it does.
     assert n.name in ('macpath', 'ntpath', 'posixpath', 'os2emxpath')
@@ -411,7 +411,7 @@ def test_import_alias(names):
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
     assert nms[0]._name.tree_name.parent.type == 'dotted_as_name'
-    n = nms[0].goto_assignments()[0]
+    n = nms[0].goto()[0]
     assert n.name == 'json'
     assert n.type == 'module'
     assert n._name._value.tree_node.type == 'file_input'
@@ -419,7 +419,7 @@ def test_import_alias(names):
     assert nms[1].name == 'foo'
     assert nms[1].type == 'module'
     assert nms[1]._name.tree_name.parent.type == 'dotted_as_name'
-    ass = nms[1].goto_assignments()
+    ass = nms[1].goto()
     assert len(ass) == 1
     assert ass[0].name == 'json'
     assert ass[0].type == 'module'
