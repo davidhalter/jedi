@@ -12,6 +12,7 @@ arguments.
 import os
 import sys
 import warnings
+import keyword
 
 import parso
 from parso.python import tree
@@ -27,6 +28,7 @@ from jedi.api import interpreter
 from jedi.api import helpers
 from jedi.api.helpers import validate_line_column
 from jedi.api.completion import Completion
+from jedi.api.keywords import KeywordName
 from jedi.api.environment import InterpreterEnvironment
 from jedi.api.project import get_default_project, Project
 from jedi.inference import InferenceState
@@ -272,9 +274,6 @@ class Script(object):
         dynamic language, which means depending on an option you can have two
         different versions of a function.
 
-        .. note:: It is deprecated to use follow_imports and follow_builtin_imports as
-            positional arguments. Will be a keyword argument in 0.16.0.
-
         :param follow_imports: The goto call will follow imports.
         :param follow_builtin_imports: If follow_imports is True will decide if
             it follow builtin imports.
@@ -323,6 +322,29 @@ class Script(object):
 
         defs = [classes.Definition(self._inference_state, d) for d in set(names)]
         return helpers.sorted_definitions(defs)
+
+    @validate_line_column
+    def help(self, line=None, column=None):
+        """
+        Works like goto and returns a list of Definition objects. Returns
+        additional definitions for keywords and operators.
+
+        The additional definitions are of ``Definition(...).type == 'keyword'``.
+        These definitions do not have a lot of value apart from their docstring
+        attribute, which contains the output of Python's ``help()`` function.
+
+        :rtype: list of :class:`classes.Definition`
+        """
+        definitions = self.goto(line, column)
+        if definitions:
+            return definitions
+        leaf = self._module_node.get_leaf_for_position((line, column))
+        if leaf.type in ('keyword', 'operator', 'error_leaf'):
+            reserved = self._grammar._pgen_grammar.reserved_syntax_strings.keys()
+            if leaf.value in reserved:
+                name = KeywordName(self._inference_state, leaf.value)
+                return [classes.Definition(self._inference_state, name)]
+        return []
 
     def usages(self, **kwargs):
         # Deprecated, will be removed.

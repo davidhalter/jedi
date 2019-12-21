@@ -110,6 +110,11 @@ def names(Script):
     return lambda code, **kwargs: Script(code).names(**kwargs)
 
 
+@pytest.fixture(scope='session', params=['goto', 'infer'])
+def goto_or_infer(request, Script):
+    return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
+
+
 @pytest.fixture(scope='session')
 def has_typing(environment):
     if environment.version_info >= (3, 5, 0):
