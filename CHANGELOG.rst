@@ -6,6 +6,15 @@ Changelog
 0.16.0 (2020--)
 +++++++++++++++++++
 
+
+- Big **Script API Changes**:
+    - The line and column parameters of ``jedi.Script`` are now deprecated
+    - ``completions`` deprecated, use ``complete`` instead
+    - ``goto_assignments`` deprecated, use ``goto`` instead
+    - ``goto_definitions`` deprecated, use ``infer`` instead
+    - ``call_signatures`` deprecated, use ``find_signatures`` instead
+    - ``usages`` deprecated, use ``find_references`` instead
+    - ``jedi.names`` deprecated, use ``jedi.Script(...).names()``
 - ``BaseDefinition.goto_assignments`` renamed to ``BaseDefinition.goto``
 
 0.15.2 (2019-12-20)
