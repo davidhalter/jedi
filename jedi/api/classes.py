@@ -237,7 +237,9 @@ class BaseDefinition(object):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        return _Help(self._name).docstring(fast=fast, raw=raw)
+        if isinstance(self._name, ImportName) and fast:
+            return ''
+        return self._name.py__doc__(include_signatures=not raw)
 
     @property
     def description(self):
@@ -730,29 +732,3 @@ def _format_signatures(value):
         signature.to_string()
         for signature in value.get_signatures()
     )
-
-
-class _Help(object):
-    """
-    Temporary implementation, will be used as `Script.help() or something in
-    the future.
-    """
-    def __init__(self, definition):
-        self._name = definition
-
-    @memoize_method
-    def _get_values(self, fast):
-        if self._name.api_type == 'statement':
-            return {}
-
-        return self._name.infer()
-
-    def docstring(self, fast=True, raw=True):
-        """
-        The docstring ``__doc__`` for any object.
-
-        See :attr:`doc` for example.
-        """
-        if isinstance(self._name, ImportName) and fast:
-            return ''
-        return self._name.py__doc__(include_signatures=not raw)
