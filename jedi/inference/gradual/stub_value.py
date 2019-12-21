@@ -1,7 +1,7 @@
 from jedi.inference.base_value import ValueWrapper
 from jedi.inference.value.module import ModuleValue
-from jedi.inference.filters import ParserTreeFilter, \
-    TreeNameDefinition
+from jedi.inference.filters import ParserTreeFilter
+from jedi.inference.names import StubName
 from jedi.inference.gradual.typing import TypingModuleFilterWrapper
 from jedi.inference.context import ModuleContext
 
@@ -81,17 +81,8 @@ class TypingModuleContext(ModuleContext):
             yield f
 
 
-# From here on down we make looking up the sys.version_info fast.
-class _StubName(TreeNameDefinition):
-    def infer(self):
-        inferred = super(_StubName, self).infer()
-        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
-            return [VersionInfo(c) for c in inferred]
-        return inferred
-
-
 class StubFilter(ParserTreeFilter):
-    name_class = _StubName
+    name_class = StubName
 
     def _is_name_reachable(self, name):
         if not super(StubFilter, self)._is_name_reachable(name):

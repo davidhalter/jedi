@@ -288,6 +288,10 @@ class CompiledName(AbstractNameDefinition):
         self.parent_context = parent_context
         self.string_name = name
 
+    def py__doc__(self, include_signatures=False):
+        value, = self.infer()
+        return value.py__doc__()
+
     def _get_qualified_names(self):
         parent_qualified_names = self.parent_context.get_qualified_names()
         if parent_qualified_names is None:

@@ -3,11 +3,36 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
+from jedi.parser_utils import clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import docstrings
 from jedi.cache import memoize_method
 from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
+
+
+def _merge_name_docs(names):
+    doc = ''
+    for name in names:
+        if doc:
+            # In case we have multiple values, just return all of them
+            # separated by a few dashes.
+            doc += '\n' + '-' * 30 + '\n'
+        doc += name.py__doc__()
+    return doc
+
+
+def _merge_docs_and_signature(values, doc):
+    signature_text = '\n'.join(
+        signature.to_string()
+        for value in values
+        for signature in value.get_signatures()
+    )
+
+    if signature_text and doc:
+        return signature_text + '\n\n' + doc
+    else:
+        return signature_text + doc
 
 
 class AbstractNameDefinition(object):
@@ -58,6 +83,9 @@ class AbstractNameDefinition(object):
 
     def is_import(self):
         return False
+
+    def py__doc__(self, include_signatures=False):
+        return ''
 
     @property
     def api_type(self):
@@ -197,6 +225,20 @@ class ValueNameMixin(object):
     def infer(self):
         return ValueSet([self._value])
 
+    def py__doc__(self, include_signatures=False):
+        from jedi.inference.gradual.conversion import convert_names
+        doc = ''
+        if self._value.is_stub():
+            names = convert_names([self], prefer_stub_to_compiled=False)
+            if self not in names:
+                doc = _merge_name_docs(names)
+        if not doc:
+            doc = self._value.py__doc__()
+
+        if include_signatures:
+            doc = _merge_docs_and_signature([self._value], doc)
+        return doc
+
     def _get_qualified_names(self):
         return self._value.get_qualified_names()
 
@@ -284,6 +326,17 @@ class TreeNameDefinition(AbstractTreeName):
             compare = node
             node = node.parent
         return indexes
+
+    def py__doc__(self, include_signatures=False):
+        if self.api_type in ('function', 'class'):
+            return clean_scope_docstring(self.tree_name.get_definition())
+
+        if self.api_type == 'module':
+            names = self.goto()
+            if self not in names:
+                print('la', _merge_name_docs(names))
+                return _merge_name_docs(names)
+        return super(TreeNameDefinition, self).py__doc__(include_signatures)
 
 
 class _ParamMixin(object):
@@ -531,6 +584,10 @@ class ImportName(AbstractNameDefinition):
     def api_type(self):
         return 'module'
 
+    def py__doc__(self, include_signatures=False):
+        print('la', (self.goto()))
+        return _merge_name_docs(self.goto())
+
 
 class SubModuleName(ImportName):
     _level = 1
@@ -549,3 +606,26 @@ class NameWrapper(object):
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_name)
+
+
+# From here on down we make looking up the sys.version_info fast.
+class StubName(TreeNameDefinition):
+    def infer(self):
+        inferred = super(StubName, self).infer()
+        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
+            from jedi.inference.gradual.stub_value import VersionInfo
+            return [VersionInfo(c) for c in inferred]
+        return inferred
+
+    def py__doc__(self, include_signatures=False):
+        from jedi.inference.gradual.conversion import convert_names
+        names = convert_names([self], prefer_stub_to_compiled=False)
+        if self in names:
+            doc = super(StubName, self).py__doc__(include_signatures)
+        else:
+            doc = _merge_name_docs(names)
+        if include_signatures:
+            parent = self.tree_name.parent
+            if parent.type in ('funcdef', 'classdef') and parent.name is self.tree_name:
+                doc = _merge_docs_and_signature(self.infer(), doc)
+        return doc

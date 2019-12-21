@@ -742,9 +742,6 @@ class _Help(object):
 
     @memoize_method
     def _get_values(self, fast):
-        if isinstance(self._name, ImportName) and fast:
-            return {}
-
         if self._name.api_type == 'statement':
             return {}
 
@@ -756,29 +753,6 @@ class _Help(object):
 
         See :attr:`doc` for example.
         """
-        full_doc = ''
-        # Using the first docstring that we see.
-        for value in self._get_values(fast=fast):
-            if full_doc:
-                # In case we have multiple values, just return all of them
-                # separated by a few dashes.
-                full_doc += '\n' + '-' * 30 + '\n'
-
-            doc = value.py__doc__()
-
-            signature_text = ''
-            if self._name.is_value_name:
-                if not raw:
-                    signature_text = _format_signatures(value)
-                if not doc and value.is_stub():
-                    for c in convert_values(ValueSet({value}), ignore_compiled=False):
-                        doc = c.py__doc__()
-                        if doc:
-                            break
-
-            if signature_text and doc:
-                full_doc += signature_text + '\n\n' + doc
-            else:
-                full_doc += signature_text + doc
-
-        return full_doc
+        if isinstance(self._name, ImportName) and fast:
+            return ''
+        return self._name.py__doc__(include_signatures=not raw)

@@ -3,9 +3,10 @@ import os
 import pytest
 from parso.utils import PythonVersionInfo
 
-from jedi.inference.gradual import typeshed, stub_value
+from jedi.inference.gradual import typeshed
 from jedi.inference.value import TreeInstance, BoundMethod, FunctionValue, \
     MethodValue, ClassValue
+from jedi.inference.names import StubName
 
 TYPESHED_PYTHON3 = os.path.join(typeshed.TYPESHED_PATH, 'stdlib', '3')
 
@@ -125,7 +126,7 @@ def test_sys_getwindowsversion(Script, environment):
 def test_sys_hexversion(Script):
     script = Script('import sys; sys.hexversion')
     def_, = script.complete()
-    assert isinstance(def_._name, stub_value._StubName), def_._name
+    assert isinstance(def_._name, StubName), def_._name
     assert typeshed.TYPESHED_PATH in def_.module_path
     def_, = script.infer()
     assert def_.name == 'int'
