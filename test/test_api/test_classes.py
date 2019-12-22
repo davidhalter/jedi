@@ -276,7 +276,7 @@ def test_parent_on_function(Script):
     assert parent.type == 'module'
 
 
-def test_parent_on_completion(Script):
+def test_parent_on_completion_and_else(Script):
     script = Script(dedent('''\
         class Foo():
             def bar(name): name
@@ -287,20 +287,47 @@ def test_parent_on_completion(Script):
     assert parent.name == 'Foo'
     assert parent.type == 'class'
 
-    param, = script.goto(line=2)
-    parent = param.parent()
+    param, name, = [d for d in script.names(all_scopes=True, references=True)
+                    if d.name == 'name']
+    parent = name.parent()
+    assert parent.name == 'bar'
+    assert parent.type == 'function'
+    parent = name.parent().parent()
     assert parent.name == 'Foo'
     assert parent.type == 'class'
 
-    name, = [d for d in script.names(all_scopes=True, references=True)
-             if d.name == 'name' and d.type == 'statement']
     parent = param.parent()
+    assert parent.name == 'bar'
+    assert parent.type == 'function'
+    parent = param.parent().parent()
     assert parent.name == 'Foo'
     assert parent.type == 'class'
 
     parent = Script('str.join').complete()[0].parent()
     assert parent.name == 'str'
     assert parent.type == 'class'
+
+
+def test_parent_on_closure(Script):
+    script = Script(dedent('''\
+        class Foo():
+            def bar(name):
+                def inner(): foo
+                return inner'''))
+
+    names = script.names(all_scopes=True, references=True)
+    inner_func, inner_reference = filter(lambda d: d.name == 'inner', names)
+    foo, = filter(lambda d: d.name == 'foo', names)
+
+    assert foo.parent().name == 'inner'
+    assert foo.parent().parent().name == 'bar'
+    assert foo.parent().parent().parent().name == 'Foo'
+    assert foo.parent().parent().parent().parent().name == ''
+
+    assert inner_func.parent().name == 'bar'
+    assert inner_func.parent().parent().name == 'Foo'
+    assert inner_reference.parent().name == 'bar'
+    assert inner_reference.parent().parent().name == 'Foo'
 
 
 def test_parent_on_comprehension(Script):

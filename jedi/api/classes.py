@@ -7,6 +7,8 @@ import re
 import sys
 import warnings
 
+from parso.python.tree import search_ancestor
+
 from jedi import settings
 from jedi import debug
 from jedi.inference.utils import unite
@@ -368,12 +370,28 @@ class BaseDefinition(object):
         if not self._name.is_value_name:
             return None
 
-        context = self._name.parent_context
+        if self.type in ('function', 'class', 'param') and self._name.tree_name is not None:
+            # Since the parent_context doesn't really match what the user
+            # thinks of that the parent is here, we do these cases separately.
+            # The reason for this is the following:
+            # - class: Nested classes parent_context is always the
+            #   parent_context of the most outer one.
+            # - function: Functions in classes have the module as
+            #   parent_context.
+            # - param: The parent_context of a param is not its function but
+            #   e.g. the outer class or module.
+            cls_or_func_node = self._name.tree_name.get_definition()
+            parent = search_ancestor(cls_or_func_node, 'funcdef', 'classdef', 'file_input')
+            context = self._get_module_context().create_value(parent).as_context()
+        else:
+            context = self._name.parent_context
+
         if context is None:
             return None
         while context.name is None:
             # Happens for comprehension contexts
             context = context.parent_context
+
         return Definition(self._inference_state, context.name)
 
     def __repr__(self):
