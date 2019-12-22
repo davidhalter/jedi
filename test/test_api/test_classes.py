@@ -277,10 +277,24 @@ def test_parent_on_function(Script):
 
 
 def test_parent_on_completion(Script):
-    parent = Script(dedent('''\
+    script = Script(dedent('''\
         class Foo():
-            def bar(): pass
-        Foo().bar''')).complete()[0].parent()
+            def bar(name): name
+        Foo().bar'''))
+
+    bar, = script.complete()
+    parent = bar.parent()
+    assert parent.name == 'Foo'
+    assert parent.type == 'class'
+
+    param, = script.goto(line=2)
+    parent = param.parent()
+    assert parent.name == 'Foo'
+    assert parent.type == 'class'
+
+    name, = [d for d in script.names(all_scopes=True, references=True)
+             if d.name == 'name' and d.type == 'statement']
+    parent = param.parent()
     assert parent.name == 'Foo'
     assert parent.type == 'class'
 
