@@ -63,6 +63,13 @@ def a(): pass
 set_object_var = object()
 set_object_var.var = 1
 
+def func(a, b):
+    a = 12
+    #< 4 (0,4), (3,8)
+    c = a
+    if True:
+        #< 8 (-3,4), (0,8)
+        c = b
 
 response = 5
 #< 0 (-2,0), (0,0), (1,0), (2,0), (4,0)
