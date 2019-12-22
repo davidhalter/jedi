@@ -420,14 +420,25 @@ class Script(object):
 
     @validate_line_column
     def get_context(self, line=None, column=None):
-        leaf = self._module_node.get_leaf_for_position((line, column), include_prefixes=True)
-        if leaf.start_pos > (line, column) or leaf.type == 'endmarker':
+        pos = (line, column)
+        leaf = self._module_node.get_leaf_for_position(pos, include_prefixes=True)
+        if leaf.start_pos > pos or leaf.type == 'endmarker':
             previous_leaf = leaf.get_previous_leaf()
             if previous_leaf is not None:
                 leaf = previous_leaf
 
         module_context = self._get_module_context()
-        context = module_context.create_context(leaf)
+
+        n = tree.search_ancestor(leaf, 'funcdef', 'classdef')
+        if n is not None and n.start_pos < pos <= n.children[-1].start_pos:
+            # This is a bit of a special case. The context of a function/class
+            # name/param/keyword is always it's parent context, not the
+            # function itself. Catch all the cases here where we are before the
+            # suite object, but still in the function.
+            context = module_context.create_value(n).as_context()
+        else:
+            context = module_context.create_context(leaf)
+
         while context.name is None:
             context = context.parent_context  # comprehensions
 

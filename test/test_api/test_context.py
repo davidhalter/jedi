@@ -61,8 +61,9 @@ def x():
 
         (func_code, 1, 0, 'myfile', []),
         (func_code, 1, None, 'myfile.func1', ['func1']),
-        #(func_code, 1, 4, 'myfile.func1', ['func1']),
-        #(func_code, 1, 10, 'myfile.func1', ['func1']),
+        (func_code, 1, 1, 'myfile.func1', ['func1']),
+        (func_code, 1, 4, 'myfile.func1', ['func1']),
+        (func_code, 1, 10, 'myfile.func1', ['func1']),
 
         (func_code, 3, 0, 'myfile', []),
         (func_code, 5, None, 'myfile.func2', ['func2']),
@@ -84,6 +85,7 @@ def x():
         (cls_code, 4, 5, 'myfile.Foo.x', ['Foo', 'x']),
         (cls_code, 4, 8, 'myfile.Foo.x', ['Foo', 'x']),
         (cls_code, 4, 12, None, ['Foo', 'x', 'y']),
+        (cls_code, 1, 1, 'myfile.Foo', ['Foo']),
 
         (cls_nested, 4, None, 'myfile.C.D.f', ['C', 'D', 'f']),
         (cls_nested, 4, 3, 'myfile.C', ['C']),
