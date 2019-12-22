@@ -52,3 +52,26 @@ def test_lambda(Script):
 )
 def test_help_no_returns(Script, code, kwargs):
     assert not Script(code).help(**kwargs)
+
+
+def test_attribute_docstrings(goto_or_help):
+    code = dedent('''\
+        class X:
+            "ha"
+            x = 3
+            """ Yeah """
+            y = 5
+            "f g "
+            z = lambda: 1
+        ''')
+
+    d, = goto_or_help(code + 'X.x')
+    assert d.docstring() == 'Yeah '
+    d, = goto_or_help(code + 'X().x')
+    assert d.docstring() == 'Yeah '
+
+    d, = goto_or_help(code + 'X.y')
+    assert d.docstring() == 'f g '
+
+    d, = goto_or_help(code + 'X.z')
+    assert d.docstring() == ''

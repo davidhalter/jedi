@@ -3,7 +3,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
-from jedi.parser_utils import clean_scope_docstring
+from jedi.parser_utils import clean_scope_docstring, find_statement_documentation
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import docstrings
@@ -324,10 +324,12 @@ class TreeNameDefinition(AbstractTreeName):
         if self.api_type in ('function', 'class'):
             return clean_scope_docstring(self.tree_name.get_definition())
 
+        if self.api_type == 'statement' and self.tree_name.is_definition():
+            return find_statement_documentation(self.tree_name.get_definition())
+
         if self.api_type == 'module':
             names = self.goto()
             if self not in names:
-                print('la', _merge_name_docs(names))
                 return _merge_name_docs(names)
         return super(TreeNameDefinition, self).py__doc__(include_signatures)
 
@@ -578,7 +580,6 @@ class ImportName(AbstractNameDefinition):
         return 'module'
 
     def py__doc__(self, include_signatures=False):
-        print('la', (self.goto()))
         return _merge_name_docs(self.goto())
 
 

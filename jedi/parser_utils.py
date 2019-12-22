@@ -109,6 +109,21 @@ def clean_scope_docstring(scope_node):
     return ''
 
 
+def find_statement_documentation(tree_node):
+    if tree_node.type == 'expr_stmt':
+        tree_node = tree_node.parent  # simple_stmt
+        maybe_string = tree_node.get_next_sibling()
+        if maybe_string is not None:
+            if maybe_string.type == 'simple_stmt':
+                maybe_string = maybe_string.children[0]
+                if maybe_string.type == 'string':
+                    cleaned = cleandoc(safe_literal_eval(maybe_string.value))
+                    # Since we want the docstr output to be always unicode, just
+                    # force it.
+                    return force_unicode(cleaned)
+    return ''
+
+
 def safe_literal_eval(value):
     first_two = value[:2].lower()
     if first_two[0] == 'f' or first_two in ('fr', 'rf'):
