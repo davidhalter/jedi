@@ -564,7 +564,7 @@ class ImportName(AbstractNameDefinition):
             return m
         # It's almost always possible to find the import or to not find it. The
         # importing returns only one value, pretty much always.
-        return next(iter(import_values))
+        return next(iter(import_values)).as_context()
 
     @memoize_method
     def infer(self):

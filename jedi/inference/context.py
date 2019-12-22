@@ -308,10 +308,13 @@ class ModuleContext(TreeContextMixin, ValueContext):
                 until_position=until_position,
                 origin_scope=origin_scope
             ),
-            GlobalNameFilter(self, self.tree_node),
+            self.get_global_filter(),
         )
         for f in filters:  # Python 2...
             yield f
+
+    def get_global_filter(self):
+        return GlobalNameFilter(self, self.tree_node)
 
     @property
     def string_names(self):

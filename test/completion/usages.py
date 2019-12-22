@@ -3,34 +3,34 @@ Renaming tests. This means search for references.
 I always leave a little bit of space to add room for additions, because the
 results always contain position informations.
 """
-#< 4 (0,4), (3,0), (5,0), (17,0), (12,4), (14,5), (15,0)
-def abc(): pass
+#< 4 (0,4), (3,0), (5,0), (12,4), (14,5), (15,0), (17,0), (19,0)
+def abcd(): pass
 
-#< 0 (-3,4), (0,0), (2,0), (14,0), (9,4), (11,5), (12,0)
-abc.d.a.bsaasd.abc.d
+#< 0 (-3,4), (0,0), (2,0), (9,4), (11,5), (12,0), (14,0), (16,0)
+abcd.d.a.bsaasd.abcd.d
 
-abc
+abcd
 # unicode chars shouldn't be a problem.
-x['smörbröd'].abc
+x['smörbröd'].abcd
 
 # With the new parser these statements are not recognized as stateents, because
 # they are not valid Python.
 if 1:
-    abc = 
+    abcd = 
 else:
-    (abc) = 
-abc = 
-#< (-17,4), (-14,0), (-12,0), (0,0), (-2,0), (-3,5), (-5,4)
-abc
+    (abcd) = 
+abcd = 
+#< (-17,4), (-14,0), (-12,0), (0,0), (2,0), (-2,0), (-3,5), (-5,4)
+abcd
 
-abc = 5
+abcd = 5
 
 
 Abc = 3
 
-#< 6 (0,6), (2,4), (5,8), (17,0)
+#< 6 (-3,0), (0,6), (2,4), (5,8), (17,0)
 class Abc():
-    #< (-2,6), (0,4), (3,8), (15,0)
+    #< (-5,0), (-2,6), (0,4), (2,8), (3,8), (15,0)
     Abc
 
     def Abc(self):
@@ -65,11 +65,11 @@ set_object_var.var = 1
 
 
 response = 5
-#< 0 (0,0), (1,0), (2,0), (4,0)
+#< 0 (-2,0), (0,0), (1,0), (2,0), (4,0)
 response = HttpResponse(mimetype='application/pdf')
 response['Content-Disposition'] = 'attachment; filename=%s.pdf' % id
 response.write(pdf)
-#< (-4,0), (-3,0), (-2,0), (0,0)
+#< (-6,0), (-4,0), (-3,0), (-2,0), (0,0)
 response
 
 
@@ -215,18 +215,18 @@ class TestProperty:
         self.prop
 
     @property
-    #< 13 (0,8), (4,5)
+    #< 13 (0,8), (4,5), (6,8), (11,13)
     def rw_prop(self):
         return self._rw_prop
 
-    #< 8 (-4,8), (0,5)
+    #< 8 (-4,8), (0,5), (2,8), (7,13)
     @rw_prop.setter
-    #< 8 (0,8), (5,13)
+    #< 8 (-6,8), (-2,5), (0,8), (5,13)
     def rw_prop(self, value):
         self._rw_prop = value
 
     def b(self):
-        #< 13 (-5,8), (0,13)
+        #< 13 (-11,8), (-7,5), (-5,8), (0,13)
         self.rw_prop
 
 # -----------------
@@ -287,9 +287,9 @@ x = 32
 [x for x in x]
 
 #< 0 (0,0), (2,1), (2,12)
-x = 32
+y = 32
 #< 12 (-2,0), (0,1), (0,12)
-[x for b in x]
+[y for b in y]
 
 
 #< 1 (0,1), (0,7)
@@ -297,13 +297,13 @@ x = 32
 #< 7 (0,1), (0,7)
 [x for x in something]
 
-x = 3
+z = 3
 #< 1 (0,1), (0,10)
-{x:1 for  x in something}
+{z:1 for  z in something}
 #< 10 (0,1), (0,10)
-{x:1 for  x in something}
+{z:1 for  z in something}
 
-def x():
+def whatever_func():
     zzz = 3
     if UNDEFINED:
         zzz = 5
@@ -314,3 +314,31 @@ def x():
         #< (0, 8), (1, 4), (-3, 12), (-6, 8), (-8, 4)
         zzz
     zzz
+
+# -----------------
+# global
+# -----------------
+
+def global_usage1():
+    #< (0, 4), (4, 11), (6, 4), (9, 8), (12, 4)
+    my_global
+
+def global_definition():
+    #< (-4, 4), (0, 11), (2, 4), (5, 8), (8, 4)
+    global my_global
+    #< 4 (-6, 4), (-2, 11), (0, 4), (3, 8), (6, 4)
+    my_global = 3
+    if WHATEVER:
+        #< 8 (-9, 4), (-5, 11), (-3, 4), (0, 8), (3, 4)
+        my_global = 4
+
+def global_usage2()
+    my_global
+
+def not_global(my_global):
+    my_global
+
+class DefinitelyNotGlobal:
+    def my_global(self):
+        def my_global(self):
+            pass

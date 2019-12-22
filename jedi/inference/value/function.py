@@ -97,9 +97,6 @@ class FunctionMixin(object):
 
 
 class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
-    def is_function(self):
-        return True
-
     @classmethod
     def from_context(cls, context, tree_node):
         def create(tree_node):
@@ -162,6 +159,9 @@ class MethodValue(FunctionValue):
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
+    def is_function_execution(self):
+        return True
+
     def _infer_annotations(self):
         raise NotImplementedError
 
