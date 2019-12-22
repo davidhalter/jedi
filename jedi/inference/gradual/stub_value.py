@@ -1,12 +1,14 @@
 from jedi.inference.base_value import ValueWrapper
 from jedi.inference.value.module import ModuleValue
 from jedi.inference.filters import ParserTreeFilter
-from jedi.inference.names import StubName
+from jedi.inference.names import StubName, StubModuleName
 from jedi.inference.gradual.typing import TypingModuleFilterWrapper
 from jedi.inference.context import ModuleContext
 
 
 class StubModuleValue(ModuleValue):
+    _module_name_class = StubModuleName
+
     def __init__(self, non_stub_value_set, *args, **kwargs):
         super(StubModuleValue, self).__init__(*args, **kwargs)
         self.non_stub_value_set = non_stub_value_set

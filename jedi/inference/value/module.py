@@ -3,7 +3,7 @@ import os
 
 from jedi import debug
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference.names import ValueNameMixin, AbstractNameDefinition
+from jedi.inference.names import AbstractNameDefinition, ModuleName
 from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.inference import compiled
 from jedi.inference.base_value import TreeValue
@@ -35,18 +35,6 @@ class _ModuleAttributeName(AbstractNameDefinition):
                 create_simple_object(self.parent_context.inference_state, s)
             ])
         return compiled.get_string_value_set(self.parent_context.inference_state)
-
-
-class ModuleName(ValueNameMixin, AbstractNameDefinition):
-    start_pos = 1, 0
-
-    def __init__(self, value, name):
-        self._value = value
-        self._name = name
-
-    @property
-    def string_name(self):
-        return self._name
 
 
 def iter_module_names(inference_state, paths):
@@ -95,6 +83,8 @@ class SubModuleDictMixin(object):
 
 
 class ModuleMixin(SubModuleDictMixin):
+    _module_name_class = ModuleName
+
     def get_filters(self, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
@@ -121,7 +111,7 @@ class ModuleMixin(SubModuleDictMixin):
     @property
     @inference_state_method_cache()
     def name(self):
-        return ModuleName(self, self._string_name)
+        return self._module_name_class(self, self._string_name)
 
     @property
     def _string_name(self):

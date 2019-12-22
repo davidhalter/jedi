@@ -226,14 +226,7 @@ class ValueNameMixin(object):
         return ValueSet([self._value])
 
     def py__doc__(self, include_signatures=False):
-        from jedi.inference.gradual.conversion import convert_names
-        doc = ''
-        if self._value.is_stub():
-            names = convert_names([self], prefer_stub_to_compiled=False)
-            if self not in names:
-                doc = _merge_name_docs(names)
-        if not doc:
-            doc = self._value.py__doc__()
+        doc = self._value.py__doc__()
 
         if include_signatures:
             doc = _merge_docs_and_signature([self._value], doc)
@@ -608,20 +601,12 @@ class NameWrapper(object):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_name)
 
 
-# From here on down we make looking up the sys.version_info fast.
-class StubName(TreeNameDefinition):
-    def infer(self):
-        inferred = super(StubName, self).infer()
-        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
-            from jedi.inference.gradual.stub_value import VersionInfo
-            return [VersionInfo(c) for c in inferred]
-        return inferred
-
+class StubNameMixin(object):
     def py__doc__(self, include_signatures=False):
         from jedi.inference.gradual.conversion import convert_names
         names = convert_names([self], prefer_stub_to_compiled=False)
         if self in names:
-            doc = super(StubName, self).py__doc__(include_signatures)
+            doc = super(StubNameMixin, self).py__doc__(include_signatures)
         else:
             doc = _merge_name_docs(names)
         if include_signatures:
@@ -629,3 +614,29 @@ class StubName(TreeNameDefinition):
             if parent.type in ('funcdef', 'classdef') and parent.name is self.tree_name:
                 doc = _merge_docs_and_signature(self.infer(), doc)
         return doc
+
+
+# From here on down we make looking up the sys.version_info fast.
+class StubName(StubNameMixin, TreeNameDefinition):
+    def infer(self):
+        inferred = super(StubName, self).infer()
+        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
+            from jedi.inference.gradual.stub_value import VersionInfo
+            return [VersionInfo(c) for c in inferred]
+        return inferred
+
+
+class ModuleName(ValueNameMixin, AbstractNameDefinition):
+    start_pos = 1, 0
+
+    def __init__(self, value, name):
+        self._value = value
+        self._name = name
+
+    @property
+    def string_name(self):
+        return self._name
+
+
+class StubModuleName(StubNameMixin, ModuleName):
+    pass
