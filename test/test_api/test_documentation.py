@@ -54,7 +54,15 @@ def test_help_no_returns(Script, code, kwargs):
     assert not Script(code).help(**kwargs)
 
 
-def test_attribute_docstrings(goto_or_help):
+@pytest.mark.parametrize(
+    'to_execute, expected_doc', [
+        ('X.x', 'Yeah '),
+        ('X().x', 'Yeah '),
+        ('X.y', 'f g '),
+        ('X.z', ''),
+    ]
+)
+def test_attribute_docstrings(goto_or_help, expected_doc, to_execute):
     code = dedent('''\
         class X:
             "ha"
@@ -65,13 +73,5 @@ def test_attribute_docstrings(goto_or_help):
             z = lambda: 1
         ''')
 
-    d, = goto_or_help(code + 'X.x')
-    assert d.docstring() == 'Yeah '
-    d, = goto_or_help(code + 'X().x')
-    assert d.docstring() == 'Yeah '
-
-    d, = goto_or_help(code + 'X.y')
-    assert d.docstring() == 'f g '
-
-    d, = goto_or_help(code + 'X.z')
-    assert d.docstring() == ''
+    d, = goto_or_help(code + to_execute)
+    assert d.docstring() == expected_doc
