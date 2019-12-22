@@ -418,6 +418,30 @@ class Script(object):
         return [classes.Signature(self._inference_state, signature, call_details)
                 for signature in definitions.get_signatures()]
 
+    @validate_line_column
+    def get_context(self, line=None, column=None):
+        leaf = self._module_node.get_leaf_for_position((line, column), include_prefixes=True)
+        if leaf.start_pos > (line, column) or leaf.type == 'endmarker':
+            previous_leaf = leaf.get_previous_leaf()
+            if previous_leaf is not None:
+                leaf = previous_leaf
+
+        module_context = self._get_module_context()
+        context = module_context.create_context(leaf)
+        while context.name is None:
+            context = context.parent_context  # comprehensions
+
+        definition = classes.Definition(self._inference_state, context.name)
+        while definition.type != 'module':
+            name = definition._name  # TODO private access
+            tree_name = name.tree_name
+            if tree_name is not None:  # Happens with lambdas.
+                scope = tree_name.get_definition()
+                if scope.start_pos[1] < column:
+                    break
+            definition = definition.parent()
+        return definition
+
     def _analysis(self):
         self._inference_state.is_analysis = True
         self._inference_state.analysis_modules = [self._module_node]
