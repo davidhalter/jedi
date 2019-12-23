@@ -618,4 +618,3 @@ def follow_error_node_imports_if_possible(context, name):
             return Importer(
                 context.inference_state, names, context.get_root_context(), level).follow()
     return None
-

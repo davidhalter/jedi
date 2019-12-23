@@ -13,7 +13,7 @@ from parso import cache
 from jedi._compatibility import unicode
 from jedi import preload_module
 from jedi.inference.gradual import typeshed
-from test.helpers import test_dir
+from test.helpers import test_dir, get_example_dir
 
 
 @pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, EoL")

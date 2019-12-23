@@ -607,3 +607,17 @@ DefaultArg().y()
 DefaultArg.x()
 #? str()
 DefaultArg.y()
+
+
+# -----------------
+# Error Recovery
+# -----------------
+
+from import_tree.pkg.base import MyBase
+
+class C1(MyBase):
+    def f3(self):
+        #! 13 ['def f1']
+        self.f1() . # hey'''
+        #? 13 MyBase.f1
+        self.f1() . # hey'''

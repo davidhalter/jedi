@@ -12,7 +12,6 @@ arguments.
 import os
 import sys
 import warnings
-import keyword
 
 import parso
 from parso.python import tree

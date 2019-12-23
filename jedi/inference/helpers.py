@@ -94,7 +94,7 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
             base = power.children[start]
             if base.type != 'trailer':
                 break
-        trailers = power.children[start + 1: index + 1]
+        trailers = power.children[start + 1:cut]
     else:
         base = power.children[0]
         trailers = power.children[1:cut]
