@@ -21,7 +21,7 @@ class Sub(Super):
     #! 4 ['def func']
     func = 3
     #! 12 ['def func']
-    class func(): ...
+    class func(): pass
 
     #! 8 ['class Inner']
-    def Inner(self): ...
+    def Inner(self): pass
