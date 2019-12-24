@@ -309,7 +309,22 @@ class Script(object):
             # executed by `foo()`, if we the cursor is after `)`.
             return self.infer(line, column, only_stubs=only_stubs, prefer_stubs=prefer_stubs)
         name = self._get_module_context().create_name(tree_name)
-        names = list(name.goto())
+
+        # Make it possible to goto the super class function/attribute
+        # definitions, when they are overwritten.
+        names = []
+        if name.tree_name.is_definition() and name.parent_context.is_class():
+            class_node = name.parent_context.tree_node
+            class_value = self._get_module_context().create_value(class_node)
+            mro = class_value.py__mro__()
+            next(mro)  # Ignore the first entry, because it's the class itself.
+            for cls in mro:
+                names = cls.goto(tree_name.value)
+                if names:
+                    break
+
+        if not names:
+            names = list(name.goto())
 
         if follow_imports:
             names = filter_follow_imports(names)

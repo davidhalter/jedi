@@ -8,6 +8,8 @@ Changelog
 
 
 - **Add** ``Script.get_context`` to get information where you currently are.
+- Goto on a function/attribute in a class now goes to the definition in its
+  super class.
 - Big **Script API Changes**:
     - The line and column parameters of ``jedi.Script`` are now deprecated
     - ``completions`` deprecated, use ``complete`` instead
