@@ -295,3 +295,11 @@ def cut_value_at_position(leaf, position):
 
 def get_string_quote(leaf):
     return re.match(r'\w*("""|\'{3}|"|\')', leaf.value).group(1)
+
+
+def function_is_static_method(function_node):
+    for decorator in function_node.get_decorators():
+        dotted_name = decorator.children[1]
+        if dotted_name.get_code() == 'staticmethod':
+            return True
+    return False

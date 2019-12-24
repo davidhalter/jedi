@@ -293,6 +293,40 @@ for part in qsplit:
     part
 
 # -----------------
+# staticmethod, classmethod params
+# -----------------
+
+class F():
+    def __init__(self):
+        self.my_variable = 3
+
+    @staticmethod
+    def my_func(param):
+        #? []
+        param.my_
+        #? ['upper']
+        param.uppe
+        #? str()
+        return param
+
+    @staticmethod
+    def my_func_without_call(param):
+        #? []
+        param.my_
+        #? []
+        param.uppe
+        #?
+        return param
+
+    @classmethod
+    def my_method(cls, param):
+        #? []
+        param.my_method
+
+
+F.my_func('')
+
+# -----------------
 # Unknown metaclass
 # -----------------
 
