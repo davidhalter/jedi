@@ -224,8 +224,8 @@ class _BaseTreeInstance(AbstractInstanceValue):
         # We are inversing this, because a hand-crafted `__getattribute__`
         # could still call another hand-crafted `__getattr__`, but not the
         # other way around.
-        names = (self.get_function_slot_names(u'__getattr__') or
-                 self.get_function_slot_names(u'__getattribute__'))
+        names = (self.get_function_slot_names(u'__getattr__')
+                 or self.get_function_slot_names(u'__getattribute__'))
         return self.execute_function_slots(names, name)
 
     def py__getitem__(self, index_value_set, contextualized_node):

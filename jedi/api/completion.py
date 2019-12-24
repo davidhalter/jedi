@@ -12,8 +12,10 @@ from jedi.api import helpers
 from jedi.api import keywords
 from jedi.api.file_name import complete_file_name
 from jedi.inference import imports
+from jedi.inference.base_value import ValueSet
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
+from jedi.inference.value import TreeInstance
 from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
 
@@ -251,14 +253,20 @@ class Completion:
         return completion_names
 
     def _complete_trailer(self, previous_leaf):
-        user_value = get_user_context(self._module_context, self._position)
         inferred_context = self._module_context.create_context(previous_leaf)
         values = infer_call_of_leaf(inferred_context, previous_leaf)
-        completion_names = []
         debug.dbg('trailer completion values: %s', values, color='MAGENTA')
+        return self._complete_trailer_for_values(values)
+
+    def _complete_trailer_for_values(self, values):
+        user_value = get_user_context(self._module_context, self._position)
+        completion_names = []
         for value in values:
             for filter in value.get_filters(origin_scope=user_value.tree_node):
                 completion_names += filter.values()
+
+            if not value.is_stub() and isinstance(value, TreeInstance):
+                completion_names += self._complete_getattr(value)
 
         python_values = convert_values(values)
         for c in python_values:
@@ -266,6 +274,66 @@ class Completion:
                 for filter in c.get_filters(origin_scope=user_value.tree_node):
                     completion_names += filter.values()
         return completion_names
+
+    def _complete_getattr(self, instance):
+        """
+        A heuristic to make completion for proxy objects work. This is not
+        intended to work in all cases. It works exactly in this case:
+
+            def __getattr__(self, name):
+                ...
+                return getattr(any_object, name)
+
+        It is important that the return contains getattr directly, otherwise it
+        won't work anymore. It's really just a stupid heuristic. It will not
+        work if you write e.g. `return (getatr(o, name))`, because of the
+        additional parentheses. It will also not work if you move the getattr
+        to some other place that is not the return statement itself.
+
+        It is intentional that it doesn't work in all cases. Generally it's
+        really hard to do even this case (as you can see below). Most people
+        will write it like this anyway and the other ones, well they are just
+        out of luck I guess :) ~dave.
+        """
+        names = (instance.get_function_slot_names(u'__getattr__')
+                 or instance.get_function_slot_names(u'__getattribute__'))
+        functions = ValueSet.from_sets(
+            name.infer()
+            for name in names
+        )
+        for func in functions:
+            tree_node = func.tree_node
+            for return_stmt in tree_node.iter_return_stmts():
+                # Basically until the next comment we just try to find out if a
+                # return statement looks exactly like `return getattr(x, name)`.
+                if return_stmt.type != 'return_stmt':
+                    continue
+                atom_expr = return_stmt.children[1]
+                if atom_expr.type != 'atom_expr':
+                    continue
+                atom = atom_expr.children[0]
+                trailer = atom_expr.children[1]
+                if len(atom_expr.children) != 2 or atom.type != 'name' \
+                        or atom.value != 'getattr':
+                    continue
+                arglist = trailer.children[1]
+                if arglist.type != 'arglist' or len(arglist.children) < 3:
+                    continue
+                context = func.as_context()
+                object_node = arglist.children[0]
+
+                # Make sure it's a param: foo in __getattr__(self, foo)
+                name_node = arglist.children[2]
+                name_list = context.goto(name_node, name_node.start_pos)
+                if not any(n.api_type == 'param' for n in name_list):
+                    continue
+
+                # Now that we know that these are most probably completion
+                # objects, we just infer the object and return them as
+                # completions.
+                objects = context.infer_node(object_node)
+                return self._complete_trailer_for_values(objects)
+        return []
 
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]

@@ -399,6 +399,12 @@ class Wrapper2():
 
 #? int()
 Wrapper(Base()).ret(3)
+#? ['ret']
+Wrapper(Base()).ret
+#? int()
+Wrapper(Wrapper(Base())).ret(3)
+#? ['ret']
+Wrapper(Wrapper(Base())).ret
 
 #? int()
 Wrapper2(Base()).ret(3)
@@ -409,6 +415,8 @@ class GetattrArray():
 
 #? int()
 GetattrArray().something[0]
+#? []
+GetattrArray().something
 
 
 # -----------------
