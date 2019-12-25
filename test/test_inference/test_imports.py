@@ -381,7 +381,7 @@ def test_relative_imports_with_outside_paths(Script):
         path=os.path.join(dir, 'api/whatever/test_this.py'),
         _project=project,
     )
-    assert [c.name for c in script.complete()] == ['import']
+    assert not script.complete()
 
 
 @cwd_at('test/examples/issue1209/api/whatever/')
