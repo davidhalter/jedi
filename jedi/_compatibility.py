@@ -665,7 +665,13 @@ if not is_py3:
             info.weakref = weakref.ref(obj, self)
             self._registry[self] = info
 
-        def __call__(self):
+        # To me it's an absolute mystery why in Python 2 we need _=None. It
+        # makes really no sense since it's never really called. Then again it
+        # might be called by Python 2.7 itself, but weakref.finalize is not
+        # documented in Python 2 and therefore shouldn't be randomly called.
+        # We never call this stuff with a parameter and therefore this
+        # parameter should not be needed. But it is. ~dave
+        def __call__(self, _=None):
             """Return func(*args, **kwargs) if alive."""
             info = self._registry.pop(self, None)
             if info:
