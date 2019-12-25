@@ -283,3 +283,7 @@ def test_fuzzy_match():
     assert fuzzy_match('Condition', 'ii')
     assert not fuzzy_match('Condition', 'Ciito')
     assert fuzzy_match('Condition', 'Cdiio')
+
+
+def test_ellipsis_completion(Script):
+    assert Script('...').completions() == []

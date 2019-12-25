@@ -374,7 +374,7 @@ def test_relative_imports_with_outside_paths(Script):
         path=os.path.join(dir, 'api/whatever/test_this.py'),
         _project=project,
     )
-    assert [c.name for c in script.complete()] == ['api', 'import', 'whatever']
+    assert [c.name for c in script.complete()] == ['api', 'whatever']
 
     script = Script(
         "from " + '.' * 100,
@@ -398,7 +398,9 @@ def test_relative_imports_without_path(Script):
 
 
 def test_relative_import_out_of_file_system(Script):
-    script = Script("from " + '.' * 100)
+    code = "from " + '.' * 100
+    assert not Script(code).complete()
+    script = Script(code + ' ')
     import_, = script.complete()
     assert import_.name == 'import'
 

@@ -183,7 +183,8 @@ class Completion:
 
         completion_names = []
         current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
-        if not current_line or current_line[-1] in ' \t.;':
+        if not current_line or current_line[-1] in ' \t.;' \
+                and current_line[-3:] != '...':
             completion_names += self._complete_keywords(allowed_transitions)
 
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
