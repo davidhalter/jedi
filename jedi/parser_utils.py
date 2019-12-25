@@ -297,9 +297,21 @@ def get_string_quote(leaf):
     return re.match(r'\w*("""|\'{3}|"|\')', leaf.value).group(1)
 
 
-def function_is_static_method(function_node):
-    for decorator in function_node.get_decorators():
-        dotted_name = decorator.children[1]
-        if dotted_name.get_code() == 'staticmethod':
-            return True
-    return False
+def _function_is_x_method(method_name):
+    def wrapper(function_node):
+        """
+        This is a heuristic. It will not hold ALL the times, but it will be
+        correct pretty much for anyone that doesn't try to beat it.
+        staticmethod/classmethod are builtins and unless overwritten, this will
+        be correct.
+        """
+        for decorator in function_node.get_decorators():
+            dotted_name = decorator.children[1]
+            if dotted_name.get_code() == method_name:
+                return True
+        return False
+    return wrapper
+
+
+function_is_staticmethod = _function_is_x_method('staticmethod')
+function_is_classmethod = _function_is_x_method('classmethod')

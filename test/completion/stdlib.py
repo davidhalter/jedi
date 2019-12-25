@@ -319,12 +319,27 @@ class F():
         return param
 
     @classmethod
+    def my_method_without_call(cls, param):
+        #?
+        cls.my_variable
+        #? ['my_method', 'my_method_without_call']
+        cls.my_meth
+        #?
+        return param
+
+    @classmethod
     def my_method(cls, param):
-        #? []
-        param.my_method
+        #?
+        cls.my_variable
+        #? ['my_method', 'my_method_without_call']
+        cls.my_meth
+        #?
+        return param
 
-
+#? str()
 F.my_func('')
+#? str()
+F.my_method('')
 
 # -----------------
 # Unknown metaclass

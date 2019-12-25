@@ -19,7 +19,7 @@ from jedi.inference.value.function import \
     BaseFunctionExecutionContext, FunctionExecutionContext
 from jedi.inference.value.klass import ClassFilter
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
-from jedi.parser_utils import function_is_static_method
+from jedi.parser_utils import function_is_staticmethod, function_is_classmethod
 
 
 class InstanceExecutedParamName(ParamName):
@@ -41,9 +41,19 @@ class AnonymousMethodExecutionFilter(AnonymousFunctionExecutionFilter):
         self._instance = instance
 
     def _convert_param(self, param, name):
-        if param.position_index == 0 \
-                and not function_is_static_method(self._function_value.tree_node):
-            return InstanceExecutedParamName(self._instance, self._function_value, name)
+        if param.position_index == 0:
+            if function_is_classmethod(self._function_value.tree_node):
+                return InstanceExecutedParamName(
+                    self._instance.py__class__(),
+                    self._function_value,
+                    name
+                )
+            elif not function_is_staticmethod(self._function_value.tree_node):
+                return InstanceExecutedParamName(
+                    self._instance,
+                    self._function_value,
+                    name
+                )
         return super(AnonymousMethodExecutionFilter, self)._convert_param(param, name)
 
 
