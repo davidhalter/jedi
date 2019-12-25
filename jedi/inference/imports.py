@@ -578,7 +578,8 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
     def get_file_ios_to_check():
         for folder_io, base_names in folders_with_names_to_be_checked:
             for file_io in check_directory(folder_io):
-                yield file_io, base_names
+                if file_io.path not in used_mod_paths:
+                    yield file_io, base_names
 
         for p in settings.additional_dynamic_modules:
             p = os.path.abspath(p)
