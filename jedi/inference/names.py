@@ -482,9 +482,6 @@ class _ActualTreeParamName(BaseTreeParamName):
 
 
 class AnonymousParamName(_ActualTreeParamName):
-    def __init__(self, function_value, tree_name):
-        super(AnonymousParamName, self).__init__(function_value, tree_name)
-
     def infer(self):
         values = super(AnonymousParamName, self).infer()
         if values:
