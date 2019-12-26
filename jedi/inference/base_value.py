@@ -254,6 +254,12 @@ class Value(HelperValueMixin, BaseValue):
     def _as_context(self):
         raise NotImplementedError('Not all values need to be converted to contexts: %s', self)
 
+    def name(self):
+        raise NotImplementedError
+
+    def py__name__(self):
+        return self.name.string_name
+
 
 def iterate_values(values, contextualized_node=None, is_async=False):
     """
