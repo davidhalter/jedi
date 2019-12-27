@@ -52,6 +52,7 @@ Supported Python Features
 - ``isinstance`` checks for if/while/assert
 - namespace packages (includes ``pkgutil``, ``pkg_resources`` and PEP420 namespaces)
 - Django / Flask / Buildout support
+- Understands Pytest fixtures
 
 
 Not Supported

@@ -12,6 +12,7 @@ Changelog
   super class.
 - Completion for "proxies" works now. These are classes that have a
   ``__getattr__(self, name)`` method that does a ``return getattr(x, name)``.
+- Understanding of Pytest fixtures.
 - Big **Script API Changes**:
     - The line and column parameters of ``jedi.Script`` are now deprecated
     - ``completions`` deprecated, use ``complete`` instead
