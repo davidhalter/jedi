@@ -40,4 +40,4 @@ str(def
 class Foo(object):
     @property
     #? ['str']
-    def bar(str
+    def bar(x=str
