@@ -47,6 +47,24 @@ def test_x(MyClassFixture):
     #?
     MyClassFixture
 
+#? 15
+def lala(my_fixture):
+    pass
+
+@pytest.fixture
+#? 15 str()
+def lala(my_fixture):
+    pass
+
+#! 15 ['param my_fixture']
+def lala(my_fixture):
+    pass
+
+@pytest.fixture
+#! 15 ['def my_fixture']
+def lala(my_fixture):
+    pass
+
 # -----------------
 # completion
 # -----------------
