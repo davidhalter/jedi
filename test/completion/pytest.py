@@ -72,3 +72,29 @@ def test_x(my_con
 #? 18 ['my_conftest_fixture']
 def test_x(my_conftest_fixture):
     return
+
+#? []
+def lala(my_con
+    return
+
+@pytest.fixture
+#? ['my_conftest_fixture']
+def lala(my_con
+    return
+
+@pytest.fixture
+#? 15 ['my_conftest_fixture']
+def lala(my_con):
+    return
+
+@pytest.fixture
+@some_decorator
+#? ['my_conftest_fixture']
+def lala(my_con
+    return
+
+@pytest.fixture
+@some_decorator
+#? 15 ['my_conftest_fixture']
+def lala(my_con):
+    return

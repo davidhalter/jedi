@@ -76,7 +76,7 @@ def get_flow_scope_node(module_node, position):
 
 
 @plugin_manager.decorate()
-def complete_param_names(context, function_name):
+def complete_param_names(context, function_name, decorator_nodes):
     # Basically there's no way to do param completion. The plugins are
     # responsible for this.
     return []
@@ -225,14 +225,7 @@ class Completion:
                 dot = self._module_node.get_leaf_for_position(self._position)
                 completion_names += self._complete_trailer(dot.get_previous_leaf())
             elif self._is_parameter_completion():
-                stack_node = self.stack[-2]
-                if stack_node.nonterminal == 'parameters':
-                    stack_node = self.stack[-3]
-                if stack_node.nonterminal == 'funcdef':
-                    context = get_user_context(self._module_context, self._position)
-                    function_name = stack_node.nodes[1]
-
-                    completion_names += complete_param_names(context, function_name)
+                completion_names += self._complete_params(leaf)
             else:
                 completion_names += self._complete_global_scope()
                 completion_names += self._complete_inherited(is_function=False)
@@ -263,6 +256,28 @@ class Completion:
             return True
         # var args is for lambdas and typed args for normal functions
         return tos.nonterminal in ('typedargslist', 'varargslist') and tos.nodes[-1] == ','
+
+    def _complete_params(self, leaf):
+        stack_node = self.stack[-2]
+        if stack_node.nonterminal == 'parameters':
+            stack_node = self.stack[-3]
+        if stack_node.nonterminal == 'funcdef':
+            context = get_user_context(self._module_context, self._position)
+            node = search_ancestor(leaf, 'error_node', 'funcdef')
+            if node.type == 'error_node':
+                n = node.children[0]
+                if n.type == 'decorators':
+                    decorators = n.children
+                elif n.type == 'decorator':
+                    decorators = [n]
+                else:
+                    decorators = []
+            else:
+                decorators = node.get_decorators()
+            function_name = stack_node.nodes[1]
+
+            return complete_param_names(context, function_name.value, decorators)
+        return []
 
     def _complete_keywords(self, allowed_transitions):
         for k in allowed_transitions:

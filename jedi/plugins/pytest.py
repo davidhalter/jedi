@@ -54,14 +54,16 @@ def goto_anonymous_param(func):
 
 
 def complete_param_names(func):
-    def wrapper(context, func_name):
+    def wrapper(context, func_name, decorator_nodes):
         module_context = context.get_root_context()
-        names = []
-        for module_context in _iter_pytest_modules(module_context):
-            names += FixtureFilter(module_context).values()
-        if names:
-            return names
-        return func(context, func_name)
+        if func_name.startswith('test_') \
+                or any('fixture' in n.get_code() for n in decorator_nodes):
+            names = []
+            for module_context in _iter_pytest_modules(module_context):
+                names += FixtureFilter(module_context).values()
+            if names:
+                return names
+        return func(context, func_name, decorator_nodes)
     return wrapper
 
 
