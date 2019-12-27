@@ -13,14 +13,25 @@ def my_simple_fixture():
     return 1
 
 
+@fixture
+def my_yield_fixture():
+    yield 1
+
+
+@fixture
+class MyClassFixture():
+    pass
+
 # -----------------
 # goto/infer
 # -----------------
 
-#! 18 'def my_conftest_fixture'
-def test_x(my_conftest_fixture, my_fixture, my_not_existing_fixture):
+#! 18 ['def my_conftest_fixture']
+def test_x(my_conftest_fixture, my_fixture, my_not_existing_fixture, my_yield_fixture):
     #? str()
     my_fixture
+    #? int()
+    my_yield_fixture
     #?
     my_not_existing_fixture
     #? float()
@@ -29,6 +40,12 @@ def test_x(my_conftest_fixture, my_fixture, my_not_existing_fixture):
 #? 18 float()
 def test_x(my_conftest_fixture, my_fixture):
     pass
+
+
+#! 18 ['param MyClassFixture']
+def test_x(MyClassFixture):
+    #?
+    MyClassFixture
 
 # -----------------
 # completion

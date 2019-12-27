@@ -17,8 +17,17 @@ def execute(callback):
 
 def infer_anonymous_param(func):
     def get_returns(value):
+        if value.tree_node.annotation is not None:
+            return value.execute_with_values()
+
+        # In pytest we need to differentiate between generators and normal
+        # returns.
+        # Parameters still need to be anonymous, .as_context() ensures that.
         function_context = value.as_context()
-        return function_context.get_return_values()
+        if function_context.is_generator():
+            return function_context.merge_yield_values()
+        else:
+            return function_context.get_return_values()
 
     def wrapper(param):
         module = param.get_root_context()
@@ -59,4 +68,6 @@ def _iter_pytest_modules(module_context):
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
         for name in super(FixtureFilter, self)._filter(names):
-            yield name
+            if name.parent.type == 'funcdef':
+                # Class fixtures are not supported
+                yield name
