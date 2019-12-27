@@ -9,6 +9,7 @@ from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import docstrings
 from jedi.cache import memoize_method
 from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
+from jedi.plugins import plugin_manager
 
 
 def _merge_name_docs(names):
@@ -482,6 +483,11 @@ class _ActualTreeParamName(BaseTreeParamName):
 
 
 class AnonymousParamName(_ActualTreeParamName):
+    @plugin_manager.decorate(name='goto_anonymous_param')
+    def goto(self):
+        return super(AnonymousParamName, self).goto()
+
+    @plugin_manager.decorate(name='infer_anonymous_param')
     def infer(self):
         values = super(AnonymousParamName, self).infer()
         if values:

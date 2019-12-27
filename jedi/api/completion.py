@@ -18,6 +18,7 @@ from jedi.inference.context import get_global_filters
 from jedi.inference.value import TreeInstance
 from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
+from jedi.plugins import plugin_manager
 
 
 def get_signature_param_names(signatures):
@@ -72,6 +73,13 @@ def get_flow_scope_node(module_node, position):
         node = node.parent
 
     return node
+
+
+@plugin_manager.decorate()
+def complete_param_names(context, function_name, decorator_nodes):
+    # Basically there's no way to do param completion. The plugins are
+    # responsible for this.
+    return []
 
 
 class Completion:
@@ -216,6 +224,8 @@ class Completion:
             elif nonterminals[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
                 completion_names += self._complete_trailer(dot.get_previous_leaf())
+            elif self._is_parameter_completion():
+                completion_names += self._complete_params(leaf)
             else:
                 completion_names += self._complete_global_scope()
                 completion_names += self._complete_inherited(is_function=False)
@@ -233,6 +243,41 @@ class Completion:
                 completion_names += get_signature_param_names(signatures)
 
         return completion_names
+
+    def _is_parameter_completion(self):
+        tos = self.stack[-1]
+        if tos.nonterminal == 'lambdef' and len(tos.nodes) == 1:
+            # We are at the position `lambda `, where basically the next node
+            # is a param.
+            return True
+        if tos.nonterminal in 'parameters':
+            # Basically we are at the position `foo(`, there's nothing there
+            # yet, so we have no `typedargslist`.
+            return True
+        # var args is for lambdas and typed args for normal functions
+        return tos.nonterminal in ('typedargslist', 'varargslist') and tos.nodes[-1] == ','
+
+    def _complete_params(self, leaf):
+        stack_node = self.stack[-2]
+        if stack_node.nonterminal == 'parameters':
+            stack_node = self.stack[-3]
+        if stack_node.nonterminal == 'funcdef':
+            context = get_user_context(self._module_context, self._position)
+            node = search_ancestor(leaf, 'error_node', 'funcdef')
+            if node.type == 'error_node':
+                n = node.children[0]
+                if n.type == 'decorators':
+                    decorators = n.children
+                elif n.type == 'decorator':
+                    decorators = [n]
+                else:
+                    decorators = []
+            else:
+                decorators = node.get_decorators()
+            function_name = stack_node.nodes[1]
+
+            return complete_param_names(context, function_name.value, decorators)
+        return []
 
     def _complete_keywords(self, allowed_transitions):
         for k in allowed_transitions:

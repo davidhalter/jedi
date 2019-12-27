@@ -299,6 +299,56 @@ except MyException as e:
     for x in e.my_attr:
         pass
 
+# -----------------
+# params
+# -----------------
+
+my_param = 1
+#? 9 str()
+def foo1(my_param):
+    my_param = 3.0
+foo1("")
+
+my_type = float()
+#? 20 float()
+def foo2(my_param: my_type):
+    pass
+foo2("")
+#? 20 int()
+def foo3(my_param=my_param):
+    pass
+foo3("")
+
+some_default = ''
+#? []
+def foo(my_t
+#? []
+def foo(my_t, my_ty
+#? ['some_default']
+def foo(my_t=some_defa
+#? ['some_default']
+def foo(my_t=some_defa, my_t2=some_defa
+
+# python > 2.7
+
+#? ['my_type']
+def foo(my_t: lala=some_defa, my_t2: my_typ
+#? ['my_type']
+def foo(my_t: lala=some_defa, my_t2: my_typ
+#? []
+def foo(my_t: lala=some_defa, my_t
+
+#? []
+lambda my_t
+#? []
+lambda my_, my_t
+#? ['some_default']
+lambda x=some_defa
+#? ['some_default']
+lambda y, x=some_defa
+
+# Just make sure we're not in some weird parsing recovery after opening brackets
+def  
 
 # -----------------
 # continuations

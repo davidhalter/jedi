@@ -277,17 +277,19 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             for lazy_value in self.get_yield_lazy_values()
         )
 
+    def is_generator(self):
+        return bool(get_yield_exprs(self.inference_state, self.tree_node))
+
     def infer(self):
         """
         Created to be used by inheritance.
         """
         inference_state = self.inference_state
         is_coroutine = self.tree_node.parent.type in ('async_stmt', 'async_funcdef')
-        is_generator = bool(get_yield_exprs(inference_state, self.tree_node))
         from jedi.inference.gradual.base import GenericClass
 
         if is_coroutine:
-            if is_generator:
+            if self.is_generator():
                 if inference_state.environment.version_info < (3, 6):
                     return NO_VALUES
                 async_generator_classes = inference_state.typing_module \
@@ -312,7 +314,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                     GenericClass(c, TupleGenericManager(generics)) for c in async_classes
                 ).execute_annotation()
         else:
-            if is_generator:
+            if self.is_generator():
                 return ValueSet([iterable.Generator(inference_state, self)])
             else:
                 return self.get_return_values()
