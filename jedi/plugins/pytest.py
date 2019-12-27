@@ -7,6 +7,8 @@ from jedi.inference.base_value import NO_VALUES, ValueSet
 
 def execute(callback):
     def wrapper(value, arguments):
+        # This might not be necessary anymore in pytest 4/5, definitely needed
+        # for pytest 3.
         if value.py__name__() == 'fixture' \
                 and value.parent_context.py__name__() == '_pytest.fixtures':
             return NO_VALUES
@@ -68,6 +70,20 @@ def _iter_pytest_modules(module_context):
 class FixtureFilter(ParserTreeFilter):
     def _filter(self, names):
         for name in super(FixtureFilter, self)._filter(names):
-            if name.parent.type == 'funcdef':
+            funcdef = name.parent
+            if funcdef.type == 'funcdef':
                 # Class fixtures are not supported
-                yield name
+                decorated = funcdef.parent
+                if decorated.type == 'decorated' and self._is_fixture(decorated):
+                    yield name
+
+    def _is_fixture(self, decorated):
+        for decorator in decorated.children:
+            dotted_name = decorator.children[1]
+            # A heuristic, this makes it faster.
+            if 'fixture' in dotted_name.get_code():
+                for value in self.parent_context.infer_node(dotted_name):
+                    if value.name.get_qualified_names(include_module_names=True) \
+                            == ('_pytest', 'fixtures', 'fixture'):
+                        return True
+        return False
