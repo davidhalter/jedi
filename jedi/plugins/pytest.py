@@ -6,7 +6,10 @@ from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.base_value import NO_VALUES, ValueSet
 
 _PYTEST_FIXTURE_MODULES = [
-    ('_pytest', 'monkeypatch')
+    ('_pytest', 'monkeypatch'),
+    ('_pytest', 'capture'),
+    ('_pytest', 'logging'),
+    ('_pytest', 'tmpdir'),
 ]
 
 

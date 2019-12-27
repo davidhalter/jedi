@@ -129,3 +129,10 @@ def test_p(monkeyp
 def test_p(monkeypatch):
     #? ['setattr']
     monkeypatch.setatt
+
+
+#? ['capsysbinary']
+def test_p(capsysbin
+
+#? ['tmpdir', 'tmpdir_factory']
+def test_p(tmpdi
