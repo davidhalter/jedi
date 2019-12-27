@@ -60,8 +60,7 @@ def test_nested_namedtuples(Script):
         Dataset = collections.namedtuple('Dataset', ['data'])
         Datasets = collections.namedtuple('Datasets', ['train'])
         train_x = Datasets(train=Dataset('data_value'))
-        train_x.train.'''
-    ))
+        train_x.train.'''))
     assert 'data' in [c.name for c in s.complete()]
 
 

@@ -84,7 +84,7 @@ class {typename}(tuple):
     # These methods were added by Jedi.
     # __new__ doesn't really work with Jedi. So adding this to nametuples seems
     # like the easiest way.
-    def __init__(_cls, {arg_list}):
+    def __init__(self, {arg_list}):
         'A helper function for namedtuple.'
         self.__iterable = ({arg_list})
 
