@@ -118,6 +118,8 @@ from io import StringIO
 from functools import reduce
 
 import parso
+from _pytest.outcomes import Skipped
+import pytest
 
 import jedi
 from jedi import debug
@@ -204,6 +206,11 @@ class IntegrationTestCase(BaseTestCase):
             TEST_GOTO: self.run_goto,
             TEST_REFERENCES: self.run_find_references,
         }
+        if self.path.endswith('pytest.py') and environment.executable != sys.executable:
+            # It's not guarantueed that pytest is installed in test
+            # environments, if we're not running in the same environment that
+            # we're already in, so just skip that case.
+            pytest.skip()
         return testers[self.test_type](compare_cb, environment)
 
     def run_completion(self, compare_cb, environment):
@@ -513,6 +520,8 @@ if __name__ == '__main__':
             if arguments['--pdb']:
                 import pdb
                 pdb.post_mortem()
+        except Skipped:
+            pass
 
         count += 1
 
