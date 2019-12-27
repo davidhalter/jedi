@@ -54,8 +54,20 @@ def test_x(MyClassFixture):
 #? 34 ['my_fixture']
 def test_x(my_simple_fixture, my_fixture):
     return
+#? 34 ['my_fixture']
+def test_x(my_simple_fixture, my_fixture):
+    return
+#? ['my_fixture']
+def test_x(my_simple_fixture, my_f
+    return
 #? 18 ['my_simple_fixture']
 def test_x(my_simple_fixture):
+    return
+#? ['my_simple_fixture']
+def test_x(my_simp
+    return
+#? ['my_conftest_fixture']
+def test_x(my_con
     return
 #? 18 ['my_conftest_fixture']
 def test_x(my_conftest_fixture):

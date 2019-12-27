@@ -53,6 +53,18 @@ def goto_anonymous_param(func):
     return wrapper
 
 
+def complete_param_names(func):
+    def wrapper(context, func_name):
+        module_context = context.get_root_context()
+        names = []
+        for module_context in _iter_pytest_modules(module_context):
+            names += FixtureFilter(module_context).values()
+        if names:
+            return names
+        return func(context, func_name)
+    return wrapper
+
+
 def _goto_pytest_fixture(module_context, name):
     for module_context in _iter_pytest_modules(module_context):
         names = FixtureFilter(module_context).get(name)

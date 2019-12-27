@@ -18,6 +18,7 @@ from jedi.inference.context import get_global_filters
 from jedi.inference.value import TreeInstance
 from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
+from jedi.plugins import plugin_manager
 
 
 def get_signature_param_names(signatures):
@@ -72,6 +73,13 @@ def get_flow_scope_node(module_node, position):
         node = node.parent
 
     return node
+
+
+@plugin_manager.decorate()
+def complete_param_names(context, function_name):
+    # Basically there's no way to do param completion. The plugins are
+    # responsible for this.
+    return []
 
 
 class Completion:
@@ -217,7 +225,14 @@ class Completion:
                 dot = self._module_node.get_leaf_for_position(self._position)
                 completion_names += self._complete_trailer(dot.get_previous_leaf())
             elif self._is_parameter_completion():
-                pass
+                stack_node = self.stack[-2]
+                if stack_node.nonterminal == 'parameters':
+                    stack_node = self.stack[-3]
+                if stack_node.nonterminal == 'funcdef':
+                    context = get_user_context(self._module_context, self._position)
+                    function_name = stack_node.nodes[1]
+
+                    completion_names += complete_param_names(context, function_name)
             else:
                 completion_names += self._complete_global_scope()
                 completion_names += self._complete_inherited(is_function=False)
