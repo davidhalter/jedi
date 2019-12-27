@@ -505,7 +505,7 @@ def _load_builtin_module(inference_state, import_names=None, sys_path=None):
     return module
 
 
-def _load_module_from_path(inference_state, file_io, base_names):
+def load_module_from_path(inference_state, file_io, base_names=None):
     """
     This should pretty much only be used for get_modules_containing_name. It's
     here to ensure that a random path is still properly loaded into the Jedi
@@ -552,7 +552,7 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
         if name not in code:
             return None
         new_file_io = KnownContentFileIO(file_io.path, code)
-        m = _load_module_from_path(inference_state, new_file_io, base_names)
+        m = load_module_from_path(inference_state, new_file_io, base_names)
         if isinstance(m, compiled.CompiledObject):
             return None
         return m.as_context()
