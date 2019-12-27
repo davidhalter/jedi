@@ -342,7 +342,7 @@ def test_get_modules_containing_name(inference_state, path, goal, is_package):
 )
 def test_load_module_from_path(inference_state, path, base_names, is_package, names):
     file_io = KnownContentFileIO(path, '')
-    m = imports._load_module_from_path(inference_state, file_io, base_names)
+    m = imports.load_module_from_path(inference_state, file_io, base_names)
     assert m.is_package() == is_package
     assert m.string_names == names
 

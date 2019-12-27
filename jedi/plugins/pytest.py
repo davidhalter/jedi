@@ -84,6 +84,8 @@ def _is_a_pytest_param(param_name):
     This is a heuristic and will work in most cases.
     """
     funcdef = search_ancestor(param_name.tree_name, 'funcdef')
+    if funcdef is None:  # A lambda
+        return False
     decorators = funcdef.get_decorators()
     return _is_pytest_func(funcdef.name.value, decorators)
 
