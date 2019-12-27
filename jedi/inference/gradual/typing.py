@@ -322,6 +322,11 @@ class NewType(Value):
     def py__call__(self, arguments):
         return self._type_value_set.execute_annotation()
 
+    @property
+    def name(self):
+        from jedi.inference.compiled.value import CompiledValueName
+        return CompiledValueName(self, 'NewType')
+
 
 class CastFunction(BaseTypingValue):
     @repack_with_argument_clinic('type, object, /')
