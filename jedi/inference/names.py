@@ -483,6 +483,10 @@ class _ActualTreeParamName(BaseTreeParamName):
 
 
 class AnonymousParamName(_ActualTreeParamName):
+    @plugin_manager.decorate(name='goto_anonymous_param')
+    def goto(self):
+        return super(AnonymousParamName, self).goto()
+
     @plugin_manager.decorate(name='infer_anonymous_param')
     def infer(self):
         values = super(AnonymousParamName, self).infer()

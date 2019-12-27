@@ -31,16 +31,25 @@ def infer_anonymous_param(func):
         else:
             return function_context.get_return_values()
 
-    def wrapper(param):
-        module = param.get_root_context()
-        fixtures = _goto_pytest_fixture(module, param.string_name)
+    def wrapper(param_name):
+        module = param_name.get_root_context()
+        fixtures = _goto_pytest_fixture(module, param_name.string_name)
         if fixtures:
             return ValueSet.from_sets(
                 get_returns(value)
                 for fixture in fixtures
                 for value in fixture.infer()
             )
-        return func(param)
+        return func(param_name)
+    return wrapper
+
+
+def goto_anonymous_param(func):
+    def wrapper(param_name):
+        names = _goto_pytest_fixture(param_name.get_root_context(), param_name.string_name)
+        if names:
+            return names
+        return func(param_name)
     return wrapper
 
 
