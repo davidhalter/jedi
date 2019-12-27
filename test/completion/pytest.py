@@ -116,3 +116,16 @@ def lala(my_con
 #? 15 ['my_conftest_fixture']
 def lala(my_con):
     return
+
+# -----------------
+# pytest owned fixtures
+# -----------------
+
+#? ['monkeypatch']
+def test_p(monkeyp
+
+
+#! 15 ['def monkeypatch']
+def test_p(monkeypatch):
+    #? ['setattr']
+    monkeypatch.setatt

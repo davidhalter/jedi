@@ -5,6 +5,10 @@ from jedi.inference.imports import load_module_from_path
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.base_value import NO_VALUES, ValueSet
 
+_PYTEST_FIXTURE_MODULES = [
+    ('_pytest', 'monkeypatch')
+]
+
 
 def execute(callback):
     def wrapper(value, arguments):
@@ -109,6 +113,10 @@ def _iter_pytest_modules(module_context):
         except FileNotFoundError:
             pass
         folder = folder.get_parent_folder()
+
+    for names in _PYTEST_FIXTURE_MODULES:
+        for module_value in module_context.inference_state.import_module(names):
+            yield module_value.as_context()
 
 
 class FixtureFilter(ParserTreeFilter):
