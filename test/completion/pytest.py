@@ -1,4 +1,4 @@
-# python > 2
+# python > 2.7
 import pytest
 from pytest import fixture
 
