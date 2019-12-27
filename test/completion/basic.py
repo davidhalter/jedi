@@ -299,6 +299,25 @@ except MyException as e:
     for x in e.my_attr:
         pass
 
+# -----------------
+# params
+# -----------------
+
+my_param = 1
+#? 9 str()
+def foo1(my_param):
+    my_param = 3.0
+foo1("")
+
+my_type = float()
+#? 20 float()
+def foo2(my_param: my_type):
+    pass
+foo2("")
+#? 20 int()
+def foo3(my_param=my_param):
+    pass
+foo3("")
 
 # -----------------
 # continuations
