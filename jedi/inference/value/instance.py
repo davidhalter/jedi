@@ -560,17 +560,18 @@ class SelfAttributeFilter(ClassFilter):
                 if name.is_definition() and self._access_possible(name, from_instance=True):
                     # TODO filter non-self assignments instead of this bad
                     #      filter.
-                    if self._is_in_right_scope(name):
+                    if self._is_in_right_scope(trailer.parent.children[0], name):
                         yield name
 
-    def _is_in_right_scope(self, name):
-        base = name
-        hit_funcdef = False
-        while True:
-            base = search_ancestor(base, 'funcdef', 'classdef', 'lambdef')
-            if base is self._parser_scope:
-                return hit_funcdef
-            hit_funcdef = True
+    def _is_in_right_scope(self, self_name, name):
+        self_context = self._node_context.create_context(self_name)
+        names = self_context.goto(self_name, position=self_name.start_pos)
+        return any(
+            n.api_type == 'param'
+            and n.tree_name.get_definition().position_index == 0
+            and n.parent_context.tree_node is self._parser_scope
+            for n in names
+        )
 
     def _convert_names(self, names):
         return [SelfName(self._instance, self._node_context, name) for name in names]
