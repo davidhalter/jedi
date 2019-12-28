@@ -119,14 +119,7 @@ def add_attribute_error(name_context, lookup_value, name):
     # instead of an error, if that happens.
     typ = Error
     if lookup_value.is_instance() and not lookup_value.is_compiled():
-        slot_names = lookup_value.get_function_slot_names(u'__getattr__') + \
-            lookup_value.get_function_slot_names(u'__getattribute__')
-        for n in slot_names:
-            # TODO do we even get here?
-            if isinstance(name, CompiledInstanceName) and \
-                    n.parent_context.obj == object:
-                typ = Warning
-                break
+        # TODO maybe make a warning for __getattr__/__getattribute__
 
         if _check_for_setattr(lookup_value):
             typ = Warning

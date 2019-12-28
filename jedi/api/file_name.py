@@ -3,6 +3,7 @@ import os
 from jedi._compatibility import FileNotFoundError, force_unicode, scandir
 from jedi.api import classes
 from jedi.api.strings import StringName, get_quote_ending
+from jedi.api.helpers import fuzzy_match, start_match
 from jedi.inference.helpers import get_str_or_none
 
 
@@ -10,8 +11,8 @@ class PathName(StringName):
     api_type = u'path'
 
 
-def file_name_completions(inference_state, module_context, start_leaf, string,
-                          like_name, call_signatures_callback, code_lines, position):
+def complete_file_name(inference_state, module_context, start_leaf, string,
+                       like_name, signatures_callback, code_lines, position, fuzzy):
     # First we want to find out what can actually be changed as a name.
     like_name_length = len(os.path.basename(string) + like_name)
 
@@ -25,7 +26,7 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
     must_start_with = os.path.basename(string) + like_name
     string = os.path.dirname(string)
 
-    sigs = call_signatures_callback()
+    sigs = signatures_callback(*position)
     is_in_os_path_join = sigs and all(s.full_name == 'os.path.join' for s in sigs)
     if is_in_os_path_join:
         to_be_added = _add_os_path_join(module_context, start_leaf, sigs[0].bracket_start)
@@ -35,12 +36,17 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
             string = to_be_added + string
     base_path = os.path.join(inference_state.project._path, string)
     try:
-        listed = scandir(base_path)
-    except FileNotFoundError:
+        listed = sorted(scandir(base_path), key=lambda e: e.name)
+        # OSError: [Errno 36] File name too long: '...'
+    except (FileNotFoundError, OSError):
         return
     for entry in listed:
         name = entry.name
-        if name.startswith(must_start_with):
+        if fuzzy:
+            match = fuzzy_match(name, must_start_with)
+        else:
+            match = start_match(name, must_start_with)
+        if match:
             if is_in_os_path_join or not entry.is_dir():
                 name += get_quote_ending(start_leaf, code_lines, position)
             else:
@@ -50,7 +56,8 @@ def file_name_completions(inference_state, module_context, start_leaf, string,
                 inference_state,
                 PathName(inference_state, name[len(must_start_with) - like_name_length:]),
                 stack=None,
-                like_name_length=like_name_length
+                like_name_length=like_name_length,
+                is_fuzzy=fuzzy,
             )
 
 

@@ -3,7 +3,7 @@ import os
 
 from jedi import debug
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference.names import ValueNameMixin, AbstractNameDefinition
+from jedi.inference.names import AbstractNameDefinition, ModuleName
 from jedi.inference.filters import GlobalNameFilter, ParserTreeFilter, DictFilter, MergedFilter
 from jedi.inference import compiled
 from jedi.inference.base_value import TreeValue
@@ -35,18 +35,6 @@ class _ModuleAttributeName(AbstractNameDefinition):
                 create_simple_object(self.parent_context.inference_state, s)
             ])
         return compiled.get_string_value_set(self.parent_context.inference_state)
-
-
-class ModuleName(ValueNameMixin, AbstractNameDefinition):
-    start_pos = 1, 0
-
-    def __init__(self, value, name):
-        self._value = value
-        self._name = name
-
-    @property
-    def string_name(self):
-        return self._name
 
 
 def iter_module_names(inference_state, paths):
@@ -83,11 +71,11 @@ class SubModuleDictMixin(object):
         package).
         """
         names = {}
-        if self.is_package:
+        if self.is_package():
             mods = iter_module_names(self.inference_state, self.py__path__())
             for name in mods:
                 # It's obviously a relative import to the current module.
-                names[name] = SubModuleName(self, name)
+                names[name] = SubModuleName(self.as_context(), name)
 
         # In the case of an import like `from x.` we don't need to
         # add all the variables, this is only about submodules.
@@ -95,13 +83,15 @@ class SubModuleDictMixin(object):
 
 
 class ModuleMixin(SubModuleDictMixin):
+    _module_name_class = ModuleName
+
     def get_filters(self, origin_scope=None):
         yield MergedFilter(
             ParserTreeFilter(
                 parent_context=self.as_context(),
                 origin_scope=origin_scope
             ),
-            GlobalNameFilter(self, self.tree_node),
+            GlobalNameFilter(self.as_context(), self.tree_node),
         )
         yield DictFilter(self.sub_modules_dict())
         yield DictFilter(self._module_attributes_dict())
@@ -121,7 +111,7 @@ class ModuleMixin(SubModuleDictMixin):
     @property
     @inference_state_method_cache()
     def name(self):
-        return ModuleName(self, self._string_name)
+        return self._module_name_class(self, self._string_name)
 
     @property
     def _string_name(self):
@@ -200,7 +190,7 @@ class ModuleValue(ModuleMixin, TreeValue):
             self._path = file_io.path
         self.string_names = string_names  # Optional[Tuple[str, ...]]
         self.code_lines = code_lines
-        self.is_package = is_package
+        self._is_package = is_package
 
     def is_stub(self):
         if self._path is not None and self._path.endswith('.pyi'):
@@ -224,8 +214,11 @@ class ModuleValue(ModuleMixin, TreeValue):
 
         return os.path.abspath(self._path)
 
+    def is_package(self):
+        return self._is_package
+
     def py__package__(self):
-        if self.is_package:
+        if self._is_package:
             return self.string_names
         return self.string_names[:-1]
 
@@ -235,7 +228,7 @@ class ModuleValue(ModuleMixin, TreeValue):
         is a list of paths (strings).
         Returns None if the module is not a package.
         """
-        if not self.is_package:
+        if not self._is_package:
             return None
 
         # A namespace package is typically auto generated and ~10 lines long.

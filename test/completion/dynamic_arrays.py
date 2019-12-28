@@ -335,6 +335,11 @@ some_lst2[3]
 #? int() str()
 some_lst2[2]
 
+some_lst3 = []
+some_lst3[0] = 3
+some_lst3[:] = ''  # Is ignored for now.
+#? int()
+some_lst3[0]
 # -----------------
 # set setitem/other modifications (should not work)
 # -----------------

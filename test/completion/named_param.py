@@ -60,3 +60,32 @@ Test().test(blub=)
 
 #? 12 []
 any(iterable=)
+
+
+def foo(xyz):
+    pass
+
+#? 7 ['xyz']
+foo(xyz)
+# No completion should be possible if it's not a simple name
+#? 17 []
+x = " "; foo(x.xyz)
+#? 17 []
+x = " "; foo([xyz)
+#? 20 []
+x = " "; foo(z[f,xyz)
+#? 18 []
+x = " "; foo(z[xyz)
+#? 20 []
+x = " "; foo(xyz[xyz)
+#? 20 []
+x = " "; foo(xyz[(xyz)
+
+#? 8 ['xyz']
+@foo(xyz)
+def x(): pass
+
+@str
+#? 8 ['xyz']
+@foo(xyz)
+def x(): pass

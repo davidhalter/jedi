@@ -10,9 +10,9 @@ tests.
 
 There are different kind of tests:
 
-- completions / goto_definitions ``#?``
-- goto_assignments: ``#!``
-- usages: ``#<``
+- completions / inference ``#?``
+- goto: ``#!``
+- references: ``#<``
 
 How to run tests?
 +++++++++++++++++
@@ -26,7 +26,7 @@ multiple Python versions.
 
 Integration test cases are located in ``test/completion`` directory
 and each test case is indicated by either the comment ``#?`` (completions /
-definitions), ``#!`` (assignments), or ``#<`` (usages).
+inference), ``#!`` (goto), or ``#<`` (references).
 There is also support for third party libraries. In a normal test run they are
 not being executed, you have to provide a ``--thirdparty`` option.
 
@@ -76,17 +76,17 @@ For example::
 Because it follows ``a.rea`` and a is an ``int``, which has a ``real``
 property.
 
-Goto Definitions
-++++++++++++++++
+Inference
++++++++++
 
-Definition tests use the same symbols like completion tests. This is
+Inference tests use the same symbols like completion tests. This is
 possible because the completion tests are defined with a list::
 
     #? int()
     ab = 3; ab
 
-Goto Assignments
-++++++++++++++++
+Goto
+++++
 
 Tests look like this::
 
@@ -100,8 +100,8 @@ describes the position of the test (otherwise it's just the end of line)::
     #! 2 ['abc=1']
     abc
 
-Usages
-++++++
+References
+++++++++++
 
 Tests look like this::
 
@@ -118,6 +118,8 @@ from io import StringIO
 from functools import reduce
 
 import parso
+from _pytest.outcomes import Skipped
+import pytest
 
 import jedi
 from jedi import debug
@@ -127,27 +129,20 @@ from jedi.api.completion import get_user_context
 from jedi import parser_utils
 from jedi.api.environment import get_default_environment, get_system_environment
 from jedi.inference.gradual.conversion import convert_values
+from jedi.inference.analysis import Warning
 
 
 TEST_COMPLETIONS = 0
-TEST_DEFINITIONS = 1
-TEST_ASSIGNMENTS = 2
-TEST_USAGES = 3
+TEST_INFERENCE = 1
+TEST_GOTO = 2
+TEST_REFERENCES = 3
 
 
 grammar36 = parso.load_grammar(version='3.6')
 
 
-class IntegrationTestCase(object):
-    def __init__(self, test_type, correct, line_nr, column, start, line,
-                 path=None, skip_version_info=None):
-        self.test_type = test_type
-        self.correct = correct
-        self.line_nr = line_nr
-        self.column = column
-        self.start = start
-        self.line = line
-        self.path = path
+class BaseTestCase(object):
+    def __init__(self, skip_version_info=None):
         self._skip_version_info = skip_version_info
         self._skip = None
 
@@ -175,6 +170,19 @@ class IntegrationTestCase(object):
                 operator_, min_version[0], min_version[1]
             )
 
+
+class IntegrationTestCase(BaseTestCase):
+    def __init__(self, test_type, correct, line_nr, column, start, line,
+                 path=None, skip_version_info=None):
+        super(IntegrationTestCase, self).__init__(skip_version_info)
+        self.test_type = test_type
+        self.correct = correct
+        self.line_nr = line_nr
+        self.column = column
+        self.start = start
+        self.line = line
+        self.path = path
+
     @property
     def module_name(self):
         return os.path.splitext(os.path.basename(self.path))[0]
@@ -189,28 +197,30 @@ class IntegrationTestCase(object):
                                    self.line_nr_test, self.line.rstrip())
 
     def script(self, environment):
-        return jedi.Script(
-            self.source, self.line_nr, self.column, self.path,
-            environment=environment
-        )
+        return jedi.Script(self.source, path=self.path, environment=environment)
 
     def run(self, compare_cb, environment=None):
         testers = {
             TEST_COMPLETIONS: self.run_completion,
-            TEST_DEFINITIONS: self.run_goto_definitions,
-            TEST_ASSIGNMENTS: self.run_goto_assignments,
-            TEST_USAGES: self.run_usages,
+            TEST_INFERENCE: self.run_inference,
+            TEST_GOTO: self.run_goto,
+            TEST_REFERENCES: self.run_find_references,
         }
+        if self.path.endswith('pytest.py') and environment.executable != sys.executable:
+            # It's not guarantueed that pytest is installed in test
+            # environments, if we're not running in the same environment that
+            # we're already in, so just skip that case.
+            pytest.skip()
         return testers[self.test_type](compare_cb, environment)
 
     def run_completion(self, compare_cb, environment):
-        completions = self.script(environment).completions()
-        #import cProfile; cProfile.run('script.completions()')
+        completions = self.script(environment).complete(self.line_nr, self.column)
+        # import cProfile; cProfile.run('...')
 
         comp_str = {c.name for c in completions}
         return compare_cb(self, comp_str, set(literal_eval(self.correct)))
 
-    def run_goto_definitions(self, compare_cb, environment):
+    def run_inference(self, compare_cb, environment):
         script = self.script(environment)
         inference_state = script._inference_state
 
@@ -227,9 +237,6 @@ class IntegrationTestCase(object):
                 node = parser.get_root_node()
                 module_context = script._get_module_context()
                 user_context = get_user_context(module_context, (self.line_nr, 0))
-                # TODO needed?
-                #if user_context._value.api_type == 'function':
-                #    user_context = user_context.get_function_execution()
                 node.parent = user_context.tree_node
                 results = convert_values(user_context.infer_node(node))
                 if not results:
@@ -244,17 +251,17 @@ class IntegrationTestCase(object):
             return should
 
         should = definition(self.correct, self.start, script.path)
-        result = script.goto_definitions()
+        result = script.infer(self.line_nr, self.column)
         is_str = set(comparison(r) for r in result)
         return compare_cb(self, is_str, should)
 
-    def run_goto_assignments(self, compare_cb, environment):
-        result = self.script(environment).goto_assignments()
+    def run_goto(self, compare_cb, environment):
+        result = self.script(environment).goto(self.line_nr, self.column)
         comp_str = str(sorted(str(r.description) for r in result))
         return compare_cb(self, comp_str, self.correct)
 
-    def run_usages(self, compare_cb, environment):
-        result = self.script(environment).usages()
+    def run_find_references(self, compare_cb, environment):
+        result = self.script(environment).find_references(self.line_nr, self.column)
         self.correct = self.correct.strip()
         compare = sorted(
             (re.sub(r'^test\.completion\.', '', r.module_name), r.line, r.column)
@@ -276,6 +283,49 @@ class IntegrationTestCase(object):
                 wanted.append((self.module_name, line, pos_tup[1]))
 
         return compare_cb(self, compare, sorted(wanted))
+
+
+class StaticAnalysisCase(BaseTestCase):
+    """
+    Static Analysis cases lie in the static_analysis folder.
+    The tests also start with `#!`, like the inference tests.
+    """
+    def __init__(self, path):
+        self._path = path
+        self.name = os.path.basename(path)
+        with open(path) as f:
+            self._source = f.read()
+
+        skip_version_info = None
+        for line in self._source.splitlines():
+            skip_version_info = skip_python_version(line) or skip_version_info
+
+        super(StaticAnalysisCase, self).__init__(skip_version_info)
+
+    def collect_comparison(self):
+        cases = []
+        for line_nr, line in enumerate(self._source.splitlines(), 1):
+            match = re.match(r'(\s*)#! (\d+ )?(.*)$', line)
+            if match is not None:
+                column = int(match.group(2) or 0) + len(match.group(1))
+                cases.append((line_nr + 1, column, match.group(3)))
+        return cases
+
+    def run(self, compare_cb, environment):
+        def typ_str(inst):
+            return 'warning ' if isinstance(inst, Warning) else ''
+
+        analysis = jedi.Script(
+            self._source,
+            path=self._path,
+            environment=environment,
+        )._analysis()
+        analysis = [(r.line, r.column, typ_str(r) + r.name)
+                    for r in analysis]
+        compare_cb(self, analysis, self.collect_comparison())
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, os.path.basename(self._path))
 
 
 def skip_python_version(line):
@@ -307,19 +357,19 @@ def collect_file_tests(path, lines, lines_to_execute):
             else:
                 column = len(line) - 1  # -1 for the \n
             if test_type == '!':
-                yield makecase(TEST_ASSIGNMENTS)
+                yield makecase(TEST_GOTO)
             elif test_type == '<':
-                yield makecase(TEST_USAGES)
+                yield makecase(TEST_REFERENCES)
             elif correct.startswith('['):
                 yield makecase(TEST_COMPLETIONS)
             else:
-                yield makecase(TEST_DEFINITIONS)
+                yield makecase(TEST_INFERENCE)
             correct = None
         else:
             skip_version_info = skip_python_version(line) or skip_version_info
             try:
                 r = re.search(r'(?:^|(?<=\s))#([?!<])\s*([^\n]*)', line)
-                # test_type is ? for completion and ! for goto_assignments
+                # test_type is ? for completion and ! for goto
                 test_type = r.group(1)
                 correct = r.group(2)
                 # Quick hack to make everything work (not quite a bloody unicorn hack though).
@@ -470,6 +520,8 @@ if __name__ == '__main__':
             if arguments['--pdb']:
                 import pdb
                 pdb.post_mortem()
+        except Skipped:
+            pass
 
         count += 1
 

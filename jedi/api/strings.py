@@ -19,12 +19,18 @@ class StringName(AbstractArbitraryName):
     is_value_name = False
 
 
-def completions_for_dicts(inference_state, dicts, literal_string):
+def completions_for_dicts(inference_state, dicts, literal_string, fuzzy):
     for dict_key in sorted(_get_python_keys(dicts)):
         dict_key_str = repr(dict_key)
         if dict_key_str.startswith(literal_string):
             name = StringName(inference_state, dict_key_str[len(literal_string):])
-            yield Completion(inference_state, name, stack=None, like_name_length=0)
+            yield Completion(
+                inference_state,
+                name,
+                stack=None,
+                like_name_length=0,
+                is_fuzzy=fuzzy
+            )
 
 
 def _get_python_keys(dicts):

@@ -106,8 +106,18 @@ def Script(environment):
 
 
 @pytest.fixture(scope='session')
-def names(environment):
-    return partial(jedi.names, environment=environment)
+def names(Script):
+    return lambda code, **kwargs: Script(code).names(**kwargs)
+
+
+@pytest.fixture(scope='session', params=['goto', 'infer'])
+def goto_or_infer(request, Script):
+    return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
+
+
+@pytest.fixture(scope='session', params=['goto', 'help'])
+def goto_or_help(request, Script):
+    return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
 
 
 @pytest.fixture(scope='session')
@@ -118,7 +128,7 @@ def has_typing(environment):
         return True
 
     script = jedi.Script('import typing', environment=environment)
-    return bool(script.goto_definitions())
+    return bool(script.infer())
 
 
 @pytest.fixture(scope='session')

@@ -67,6 +67,7 @@ from parso import python_bytes_to_unicode
 from jedi.file_io import FileIO
 
 from jedi import debug
+from jedi import settings
 from jedi.inference import imports
 from jedi.inference import recursion
 from jedi.inference.cache import inference_state_function_cache
@@ -76,7 +77,7 @@ from jedi.inference.base_value import ContextualizedNode, \
     ValueSet, iterate_values
 from jedi.inference.value import ClassValue, FunctionValue
 from jedi.inference.syntax_tree import infer_expr_stmt, \
-    check_tuple_assignments
+    check_tuple_assignments, tree_name_to_values
 from jedi.inference.imports import follow_error_node_imports_if_possible
 from jedi.plugins import plugin_manager
 
@@ -105,14 +106,10 @@ class InferenceState(object):
         self.allow_descriptor_getattr = False
 
         self.reset_recursion_limitations()
-        self.allow_different_encoding = True
 
-    def import_module(self, import_names, parent_module_value=None,
-                      sys_path=None, prefer_stubs=True):
-        if sys_path is None:
-            sys_path = self.get_sys_path()
-        return imports.import_module(self, import_names, parent_module_value,
-                                     sys_path, prefer_stubs=prefer_stubs)
+    def import_module(self, import_names, sys_path=None, prefer_stubs=True):
+        return imports.import_module_by_names(
+            self, import_names, sys_path, prefer_stubs=prefer_stubs)
 
     @staticmethod
     @plugin_manager.decorate()
@@ -146,7 +143,7 @@ class InferenceState(object):
         """Convenience function"""
         return self.project._get_sys_path(self, environment=self.environment, **kwargs)
 
-    def goto_definitions(self, context, name):
+    def infer(self, context, name):
         def_ = name.get_definition(import_name_always=True)
         if def_ is not None:
             type_ = def_.type
@@ -170,6 +167,10 @@ class InferenceState(object):
                 return check_tuple_assignments(n, for_types)
             if type_ in ('import_from', 'import_name'):
                 return imports.infer_import(context, name)
+            if type_ == 'with_stmt':
+                return tree_name_to_values(self, context, name)
+            elif type_ == 'param':
+                return context.py__getattribute__(name.value, position=name.end_pos)
         else:
             result = follow_error_node_imports_if_possible(context, name)
             if result is not None:
@@ -179,12 +180,15 @@ class InferenceState(object):
 
     def parse_and_get_code(self, code=None, path=None, encoding='utf-8',
                            use_latest_grammar=False, file_io=None, **kwargs):
-        if self.allow_different_encoding:
-            if code is None:
-                if file_io is None:
-                    file_io = FileIO(path)
-                code = file_io.read()
-            code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
+        if code is None:
+            if file_io is None:
+                file_io = FileIO(path)
+            code = file_io.read()
+        # We cannot just use parso, because it doesn't use errors='replace'.
+        code = python_bytes_to_unicode(code, encoding=encoding, errors='replace')
+
+        if len(code) > settings._cropped_file_size:
+            code = code[:settings._cropped_file_size]
 
         grammar = self.latest_grammar if use_latest_grammar else self.grammar
         return grammar.parse(code=code, path=path, file_io=file_io, **kwargs), code

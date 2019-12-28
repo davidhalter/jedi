@@ -139,12 +139,12 @@ def test_follow_imports(names):
 
 
 def test_names_twice(names):
-    source = dedent('''
+    code = dedent('''
     def lol():
         pass
     ''')
 
-    defs = names(source=source)
+    defs = names(code)
     assert defs[0].defined_names() == []
 
 
@@ -166,4 +166,4 @@ def test_no_error(names):
     assert a.name == 'a'
     assert b.name == 'b'
     assert a20.name == 'a'
-    assert a20.goto_assignments() == [a20]
+    assert a20.goto() == [a20]

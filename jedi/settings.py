@@ -112,6 +112,14 @@ something has been changed e.g. to a function. If this happens, only the
 function is being reparsed.
 """
 
+_cropped_file_size = 10e6  # 1 Megabyte
+"""
+Jedi gets extremely slow if the file size exceed a few thousand lines.
+To avoid getting stuck completely Jedi crops the file this point.
+
+One megabyte of typical Python code equals about 20'000 lines of code.
+"""
+
 # ----------------
 # dynamic stuff
 # ----------------

@@ -190,6 +190,10 @@ def huhu(db):
     #? sqlite3.Connection()
     db
 
+with sqlite3.connect() as c:
+    #? sqlite3.Connection()
+    c
+
 # -----------------
 # hashlib
 # -----------------
@@ -289,6 +293,55 @@ for part in qsplit:
     part
 
 # -----------------
+# staticmethod, classmethod params
+# -----------------
+
+class F():
+    def __init__(self):
+        self.my_variable = 3
+
+    @staticmethod
+    def my_func(param):
+        #? []
+        param.my_
+        #? ['upper']
+        param.uppe
+        #? str()
+        return param
+
+    @staticmethod
+    def my_func_without_call(param):
+        #? []
+        param.my_
+        #? []
+        param.uppe
+        #?
+        return param
+
+    @classmethod
+    def my_method_without_call(cls, param):
+        #?
+        cls.my_variable
+        #? ['my_method', 'my_method_without_call']
+        cls.my_meth
+        #?
+        return param
+
+    @classmethod
+    def my_method(cls, param):
+        #?
+        cls.my_variable
+        #? ['my_method', 'my_method_without_call']
+        cls.my_meth
+        #?
+        return param
+
+#? str()
+F.my_func('')
+#? str()
+F.my_method('')
+
+# -----------------
 # Unknown metaclass
 # -----------------
 
@@ -329,3 +382,24 @@ X.attr_y.value
 X().name
 #? float()
 X().attr_x.attr_y.value
+
+
+# -----------------
+# functools Python 3.8
+# -----------------
+
+# python >= 3.8
+
+@functools.lru_cache
+def x() -> int: ...
+@functools.lru_cache()
+def y() -> float: ...
+@functools.lru_cache(8)
+def z() -> str: ...
+
+#? int()
+x()
+#? float()
+y()
+#? str()
+z()

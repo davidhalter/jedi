@@ -70,4 +70,4 @@ def test_pyc(pyc_project_path, environment):
         "from dummy_package import dummy; dummy.",
         path=path,
         environment=environment)
-    assert len(s.completions()) >= 2
+    assert len(s.complete()) >= 2

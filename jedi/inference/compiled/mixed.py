@@ -8,20 +8,23 @@ import sys
 
 from jedi.parser_utils import get_cached_code_lines
 
+from jedi._compatibility import unwrap
 from jedi import settings
 from jedi.inference import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
-from jedi.inference.base_value import ValueSet, ValueWrapper
+from jedi.inference.base_value import ValueSet, ValueWrapper, NO_VALUES
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.value import ModuleValue
-from jedi.inference.cache import inference_state_function_cache
+from jedi.inference.cache import inference_state_function_cache, \
+    inference_state_method_cache
 from jedi.inference.compiled.getattr_static import getattr_static
 from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.inference.compiled.value import create_cached_compiled_object
 from jedi.inference.gradual.conversion import to_stub
-from jedi.inference.context import CompiledContext, TreeContextMixin
+from jedi.inference.context import CompiledContext, CompiledModuleContext, \
+    TreeContextMixin
 
 _sentinel = object()
 
@@ -56,8 +59,13 @@ class MixedObject(ValueWrapper):
         # should be very precise, especially for stuff like `partial`.
         return self.compiled_object.get_signatures()
 
+    @inference_state_method_cache(default=NO_VALUES)
     def py__call__(self, arguments):
-        return (to_stub(self._wrapped_value) or self._wrapped_value).py__call__(arguments)
+        # Fallback to the wrapped value if to stub returns no values.
+        values = to_stub(self._wrapped_value)
+        if not values:# or self in values:
+            values = self._wrapped_value
+        return values.py__call__(arguments)
 
     def get_safe_value(self, default=_sentinel):
         if default is _sentinel:
@@ -72,6 +80,8 @@ class MixedObject(ValueWrapper):
         raise SimpleGetItemNotFound
 
     def _as_context(self):
+        if self.parent_context is None:
+            return MixedModuleContext(self)
         return MixedContext(self)
 
     def __repr__(self):
@@ -85,6 +95,10 @@ class MixedContext(CompiledContext, TreeContextMixin):
     @property
     def compiled_object(self):
         return self._value.compiled_object
+
+
+class MixedModuleContext(CompiledModuleContext, MixedContext):
+    pass
 
 
 class MixedName(compiled.CompiledName):
@@ -153,7 +167,11 @@ def _load_module(inference_state, path):
 def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
     if sys.version_info[0] > 2:
-        python_object = inspect.unwrap(python_object)
+        try:
+            python_object = unwrap(python_object)
+        except ValueError:
+            # Can return a ValueError when it wraps around
+            pass
 
     if (inspect.ismodule(python_object) or
             inspect.isclass(python_object) or
@@ -277,7 +295,7 @@ def _create(inference_state, access_handle, parent_context, *args):
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
-                is_package=compiled_object.is_package,
+                is_package=compiled_object.is_package(),
             ).as_context()
             if name is not None:
                 inference_state.module_cache.add(string_names, ValueSet([module_context]))

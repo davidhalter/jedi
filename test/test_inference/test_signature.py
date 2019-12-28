@@ -1,10 +1,12 @@
 from textwrap import dedent
 from operator import ge, lt
 import re
+import os
 
 import pytest
 
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
+from ..helpers import get_example_dir
 
 
 @pytest.mark.parametrize(
@@ -16,9 +18,10 @@ from jedi.inference.gradual.conversion import _stub_to_python_value_set
         ('str', "str(object='', /) -> str", ['object'], ge, (2, 7)),
 
         ('pow', 'pow(x, y, z=None, /) -> number', ['x', 'y', 'z'], lt, (3, 5)),
-        ('pow', 'pow(x, y, z=None, /)', ['x', 'y', 'z'], ge, (3, 5)),
+        ('pow', 'pow(base, exp, mod=None)', ['base', 'exp', 'mod'], ge, (3, 8)),
 
-        ('bytes.partition', 'partition(self, sep, /) -> (head, sep, tail)', ['self', 'sep'], lt, (3, 5)),
+        ('bytes.partition', 'partition(self, sep, /) -> (head, sep, tail)',
+         ['self', 'sep'], lt, (3, 5)),
         ('bytes.partition', 'partition(self, sep, /)', ['self', 'sep'], ge, (3, 5)),
 
         ('bytes().partition', 'partition(sep, /) -> (head, sep, tail)', ['sep'], lt, (3, 5)),
@@ -29,7 +32,7 @@ def test_compiled_signature(Script, environment, code, sig, names, op, version):
     if not op(environment.version_info, version):
         return  # The test right next to it should take over.
 
-    d, = Script(code).goto_definitions()
+    d, = Script(code).infer()
     value, = d._name.infer()
     compiled, = _stub_to_python_value_set(value)
     signature, = compiled.get_signatures()
@@ -70,8 +73,8 @@ d = functools.partial()
         ('def f(x,/,y,* ,z): pass\n f(', 'f(x, /, y, *, z)'),
         ('def f(a, /, *, x=3, **kwargs): pass\n f(', 'f(a, /, *, x=3, **kwargs)'),
 
-        (classmethod_code + 'X.x(', 'x(cls, a, b)'),
-        (classmethod_code + 'X().x(', 'x(cls, a, b)'),
+        (classmethod_code + 'X.x(', 'x(a, b)'),
+        (classmethod_code + 'X().x(', 'x(a, b)'),
         (classmethod_code + 'X.static(', 'static(a, b)'),
         (classmethod_code + 'X().static(', 'static(a, b)'),
 
@@ -87,9 +90,9 @@ def test_tree_signature(Script, environment, code, expected):
         pytest.skip()
 
     if expected is None:
-        assert not Script(code).call_signatures()
+        assert not Script(code).find_signatures()
     else:
-        sig, = Script(code).call_signatures()
+        sig, = Script(code).find_signatures()
         assert expected == sig.to_string()
 
 
@@ -179,7 +182,7 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
                 super().foo(**kwargs)
     ''')
     code += 'z = ' + combination + '\nz('
-    sig, = Script(code).call_signatures()
+    sig, = Script(code).find_signatures()
     computed = sig.to_string()
     if not re.match(r'\w+\(', expected):
         expected = '<lambda>(' + expected + ')'
@@ -188,7 +191,7 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
 
 def test_pow_signature(Script):
     # See github #1357
-    sigs = Script('pow(').call_signatures()
+    sigs = Script('pow(').find_signatures()
     strings = {sig.to_string() for sig in sigs}
     assert strings == {'pow(x: float, y: float, z: float, /) -> float',
                        'pow(x: float, y: float, /) -> float',
@@ -227,7 +230,7 @@ def test_pow_signature(Script):
     ]
 )
 def test_wraps_signature(Script, code, signature, skip_pre_python35):
-    sigs = Script(code).call_signatures()
+    sigs = Script(code).find_signatures()
     assert {sig.to_string() for sig in sigs} == {signature}
 
 
@@ -260,7 +263,7 @@ def test_dataclass_signature(Script, skip_pre_python37, start, start_params):
 
     code = 'from dataclasses import dataclass\n' + start + code
 
-    sig, = Script(code).call_signatures()
+    sig, = Script(code).find_signatures()
     assert [p.name for p in sig.params] == start_params + ['name', 'price', 'quantity']
     quantity, = sig.params[-1].infer()
     assert quantity.name == 'int'
@@ -286,5 +289,13 @@ def test_param_resolving_to_static(Script, stmt, expected, skip_pre_python35):
         def simple(a, b, *, c): ...
         full_redirect(simple)('''.format(stmt=stmt))
 
-    sig, = Script(code).call_signatures()
+    sig, = Script(code).find_signatures()
     assert sig.to_string() == expected
+
+
+def test_overload(Script):
+    dir_ = get_example_dir('typing_overload')
+    code = 'from file import with_overload; with_overload('
+    x1, x2 = Script(code, path=os.path.join(dir_, 'foo.py')).find_signatures()
+    assert x1.to_string() == 'with_overload(x: int, y: int) -> float'
+    assert x2.to_string() == 'with_overload(x: str, y: list) -> float'

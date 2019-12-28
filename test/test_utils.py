@@ -19,7 +19,7 @@ class TestSetupReadline(unittest.TestCase):
         self.namespace = self.NameSpace()
         utils.setup_readline(self.namespace)
 
-    def completions(self, text):
+    def complete(self, text):
         completer = readline.get_completer()
         i = 0
         completions = []
@@ -32,18 +32,18 @@ class TestSetupReadline(unittest.TestCase):
         return completions
 
     def test_simple(self):
-        assert self.completions('list') == ['list']
-        assert self.completions('importerror') == ['ImportError']
+        assert self.complete('list') == ['list']
+        assert self.complete('importerror') == ['ImportError']
         s = "print(BaseE"
-        assert self.completions(s) == [s + 'xception']
+        assert self.complete(s) == [s + 'xception']
 
     def test_nested(self):
-        assert self.completions('list.Insert') == ['list.insert']
-        assert self.completions('list().Insert') == ['list().insert']
+        assert self.complete('list.Insert') == ['list.insert']
+        assert self.complete('list().Insert') == ['list().insert']
 
     def test_magic_methods(self):
-        assert self.completions('list.__getitem__') == ['list.__getitem__']
-        assert self.completions('list().__getitem__') == ['list().__getitem__']
+        assert self.complete('list.__getitem__') == ['list.__getitem__']
+        assert self.complete('list().__getitem__') == ['list().__getitem__']
 
     def test_modules(self):
         import sys
@@ -52,44 +52,48 @@ class TestSetupReadline(unittest.TestCase):
         self.namespace.os = os
 
         try:
-            assert self.completions('os.path.join') == ['os.path.join']
+            assert self.complete('os.path.join') == ['os.path.join']
             string = 'os.path.join("a").upper'
-            assert self.completions(string) == [string]
+            assert self.complete(string) == [string]
 
             c = {'os.' + d for d in dir(os) if d.startswith('ch')}
-            assert set(self.completions('os.ch')) == set(c)
+            assert set(self.complete('os.ch')) == set(c)
         finally:
             del self.namespace.sys
             del self.namespace.os
 
     def test_calls(self):
         s = 'str(bytes'
-        assert self.completions(s) == [s, 'str(BytesWarning']
+        assert self.complete(s) == [s, 'str(BytesWarning']
 
     def test_import(self):
         s = 'from os.path import a'
-        assert set(self.completions(s)) == {s + 'ltsep', s + 'bspath'}
-        assert self.completions('import keyword') == ['import keyword']
+        assert set(self.complete(s)) == {s + 'ltsep', s + 'bspath'}
+        assert self.complete('import keyword') == ['import keyword']
 
         import os
         s = 'from os import '
         goal = {s + el for el in dir(os)}
         # There are minor differences, e.g. the dir doesn't include deleted
         # items as well as items that are not only available on linux.
-        difference = set(self.completions(s)).symmetric_difference(goal)
-        difference = {x for x in difference if not x.startswith('from os import _')}
+        difference = set(self.complete(s)).symmetric_difference(goal)
+        difference = {
+            x for x in difference
+            if all(not x.startswith('from os import ' + s)
+                   for s in ['_', 'O_', 'EX_', 'MFD_', 'SF_', 'ST_'])
+        }
         # There are quite a few differences, because both Windows and Linux
-        # (posix and nt) libraries are included.
-        assert len(difference) < 38
+        # (posix and nt) librariesare included.
+        assert len(difference) < 20
 
     @cwd_at('test')
     def test_local_import(self):
         s = 'import test_utils'
-        assert self.completions(s) == [s]
+        assert self.complete(s) == [s]
 
     def test_preexisting_values(self):
         self.namespace.a = range(10)
-        assert set(self.completions('a.')) == {'a.' + n for n in dir(range(1))}
+        assert set(self.complete('a.')) == {'a.' + n for n in dir(range(1))}
         del self.namespace.a
 
     def test_colorama(self):
@@ -106,8 +110,8 @@ class TestSetupReadline(unittest.TestCase):
             pass
         else:
             self.namespace.colorama = colorama
-            assert self.completions('colorama')
-            assert self.completions('colorama.Fore.BLACK') == ['colorama.Fore.BLACK']
+            assert self.complete('colorama')
+            assert self.complete('colorama.Fore.BLACK') == ['colorama.Fore.BLACK']
             del self.namespace.colorama
 
 

@@ -11,17 +11,20 @@ from jedi.api import classes
 from jedi.api import helpers
 from jedi.api import keywords
 from jedi.api.strings import completions_for_dicts
-from jedi.api.file_name import file_name_completions
+from jedi.api.file_name import complete_file_name
 from jedi.inference import imports
+from jedi.inference.base_value import ValueSet
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
+from jedi.inference.value import TreeInstance
 from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
+from jedi.plugins import plugin_manager
 
 
-def get_call_signature_param_names(call_signatures):
+def get_signature_param_names(signatures):
     # add named params
-    for call_sig in call_signatures:
+    for call_sig in signatures:
         for p in call_sig.params:
             # Allow protected access, because it's a public API.
             if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
@@ -29,7 +32,7 @@ def get_call_signature_param_names(call_signatures):
                 yield p._name
 
 
-def filter_names(inference_state, completion_names, stack, like_name):
+def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
     comp_dct = {}
     if settings.case_insensitive_completion:
         like_name = like_name.lower()
@@ -37,13 +40,17 @@ def filter_names(inference_state, completion_names, stack, like_name):
         string = name.string_name
         if settings.case_insensitive_completion:
             string = string.lower()
-
-        if string.startswith(like_name):
+        if fuzzy:
+            match = helpers.fuzzy_match(string, like_name)
+        else:
+            match = helpers.start_match(string, like_name)
+        if match:
             new = classes.Completion(
                 inference_state,
                 name,
                 stack,
-                len(like_name)
+                len(like_name),
+                is_fuzzy=fuzzy,
             )
             k = (new.name, new.complete)  # key
             if k in comp_dct and settings.no_completion_duplicates:
@@ -69,9 +76,16 @@ def get_flow_scope_node(module_node, position):
     return node
 
 
+@plugin_manager.decorate()
+def complete_param_names(context, function_name, decorator_nodes):
+    # Basically there's no way to do param completion. The plugins are
+    # responsible for this.
+    return []
+
+
 class Completion:
     def __init__(self, inference_state, module_context, code_lines, position,
-                 call_signatures_callback):
+                 signatures_callback, fuzzy=False):
         self._inference_state = inference_state
         self._module_context = module_context
         self._module_node = module_context.tree_node
@@ -83,19 +97,21 @@ class Completion:
         # everything. We want the start of the name we're on.
         self._original_position = position
         self._position = position[0], position[1] - len(self._like_name)
-        self._call_signatures_callback = call_signatures_callback
+        self._signatures_callback = signatures_callback
 
-    def completions(self):
+        self._fuzzy = fuzzy
+
+    def complete(self, fuzzy):
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
 
         prefixed_completions = []
-        if string is None:
-            string = ''
+        #if string is None:
+            #string = ''
         bracket_leaf = leaf
-        if bracket_leaf.type in ('number', 'error_leaf'):
-            string = bracket_leaf.value
-            bracket_leaf = bracket_leaf.get_previous_leaf()
+        #if bracket_leaf.type in ('number', 'error_leaf'):
+            #string = bracket_leaf.value
+            #bracket_leaf = bracket_leaf.get_previous_leaf()
 
         if bracket_leaf == '[':
             context = self._module_context.create_context(bracket_leaf)
@@ -103,23 +119,24 @@ class Completion:
             if before_bracket_leaf.type in ('atom', 'trailer', 'name'):
                 values = infer_call_of_leaf(context, before_bracket_leaf)
                 prefixed_completions += completions_for_dicts(
-                    self._inference_state, values, string)
+                    self._inference_state, values, string, fuzzy=fuzzy)
 
         if string is not None and not prefixed_completions:
-            completions = list(file_name_completions(
+            prefixed_completions = list(complete_file_name(
                 self._inference_state, self._module_context, start_leaf, string,
-                self._like_name, self._call_signatures_callback,
-                self._code_lines, self._original_position
+                self._like_name, self._signatures_callback,
+                self._code_lines, self._original_position,
+                fuzzy
             ))
-            if completions:
-                return completions
+            if prefixed_completions:
+                return prefixed_completions
         if string is not None:
             return prefixed_completions
 
-        completion_names = self._get_context_completions(leaf)
+        completion_names = self._complete_python(leaf)
 
         completions = filter_names(self._inference_state, completion_names,
-                                   self.stack, self._like_name)
+                                   self.stack, self._like_name, fuzzy)
 
         return (
             prefixed_completions +
@@ -128,7 +145,7 @@ class Completion:
                                                x.name.lower()))
         )
 
-    def _get_context_completions(self, leaf):
+    def _complete_python(self, leaf):
         """
         Analyzes the current context of a completion and decides what to
         return.
@@ -158,7 +175,7 @@ class Completion:
                 return []
 
             # If we don't have a value, just use global completion.
-            return self._global_completions()
+            return self._complete_global_scope()
 
         allowed_transitions = \
             list(stack._allowed_transition_names_and_token_types())
@@ -197,8 +214,9 @@ class Completion:
 
         completion_names = []
         current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
-        if not current_line or current_line[-1] in ' \t.;':
-            completion_names += self._get_keyword_completion_names(allowed_transitions)
+        if not current_line or current_line[-1] in ' \t.;' \
+                and current_line[-3:] != '...':
+            completion_names += self._complete_keywords(allowed_transitions)
 
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
@@ -210,7 +228,7 @@ class Completion:
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
-                return list(self._get_class_value_completions(is_function=True))
+                return list(self._complete_inherited(is_function=True))
             elif "import_stmt" in nonterminals:
                 level, names = parse_dotted_names(nodes, "import_from" in nonterminals)
 
@@ -222,23 +240,68 @@ class Completion:
                 )
             elif nonterminals[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
-                completion_names += self._trailer_completions(dot.get_previous_leaf())
+                completion_names += self._complete_trailer(dot.get_previous_leaf())
+            elif self._is_parameter_completion():
+                completion_names += self._complete_params(leaf)
             else:
-                completion_names += self._global_completions()
-                completion_names += self._get_class_value_completions(is_function=False)
+                completion_names += self._complete_global_scope()
+                completion_names += self._complete_inherited(is_function=False)
 
-            if 'trailer' in nonterminals:
-                call_signatures = self._call_signatures_callback()
-                completion_names += get_call_signature_param_names(call_signatures)
+            # Apparently this looks like it's good enough to filter most cases
+            # so that signature completions don't randomly appear.
+            # To understand why this works, three things are important:
+            # 1. trailer with a `,` in it is either a subscript or an arglist.
+            # 2. If there's no `,`, it's at the start and only signatures start
+            #    with `(`. Other trailers could start with `.` or `[`.
+            # 3. Decorators are very primitive and have an optional `(` with
+            #    optional arglist in them.
+            if nodes[-1] in ['(', ','] and nonterminals[-1] in ('trailer', 'arglist', 'decorator'):
+                signatures = self._signatures_callback(*self._position)
+                completion_names += get_signature_param_names(signatures)
 
         return completion_names
 
-    def _get_keyword_completion_names(self, allowed_transitions):
+    def _is_parameter_completion(self):
+        tos = self.stack[-1]
+        if tos.nonterminal == 'lambdef' and len(tos.nodes) == 1:
+            # We are at the position `lambda `, where basically the next node
+            # is a param.
+            return True
+        if tos.nonterminal in 'parameters':
+            # Basically we are at the position `foo(`, there's nothing there
+            # yet, so we have no `typedargslist`.
+            return True
+        # var args is for lambdas and typed args for normal functions
+        return tos.nonterminal in ('typedargslist', 'varargslist') and tos.nodes[-1] == ','
+
+    def _complete_params(self, leaf):
+        stack_node = self.stack[-2]
+        if stack_node.nonterminal == 'parameters':
+            stack_node = self.stack[-3]
+        if stack_node.nonterminal == 'funcdef':
+            context = get_user_context(self._module_context, self._position)
+            node = search_ancestor(leaf, 'error_node', 'funcdef')
+            if node.type == 'error_node':
+                n = node.children[0]
+                if n.type == 'decorators':
+                    decorators = n.children
+                elif n.type == 'decorator':
+                    decorators = [n]
+                else:
+                    decorators = []
+            else:
+                decorators = node.get_decorators()
+            function_name = stack_node.nodes[1]
+
+            return complete_param_names(context, function_name.value, decorators)
+        return []
+
+    def _complete_keywords(self, allowed_transitions):
         for k in allowed_transitions:
             if isinstance(k, str) and k.isalpha():
                 yield keywords.KeywordName(self._inference_state, k)
 
-    def _global_completions(self):
+    def _complete_global_scope(self):
         context = get_user_context(self._module_context, self._position)
         debug.dbg('global completion scope: %s', context)
         flow_scope_node = get_flow_scope_node(self._module_node, self._position)
@@ -252,15 +315,21 @@ class Completion:
             completion_names += filter.values()
         return completion_names
 
-    def _trailer_completions(self, previous_leaf):
-        user_value = get_user_context(self._module_context, self._position)
+    def _complete_trailer(self, previous_leaf):
         inferred_context = self._module_context.create_context(previous_leaf)
         values = infer_call_of_leaf(inferred_context, previous_leaf)
-        completion_names = []
         debug.dbg('trailer completion values: %s', values, color='MAGENTA')
+        return self._complete_trailer_for_values(values)
+
+    def _complete_trailer_for_values(self, values):
+        user_value = get_user_context(self._module_context, self._position)
+        completion_names = []
         for value in values:
             for filter in value.get_filters(origin_scope=user_value.tree_node):
                 completion_names += filter.values()
+
+            if not value.is_stub() and isinstance(value, TreeInstance):
+                completion_names += self._complete_getattr(value)
 
         python_values = convert_values(values)
         for c in python_values:
@@ -269,12 +338,72 @@ class Completion:
                     completion_names += filter.values()
         return completion_names
 
+    def _complete_getattr(self, instance):
+        """
+        A heuristic to make completion for proxy objects work. This is not
+        intended to work in all cases. It works exactly in this case:
+
+            def __getattr__(self, name):
+                ...
+                return getattr(any_object, name)
+
+        It is important that the return contains getattr directly, otherwise it
+        won't work anymore. It's really just a stupid heuristic. It will not
+        work if you write e.g. `return (getatr(o, name))`, because of the
+        additional parentheses. It will also not work if you move the getattr
+        to some other place that is not the return statement itself.
+
+        It is intentional that it doesn't work in all cases. Generally it's
+        really hard to do even this case (as you can see below). Most people
+        will write it like this anyway and the other ones, well they are just
+        out of luck I guess :) ~dave.
+        """
+        names = (instance.get_function_slot_names(u'__getattr__')
+                 or instance.get_function_slot_names(u'__getattribute__'))
+        functions = ValueSet.from_sets(
+            name.infer()
+            for name in names
+        )
+        for func in functions:
+            tree_node = func.tree_node
+            for return_stmt in tree_node.iter_return_stmts():
+                # Basically until the next comment we just try to find out if a
+                # return statement looks exactly like `return getattr(x, name)`.
+                if return_stmt.type != 'return_stmt':
+                    continue
+                atom_expr = return_stmt.children[1]
+                if atom_expr.type != 'atom_expr':
+                    continue
+                atom = atom_expr.children[0]
+                trailer = atom_expr.children[1]
+                if len(atom_expr.children) != 2 or atom.type != 'name' \
+                        or atom.value != 'getattr':
+                    continue
+                arglist = trailer.children[1]
+                if arglist.type != 'arglist' or len(arglist.children) < 3:
+                    continue
+                context = func.as_context()
+                object_node = arglist.children[0]
+
+                # Make sure it's a param: foo in __getattr__(self, foo)
+                name_node = arglist.children[2]
+                name_list = context.goto(name_node, name_node.start_pos)
+                if not any(n.api_type == 'param' for n in name_list):
+                    continue
+
+                # Now that we know that these are most probably completion
+                # objects, we just infer the object and return them as
+                # completions.
+                objects = context.infer_node(object_node)
+                return self._complete_trailer_for_values(objects)
+        return []
+
     def _get_importer_names(self, names, level=0, only_modules=True):
         names = [n.value for n in names]
         i = imports.Importer(self._inference_state, names, self._module_context, level)
         return i.completion_names(self._inference_state, only_modules=only_modules)
 
-    def _get_class_value_completions(self, is_function=True):
+    def _complete_inherited(self, is_function=True):
         """
         Autocomplete inherited methods when overriding in child class.
         """
@@ -310,6 +439,9 @@ def _gather_nodes(stack):
 
 
 def _extract_string_while_in_string(leaf, position):
+    if position < leaf.start_pos:
+        return None, None
+
     if leaf.type == 'string':
         match = re.match(r'^\w*(\'{3}|"{3}|\'|")', leaf.value)
         quote = match.group(1)

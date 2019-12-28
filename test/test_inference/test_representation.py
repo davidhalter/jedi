@@ -2,7 +2,7 @@ from textwrap import dedent
 
 
 def get_definition_and_inference_state(Script, source):
-    first, = Script(dedent(source)).goto_definitions()
+    first, = Script(dedent(source)).infer()
     return first._name._value, first._inference_state
 
 

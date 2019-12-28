@@ -13,6 +13,12 @@ class AbstractFolderIO(object):
     def get_file_io(self, name):
         raise NotImplementedError
 
+    def get_parent_folder(self):
+        raise NotImplementedError
+
+    def __repr__(self):
+        return '<%s: %s>' % (self.__class__.__name__, self.path)
+
 
 class FolderIO(AbstractFolderIO):
     def list(self):
@@ -20,6 +26,9 @@ class FolderIO(AbstractFolderIO):
 
     def get_file_io(self, name):
         return FileIO(os.path.join(self.path, name))
+
+    def get_parent_folder(self):
+        return FolderIO(os.path.dirname(self.path))
 
 
 class FileIOFolderMixin(object):

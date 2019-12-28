@@ -1,15 +1,14 @@
 from textwrap import dedent
 
-from jedi import names
 from jedi.inference import helpers
 
 
-def test_call_of_leaf_in_brackets(environment):
+def test_call_of_leaf_in_brackets(Script):
     s = dedent("""
     x = 1
     type(x)
     """)
-    last_x = names(s, references=True, definitions=False, environment=environment)[-1]
+    last_x = Script(s).names(references=True, definitions=False)[-1]
     name = last_x._name.tree_name
 
     call = helpers.call_of_leaf(name)

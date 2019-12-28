@@ -6,6 +6,7 @@ python:
   - 3.5
   - 3.6
   - 3.7
+  - 3.8
 
 env:
   - JEDI_TEST_ENVIRONMENT=27
@@ -13,6 +14,7 @@ env:
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=36
   - JEDI_TEST_ENVIRONMENT=37
+  - JEDI_TEST_ENVIRONMENT=38
 
 matrix:
   include:
@@ -23,9 +25,10 @@ matrix:
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.
     #- python: pypy
-    - python: 3.8-dev
-      env:
-        - JEDI_TEST_ENVIRONMENT=38
+    # The 3.9 dev build does not seem to be available end 2019.
+    #- python: 3.9-dev
+    #  env:
+    #    - JEDI_TEST_ENVIRONMENT=38
 install:
     - pip install --quiet tox-travis
 script:

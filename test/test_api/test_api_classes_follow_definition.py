@@ -6,14 +6,14 @@ from ..helpers import cwd_at
 
 def test_import_empty(Script):
     """ github #340, return the full word. """
-    completion = Script("import ").completions()[0]
+    completion = Script("import ").complete()[0]
     definition = completion.infer()[0]
     assert definition
 
 
 def check_follow_definition_types(Script, source):
     # nested import
-    completions = Script(source, path='some_path.py').completions()
+    completions = Script(source, path='some_path.py').complete()
     defs = chain.from_iterable(c.infer() for c in completions)
     return [d.type for d in defs]
 
@@ -27,7 +27,7 @@ def test_follow_import_incomplete(Script, environment):
     assert datetime == ['module']
 
     # empty `from * import` parts
-    itert = jedi.Script("from itertools import ").completions()
+    itert = jedi.Script("from itertools import ").complete()
     definitions = [d for d in itert if d.name == 'chain']
     assert len(definitions) == 1
     assert [d.type for d in definitions[0].infer()] == ['class']

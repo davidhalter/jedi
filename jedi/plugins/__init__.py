@@ -14,18 +14,18 @@ class _PluginManager(object):
         self._registered_plugins.extend(plugins)
         self._build_functions()
 
-    def decorate(self):
+    def decorate(self, name=None):
         def decorator(callback):
             @wraps(callback)
             def wrapper(*args, **kwargs):
-                return built_functions[name](*args, **kwargs)
+                return built_functions[public_name](*args, **kwargs)
 
-            name = callback.__name__
+            public_name = name or callback.__name__
 
-            assert name not in self._built_functions
+            assert public_name not in self._built_functions
             built_functions = self._built_functions
-            built_functions[name] = callback
-            self._cached_base_callbacks[name] = callback
+            built_functions[public_name] = callback
+            self._cached_base_callbacks[public_name] = callback
 
             return wrapper
 

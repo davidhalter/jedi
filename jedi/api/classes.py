@@ -7,6 +7,8 @@ import re
 import sys
 import warnings
 
+from parso.python.tree import search_ancestor
+
 from jedi import settings
 from jedi import debug
 from jedi.inference.utils import unite
@@ -104,7 +106,7 @@ class BaseDefinition(object):
 
         Here is an example of the value of this attribute.  Let's consider
         the following source.  As what is in ``variable`` is unambiguous
-        to Jedi, :meth:`jedi.Script.goto_definitions` should return a list of
+        to Jedi, :meth:`jedi.Script.infer` should return a list of
         definition for ``sys``, ``f``, ``C`` and ``x``.
 
         >>> from jedi._compatibility import no_unicode_pprint
@@ -127,7 +129,7 @@ class BaseDefinition(object):
         ...     variable'''
 
         >>> script = Script(source)
-        >>> defs = script.goto_definitions()
+        >>> defs = script.infer()
 
         Before showing what is in ``defs``, let's sort it by :attr:`line`
         so that it is easy to relate the result to the source code.
@@ -177,7 +179,7 @@ class BaseDefinition(object):
         >>> from jedi import Script
         >>> source = 'import json'
         >>> script = Script(source, path='example.py')
-        >>> d = script.goto_definitions()[0]
+        >>> d = script.infer()[0]
         >>> print(d.module_name)  # doctest: +ELLIPSIS
         json
         """
@@ -217,18 +219,18 @@ class BaseDefinition(object):
         ... def f(a, b=1):
         ...     "Document for function f."
         ... '''
-        >>> script = Script(source, 1, len('def f'), 'example.py')
-        >>> doc = script.goto_definitions()[0].docstring()
+        >>> script = Script(source, path='example.py')
+        >>> doc = script.infer(1, len('def f'))[0].docstring()
         >>> print(doc)
         f(a, b=1)
         <BLANKLINE>
         Document for function f.
 
         Notice that useful extra information is added to the actual
-        docstring.  For function, it is call signature.  If you need
+        docstring.  For function, it is signature.  If you need
         actual docstring, use ``raw=True`` instead.
 
-        >>> print(script.goto_definitions()[0].docstring(raw=True))
+        >>> print(script.infer(1, len('def f'))[0].docstring(raw=True))
         Document for function f.
 
         :param fast: Don't follow imports that are only one level deep like
@@ -237,7 +239,9 @@ class BaseDefinition(object):
             the ``foo.docstring(fast=False)`` on every object, because it
             parses all libraries starting with ``a``.
         """
-        return _Help(self._name).docstring(fast=fast, raw=raw)
+        if isinstance(self._name, ImportName) and fast:
+            return ''
+        return self._name.py__doc__(include_signatures=not raw)
 
     @property
     def description(self):
@@ -259,8 +263,8 @@ class BaseDefinition(object):
         >>> source = '''
         ... import os
         ... os.path.join'''
-        >>> script = Script(source, 3, len('os.path.join'), 'example.py')
-        >>> print(script.goto_definitions()[0].full_name)
+        >>> script = Script(source, path='example.py')
+        >>> print(script.infer(3, len('os.path.join'))[0].full_name)
         os.path.join
 
         Notice that it returns ``'os.path.join'`` instead of (for example)
@@ -289,11 +293,19 @@ class BaseDefinition(object):
 
         return self._name.get_root_context().is_stub()
 
-    def goto_assignments(self, **kwargs):  # Python 2...
+    def goto(self, **kwargs):
         with debug.increase_indent_cm('goto for %s' % self._name):
-            return self._goto_assignments(**kwargs)
+            return self._goto(**kwargs)
 
-    def _goto_assignments(self, only_stubs=False, prefer_stubs=False):
+    def goto_assignments(self, **kwargs):  # Python 2...
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use .goto.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.goto(**kwargs)
+
+    def _goto(self, only_stubs=False, prefer_stubs=False):
         assert not (only_stubs and prefer_stubs)
 
         if not self._name.is_value_name:
@@ -358,12 +370,28 @@ class BaseDefinition(object):
         if not self._name.is_value_name:
             return None
 
-        context = self._name.parent_context
+        if self.type in ('function', 'class', 'param') and self._name.tree_name is not None:
+            # Since the parent_context doesn't really match what the user
+            # thinks of that the parent is here, we do these cases separately.
+            # The reason for this is the following:
+            # - class: Nested classes parent_context is always the
+            #   parent_context of the most outer one.
+            # - function: Functions in classes have the module as
+            #   parent_context.
+            # - param: The parent_context of a param is not its function but
+            #   e.g. the outer class or module.
+            cls_or_func_node = self._name.tree_name.get_definition()
+            parent = search_ancestor(cls_or_func_node, 'funcdef', 'classdef', 'file_input')
+            context = self._get_module_context().create_value(parent).as_context()
+        else:
+            context = self._name.parent_context
+
         if context is None:
             return None
         while context.name is None:
             # Happens for comprehension contexts
             context = context.parent_context
+
         return Definition(self._inference_state, context.name)
 
     def __repr__(self):
@@ -384,17 +412,23 @@ class BaseDefinition(object):
         :return str: Returns the line(s) of code or an empty string if it's a
                      builtin.
         """
-        if not self._name.is_value_name or self.in_builtin_module():
+        if not self._name.is_value_name:
             return ''
 
         lines = self._name.get_root_context().code_lines
+        if lines is None:
+            # Probably a builtin module, just ignore in that case.
+            return ''
 
         index = self._name.start_pos[0] - 1
         start_index = max(index - before, 0)
         return ''.join(lines[start_index:index + after + 1])
 
     def get_signatures(self):
-        return [Signature(self._inference_state, s) for s in self._name.infer().get_signatures()]
+        return [
+            BaseSignature(self._inference_state, s)
+            for s in self._name.infer().get_signatures()
+        ]
 
     def execute(self):
         return _values_to_definitions(self._name.infer().execute_with_values())
@@ -402,14 +436,15 @@ class BaseDefinition(object):
 
 class Completion(BaseDefinition):
     """
-    `Completion` objects are returned from :meth:`api.Script.completions`. They
+    `Completion` objects are returned from :meth:`api.Script.complete`. They
     provide additional information about a completion.
     """
-    def __init__(self, inference_state, name, stack, like_name_length):
+    def __init__(self, inference_state, name, stack, like_name_length, is_fuzzy):
         super(Completion, self).__init__(inference_state, name)
 
         self._like_name_length = like_name_length
         self._stack = stack
+        self._is_fuzzy = is_fuzzy
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
@@ -435,6 +470,9 @@ class Completion(BaseDefinition):
     @property
     def complete(self):
         """
+        Only works with non-fuzzy completions. Returns None if fuzzy
+        completions are used.
+
         Return the rest of the word, e.g. completing ``isinstance``::
 
             isinstan# <-- Cursor is here
@@ -449,9 +487,9 @@ class Completion(BaseDefinition):
 
         completing ``foo(par`` would give a ``Completion`` which `complete`
         would be `am=`
-
-
         """
+        if self._is_fuzzy:
+            return None
         return self._complete(True)
 
     @property
@@ -507,8 +545,8 @@ class Completion(BaseDefinition):
 
 class Definition(BaseDefinition):
     """
-    *Definition* objects are returned from :meth:`api.Script.goto_assignments`
-    or :meth:`api.Script.goto_definitions`.
+    *Definition* objects are returned from :meth:`api.Script.goto`
+    or :meth:`api.Script.infer`.
     """
     def __init__(self, inference_state, definition):
         super(Definition, self).__init__(inference_state, definition)
@@ -531,8 +569,8 @@ class Definition(BaseDefinition):
         ...     pass
         ...
         ... variable = f if random.choice([0,1]) else C'''
-        >>> script = Script(source, column=3)  # line is maximum by default
-        >>> defs = script.goto_definitions()
+        >>> script = Script(source)  # line is maximum by default
+        >>> defs = script.infer(column=3)
         >>> defs = sorted(defs, key=lambda d: d.line)
         >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
         [<Definition full_name='__main__.f', description='def f'>,
@@ -613,14 +651,14 @@ class Definition(BaseDefinition):
         return hash((self._name.start_pos, self.module_path, self.name, self._inference_state))
 
 
-class Signature(Definition):
+class BaseSignature(Definition):
     """
-    `Signature` objects is the return value of `Script.function_definition`.
+    `BaseSignature` objects is the return value of `Script.function_definition`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function. without `(` it would return nothing.
     """
     def __init__(self, inference_state, signature):
-        super(Signature, self).__init__(inference_state, signature.name)
+        super(BaseSignature, self).__init__(inference_state, signature.name)
         self._signature = signature
 
     @property
@@ -635,15 +673,15 @@ class Signature(Definition):
         return self._signature.to_string()
 
 
-class CallSignature(Signature):
+class Signature(BaseSignature):
     """
-    `CallSignature` objects is the return value of `Script.call_signatures`.
+    `Signature` objects is the return value of `Script.find_signatures`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function with its params. Without `(` it would
     return nothing.
     """
     def __init__(self, inference_state, signature, call_details):
-        super(CallSignature, self).__init__(inference_state, signature)
+        super(Signature, self).__init__(inference_state, signature)
         self._call_details = call_details
         self._signature = signature
 
@@ -712,55 +750,3 @@ def _format_signatures(value):
         signature.to_string()
         for signature in value.get_signatures()
     )
-
-
-class _Help(object):
-    """
-    Temporary implementation, will be used as `Script.help() or something in
-    the future.
-    """
-    def __init__(self, definition):
-        self._name = definition
-
-    @memoize_method
-    def _get_values(self, fast):
-        if isinstance(self._name, ImportName) and fast:
-            return {}
-
-        if self._name.api_type == 'statement':
-            return {}
-
-        return self._name.infer()
-
-    def docstring(self, fast=True, raw=True):
-        """
-        The docstring ``__doc__`` for any object.
-
-        See :attr:`doc` for example.
-        """
-        full_doc = ''
-        # Using the first docstring that we see.
-        for value in self._get_values(fast=fast):
-            if full_doc:
-                # In case we have multiple values, just return all of them
-                # separated by a few dashes.
-                full_doc += '\n' + '-' * 30 + '\n'
-
-            doc = value.py__doc__()
-
-            signature_text = ''
-            if self._name.is_value_name:
-                if not raw:
-                    signature_text = _format_signatures(value)
-                if not doc and value.is_stub():
-                    for c in convert_values(ValueSet({value}), ignore_compiled=False):
-                        doc = c.py__doc__()
-                        if doc:
-                            break
-
-            if signature_text and doc:
-                full_doc += signature_text + '\n\n' + doc
-            else:
-                full_doc += signature_text + doc
-
-        return full_doc

@@ -74,7 +74,7 @@ def dynamic_param_lookup(function_value, param_index):
 
     path = function_value.get_root_context().py__file__()
     if path is not None and is_stdlib_path(path):
-        # We don't want to search for usages in the stdlib. Usually people
+        # We don't want to search for references in the stdlib. Usually people
         # don't work with it (except if you are a core maintainer, sorry).
         # This makes everything slower. Just disable it and run the tests,
         # you will see the slowdown, especially in 3.6.
@@ -186,7 +186,7 @@ def _check_name_for_execution(inference_state, context, compare_node, name, trai
                 args = InstanceArguments(value.instance, args)
             return args
 
-    for value in inference_state.goto_definitions(context, name):
+    for value in inference_state.infer(context, name):
         value_node = value.tree_node
         if compare_node == value_node:
             yield create_args(value)

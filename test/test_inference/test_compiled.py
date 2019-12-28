@@ -9,6 +9,7 @@ import pytest
 from jedi.inference import compiled
 from jedi.inference.compiled.access import DirectObjectAccess
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
+from jedi.inference.syntax_tree import _infer_comparison_part
 
 
 def test_simple(inference_state, environment):
@@ -60,7 +61,7 @@ def test_doc(inference_state):
 
 def test_string_literals(Script, environment):
     def typ(string):
-        d = Script("a = %s; a" % string).goto_definitions()[0]
+        d = Script("a = %s; a" % string).infer()[0]
         return d.name
 
     assert typ('""') == 'str'
@@ -82,12 +83,12 @@ def test_method_completion(Script, environment):
 
     foo = Foo()
     foo.bar.__func__''')
-    assert [c.name for c in Script(code).completions()] == ['__func__']
+    assert [c.name for c in Script(code).complete()] == ['__func__']
 
 
 def test_time_docstring(Script):
     import time
-    comp, = Script('import time\ntime.sleep').completions()
+    comp, = Script('import time\ntime.sleep').complete()
     assert comp.docstring(raw=True) == time.sleep.__doc__
     expected = 'sleep(secs: float) -> None\n\n' + time.sleep.__doc__
     assert comp.docstring() == expected
@@ -97,12 +98,12 @@ def test_dict_values(Script, environment):
     if environment.version_info.major == 2:
         # It looks like typeshed for Python 2 returns Any.
         pytest.skip()
-    assert Script('import sys\nsys.modules["alshdb;lasdhf"]').goto_definitions()
+    assert Script('import sys\nsys.modules["alshdb;lasdhf"]').infer()
 
 
 def test_getitem_on_none(Script):
     script = Script('None[1j]')
-    assert not script.goto_definitions()
+    assert not script.infer()
     issue, = script._inference_state.analysis
     assert issue.name == 'type-error-not-subscriptable'
 
@@ -169,3 +170,14 @@ def test_qualified_names(same_process_inference_state, obj, expected_names):
         DirectObjectAccess(same_process_inference_state, obj)
     )
     assert o.get_qualified_names() == tuple(expected_names)
+
+
+def test_operation(Script, inference_state, create_compiled_object):
+    b = create_compiled_object(bool)
+    true, = _infer_comparison_part(
+        inference_state, b.parent_context,
+        left=list(b.execute_with_values())[0],
+        operator=u'is not',
+        right=b,
+    )
+    assert true.py__name__() == 'bool'

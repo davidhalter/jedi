@@ -4,6 +4,7 @@ import types
 import sys
 import operator as op
 from collections import namedtuple
+import warnings
 
 from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode
@@ -323,7 +324,7 @@ class DirectObjectAccess(object):
             name = try_to_get_name(type(self._obj))
             if name is None:
                 return ()
-        return tuple(name.split('.'))
+        return tuple(force_unicode(n) for n in name.split('.'))
 
     def dir(self):
         return list(map(force_unicode, dir(self._obj)))
@@ -335,8 +336,23 @@ class DirectObjectAccess(object):
         except TypeError:
             return False
 
-    def is_allowed_getattr(self, name):
+    def is_allowed_getattr(self, name, unsafe=False):
         # TODO this API is ugly.
+        if unsafe:
+            # Unsafe is mostly used to check for __getattr__/__getattribute__.
+            # getattr_static works for properties, but the underscore methods
+            # are just ignored (because it's safer and avoids more code
+            # execution). See also GH #1378.
+
+            # Avoid warnings, see comment in the next function.
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("always")
+                try:
+                    return hasattr(self._obj, name), False
+                except Exception:
+                    # Obviously has an attribute (propably a property) that
+                    # gets executed, so just avoid all exceptions here.
+                    return False, False
         try:
             attr, is_get_descriptor = getattr_static(self._obj, name)
         except AttributeError:
@@ -350,7 +366,11 @@ class DirectObjectAccess(object):
 
     def getattr_paths(self, name, default=_sentinel):
         try:
-            return_obj = getattr(self._obj, name)
+            # Make sure no warnings are printed here, this is autocompletion,
+            # warnings should not be shown. See also GH #1383.
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("always")
+                return_obj = getattr(self._obj, name)
         except Exception as e:
             if default is _sentinel:
                 if isinstance(e, AttributeError):
@@ -365,6 +385,22 @@ class DirectObjectAccess(object):
         access = self._create_access(return_obj)
         if inspect.ismodule(return_obj):
             return [access]
+
+        try:
+            module = return_obj.__module__
+        except AttributeError:
+            pass
+        else:
+            if module is not None:
+                try:
+                    __import__(module)
+                    # For some modules like _sqlite3, the __module__ for classes is
+                    # different, in this case it's sqlite3. So we have to try to
+                    # load that "original" module, because it's not loaded yet. If
+                    # we don't do that, we don't really have a "parent" module and
+                    # we would fall back to builtins.
+                except ImportError:
+                    pass
 
         module = inspect.getmodule(return_obj)
         if module is None:
@@ -433,7 +469,7 @@ class DirectObjectAccess(object):
                 default_string=repr(p.default),
                 has_annotation=p.annotation is not p.empty,
                 annotation=self._create_access_path(p.annotation),
-                annotation_string=str(p.default),
+                annotation_string=str(p.annotation),
                 kind_name=str(p.kind)
             ) for p in self._get_signature().parameters.values()
         ]
@@ -485,7 +521,6 @@ class DirectObjectAccess(object):
         Used to return a couple of infos that are needed when accessing the sub
         objects of an objects
         """
-        # TODO is_allowed_getattr might raise an AttributeError
         tuples = dict(
             (force_unicode(name), self.is_allowed_getattr(name))
             for name in self.dir()

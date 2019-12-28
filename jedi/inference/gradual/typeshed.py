@@ -44,7 +44,7 @@ def _create_stub_map(directory):
                 if os.path.isfile(init):
                     yield entry, init
             elif entry.endswith('.pyi') and os.path.isfile(path):
-                name = entry.rstrip('.pyi')
+                name = entry[:-4]
                 if name != '__init__':
                     yield name, path
 
@@ -163,6 +163,7 @@ def _try_to_load_stub(inference_state, import_names, python_value_set,
     if len(import_names) == 1:
         # foo-stubs
         for p in sys_path:
+            p = cast_path(p)
             init = os.path.join(p, *import_names) + '-stubs' + os.path.sep + '__init__.pyi'
             m = _try_to_load_stub_from_file(
                 inference_state,
@@ -235,7 +236,7 @@ def _load_from_typeshed(inference_state, python_value_set, parent_module_value, 
         map_ = _cache_stub_file_map(inference_state.grammar.version_info)
         import_name = _IMPORT_MAP.get(import_name, import_name)
     elif isinstance(parent_module_value, ModuleValue):
-        if not parent_module_value.is_package:
+        if not parent_module_value.is_package():
             # Only if it's a package (= a folder) something can be
             # imported.
             return None

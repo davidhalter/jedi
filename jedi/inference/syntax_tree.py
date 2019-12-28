@@ -45,7 +45,16 @@ def _limit_value_infers(func):
         inference_state = context.inference_state
         try:
             inference_state.inferred_element_counts[n] += 1
-            if inference_state.inferred_element_counts[n] > 300:
+            maximum = 300
+            if context.parent_context is None \
+                    and context.get_value() is inference_state.builtins_module:
+                # Builtins should have a more generous inference limit.
+                # It is important that builtins can be executed, otherwise some
+                # functions that depend on certain builtins features would be
+                # broken, see e.g. GH #1432
+                maximum *= 100
+
+            if inference_state.inferred_element_counts[n] > maximum:
                 debug.warning('In value %s there were too many inferences.', n)
                 return NO_VALUES
         except KeyError:
@@ -99,7 +108,7 @@ def infer_node(context, element):
             str_element_names = [e.value for e in element_names]
             if any(i.value in str_element_names for i in if_names):
                 for if_name in if_names:
-                    definitions = context.inference_state.goto_definitions(context, if_name)
+                    definitions = context.inference_state.infer(context, if_name)
                     # Every name that has multiple different definitions
                     # causes the complexity to rise. The complexity should
                     # never fall below 1.
@@ -406,7 +415,7 @@ def _infer_expr_stmt(context, stmt, seek_name=None):
 
         if is_setitem:
             def to_mod(v):
-                c = ContextualizedNode(context, subscriptlist)
+                c = ContextualizedSubscriptListNode(context, subscriptlist)
                 if v.array_type == 'dict':
                     return DictModification(v, value_set, c)
                 elif v.array_type == 'list':
@@ -677,6 +686,11 @@ def tree_name_to_values(inference_state, context, tree_name):
         node = tree_name.parent
         if node.type == 'global_stmt':
             c = context.create_context(tree_name)
+            if c.is_module():
+                # In case we are already part of the module, there is no point
+                # in looking up the global statement anymore, because it's not
+                # valid at that point anyway.
+                return NO_VALUES
             # For global_stmt lookups, we only need the first possible scope,
             # which means the function itself.
             filter = next(c.get_filters())
@@ -801,6 +815,11 @@ def check_tuple_assignments(name, value_set):
                 return NO_VALUES
         value_set = lazy_value.infer()
     return value_set
+
+
+class ContextualizedSubscriptListNode(ContextualizedNode):
+    def infer(self):
+        return _infer_subscript_list(self.context, self.node)
 
 
 def _infer_subscript_list(context, index):

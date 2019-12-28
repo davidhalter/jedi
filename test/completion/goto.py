@@ -1,4 +1,4 @@
-# goto_assignments command tests are different in syntax
+# goto command tests are different in syntax
 
 definition = 3
 #! 0 ['a = definition']
@@ -37,6 +37,7 @@ foo = 10;print(foo)
 # classes
 # -----------------
 class C(object):
+    x = 3
     def b(self):
         #! ['b = math']
         b
@@ -44,8 +45,14 @@ class C(object):
         self.b
         #! 14 ['def b']
         self.b()
+        #! 14 ['def b']
+        self.b.
         #! 11 ['param self']
         self.b
+        #! ['x = 3']
+        self.x
+        #! 14 ['x = 3']
+        self.x.
         return 1
 
     #! ['def b']

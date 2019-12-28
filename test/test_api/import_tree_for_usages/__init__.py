@@ -1,4 +1,4 @@
 """
-An import tree, for testing usages.
+An import tree, for testing references.
 """
 
