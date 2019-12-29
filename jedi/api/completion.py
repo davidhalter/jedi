@@ -10,7 +10,7 @@ from jedi import settings
 from jedi.api import classes
 from jedi.api import helpers
 from jedi.api import keywords
-from jedi.api.strings import completions_for_dicts
+from jedi.api.strings import complete_dict
 from jedi.api.file_name import complete_file_name
 from jedi.inference import imports
 from jedi.inference.base_value import ValueSet
@@ -105,21 +105,13 @@ class Completion:
         leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
         string, start_leaf = _extract_string_while_in_string(leaf, self._position)
 
-        prefixed_completions = []
-        #if string is None:
-            #string = ''
-        bracket_leaf = leaf
-        #if bracket_leaf.type in ('number', 'error_leaf'):
-            #string = bracket_leaf.value
-            #bracket_leaf = bracket_leaf.get_previous_leaf()
-
-        if bracket_leaf == '[':
-            context = self._module_context.create_context(bracket_leaf)
-            before_bracket_leaf = bracket_leaf.get_previous_leaf()
-            if before_bracket_leaf.type in ('atom', 'trailer', 'name'):
-                values = infer_call_of_leaf(context, before_bracket_leaf)
-                prefixed_completions += completions_for_dicts(
-                    self._inference_state, values, string, fuzzy=fuzzy)
+        prefixed_completions = complete_dict(
+            self._module_context,
+            leaf,
+            self._original_position,
+            string,
+            fuzzy=fuzzy,
+        )
 
         if string is not None and not prefixed_completions:
             prefixed_completions = list(complete_file_name(
@@ -128,8 +120,6 @@ class Completion:
                 self._code_lines, self._original_position,
                 fuzzy
             ))
-            if prefixed_completions:
-                return prefixed_completions
         if string is not None:
             return prefixed_completions
 

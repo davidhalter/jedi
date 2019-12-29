@@ -293,10 +293,6 @@ def cut_value_at_position(leaf, position):
     return ''.join(lines)
 
 
-def get_string_quote(leaf):
-    return re.match(r'\w*("""|\'{3}|"|\')', leaf.value).group(1)
-
-
 def _function_is_x_method(method_name):
     def wrapper(function_node):
         """

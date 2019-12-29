@@ -354,6 +354,9 @@ class TreeInstance(_BaseTreeInstance):
     def get_annotated_class_object(self):
         return self._get_annotated_class_object() or self.class_value
 
+    def get_key_values(self):
+        return NO_VALUES
+
     def py__simple_getitem__(self, index):
         if self.array_type == 'dict':
             # Logic for dict({'foo': bar}) and dict(foo=bar)

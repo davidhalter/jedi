@@ -175,7 +175,7 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
 @pytest.mark.parametrize(
     'file, code, column, expected', [
         # General tests / relative paths
-        (None, '"comp', None, ['ile', 'lex']),  # No files like comp
+        (None, '"comp', None, []),  # No files like comp
         (None, '"test', None, [s]),
         (None, '"test', 4, ['t' + s]),
         ('example.py', '"test%scomp' % s, None, ['letion' + s]),
@@ -273,8 +273,7 @@ def test_file_path_completions(Script, file, code, column, expected):
         assert [c.complete for c in comps] == expected
 
 
-@pytest.mark.parametrize(
-    'added_code, column, expected', [
+_dict_keys_completion_tests = [
         ('ints[', 5, ['1', '50', Ellipsis]),
         ('ints[]', 5, ['1', '50', Ellipsis]),
         ('ints[1]', 5, ['1', '50', Ellipsis]),
@@ -286,19 +285,20 @@ def test_file_path_completions(Script, file, code, column, expected):
         ('ints[5]', 6, ['0']),
         ('ints[50', 5, ['1', '50', Ellipsis]),
         ('ints[5', 6, ['0']),
-        ('ints[50', 6, ['']),#TODO ['0']),
+        ('ints[50', 6, ['0']),
         ('ints[50', 7, ['']),
 
         ('strs[', 5, ["'asdf'", "'fbar'", "'foo'", Ellipsis]),
         ('strs[]', 5, ["'asdf'", "'fbar'", "'foo'", Ellipsis]),
+        ("strs['", 6, ["asdf'", "fbar'", "foo'"]),
         ("strs[']", 6, ["asdf'", "fbar'", "foo'"]),
         ('strs["]', 6, ['asdf"', 'fbar"', 'foo"']),
-        ('strs["""]', 6, ['asdf', 'bar', 'foo']),
+        ('strs["""]', 6, ['asdf', 'fbar', 'foo']),
         ('strs["""]', 8, ['asdf"""', 'fbar"""', 'foo"""']),
         ('strs[b"]', 8, []),
-        ('strs[r"asd', 11, ['f"']),
-        ('strs[R"asd', 11, ['f"']),
-        ('strs[f"asd', 11, ['f"']),
+        ('strs[r"asd', 10, ['f"']),
+        ('strs[R"asd', 10, ['f"']),
+        ('strs[f"asd', 10, ['f"']),
 
         ('strs["f', 7, ['oo"]']),
         ('strs["f"', 7, ['oo']),
@@ -310,7 +310,11 @@ def test_file_path_completions(Script, file, code, column, expected):
 
         ('casted["f', 9, ['3"', 'bar"', 'oo"']),
         ('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'uuu"', 'ull"']),
-    ]
+]
+
+
+@pytest.mark.parametrize(
+    'added_code, column, expected', _dict_keys_completion_tests
 )
 def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_python35):
     code = dedent(r'''
