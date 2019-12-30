@@ -101,7 +101,10 @@ class Completion:
         self._fuzzy = fuzzy
 
     def complete(self, fuzzy):
-        leaf = self._module_node.get_leaf_for_position(self._original_position, include_prefixes=True)
+        leaf = self._module_node.get_leaf_for_position(
+            self._original_position,
+            include_prefixes=True
+        )
         string, start_leaf, quote = _extract_string_while_in_string(leaf, self._original_position)
 
         prefixed_completions = complete_dict(

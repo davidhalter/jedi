@@ -308,8 +308,16 @@ _dict_keys_completion_tests = [
         ('mixed[', 6, [r"'a\\sdf'", '1', '1.1', 'None', "b'foo'", Ellipsis]),
         ('mixed[1', 7, ['', '.1']),
 
-        #('casted["f', 9, ['3"', 'bar"', 'oo"']),
-        #('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'uuu"', 'ull"']),
+        ('casted["f', 9, ['3"', 'bar"', 'oo"']),
+        ('casted["f"', 9, ['3', 'bar', 'oo']),
+        ('casted["f3', 10, ['"']),
+        ('casted["f3"', 10, ['']),
+        ('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'ull"', 'uuu"']),
+
+        ('keywords["', None, ['a"']),
+        ('keywords[Non', None, ['e']),
+        ('keywords[Fa', None, ['lse']),
+        ('keywords[str', None, ['', 's']),
 ]
 
 
@@ -326,6 +334,7 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
         casted_mod = dict(casted)
         casted_mod["fuuu"] = 8
         casted_mod["full"] = 8
+        keywords = {None: 1, False: 2, "a": 3}
         ''')
     line = None
     if isinstance(column, tuple):
