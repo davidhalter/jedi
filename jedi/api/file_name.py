@@ -14,7 +14,7 @@ class PathName(StringName):
 def complete_file_name(inference_state, module_context, start_leaf, string,
                        like_name, signatures_callback, code_lines, position, fuzzy):
     # First we want to find out what can actually be changed as a name.
-    like_name_length = len(os.path.basename(string) + like_name)
+    like_name_length = len(os.path.basename(string))
 
     addition = _get_string_additions(module_context, start_leaf)
     if addition is None:
@@ -23,7 +23,7 @@ def complete_file_name(inference_state, module_context, start_leaf, string,
 
     # Here we use basename again, because if strings are added like
     # `'foo' + 'bar`, it should complete to `foobar/`.
-    must_start_with = os.path.basename(string) + like_name
+    must_start_with = os.path.basename(string)
     string = os.path.dirname(string)
 
     sigs = signatures_callback(*position)

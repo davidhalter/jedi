@@ -179,8 +179,8 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
         (None, '"test', None, [s]),
         (None, '"test', 4, ['t' + s]),
         ('example.py', '"test%scomp' % s, None, ['letion' + s]),
-        ('example.py', 'r"comp"', None, "A LOT"),
-        ('example.py', 'r"tes"', None, "A LOT"),
+        ('example.py', 'r"comp"', None, []),
+        ('example.py', 'r"tes"', None, []),
         ('example.py', 'r"tes"', 5, ['t' + s]),
         ('example.py', 'r" tes"', 6, []),
         ('test%sexample.py' % se, 'r"tes"', 5, ['t' + s]),
@@ -308,8 +308,8 @@ _dict_keys_completion_tests = [
         ('mixed[', 6, [r"'a\\sdf'", '1', '1.1', 'None', "b'foo'", Ellipsis]),
         ('mixed[1', 7, ['', '.1']),
 
-        ('casted["f', 9, ['3"', 'bar"', 'oo"']),
-        ('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'uuu"', 'ull"']),
+        #('casted["f', 9, ['3"', 'bar"', 'oo"']),
+        #('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'uuu"', 'ull"']),
 ]
 
 

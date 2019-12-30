@@ -88,7 +88,7 @@ def test_multiple_docstrings(Script):
 
 
 def test_completion(Script):
-    assert Script('''
+    assert not Script('''
     class DocstringCompletion():
         #? []
         """ asdfas """''').complete()

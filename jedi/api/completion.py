@@ -432,22 +432,31 @@ def _gather_nodes(stack):
     return nodes
 
 
+_string_start = re.compile(r'^\w*(\'{3}|"{3}|\'|")')
+
+
 def _extract_string_while_in_string(leaf, position):
+    def return_part_of_leaf(leaf):
+        kwargs = {}
+        if leaf.line == position[0]:
+            kwargs['endpos'] = position[1] - leaf.column
+        match = _string_start.match(leaf.value, **kwargs)
+        start = match.group(0)
+        if leaf.line == position[0] and position[1] < leaf.column + match.end():
+            return None, None, None
+        return cut_value_at_position(leaf, position)[match.end():], leaf, start
+
     if position < leaf.start_pos:
         return None, None, None
 
     if leaf.type == 'string':
-        match = re.match(r'^\w*(\'{3}|"{3}|\'|")', leaf.value)
-        start = match.group(0)
-        if leaf.line == position[0] and position[1] < leaf.column + match.end():
-            return None, None, None
-        if leaf.end_pos[0] == position[0] and position[1] > leaf.end_pos[1] - len(start):
-            return None, None, None
-        return cut_value_at_position(leaf, position)[match.end():], leaf, start
+        return return_part_of_leaf(leaf)
 
     leaves = []
     while leaf is not None and leaf.line == position[0]:
         if leaf.type == 'error_leaf' and ('"' in leaf.value or "'" in leaf.value):
+            if len(leaf.value) > 1:
+                return return_part_of_leaf(leaf)
             prefix_leaf = None
             if not leaf.prefix:
                 prefix_leaf = leaf.get_previous_leaf()
