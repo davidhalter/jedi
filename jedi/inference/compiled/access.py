@@ -410,7 +410,7 @@ class DirectObjectAccess(object):
         return [self._create_access(module), access]
 
     def get_safe_value(self):
-        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice):
+        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice) or self._obj is None:
             return self._obj
         raise ValueError("Object is type %s and not simple" % type(self._obj))
 

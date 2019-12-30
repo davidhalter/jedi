@@ -96,20 +96,20 @@ class Completion:
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._original_position = position
-        self._position = position[0], position[1] - len(self._like_name)
         self._signatures_callback = signatures_callback
 
         self._fuzzy = fuzzy
 
     def complete(self, fuzzy):
-        leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
-        string, start_leaf = _extract_string_while_in_string(leaf, self._position)
+        leaf = self._module_node.get_leaf_for_position(self._original_position, include_prefixes=True)
+        string, start_leaf, quote = _extract_string_while_in_string(leaf, self._original_position)
 
         prefixed_completions = complete_dict(
             self._module_context,
-            leaf,
+            self._code_lines,
+            start_leaf or leaf,
             self._original_position,
-            string,
+            None if string is None else quote + string,
             fuzzy=fuzzy,
         )
 
@@ -152,6 +152,10 @@ class Completion:
 
         grammar = self._inference_state.grammar
         self.stack = stack = None
+        self._position = (
+            self._original_position[0],
+            self._original_position[1] - len(self._like_name)
+        )
 
         try:
             self.stack = stack = helpers.get_stack_at_position(
@@ -430,21 +434,33 @@ def _gather_nodes(stack):
 
 def _extract_string_while_in_string(leaf, position):
     if position < leaf.start_pos:
-        return None, None
+        return None, None, None
 
     if leaf.type == 'string':
         match = re.match(r'^\w*(\'{3}|"{3}|\'|")', leaf.value)
-        quote = match.group(1)
+        start = match.group(0)
         if leaf.line == position[0] and position[1] < leaf.column + match.end():
-            return None, None
-        if leaf.end_pos[0] == position[0] and position[1] > leaf.end_pos[1] - len(quote):
-            return None, None
-        return cut_value_at_position(leaf, position)[match.end():], leaf
+            return None, None, None
+        if leaf.end_pos[0] == position[0] and position[1] > leaf.end_pos[1] - len(start):
+            return None, None, None
+        return cut_value_at_position(leaf, position)[match.end():], leaf, start
 
     leaves = []
     while leaf is not None and leaf.line == position[0]:
         if leaf.type == 'error_leaf' and ('"' in leaf.value or "'" in leaf.value):
-            return ''.join(l.get_code() for l in leaves), leaf
+            prefix_leaf = None
+            if not leaf.prefix:
+                prefix_leaf = leaf.get_previous_leaf()
+                if prefix_leaf is None or prefix_leaf.type != 'name' \
+                        or not all(c in 'rubf' for c in prefix_leaf.value.lower()):
+                    prefix_leaf = None
+
+            return (
+                ''.join(cut_value_at_position(l, position) for l in leaves),
+                prefix_leaf or leaf,
+                ('' if prefix_leaf is None else prefix_leaf.value)
+                + cut_value_at_position(leaf, position),
+            )
         leaves.insert(0, leaf)
         leaf = leaf.get_previous_leaf()
-    return None, None
+    return None, None, None

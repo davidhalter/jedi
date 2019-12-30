@@ -48,7 +48,7 @@ def complete_file_name(inference_state, module_context, start_leaf, string,
             match = start_match(name, must_start_with)
         if match:
             if is_in_os_path_join or not entry.is_dir():
-                name += get_quote_ending(start_leaf, code_lines, position)
+                name += get_quote_ending(start_leaf.value, code_lines, position)
             else:
                 name += os.path.sep
 

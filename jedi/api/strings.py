@@ -23,26 +23,19 @@ class StringName(AbstractArbitraryName):
     is_value_name = False
 
 
-def complete_dict(module_context, leaf, position, string, fuzzy):
-    if string is None:
-        string = ''
+def complete_dict(module_context, code_lines, leaf, position, string, fuzzy):
     bracket_leaf = leaf
-    end_quote = ''
-    if bracket_leaf.type in ('number', 'error_leaf'):
-        string = cut_value_at_position(bracket_leaf, position)
-        if bracket_leaf.end_pos > position:
-            end_quote = _get_string_quote(string) or ''
-            if end_quote:
-                ending = cut_value_at_position(
-                    bracket_leaf,
-                    (position[0], position[1] + len(end_quote))
-                )
-                if not ending.endswith(end_quote):
-                    end_quote = ''
+    if bracket_leaf != '[':
+        bracket_leaf = leaf.get_previous_leaf()
 
-        bracket_leaf = bracket_leaf.get_previous_leaf()
+    cut_end_quote = ''
+    if string:
+        cut_end_quote = get_quote_ending(string, code_lines, position, invert_result=True)
 
     if bracket_leaf == '[':
+        if string is None and leaf is not bracket_leaf:
+            string = cut_value_at_position(leaf, position)
+
         context = module_context.create_context(bracket_leaf)
         before_bracket_leaf = bracket_leaf.get_previous_leaf()
         if before_bracket_leaf.type in ('atom', 'trailer', 'name'):
@@ -51,17 +44,17 @@ def complete_dict(module_context, leaf, position, string, fuzzy):
                 module_context.inference_state,
                 values,
                 '' if string is None else string,
-                end_quote,
+                cut_end_quote,
                 fuzzy=fuzzy,
             ))
     return []
 
 
-def _completions_for_dicts(inference_state, dicts, literal_string, end_quote, fuzzy):
+def _completions_for_dicts(inference_state, dicts, literal_string, cut_end_quote, fuzzy):
     for dict_key in sorted(_get_python_keys(dicts), key=lambda x: repr(x)):
         dict_key_str = _create_repr_string(literal_string, dict_key)
         if dict_key_str.startswith(literal_string):
-            n = dict_key_str[len(literal_string):-len(end_quote) or None]
+            n = dict_key_str[len(literal_string):-len(cut_end_quote) or None]
             name = StringName(inference_state, n)
             yield Completion(
                 inference_state,
@@ -78,6 +71,8 @@ def _create_repr_string(literal_string, dict_key):
 
     r = repr(dict_key)
     prefix, quote = _get_string_prefix_and_quote(literal_string)
+    if quote is None:
+        return r
     if quote == r[0]:
         return prefix + r
     return prefix + quote + r[1:-1] + quote
@@ -103,15 +98,14 @@ def _get_string_quote(string):
     return _get_string_prefix_and_quote(string)[1]
 
 
-def get_quote_ending(start_leaf, code_lines, position):
-    if start_leaf.type == 'string':
-        quote = _get_string_quote(start_leaf)
-    else:
-        assert start_leaf.type == 'error_leaf'
-        quote = start_leaf.value
-    potential_other_quote = \
-        code_lines[position[0] - 1][position[1]:position[1] + len(quote)]
+def _matches_quote_at_position(code_lines, quote, position):
+    string = code_lines[position[0] - 1][position[1]:position[1] + len(quote)]
+    return string == quote
+
+
+def get_quote_ending(string, code_lines, position, invert_result=False):
+    quote = _get_string_quote(string)
     # Add a quote only if it's not already there.
-    if quote == potential_other_quote:
+    if _matches_quote_at_position(code_lines, quote, position) != invert_result:
         return ''
     return quote

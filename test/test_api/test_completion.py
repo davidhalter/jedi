@@ -298,15 +298,15 @@ _dict_keys_completion_tests = [
         ('strs[b"]', 8, []),
         ('strs[r"asd', 10, ['f"']),
         ('strs[R"asd', 10, ['f"']),
-        ('strs[f"asd', 10, ['f"']),
+        ('strs[f"asd', 10, []),
 
-        ('strs["f', 7, ['oo"]']),
-        ('strs["f"', 7, ['oo']),
-        ('strs["f]', 7, ['oo"]']),
-        ('strs["f"]', 7, ['oo']),
+        ('strs["f', 7, ['bar"', 'oo"']),
+        ('strs["f"', 7, ['bar', 'oo']),
+        ('strs["f]', 7, ['bar"', 'oo"']),
+        ('strs["f"]', 7, ['bar', 'oo']),
 
-        ('mixed[', 6, ['1', '1.1', 'None', "'a\sdf'", "b'foo'"]),
-        ('mixed[1', 6, ['', '.1']),
+        ('mixed[', 6, [r"'a\\sdf'", '1', '1.1', 'None', "b'foo'", Ellipsis]),
+        ('mixed[1', 7, ['', '.1']),
 
         ('casted["f', 9, ['3"', 'bar"', 'oo"']),
         ('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'uuu"', 'ull"']),
