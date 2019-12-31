@@ -10,6 +10,7 @@ _PYTEST_FIXTURE_MODULES = [
     ('_pytest', 'capture'),
     ('_pytest', 'logging'),
     ('_pytest', 'tmpdir'),
+    ('_pytest', 'pytester'),
 ]
 
 
