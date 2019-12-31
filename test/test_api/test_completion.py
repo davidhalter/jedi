@@ -326,6 +326,7 @@ _dict_keys_completion_tests = [
 ]
 
 
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'added_code, column, expected', _dict_keys_completion_tests
 )
