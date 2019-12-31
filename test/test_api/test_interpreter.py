@@ -606,3 +606,19 @@ def test_dict_completion(code, column, expected):
         expected = [e for e in expected if e is not Ellipsis]
 
     assert [c.complete for c in comps] == expected
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize(
+    'code, types', [
+        ('dct[1]', ['int']),
+        ('dct["asdf"]', ['float']),
+        ('dct[r"asdf"]', ['float']),
+        ('dct["a"]', ['float', 'int']),
+    ]
+)
+def test_dict_getitem(code, types):
+    dct = {1: 2, "asdf": 1.0}
+
+    comps = jedi.Interpreter(code, [locals()]).infer()
+    assert [c.name for c in comps] == types
