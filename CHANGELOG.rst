@@ -10,6 +10,8 @@ Changelog
 - **Add** ``Script.get_context`` to get information where you currently are.
 - Goto on a function/attribute in a class now goes to the definition in its
   super class.
+- Dict key completions are working now. e.g. ``d = {1000: 3}; d[10`` will
+  expand to ``1000``.
 - Completion for "proxies" works now. These are classes that have a
   ``__getattr__(self, name)`` method that does a ``return getattr(x, name)``.
 - Understanding of Pytest fixtures.
