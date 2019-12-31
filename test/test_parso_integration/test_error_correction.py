@@ -23,7 +23,7 @@ def test_string_literals(Script):
 
     script = Script(dedent(source))
     assert script._get_module_context().tree_node.end_pos == (6, 0)
-    assert script.complete()
+    assert not script.complete()
 
 
 def test_incomplete_function(Script):

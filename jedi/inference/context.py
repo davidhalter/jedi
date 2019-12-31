@@ -468,7 +468,7 @@ def get_global_filters(context, until_position, origin_scope):
                 until_position=until_position,
                 origin_scope=origin_scope):
             yield filter
-        if isinstance(context, BaseFunctionExecutionContext):
+        if isinstance(context, (BaseFunctionExecutionContext, ModuleContext)):
             # The position should be reset if the current scope is a function.
             until_position = None
 

@@ -204,9 +204,9 @@ class Script(object):
         with debug.increase_indent_cm('complete'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
-                (line, column), self.find_signatures
+                (line, column), self.find_signatures, fuzzy=fuzzy,
             )
-            return completion.complete(fuzzy)
+            return completion.complete()
 
     def completions(self, fuzzy=False):
         # Deprecated, will be removed.

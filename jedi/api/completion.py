@@ -1,8 +1,10 @@
 import re
+from textwrap import dedent
 
 from parso.python.token import PythonTokenTypes
 from parso.python import tree
 from parso.tree import search_ancestor, Leaf
+from parso import split_lines
 
 from jedi._compatibility import Parameter
 from jedi import debug
@@ -16,7 +18,7 @@ from jedi.inference import imports
 from jedi.inference.base_value import ValueSet
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
-from jedi.inference.value import TreeInstance
+from jedi.inference.value import TreeInstance, ModuleValue
 from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
 from jedi.plugins import plugin_manager
@@ -105,7 +107,7 @@ class Completion:
 
         self._fuzzy = fuzzy
 
-    def complete(self, fuzzy):
+    def complete(self):
         leaf = self._module_node.get_leaf_for_position(
             self._original_position,
             include_prefixes=True
@@ -118,7 +120,7 @@ class Completion:
             start_leaf or leaf,
             self._original_position,
             None if string is None else quote + string,
-            fuzzy=fuzzy,
+            fuzzy=self._fuzzy,
         )
 
         if string is not None and not prefixed_completions:
@@ -126,15 +128,18 @@ class Completion:
                 self._inference_state, self._module_context, start_leaf, string,
                 self._like_name, self._signatures_callback,
                 self._code_lines, self._original_position,
-                fuzzy
+                self._fuzzy
             ))
         if string is not None:
+            if not prefixed_completions and '\n' in string:
+                # Complete only multi line strings
+                prefixed_completions = self._complete_in_string(start_leaf, string)
             return prefixed_completions
 
         completion_names = self._complete_python(leaf)
 
         completions = list(filter_names(self._inference_state, completion_names,
-                                        self.stack, self._like_name, fuzzy))
+                                        self.stack, self._like_name, self._fuzzy))
 
         return (
             # Removing duplicates mostly to remove False/True/None duplicates.
@@ -434,6 +439,41 @@ class Completion:
                 if (name.api_type == 'function') == is_function:
                     yield name
 
+    def _complete_in_string(self, start_leaf, string):
+        """
+        To make it possible for people to have completions in doctests or
+        generally in "Python" code in docstrings, we use the following
+        heuristic:
+
+        - Either
+        """
+        string = dedent(string)
+        code_lines = split_lines(string, keepends=True)
+        if code_lines[-1].startswith('>>>') or code_lines[-1].startswith(' '):
+            code_lines = [
+                re.sub(r'^(>>> ?| +)', '', l)
+                for l in code_lines
+                if l.startswith('>>>') or l.startswith(' ')
+            ]
+            module_node = self._inference_state.grammar.parse(''.join(code_lines))
+            module_value = ModuleValue(
+                self._inference_state,
+                module_node,
+                file_io=None,
+                string_names=None,
+                code_lines=code_lines,
+            )
+            module_value.parent_context = self._module_context
+            return Completion(
+                self._inference_state,
+                module_value.as_context(),
+                code_lines=code_lines,
+                position=module_node.end_pos,
+                signatures_callback=lambda *args, **kwargs: [],
+                fuzzy=self._fuzzy
+            ).complete()
+        return []
+
 
 def _gather_nodes(stack):
     nodes = []
@@ -466,7 +506,7 @@ def _extract_string_while_in_string(leaf, position):
         return return_part_of_leaf(leaf)
 
     leaves = []
-    while leaf is not None and leaf.line == position[0]:
+    while leaf is not None:
         if leaf.type == 'error_leaf' and ('"' in leaf.value or "'" in leaf.value):
             if len(leaf.value) > 1:
                 return return_part_of_leaf(leaf)
@@ -483,6 +523,12 @@ def _extract_string_while_in_string(leaf, position):
                 ('' if prefix_leaf is None else prefix_leaf.value)
                 + cut_value_at_position(leaf, position),
             )
+        if leaf.line != position[0]:
+            # Multi line strings are always simple error leaves and contain the
+            # whole string, single line error leaves are atherefore important
+            # now and since the line is different, it's not really a single
+            # line string anymore.
+            break
         leaves.insert(0, leaf)
         leaf = leaf.get_previous_leaf()
     return None, None, None
