@@ -60,6 +60,11 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
                 yield new
 
 
+def _remove_duplicates(completions, other_completions):
+    names = {d.name for d in other_completions}
+    return [c for c in completions if c.name not in names]
+
+
 def get_user_context(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
@@ -128,14 +133,15 @@ class Completion:
 
         completion_names = self._complete_python(leaf)
 
-        completions = filter_names(self._inference_state, completion_names,
-                                   self.stack, self._like_name, fuzzy)
+        completions = list(filter_names(self._inference_state, completion_names,
+                                        self.stack, self._like_name, fuzzy))
 
         return (
-            prefixed_completions +
-            sorted(completions, key=lambda x: (x.name.startswith('__'),
-                                               x.name.startswith('_'),
-                                               x.name.lower()))
+            # Removing duplicates mostly to remove False/True/None duplicates.
+            _remove_duplicates(prefixed_completions, completions)
+            + sorted(completions, key=lambda x: (x.name.startswith('__'),
+                                                 x.name.startswith('_'),
+                                                 x.name.lower()))
         )
 
     def _complete_python(self, leaf):
@@ -211,9 +217,12 @@ class Completion:
 
         completion_names = []
         current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
-        if not current_line or current_line[-1] in ' \t.;' \
-                and current_line[-3:] != '...':
-            completion_names += self._complete_keywords(allowed_transitions)
+
+        completion_names += self._complete_keywords(
+            allowed_transitions,
+            only_values=not (not current_line or current_line[-1] in ' \t.;'
+                             and current_line[-3:] != '...')
+        )
 
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
@@ -293,10 +302,11 @@ class Completion:
             return complete_param_names(context, function_name.value, decorators)
         return []
 
-    def _complete_keywords(self, allowed_transitions):
+    def _complete_keywords(self, allowed_transitions, only_values):
         for k in allowed_transitions:
             if isinstance(k, str) and k.isalpha():
-                yield keywords.KeywordName(self._inference_state, k)
+                if not only_values or k in ('True', 'False', 'None'):
+                    yield keywords.KeywordName(self._inference_state, k)
 
     def _complete_global_scope(self):
         context = get_user_context(self._module_context, self._position)

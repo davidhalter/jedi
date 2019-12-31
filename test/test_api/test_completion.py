@@ -305,8 +305,9 @@ _dict_keys_completion_tests = [
         ('strs["f]', 7, ['bar"', 'oo"']),
         ('strs["f"]', 7, ['bar', 'oo']),
 
-        ('mixed[', 6, [r"'a\\sdf'", '1', '1.1', 'None', "b'foo'", Ellipsis]),
+        ('mixed[', 6, [r"'a\\sdf'", '1', '1.1', "b'foo'", Ellipsis]),
         ('mixed[1', 7, ['', '.1']),
+        ('mixed[Non', 9, ['e']),
 
         ('casted["f', 9, ['3"', 'bar"', 'oo"']),
         ('casted["f"', 9, ['3', 'bar', 'oo']),
@@ -317,6 +318,7 @@ _dict_keys_completion_tests = [
         ('keywords["', None, ['a"']),
         ('keywords[Non', None, ['e']),
         ('keywords[Fa', None, ['lse']),
+        ('keywords[Tr', None, ['ue']),
         ('keywords[str', None, ['', 's']),
 ]
 
@@ -337,14 +339,11 @@ def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_py
         keywords = {None: 1, False: 2, "a": 3}
         ''')
     line = None
-    if isinstance(column, tuple):
-        raise NotImplementedError
-        line, column = column
     comps = Script(code + added_code, line=line, column=column).completions()
     if Ellipsis in expected:
         # This means that global completions are part of this, so filter all of
         # that out.
-        comps = [c for c in comps if not c._name.is_value_name]
+        comps = [c for c in comps if not c._name.is_value_name and not c.is_keyword]
         expected = [e for e in expected if e is not Ellipsis]
 
     assert [c.complete for c in comps] == expected
