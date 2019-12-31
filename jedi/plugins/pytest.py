@@ -99,7 +99,7 @@ def _is_a_pytest_param(param_name):
 
 
 def _is_pytest_func(func_name, decorator_nodes):
-    return func_name.startswith('test_') \
+    return func_name.startswith('test') \
         or any('fixture' in n.get_code() for n in decorator_nodes)
 
 
