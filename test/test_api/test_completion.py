@@ -297,8 +297,11 @@ _dict_keys_completion_tests = [
         ('strs["""]', 8, ['asdf"""', 'fbar"""', 'foo"""']),
         ('strs[b"]', 8, []),
         ('strs[r"asd', 10, ['f"']),
+        ('strs[r"asd"', 10, ['f']),
         ('strs[R"asd', 10, ['f"']),
         ('strs[f"asd', 10, []),
+        ('strs[br"""asd', 13, ['f"""']),
+        ('strs[br"""asd"""', 13, ['f']),
 
         ('strs["f', 7, ['bar"', 'oo"']),
         ('strs["f"', 7, ['bar', 'oo']),
