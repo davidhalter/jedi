@@ -461,8 +461,8 @@ def _is_unix_safe_simple(real_path):
     # 2. The repository has an innocent looking folder called foobar. jedi
     #    searches for the folder and executes foobar/bin/python --version if
     #    there's also a foobar/bin/activate.
-    # 3. The bin/python is obviously not a python script but a bash script or
-    #    whatever the attacker wants.
+    # 3. The attacker has gained code execution, since he controls
+    #    foobar/bin/python.
     return uid == 0
 
 
