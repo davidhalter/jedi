@@ -575,3 +575,50 @@ def test_param_annotation_completion(class_is_findable):
     code = 'def CallFoo(x: Foo):\n x.ba'
     def_, = jedi.Interpreter(code, [locals()]).complete()
     assert def_.name == 'bar'
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize(
+    'code, column, expected', [
+        ('strs[', 5, ["'asdf'", "'fbar'", "'foo'", Ellipsis]),
+        ('strs[]', 5, ["'asdf'", "'fbar'", "'foo'", Ellipsis]),
+        ("strs['", 6, ["asdf'", "fbar'", "foo'"]),
+        ("strs[']", 6, ["asdf'", "fbar'", "foo'"]),
+        ('strs["]', 6, ['asdf"', 'fbar"', 'foo"']),
+
+        ('mixed[', 6, [r"'a\\sdf'", '1', '1.1', "b'foo'", Ellipsis]),
+        ('mixed[1', 7, ['', '.1']),
+        ('mixed[Non', 9, ['e']),
+
+        ('implicit[10', None, ['00']),
+    ]
+)
+def test_dict_completion(code, column, expected):
+    strs = {'asdf': 1, u"""foo""": 2, r'fbar': 3}
+    mixed = {1: 2, 1.10: 4, None: 6, r'a\sdf': 8, b'foo': 9}
+
+    namespaces = [locals(), {'implicit': {1000: 3}}]
+    comps = jedi.Interpreter(code, namespaces).complete(column=column)
+    if Ellipsis in expected:
+        # This means that global completions are part of this, so filter all of
+        # that out.
+        comps = [c for c in comps if not c._name.is_value_name and not c.is_keyword]
+        expected = [e for e in expected if e is not Ellipsis]
+
+    assert [c.complete for c in comps] == expected
+
+
+@pytest.mark.skipif(sys.version_info[0] == 2, reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize(
+    'code, types', [
+        ('dct[1]', ['int']),
+        ('dct["asdf"]', ['float']),
+        ('dct[r"asdf"]', ['float']),
+        ('dct["a"]', ['float', 'int']),
+    ]
+)
+def test_dict_getitem(code, types):
+    dct = {1: 2, "asdf": 1.0}
+
+    comps = jedi.Interpreter(code, [locals()]).infer()
+    assert [c.name for c in comps] == types

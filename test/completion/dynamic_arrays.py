@@ -384,5 +384,14 @@ some_dct['y'] = tuple
 some_dct['x']
 #? int() str() list tuple
 some_dct['unknown']
+k = 'a'
 #? int()
-some_dct['a']
+some_dct[k]
+
+some_other_dct = dict(some_dct, c=set)
+#? int()
+some_other_dct['a']
+#? list
+some_other_dct['x']
+#? set
+some_other_dct['c']

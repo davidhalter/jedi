@@ -209,8 +209,10 @@ if r:
 
 def a():
     """
-    #? ['global_define']
+    #? []
     global_define
+    #?
+    str
     """
     pass
 

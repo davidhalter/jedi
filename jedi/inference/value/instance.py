@@ -354,6 +354,24 @@ class TreeInstance(_BaseTreeInstance):
     def get_annotated_class_object(self):
         return self._get_annotated_class_object() or self.class_value
 
+    def get_key_values(self):
+        values = NO_VALUES
+        if self.array_type == 'dict':
+            for i, (key, instance) in enumerate(self._arguments.unpack()):
+                if key is None and i == 0:
+                    values |= ValueSet.from_sets(
+                        v.get_key_values()
+                        for v in instance.infer()
+                        if v.array_type == 'dict'
+                    )
+                if key:
+                    values |= ValueSet([compiled.create_simple_object(
+                        self.inference_state,
+                        key,
+                    )])
+
+        return values
+
     def py__simple_getitem__(self, index):
         if self.array_type == 'dict':
             # Logic for dict({'foo': bar}) and dict(foo=bar)

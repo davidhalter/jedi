@@ -175,12 +175,12 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
 @pytest.mark.parametrize(
     'file, code, column, expected', [
         # General tests / relative paths
-        (None, '"comp', None, ['ile', 'lex']),  # No files like comp
+        (None, '"comp', None, []),  # No files like comp
         (None, '"test', None, [s]),
         (None, '"test', 4, ['t' + s]),
         ('example.py', '"test%scomp' % s, None, ['letion' + s]),
-        ('example.py', 'r"comp"', None, "A LOT"),
-        ('example.py', 'r"tes"', None, "A LOT"),
+        ('example.py', 'r"comp"', None, []),
+        ('example.py', 'r"tes"', None, []),
         ('example.py', 'r"tes"', 5, ['t' + s]),
         ('example.py', 'r" tes"', 6, []),
         ('test%sexample.py' % se, 'r"tes"', 5, ['t' + s]),
@@ -273,6 +273,85 @@ def test_file_path_completions(Script, file, code, column, expected):
         assert [c.complete for c in comps] == expected
 
 
+_dict_keys_completion_tests = [
+        ('ints[', 5, ['1', '50', Ellipsis]),
+        ('ints[]', 5, ['1', '50', Ellipsis]),
+        ('ints[1]', 5, ['1', '50', Ellipsis]),
+        ('ints[1]', 6, ['']),
+        ('ints[1', 5, ['1', '50', Ellipsis]),
+        ('ints[1', 6, ['']),
+
+        ('ints[5]', 5, ['1', '50', Ellipsis]),
+        ('ints[5]', 6, ['0']),
+        ('ints[50', 5, ['1', '50', Ellipsis]),
+        ('ints[5', 6, ['0']),
+        ('ints[50', 6, ['0']),
+        ('ints[50', 7, ['']),
+
+        ('strs[', 5, ["'asdf'", "'fbar'", "'foo'", Ellipsis]),
+        ('strs[]', 5, ["'asdf'", "'fbar'", "'foo'", Ellipsis]),
+        ("strs['", 6, ["asdf'", "fbar'", "foo'"]),
+        ("strs[']", 6, ["asdf'", "fbar'", "foo'"]),
+        ('strs["]', 6, ['asdf"', 'fbar"', 'foo"']),
+        ('strs["""]', 6, ['asdf', 'fbar', 'foo']),
+        ('strs["""]', 8, ['asdf"""', 'fbar"""', 'foo"""']),
+        ('strs[b"]', 8, []),
+        ('strs[r"asd', 10, ['f"']),
+        ('strs[r"asd"', 10, ['f']),
+        ('strs[R"asd', 10, ['f"']),
+        ('strs[f"asd', 10, []),
+        ('strs[br"""asd', 13, ['f"""']),
+        ('strs[br"""asd"""', 13, ['f']),
+
+        ('strs["f', 7, ['bar"', 'oo"']),
+        ('strs["f"', 7, ['bar', 'oo']),
+        ('strs["f]', 7, ['bar"', 'oo"']),
+        ('strs["f"]', 7, ['bar', 'oo']),
+
+        ('mixed[', 6, [r"'a\\sdf'", '1', '1.1', "b'foo'", Ellipsis]),
+        ('mixed[1', 7, ['', '.1']),
+        ('mixed[Non', 9, ['e']),
+
+        ('casted["f', 9, ['3"', 'bar"', 'oo"']),
+        ('casted["f"', 9, ['3', 'bar', 'oo']),
+        ('casted["f3', 10, ['"']),
+        ('casted["f3"', 10, ['']),
+        ('casted_mod["f', 13, ['3"', 'bar"', 'oo"', 'ull"', 'uuu"']),
+
+        ('keywords["', None, ['a"']),
+        ('keywords[Non', None, ['e']),
+        ('keywords[Fa', None, ['lse']),
+        ('keywords[Tr', None, ['ue']),
+        ('keywords[str', None, ['', 's']),
+]
+
+
+@pytest.mark.parametrize(
+    'added_code, column, expected', _dict_keys_completion_tests
+)
+def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_python35):
+    code = dedent(r'''
+        ints = {1: ''}
+        ints[50] = 3.0
+        strs = {'asdf': 1, u"""foo""": 2, r'fbar': 3}
+        mixed = {1: 2, 1.10: 4, None: 6, r'a\sdf': 8, b'foo': 9}
+        casted = dict(strs, f3=4, r'\\xyz')
+        casted_mod = dict(casted)
+        casted_mod["fuuu"] = 8
+        casted_mod["full"] = 8
+        keywords = {None: 1, False: 2, "a": 3}
+        ''')
+    line = None
+    comps = Script(code + added_code).complete(line=line, column=column)
+    if Ellipsis in expected:
+        # This means that global completions are part of this, so filter all of
+        # that out.
+        comps = [c for c in comps if not c._name.is_value_name and not c.is_keyword]
+        expected = [e for e in expected if e is not Ellipsis]
+
+    assert [c.complete for c in comps] == expected
+
+
 def test_start_match():
     assert start_match('Condition', 'C')
 
@@ -286,4 +365,4 @@ def test_fuzzy_match():
 
 
 def test_ellipsis_completion(Script):
-    assert Script('...').completions() == []
+    assert Script('...').complete() == []

@@ -246,7 +246,17 @@ class GeneratorComprehension(_BaseComprehension, GeneratorBase):
     pass
 
 
-class DictComprehension(ComprehensionMixin, Sequence):
+class _DictKeyMixin(object):
+    # TODO merge with _DictMixin?
+    def get_mapping_item_values(self):
+        return self._dict_keys(), self._dict_values()
+
+    def get_key_values(self):
+        # TODO merge with _dict_keys?
+        return self._dict_keys()
+
+
+class DictComprehension(ComprehensionMixin, Sequence, _DictKeyMixin):
     array_type = u'dict'
 
     def __init__(self, inference_state, defining_context, sync_comp_for_node, key_node, value_node):
@@ -295,9 +305,6 @@ class DictComprehension(ComprehensionMixin, Sequence):
         ]
 
         return ValueSet([FakeList(self.inference_state, lazy_values)])
-
-    def get_mapping_item_values(self):
-        return self._dict_keys(), self._dict_values()
 
     def exact_key_items(self):
         # NOTE: A smarter thing can probably done here to achieve better
@@ -409,7 +416,7 @@ class SequenceLiteralValue(Sequence):
         return "<%s of %s>" % (self.__class__.__name__, self.atom)
 
 
-class DictLiteralValue(_DictMixin, SequenceLiteralValue):
+class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
     array_type = u'dict'
 
     def __init__(self, inference_state, defining_context, atom):
@@ -474,9 +481,6 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue):
             for k, v in self.get_tree_entries()
         )
 
-    def get_mapping_item_values(self):
-        return self._dict_keys(), self._dict_values()
-
 
 class _FakeSequence(Sequence):
     def __init__(self, inference_state, lazy_value_list):
@@ -512,7 +516,7 @@ class FakeList(_FakeSequence):
     array_type = u'tuple'
 
 
-class FakeDict(_DictMixin, Sequence):
+class FakeDict(_DictMixin, Sequence, _DictKeyMixin):
     array_type = u'dict'
 
     def __init__(self, inference_state, dct):
@@ -555,9 +559,6 @@ class FakeDict(_DictMixin, Sequence):
 
     def _dict_keys(self):
         return ValueSet.from_sets(lazy_value.infer() for lazy_value in self.py__iter__())
-
-    def get_mapping_item_values(self):
-        return self._dict_keys(), self._dict_values()
 
     def exact_key_items(self):
         return self._dct.items()

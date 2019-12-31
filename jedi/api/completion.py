@@ -10,6 +10,7 @@ from jedi import settings
 from jedi.api import classes
 from jedi.api import helpers
 from jedi.api import keywords
+from jedi.api.strings import complete_dict
 from jedi.api.file_name import complete_file_name
 from jedi.inference import imports
 from jedi.inference.base_value import ValueSet
@@ -59,6 +60,11 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
                 yield new
 
 
+def _remove_duplicates(completions, other_completions):
+    names = {d.name for d in other_completions}
+    return [c for c in completions if c.name not in names]
+
+
 def get_user_context(module_context, position):
     """
     Returns the scope in which the user resides. This includes flows.
@@ -95,36 +101,52 @@ class Completion:
         # The actual cursor position is not what we need to calculate
         # everything. We want the start of the name we're on.
         self._original_position = position
-        self._position = position[0], position[1] - len(self._like_name)
         self._signatures_callback = signatures_callback
 
         self._fuzzy = fuzzy
 
     def complete(self, fuzzy):
-        leaf = self._module_node.get_leaf_for_position(self._position, include_prefixes=True)
-        string, start_leaf = _extract_string_while_in_string(leaf, self._position)
-        if string is not None:
-            completions = list(complete_file_name(
+        leaf = self._module_node.get_leaf_for_position(
+            self._original_position,
+            include_prefixes=True
+        )
+        string, start_leaf, quote = _extract_string_while_in_string(leaf, self._original_position)
+
+        prefixed_completions = complete_dict(
+            self._module_context,
+            self._code_lines,
+            start_leaf or leaf,
+            self._original_position,
+            None if string is None else quote + string,
+            fuzzy=fuzzy,
+        )
+
+        if string is not None and not prefixed_completions:
+            prefixed_completions = list(complete_file_name(
                 self._inference_state, self._module_context, start_leaf, string,
                 self._like_name, self._signatures_callback,
                 self._code_lines, self._original_position,
                 fuzzy
             ))
-            if completions:
-                return completions
+        if string is not None:
+            return prefixed_completions
 
         completion_names = self._complete_python(leaf)
 
-        completions = filter_names(self._inference_state, completion_names,
-                                   self.stack, self._like_name, fuzzy)
+        completions = list(filter_names(self._inference_state, completion_names,
+                                        self.stack, self._like_name, fuzzy))
 
-        return sorted(completions, key=lambda x: (x.name.startswith('__'),
-                                                  x.name.startswith('_'),
-                                                  x.name.lower()))
+        return (
+            # Removing duplicates mostly to remove False/True/None duplicates.
+            _remove_duplicates(prefixed_completions, completions)
+            + sorted(completions, key=lambda x: (x.name.startswith('__'),
+                                                 x.name.startswith('_'),
+                                                 x.name.lower()))
+        )
 
     def _complete_python(self, leaf):
         """
-        Analyzes the value that a completion is made in and decides what to
+        Analyzes the current context of a completion and decides what to
         return.
 
         Technically this works by generating a parser stack and analysing the
@@ -139,6 +161,10 @@ class Completion:
 
         grammar = self._inference_state.grammar
         self.stack = stack = None
+        self._position = (
+            self._original_position[0],
+            self._original_position[1] - len(self._like_name)
+        )
 
         try:
             self.stack = stack = helpers.get_stack_at_position(
@@ -191,9 +217,12 @@ class Completion:
 
         completion_names = []
         current_line = self._code_lines[self._position[0] - 1][:self._position[1]]
-        if not current_line or current_line[-1] in ' \t.;' \
-                and current_line[-3:] != '...':
-            completion_names += self._complete_keywords(allowed_transitions)
+
+        completion_names += self._complete_keywords(
+            allowed_transitions,
+            only_values=not (not current_line or current_line[-1] in ' \t.;'
+                             and current_line[-3:] != '...')
+        )
 
         if any(t in allowed_transitions for t in (PythonTokenTypes.NAME,
                                                   PythonTokenTypes.INDENT)):
@@ -201,13 +230,7 @@ class Completion:
 
             nonterminals = [stack_node.nonterminal for stack_node in stack]
 
-            nodes = []
-            for stack_node in stack:
-                if stack_node.dfa.from_rule == 'small_stmt':
-                    nodes = []
-                else:
-                    nodes += stack_node.nodes
-
+            nodes = _gather_nodes(stack)
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
@@ -279,10 +302,11 @@ class Completion:
             return complete_param_names(context, function_name.value, decorators)
         return []
 
-    def _complete_keywords(self, allowed_transitions):
+    def _complete_keywords(self, allowed_transitions, only_values):
         for k in allowed_transitions:
             if isinstance(k, str) and k.isalpha():
-                yield keywords.KeywordName(self._inference_state, k)
+                if not only_values or k in ('True', 'False', 'None'):
+                    yield keywords.KeywordName(self._inference_state, k)
 
     def _complete_global_scope(self):
         context = get_user_context(self._module_context, self._position)
@@ -411,23 +435,54 @@ class Completion:
                     yield name
 
 
+def _gather_nodes(stack):
+    nodes = []
+    for stack_node in stack:
+        if stack_node.dfa.from_rule == 'small_stmt':
+            nodes = []
+        else:
+            nodes += stack_node.nodes
+    return nodes
+
+
+_string_start = re.compile(r'^\w*(\'{3}|"{3}|\'|")')
+
+
 def _extract_string_while_in_string(leaf, position):
+    def return_part_of_leaf(leaf):
+        kwargs = {}
+        if leaf.line == position[0]:
+            kwargs['endpos'] = position[1] - leaf.column
+        match = _string_start.match(leaf.value, **kwargs)
+        start = match.group(0)
+        if leaf.line == position[0] and position[1] < leaf.column + match.end():
+            return None, None, None
+        return cut_value_at_position(leaf, position)[match.end():], leaf, start
+
     if position < leaf.start_pos:
-        return None, None
+        return None, None, None
 
     if leaf.type == 'string':
-        match = re.match(r'^\w*(\'{3}|"{3}|\'|")', leaf.value)
-        quote = match.group(1)
-        if leaf.line == position[0] and position[1] < leaf.column + match.end():
-            return None, None
-        if leaf.end_pos[0] == position[0] and position[1] > leaf.end_pos[1] - len(quote):
-            return None, None
-        return cut_value_at_position(leaf, position)[match.end():], leaf
+        return return_part_of_leaf(leaf)
 
     leaves = []
     while leaf is not None and leaf.line == position[0]:
         if leaf.type == 'error_leaf' and ('"' in leaf.value or "'" in leaf.value):
-            return ''.join(l.get_code() for l in leaves), leaf
+            if len(leaf.value) > 1:
+                return return_part_of_leaf(leaf)
+            prefix_leaf = None
+            if not leaf.prefix:
+                prefix_leaf = leaf.get_previous_leaf()
+                if prefix_leaf is None or prefix_leaf.type != 'name' \
+                        or not all(c in 'rubf' for c in prefix_leaf.value.lower()):
+                    prefix_leaf = None
+
+            return (
+                ''.join(cut_value_at_position(l, position) for l in leaves),
+                prefix_leaf or leaf,
+                ('' if prefix_leaf is None else prefix_leaf.value)
+                + cut_value_at_position(leaf, position),
+            )
         leaves.insert(0, leaf)
         leaf = leaf.get_previous_leaf()
-    return None, None
+    return None, None, None
