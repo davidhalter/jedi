@@ -417,6 +417,23 @@ class DirectObjectAccess(object):
     def get_api_type(self):
         return get_api_type(self._obj)
 
+    def get_array_type(self):
+        if isinstance(self._obj, dict):
+            return 'dict'
+        return None
+
+    def get_key_paths(self):
+        def iter_partial_keys():
+            # We could use list(keys()), but that might take a lot more memory.
+            for (i, k) in enumerate(self._obj.keys()):
+                # Limit key listing at some point. This is artificial, but this
+                # way we don't get stalled because of slow completions
+                if i > 50:
+                    break
+                yield k
+
+        return [self._create_access_path(k) for k in iter_partial_keys()]
+
     def get_access_path_tuples(self):
         accesses = [create_access(self._inference_state, o) for o in self._get_objects_path()]
         return [(access.py__name__(), access) for access in accesses]

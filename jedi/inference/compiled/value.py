@@ -281,6 +281,16 @@ class CompiledObject(Value):
             return CompiledModuleContext(self)
         return CompiledContext(self)
 
+    @property
+    def array_type(self):
+        return self.access_handle.get_array_type()
+
+    def get_key_values(self):
+        return [
+            create_from_access_path(self.inference_state, k)
+            for k in self.access_handle.get_key_paths()
+        ]
+
 
 class CompiledName(AbstractNameDefinition):
     def __init__(self, inference_state, parent_context, name):
