@@ -285,6 +285,8 @@ _dict_keys_completion_tests = [
         ('ints[5]', 6, ['0']),
         ('ints[50', 5, ['1', '50', Ellipsis]),
         ('ints[5', 6, ['0']),
+        ('ints[ 5', None, ['0']),
+        ('ints [ 5', None, ['0']),
         ('ints[50', 6, ['0']),
         ('ints[50', 7, ['']),
 
@@ -299,9 +301,13 @@ _dict_keys_completion_tests = [
         ('strs[r"asd', 10, ['f"']),
         ('strs[r"asd"', 10, ['f']),
         ('strs[R"asd', 10, ['f"']),
+        ('strs[ R"asd', None, ['f"']),
+        ('strs[\tR"asd', None, ['f"']),
+        ('strs[\nR"asd', None, ['f"']),
         ('strs[f"asd', 10, []),
         ('strs[br"""asd', 13, ['f"""']),
         ('strs[br"""asd"""', 13, ['f']),
+        ('strs[ \t"""asd"""', 13, ['f']),
 
         ('strs["f', 7, ['bar"', 'oo"']),
         ('strs["f"', 7, ['bar', 'oo']),
