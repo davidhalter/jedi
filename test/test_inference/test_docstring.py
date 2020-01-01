@@ -424,3 +424,18 @@ def test_basic_str_init_signature(Script, disable_typeshed):
         Foo(''')
     c, = Script(code).find_signatures()
     assert c.name == 'Foo'
+
+
+def test_doctest_result_completion(Script):
+    code = '''\
+    """
+    comment
+
+    >>> something = 3
+    somethi
+    """
+    something_else = 8
+    '''
+    c1, c2 = Script(code).complete(line=5)
+    assert c1.complete == 'ng'
+    assert c2.complete == 'ng_else'

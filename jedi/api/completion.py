@@ -445,16 +445,26 @@ class Completion:
         generally in "Python" code in docstrings, we use the following
         heuristic:
 
-        - Either
+        - Having an indented block of code
+        - Having some doctest code that starts with `>>>`
         """
+        def iter_relevant_lines(lines):
+            include_next_line = False
+            for l in code_lines:
+                if include_next_line or l.startswith('>>>') or l.startswith(' '):
+                    yield re.sub(r'^( *>>> ?| +)', '', l)
+                else:
+                    yield None
+
+                include_next_line = bool(re.match(' *>>>', l))
+
         string = dedent(string)
         code_lines = split_lines(string, keepends=True)
-        if code_lines[-1].startswith('>>>') or code_lines[-1].startswith(' '):
-            code_lines = [
-                re.sub(r'^(>>> ?| +)', '', l)
-                for l in code_lines
-                if l.startswith('>>>') or l.startswith(' ')
-            ]
+        code_lines = list(iter_relevant_lines(code_lines))
+        if code_lines[-1] is not None:
+            # Some code lines might be None, therefore get rid of that.
+            code_lines = [c or '\n' for c in code_lines]
+
             module_node = self._inference_state.grammar.parse(''.join(code_lines))
             module_value = ModuleValue(
                 self._inference_state,
