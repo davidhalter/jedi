@@ -8,7 +8,7 @@ import pytest
 
 import jedi
 from jedi._compatibility import is_py3, py_version
-from jedi.inference.compiled import mixed, value
+from jedi.inference.compiled import mixed
 from importlib import import_module
 
 if py_version > 30:
@@ -78,8 +78,8 @@ def test_numpy_like_non_zero():
 
     # just assert these do not raise. They (strangely) trigger different
     # codepath
-    get_completion('d["a"].some', {'d':d})
-    get_completion('x.some', {'x':x})
+    get_completion('d["a"].some', {'d': d})
+    get_completion('x.some', {'x': x})
 
 
 def test_nested_resolve():
@@ -255,6 +255,7 @@ def allow_unsafe_getattr(request, monkeypatch):
 
 def test_property_error_oldstyle(allow_unsafe_getattr):
     lst = []
+
     class Foo3:
         @property
         def bar(self):
@@ -274,6 +275,7 @@ def test_property_error_oldstyle(allow_unsafe_getattr):
 
 def test_property_error_newstyle(allow_unsafe_getattr):
     lst = []
+
     class Foo3(object):
         @property
         def bar(self):
@@ -375,9 +377,9 @@ def test_more_complex_instances():
         def wow(self):
             return Something()
 
-    #script = jedi.Interpreter('Base().wow().foo', [locals()])
-    #c, = script.complete()
-    #assert c.name == 'foo'
+    script = jedi.Interpreter('Base().wow().foo', [locals()])
+    c, = script.complete()
+    assert c.name == 'foo'
 
     x = Base()
     script = jedi.Interpreter('x.wow().foo', [locals()])
@@ -514,7 +516,7 @@ def test__wrapped__():
 
     @lru_cache(maxsize=128)
     def syslogs_to_df():
-            pass
+        pass
 
     c, = jedi.Interpreter('syslogs_to_df', [locals()]).complete()
     # Apparently the function starts on the line where the decorator starts.
