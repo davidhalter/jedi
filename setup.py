@@ -44,6 +44,9 @@ setup(name='jedi',
               # coloroma for colored debug output
               'colorama==0.4.1',  # Pinned so it works for Python 3.4
           ],
+          'qa': [
+              'flake8==3.7.9',
+          ],
       },
       package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',
                              'third_party/typeshed/README']},
