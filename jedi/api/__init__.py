@@ -167,7 +167,8 @@ class Script(object):
             names = ('__main__',)
 
         module = ModuleValue(
-            self._inference_state, self._module_node, file_io,
+            self._inference_state, self._module_node,
+            file_io=file_io,
             string_names=names,
             code_lines=self._code_lines,
             is_package=is_package,

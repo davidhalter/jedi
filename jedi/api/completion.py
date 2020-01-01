@@ -476,8 +476,6 @@ class Completion:
         module_value = ModuleValue(
             self._inference_state,
             module_node,
-            file_io=None,
-            string_names=None,
             code_lines=code_lines,
         )
         module_value.parent_context = self._module_context
