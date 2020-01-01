@@ -33,10 +33,6 @@ class StubModuleValue(ModuleValue):
         names.update(super(StubModuleValue, self).sub_modules_dict())
         return names
 
-    def _get_first_non_stub_filters(self):
-        for value in self.non_stub_value_set:
-            yield next(value.get_filters())
-
     def _get_stub_filters(self, origin_scope):
         return [StubFilter(
             parent_context=self.as_context(),
