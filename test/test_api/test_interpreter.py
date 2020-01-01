@@ -311,8 +311,8 @@ def test_param_completion():
 
     lambd = lambda xyz: 3
 
-    _assert_interpreter_complete('foo(bar', locals(), ['bar'])
-    assert bool(jedi.Interpreter('lambd(xyz', [locals()]).complete()) == is_py3
+    _assert_interpreter_complete('foo(bar', locals(), ['bar='])
+    _assert_interpreter_complete('lambd(xyz', locals(), ['xyz='])
 
 
 def test_endless_yield():
@@ -357,7 +357,7 @@ def test_keyword_argument():
         pass
 
     c, = jedi.Interpreter("f(some_keyw", [{'f': f}]).complete()
-    assert c.name == 'some_keyword_argument'
+    assert c.name == 'some_keyword_argument='
     assert c.complete == 'ord_argument='
 
     # This needs inspect.signature to work.
@@ -365,7 +365,7 @@ def test_keyword_argument():
         # Make it impossible for jedi to find the source of the function.
         f.__name__ = 'xSOMETHING'
         c, = jedi.Interpreter("x(some_keyw", [{'x': f}]).complete()
-        assert c.name == 'some_keyword_argument'
+        assert c.name == 'some_keyword_argument='
 
 
 def test_more_complex_instances():

@@ -456,11 +456,7 @@ class Completion(BaseDefinition):
                 and self.type == 'function':
             append = '('
 
-        if self._name.api_type == 'param' and self._stack is not None:
-            nonterminals = [stack_node.nonterminal for stack_node in self._stack]
-            if 'trailer' in nonterminals and 'argument' not in nonterminals:
-                # TODO this doesn't work for nested calls.
-                append += '='
+        self._name.api_type
 
         name = self._name.get_public_name()
         if like_name:

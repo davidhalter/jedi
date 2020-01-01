@@ -149,6 +149,18 @@ def test_with_stmt_error_recovery(Script):
     assert Script('with open('') as foo: foo.\na').complete(line=1)
 
 
+def test_function_param_usage(Script):
+    c, = Script('def func(foo_value):\n str(foo_valu').complete()
+    assert c.complete == 'e'
+    assert c.name == 'foo_value'
+
+    c1, c2 = Script('def func(foo_value):\n func(foo_valu').complete()
+    assert c1.complete == 'e'
+    assert c1.name == 'foo_value'
+    assert c2.complete == 'e='
+    assert c2.name == 'foo_value='
+
+
 @pytest.mark.parametrize(
     'code, has_keywords', (
         ('', True),

@@ -19,9 +19,15 @@ from jedi.inference.base_value import ValueSet
 from jedi.inference.helpers import infer_call_of_leaf, parse_dotted_names
 from jedi.inference.context import get_global_filters
 from jedi.inference.value import TreeInstance, ModuleValue
+from jedi.inference.names import ParamNameWrapper
 from jedi.inference.gradual.conversion import convert_values
 from jedi.parser_utils import cut_value_at_position
 from jedi.plugins import plugin_manager
+
+
+class ParamNameWithEquals(ParamNameWrapper):
+    def get_public_name(self):
+        return self.string_name + '='
 
 
 def get_signature_param_names(signatures):
@@ -31,7 +37,7 @@ def get_signature_param_names(signatures):
             # Allow protected access, because it's a public API.
             if p._name.get_kind() in (Parameter.POSITIONAL_OR_KEYWORD,
                                       Parameter.KEYWORD_ONLY):
-                yield p._name
+                yield ParamNameWithEquals(p._name)
 
 
 def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
