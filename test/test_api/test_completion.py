@@ -330,7 +330,7 @@ _dict_keys_completion_tests = [
 @pytest.mark.parametrize(
     'added_code, column, expected', _dict_keys_completion_tests
 )
-def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_python35):
+def test_dict_keys_completions(Script, added_code, column, expected, skip_pre_python36):
     code = dedent(r'''
         ints = {1: ''}
         ints[50] = 3.0

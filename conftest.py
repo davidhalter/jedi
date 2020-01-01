@@ -166,3 +166,11 @@ def skip_pre_python35(environment):
         # This if is just needed to avoid that tests ever skip way more than
         # they should for all Python versions.
         pytest.skip()
+
+
+@pytest.fixture()
+def skip_pre_python36(environment):
+    if environment.version_info < (3, 6):
+        # This if is just needed to avoid that tests ever skip way more than
+        # they should for all Python versions.
+        pytest.skip()
