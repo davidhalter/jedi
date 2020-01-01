@@ -27,7 +27,11 @@ class HelperValueMixin(object):
         value = self
         if value.parent_context is None:
             return value.as_context()
-        return super(HelperValueMixin, self).get_root_context()
+
+        while True:
+            if value.parent_context is None:
+                return value
+            value = value.parent_context
 
     @classmethod
     @inference_state_as_method_param_cache()
