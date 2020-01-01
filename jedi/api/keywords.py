@@ -39,7 +39,9 @@ def imitate_pydoc(string):
         string = h.symbols[string]
         string, _, related = string.partition(' ')
 
-    get_target = lambda s: h.topics.get(s, h.keywords.get(s))
+    def get_target(s):
+        return h.topics.get(s, h.keywords.get(s))
+
     while isinstance(string, str):
         string = get_target(string)
 

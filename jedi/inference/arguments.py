@@ -161,8 +161,7 @@ def unpack_arglist(arglist):
     # definitions.
     if not (arglist.type in ('arglist', 'testlist') or (
             # in python 3.5 **arg is an argument, not arglist
-            (arglist.type == 'argument') and
-            arglist.children[0] in ('*', '**'))):
+            arglist.type == 'argument' and arglist.children[0] in ('*', '**'))):
         yield 0, arglist
         return
 

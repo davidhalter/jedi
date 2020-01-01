@@ -146,8 +146,8 @@ def extract(script, new_name):
             # add parentheses in multi-line case
             open_brackets = ['(', '[', '{']
             close_brackets = [')', ']', '}']
-            if '\n' in text and not (text[0] in open_brackets and text[-1] ==
-                                     close_brackets[open_brackets.index(text[0])]):
+            if '\n' in text and not (text[0] in open_brackets and text[-1]
+                                     == close_brackets[open_brackets.index(text[0])]):
                 text = '(%s)' % text
 
             # add new line before statement
@@ -183,7 +183,7 @@ def inline(script):
     replace_str = line[expression_list[0].start_pos[1]:stmt.end_pos[1] + 1]
     replace_str = replace_str.strip()
     # tuples need parentheses
-    if expression_list and isinstance(expression_list[0], pr.Array):
+    if expression_list and expression_list[0].type == 'TODO':
         arr = expression_list[0]
         if replace_str[0] not in ['(', '[', '{'] and len(arr) > 1:
             replace_str = '(%s)' % replace_str

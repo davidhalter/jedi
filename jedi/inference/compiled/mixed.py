@@ -18,7 +18,6 @@ from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.value import ModuleValue
 from jedi.inference.cache import inference_state_function_cache, \
     inference_state_method_cache
-from jedi.inference.compiled.getattr_static import getattr_static
 from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.inference.compiled.value import create_cached_compiled_object
@@ -63,7 +62,7 @@ class MixedObject(ValueWrapper):
     def py__call__(self, arguments):
         # Fallback to the wrapped value if to stub returns no values.
         values = to_stub(self._wrapped_value)
-        if not values:# or self in values:
+        if not values:
             values = self._wrapped_value
         return values.py__call__(arguments)
 
@@ -160,7 +159,7 @@ def _load_module(inference_state, path):
     ).get_root_node()
     # python_module = inspect.getmodule(python_object)
     # TODO we should actually make something like this possible.
-    #inference_state.modules[python_module.__name__] = module_node
+    # inference_state.modules[python_module.__name__] = module_node
     return module_node
 
 
@@ -173,13 +172,13 @@ def _get_object_to_check(python_object):
             # Can return a ValueError when it wraps around
             pass
 
-    if (inspect.ismodule(python_object) or
-            inspect.isclass(python_object) or
-            inspect.ismethod(python_object) or
-            inspect.isfunction(python_object) or
-            inspect.istraceback(python_object) or
-            inspect.isframe(python_object) or
-            inspect.iscode(python_object)):
+    if (inspect.ismodule(python_object)
+            or inspect.isclass(python_object)
+            or inspect.ismethod(python_object)
+            or inspect.isfunction(python_object)
+            or inspect.istraceback(python_object)
+            or inspect.isframe(python_object)
+            or inspect.iscode(python_object)):
         return python_object
 
     try:

@@ -42,8 +42,6 @@ class ModuleCache(object):
         self._name_cache = {}
 
     def add(self, string_names, value_set):
-        #path = module.py__file__()
-        #self._path_cache[path] = value_set
         if string_names is not None:
             self._name_cache[string_names] = value_set
 
@@ -123,8 +121,8 @@ def _prepare_infer_import(module_context, tree_name):
     importer = Importer(module_context.inference_state, tuple(import_path),
                         module_context, import_node.level)
 
-    #if import_node.is_nested() and not self.nested_resolve:
-    #    scopes = [NestedImportModule(module, import_node)]
+    # if import_node.is_nested() and not self.nested_resolve:
+    #     scopes = [NestedImportModule(module, import_node)]
     return from_import_name, tuple(import_path), import_node.level, importer.follow()
 
 
@@ -302,8 +300,10 @@ class Importer(object):
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
-            names += [ImportName(self._module_context, name)
-                      for name in self._inference_state.compiled_subprocess.get_builtin_module_names()]
+            names += [
+                ImportName(self._module_context, name)
+                for name in self._inference_state.compiled_subprocess.get_builtin_module_names()
+            ]
 
         if search_path is None:
             search_path = self._sys_path_with_modifications(is_completion=True)

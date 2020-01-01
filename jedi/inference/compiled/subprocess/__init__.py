@@ -383,8 +383,8 @@ class AccessHandle(object):
         if name in ('id', 'access') or name.startswith('_'):
             raise AttributeError("Something went wrong with unpickling")
 
-        #if not is_py3: print >> sys.stderr, name
-        #print('getattr', name, file=sys.stderr)
+        # if not is_py3: print >> sys.stderr, name
+        # print('getattr', name, file=sys.stderr)
         return partial(self._workaround, force_unicode(name))
 
     def _workaround(self, name, *args, **kwargs):
@@ -399,8 +399,4 @@ class AccessHandle(object):
 
     @memoize_method
     def _cached_results(self, name, *args, **kwargs):
-        #if type(self._subprocess) == InferenceStateSubprocess:
-            #print(name, args, kwargs,
-                #self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)
-            #)
         return self._subprocess.get_compiled_method_return(self.id, name, *args, **kwargs)

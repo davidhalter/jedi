@@ -10,7 +10,8 @@ _NO_DEFAULT = object()
 _RECURSION_SENTINEL = object()
 
 
-def _memoize_default(default=_NO_DEFAULT, inference_state_is_first_arg=False, second_arg_is_inference_state=False):
+def _memoize_default(default=_NO_DEFAULT, inference_state_is_first_arg=False,
+                     second_arg_is_inference_state=False):
     """ This is a typical memoization decorator, BUT there is one difference:
     To prevent recursion it sets defaults.
 

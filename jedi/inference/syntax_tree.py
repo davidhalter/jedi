@@ -212,8 +212,8 @@ def _infer_node(context, element):
         return value_set
     elif typ == 'test':
         # `x if foo else y` case.
-        return (context.infer_node(element.children[0]) |
-                context.infer_node(element.children[-1]))
+        return (context.infer_node(element.children[0])
+                | context.infer_node(element.children[-1]))
     elif typ == 'operator':
         # Must be an ellipsis, other operators are not inferred.
         # In Python 2 ellipsis is coded as three single dot tokens, not
@@ -328,8 +328,8 @@ def infer_atom(context, atom):
         c = atom.children
         # Parentheses without commas are not tuples.
         if c[0] == '(' and not len(c) == 2 \
-                and not(c[1].type == 'testlist_comp' and
-                        len(c[1].children) > 1):
+                and not(c[1].type == 'testlist_comp'
+                        and len(c[1].children) > 1):
             return context.infer_node(c[1])
 
         try:
@@ -355,8 +355,8 @@ def infer_atom(context, atom):
             array_node_c = array_node.children
         except AttributeError:
             array_node_c = []
-        if c[0] == '{' and (array_node == '}' or ':' in array_node_c or
-                            '**' in array_node_c):
+        if c[0] == '{' and (array_node == '}' or ':' in array_node_c
+                            or '**' in array_node_c):
             new_value = iterable.DictLiteralValue(state, context, atom)
         else:
             new_value = iterable.SequenceLiteralValue(state, context, atom)

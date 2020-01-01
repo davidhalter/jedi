@@ -50,7 +50,10 @@ class CompiledObject(Value):
         return_annotation = self.access_handle.get_return_annotation()
         if return_annotation is not None:
             # TODO the return annotation may also be a string.
-            return create_from_access_path(self.inference_state, return_annotation).execute_annotation()
+            return create_from_access_path(
+                self.inference_state,
+                return_annotation
+            ).execute_annotation()
 
         try:
             self.access_handle.getattr_paths(u'__call__')
@@ -411,10 +414,11 @@ class CompiledObjectFilter(AbstractFilter):
         self.is_instance = is_instance
 
     def get(self, name):
+        access_handle = self.compiled_object.access_handle
         return self._get(
             name,
-            lambda name, unsafe: self.compiled_object.access_handle.is_allowed_getattr(name, unsafe),
-            lambda name: name in self.compiled_object.access_handle.dir(),
+            lambda name, unsafe: access_handle.is_allowed_getattr(name, unsafe),
+            lambda name: name in access_handle.dir(),
             check_has_attribute=True
         )
 
