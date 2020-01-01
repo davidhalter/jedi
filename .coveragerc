@@ -11,3 +11,4 @@ omit =
 exclude_lines =
     # Don't complain about missing debug-only code:
     def __repr__
+    debug.warning
