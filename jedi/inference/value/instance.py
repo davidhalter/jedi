@@ -8,7 +8,8 @@ from jedi.inference import compiled
 from jedi.inference.compiled.value import CompiledObjectFilter
 from jedi.inference.helpers import values_from_qualified_names
 from jedi.inference.filters import AbstractFilter, AnonymousFunctionExecutionFilter
-from jedi.inference.names import ValueName, TreeNameDefinition, ParamName
+from jedi.inference.names import ValueName, TreeNameDefinition, ParamName, \
+    NameWrapper
 from jedi.inference.base_value import Value, NO_VALUES, ValueSet, \
     iterator_to_value_set, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValue, LazyKnownValues
@@ -507,22 +508,16 @@ class SelfName(TreeNameDefinition):
         return self._instance.create_instance_context(self.class_context, self.tree_name)
 
 
-class LazyInstanceClassName(object):
+class LazyInstanceClassName(NameWrapper):
     def __init__(self, instance, class_member_name):
+        super(LazyInstanceClassName, self).__init__(class_member_name)
         self._instance = instance
-        self._class_member_name = class_member_name
 
     @iterator_to_value_set
     def infer(self):
-        for result_value in self._class_member_name.infer():
+        for result_value in super(LazyInstanceClassName, self).infer():
             for c in result_value.py__get__(self._instance, self._instance.py__class__()):
                 yield c
-
-    def __getattr__(self, name):
-        return getattr(self._class_member_name, name)
-
-    def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._class_member_name)
 
 
 class InstanceClassFilter(AbstractFilter):

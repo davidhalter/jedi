@@ -3,7 +3,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
-from jedi.parser_utils import clean_scope_docstring, find_statement_documentation
+from jedi.parser_utils import find_statement_documentation
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import docstrings

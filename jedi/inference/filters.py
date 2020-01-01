@@ -9,7 +9,7 @@ from parso.tree import search_ancestor
 
 from jedi._compatibility import use_metaclass
 from jedi.inference import flow_analysis
-from jedi.inference.base_value import ValueSet, Value, ValueWrapper, \
+from jedi.inference.base_value import ValueSet, ValueWrapper, \
     LazyValueWrapper
 from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.utils import to_list
