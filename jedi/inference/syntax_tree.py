@@ -64,18 +64,6 @@ def _limit_value_infers(func):
     return wrapper
 
 
-def _py__stop_iteration_returns(generators):
-    results = NO_VALUES
-    for generator in generators:
-        try:
-            method = generator.py__stop_iteration_returns
-        except AttributeError:
-            debug.warning('%s is not actually a generator', generator)
-        else:
-            results |= method()
-    return results
-
-
 def infer_node(context, element):
     if isinstance(context, CompForContext):
         return _infer_node(context, element)
