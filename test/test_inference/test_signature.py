@@ -293,9 +293,14 @@ def test_param_resolving_to_static(Script, stmt, expected, skip_pre_python35):
     assert sig.to_string() == expected
 
 
-def test_overload(Script):
+@pytest.mark.parametrize(
+    'code', [
+        'from file import with_overload; with_overload(',
+        'from file import *\nwith_overload(',
+    ]
+)
+def test_overload(Script, code):
     dir_ = get_example_dir('typing_overload')
-    code = 'from file import with_overload; with_overload('
     x1, x2 = Script(code, path=os.path.join(dir_, 'foo.py')).find_signatures()
     assert x1.to_string() == 'with_overload(x: int, y: int) -> float'
     assert x2.to_string() == 'with_overload(x: str, y: list) -> float'
