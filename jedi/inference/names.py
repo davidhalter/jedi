@@ -12,14 +12,14 @@ from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
 from jedi.plugins import plugin_manager
 
 
-def _merge_name_docs(names):
+def _merge_name_docs(names, include_signatures):
     doc = ''
     for name in names:
         if doc:
             # In case we have multiple values, just return all of them
             # separated by a few dashes.
             doc += '\n' + '-' * 30 + '\n'
-        doc += name.py__doc__()
+        doc += name.py__doc__(include_signatures)
     return doc
 
 
@@ -322,16 +322,13 @@ class TreeNameDefinition(AbstractTreeName):
         return indexes
 
     def py__doc__(self, include_signatures=False):
-        if self.api_type in ('function', 'class'):
-            return clean_scope_docstring(self.tree_name.get_definition())
+        if self.api_type in ('function', 'class', 'module'):
+            # Make sure the names are not TreeNameDefinitions anymore.
+            return _merge_name_docs([v.name for v in self.infer()], include_signatures)
 
         if self.api_type == 'statement' and self.tree_name.is_definition():
             return find_statement_documentation(self.tree_name.get_definition())
 
-        if self.api_type == 'module':
-            names = self.goto()
-            if self not in names:
-                return _merge_name_docs(names)
         return super(TreeNameDefinition, self).py__doc__(include_signatures)
 
 
@@ -583,7 +580,7 @@ class ImportName(AbstractNameDefinition):
         return 'module'
 
     def py__doc__(self, include_signatures=False):
-        return _merge_name_docs(self.goto())
+        return _merge_name_docs(self.goto(), include_signatures)
 
 
 class SubModuleName(ImportName):
@@ -612,8 +609,10 @@ class StubNameMixin(object):
         if self in names:
             doc = super(StubNameMixin, self).py__doc__(include_signatures)
         else:
-            doc = _merge_name_docs(names)
-        if include_signatures:
+            # We have signatures ourselves in stubs, so don't use signatures
+            # from the implementation.
+            doc = _merge_name_docs(names, include_signatures=False)
+        if include_signatures and self.tree_name is not None:
             parent = self.tree_name.parent
             if parent.type in ('funcdef', 'classdef') and parent.name is self.tree_name:
                 doc = _merge_docs_and_signature(self.infer(), doc)

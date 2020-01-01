@@ -2,11 +2,14 @@
 Testing of docstring related issues and especially ``jedi.docstrings``.
 """
 
-from textwrap import dedent
-import jedi
-import pytest
-from ..helpers import unittest
+import os
 import sys
+from textwrap import dedent
+
+import pytest
+
+import jedi
+from ..helpers import unittest, test_dir
 
 try:
     import numpydoc  # NOQA
@@ -169,6 +172,22 @@ def test_docstring_params_formatting(Script):
         pass
     func""").infer()
     assert defs[0].docstring() == 'func(param1, param2, param3)'
+
+
+def test_import_function_docstring(Script, skip_pre_python35):
+    code = "from stub_folder import with_stub; with_stub.stub_function"
+    path = os.path.join(test_dir, 'completion', 'import_function_docstring.py')
+    c, = Script(code, path=path).complete()
+
+    stub_signature = 'stub_function(x: int, y: float) -> str'
+    python_signature = 'stub_function(x: float, y)'
+    doc = '\n\nPython docstring'
+    assert c.docstring() == stub_signature + doc
+    assert c.type == 'function'
+    func, = c.goto(prefer_stubs=True)
+    assert func.docstring() == stub_signature + doc
+    func, = c.goto()
+    assert func.docstring() == python_signature + doc
 
 
 # ---- Numpy Style Tests ---
