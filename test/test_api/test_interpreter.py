@@ -267,7 +267,7 @@ def test_property_error_oldstyle(allow_unsafe_getattr):
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
 
     if allow_unsafe_getattr:
-        assert lst == [1, 1]
+        assert lst == [1]
     else:
         # There should not be side effects
         assert lst == []
@@ -287,7 +287,7 @@ def test_property_error_newstyle(allow_unsafe_getattr):
     _assert_interpreter_complete('foo.bar.baz', locals(), [])
 
     if allow_unsafe_getattr:
-        assert lst == [1, 1]
+        assert lst == [1]
     else:
         # There should not be side effects
         assert lst == []

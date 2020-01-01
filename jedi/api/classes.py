@@ -467,8 +467,6 @@ class Completion(BaseDefinition):
                 and self.type == 'function':
             append = '('
 
-        self._name.api_type
-
         name = self._name.get_public_name()
         if like_name:
             name = name[self._like_name_length:]
