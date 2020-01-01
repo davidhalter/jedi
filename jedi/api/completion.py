@@ -447,6 +447,7 @@ class Completion:
 
         - Having an indented block of code
         - Having some doctest code that starts with `>>>`
+        - Having backticks that doesn't have whitespace inside it
         """
         def iter_relevant_lines(lines):
             include_next_line = False
@@ -460,29 +461,34 @@ class Completion:
 
         string = dedent(string)
         code_lines = split_lines(string, keepends=True)
-        code_lines = list(iter_relevant_lines(code_lines))
-        if code_lines[-1] is not None:
+        relevant_code_lines = list(iter_relevant_lines(code_lines))
+        if relevant_code_lines[-1] is not None:
             # Some code lines might be None, therefore get rid of that.
-            code_lines = [c or '\n' for c in code_lines]
-
-            module_node = self._inference_state.grammar.parse(''.join(code_lines))
-            module_value = ModuleValue(
-                self._inference_state,
-                module_node,
-                file_io=None,
-                string_names=None,
-                code_lines=code_lines,
-            )
-            module_value.parent_context = self._module_context
-            return Completion(
-                self._inference_state,
-                module_value.as_context(),
-                code_lines=code_lines,
-                position=module_node.end_pos,
-                signatures_callback=lambda *args, **kwargs: [],
-                fuzzy=self._fuzzy
-            ).complete()
+            relevant_code_lines = [c or '\n' for c in relevant_code_lines]
+            return self._complete_code_lines(relevant_code_lines)
+        match = re.search(r'`([^`\s]+)', code_lines[-1])
+        if match:
+            return self._complete_code_lines([match.group(1)])
         return []
+
+    def _complete_code_lines(self, code_lines):
+        module_node = self._inference_state.grammar.parse(''.join(code_lines))
+        module_value = ModuleValue(
+            self._inference_state,
+            module_node,
+            file_io=None,
+            string_names=None,
+            code_lines=code_lines,
+        )
+        module_value.parent_context = self._module_context
+        return Completion(
+            self._inference_state,
+            module_value.as_context(),
+            code_lines=code_lines,
+            position=module_node.end_pos,
+            signatures_callback=lambda *args, **kwargs: [],
+            fuzzy=self._fuzzy
+        ).complete()
 
 
 def _gather_nodes(stack):

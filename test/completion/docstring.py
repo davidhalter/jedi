@@ -284,6 +284,25 @@ def doctest_with_space():
         import_issu
     """
 
+
+def docstring_rst_identifiers():
+    """
+    #? 30 ['import_issues']
+    hello I'm here `import_iss` blabla
+
+    #? ['import_issues']
+    hello I'm here `import_iss
+
+    #? []
+    hello I'm here import_iss
+    #? []
+    hello I'm here ` import_iss
+
+    #? ['upper']
+    hello I'm here `str.upp
+    """
+
+
 def doctest_without_ending():
     """
     #? []
