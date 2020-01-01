@@ -9,7 +9,7 @@ from textwrap import dedent
 import pytest
 
 import jedi
-from ..helpers import unittest, test_dir
+from ..helpers import test_dir
 
 try:
     import numpydoc  # NOQA
@@ -69,25 +69,14 @@ def test_instance_doc(Script):
     assert defs[0].docstring() == 'Docstring of `TestClass`.'
 
 
-@unittest.skip('need inference_state class for that')
-def test_attribute_docstring(Script):
-    defs = Script("""
-    x = None
-    '''Docstring of `x`.'''
-    x""").infer()
-    assert defs[0].docstring() == 'Docstring of `x`.'
-
-
-@unittest.skip('need inference_state class for that')
 def test_multiple_docstrings(Script):
-    defs = Script("""
+    d, = Script("""
     def func():
         '''Original docstring.'''
     x = func
     '''Docstring of `x`.'''
-    x""").infer()
-    docs = [d.docstring() for d in defs]
-    assert docs == ['Original docstring.', 'Docstring of `x`.']
+    x""").help()
+    assert d.docstring() == 'Docstring of `x`.'
 
 
 def test_completion(Script):
