@@ -515,9 +515,12 @@ class LazyInstanceClassName(NameWrapper):
 
     @iterator_to_value_set
     def infer(self):
-        for result_value in super(LazyInstanceClassName, self).infer():
+        for result_value in self._wrapped_name.infer():
             for c in result_value.py__get__(self._instance, self._instance.py__class__()):
                 yield c
+
+    def get_signatures(self):
+        return self.infer().get_signatures()
 
 
 class InstanceClassFilter(AbstractFilter):

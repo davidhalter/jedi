@@ -241,7 +241,18 @@ class BaseDefinition(object):
         """
         if isinstance(self._name, ImportName) and fast:
             return ''
-        return self._name.py__doc__(include_signatures=not raw)
+        doc = self._name.py__doc__()
+        if raw:
+            return doc
+
+        signature_text = '\n'.join(
+            signature.to_string()
+            for signature in self._name.get_signatures()
+        )
+        if signature_text and doc:
+            return signature_text + '\n\n' + doc
+        else:
+            return signature_text + doc
 
     @property
     def description(self):

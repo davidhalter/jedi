@@ -301,7 +301,7 @@ class CompiledName(AbstractNameDefinition):
         self.parent_context = parent_context
         self.string_name = name
 
-    def py__doc__(self, include_signatures=False):
+    def py__doc__(self):
         value, = self.infer()
         return value.py__doc__()
 

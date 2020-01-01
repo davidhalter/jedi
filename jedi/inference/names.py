@@ -12,28 +12,15 @@ from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
 from jedi.plugins import plugin_manager
 
 
-def _merge_name_docs(names, include_signatures):
+def _merge_name_docs(names):
     doc = ''
     for name in names:
         if doc:
             # In case we have multiple values, just return all of them
             # separated by a few dashes.
             doc += '\n' + '-' * 30 + '\n'
-        doc += name.py__doc__(include_signatures)
+        doc += name.py__doc__()
     return doc
-
-
-def _merge_docs_and_signature(values, doc):
-    signature_text = '\n'.join(
-        signature.to_string()
-        for value in values
-        for signature in value.get_signatures()
-    )
-
-    if signature_text and doc:
-        return signature_text + '\n\n' + doc
-    else:
-        return signature_text + doc
 
 
 class AbstractNameDefinition(object):
@@ -85,7 +72,10 @@ class AbstractNameDefinition(object):
     def is_import(self):
         return False
 
-    def py__doc__(self, include_signatures=False):
+    def get_signatures(self):
+        return []
+
+    def py__doc__(self):
         return ''
 
     @property
@@ -226,12 +216,11 @@ class ValueNameMixin(object):
     def infer(self):
         return ValueSet([self._value])
 
-    def py__doc__(self, include_signatures=False):
-        doc = self._value.py__doc__()
+    def py__doc__(self):
+        return self._value.py__doc__()
 
-        if include_signatures:
-            doc = _merge_docs_and_signature([self._value], doc)
-        return doc
+    def get_signatures(self):
+        return self._value.get_signatures()
 
     def _get_qualified_names(self):
         return self._value.get_qualified_names()
@@ -321,15 +310,20 @@ class TreeNameDefinition(AbstractTreeName):
             node = node.parent
         return indexes
 
-    def py__doc__(self, include_signatures=False):
+    def py__doc__(self):
         if self.api_type in ('function', 'class', 'module'):
             # Make sure the names are not TreeNameDefinitions anymore.
-            return _merge_name_docs([v.name for v in self.infer()], include_signatures)
+            return _merge_name_docs([v.name for v in self.infer()])
 
         if self.api_type == 'statement' and self.tree_name.is_definition():
             return find_statement_documentation(self.tree_name.get_definition())
+        assert False, self.api_type
+        return ''
 
-        return super(TreeNameDefinition, self).py__doc__(include_signatures)
+    def get_signatures(self):
+        if self.api_type in ('function', 'class'):
+            return self.infer().get_signatures()
+        return []
 
 
 class _ParamMixin(object):
@@ -579,8 +573,11 @@ class ImportName(AbstractNameDefinition):
     def api_type(self):
         return 'module'
 
-    def py__doc__(self, include_signatures=False):
-        return _merge_name_docs(self.goto(), include_signatures)
+    def py__doc__(self):
+        return _merge_name_docs(self.goto())
+
+    def get_signatures(self):
+        return [sig for name in self.goto() for sig in name.get_signatures()]
 
 
 class SubModuleName(ImportName):
@@ -591,10 +588,6 @@ class NameWrapper(object):
     def __init__(self, wrapped_name):
         self._wrapped_name = wrapped_name
 
-    @abstractmethod
-    def infer(self):
-        raise NotImplementedError
-
     def __getattr__(self, name):
         return getattr(self._wrapped_name, name)
 
@@ -603,20 +596,22 @@ class NameWrapper(object):
 
 
 class StubNameMixin(object):
-    def py__doc__(self, include_signatures=False):
+    def py__doc__(self):
         from jedi.inference.gradual.conversion import convert_names
         names = convert_names([self], prefer_stub_to_compiled=False)
         if self in names:
-            doc = super(StubNameMixin, self).py__doc__(include_signatures)
+            return super(StubNameMixin, self).py__doc__()
         else:
             # We have signatures ourselves in stubs, so don't use signatures
             # from the implementation.
-            doc = _merge_name_docs(names, include_signatures=False)
-        if include_signatures and self.tree_name is not None:
+            return _merge_name_docs(names)
+
+    def get_signatures(self):
+        if self.tree_name is not None:
             parent = self.tree_name.parent
             if parent.type in ('funcdef', 'classdef') and parent.name is self.tree_name:
-                doc = _merge_docs_and_signature(self.infer(), doc)
-        return doc
+                return self.infer().get_signatures()
+        return []
 
 
 # From here on down we make looking up the sys.version_info fast.

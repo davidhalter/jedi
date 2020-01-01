@@ -18,7 +18,7 @@ except ImportError:
 class KeywordName(AbstractArbitraryName):
     api_type = u'keyword'
 
-    def py__doc__(self, include_signatures=False):
+    def py__doc__(self):
         return imitate_pydoc(self.string_name)
 
 
