@@ -362,14 +362,18 @@ class BaseDefinition(object):
         Raises an ``AttributeError`` if the definition is not callable.
         Otherwise returns a list of `Definition` that represents the params.
         """
+        warnings.warn(
+            "Deprecated since version 0.16.0. Use get_signatures()[...].params",
+            DeprecationWarning,
+            stacklevel=2
+        )
         # Only return the first one. There might be multiple one, especially
         # with overloading.
-        for value in self._name.infer():
-            for signature in value.get_signatures():
-                return [
-                    Definition(self._inference_state, n)
-                    for n in signature.get_param_names(resolve_stars=True)
-                ]
+        for signature in self._get_signatures():
+            return [
+                Definition(self._inference_state, n)
+                for n in signature.get_param_names(resolve_stars=True)
+            ]
 
         if self.type == 'function' or self.type == 'class':
             # Fallback, if no signatures were defined (which is probably by
@@ -434,6 +438,9 @@ class BaseDefinition(object):
         index = self._name.start_pos[0] - 1
         start_index = max(index - before, 0)
         return ''.join(lines[start_index:index + after + 1])
+
+    def _get_signatures(self):
+        return self._name.infer().get_signatures()
 
     def get_signatures(self):
         return [
