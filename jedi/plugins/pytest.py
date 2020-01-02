@@ -107,16 +107,18 @@ def _is_pytest_func(func_name, decorator_nodes):
 def _iter_pytest_modules(module_context):
     yield module_context
 
-    folder = module_context.get_value().file_io.get_parent_folder()
-    sys_path = module_context.inference_state.get_sys_path()
-    while any(folder.path.startswith(p) for p in sys_path):
-        file_io = folder.get_file_io('conftest.py')
-        try:
-            m = load_module_from_path(module_context.inference_state, file_io)
-            yield m.as_context()
-        except FileNotFoundError:
-            pass
-        folder = folder.get_parent_folder()
+    file_io = module_context.get_value().file_io
+    if file_io is not None:
+        folder = file_io.get_parent_folder()
+        sys_path = module_context.inference_state.get_sys_path()
+        while any(folder.path.startswith(p) for p in sys_path):
+            file_io = folder.get_file_io('conftest.py')
+            try:
+                m = load_module_from_path(module_context.inference_state, file_io)
+                yield m.as_context()
+            except FileNotFoundError:
+                pass
+            folder = folder.get_parent_folder()
 
     for names in _PYTEST_FIXTURE_MODULES:
         for module_value in module_context.inference_state.import_module(names):
