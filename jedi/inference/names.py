@@ -72,9 +72,6 @@ class AbstractNameDefinition(object):
     def is_import(self):
         return False
 
-    def get_signatures(self):
-        return []
-
     def py__doc__(self):
         return ''
 
@@ -219,9 +216,6 @@ class ValueNameMixin(object):
     def py__doc__(self):
         return self._value.py__doc__()
 
-    def get_signatures(self):
-        return self._value.get_signatures()
-
     def _get_qualified_names(self):
         return self._value.get_qualified_names()
 
@@ -324,9 +318,6 @@ class TreeNameDefinition(AbstractTreeName):
         if api_type == 'statement' and self.tree_name.is_definition():
             return find_statement_documentation(self.tree_name.get_definition())
         return ''
-
-    def get_signatures(self):
-        return self.infer().get_signatures()
 
 
 class _ParamMixin(object):
@@ -579,9 +570,6 @@ class ImportName(AbstractNameDefinition):
     def py__doc__(self):
         return _merge_name_docs(self.goto())
 
-    def get_signatures(self):
-        return [sig for name in self.goto() for sig in name.get_signatures()]
-
 
 class SubModuleName(ImportName):
     _level = 1
@@ -615,13 +603,6 @@ class StubNameMixin(object):
             # We have signatures ourselves in stubs, so don't use signatures
             # from the implementation.
             return _merge_name_docs(names)
-
-    def get_signatures(self):
-        if self.tree_name is not None:
-            parent = self.tree_name.parent
-            if parent.type in ('funcdef', 'classdef') and parent.name is self.tree_name:
-                return self.infer().get_signatures()
-        return []
 
 
 # From here on down we make looking up the sys.version_info fast.

@@ -446,7 +446,7 @@ class BaseDefinition(object):
     def get_signatures(self):
         return [
             BaseSignature(self._inference_state, s)
-            for s in self._name.infer().get_signatures()
+            for s in self._get_signatures()
         ]
 
     def execute(self):
@@ -756,10 +756,3 @@ class ParamDefinition(Definition):
                 'Python 2 is end-of-life, the new feature is not available for it'
             )
         return self._name.get_kind()
-
-
-def _format_signatures(value):
-    return '\n'.join(
-        signature.to_string()
-        for signature in value.get_signatures()
-    )
