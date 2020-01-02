@@ -317,7 +317,6 @@ class TreeNameDefinition(AbstractTreeName):
 
         if self.api_type == 'statement' and self.tree_name.is_definition():
             return find_statement_documentation(self.tree_name.get_definition())
-        assert False, self.api_type
         return ''
 
     def get_signatures(self):
