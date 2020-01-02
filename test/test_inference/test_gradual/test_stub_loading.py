@@ -25,3 +25,41 @@ def ScriptInStubFolder(Script):
 def test_find_stubs_infer(ScriptInStubFolder, code, expected):
     defs = ScriptInStubFolder(code).infer()
     assert [d.name for d in defs] == expected
+
+
+func_without_stub_sig = 'func_without_stub(a)'
+func_without_stub_doc = func_without_stub_sig + '\n\nnostubdoc'
+func_with_stub_doc = 'func_with_stub(b: int) -> float\n\nwithstubdoc'
+
+
+@pytest.mark.parametrize(
+    ('code', 'expected'), [
+        ('from with_python import stub_only', ''),
+        ('from with_python import python_only', ''),
+        ('from with_python import both', ''),
+
+        ('import with_python; with_python.func_without_stub', func_without_stub_sig),
+        ('import with_python.module; with_python.module.func_without_stub', func_without_stub_doc),
+        ('from with_python import module; module.func_without_stub', func_without_stub_doc),
+        ('from with_python.module import func_without_stub', func_without_stub_doc),
+        ('from with_python.module import func_without_stub as f; f', func_without_stub_doc),
+        ('from with_python.module import func_without_stub; func_without_stub',
+         func_without_stub_doc),
+        ('from with_python import func_without_stub', func_without_stub_sig),
+        ('from with_python import func_without_stub as f; f', func_without_stub_sig),
+        ('from with_python import func_without_stub; func_without_stub', func_without_stub_sig),
+
+        ('import with_python; with_python.func_with_stub', func_with_stub_doc),
+        ('import with_python.module; with_python.module.func_with_stub', func_with_stub_doc),
+        ('from with_python import module; module.func_with_stub', func_with_stub_doc),
+        ('from with_python.module import func_with_stub', func_with_stub_doc),
+        ('from with_python.module import func_with_stub as f; f', func_with_stub_doc),
+        ('from with_python.module import func_with_stub; func_with_stub', func_with_stub_doc),
+        ('from with_python import func_with_stub', func_with_stub_doc),
+        ('from with_python import func_with_stub as f; f', func_with_stub_doc),
+        ('from with_python import func_with_stub; func_with_stub', func_with_stub_doc),
+    ]
+)
+def test_docstrings(ScriptInStubFolder, code, expected):
+    d, = ScriptInStubFolder(code).help()
+    assert d.docstring() == expected

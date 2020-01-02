@@ -76,7 +76,7 @@ def test_multiple_docstrings(Script):
     x = func
     '''Docstring of `x`.'''
     x""").help()
-    assert d.docstring() == 'Docstring of `x`.'
+    assert d.docstring() == 'func()\n\nDocstring of `x`.'
 
 
 def test_completion(Script):
@@ -168,15 +168,13 @@ def test_import_function_docstring(Script, skip_pre_python35):
     path = os.path.join(test_dir, 'completion', 'import_function_docstring.py')
     c, = Script(code, path=path).complete()
 
-    stub_signature = 'stub_function(x: int, y: float) -> str'
-    python_signature = 'stub_function(x: float, y)'
-    doc = '\n\nPython docstring'
-    assert c.docstring() == stub_signature + doc
+    doc = 'stub_function(x: int, y: float) -> str\n\nPython docstring'
+    assert c.docstring() == doc
     assert c.type == 'function'
     func, = c.goto(prefer_stubs=True)
-    assert func.docstring() == stub_signature + doc
+    assert func.docstring() == doc
     func, = c.goto()
-    assert func.docstring() == python_signature + doc
+    assert func.docstring() == doc
 
 
 # ---- Numpy Style Tests ---

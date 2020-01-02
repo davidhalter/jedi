@@ -247,7 +247,7 @@ class BaseDefinition(object):
 
         signature_text = '\n'.join(
             signature.to_string()
-            for signature in self._name.get_signatures()
+            for signature in self._get_signatures()
         )
         if signature_text and doc:
             return signature_text + '\n\n' + doc
@@ -440,7 +440,8 @@ class BaseDefinition(object):
         return ''.join(lines[start_index:index + after + 1])
 
     def _get_signatures(self):
-        return self._name.infer().get_signatures()
+        names = convert_names([self._name], prefer_stubs=True)
+        return [sig for name in names for sig in name.infer().get_signatures()]
 
     def get_signatures(self):
         return [

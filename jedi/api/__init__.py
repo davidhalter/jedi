@@ -350,7 +350,7 @@ class Script(object):
 
         :rtype: list of :class:`classes.Definition`
         """
-        definitions = self.goto(line, column)
+        definitions = self.goto(line, column, follow_imports=True)
         if definitions:
             return definitions
         leaf = self._module_node.get_leaf_for_position((line, column))

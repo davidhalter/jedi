@@ -3,7 +3,7 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
-from jedi.parser_utils import find_statement_documentation
+from jedi.parser_utils import find_statement_documentation, clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import docstrings
@@ -311,18 +311,22 @@ class TreeNameDefinition(AbstractTreeName):
         return indexes
 
     def py__doc__(self):
-        if self.api_type in ('function', 'class', 'module'):
+        api_type = self.api_type
+        if api_type in ('function', 'class'):
             # Make sure the names are not TreeNameDefinitions anymore.
-            return _merge_name_docs([v.name for v in self.infer()])
+            return clean_scope_docstring(self.tree_name.get_definition())
 
-        if self.api_type == 'statement' and self.tree_name.is_definition():
+        if api_type == 'module':
+            names = self.goto()
+            if self not in names:
+                return _merge_name_docs(names)
+
+        if api_type == 'statement' and self.tree_name.is_definition():
             return find_statement_documentation(self.tree_name.get_definition())
         return ''
 
     def get_signatures(self):
-        if self.api_type in ('function', 'class'):
-            return self.infer().get_signatures()
-        return []
+        return self.infer().get_signatures()
 
 
 class _ParamMixin(object):
@@ -597,7 +601,14 @@ class NameWrapper(object):
 class StubNameMixin(object):
     def py__doc__(self):
         from jedi.inference.gradual.conversion import convert_names
-        names = convert_names([self], prefer_stub_to_compiled=False)
+        # Stubs are not complicated and we can just follow simple statements
+        # that have an equals in them, because they typically make something
+        # else public. See e.g. stubs for `requests`.
+        names = [self]
+        if self.api_type == 'statement' and '=' in self.tree_name.get_definition().children:
+            names = [v.name for v in self.infer()]
+
+        names = convert_names(names, prefer_stub_to_compiled=False)
         if self in names:
             return super(StubNameMixin, self).py__doc__()
         else:

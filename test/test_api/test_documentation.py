@@ -59,7 +59,7 @@ def test_help_no_returns(Script, code, kwargs):
         ('X.x', 'Yeah '),
         ('X().x', 'Yeah '),
         ('X.y', 'f g '),
-        ('X.z', ''),
+        ('X.z', '<lambda>(x)'),
     ]
 )
 def test_attribute_docstrings(goto_or_help, expected_doc, to_execute):
@@ -70,7 +70,7 @@ def test_attribute_docstrings(goto_or_help, expected_doc, to_execute):
             """ Yeah """
             y = 5
             "f g "
-            z = lambda: 1
+            z = lambda x: 1
         ''')
 
     d, = goto_or_help(code + to_execute)
