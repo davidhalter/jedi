@@ -256,8 +256,53 @@ class BaseDefinition(object):
 
     @property
     def description(self):
-        """A textual description of the object."""
-        return self._name.get_public_name()
+        """
+        A description of the :class:`.Definition` object, which is heavily used
+        in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
+
+        Example:
+
+        >>> from jedi._compatibility import no_unicode_pprint
+        >>> from jedi import Script
+        >>> source = '''
+        ... def f():
+        ...     pass
+        ...
+        ... class C:
+        ...     pass
+        ...
+        ... variable = f if random.choice([0,1]) else C'''
+        >>> script = Script(source)  # line is maximum by default
+        >>> defs = script.infer(column=3)
+        >>> defs = sorted(defs, key=lambda d: d.line)
+        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
+        [<Definition full_name='__main__.f', description='def f'>,
+         <Definition full_name='__main__.C', description='class C'>]
+        >>> str(defs[0].description)  # strip literals in python2
+        'def f'
+        >>> str(defs[1].description)
+        'class C'
+
+        """
+        typ = self.type
+        tree_name = self._name.tree_name
+        if typ == 'param':
+            return typ + ' ' + self._name.to_string()
+        if typ in ('function', 'class', 'module', 'instance') or tree_name is None:
+            if typ == 'function':
+                # For the description we want a short and a pythonic way.
+                typ = 'def'
+            return typ + ' ' + self._name.get_public_name()
+
+        definition = tree_name.get_definition(include_setitem=True) or tree_name
+        # Remove the prefix, because that's not what we want for get_code
+        # here.
+        txt = definition.get_code(include_prefix=False)
+        # Delete comments:
+        txt = re.sub(r'#[^\n]+\n', ' ', txt)
+        # Delete multi spaces/newlines
+        txt = re.sub(r'\s+', ' ', txt).strip()
+        return txt
 
     @property
     def full_name(self):
@@ -527,12 +572,6 @@ class Completion(BaseDefinition):
             fast = False
         return super(Completion, self).docstring(raw=raw, fast=fast)
 
-    @property
-    def description(self):
-        """Provide a description of the completion object."""
-        # TODO improve the class structure.
-        return Definition.description.__get__(self)
-
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())
 
@@ -563,56 +602,6 @@ class Definition(BaseDefinition):
     """
     def __init__(self, inference_state, definition):
         super(Definition, self).__init__(inference_state, definition)
-
-    @property
-    def description(self):
-        """
-        A description of the :class:`.Definition` object, which is heavily used
-        in testing. e.g. for ``isinstance`` it returns ``def isinstance``.
-
-        Example:
-
-        >>> from jedi._compatibility import no_unicode_pprint
-        >>> from jedi import Script
-        >>> source = '''
-        ... def f():
-        ...     pass
-        ...
-        ... class C:
-        ...     pass
-        ...
-        ... variable = f if random.choice([0,1]) else C'''
-        >>> script = Script(source)  # line is maximum by default
-        >>> defs = script.infer(column=3)
-        >>> defs = sorted(defs, key=lambda d: d.line)
-        >>> no_unicode_pprint(defs)  # doctest: +NORMALIZE_WHITESPACE
-        [<Definition full_name='__main__.f', description='def f'>,
-         <Definition full_name='__main__.C', description='class C'>]
-        >>> str(defs[0].description)  # strip literals in python2
-        'def f'
-        >>> str(defs[1].description)
-        'class C'
-
-        """
-        typ = self.type
-        tree_name = self._name.tree_name
-        if typ == 'param':
-            return typ + ' ' + self._name.to_string()
-        if typ in ('function', 'class', 'module', 'instance') or tree_name is None:
-            if typ == 'function':
-                # For the description we want a short and a pythonic way.
-                typ = 'def'
-            return typ + ' ' + self._name.get_public_name()
-
-        definition = tree_name.get_definition(include_setitem=True) or tree_name
-        # Remove the prefix, because that's not what we want for get_code
-        # here.
-        txt = definition.get_code(include_prefix=False)
-        # Delete comments:
-        txt = re.sub(r'#[^\n]+\n', ' ', txt)
-        # Delete multi spaces/newlines
-        txt = re.sub(r'\s+', ' ', txt).strip()
-        return txt
 
     @property
     def desc_with_module(self):
