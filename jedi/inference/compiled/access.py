@@ -103,6 +103,15 @@ SignatureParam = namedtuple(
 )
 
 
+def shorten_repr(func):
+    def wrapper(self):
+        r = func(self)
+        if len(r) > 50:
+            r = r[:50] + '..'
+        return r
+    return wrapper
+
+
 def compiled_objects_cache(attribute_name):
     def decorator(func):
         """
@@ -283,6 +292,7 @@ class DirectObjectAccess(object):
         return paths
 
     @_force_unicode_decorator
+    @shorten_repr
     def get_repr(self):
         builtins = 'builtins', '__builtin__'
 
