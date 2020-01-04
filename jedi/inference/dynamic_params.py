@@ -24,7 +24,7 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference import imports
 from jedi.inference.arguments import TreeArguments
 from jedi.inference.param import get_executed_param_names
-from jedi.inference.helpers import is_stdlib_path
+from jedi.inference.helpers import is_stdlib_path, is_big_annoying_library
 from jedi.inference.utils import to_list
 from jedi.inference.value import instance
 from jedi.inference.base_value import ValueSet, NO_VALUES
@@ -67,6 +67,9 @@ def dynamic_param_lookup(function_value, param_index):
     have to look for all calls to ``func`` to find out what ``foo`` possibly
     is.
     """
+    if is_big_annoying_library(function_value.parent_context):
+        return NO_VALUES
+
     funcdef = function_value.tree_node
 
     if not settings.dynamic_params:

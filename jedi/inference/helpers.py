@@ -261,3 +261,9 @@ def parse_dotted_names(nodes, is_import_from, until_node=None):
 
 def values_from_qualified_names(inference_state, *names):
     return inference_state.import_module(names[:-1]).py__getattribute__(names[-1])
+
+
+def is_big_annoying_library(context):
+    string_names = context.get_root_context().string_names
+    # Pandas is huge, so just ignore it, because  stuff makes everything slow.
+    return string_names[0] in ('pandas', 'numpy', 'tensorflow', 'matplotlib')

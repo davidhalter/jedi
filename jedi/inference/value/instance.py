@@ -6,7 +6,7 @@ from jedi import debug
 from jedi import settings
 from jedi.inference import compiled
 from jedi.inference.compiled.value import CompiledObjectFilter
-from jedi.inference.helpers import values_from_qualified_names
+from jedi.inference.helpers import values_from_qualified_names, is_big_annoying_library
 from jedi.inference.filters import AbstractFilter, AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, TreeNameDefinition, ParamName, \
     NameWrapper
@@ -237,6 +237,8 @@ class _BaseTreeInstance(AbstractInstanceValue):
         # We are inversing this, because a hand-crafted `__getattribute__`
         # could still call another hand-crafted `__getattr__`, but not the
         # other way around.
+        if is_big_annoying_library(self.parent_context):
+            return NO_VALUES
         names = (self.get_function_slot_names(u'__getattr__')
                  or self.get_function_slot_names(u'__getattribute__'))
         return self.execute_function_slots(names, name)
