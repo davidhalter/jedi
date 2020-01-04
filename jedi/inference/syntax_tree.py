@@ -20,7 +20,8 @@ from jedi.inference.value import ClassValue, FunctionValue
 from jedi.inference.value import iterable
 from jedi.inference.value.dynamic_arrays import ListModification, DictModification
 from jedi.inference.value import TreeInstance
-from jedi.inference.helpers import is_string, is_literal, is_number, get_names_of_node
+from jedi.inference.helpers import is_string, is_literal, is_number, \
+    get_names_of_node, is_big_annoying_library
 from jedi.inference.compiled.access import COMPARISON_OPERATORS
 from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.gradual.stub_value import VersionInfo
@@ -750,6 +751,10 @@ def _apply_decorators(context, node):
     else:
         decoratee_value = FunctionValue.from_context(context, node)
     initial = values = ValueSet([decoratee_value])
+
+    if is_big_annoying_library(context):
+        return values
+
     for dec in reversed(node.get_decorators()):
         debug.dbg('decorator: %s %s', dec, values, color="MAGENTA")
         with debug.increase_indent_cm():
