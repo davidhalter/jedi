@@ -119,7 +119,7 @@ def _internal_check_array_additions(context, sequence):
 
     # reset settings
     settings.dynamic_params_for_other_modules = temp_param_add
-    debug.dbg('Dynamic array result %s' % added_types, color='MAGENTA')
+    debug.dbg('Dynamic array result %s', added_types, color='MAGENTA')
     return added_types
 
 
