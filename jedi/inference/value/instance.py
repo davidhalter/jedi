@@ -75,7 +75,7 @@ class AnonymousMethodExecutionContext(BaseFunctionExecutionContext):
         # set the self name
         param_names[0] = InstanceExecutedParamName(
             self.instance,
-            self._function_value,
+            self._value,
             param_names[0].tree_name
         )
         return param_names
