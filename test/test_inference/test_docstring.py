@@ -76,7 +76,7 @@ def test_multiple_docstrings(Script):
     x = func
     '''Docstring of `x`.'''
     x""").help()
-    assert d.docstring() == 'func()\n\nDocstring of `x`.'
+    assert d.docstring() == 'Docstring of `x`.'
 
 
 def test_completion(Script):

@@ -59,7 +59,7 @@ def test_help_no_returns(Script, code, kwargs):
         ('X.x', 'Yeah '),
         ('X().x', 'Yeah '),
         ('X.y', 'f g '),
-        ('X.z', '<lambda>(x)'),
+        ('X.z', ''),
     ]
 )
 def test_attribute_docstrings(goto_or_help, expected_doc, to_execute):

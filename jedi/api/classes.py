@@ -247,7 +247,7 @@ class BaseDefinition(object):
 
         signature_text = '\n'.join(
             signature.to_string()
-            for signature in self._get_signatures()
+            for signature in self._get_signatures(for_docstring=True)
         )
         if signature_text and doc:
             return signature_text + '\n\n' + doc
@@ -484,7 +484,12 @@ class BaseDefinition(object):
         start_index = max(index - before, 0)
         return ''.join(lines[start_index:index + after + 1])
 
-    def _get_signatures(self):
+    def _get_signatures(self, for_docstring=False):
+        if for_docstring and self.type == 'statement' and not self.is_stub():
+            # For docstrings we don't resolve signatures if they are simple
+            # statements and not stubs. This is a speed optimization.
+            return []
+
         names = convert_names([self._name], prefer_stubs=True)
         return [sig for name in names for sig in name.infer().get_signatures()]
 

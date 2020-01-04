@@ -27,8 +27,7 @@ def test_find_stubs_infer(ScriptInStubFolder, code, expected):
     assert [d.name for d in defs] == expected
 
 
-func_without_stub_sig = 'func_without_stub(a)'
-func_without_stub_doc = func_without_stub_sig + '\n\nnostubdoc'
+func_without_stub_doc = 'func_without_stub(a)\n\nnostubdoc'
 func_with_stub_doc = 'func_with_stub(b: int) -> float\n\nwithstubdoc'
 
 
@@ -38,16 +37,16 @@ func_with_stub_doc = 'func_with_stub(b: int) -> float\n\nwithstubdoc'
         ('from with_python import python_only', ''),
         ('from with_python import both', ''),
 
-        ('import with_python; with_python.func_without_stub', func_without_stub_sig),
+        ('import with_python; with_python.func_without_stub', ''),
         ('import with_python.module; with_python.module.func_without_stub', func_without_stub_doc),
         ('from with_python import module; module.func_without_stub', func_without_stub_doc),
         ('from with_python.module import func_without_stub', func_without_stub_doc),
         ('from with_python.module import func_without_stub as f; f', func_without_stub_doc),
         ('from with_python.module import func_without_stub; func_without_stub',
          func_without_stub_doc),
-        ('from with_python import func_without_stub', func_without_stub_sig),
-        ('from with_python import func_without_stub as f; f', func_without_stub_sig),
-        ('from with_python import func_without_stub; func_without_stub', func_without_stub_sig),
+        ('from with_python import func_without_stub', ''),
+        ('from with_python import func_without_stub as f; f', ''),
+        ('from with_python import func_without_stub; func_without_stub', ''),
 
         ('import with_python; with_python.func_with_stub', func_with_stub_doc),
         ('import with_python.module; with_python.module.func_with_stub', func_with_stub_doc),
