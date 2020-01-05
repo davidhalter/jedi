@@ -392,3 +392,33 @@ def test_fuzzy_match():
 
 def test_ellipsis_completion(Script):
     assert Script('...').complete() == []
+
+
+def test_completion_cache(Script, module_injector):
+    """
+    For some modules like numpy, tensorflow or pandas we cache docstrings and
+    type to avoid them slowing us down, because they are huge.
+    """
+    script = Script('import numpy; numpy.foo')
+    module_injector(script._inference_state, ('numpy',), 'def foo(a): "doc"')
+    c, = script.complete()
+    assert c.name == 'foo'
+    assert c.type == 'function'
+    assert c.docstring() == 'foo(a)\n\ndoc'
+
+    code = dedent('''\
+        class foo:
+            'doc2'
+            def __init__(self):
+                pass
+        ''')
+    script = Script('import numpy; numpy.foo')
+    module_injector(script._inference_state, ('numpy',), code)
+    # The outpus should still be the same
+    c, = script.complete()
+    assert c.name == 'foo'
+    assert c.type == 'function'
+    assert c.docstring() == 'foo(a)\n\ndoc'
+    cls, = c.infer()
+    assert cls.type == 'class'
+    assert cls.docstring() == 'foo()\n\ndoc2'

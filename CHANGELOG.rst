@@ -15,6 +15,8 @@ Changelog
 - Completion for "proxies" works now. These are classes that have a
   ``__getattr__(self, name)`` method that does a ``return getattr(x, name)``.
 - Understanding of Pytest fixtures.
+- Tensorflow, Numpy and Pandas completions should now be about 4-10x faster
+  after loading them initially.
 - Big **Script API Changes**:
     - The line and column parameters of ``jedi.Script`` are now deprecated
     - ``completions`` deprecated, use ``complete`` instead
