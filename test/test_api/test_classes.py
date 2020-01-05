@@ -175,13 +175,17 @@ def test_completion_docstring(Script, jedi_path):
 
 def test_completion_params(Script):
     c = Script('import string; string.capwords').complete()[0]
-    assert [p.name for p in c.params] == ['s', 'sep']
+    assert [p.name for p in c.get_signatures()[0].params] == ['s', 'sep']
 
 
 def test_functions_should_have_params(Script):
     for c in Script('bool.').complete():
         if c.type == 'function':
-            assert isinstance(c.params, list)
+            if c.name in ('denominator', 'numerator', 'imag', 'real', '__class__'):
+                # Properties
+                assert not c.get_signatures()
+            else:
+                assert c.get_signatures()
 
 
 def test_hashlib_params(Script, environment):
@@ -190,14 +194,15 @@ def test_hashlib_params(Script, environment):
 
     script = Script(source='from hashlib import sha256')
     c, = script.complete()
-    assert [p.name for p in c.params] == ['arg']
+    sig, = c.get_signatures()
+    assert [p.name for p in sig.params] == ['arg']
 
 
 def test_signature_params(Script):
     def check(defs):
-        params = defs[0].params
-        assert len(params) == 1
-        assert params[0].name == 'bar'
+        signature, = defs[0].get_signatures()
+        assert len(signature.params) == 1
+        assert signature.params[0].name == 'bar'
 
     s = dedent('''
     def foo(bar):
@@ -215,7 +220,7 @@ def test_param_endings(Script):
     Params should be represented without the comma and whitespace they have
     around them.
     """
-    sig = Script('def x(a, b=5, c=""): pass\n x(').find_signatures()[0]
+    sig, = Script('def x(a, b=5, c=""): pass\n x(').find_signatures()
     assert [p.description for p in sig.params] == ['param a', 'param b=5', 'param c=""']
 
 
