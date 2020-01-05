@@ -91,9 +91,8 @@ def _cache_stub_file_map(version_info):
 def import_module_decorator(func):
     @wraps(func)
     def wrapper(inference_state, import_names, parent_module_value, sys_path, prefer_stubs):
-        try:
-            python_value_set = inference_state.module_cache.get(import_names)
-        except KeyError:
+        python_value_set = inference_state.module_cache.get(import_names)
+        if python_value_set is None:
             if parent_module_value is not None and parent_module_value.is_stub():
                 parent_module_values = parent_module_value.non_stub_value_set
             else:

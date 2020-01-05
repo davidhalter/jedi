@@ -38,7 +38,6 @@ from jedi.plugins import plugin_manager
 
 class ModuleCache(object):
     def __init__(self):
-        self._path_cache = {}
         self._name_cache = {}
 
     def add(self, string_names, value_set):
@@ -46,10 +45,7 @@ class ModuleCache(object):
             self._name_cache[string_names] = value_set
 
     def get(self, string_names):
-        return self._name_cache[string_names]
-
-    def get_from_path(self, path):
-        return self._path_cache[path]
+        return self._name_cache.get(string_names)
 
 
 # This memoization is needed, because otherwise we will infinitely loop on
@@ -286,6 +282,14 @@ class Importer(object):
         if not self.import_path or not self._infer_possible:
             return NO_VALUES
 
+        # Check caches first
+        from_cache = self._inference_state.stub_module_cache.get(self._str_import_path)
+        if from_cache is not None:
+            return ValueSet({from_cache})
+        from_cache = self._inference_state.module_cache.get(self._str_import_path)
+        if from_cache is not None:
+            return from_cache
+
         sys_path = self._sys_path_with_modifications(is_completion=False)
 
         return import_module_by_names(
@@ -455,7 +459,7 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
             return NO_VALUES
     else:
         module = _load_python_module(
-            inference_state, file_io_or_ns, sys_path,
+            inference_state, file_io_or_ns,
             import_names=import_names,
             is_package=is_pkg,
         )
@@ -467,13 +471,8 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
     return ValueSet([module])
 
 
-def _load_python_module(inference_state, file_io, sys_path=None,
+def _load_python_module(inference_state, file_io,
                         import_names=None, is_package=False):
-    try:
-        return inference_state.module_cache.get_from_path(file_io.path)
-    except KeyError:
-        pass
-
     module_node = inference_state.parse(
         file_io=file_io,
         cache=True,
@@ -511,7 +510,6 @@ def load_module_from_path(inference_state, file_io, base_names=None):
     here to ensure that a random path is still properly loaded into the Jedi
     module structure.
     """
-    e_sys_path = inference_state.get_sys_path()
     path = file_io.path
     if base_names:
         module_name = os.path.basename(path)
@@ -522,11 +520,11 @@ def load_module_from_path(inference_state, file_io, base_names=None):
         else:
             import_names = base_names + (module_name,)
     else:
+        e_sys_path = inference_state.get_sys_path()
         import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
 
     module = _load_python_module(
         inference_state, file_io,
-        sys_path=e_sys_path,
         import_names=import_names,
         is_package=is_package,
     )
