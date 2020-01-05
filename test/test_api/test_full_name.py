@@ -113,3 +113,9 @@ def test_os_path(Script):
 def test_os_issues(Script):
     """Issue #873"""
     assert [c.name for c in Script('import os\nos.nt''').complete()] == ['nt']
+
+
+def test_param_name(Script):
+    name, = Script('class X:\n def foo(bar): bar''').goto()
+    assert name.type == 'param'
+    assert name.full_name is None

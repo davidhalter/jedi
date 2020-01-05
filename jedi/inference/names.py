@@ -341,6 +341,9 @@ class _ParamMixin(object):
             return '**'
         return ''
 
+    def get_qualified_names(self, include_module_names=False):
+        return None
+
 
 class ParamNameInterface(_ParamMixin):
     api_type = u'param'
