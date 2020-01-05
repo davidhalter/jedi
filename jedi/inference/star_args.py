@@ -14,6 +14,7 @@ The signature here for bar should be `bar(b, c)` instead of bar(*args).
 from jedi._compatibility import Parameter
 from jedi.inference.utils import to_list
 from jedi.inference.names import ParamNameWrapper
+from jedi.inference.helpers import is_big_annoying_library
 
 
 def _iter_nodes_for_param(param_name):
@@ -93,6 +94,14 @@ def _remove_given_params(arguments, param_names):
 
 @to_list
 def process_params(param_names, star_count=3):  # default means both * and **
+    if param_names:
+        if is_big_annoying_library(param_names[0].parent_context):
+            # At first this feature can look innocent, but it does a lot of
+            # type inference in some cases, so we just ditch it.
+            for p in param_names:
+                yield p
+            return
+
     used_names = set()
     arg_callables = []
     kwarg_callables = []
