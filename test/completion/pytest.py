@@ -137,3 +137,33 @@ def test_p(capsysbin
 
 #? ['tmpdir', 'tmpdir_factory']
 def test_p(tmpdi
+
+
+def close_parens():
+    pass
+# -----------------
+# inheritance
+# -----------------
+
+@fixture
+#? 40 ['inheritance_fixture']
+def inheritance_fixture(inheritance_fixture):
+    #? str()
+    inheritance_fixture
+    #? ['upper']
+    inheritance_fixture.upper
+    return 1
+
+
+#! 48 ['def inheritance_fixture']
+def test_inheritance_fixture(inheritance_fixture, caplog):
+    #? int()
+    inheritance_fixture
+
+    #? ['set_level']
+    caplog.set_le
+
+
+@pytest.fixture
+def caplog(caplog):
+    yield caplog

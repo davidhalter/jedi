@@ -15,3 +15,8 @@ def my_conftest_fixture(my_other_conftest_fixture):
 
 def my_not_existing_fixture():
     return 3  # Just a normal function
+
+
+@pytest.fixture()
+def inheritance_fixture():
+    return ''

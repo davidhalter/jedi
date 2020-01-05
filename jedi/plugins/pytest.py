@@ -41,9 +41,17 @@ def infer_anonymous_param(func):
             return function_context.get_return_values()
 
     def wrapper(param_name):
-        if _is_a_pytest_param(param_name):
+        is_pytest_param, param_name_is_function_name = \
+            _is_a_pytest_param_and_inherited(param_name)
+        if is_pytest_param:
             module = param_name.get_root_context()
-            fixtures = _goto_pytest_fixture(module, param_name.string_name)
+            fixtures = _goto_pytest_fixture(
+                module,
+                param_name.string_name,
+                # This skips the current module, because we are basically
+                # inheriting a fixture from somewhere else.
+                skip_own_module=param_name_is_function_name,
+            )
             if fixtures:
                 return ValueSet.from_sets(
                     get_returns(value)
@@ -56,8 +64,14 @@ def infer_anonymous_param(func):
 
 def goto_anonymous_param(func):
     def wrapper(param_name):
-        if _is_a_pytest_param(param_name):
-            names = _goto_pytest_fixture(param_name.get_root_context(), param_name.string_name)
+        is_pytest_param, param_name_is_function_name = \
+            _is_a_pytest_param_and_inherited(param_name)
+        if is_pytest_param:
+            names = _goto_pytest_fixture(
+                param_name.get_root_context(),
+                param_name.string_name,
+                skip_own_module=param_name_is_function_name,
+            )
             if names:
                 return names
         return func(param_name)
@@ -77,14 +91,14 @@ def complete_param_names(func):
     return wrapper
 
 
-def _goto_pytest_fixture(module_context, name):
-    for module_context in _iter_pytest_modules(module_context):
+def _goto_pytest_fixture(module_context, name, skip_own_module):
+    for module_context in _iter_pytest_modules(module_context, skip_own_module=skip_own_module):
         names = FixtureFilter(module_context).get(name)
         if names:
             return names
 
 
-def _is_a_pytest_param(param_name):
+def _is_a_pytest_param_and_inherited(param_name):
     """
     Pytest params are either in a `test_*` function or have a pytest fixture
     with the decorator @pytest.fixture.
@@ -93,9 +107,10 @@ def _is_a_pytest_param(param_name):
     """
     funcdef = search_ancestor(param_name.tree_name, 'funcdef')
     if funcdef is None:  # A lambda
-        return False
+        return False, False
     decorators = funcdef.get_decorators()
-    return _is_pytest_func(funcdef.name.value, decorators)
+    return _is_pytest_func(funcdef.name.value, decorators), \
+        funcdef.name.value == param_name.string_name
 
 
 def _is_pytest_func(func_name, decorator_nodes):
@@ -104,8 +119,9 @@ def _is_pytest_func(func_name, decorator_nodes):
 
 
 @inference_state_method_cache()
-def _iter_pytest_modules(module_context):
-    yield module_context
+def _iter_pytest_modules(module_context, skip_own_module=False):
+    if not skip_own_module:
+        yield module_context
 
     file_io = module_context.get_value().file_io
     if file_io is not None:
