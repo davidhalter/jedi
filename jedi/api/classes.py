@@ -19,6 +19,7 @@ from jedi.inference.gradual.typeshed import StubModuleValue
 from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
 from jedi.api.keywords import KeywordName
+from jedi.api import completion_cache
 
 
 def _sort_names_by_start_pos(names):
@@ -241,18 +242,24 @@ class BaseDefinition(object):
         """
         if isinstance(self._name, ImportName) and fast:
             return ''
-        doc = self._name.py__doc__()
+        doc = self._get_docstring()
         if raw:
             return doc
 
-        signature_text = '\n'.join(
-            signature.to_string()
-            for signature in self._get_signatures(for_docstring=True)
-        )
+        signature_text = self._get_docstring_signature()
         if signature_text and doc:
             return signature_text + '\n\n' + doc
         else:
             return signature_text + doc
+
+    def _get_docstring(self):
+        return self._name.py__doc__()
+
+    def _get_docstring_signature(self):
+        return '\n'.join(
+            signature.to_string()
+            for signature in self._get_signatures(for_docstring=True)
+        )
 
     @property
     def description(self):
@@ -485,7 +492,7 @@ class BaseDefinition(object):
         return ''.join(lines[start_index:index + after + 1])
 
     def _get_signatures(self, for_docstring=False):
-        if for_docstring and self.type == 'statement' and not self.is_stub():
+        if for_docstring and self._name.api_type == 'statement' and not self.is_stub():
             # For docstrings we don't resolve signatures if they are simple
             # statements and not stubs. This is a speed optimization.
             return []
@@ -508,12 +515,14 @@ class Completion(BaseDefinition):
     `Completion` objects are returned from :meth:`api.Script.complete`. They
     provide additional information about a completion.
     """
-    def __init__(self, inference_state, name, stack, like_name_length, is_fuzzy):
+    def __init__(self, inference_state, name, stack, like_name_length,
+                 is_fuzzy, cached_name=None):
         super(Completion, self).__init__(inference_state, name)
 
         self._like_name_length = like_name_length
         self._stack = stack
         self._is_fuzzy = is_fuzzy
+        self._cached_name = cached_name
 
         # Completion objects with the same Completion name (which means
         # duplicate items in the completion)
@@ -575,7 +584,46 @@ class Completion(BaseDefinition):
             # In this case we can just resolve the like name, because we
             # wouldn't load like > 100 Python modules anymore.
             fast = False
+
         return super(Completion, self).docstring(raw=raw, fast=fast)
+
+    def _get_docstring(self):
+        if self._cached_name is not None:
+            return completion_cache.get_docstring(
+                self._cached_name,
+                self._name.get_public_name(),
+                lambda: self._get_cache()
+            )
+        return super(Completion, self)._get_docstring()
+
+    def _get_docstring_signature(self):
+        if self._cached_name is not None:
+            return completion_cache.get_docstring_signature(
+                self._cached_name,
+                self._name.get_public_name(),
+                lambda: self._get_cache()
+            )
+        return super(Completion, self)._get_docstring_signature()
+
+    def _get_cache(self):
+        typ = super(Completion, self).type
+        return (
+            typ,
+            super(Completion, self)._get_docstring_signature(),
+            super(Completion, self)._get_docstring(),
+        )
+
+    @property
+    def type(self):
+        # Purely a speed optimization.
+        if self._cached_name is not None:
+            return completion_cache.get_type(
+                self._cached_name,
+                self._name.get_public_name(),
+                lambda: self._get_cache()
+            )
+
+        return super(Completion, self).type
 
     def __repr__(self):
         return '<%s: %s>' % (type(self).__name__, self._name.get_public_name())

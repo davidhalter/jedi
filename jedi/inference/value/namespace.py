@@ -26,10 +26,10 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     api_type = u'module'
     parent_context = None
 
-    def __init__(self, inference_state, fullname, paths):
+    def __init__(self, inference_state, string_names, paths):
         super(ImplicitNamespaceValue, self).__init__(inference_state, parent_context=None)
         self.inference_state = inference_state
-        self._fullname = fullname
+        self.string_names = string_names
         self._paths = paths
 
     def get_filters(self, origin_scope=None):
@@ -47,13 +47,13 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
     def py__package__(self):
         """Return the fullname
         """
-        return self._fullname.split('.')
+        return self.string_names
 
     def py__path__(self):
         return self._paths
 
     def py__name__(self):
-        return self._fullname
+        return '.'.join(self.string_names)
 
     def is_namespace(self):
         return True
@@ -68,4 +68,4 @@ class ImplicitNamespaceValue(Value, SubModuleDictMixin):
         return NamespaceContext(self)
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._fullname)
+        return '<%s: %s>' % (self.__class__.__name__, self.py__name__())

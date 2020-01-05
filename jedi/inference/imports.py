@@ -446,7 +446,7 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
         from jedi.inference.value.namespace import ImplicitNamespaceValue
         module = ImplicitNamespaceValue(
             inference_state,
-            fullname=file_io_or_ns.name,
+            string_names=tuple(file_io_or_ns.name.split('.')),
             paths=file_io_or_ns.paths,
         )
     elif file_io_or_ns is None:

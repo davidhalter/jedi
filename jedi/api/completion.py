@@ -40,7 +40,7 @@ def get_signature_param_names(signatures):
                 yield ParamNameWithEquals(p._name)
 
 
-def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
+def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cached_name):
     comp_dct = {}
     if settings.case_insensitive_completion:
         like_name = like_name.lower()
@@ -59,6 +59,7 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy):
                 stack,
                 len(like_name),
                 is_fuzzy=fuzzy,
+                cached_name=cached_name,
             )
             k = (new.name, new.complete)  # key
             if k in comp_dct and settings.no_completion_duplicates:
@@ -142,10 +143,11 @@ class Completion:
                 prefixed_completions = self._complete_in_string(start_leaf, string)
             return prefixed_completions
 
-        completion_names = self._complete_python(leaf)
+        cached_name, completion_names = self._complete_python(leaf)
 
         completions = list(filter_names(self._inference_state, completion_names,
-                                        self.stack, self._like_name, self._fuzzy))
+                                        self.stack, self._like_name,
+                                        self._fuzzy, cached_name=cached_name))
 
         return (
             # Removing duplicates mostly to remove False/True/None duplicates.
@@ -176,6 +178,7 @@ class Completion:
             self._original_position[0],
             self._original_position[1] - len(self._like_name)
         )
+        cached_name = None
 
         try:
             self.stack = stack = helpers.get_stack_at_position(
@@ -186,10 +189,10 @@ class Completion:
             if value == '.':
                 # After ErrorLeaf's that are dots, we will not do any
                 # completions since this probably just confuses the user.
-                return []
+                return cached_name, []
 
             # If we don't have a value, just use global completion.
-            return self._complete_global_scope()
+            return cached_name, self._complete_global_scope()
 
         allowed_transitions = \
             list(stack._allowed_transition_names_and_token_types())
@@ -245,7 +248,7 @@ class Completion:
             if nodes and nodes[-1] in ('as', 'def', 'class'):
                 # No completions for ``with x as foo`` and ``import x as foo``.
                 # Also true for defining names as a class or function.
-                return list(self._complete_inherited(is_function=True))
+                return cached_name, list(self._complete_inherited(is_function=True))
             elif "import_stmt" in nonterminals:
                 level, names = parse_dotted_names(nodes, "import_from" in nonterminals)
 
@@ -257,7 +260,8 @@ class Completion:
                 )
             elif nonterminals[-1] in ('trailer', 'dotted_name') and nodes[-1] == '.':
                 dot = self._module_node.get_leaf_for_position(self._position)
-                completion_names += self._complete_trailer(dot.get_previous_leaf())
+                cached_name, n = self._complete_trailer(dot.get_previous_leaf())
+                completion_names += n
             elif self._is_parameter_completion():
                 completion_names += self._complete_params(leaf)
             else:
@@ -276,7 +280,7 @@ class Completion:
                 signatures = self._signatures_callback(*self._position)
                 completion_names += get_signature_param_names(signatures)
 
-        return completion_names
+        return cached_name, completion_names
 
     def _is_parameter_completion(self):
         tos = self.stack[-1]
@@ -337,13 +341,26 @@ class Completion:
         inferred_context = self._module_context.create_context(previous_leaf)
         values = infer_call_of_leaf(inferred_context, previous_leaf)
         debug.dbg('trailer completion values: %s', values, color='MAGENTA')
-        return self._complete_trailer_for_values(values)
+
+        # The cached name simply exists to make speed optimizations for certain
+        # modules.
+        cached_name = None
+        if len(values) == 1:
+            v, = values
+            if v.is_module():
+                if len(v.string_names) == 1:
+                    module_name = v.string_names[0]
+                    if module_name in ('numpy', 'tensorflow', 'matplotlib', 'pandas'):
+                        cached_name = module_name
+
+        return cached_name, self._complete_trailer_for_values(values)
 
     def _complete_trailer_for_values(self, values):
-        user_value = get_user_context(self._module_context, self._position)
+        user_context = get_user_context(self._module_context, self._position)
+
         completion_names = []
         for value in values:
-            for filter in value.get_filters(origin_scope=user_value.tree_node):
+            for filter in value.get_filters(origin_scope=user_context.tree_node):
                 completion_names += filter.values()
 
             if not value.is_stub() and isinstance(value, TreeInstance):
@@ -352,7 +369,7 @@ class Completion:
         python_values = convert_values(values)
         for c in python_values:
             if c not in values:
-                for filter in c.get_filters(origin_scope=user_value.tree_node):
+                for filter in c.get_filters(origin_scope=user_context.tree_node):
                     completion_names += filter.values()
         return completion_names
 
