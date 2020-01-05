@@ -533,6 +533,15 @@ class DirectObjectAccess(object):
         try:
             import typing
             o = typing.get_type_hints(self._obj).get('return')
+            return self._create_access_path(o)
+        except ImportError:
+            # Old behaviour
+            pass
+        except AttributeError:
+            return None
+
+        try:
+            o = self._obj.__annotations__.get('return')
         except AttributeError:
             return None
 
