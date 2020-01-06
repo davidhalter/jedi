@@ -20,3 +20,10 @@ def my_not_existing_fixture():
 @pytest.fixture()
 def inheritance_fixture():
     return ''
+
+
+@pytest.fixture
+def testdir(testdir):
+    #? ['chdir']
+    testdir.chdir
+    return testdir

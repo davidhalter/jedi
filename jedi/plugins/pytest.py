@@ -129,11 +129,12 @@ def _iter_pytest_modules(module_context, skip_own_module=False):
         sys_path = module_context.inference_state.get_sys_path()
         while any(folder.path.startswith(p) for p in sys_path):
             file_io = folder.get_file_io('conftest.py')
-            try:
-                m = load_module_from_path(module_context.inference_state, file_io)
-                yield m.as_context()
-            except FileNotFoundError:
-                pass
+            if file_io.path != module_context.py__file__():
+                try:
+                    m = load_module_from_path(module_context.inference_state, file_io)
+                    yield m.as_context()
+                except FileNotFoundError:
+                    pass
             folder = folder.get_parent_folder()
 
     for names in _PYTEST_FIXTURE_MODULES:
