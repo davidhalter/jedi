@@ -113,6 +113,8 @@ def test_tree_signature(Script, environment, code, expected):
         # Classes / inheritance
         ('full_redirect(C)', 'z, *, c'),
         ('full_redirect(C())', 'y'),
+        ('full_redirect(G)', 't: T'),
+        ('full_redirect(G[str])', 't: T'),
         ('D', 'D(a, z, /)'),
         ('D()', 'D(x, y)'),
         ('D().foo', 'foo(a, *, bar, z, **kwargs)'),
@@ -189,6 +191,11 @@ def test_nested_signatures(Script, environment, combination, expected, skip_pre_
 
             def foo(self, a, **kwargs):
                 super().foo(**kwargs)
+
+        from typing import Generic, TypeVar
+        T = TypeVar('T')
+        class G(Generic[T]):
+            def __init__(self, i, t: T): ...
     ''')
     code += 'z = ' + combination + '\nz('
     sig, = Script(code).find_signatures()

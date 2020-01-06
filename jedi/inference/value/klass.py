@@ -133,8 +133,6 @@ class ClassMixin(object):
 
     def py__call__(self, arguments=None):
         from jedi.inference.value import TreeInstance
-        if arguments is None:
-            arguments = ValuesArguments([])
         return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
@@ -207,7 +205,11 @@ class ClassMixin(object):
             type_ = builtin_from_name(self.inference_state, u'type')
             assert isinstance(type_, ClassValue)
             if type_ != self:
-                for instance in type_.py__call__():
+                # We are not using execute_with_values here, because the
+                # plugin function for type would get executed instead of an
+                # instance creation.
+                args = ValuesArguments([])
+                for instance in type_.py__call__(args):
                     instance_filters = instance.get_filters()
                     # Filter out self filters
                     next(instance_filters)
@@ -215,7 +217,11 @@ class ClassMixin(object):
                     yield next(instance_filters)
 
     def get_signatures(self):
-        init_funcs = self.py__call__().py__getattribute__('__init__')
+        # Since calling staticmethod without a function is illegal, the Jedi
+        # plugin doesn't return anything. Therefore call directly and get what
+        # we want: An instance of staticmethod.
+        args = ValuesArguments([])
+        init_funcs = self.py__call__(args).py__getattribute__('__init__')
         return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
     def _as_context(self):
