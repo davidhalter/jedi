@@ -133,7 +133,7 @@ class AbstractTreeName(AbstractNameDefinition):
 
     def get_defining_qualified_value(self):
         if self.is_import():
-            raise 1
+            raise NotImplementedError("Shouldn't really happen, please report")
         elif self.parent_context:
             return self.parent_context.get_value()  # Might be None
         return None

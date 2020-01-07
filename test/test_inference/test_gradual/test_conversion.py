@@ -54,3 +54,11 @@ def test_goto_on_file(Script):
     script = Script(path=d1.module_path, _project=project)
     d2, = script.goto(line=d1.line, column=d1.column + 4)
     assert d2.name == 'Bar'
+
+
+def test_goto_import(Script):
+    code = 'from abc import ABC; ABC'
+    d, = Script(code).goto(only_stubs=True)
+    assert d.is_stub()
+    d, = Script(code).goto()
+    assert not d.is_stub()
