@@ -296,9 +296,10 @@ class CompiledObject(Value):
 
 
 class CompiledName(AbstractNameDefinition):
-    def __init__(self, inference_state, parent_context, name):
+    def __init__(self, inference_state, parent_value, name):
         self._inference_state = inference_state
-        self.parent_context = parent_context
+        self.parent_context = parent_value.as_context()
+        self._parent_value = parent_value
         self.string_name = name
 
     def py__doc__(self):
@@ -336,7 +337,7 @@ class CompiledName(AbstractNameDefinition):
     @underscore_memoization
     def infer(self):
         return ValueSet([_create_from_name(
-            self._inference_state, self.parent_context, self.string_name
+            self._inference_state, self._parent_value, self.string_name
         )])
 
 
@@ -484,7 +485,11 @@ class CompiledObjectFilter(AbstractFilter):
         return names
 
     def _create_name(self, name):
-        return self.name_class(self._inference_state, self.compiled_object, name)
+        return self.name_class(
+            self._inference_state,
+            self.compiled_object,
+            name
+        )
 
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, self.compiled_object)

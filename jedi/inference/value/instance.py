@@ -409,9 +409,11 @@ class AnonymousInstance(_BaseTreeInstance):
 
 class CompiledInstanceName(compiled.CompiledName):
     def __init__(self, inference_state, instance, klass, name):
+        parent_value = klass.parent_context.get_value()
+        assert parent_value is not None, "How? Please reproduce and report"
         super(CompiledInstanceName, self).__init__(
             inference_state,
-            klass.parent_context,
+            parent_value,
             name.string_name
         )
         self._instance = instance

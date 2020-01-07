@@ -118,6 +118,7 @@ class MixedName(compiled.CompiledName):
             if parent_value is None:
                 parent_context = None
             else:
+                assert parent_value is not None
                 parent_context = parent_value.as_context()
 
             if parent_context is None or isinstance(parent_context, MixedContext):
@@ -130,7 +131,7 @@ class MixedName(compiled.CompiledName):
                 })
 
         # TODO use logic from compiled.CompiledObjectFilter
-        access_paths = self.parent_context.access_handle.getattr_paths(
+        access_paths = self._parent_value.access_handle.getattr_paths(
             self.string_name,
             default=None
         )
@@ -266,6 +267,8 @@ def _create(inference_state, access_handle, parent_context, *args):
     compiled_object = create_cached_compiled_object(
         inference_state,
         access_handle,
+        # TODO It looks like we have to use the compiled object as a parent context.
+        #      Why is that?
         parent_context=None if parent_context is None
                        else parent_context.compiled_object.as_context()  # noqa
     )
