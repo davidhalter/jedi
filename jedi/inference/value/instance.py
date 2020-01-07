@@ -17,7 +17,7 @@ from jedi.inference.cache import inference_state_method_cache
 from jedi.inference.arguments import ValuesArguments, TreeArgumentsWrapper
 from jedi.inference.value.function import \
     FunctionValue, FunctionMixin, OverloadedFunctionValue, \
-    BaseFunctionExecutionContext, FunctionExecutionContext
+    BaseFunctionExecutionContext, FunctionExecutionContext, FunctionNameInClass
 from jedi.inference.value.klass import ClassFilter
 from jedi.inference.value.dynamic_arrays import get_dynamic_array_instance
 from jedi.parser_utils import function_is_staticmethod, function_is_classmethod
@@ -211,7 +211,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
             new = search_ancestor(new, 'funcdef', 'classdef')
             if class_context.tree_node is new:
                 func = FunctionValue.from_context(class_context, func_node)
-                bound_method = BoundMethod(self, func)
+                bound_method = BoundMethod(self, class_context, func)
                 if func_node.name.value == '__init__':
                     context = bound_method.as_context(self._arguments)
                 else:
@@ -343,7 +343,7 @@ class TreeInstance(_BaseTreeInstance):
                 # First check if the signature even matches, if not we don't
                 # need to infer anything.
                 continue
-            bound_method = BoundMethod(self, signature.value)
+            bound_method = BoundMethod(self, self.class_value.as_context(), signature.value)
             all_annotations = py__annotations__(signature.value.tree_node)
             type_var_dict = infer_type_vars_for_execution(bound_method, args, all_annotations)
             if type_var_dict:
@@ -446,12 +446,20 @@ class CompiledInstanceClassFilter(AbstractFilter):
 
 
 class BoundMethod(FunctionMixin, ValueWrapper):
-    def __init__(self, instance, function):
+    def __init__(self, instance, class_context, function):
         super(BoundMethod, self).__init__(function)
         self.instance = instance
+        self._class_context = class_context
 
     def is_bound_method(self):
         return True
+
+    @property
+    def name(self):
+        return FunctionNameInClass(
+            self._class_context,
+            super(BoundMethod, self).name
+        )
 
     def py__class__(self):
         c, = values_from_qualified_names(self.inference_state, u'types', u'MethodType')
@@ -477,7 +485,7 @@ class BoundMethod(FunctionMixin, ValueWrapper):
 
     def get_signature_functions(self):
         return [
-            BoundMethod(self.instance, f)
+            BoundMethod(self.instance, self._class_context, f)
             for f in self._wrapped_value.get_signature_functions()
         ]
 

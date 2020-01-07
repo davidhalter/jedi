@@ -311,6 +311,13 @@ class CompiledName(AbstractNameDefinition):
             return None
         return parent_qualified_names + (self.string_name,)
 
+    def get_defining_qualified_value(self):
+        context = self.parent_context
+        if context.is_module() or context.is_class():
+            return self.parent_context.get_value()  # Might be None
+
+        return None
+
     def __repr__(self):
         try:
             name = self.parent_context.name  # __name__ is not defined all the time

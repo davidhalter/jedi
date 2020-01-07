@@ -11,7 +11,7 @@ from jedi.inference.signature import TreeSignature
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter, \
     AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, AbstractNameDefinition, \
-    AnonymousParamName, ParamName
+    AnonymousParamName, ParamName, NameWrapper
 from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
@@ -68,7 +68,7 @@ class FunctionMixin(object):
         if instance is None:
             # Calling the Foo.bar results in the original bar function.
             return ValueSet([self])
-        return ValueSet([BoundMethod(instance, self)])
+        return ValueSet([BoundMethod(instance, class_value.as_context(), self)])
 
     def get_param_names(self):
         return [AnonymousParamName(self, param.name)
@@ -141,6 +141,15 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         return [self]
 
 
+class FunctionNameInClass(NameWrapper):
+    def __init__(self, class_context, name):
+        super(FunctionNameInClass, self).__init__(name)
+        self._class_context = class_context
+
+    def get_defining_qualified_value(self):
+        return self._class_context.get_value()  # Might be None.
+
+
 class MethodValue(FunctionValue):
     def __init__(self, inference_state, class_context, *args, **kwargs):
         super(MethodValue, self).__init__(inference_state, *args, **kwargs)
@@ -156,6 +165,10 @@ class MethodValue(FunctionValue):
         if names is None:
             return None
         return names + (self.py__name__(),)
+
+    @property
+    def name(self):
+        return FunctionNameInClass(self.class_context, super(MethodValue, self).name)
 
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):

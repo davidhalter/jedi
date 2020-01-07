@@ -135,9 +135,7 @@ class AbstractTreeName(AbstractNameDefinition):
         if self.is_import():
             raise 1
         elif self.parent_context:
-            values = self.parent_context.name.infer()
-            if len(values) == 1:
-                return next(iter(values))
+            return self.parent_context.get_value()  # Might be None
         return None
 
     def goto(self):
@@ -239,6 +237,12 @@ class ValueNameMixin(object):
         if self.parent_context is None:  # A module
             return self._value.as_context()
         return super(ValueNameMixin, self).get_root_context()
+
+    def get_defining_qualified_value(self):
+        context = self.parent_context
+        if context.is_module() or context.is_class():
+            return self.parent_context.get_value()  # Might be None
+        return None
 
     @property
     def api_type(self):
