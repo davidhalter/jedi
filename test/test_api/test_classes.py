@@ -437,16 +437,17 @@ def test_import(names):
     assert n.name == 'os'
     assert n.type == 'module'
 
-    n = nms[2].goto()[0]
-    assert n.name == 'path'
-    assert n.type == 'module'
+    nms = nms[2].goto()
+    assert nms
+    assert all(n.type == 'module' for n in nms)
+    assert 'posixpath' in {n.name for n in nms}
 
     nms = names('import os.path', references=True)
     n = nms[0].goto()[0]
     assert n.name == 'os'
     assert n.type == 'module'
     n = nms[1].goto()[0]
-    # This is very special, normally the name doesn't chance, but since
+    # This is very special, normally the name doesn't change, but since
     # os.path is a sys.modules hack, it does.
     assert n.name in ('macpath', 'ntpath', 'posixpath', 'os2emxpath')
     assert n.type == 'module'

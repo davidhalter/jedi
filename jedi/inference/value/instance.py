@@ -509,6 +509,9 @@ class SelfName(TreeNameDefinition):
     def parent_context(self):
         return self._instance.create_instance_context(self.class_context, self.tree_name)
 
+    def get_defining_qualified_value(self):
+        return self._instance
+
 
 class LazyInstanceClassName(NameWrapper):
     def __init__(self, instance, class_member_name):
@@ -523,6 +526,9 @@ class LazyInstanceClassName(NameWrapper):
 
     def get_signatures(self):
         return self.infer().get_signatures()
+
+    def get_defining_qualified_value(self):
+        return self._instance
 
 
 class InstanceClassFilter(AbstractFilter):

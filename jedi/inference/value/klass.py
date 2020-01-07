@@ -74,6 +74,10 @@ class ClassName(TreeNameDefinition):
             else:
                 yield result_value
 
+    @property
+    def defining_qualified_value(self):
+        return self._class_value
+
 
 class ClassFilter(ParserTreeFilter):
     def __init__(self, class_value, node_context=None, until_position=None,

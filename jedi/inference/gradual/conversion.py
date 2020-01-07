@@ -59,28 +59,23 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
             yield name
             continue
 
-        name_list = name.get_qualified_names()
-        if name_list is None:
-            values = NO_VALUES
-        else:
-            values = _infer_from_stub(
-                module_context,
-                name_list[:-1],
-                ignore_compiled=prefer_stub_to_compiled,
-            )
-        if values and name_list:
-            new_names = values.goto(name_list[-1])
-            for new_name in new_names:
-                yield new_name
-            if new_names:
+        if name.api_type == 'module':
+            values = convert_values(name.infer(), ignore_compiled=prefer_stub_to_compiled)
+            if values:
+                for v in values:
+                    yield v.name
                 continue
-        elif values:
-            for c in values:
-                yield c.name
-            continue
-        # This is the part where if we haven't found anything, just return the
-        # stub name.
-        yield name
+        else:
+            v = name.get_defining_qualified_value()
+            if v is not None:
+                converted = _stub_to_python_value_set(v, ignore_compiled=prefer_stub_to_compiled)
+                if converted:
+                    converted_names = converted.goto(name.get_public_name())
+                    if converted_names:
+                        for n in converted_names:
+                            yield n
+                        continue
+            yield name
 
 
 def _load_stub_module(module):

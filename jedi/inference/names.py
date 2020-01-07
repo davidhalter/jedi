@@ -79,6 +79,13 @@ class AbstractNameDefinition(object):
     def api_type(self):
         return self.parent_context.api_type
 
+    def get_defining_qualified_value(self):
+        """
+        Returns either None or the value that is public and qualified. Won't
+        return a function, because a name in a function is never public.
+        """
+        return None
+
 
 class AbstractArbitraryName(AbstractNameDefinition):
     """
@@ -123,6 +130,15 @@ class AbstractTreeName(AbstractNameDefinition):
         if parent_names is None:
             return None
         return parent_names + (self.tree_name.value,)
+
+    def get_defining_qualified_value(self):
+        if self.is_import():
+            raise 1
+        elif self.parent_context:
+            values = self.parent_context.name.infer()
+            if len(values) == 1:
+                return next(iter(values))
+        return None
 
     def goto(self):
         context = self.parent_context
