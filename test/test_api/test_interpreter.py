@@ -328,9 +328,10 @@ def test_completion_params():
 
     script = jedi.Interpreter('foo', [locals()])
     c, = script.complete()
-    assert [p.name for p in c.params] == ['a', 'b']
-    assert c.params[0].infer() == []
-    t, = c.params[1].infer()
+    sig, = c.get_signatures()
+    assert [p.name for p in sig.params] == ['a', 'b']
+    assert sig.params[0].infer() == []
+    t, = sig.params[1].infer()
     assert t.name == 'int'
 
 
@@ -342,7 +343,8 @@ def test_completion_param_annotations():
     exec_(code, locals())
     script = jedi.Interpreter('foo', [locals()])
     c, = script.complete()
-    a, b, c = c.params
+    sig, = c.get_signatures()
+    a, b, c = sig.params
     assert a.infer() == []
     assert [d.name for d in b.infer()] == ['str']
     assert {d.name for d in c.infer()} == {'int', 'float'}
