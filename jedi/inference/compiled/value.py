@@ -271,6 +271,11 @@ class CompiledObject(Value):
         if self.access_handle.get_repr() == 'None':
             # None as an annotation doesn't need to be executed.
             return ValueSet([self])
+
+        name, args = self.access_handle.get_annotation_name_and_args()
+        arguments = [create_from_access_path(self.inference_state, path) for path in args]
+        if name == 'typing.Union':
+            return ValueSet.from_sets(arg.execute_annotation() for arg in arguments)
         return super(CompiledObject, self).execute_annotation()
 
     def negate(self):

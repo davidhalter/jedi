@@ -653,7 +653,11 @@ def bar():
         ({'return': 'foo()'}, []),
         ({'return': 'bar()'}, ['float']),
         # typing is available via globals.
-        #({'return': 'typing.Union[str, int]'}, ['str']),
+        ({'return': 'typing.Union[str, int]'}, ['int', 'str']),
+        ({'return': 'typing.Union["str", int]'}, ['int']),
+        ({'return': 'typing.Union["str", 1]'}, []),
+        ({'return': 'typing.Optional[str]'}, ['NoneType', 'str']),
+        ({'return': 'typing.Optional[str, int]'}, []),  # Takes only one arg
 
         ({'return': 'decimal.Decimal'}, []),
         ({'return': 'lalalalallalaa'}, []),

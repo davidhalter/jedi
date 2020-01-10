@@ -484,6 +484,19 @@ class DirectObjectAccess(object):
         op = _OPERATORS[operator]
         return self._create_access_path(op(self._obj, other_access._obj))
 
+    def get_annotation_name_and_args(self):
+        """
+        Returns Tuple[Optional[str], Tuple[AccessPath, ...]]
+        """
+        if sys.version_info < (3, 5):
+            return None, ()
+
+        import typing
+        args = typing.get_args(self._obj)
+        origin = typing.get_origin(self._obj)
+        name = None if origin is None else str(origin)
+        return name, tuple(self._create_access_path(arg) for arg in args)
+
     def needs_type_completions(self):
         return inspect.isclass(self._obj) and self._obj != type
 
