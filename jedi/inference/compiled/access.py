@@ -500,7 +500,10 @@ class DirectObjectAccess(object):
                 name = m.group(1)
 
                 import typing
-                args = typing.get_args(self._obj)
+                if sys.version_info >= (3, 8):
+                    args = typing.get_args(self._obj)
+                else:
+                    args = safe_getattr(self._obj, '__args__', default=None)
         return name, tuple(self._create_access_path(arg) for arg in args)
 
     def needs_type_completions(self):

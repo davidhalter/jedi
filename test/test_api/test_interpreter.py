@@ -641,7 +641,7 @@ def bar():
     return float
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5), reason="Ignore Python 2, because EOL")
+@pytest.mark.skipif(sys.version_info < (3, 6), reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
     'annotations, result, code', [
         ({}, [], ''),
