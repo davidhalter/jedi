@@ -18,6 +18,11 @@ else:
     eval(compile("""def exec_(source, global_map):
                         exec source in global_map """, 'blub', 'exec'))
 
+if py_version > 34:
+    import typing
+else:
+    typing = None
+
 
 class _GlobalNameSpace:
     class SideEffectContainer:
@@ -626,3 +631,37 @@ def test_dict_getitem(code, types):
 
     comps = jedi.Interpreter(code, [locals()]).infer()
     assert [c.name for c in comps] == types
+
+
+def foo():
+    raise KeyError
+
+
+def bar():
+    return float
+
+
+@pytest.mark.skipif(sys.version_info < (3, 5), reason="Ignore Python 2, because EOL")
+@pytest.mark.parametrize(
+    'annotations, result', [
+        ({}, []),
+        (None, []),
+        ({'asdf': 'str'}, []),
+
+        ({'return': 'str'}, ['str']),
+        ({'return': 'str().upper'}, []),
+        ({'return': 'foo()'}, []),
+        ({'return': 'bar()'}, ['float']),
+        # typing is available via globals.
+        #({'return': 'typing.Union[str, int]'}, ['str']),
+
+        ({'return': 'decimal.Decimal'}, []),
+        ({'return': 'lalalalallalaa'}, []),
+        ({'return': 'lalalalallalaa.lala'}, []),
+    ]
+)
+def test_string_annotation(annotations, result):
+    x = lambda foo: 1
+    x.__annotations__ = annotations
+    defs = jedi.Interpreter('x()', [locals()]).goto_definitions()
+    assert [d.name for d in defs] == result

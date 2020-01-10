@@ -538,6 +538,17 @@ class DirectObjectAccess(object):
         if o is None:
             return None
 
+        try:
+            # Python 2 doesn't have typing.
+            import typing
+        except ImportError:
+            pass
+        else:
+            try:
+                o = typing.get_type_hints(self._obj).get('return')
+            except Exception:
+                pass
+
         return self._create_access_path(o)
 
     def negate(self):
