@@ -16,7 +16,7 @@ from jedi.inference.names import NameWrapper, ValueName
 from jedi.inference.value.klass import ClassMixin
 from jedi.inference.gradual.base import BaseTypingValue, BaseTypingValueWithGenerics
 from jedi.inference.gradual.type_var import TypeVarClass
-from jedi.inference.gradual.generics import LazyGenericManager
+from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 
 _PROXY_CLASS_TYPES = 'Tuple Generic Protocol Callable Type'.split()
 _TYPE_ALIAS_TYPES = {
@@ -143,6 +143,14 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
 class ProxyTypingValue(BaseTypingValue):
     index_class = TypingValueWithIndex
     py__simple_getitem__ = None
+
+    def with_generics(self, generics_tuple):
+        return self.index_class.create_cached(
+            self.inference_state,
+            self.parent_context,
+            self._tree_name,
+            generics_manager=TupleGenericManager(generics_tuple)
+        )
 
     def py__getitem__(self, index_value_set, contextualized_node):
         return ValueSet(

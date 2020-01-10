@@ -643,29 +643,46 @@ def bar():
 
 @pytest.mark.skipif(sys.version_info < (3, 5), reason="Ignore Python 2, because EOL")
 @pytest.mark.parametrize(
-    'annotations, result', [
-        ({}, []),
-        (None, []),
-        ({'asdf': 'str'}, []),
+    'annotations, result, code', [
+        ({}, [], ''),
+        (None, [], ''),
+        ({'asdf': 'str'}, [], ''),
 
-        ({'return': 'str'}, ['str']),
-        ({'return': 'str().upper'}, []),
-        ({'return': 'foo()'}, []),
-        ({'return': 'bar()'}, ['float']),
+        ({'return': 'str'}, ['str'], ''),
+        ({'return': 'None'}, ['NoneType'], ''),
+        ({'return': 'str().upper'}, [], ''),
+        ({'return': 'foo()'}, [], ''),
+        ({'return': 'bar()'}, ['float'], ''),
+
         # typing is available via globals.
-        ({'return': 'typing.Union[str, int]'}, ['int', 'str']),
-        ({'return': 'typing.Union["str", int]'}, ['int']),
-        ({'return': 'typing.Union["str", 1]'}, []),
-        ({'return': 'typing.Optional[str]'}, ['NoneType', 'str']),
-        ({'return': 'typing.Optional[str, int]'}, []),  # Takes only one arg
+        ({'return': 'typing.Union[str, int]'}, ['int', 'str'], ''),
+        ({'return': 'typing.Union["str", int]'}, ['int'], ''),
+        ({'return': 'typing.Union["str", 1]'}, [], ''),
+        ({'return': 'typing.Optional[str]'}, ['NoneType', 'str'], ''),
+        ({'return': 'typing.Optional[str, int]'}, [], ''),  # Takes only one arg
+        ({'return': 'typing.Any'}, [], ''),
 
-        ({'return': 'decimal.Decimal'}, []),
-        ({'return': 'lalalalallalaa'}, []),
-        ({'return': 'lalalalallalaa.lala'}, []),
+        ({'return': 'typing.Tuple[int, str]'}, ['tuple'], ''),
+        ({'return': 'typing.Tuple[int, str]'}, ['int'], 'x()[0]'),
+        ({'return': 'typing.Tuple[int, str]'}, ['str'], 'x()[1]'),
+        ({'return': 'typing.Tuple[int, str]'}, [], 'x()[2]'),
+
+        ({'return': 'typing.List'}, ['list'], 'list'),
+        ({'return': 'typing.List[int]'}, ['list'], 'list'),
+        ({'return': 'typing.List[int]'}, ['int'], 'x()[0]'),
+        ({'return': 'typing.List[int, str]'}, [], 'x()[0]'),
+
+        ({'return': 'typing.Iterator[int]'}, [], 'x()[0]'),
+        ({'return': 'typing.Iterator[int]'}, ['int'], 'next(x())'),
+        ({'return': 'typing.Iterable[float]'}, ['float'], 'list(x())[0]'),
+
+        ({'return': 'decimal.Decimal'}, [], ''),
+        ({'return': 'lalalalallalaa'}, [], ''),
+        ({'return': 'lalalalallalaa.lala'}, [], ''),
     ]
 )
-def test_string_annotation(annotations, result):
+def test_string_annotation(annotations, result, code):
     x = lambda foo: 1
     x.__annotations__ = annotations
-    defs = jedi.Interpreter('x()', [locals()]).goto_definitions()
+    defs = jedi.Interpreter(code or 'x()', [locals()]).goto_definitions()
     assert [d.name for d in defs] == result

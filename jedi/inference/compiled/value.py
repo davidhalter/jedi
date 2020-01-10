@@ -273,9 +273,20 @@ class CompiledObject(Value):
             return ValueSet([self])
 
         name, args = self.access_handle.get_annotation_name_and_args()
-        arguments = [create_from_access_path(self.inference_state, path) for path in args]
-        if name == 'typing.Union':
+        arguments = [
+            ValueSet([create_from_access_path(self.inference_state, path)])
+            for path in args
+        ]
+        if name == 'Union':
             return ValueSet.from_sets(arg.execute_annotation() for arg in arguments)
+        elif name:
+            # While with_generics only exists on very specific objects, we
+            # should probably be fine, because we control all the typing
+            # objects.
+            return ValueSet([
+                v.with_generics(arguments)
+                for v in self.inference_state.typing_module.py__getattribute__(name)
+            ]).execute_annotation()
         return super(CompiledObject, self).execute_annotation()
 
     def negate(self):

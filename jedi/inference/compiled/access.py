@@ -5,6 +5,7 @@ import sys
 import operator as op
 from collections import namedtuple
 import warnings
+import re
 
 from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode
@@ -491,10 +492,15 @@ class DirectObjectAccess(object):
         if sys.version_info < (3, 5):
             return None, ()
 
-        import typing
-        args = typing.get_args(self._obj)
-        origin = typing.get_origin(self._obj)
-        name = None if origin is None else str(origin)
+        name = None
+        args = ()
+        if safe_getattr(self._obj, '__module__', default='') == 'typing':
+            m = re.match(r'typing.(\w+)\[', repr(self._obj))
+            if m is not None:
+                name = m.group(1)
+
+                import typing
+                args = typing.get_args(self._obj)
         return name, tuple(self._create_access_path(arg) for arg in args)
 
     def needs_type_completions(self):

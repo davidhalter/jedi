@@ -286,6 +286,13 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
             for index_value in index_value_set
         )
 
+    def with_generics(self, generics_tuple):
+        from jedi.inference.gradual.base import GenericClass
+        return GenericClass(
+            self,
+            TupleGenericManager(generics_tuple)
+        )
+
     def define_generics(self, type_var_dict):
         from jedi.inference.gradual.base import GenericClass
 
