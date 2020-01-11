@@ -236,7 +236,7 @@ def test_goto_module(Script):
         module, = script.goto(line=line, follow_imports=follow_imports)
         assert module.module_path == expected
 
-    base_path = os.path.join(os.path.dirname(__file__), 'simple_import')
+    base_path = get_example_dir('simple_import')
     path = os.path.join(base_path, '__init__.py')
 
     check(1, os.path.join(base_path, 'module.py'))
