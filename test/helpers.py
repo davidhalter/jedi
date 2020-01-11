@@ -19,6 +19,7 @@ from functools import partial, wraps
 
 test_dir = dirname(abspath(__file__))
 root_dir = dirname(test_dir)
+example_dir = join(test_dir, 'examples')
 
 sample_int = 1  # This is used in completion/imports.py
 
@@ -28,8 +29,8 @@ skip_if_not_windows = partial(pytest.param,
                               marks=pytest.mark.skipif("sys.platform!='win32'"))
 
 
-def get_example_dir(name):
-    return join(test_dir, 'examples', name)
+def get_example_dir(*names):
+    return join(example_dir, *names)
 
 
 def cwd_at(path):

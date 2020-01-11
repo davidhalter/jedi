@@ -1,6 +1,8 @@
-from os.path import dirname, join
+from os.path import dirname
 
 import pytest
+
+from test.helpers import get_example_dir, example_dir
 
 
 @pytest.fixture(autouse=True)
@@ -10,8 +12,8 @@ def skip_not_supported_versions(environment):
 
 
 def test_implicit_namespace_package(Script):
-    sys_path = [join(dirname(__file__), d)
-                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+    sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
+                get_example_dir('implicit_namespace_package', 'ns2')]
 
     def script_with_path(*args, **kwargs):
         return Script(sys_path=sys_path, *args, **kwargs)
@@ -53,7 +55,7 @@ def test_implicit_namespace_package(Script):
 def test_implicit_nested_namespace_package(Script):
     code = 'from implicit_nested_namespaces.namespace.pkg.module import CONST'
 
-    sys_path = [dirname(__file__)]
+    sys_path = [example_dir]
 
     script = Script(sys_path=sys_path, source=code, line=1, column=61)
 
@@ -69,7 +71,7 @@ def test_implicit_nested_namespace_package(Script):
 def test_implicit_namespace_package_import_autocomplete(Script):
     CODE = 'from implicit_name'
 
-    sys_path = [dirname(__file__)]
+    sys_path = [example_dir]
 
     script = Script(sys_path=sys_path, source=CODE)
     compl = script.complete()
@@ -78,8 +80,8 @@ def test_implicit_namespace_package_import_autocomplete(Script):
 
 def test_namespace_package_in_multiple_directories_autocompletion(Script):
     CODE = 'from pkg.'
-    sys_path = [join(dirname(__file__), d)
-                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+    sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
+                get_example_dir('implicit_namespace_package', 'ns2')]
 
     script = Script(sys_path=sys_path, source=CODE)
     compl = script.complete()
@@ -88,8 +90,8 @@ def test_namespace_package_in_multiple_directories_autocompletion(Script):
 
 def test_namespace_package_in_multiple_directories_goto_definition(Script):
     CODE = 'from pkg import ns1_file'
-    sys_path = [join(dirname(__file__), d)
-                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+    sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
+                get_example_dir('implicit_namespace_package', 'ns2')]
     script = Script(sys_path=sys_path, source=CODE)
     result = script.infer()
     assert len(result) == 1
@@ -97,8 +99,8 @@ def test_namespace_package_in_multiple_directories_goto_definition(Script):
 
 def test_namespace_name_autocompletion_full_name(Script):
     CODE = 'from pk'
-    sys_path = [join(dirname(__file__), d)
-                for d in ['implicit_namespace_package/ns1', 'implicit_namespace_package/ns2']]
+    sys_path = [get_example_dir('implicit_namespace_package', 'ns1'),
+                get_example_dir('implicit_namespace_package', 'ns2')]
 
     script = Script(sys_path=sys_path, source=CODE)
     compl = script.complete()
