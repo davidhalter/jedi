@@ -109,7 +109,7 @@ def test_find_module_not_package_zipped(Script, inference_state, environment):
     assert is_package is False
 
 
-@cwd_at('test/test_inference/not_in_sys_path/pkg')
+@cwd_at('test/examples/not_in_sys_path/pkg')
 def test_import_not_in_sys_path(Script):
     """
     non-direct imports (not in sys.path)
