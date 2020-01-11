@@ -38,9 +38,7 @@ def test_find_module_not_package():
     assert is_package is False
 
 
-pkg_zip_path = os.path.join(os.path.dirname(__file__),
-                            'zipped_imports',
-                            'pkg.zip')
+pkg_zip_path = get_example_dir('zipped_imports', 'pkg.zip')
 
 
 def test_find_module_package_zipped(Script, inference_state, environment):
@@ -97,7 +95,7 @@ def test_correct_zip_package_behavior(Script, inference_state, environment, code
 
 
 def test_find_module_not_package_zipped(Script, inference_state, environment):
-    path = os.path.join(os.path.dirname(__file__), 'zipped_imports/not_pkg.zip')
+    path = get_example_dir('zipped_imports', 'not_pkg.zip')
     sys_path = environment.get_sys_path() + [path]
     script = Script('import not_pkg; not_pkg.val', sys_path=sys_path)
     assert len(script.complete()) == 1
