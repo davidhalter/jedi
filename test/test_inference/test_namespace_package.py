@@ -1,13 +1,13 @@
-from os.path import dirname, join
+from os.path import join
 
 import pytest
 import py
 
-from ..helpers import get_example_dir
+from ..helpers import get_example_dir, example_dir
 
 
-SYS_PATH = [join(dirname(__file__), d)
-            for d in ['namespace_package/ns1', 'namespace_package/ns2']]
+SYS_PATH = [get_example_dir('namespace_package', 'ns1'),
+            get_example_dir('namespace_package', 'ns2')]
 
 
 def script_with_path(Script, *args, **kwargs):
@@ -68,7 +68,7 @@ def test_completions(Script, source, solution):
 def test_nested_namespace_package(Script):
     code = 'from nested_namespaces.namespace.pkg import CONST'
 
-    sys_path = [dirname(__file__)]
+    sys_path = [example_dir]
 
     script = Script(sys_path=sys_path, source=code)
 
