@@ -332,6 +332,9 @@ def union4(x: U[int, str]):
     #? int() str()
     x
 
+#? typing.Optional
+typing.Optional[0]
+
 # -------------------------
 # Type Vars
 # -------------------------

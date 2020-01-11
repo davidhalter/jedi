@@ -142,7 +142,6 @@ class TypingValueWithIndex(BaseTypingValueWithGenerics):
 
 class ProxyTypingValue(BaseTypingValue):
     index_class = TypingValueWithIndex
-    py__simple_getitem__ = None
 
     def with_generics(self, generics_tuple):
         return self.index_class.create_cached(
