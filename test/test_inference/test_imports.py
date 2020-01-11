@@ -144,7 +144,7 @@ def test_import_not_in_sys_path(Script):
 def test_flask_ext(Script, code, name):
     """flask.ext.foo is really imported from flaskext.foo or flask_foo.
     """
-    path = os.path.join(os.path.dirname(__file__), 'flask-site-packages')
+    path = get_example_dir('flask-site-packages')
     completions = Script(code, sys_path=[path]).complete()
     assert name in [c.name for c in completions]
 
