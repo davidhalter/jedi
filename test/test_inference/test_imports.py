@@ -469,12 +469,10 @@ def test_import_with_semicolon(Script):
 
 def test_relative_import_star(Script):
     # Coming from github #1235
-    import jedi
-
     source = """
     from . import *
     furl.c
     """
-    script = jedi.Script(source, 'export.py')
+    script = Script(source, 'export.py')
 
     assert script.complete(3, len("furl.c"))
