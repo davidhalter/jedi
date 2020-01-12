@@ -117,41 +117,7 @@ def _prepare_infer_import(module_context, tree_name):
     importer = Importer(module_context.inference_state, tuple(import_path),
                         module_context, import_node.level)
 
-    # if import_node.is_nested() and not self.nested_resolve:
-    #     scopes = [NestedImportModule(module, import_node)]
     return from_import_name, tuple(import_path), import_node.level, importer.follow()
-
-
-class NestedImportModule(tree.Module):
-    """
-    TODO while there's no use case for nested import module right now, we might
-        be able to use them for static analysis checks later on.
-    """
-    def __init__(self, module, nested_import):
-        self._module = module
-        self._nested_import = nested_import
-
-    def _get_nested_import_name(self):
-        """
-        Generates an Import statement, that can be used to fake nested imports.
-        """
-        i = self._nested_import
-        # This is not an existing Import statement. Therefore, set position to
-        # 0 (0 is not a valid line number).
-        zero = (0, 0)
-        names = [unicode(name) for name in i.namespace_names[1:]]
-        name = helpers.FakeName(names, self._nested_import)
-        new = tree.Import(i._sub_module, zero, zero, name)
-        new.parent = self._module
-        debug.dbg('Generated a nested import: %s', new)
-        return helpers.FakeName(str(i.namespace_names[1]), new)
-
-    def __getattr__(self, name):
-        return getattr(self._module, name)
-
-    def __repr__(self):
-        return "<%s: %s of %s>" % (self.__class__.__name__, self._module,
-                                   self._nested_import)
 
 
 def _add_error(value, name, message):
