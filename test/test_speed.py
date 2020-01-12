@@ -6,7 +6,7 @@ should.
 import time
 import functools
 
-from .helpers import cwd_at
+from .helpers import cwd_at, get_example_dir
 import jedi
 
 
@@ -50,9 +50,10 @@ def test_precedence_slowdown(Script):
     Precedence calculation can slow down things significantly in edge
     cases. Having strange recursion structures increases the problem.
     """
-    with open('speed/precedence.py') as f:
+    path = get_example_dir('speed', 'precedence.py')
+    with open(path) as f:
         line = len(f.read().splitlines())
-    assert Script(path='speed/precedence.py').infer(line=line)
+    assert Script(path=path).infer(line=line)
 
 
 @_check_speed(0.1)
