@@ -81,35 +81,39 @@ def check_flow_information(value, flow, search_name, pos):
     return result
 
 
-def _check_isinstance_type(value, element, search_name):
-    try:
-        assert element.type in ('power', 'atom_expr')
-        # this might be removed if we analyze and, etc
-        assert len(element.children) == 2
-        first, trailer = element.children
-        assert first.type == 'name' and first.value == 'isinstance'
-        assert trailer.type == 'trailer' and trailer.children[0] == '('
-        assert len(trailer.children) == 3
+def _get_isinstance_trailer_arglist(node):
+    if node.type in ('power', 'atom_expr') and len(node.children) == 2:
+        # This might be removed if we analyze and, etc
+        first, trailer = node.children
+        if first.type == 'name' and first.value == 'isinstance' \
+                and trailer.type == 'trailer' and trailer.children[0] == '(':
+            return trailer
+    return None
 
-        # arglist stuff
+
+def _check_isinstance_type(value, node, search_name):
+    lazy_cls = None
+    trailer = _get_isinstance_trailer_arglist(node)
+    if trailer is not None and len(trailer.children) == 3:
         arglist = trailer.children[1]
         args = TreeArguments(value.inference_state, value, arglist, trailer)
         param_list = list(args.unpack())
         # Disallow keyword arguments
-        assert len(param_list) == 2
-        (key1, lazy_value_object), (key2, lazy_value_cls) = param_list
-        assert key1 is None and key2 is None
-        call = helpers.call_of_leaf(search_name)
-        is_instance_call = helpers.call_of_leaf(lazy_value_object.data)
-        # Do a simple get_code comparison. They should just have the same code,
-        # and everything will be all right.
-        normalize = value.inference_state.grammar._normalize
-        assert normalize(is_instance_call) == normalize(call)
-    except AssertionError:
+        if len(param_list) == 2:
+            (key1, lazy_value_object), (key2, lazy_value_cls) = param_list
+            if key1 is None and key2 is None:
+                call = helpers.call_of_leaf(search_name)
+                is_instance_call = helpers.call_of_leaf(lazy_value_object.data)
+                # Do a simple get_code comparison. They should just have the
+                # same code, and everything will be all right.
+                normalize = value.inference_state.grammar._normalize
+                if normalize(is_instance_call) == normalize(call):
+                    lazy_cls = lazy_value_cls
+    if lazy_cls is None:
         return None
 
     value_set = NO_VALUES
-    for cls_or_tup in lazy_value_cls.infer():
+    for cls_or_tup in lazy_cls.infer():
         if isinstance(cls_or_tup, iterable.Sequence) and cls_or_tup.array_type == 'tuple':
             for lazy_value in cls_or_tup.py__iter__():
                 value_set |= lazy_value.infer().execute_with_values()
