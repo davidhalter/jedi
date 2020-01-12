@@ -21,7 +21,6 @@ matrix:
     - python: 3.7
       env:
         - TOXENV=cov-py37
-        - JEDI_TEST_ENVIRONMENT=37
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.
     #- python: pypy
