@@ -99,3 +99,14 @@ class Test():
 
 #?
 isinstance(1, int())
+
+# -----------------
+# more complicated arguments
+# -----------------
+
+def ayyyyyye(obj):
+    if isinstance(obj.obj, str):
+        #?
+        obj.obj
+        #?
+        obj

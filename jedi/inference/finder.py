@@ -99,15 +99,17 @@ def _check_isinstance_type(value, node, search_name):
         args = TreeArguments(value.inference_state, value, arglist, trailer)
         param_list = list(args.unpack())
         # Disallow keyword arguments
-        if len(param_list) == 2:
-            (key1, lazy_value_object), (key2, lazy_value_cls) = param_list
+        if len(param_list) == 2 and len(arglist.children) == 3:
+            (key1, _), (key2, lazy_value_cls) = param_list
             if key1 is None and key2 is None:
-                call = helpers.call_of_leaf(search_name)
-                is_instance_call = helpers.call_of_leaf(lazy_value_object.data)
-                # Do a simple get_code comparison. They should just have the
-                # same code, and everything will be all right.
-                normalize = value.inference_state.grammar._normalize
-                if normalize(is_instance_call) == normalize(call):
+                call = _get_call_string(search_name)
+                is_instance_call = _get_call_string(arglist.children[0])
+                # Do a simple get_code comparison of the strings . They should
+                # just have the same code, and everything will be all right.
+                # There are ways that this is not correct, if some stuff is
+                # redefined in between. However here we don't care, because
+                # it's a heuristic that works pretty well.
+                if call == is_instance_call:
                     lazy_cls = lazy_value_cls
     if lazy_cls is None:
         return None
@@ -120,3 +122,16 @@ def _check_isinstance_type(value, node, search_name):
         else:
             value_set |= cls_or_tup.execute_with_values()
     return value_set
+
+
+def _get_call_string(node):
+    if node.parent.type == 'atom_expr':
+        return _get_call_string(node.parent)
+
+    code = ''
+    leaf = node.get_first_leaf()
+    end = node.get_last_leaf().end_pos
+    while leaf.start_pos < end:
+        code += leaf.value
+        leaf = leaf.get_next_leaf()
+    return code
