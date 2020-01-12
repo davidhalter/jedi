@@ -262,10 +262,13 @@ class CompiledObject(Value):
             return default
 
     def execute_operation(self, other, operator):
-        return create_from_access_path(
-            self.inference_state,
-            self.access_handle.execute_operation(other.access_handle, operator)
-        )
+        try:
+            return ValueSet([create_from_access_path(
+                self.inference_state,
+                self.access_handle.execute_operation(other.access_handle, operator)
+            )])
+        except TypeError:
+            return NO_VALUES
 
     def execute_annotation(self):
         if self.access_handle.get_repr() == 'None':

@@ -576,12 +576,12 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
             return ValueSet([right])
     elif str_operator == '+':
         if l_is_num and r_is_num or is_string(left) and is_string(right):
-            return ValueSet([left.execute_operation(right, str_operator)])
+            return left.execute_operation(right, str_operator)
         elif _is_tuple(left) and _is_tuple(right) or _is_list(left) and _is_list(right):
             return ValueSet([iterable.MergedArray(inference_state, (left, right))])
     elif str_operator == '-':
         if l_is_num and r_is_num:
-            return ValueSet([left.execute_operation(right, str_operator)])
+            return left.execute_operation(right, str_operator)
     elif str_operator == '%':
         # With strings and numbers the left type typically remains. Except for
         # `int() % float()`.
@@ -589,11 +589,9 @@ def _infer_comparison_part(inference_state, context, left, operator, right):
     elif str_operator in COMPARISON_OPERATORS:
         if left.is_compiled() and right.is_compiled():
             # Possible, because the return is not an option. Just compare.
-            try:
-                return ValueSet([left.execute_operation(right, str_operator)])
-            except TypeError:
-                # Could be True or False.
-                pass
+            result = left.execute_operation(right, str_operator)
+            if result:
+                return result
         else:
             if str_operator in ('is', '!=', '==', 'is not'):
                 operation = COMPARISON_OPERATORS[str_operator]

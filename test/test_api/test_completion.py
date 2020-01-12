@@ -206,6 +206,7 @@ current_dirname = os.path.basename(dirname(dirname(dirname(__file__))))
         ('example.py', '"test%scomp' % s, None, ['letion' + s]),
         ('example.py', 'r"comp"', None, []),
         ('example.py', 'r"tes"', None, []),
+        ('example.py', '1 + r"tes"', None, []),
         ('example.py', 'r"tes"', 5, ['t' + s]),
         ('example.py', 'r" tes"', 6, []),
         ('test%sexample.py' % se, 'r"tes"', 5, ['t' + s]),

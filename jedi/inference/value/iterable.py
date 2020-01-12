@@ -429,12 +429,8 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
         compiled_obj_index = compiled.create_simple_object(self.inference_state, index)
         for key, value in self.get_tree_entries():
             for k in self._defining_context.infer_node(key):
-                try:
-                    method = k.execute_operation
-                except AttributeError:
-                    pass
-                else:
-                    if method(compiled_obj_index, u'==').get_safe_value():
+                for key_v in k.execute_operation(compiled_obj_index, u'=='):
+                    if key_v.get_safe_value():
                         return self._defining_context.infer_node(value)
         raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)
 

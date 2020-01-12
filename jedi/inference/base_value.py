@@ -225,6 +225,10 @@ class Value(HelperValueMixin, BaseValue):
             raise ValueError("There exists no safe value for value %s" % self)
         return default
 
+    def execute_operation(self, other, operator):
+        debug.warning("%s not possible between %s and %s", operator, self, other)
+        return NO_VALUES
+
     def py__call__(self, arguments):
         debug.warning("no execution possible %s", self)
         return NO_VALUES
