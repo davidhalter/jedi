@@ -265,7 +265,10 @@ class IntegrationTestCase(BaseTestCase):
         result = self.script(environment).find_references(self.line_nr, self.column)
         self.correct = self.correct.strip()
         compare = sorted(
-            (re.sub(r'^test\.completion\.', '', r.module_name), r.line, r.column)
+            (('stub:' if r.is_stub() else '')
+             + re.sub(r'^test\.completion\.', '', r.module_name),
+             r.line,
+             r.column)
             for r in result
         )
         wanted = []

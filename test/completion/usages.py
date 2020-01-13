@@ -349,3 +349,11 @@ class DefinitelyNotGlobal:
     def my_global(self):
         def my_global(self):
             pass
+
+# -----------------
+# stubs
+# -----------------
+
+from stub_folder import with_stub
+#< ('stub:stub_folder.with_stub', 5, 4), ('stub_folder.with_stub', 5, 4), (0, 10)
+with_stub.stub_function

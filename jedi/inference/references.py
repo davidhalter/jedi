@@ -1,5 +1,6 @@
 from jedi.inference import imports
 from jedi.inference.filters import ParserTreeFilter
+from jedi.inference.gradual.conversion import convert_names
 
 
 def _resolve_names(definition_names, avoid_names=()):
@@ -28,6 +29,14 @@ def _dictionarize(names):
 
 def _find_defining_names(module_context, tree_name):
     found_names = _find_names(module_context, tree_name)
+
+    for name in list(found_names):
+        # Convert from/to stubs, because those might also be usages.
+        found_names |= set(convert_names(
+            [name],
+            only_stubs=not name.get_root_context().is_stub(),
+            prefer_stub_to_compiled=False
+        ))
 
     found_names |= set(_find_global_variables(found_names, tree_name.value))
     for name in list(found_names):
