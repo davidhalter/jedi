@@ -100,10 +100,18 @@ def _python_to_stub_names(names, fallback_to_python=False):
             continue
 
         if name.api_type == 'module':
-            values = convert_values(name.infer(), only_stubs=True)
-            if values:
-                for v in values:
-                    yield v.name
+            found_name = False
+            for n in name.goto():
+                if n.api_type == 'module':
+                    values = convert_values(n.infer(), only_stubs=True)
+                    for v in values:
+                        yield v.name
+                        found_name = True
+                else:
+                    for x in _python_to_stub_names([n], fallback_to_python=fallback_to_python):
+                        yield x
+                        found_name = True
+            if found_name:
                 continue
         else:
             v = name.get_defining_qualified_value()
