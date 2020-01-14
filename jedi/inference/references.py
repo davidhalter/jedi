@@ -92,15 +92,23 @@ def _find_global_variables(names, search_name):
 
 
 def find_references(module_context, tree_name):
+    inf = module_context.inference_state
     search_name = tree_name.value
-    found_names = _find_defining_names(module_context, tree_name)
+
+    # We disable flow analysis, because if we have ifs that are only true in
+    # certain cases, we want both sides.
+    try:
+        inf.flow_analysis_enabled = False
+        found_names = _find_defining_names(module_context, tree_name)
+    finally:
+        inf.flow_analysis_enabled = True
+
     found_names_dct = _dictionarize(found_names)
 
     module_contexts = set(d.get_root_context() for d in found_names)
     module_contexts = set(m for m in module_contexts if not m.is_compiled())
 
     non_matching_reference_maps = {}
-    inf = module_context.inference_state
     potential_modules = imports.get_module_contexts_containing_name(
         inf, module_contexts, search_name
     )

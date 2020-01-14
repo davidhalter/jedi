@@ -43,7 +43,8 @@ def _get_flow_scopes(node):
 
 
 def reachability_check(context, value_scope, node, origin_scope=None):
-    if is_big_annoying_library(context):
+    if is_big_annoying_library(context) \
+            or not context.inference_state.flow_analysis_enabled:
         return UNSURE
 
     first_flow_scope = get_parent_scope(node, include_flows=True)

@@ -104,6 +104,7 @@ class InferenceState(object):
         self.project = project
         self.access_cache = {}
         self.allow_descriptor_getattr = False
+        self.flow_analysis_enabled = True
 
         self.reset_recursion_limitations()
 
