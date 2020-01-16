@@ -36,7 +36,7 @@ script:
       # Setup/install Python for $JEDI_TEST_ENVIRONMENT.
       set -ex
       test_env_version=${JEDI_TEST_ENVIRONMENT:0:1}.${JEDI_TEST_ENVIRONMENT:1:1}
-      if [ "$TRAVIS_PYTHON_VERSION" != "$test_env_version" ]; then
+      if [ "$TRAVIS_PYTHON_VERSION" != "$test_env_version" ] && [ "$test_env_version" != "interpreter" ]; then
         python_bin=python$test_env_version
         python_path="$(which $python_bin || true)"
         if [ -z "$python_path" ]; then
