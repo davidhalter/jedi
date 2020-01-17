@@ -498,64 +498,6 @@ def load_module_from_path(inference_state, file_io, base_names=None):
     return module
 
 
-def get_module_contexts_containing_name(inference_state, module_contexts, name):
-    """
-    Search a name in the directories of modules.
-    """
-    def check_directory(folder_io):
-        for file_name in folder_io.list():
-            if file_name.endswith('.py'):
-                yield folder_io.get_file_io(file_name)
-
-    def check_fs(file_io, base_names):
-        try:
-            code = file_io.read()
-        except FileNotFoundError:
-            return None
-        code = python_bytes_to_unicode(code, errors='replace')
-        if name not in code:
-            return None
-        new_file_io = KnownContentFileIO(file_io.path, code)
-        m = load_module_from_path(inference_state, new_file_io, base_names)
-        if isinstance(m, compiled.CompiledObject):
-            return None
-        return m.as_context()
-
-    # skip non python modules
-    used_mod_paths = set()
-    folders_with_names_to_be_checked = []
-    for module_context in module_contexts:
-        path = module_context.py__file__()
-        if path not in used_mod_paths:
-            file_io = module_context.get_value().file_io
-            if file_io is not None:
-                used_mod_paths.add(path)
-                folders_with_names_to_be_checked.append((
-                    file_io.get_parent_folder(),
-                    module_context.get_value().py__package__()
-                ))
-        yield module_context
-
-    if not settings.dynamic_params_for_other_modules:
-        return
-
-    def get_file_ios_to_check():
-        for folder_io, base_names in folders_with_names_to_be_checked:
-            for file_io in check_directory(folder_io):
-                if file_io.path not in used_mod_paths:
-                    yield file_io, base_names
-
-        for p in settings.additional_dynamic_modules:
-            p = os.path.abspath(p)
-            if p not in used_mod_paths:
-                yield FileIO(p), None
-
-    for file_io, base_names in get_file_ios_to_check():
-        m = check_fs(file_io, base_names)
-        if m is not None:
-            yield m
-
-
 def follow_error_node_imports_if_possible(context, name):
     error_node = tree.search_ancestor(name, 'error_node')
     if error_node is not None:

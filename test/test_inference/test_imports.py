@@ -13,6 +13,7 @@ from jedi.inference import compiled
 from jedi.inference import imports
 from jedi.api.project import Project
 from jedi.inference.gradual.conversion import _stub_to_python_value_set
+from jedi.inference.references import get_module_contexts_containing_name
 from ..helpers import cwd_at, get_example_dir, test_dir, root_dir
 
 THIS_DIR = os.path.dirname(__file__)
@@ -319,7 +320,7 @@ def test_get_modules_containing_name(inference_state, path, goal, is_package):
     )
     assert module
     module_context = module.as_context()
-    input_module, found_module = imports.get_module_contexts_containing_name(
+    input_module, found_module = get_module_contexts_containing_name(
         inference_state,
         [module_context],
         'string_that_only_exists_here'

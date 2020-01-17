@@ -367,3 +367,13 @@ in_python
 from stub_folder.with_stub_folder.nested_with_stub import in_both
 #< ('stub_folder.with_stub_folder.nested_with_stub', 2, 0), ('stub:stub_folder.with_stub_folder.nested_with_stub', 2, 0), ('stubs', 66, 17), (-2, 58), (0, 0)
 in_both
+
+# -----------------
+# across directories
+# -----------------
+
+#< 8 (0, 0), (3, 4), ('import_tree.references', 1, 21), ('import_tree.references', 5, 4)
+usage_definition = 1
+if False:
+    #< 8 (-3, 0), (0, 4), ('import_tree.references', 1, 21), ('import_tree.references', 5, 4)
+    usage_definition()

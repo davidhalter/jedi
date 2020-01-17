@@ -21,13 +21,13 @@ from jedi import settings
 from jedi import debug
 from jedi.parser_utils import get_parent_scope
 from jedi.inference.cache import inference_state_method_cache
-from jedi.inference import imports
 from jedi.inference.arguments import TreeArguments
 from jedi.inference.param import get_executed_param_names
 from jedi.inference.helpers import is_stdlib_path
 from jedi.inference.utils import to_list
 from jedi.inference.value import instance
 from jedi.inference.base_value import ValueSet, NO_VALUES
+from jedi.inference.references import get_module_contexts_containing_name
 from jedi.inference import recursion
 
 
@@ -116,7 +116,7 @@ def _search_function_arguments(module_context, funcdef, string_name):
     found_arguments = False
     i = 0
     inference_state = module_context.inference_state
-    for for_mod_context in imports.get_module_contexts_containing_name(
+    for for_mod_context in get_module_contexts_containing_name(
             inference_state, [module_context], string_name):
         for name, trailer in _get_potential_nodes(for_mod_context, string_name):
             i += 1
