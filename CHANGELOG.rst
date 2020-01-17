@@ -7,7 +7,7 @@ Changelog
 +++++++++++++++++++
 
 
-- **Add** ``Script.get_context`` to get information where you currently are.
+- **Added** ``Script.get_context`` to get information where you currently are.
 - Goto on a function/attribute in a class now goes to the definition in its
   super class.
 - Dict key completions are working now. e.g. ``d = {1000: 3}; d[10`` will
