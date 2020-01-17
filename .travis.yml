@@ -31,7 +31,7 @@ matrix:
     #    - JEDI_TEST_ENVIRONMENT=39
 install:
     - pip install --quiet tox-travis
-    - apt-get install python3-venv
+    - sudo apt-get -y install python3-venv
 script:
     - |
       # Setup/install Python for $JEDI_TEST_ENVIRONMENT.
