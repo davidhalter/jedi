@@ -35,6 +35,8 @@ from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
 from jedi.inference.signature import AbstractSignature, SignatureWrapper
 
+from . import django
+
 
 # Copied from Python 3.6's stdlib.
 _NAMEDTUPLE_CLASS_TEMPLATE = """\
@@ -781,77 +783,6 @@ _implemented = {
 }
 
 
-def infer_django_field(cls, field):
-    field_tree_instance, = field.infer()
-
-    if field_tree_instance.name.string_name in ('CharField', 'TextField', 'EmailField'):
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('str')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    integer_field_classes = ('IntegerField', 'BigIntegerField', 'PositiveIntegerField', 'SmallIntegerField')
-    if field_tree_instance.name.string_name in integer_field_classes:
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('int')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'FloatField':
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('float')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'BinaryField':
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bytes')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'BooleanField':
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bool')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DecimalField':
-        model_instance_field_type, = cls.inference_state.import_module(('decimal',)).py__getattribute__('Decimal')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'ForeignKey':
-        if isinstance(field_tree_instance, TreeInstance):
-             argument_iterator = field_tree_instance._arguments.unpack()
-             key, lazy_values = next(argument_iterator, (None, None))
-             if key is None and lazy_values is not None:
-                 # TODO: it has only one element in current state. Handle rest of elements.
-                 for value in lazy_values.infer():
-                     string = value.get_safe_value(default=None)
-                     if value.name.string_name == 'str':
-                         foreign_key_class_name = value._compiled_obj.get_safe_value()
-                         # TODO: it has only one element in current state. Handle rest of elements.
-                         for v in cls.parent_context.py__getattribute__(foreign_key_class_name):
-                             return DjangoModelField(v, field).name
-                     else:
-                         return DjangoModelField(value, field).name
-
-        raise Exception('Should be handled')
-
-    if field_tree_instance.name.string_name == 'TimeField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('time')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DurationField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('timedelta')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DateField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('date')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DateTimeField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('datetime')
-        return DjangoModelField(model_instance_field_type, field).name
-
-
-
-def new_django_dict_filter(cls):
-    filter_ = ParserTreeFilter(parent_context=cls.as_context())
-    return [DictFilter({
-        f.string_name: infer_django_field(cls, f) for f in filter_.values()
-    })]
-
-
 def get_metaclass_filters(func):
     def wrapper(cls, metaclasses):
         for metaclass in metaclasses:
@@ -864,32 +795,12 @@ def get_metaclass_filters(func):
 
             if metaclass.py__name__() == 'ModelBase' \
                     and metaclass.get_root_context().py__name__() == 'django.db.models.base':
-                django_dict_filter = new_django_dict_filter(cls)
+                django_dict_filter = django.new_dict_filter(cls)
                 if django_dict_filter is not None:
                     return django_dict_filter
 
         return func(cls, metaclasses)
     return wrapper
-
-
-class DjangoModelField(LazyValueWrapper):
-    def __init__(self, cls, name):
-        self.inference_state = cls.inference_state
-        self._cls = cls  # Corresponds to super().__self__
-        self._name = name
-        self.tree_node = self._name.tree_name
-
-    @safe_property
-    def name(self):
-        return ValueName(self, self._name.tree_name)
-
-    def _get_wrapped_value(self):
-        obj, = self._cls.execute_with_values()
-        return obj
-
-    def get_filters(self, origin_scope=None):
-        for f in self._get_wrapped_value().get_filters():
-            yield f
 
 
 class EnumInstance(LazyValueWrapper):
