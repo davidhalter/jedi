@@ -3,8 +3,7 @@ import re
 
 from parso import python_bytes_to_unicode
 
-from jedi import settings
-from jedi.file_io import FileIO, KnownContentFileIO
+from jedi.file_io import KnownContentFileIO
 from jedi.inference.imports import SubModuleName, load_module_from_path
 from jedi.inference.compiled import CompiledObject
 from jedi.inference.filters import ParserTreeFilter
@@ -240,9 +239,12 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
         return
 
     file_io_count = 0
+    module_found_count = 0
     regex = re.compile(r'\b' + re.escape(name) + r'\b')
     for file_io in _find_python_files_in_sys_path(inference_state, module_contexts):
         file_io_count += 1
         m = _check_fs(inference_state, file_io, regex)
         if m is not None:
+            module_found_count += 1
             yield m
+    print(name, file_io_count, module_found_count)
