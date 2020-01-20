@@ -11,6 +11,9 @@ from jedi.inference.gradual.conversion import convert_names
 
 _IGNORE_FOLDERS = ('.tox', 'venv', '__pycache__')
 
+_OPENED_FILE_LIMIT = 1000
+_PARSED_FILE_LIMIT = 50
+
 
 def _resolve_names(definition_names, avoid_names=()):
     for name in definition_names:
@@ -239,12 +242,16 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
         return
 
     file_io_count = 0
-    module_found_count = 0
+    parsed_file_count = 0
     regex = re.compile(r'\b' + re.escape(name) + r'\b')
     for file_io in _find_python_files_in_sys_path(inference_state, module_contexts):
         file_io_count += 1
         m = _check_fs(inference_state, file_io, regex)
         if m is not None:
-            module_found_count += 1
+            parsed_file_count += 1
             yield m
-    print(name, file_io_count, module_found_count)
+            if parsed_file_count > _PARSED_FILE_LIMIT:
+                break
+
+        if file_io_count > _OPENED_FILE_LIMIT:
+            break
