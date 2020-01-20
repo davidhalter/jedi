@@ -1,3 +1,4 @@
+import os
 import re
 
 from parso import python_bytes_to_unicode
@@ -157,21 +158,45 @@ def _check_fs(inference_state, file_io, regex):
     return m.as_context()
 
 
+def gitignored_lines(folder_io, file_io):
+    ignored_paths = set()
+    ignored_names = set()
+    for l in file_io.read().splitlines():
+        if not l or l.startswith(b'#'):
+            continue
+
+        p = l.decode('utf-8', 'ignore')
+        if p.startswith('/'):
+            name = p[1:]
+            if name.endswith(os.path.sep):
+                name = name[:-1]
+            ignored_paths.add(os.path.join(folder_io.path, name))
+        else:
+            ignored_names.add(p)
+    return ignored_paths, ignored_names
+
+
 def _recurse_find_python_files(folder_io, except_paths):
     for root_folder_io, folder_ios, file_ios in folder_io.walk():
         # Delete folders that we don't want to iterate over.
+        for file_io in file_ios:
+            path = file_io.path
+            if path.endswith('.py') or path.endswith('.pyi'):
+                if path not in except_paths:
+                    yield file_io
+
+            if path.endswith('.gitignore'):
+                ignored_paths, ignored_names = \
+                    gitignored_lines(root_folder_io, file_io)
+                except_paths |= ignored_paths
+                print(folder_io.path, ignored_paths)
+
         folder_ios[:] = [
             folder_io
             for folder_io in folder_ios
             if folder_io.path not in except_paths
             and folder_io.get_base_name() not in _IGNORE_FOLDERS
         ]
-
-        for file_io in file_ios:
-            path = file_io.path
-            if path.endswith('.py') or path.endswith('.pyi'):
-                if path not in except_paths:
-                    yield file_io
 
 
 def _find_python_files_in_sys_path(inference_state, folder_io):
