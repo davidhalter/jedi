@@ -194,7 +194,6 @@ def _recurse_find_python_files(folder_io, except_paths):
                 ignored_paths, ignored_names = \
                     gitignored_lines(root_folder_io, file_io)
                 except_paths |= ignored_paths
-                print(folder_io.path, ignored_paths)
 
         folder_ios[:] = [
             folder_io
@@ -204,47 +203,45 @@ def _recurse_find_python_files(folder_io, except_paths):
         ]
 
 
-def _find_python_files_in_sys_path(inference_state, folder_io):
+def _find_python_files_in_sys_path(inference_state, module_contexts):
     sys_path = inference_state.get_sys_path()
     except_paths = set()
-    while True:
-        path = folder_io.path
-        if not any(path.startswith(p) for p in sys_path):
-            break
-        for file_io in _recurse_find_python_files(folder_io, except_paths):
-            yield file_io
-        except_paths.add(path)
-        folder_io = folder_io.get_parent_folder()
+    yielded_paths = [m.py__file__() for m in module_contexts]
+    for module_context in module_contexts:
+        file_io = module_context.get_value().file_io
+        if file_io is None:
+            continue
+
+        folder_io = file_io.get_parent_folder()
+        while True:
+            path = folder_io.path
+            if not any(path.startswith(p) for p in sys_path) or path in except_paths:
+                break
+            for file_io in _recurse_find_python_files(folder_io, except_paths):
+                if file_io.path not in yielded_paths:
+                    yield file_io
+            except_paths.add(path)
+            folder_io = folder_io.get_parent_folder()
 
 
 def get_module_contexts_containing_name(inference_state, module_contexts, name):
     """
     Search a name in the directories of modules.
     """
-    def iter_file_ios():
-        yielded_paths = [m.py__file__() for m in module_contexts]
-        for module_context in module_contexts:
-            file_io = module_context.get_value().file_io
-            if file_io is None:
-                continue
-
-            folder_io = file_io.get_parent_folder()
-            for file_io in _find_python_files_in_sys_path(inference_state, folder_io):
-                if file_io.path not in yielded_paths:
-                    yield file_io
-
     # Skip non python modules
     for module_context in module_contexts:
         if module_context.is_compiled():
             continue
         yield module_context
 
+    # Very short names are not searched in other modules for now to avoid lots
+    # of file lookups.
     if len(name) <= 2:
         return
 
     file_io_count = 0
     regex = re.compile(r'\b' + re.escape(name) + r'\b')
-    for file_io in iter_file_ios():
+    for file_io in _find_python_files_in_sys_path(inference_state, module_contexts):
         file_io_count += 1
         m = _check_fs(inference_state, file_io, regex)
         if m is not None:
