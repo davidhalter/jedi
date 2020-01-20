@@ -43,9 +43,11 @@ class FolderIO(AbstractFolderIO):
                 modified_folder_ios,
                 [FileIO(os.path.join(root, f)) for f in files],
             )
-            modified_iterator = iter(modified_folder_ios)
+            modified_iterator = iter(reversed(modified_folder_ios))
             current = next(modified_iterator, None)
-            for i, folder_io in enumerate(original_folder_ios):
+            i = len(original_folder_ios)
+            for folder_io in reversed(original_folder_ios):
+                i -= 1   # Basically enumerate but reversed
                 if current is folder_io:
                     current = next(modified_iterator, None)
                 else:

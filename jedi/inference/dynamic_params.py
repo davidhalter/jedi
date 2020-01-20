@@ -116,8 +116,14 @@ def _search_function_arguments(module_context, funcdef, string_name):
     found_arguments = False
     i = 0
     inference_state = module_context.inference_state
-    for for_mod_context in get_module_contexts_containing_name(
-            inference_state, [module_context], string_name):
+
+    if settings.dynamic_params_for_other_modules:
+        module_contexts = get_module_contexts_containing_name(
+            inference_state, [module_context], string_name)
+    else:
+        module_contexts = [module_context]
+
+    for for_mod_context in module_contexts:
         for name, trailer in _get_potential_nodes(for_mod_context, string_name):
             i += 1
 

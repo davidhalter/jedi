@@ -17,3 +17,11 @@ def test_folder_io_walk():
     assert root.path == join(root_dir, 'ns2')
     folder_ios.clear()
     assert next(iterator, None) is None
+
+
+def test_folder_io_walk2():
+    root_dir = get_example_dir('namespace_package')
+    iterator = FolderIO(root_dir).walk()
+    root, folder_ios, file_ios = next(iterator)
+    folder_ios.clear()
+    assert next(iterator, None) is None

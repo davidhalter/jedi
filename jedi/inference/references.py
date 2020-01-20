@@ -1,4 +1,4 @@
-import os
+import re
 
 from parso import python_bytes_to_unicode
 
@@ -8,6 +8,8 @@ from jedi.inference.imports import SubModuleName, load_module_from_path
 from jedi.inference.compiled import CompiledObject
 from jedi.inference.filters import ParserTreeFilter
 from jedi.inference.gradual.conversion import convert_names
+
+_IGNORE_FOLDERS = ('.tox', 'venv', '__pycache__')
 
 
 def _resolve_names(definition_names, avoid_names=()):
@@ -113,11 +115,12 @@ def find_references(module_context, tree_name):
     found_names_dct = _dictionarize(found_names)
 
     module_contexts = set(d.get_root_context() for d in found_names)
-    module_contexts = set(m for m in module_contexts if not m.is_compiled())
 
     non_matching_reference_maps = {}
     potential_modules = get_module_contexts_containing_name(
-        inf, module_contexts, search_name
+        inf,
+        [module_context] + [m for m in module_contexts if m != module_context],
+        search_name
     )
     for module_context in potential_modules:
         for name_leaf in module_context.tree_node.get_used_names().get(search_name, []):
@@ -139,59 +142,80 @@ def find_references(module_context, tree_name):
     return found_names_dct.values()
 
 
+def _check_fs(inference_state, file_io, regex):
+    try:
+        code = file_io.read()
+    except FileNotFoundError:
+        return None
+    code = python_bytes_to_unicode(code, errors='replace')
+    if not regex.search(code):
+        return None
+    new_file_io = KnownContentFileIO(file_io.path, code)
+    m = load_module_from_path(inference_state, new_file_io)
+    if isinstance(m, CompiledObject):
+        return None
+    return m.as_context()
+
+
+def _recurse_find_python_files(folder_io, except_paths):
+    for root_folder_io, folder_ios, file_ios in folder_io.walk():
+        # Delete folders that we don't want to iterate over.
+        folder_ios[:] = [
+            folder_io
+            for folder_io in folder_ios
+            if folder_io.path not in except_paths
+            and folder_io.get_base_name() not in _IGNORE_FOLDERS
+        ]
+
+        for file_io in file_ios:
+            path = file_io.path
+            if path.endswith('.py') or path.endswith('.pyi'):
+                if path not in except_paths:
+                    yield file_io
+
+
+def _find_python_files_in_sys_path(inference_state, folder_io):
+    sys_path = inference_state.get_sys_path()
+    except_paths = set()
+    while True:
+        path = folder_io.path
+        if not any(path.startswith(p) for p in sys_path):
+            break
+        for file_io in _recurse_find_python_files(folder_io, except_paths):
+            yield file_io
+        except_paths.add(path)
+        folder_io = folder_io.get_parent_folder()
+
+
 def get_module_contexts_containing_name(inference_state, module_contexts, name):
     """
     Search a name in the directories of modules.
     """
-    def check_directory(folder_io):
-        for file_name in folder_io.list():
-            if file_name.endswith('.py'):
-                yield folder_io.get_file_io(file_name)
-
-    def check_fs(file_io, base_names):
-        try:
-            code = file_io.read()
-        except FileNotFoundError:
-            return None
-        code = python_bytes_to_unicode(code, errors='replace')
-        if name not in code:
-            return None
-        new_file_io = KnownContentFileIO(file_io.path, code)
-        m = load_module_from_path(inference_state, new_file_io, base_names)
-        if isinstance(m, CompiledObject):
-            return None
-        return m.as_context()
-
-    # skip non python modules
-    used_mod_paths = set()
-    folders_with_names_to_be_checked = []
-    for module_context in module_contexts:
-        path = module_context.py__file__()
-        if path not in used_mod_paths:
+    def iter_file_ios():
+        yielded_paths = [m.py__file__() for m in module_contexts]
+        for module_context in module_contexts:
             file_io = module_context.get_value().file_io
-            if file_io is not None:
-                used_mod_paths.add(path)
-                folders_with_names_to_be_checked.append((
-                    file_io.get_parent_folder(),
-                    module_context.get_value().py__package__()
-                ))
+            if file_io is None:
+                continue
+
+            folder_io = file_io.get_parent_folder()
+            for file_io in _find_python_files_in_sys_path(inference_state, folder_io):
+                if file_io.path not in yielded_paths:
+                    yield file_io
+
+    # Skip non python modules
+    for module_context in module_contexts:
+        if module_context.is_compiled():
+            continue
         yield module_context
 
-    if not settings.dynamic_params_for_other_modules:
+    if len(name) <= 2 or name == 'self':
         return
 
-    def get_file_ios_to_check():
-        for folder_io, base_names in folders_with_names_to_be_checked:
-            for file_io in check_directory(folder_io):
-                if file_io.path not in used_mod_paths:
-                    yield file_io, base_names
-
-        for p in settings.additional_dynamic_modules:
-            p = os.path.abspath(p)
-            if p not in used_mod_paths:
-                yield FileIO(p), None
-
-    for file_io, base_names in get_file_ios_to_check():
-        m = check_fs(file_io, base_names)
+    file_io_count = 0
+    regex = re.compile(r'\b' + re.escape(name) + r'\b')
+    for file_io in iter_file_ios():
+        file_io_count += 1
+        m = _check_fs(inference_state, file_io, regex)
         if m is not None:
             yield m
