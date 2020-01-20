@@ -116,13 +116,18 @@ def find_references(module_context, tree_name):
     found_names_dct = _dictionarize(found_names)
 
     module_contexts = set(d.get_root_context() for d in found_names)
+    module_contexts = [module_context] + [m for m in module_contexts if m != module_context]
+    # For param no search for other modules is necessary.
+    if any(n.api_type == 'param' for n in found_names):
+        potential_modules = module_contexts
+    else:
+        potential_modules = get_module_contexts_containing_name(
+            inf,
+            module_contexts,
+            search_name
+        )
 
     non_matching_reference_maps = {}
-    potential_modules = get_module_contexts_containing_name(
-        inf,
-        [module_context] + [m for m in module_contexts if m != module_context],
-        search_name
-    )
     for module_context in potential_modules:
         for name_leaf in module_context.tree_node.get_used_names().get(search_name, []):
             new = _dictionarize(_find_names(module_context, name_leaf))
@@ -234,7 +239,7 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
             continue
         yield module_context
 
-    if len(name) <= 2 or name == 'self':
+    if len(name) <= 2:
         return
 
     file_io_count = 0
