@@ -136,7 +136,7 @@ def find_references(module_context, tree_name):
         potential_modules = get_module_contexts_containing_name(
             inf,
             module_contexts,
-            search_name
+            search_name,
         )
 
     non_matching_reference_maps = {}
@@ -236,9 +236,13 @@ def _find_python_files_in_sys_path(inference_state, module_contexts):
             folder_io = folder_io.get_parent_folder()
 
 
-def get_module_contexts_containing_name(inference_state, module_contexts, name):
+def get_module_contexts_containing_name(inference_state, module_contexts, name,
+                                        limit_reduction=1):
     """
     Search a name in the directories of modules.
+
+    :param limit_reduction: Divides the limits on opening/parsing files by this
+        factor.
     """
     # Skip non python modules
     for module_context in module_contexts:
@@ -251,6 +255,8 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
     if len(name) <= 2:
         return
 
+    parse_limit = _PARSED_FILE_LIMIT / limit_reduction
+    open_limit = _OPENED_FILE_LIMIT / limit_reduction
     file_io_count = 0
     parsed_file_count = 0
     regex = re.compile(r'\b' + re.escape(name) + r'\b')
@@ -260,8 +266,8 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name):
         if m is not None:
             parsed_file_count += 1
             yield m
-            if parsed_file_count > _PARSED_FILE_LIMIT:
+            if parsed_file_count > parse_limit:
                 break
 
-        if file_io_count > _OPENED_FILE_LIMIT:
+        if file_io_count > open_limit:
             break

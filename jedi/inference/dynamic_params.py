@@ -119,7 +119,10 @@ def _search_function_arguments(module_context, funcdef, string_name):
 
     if settings.dynamic_params_for_other_modules:
         module_contexts = get_module_contexts_containing_name(
-            inference_state, [module_context], string_name)
+            inference_state, [module_context], string_name,
+            # Limit the amounts of files to be opened massively.
+            limit_reduction=10,
+        )
     else:
         module_contexts = [module_context]
 
