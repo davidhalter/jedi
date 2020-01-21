@@ -298,6 +298,8 @@ class CompiledObject(Value):
     def get_metaclasses(self):
         return NO_VALUES
 
+    file_io = None  # For modules
+
     def _as_context(self):
         if self.parent_context is None:
             return CompiledModuleContext(self)
