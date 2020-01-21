@@ -307,8 +307,13 @@ def test_compiled_import_none(monkeypatch, Script):
 
 @pytest.mark.parametrize(
     ('path', 'is_package', 'goal'), [
-        (os.path.join(THIS_DIR, 'test_docstring.py'), False, ('ok', 'lala', 'test_imports')),
-        (os.path.join(THIS_DIR, '__init__.py'), True, ('ok', 'lala', 'x', 'test_imports')),
+        # Both of these tests used to return relative paths to the module
+        # context that was initially given, but now we just work with the file
+        # system.
+        (os.path.join(THIS_DIR, 'test_docstring.py'), False,
+         ('test', 'test_inference', 'test_imports')),
+        (os.path.join(THIS_DIR, '__init__.py'), True,
+         ('test', 'test_inference', 'test_imports')),
     ]
 )
 def test_get_modules_containing_name(inference_state, path, goal, is_package):

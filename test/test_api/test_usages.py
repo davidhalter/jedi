@@ -5,7 +5,9 @@ def test_import_references(Script):
 
 def test_exclude_builtin_modules(Script):
     def get(include):
-        references = Script(source).find_references(column=8, include_builtins=include)
+        from jedi.api.project import Project
+        script = Script(source, _project=Project('', sys_path=[]))
+        references = script.find_references(column=8, include_builtins=include)
         return [(d.line, d.column) for d in references]
     source = '''import sys\nprint(sys.path)'''
     places = get(include=True)

@@ -266,8 +266,8 @@ def get_module_contexts_containing_name(inference_state, module_contexts, name,
         if m is not None:
             parsed_file_count += 1
             yield m
-            if parsed_file_count > parse_limit:
+            if parsed_file_count >= parse_limit:
                 break
 
-        if file_io_count > open_limit:
+        if file_io_count >= open_limit:
             break
