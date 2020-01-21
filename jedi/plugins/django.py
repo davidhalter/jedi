@@ -80,3 +80,16 @@ def _infer_field(cls, field):
                          return DjangoModelField(value, field).name
 
         raise Exception('Should be handled')
+
+
+def get_metaclass_filters(func):
+    def wrapper(cls, metaclasses):
+        for metaclass in metaclasses:
+            if metaclass.py__name__() == 'ModelBase' \
+                    and metaclass.get_root_context().py__name__() == 'django.db.models.base':
+                django_dict_filter = new_dict_filter(cls)
+                if django_dict_filter is not None:
+                    return django_dict_filter
+
+        return func(cls, metaclasses)
+    return wrapper

@@ -35,8 +35,6 @@ from jedi.inference.filters import AttributeOverwrite, publish_method, \
     ParserTreeFilter, DictFilter
 from jedi.inference.signature import AbstractSignature, SignatureWrapper
 
-from . import django
-
 
 # Copied from Python 3.6's stdlib.
 _NAMEDTUPLE_CLASS_TEMPLATE = """\
@@ -792,13 +790,6 @@ def get_metaclass_filters(func):
                 return [DictFilter({
                     name.string_name: EnumInstance(cls, name).name for name in filter_.values()
                 })]
-
-            if metaclass.py__name__() == 'ModelBase' \
-                    and metaclass.get_root_context().py__name__() == 'django.db.models.base':
-                django_dict_filter = django.new_dict_filter(cls)
-                if django_dict_filter is not None:
-                    return django_dict_filter
-
         return func(cls, metaclasses)
     return wrapper
 
