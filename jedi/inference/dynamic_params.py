@@ -121,7 +121,7 @@ def _search_function_arguments(module_context, funcdef, string_name):
         module_contexts = get_module_contexts_containing_name(
             inference_state, [module_context], string_name,
             # Limit the amounts of files to be opened massively.
-            limit_reduction=10,
+            limit_reduction=5,
         )
     else:
         module_contexts = [module_context]

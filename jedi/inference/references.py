@@ -18,7 +18,7 @@ With os.walk, it takes about 10s to scan 11'000 files (without filesystem
 caching). Once cached it only takes 5s. So it is expected that reading all
 those files might take a few seconds, but not a lot more.
 """
-_PARSED_FILE_LIMIT = 50
+_PARSED_FILE_LIMIT = 30
 """
 For now we keep the amount of parsed files really low, since parsing might take
 easily 100ms for bigger files.
