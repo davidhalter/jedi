@@ -30,34 +30,38 @@ class DjangoModelField(LazyValueWrapper):
         obj, = self._cls.execute_with_values()
         return obj
 
+mapping = {
+    'IntegerField': (None, 'int'),
+    'BigIntegerField': (None, 'int'),
+    'PositiveIntegerField': (None, 'int'),
+    'SmallIntegerField': (None, 'int'),
+    'CharField': (None, 'str'),
+    'TextField': (None, 'str'),
+    'EmailField': (None, 'str'),
+    'FloatField': (None, 'float'),
+    'BinaryField': (None, 'bytes'),
+    'BooleanField': (None, 'bool'),
+    'DecimalField': ('decimal', 'Decimal'),
+    'TimeField': ('datetime', 'time'),
+    'DurationField': ('datetime', 'timedelta'),
+    'DateField': ('datetime', 'date'),
+    'DateTimeField': ('datetime', 'datetime'),
+}
 
 def _infer_field(cls, field):
     field_tree_instance, = field.infer()
 
-    if field_tree_instance.name.string_name in ('CharField', 'TextField', 'EmailField'):
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('str')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    integer_field_classes = ('IntegerField', 'BigIntegerField', 'PositiveIntegerField', 'SmallIntegerField')
-    if field_tree_instance.name.string_name in integer_field_classes:
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('int')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'FloatField':
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('float')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'BinaryField':
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bytes')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'BooleanField':
-        model_instance_field_type, = cls.inference_state.builtins_module.py__getattribute__('bool')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DecimalField':
-        model_instance_field_type, = cls.inference_state.import_module(('decimal',)).py__getattribute__('Decimal')
-        return DjangoModelField(model_instance_field_type, field).name
+    try:
+        module_name, attribute_name = mapping[field_tree_instance.name.string_name]
+    except KeyError:
+        pass
+    else:
+        if module_name is None:
+            module = cls.inference_state.builtins_module
+        else:
+            module = cls.inference_state.import_module((module_name,))
+        attribute, = module.py__getattribute__(attribute_name)
+        return DjangoModelField(attribute, field).name
 
     if field_tree_instance.name.string_name == 'ForeignKey':
         if isinstance(field_tree_instance, TreeInstance):
@@ -76,20 +80,3 @@ def _infer_field(cls, field):
                          return DjangoModelField(value, field).name
 
         raise Exception('Should be handled')
-
-    if field_tree_instance.name.string_name == 'TimeField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('time')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DurationField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('timedelta')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DateField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('date')
-        return DjangoModelField(model_instance_field_type, field).name
-
-    if field_tree_instance.name.string_name == 'DateTimeField':
-        model_instance_field_type, = cls.inference_state.import_module(('datetime',)).py__getattribute__('datetime')
-        return DjangoModelField(model_instance_field_type, field).name
-
