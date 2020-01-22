@@ -2,9 +2,8 @@ import os
 from textwrap import dedent
 
 from jedi._compatibility import force_unicode
-from jedi.inference.sys_path import (_get_parent_dir_with_file,
-                                    _get_buildout_script_paths,
-                                    check_sys_path_modifications)
+from jedi.inference.sys_path import _get_parent_dir_with_file, \
+    _get_buildout_script_paths, check_sys_path_modifications
 
 from ..helpers import cwd_at
 
@@ -37,8 +36,7 @@ def test_append_on_non_sys_path(Script):
             path = []
 
         d = Dummy()
-        d.path.append('foo')"""
-    )
+        d.path.append('foo')""")
 
     paths = check_module_test(Script, code)
     assert not paths
@@ -48,8 +46,7 @@ def test_append_on_non_sys_path(Script):
 def test_path_from_invalid_sys_path_assignment(Script):
     code = dedent("""
         import sys
-        sys.path = 'invalid'"""
-    )
+        sys.path = 'invalid'""")
 
     paths = check_module_test(Script, code)
     assert not paths
@@ -82,8 +79,7 @@ def test_path_from_sys_path_assignment(Script):
         import important_package
 
         if __name__ == '__main__':
-            sys.exit(important_package.main())"""
-    )
+            sys.exit(important_package.main())""")
 
     paths = check_module_test(Script, code)
     paths = list(map(force_unicode, paths))

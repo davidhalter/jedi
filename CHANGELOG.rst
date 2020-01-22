@@ -6,7 +6,6 @@ Changelog
 0.16.0 (2020-01-24)
 +++++++++++++++++++
 
-
 - **Added** ``Script.get_context`` to get information where you currently are.
 - Completions/type inference of **Pytest fixtures**.
 - Tensorflow, Numpy and Pandas completions should now be about **4-10x faster**
