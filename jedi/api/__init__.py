@@ -502,7 +502,7 @@ class Script(object):
         finally:
             self._inference_state.is_analysis = False
 
-    def names(self, **kwargs):
+    def get_names(self, **kwargs):
         """
         Returns a list of `Definition` objects, containing name parts.
         This means you can call ``Definition.goto()`` and get the
@@ -598,12 +598,12 @@ class Interpreter(Script):
 def names(source=None, path=None, encoding='utf-8', all_scopes=False,
           definitions=True, references=False, environment=None):
     warnings.warn(
-        "Deprecated since version 0.16.0. Use Script(...).names instead.",
+        "Deprecated since version 0.16.0. Use Script(...).get_names instead.",
         DeprecationWarning,
         stacklevel=2
     )
 
-    return Script(source, path=path, encoding=encoding).names(
+    return Script(source, path=path, encoding=encoding).get_names(
         all_scopes=all_scopes,
         definitions=definitions,
         references=references,

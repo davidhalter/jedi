@@ -64,7 +64,7 @@ class TestFullNameWithCompletions(MixinTestFullName, TestCase):
 
 class TestFullDefinedName(TestCase):
     """
-    Test combination of ``obj.full_name`` and ``jedi.defined_names``.
+    Test combination of ``obj.full_name`` and ``jedi.Script.get_names``.
     """
     @pytest.fixture(autouse=True)
     def init(self, environment):
@@ -72,7 +72,7 @@ class TestFullDefinedName(TestCase):
 
     def check(self, source, desired):
         script = jedi.Script(textwrap.dedent(source), environment=self.environment)
-        definitions = script.names()
+        definitions = script.get_names()
         full_names = [d.full_name for d in definitions]
         self.assertEqual(full_names, desired)
 

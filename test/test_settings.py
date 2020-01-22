@@ -34,7 +34,7 @@ def test_additional_dynamic_modules(monkeypatch, Script):
     assert not Script('def some_func(f):\n f.').complete()
 
 
-def test_cropped_file_size(monkeypatch, names, Script):
+def test_cropped_file_size(monkeypatch, get_names, Script):
     code = 'class Foo(): pass\n'
     monkeypatch.setattr(
         settings,
@@ -42,7 +42,7 @@ def test_cropped_file_size(monkeypatch, names, Script):
         len(code)
     )
 
-    foo, = names(code + code)
+    foo, = get_names(code + code)
     assert foo.line == 1
 
     # It should just not crash if we are outside of the cropped range.

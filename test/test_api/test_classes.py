@@ -18,7 +18,7 @@ def test_is_keyword(Script):
     assert len(results) == 1 and results[0].is_keyword is False
 
 
-def test_basedefinition_type(Script, names):
+def test_basedefinition_type(Script, get_names):
     def make_definitions():
         """
         Return a list of definitions for parametrized tests.
@@ -43,7 +43,7 @@ def test_basedefinition_type(Script, names):
         """)
 
         definitions = []
-        definitions += names(source)
+        definitions += get_names(source)
 
         source += dedent("""
         variable = sys or C or x or f or g or g() or h""")
@@ -101,8 +101,8 @@ def test_function_signature_in_doc(Script):
     assert "f(x, y=1, z='a')" in str(doc)
 
 
-def test_param_docstring(names):
-    param = names("def test(parameter): pass", all_scopes=True)[1]
+def test_param_docstring(get_names):
+    param = get_names("def test(parameter): pass", all_scopes=True)[1]
     assert param.name == 'parameter'
     assert param.docstring() == ''
 
@@ -232,8 +232,8 @@ def test_param_endings(Script):
         ('a = f(x)', 2, 'x', False),
     ]
 )
-def test_is_definition(names, code, index, name, is_definition):
-    d = names(
+def test_is_definition(get_names, code, index, name, is_definition):
+    d = get_names(
         dedent(code),
         references=True,
         all_scopes=True,
@@ -249,8 +249,8 @@ def test_is_definition(names, code, index, name, is_definition):
         ('from x.z import y', [False, False, True]),
     )
 )
-def test_is_definition_import(names, code, expected):
-    ns = names(dedent(code), references=True, all_scopes=True)
+def test_is_definition_import(get_names, code, expected):
+    ns = get_names(dedent(code), references=True, all_scopes=True)
     # Assure that names are definitely sorted.
     ns = sorted(ns, key=lambda name: (name.line, name.column))
     assert [name.is_definition() for name in ns] == expected
@@ -292,7 +292,7 @@ def test_parent_on_completion_and_else(Script):
     assert parent.name == 'Foo'
     assert parent.type == 'class'
 
-    param, name, = [d for d in script.names(all_scopes=True, references=True)
+    param, name, = [d for d in script.get_names(all_scopes=True, references=True)
                     if d.name == 'name']
     parent = name.parent()
     assert parent.name == 'bar'
@@ -320,7 +320,7 @@ def test_parent_on_closure(Script):
                 def inner(): foo
                 return inner'''))
 
-    names = script.names(all_scopes=True, references=True)
+    names = script.get_names(all_scopes=True, references=True)
     inner_func, inner_reference = filter(lambda d: d.name == 'inner', names)
     foo, = filter(lambda d: d.name == 'foo', names)
 
@@ -339,7 +339,7 @@ def test_parent_on_comprehension(Script):
     ns = Script('''\
     def spam():
         return [i for i in range(5)]
-    ''').names(all_scopes=True)
+    ''').get_names(all_scopes=True)
 
     assert [name.name for name in ns] == ['spam', 'i']
 
@@ -380,8 +380,8 @@ different as an implementation.
 """
 
 
-def test_goto_repetition(names):
-    defs = names('a = 1; a', references=True, definitions=False)
+def test_goto_repetition(get_names):
+    defs = get_names('a = 1; a', references=True, definitions=False)
     # Repeat on the same variable. Shouldn't change once we're on a
     # definition.
     for _ in range(3):
@@ -390,34 +390,34 @@ def test_goto_repetition(names):
         assert ass[0].description == 'a = 1'
 
 
-def test_goto_named_params(names):
+def test_goto_named_params(get_names):
     src = """\
             def foo(a=1, bar=2):
                 pass
             foo(bar=1)
           """
-    bar = names(dedent(src), references=True)[-1]
+    bar = get_names(dedent(src), references=True)[-1]
     param = bar.goto()[0]
     assert (param.line, param.column) == (1, 13)
     assert param.type == 'param'
 
 
-def test_class_call(names):
+def test_class_call(get_names):
     src = 'from threading import Thread; Thread(group=1)'
-    n = names(src, references=True)[-1]
+    n = get_names(src, references=True)[-1]
     assert n.name == 'group'
     param_def = n.goto()[0]
     assert param_def.name == 'group'
     assert param_def.type == 'param'
 
 
-def test_parentheses(names):
-    n = names('("").upper', references=True)[-1]
+def test_parentheses(get_names):
+    n = get_names('("").upper', references=True)[-1]
     assert n.goto()[0].name == 'upper'
 
 
-def test_import(names):
-    nms = names('from json import load', references=True)
+def test_import(get_names):
+    nms = get_names('from json import load', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
     n = nms[0].goto()[0]
@@ -430,7 +430,7 @@ def test_import(names):
     assert n.name == 'load'
     assert n.type == 'function'
 
-    nms = names('import os; os.path', references=True)
+    nms = get_names('import os; os.path', references=True)
     assert nms[0].name == 'os'
     assert nms[0].type == 'module'
     n = nms[0].goto()[0]
@@ -442,7 +442,7 @@ def test_import(names):
     assert all(n.type == 'module' for n in nms)
     assert 'posixpath' in {n.name for n in nms}
 
-    nms = names('import os.path', references=True)
+    nms = get_names('import os.path', references=True)
     n = nms[0].goto()[0]
     assert n.name == 'os'
     assert n.type == 'module'
@@ -453,8 +453,8 @@ def test_import(names):
     assert n.type == 'module'
 
 
-def test_import_alias(names):
-    nms = names('import json as foo', references=True)
+def test_import_alias(get_names):
+    nms = get_names('import json as foo', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
     assert nms[0]._name.tree_name.parent.type == 'dotted_as_name'

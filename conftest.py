@@ -106,8 +106,8 @@ def Script(environment):
 
 
 @pytest.fixture(scope='session')
-def names(Script):
-    return lambda code, **kwargs: Script(code).names(**kwargs)
+def get_names(Script):
+    return lambda code, **kwargs: Script(code).get_names(**kwargs)
 
 
 @pytest.fixture(scope='session', params=['goto', 'infer'])
