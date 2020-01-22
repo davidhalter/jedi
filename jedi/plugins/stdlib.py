@@ -21,7 +21,7 @@ from jedi.inference.arguments import \
 from jedi.inference import analysis
 from jedi.inference import compiled
 from jedi.inference.value.instance import \
-    AnonymousMethodExecutionContext, MethodExecutionContext, TreeInstance
+    AnonymousMethodExecutionContext, MethodExecutionContext
 from jedi.inference.base_value import ContextualizedNode, \
     NO_VALUES, ValueSet, ValueWrapper, LazyValueWrapper
 from jedi.inference.value import ClassValue, ModuleValue
