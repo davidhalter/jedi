@@ -16,7 +16,7 @@ from test.helpers import root_dir
     ]
 )
 @pytest.mark.parametrize(
-    ('code', 'full_name', 'has_stub', 'has_python', 'goto_changes'), [
+    ('code', 'full_name', 'has_stub', 'has_python', 'options'), [
         ['import os; os.walk', 'os.walk', True, True, {}],
         ['from collections import Counter', 'collections.Counter', True, True, {}],
         ['from collections', 'collections', True, True, {}],
@@ -24,15 +24,16 @@ from test.helpers import root_dir
         ['from collections import Counter; Counter()', 'collections.Counter', True, True, {}],
         ['from collections import Counter; Counter.most_common',
          'collections.Counter.most_common', True, True, {}],
-        ['from collections import deque', 'collections.deque', True, False, {'has_python': True}],
+        ['from collections import deque', 'collections.deque', True, False,
+         {'goto_has_python': True}],
 
         ['from keyword import kwlist; kwlist', 'typing.Sequence', True, True,
-         {'full_name': 'keyword.kwlist'}],
+         {'goto_full_name': 'keyword.kwlist'}],
         ['from keyword import kwlist', 'typing.Sequence', True, True,
-         {'full_name': 'keyword.kwlist'}],
+         {'goto_full_name': 'keyword.kwlist'}],
 
         ['from socket import AF_INET', 'socket.AddressFamily', True, False,
-         {'full_name': 'socket.AF_INET'}],
+         {'goto_full_name': 'socket.AF_INET'}],
         ['from socket import socket', 'socket.socket', True, True, {}],
 
         ['import with_stub', 'with_stub', True, True, {}],
@@ -41,7 +42,7 @@ from test.helpers import root_dir
         ['import stub_only', 'stub_only', True, False, {}],
     ])
 def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
-                        kwargs, type_, goto_changes, environment):
+                        kwargs, type_, options, environment):
     if environment.version_info < (3, 5):
         # We just don't care about much of the detailed Python 2 failures
         # anymore, because its end-of-life soon. (same for 3.4)
@@ -58,22 +59,22 @@ def test_infer_and_goto(Script, code, full_name, has_stub, has_python, way,
     only_stubs = kwargs['only_stubs']
 
     if type_ == 'goto':
-        full_name = goto_changes.get('full_name', full_name)
-        has_python = goto_changes.get('has_python', has_python)
+        full_name = options.get('goto_full_name', full_name)
+        has_python = options.get('goto_has_python', has_python)
 
     if way == 'direct':
         if type_ == 'goto':
-            defs = s.goto_assignments(follow_imports=True, **kwargs)
+            defs = s.goto(follow_imports=True, **kwargs)
         else:
-            defs = s.goto_definitions(**kwargs)
+            defs = s.infer(**kwargs)
     else:
-        goto_defs = s.goto_assignments(
+        goto_defs = s.goto(
             # Prefering stubs when we want to go to python and vice versa
             prefer_stubs=not (prefer_stubs or only_stubs),
             follow_imports=True,
         )
         if type_ == 'goto':
-            defs = [d for goto_def in goto_defs for d in goto_def.goto_assignments(**kwargs)]
+            defs = [d for goto_def in goto_defs for d in goto_def.goto(**kwargs)]
         else:
             defs = [d for goto_def in goto_defs for d in goto_def.infer(**kwargs)]
 

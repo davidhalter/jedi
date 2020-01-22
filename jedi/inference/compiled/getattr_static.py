@@ -46,9 +46,9 @@ def _shadowed_dict_newstyle(klass):
         except KeyError:
             pass
         else:
-            if not (type(class_dict) is types.GetSetDescriptorType and
-                    class_dict.__name__ == "__dict__" and
-                    class_dict.__objclass__ is entry):
+            if not (type(class_dict) is types.GetSetDescriptorType
+                    and class_dict.__name__ == "__dict__"
+                    and class_dict.__objclass__ is entry):
                 return class_dict
     return _sentinel
 

@@ -56,6 +56,9 @@ class AbstractSignature(_SignatureMixin):
     def bind(self, value):
         raise NotImplementedError
 
+    def matches_signature(self, arguments):
+        return True
+
     def __repr__(self):
         if self.value is self._function_value:
             return '<%s: %s>' % (self.__class__.__name__, self.value)
@@ -104,7 +107,7 @@ class TreeSignature(AbstractSignature):
                       for executed_param_name in executed_param_names)
         if debug.enable_notice:
             tree_node = self._function_value.tree_node
-            signature = parser_utils.get_call_signature(tree_node)
+            signature = parser_utils.get_signature(tree_node)
             if matches:
                 debug.dbg("Overloading match: %s@%s (%s)",
                           signature, tree_node.start_pos[0], arguments, color='BLUE')
@@ -128,7 +131,6 @@ class BuiltinSignature(AbstractSignature):
         return self.value
 
     def bind(self, value):
-        assert not self.is_bound
         return BuiltinSignature(value, self._return_string, is_bound=True)
 
 

@@ -8,7 +8,7 @@ just one.
 """
 from functools import reduce
 from operator import add
-from parso.python.tree import ExprStmt, SyncCompFor, Name
+from parso.python.tree import Name
 
 from jedi import debug
 from jedi._compatibility import zip_longest, unicode
@@ -225,6 +225,10 @@ class Value(HelperValueMixin, BaseValue):
             raise ValueError("There exists no safe value for value %s" % self)
         return default
 
+    def execute_operation(self, other, operator):
+        debug.warning("%s not possible between %s and %s", operator, self, other)
+        return NO_VALUES
+
     def py__call__(self, arguments):
         debug.warning("no execution possible %s", self)
         return NO_VALUES
@@ -239,6 +243,10 @@ class Value(HelperValueMixin, BaseValue):
         """
         return NO_VALUES
 
+    def py__get__(self, instance, class_value):
+        debug.warning("No __get__ defined on %s", self)
+        return ValueSet([self])
+
     def get_qualified_names(self):
         # Returns Optional[Tuple[str, ...]]
         return None
@@ -248,7 +256,13 @@ class Value(HelperValueMixin, BaseValue):
         return self.parent_context.is_stub()
 
     def _as_context(self):
-        raise NotImplementedError('Not all values need to be converted to contexts')
+        raise NotImplementedError('Not all values need to be converted to contexts: %s', self)
+
+    def name(self):
+        raise NotImplementedError
+
+    def py__name__(self):
+        return self.name.string_name
 
 
 def iterate_values(values, contextualized_node=None, is_async=False):

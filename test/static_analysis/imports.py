@@ -18,7 +18,7 @@ date.not_existing_attribute
 from datetime.date import today
 
 #! 16 import-error
-import datetime.date
+import datetime.datetime
 #! 7 import-error
 import not_existing_nested.date
 

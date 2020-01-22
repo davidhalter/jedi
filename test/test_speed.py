@@ -6,7 +6,7 @@ should.
 import time
 import functools
 
-from .helpers import cwd_at
+from .helpers import cwd_at, get_example_dir
 import jedi
 
 
@@ -33,14 +33,14 @@ def _check_speed(time_per_run, number=4, run_warm=True):
 @_check_speed(0.5)
 def test_os_path_join(Script):
     s = "from posixpath import join; join('', '')."
-    assert len(Script(s).completions()) > 10  # is a str completion
+    assert len(Script(s).complete()) > 10  # is a str completion
 
 
 @_check_speed(0.15)
 def test_scipy_speed(Script):
     s = 'import scipy.weave; scipy.weave.inline('
-    script = Script(s, 1, len(s), '')
-    script.call_signatures()
+    script = Script(s, path='')
+    script.get_signatures(1, len(s))
 
 
 @_check_speed(0.8)
@@ -50,9 +50,10 @@ def test_precedence_slowdown(Script):
     Precedence calculation can slow down things significantly in edge
     cases. Having strange recursion structures increases the problem.
     """
-    with open('speed/precedence.py') as f:
+    path = get_example_dir('speed', 'precedence.py')
+    with open(path) as f:
         line = len(f.read().splitlines())
-    assert Script(line=line, path='speed/precedence.py').goto_definitions()
+    assert Script(path=path).infer(line=line)
 
 
 @_check_speed(0.1)
@@ -70,4 +71,4 @@ def test_no_repr_computation(Script):
         def __repr__(self):
             time.sleep(0.2)
     test = SlowRepr()
-    jedi.Interpreter('test.som', [locals()]).completions()
+    jedi.Interpreter('test.som', [locals()]).complete()

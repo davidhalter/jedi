@@ -95,9 +95,7 @@ class TestCase(object):
             args = json.load(f)
         return cls(*args)
 
-    operations = [
-        'completions', 'goto_assignments', 'goto_definitions', 'usages',
-        'call_signatures']
+    operations = ['complete', 'goto', 'infer', 'get_references', 'get_signatures']
 
     @classmethod
     def generate(cls, file_path):
@@ -123,12 +121,12 @@ class TestCase(object):
     def run(self, debugger, record=None, print_result=False):
         try:
             with open(self.path) as f:
-                self.script = jedi.Script(f.read(), self.line, self.column, self.path)
+                self.script = jedi.Script(f.read(), path=self.path)
             kwargs = {}
             if self.operation == 'goto_assignments':
                 kwargs['follow_imports'] = random.choice([False, True])
 
-            self.objects = getattr(self.script, self.operation)(**kwargs)
+            self.objects = getattr(self.script, self.operation)(self.line, self.column, **kwargs)
             if print_result:
                 print("{path}: Line {line} column {column}".format(**self.__dict__))
                 self.show_location(self.line, self.column)

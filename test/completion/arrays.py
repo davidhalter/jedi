@@ -45,6 +45,9 @@ b[int():]
 #? list()
 b[:]
 
+#? 3
+b[:]
+
 #? int()
 b[:, 1]
 #? int()
@@ -296,6 +299,17 @@ some_dct['a']
 some_dct['b']
 #? int() float() str()
 some_dct['c']
+
+class Foo:
+    pass
+
+objects = {object(): 1, Foo: '', Foo(): 3.0}
+#? int() float() str()
+objects[Foo]
+#? int() float() str()
+objects[Foo()]
+#? int() float() str()
+objects['']
 
 # -----------------
 # with variable as index

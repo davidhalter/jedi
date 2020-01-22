@@ -3,20 +3,22 @@
 
 from textwrap import dedent
 from inspect import cleandoc
+import os
 
 import pytest
 
 import jedi
 from jedi import __doc__ as jedi_doc
 from jedi.inference.compiled import CompiledValueName
+from ..helpers import get_example_dir
 
 
 def test_is_keyword(Script):
-    results = Script('str', 1, 1, None).goto_definitions()
+    results = Script('str', path=None).infer(1, 1)
     assert len(results) == 1 and results[0].is_keyword is False
 
 
-def test_basedefinition_type(Script, names):
+def test_basedefinition_type(Script, get_names):
     def make_definitions():
         """
         Return a list of definitions for parametrized tests.
@@ -41,20 +43,20 @@ def test_basedefinition_type(Script, names):
         """)
 
         definitions = []
-        definitions += names(source)
+        definitions += get_names(source)
 
         source += dedent("""
         variable = sys or C or x or f or g or g() or h""")
         lines = source.splitlines()
-        script = Script(source, len(lines), len('variable'), None)
-        definitions += script.goto_definitions()
+        script = Script(source, path=None)
+        definitions += script.infer(len(lines), len('variable'))
 
-        script2 = Script(source, 4, len('class C'), None)
-        definitions += script2.usages()
+        script2 = Script(source, path=None)
+        definitions += script2.get_references(4, len('class C'))
 
         source_param = "def f(a): return a"
-        script_param = Script(source_param, 1, len(source_param), None)
-        definitions += script_param.goto_assignments()
+        script_param = Script(source_param, path=None)
+        definitions += script_param.goto(1, len(source_param))
 
         return definitions
 
@@ -86,37 +88,37 @@ def test_basedefinition_type(Script, names):
 
 )
 def test_basedefinition_type_import(Script, src, expected_result, column):
-    types = {t.type for t in Script(src, column=column).completions()}
+    types = {t.type for t in Script(src).complete(column=column)}
     assert types == {expected_result}
 
 
-def test_function_call_signature_in_doc(Script):
+def test_function_signature_in_doc(Script):
     defs = Script("""
     def f(x, y=1, z='a'):
         pass
-    f""").goto_definitions()
+    f""").infer()
     doc = defs[0].docstring()
     assert "f(x, y=1, z='a')" in str(doc)
 
 
-def test_param_docstring(names):
-    param = names("def test(parameter): pass", all_scopes=True)[1]
+def test_param_docstring(get_names):
+    param = get_names("def test(parameter): pass", all_scopes=True)[1]
     assert param.name == 'parameter'
     assert param.docstring() == ''
 
 
-def test_class_call_signature(Script):
+def test_class_signature(Script):
     defs = Script("""
     class Foo:
         def __init__(self, x, y=1, z='a'):
             pass
-    Foo""").goto_definitions()
+    Foo""").infer()
     doc = defs[0].docstring()
     assert doc == "Foo(x, y=1, z='a')"
 
 
 def test_position_none_if_builtin(Script):
-    gotos = Script('import sys; sys.path').goto_assignments()
+    gotos = Script('import sys; sys.path').goto()
     assert gotos[0].in_builtin_module()
     assert gotos[0].line is not None
     assert gotos[0].column is not None
@@ -127,10 +129,10 @@ def test_completion_docstring(Script, jedi_path):
     Jedi should follow imports in certain conditions
     """
     def docstr(src, result):
-        c = Script(src, sys_path=[jedi_path]).completions()[0]
+        c = Script(src, sys_path=[jedi_path]).complete()[0]
         assert c.docstring(raw=True, fast=False) == cleandoc(result)
 
-    c = Script('import jedi\njed', sys_path=[jedi_path]).completions()[0]
+    c = Script('import jedi\njed', sys_path=[jedi_path]).complete()[0]
     assert c.docstring(fast=False) == cleandoc(jedi_doc)
 
     docstr('import jedi\njedi.Scr', cleandoc(jedi.Script.__doc__))
@@ -172,14 +174,18 @@ def test_completion_docstring(Script, jedi_path):
 
 
 def test_completion_params(Script):
-    c = Script('import string; string.capwords').completions()[0]
-    assert [p.name for p in c.params] == ['s', 'sep']
+    c = Script('import string; string.capwords').complete()[0]
+    assert [p.name for p in c.get_signatures()[0].params] == ['s', 'sep']
 
 
 def test_functions_should_have_params(Script):
-    for c in Script('bool.').completions():
+    for c in Script('bool.').complete():
         if c.type == 'function':
-            assert isinstance(c.params, list)
+            if c.name in ('denominator', 'numerator', 'imag', 'real', '__class__'):
+                # Properties
+                assert not c.get_signatures()
+            else:
+                assert c.get_signatures()
 
 
 def test_hashlib_params(Script, environment):
@@ -187,25 +193,26 @@ def test_hashlib_params(Script, environment):
         pytest.skip()
 
     script = Script(source='from hashlib import sha256')
-    c, = script.completions()
-    assert [p.name for p in c.params] == ['arg']
+    c, = script.complete()
+    sig, = c.get_signatures()
+    assert [p.name for p in sig.params] == ['arg']
 
 
 def test_signature_params(Script):
     def check(defs):
-        params = defs[0].params
-        assert len(params) == 1
-        assert params[0].name == 'bar'
+        signature, = defs[0].get_signatures()
+        assert len(signature.params) == 1
+        assert signature.params[0].name == 'bar'
 
     s = dedent('''
     def foo(bar):
         pass
     foo''')
 
-    check(Script(s).goto_definitions())
+    check(Script(s).infer())
 
-    check(Script(s).goto_assignments())
-    check(Script(s + '\nbar=foo\nbar').goto_assignments())
+    check(Script(s).goto())
+    check(Script(s + '\nbar=foo\nbar').goto())
 
 
 def test_param_endings(Script):
@@ -213,7 +220,7 @@ def test_param_endings(Script):
     Params should be represented without the comma and whitespace they have
     around them.
     """
-    sig = Script('def x(a, b=5, c=""): pass\n x(').call_signatures()[0]
+    sig, = Script('def x(a, b=5, c=""): pass\n x(').get_signatures()
     assert [p.description for p in sig.params] == ['param a', 'param b=5', 'param c=""']
 
 
@@ -225,8 +232,8 @@ def test_param_endings(Script):
         ('a = f(x)', 2, 'x', False),
     ]
 )
-def test_is_definition(names, code, index, name, is_definition):
-    d = names(
+def test_is_definition(get_names, code, index, name, is_definition):
+    d = get_names(
         dedent(code),
         references=True,
         all_scopes=True,
@@ -242,8 +249,8 @@ def test_is_definition(names, code, index, name, is_definition):
         ('from x.z import y', [False, False, True]),
     )
 )
-def test_is_definition_import(names, code, expected):
-    ns = names(dedent(code), references=True, all_scopes=True)
+def test_is_definition_import(get_names, code, expected):
+    ns = get_names(dedent(code), references=True, all_scopes=True)
     # Assure that names are definitely sorted.
     ns = sorted(ns, key=lambda name: (name.line, name.column))
     assert [name.is_definition() for name in ns] == expected
@@ -251,7 +258,7 @@ def test_is_definition_import(names, code, expected):
 
 def test_parent(Script):
     def _parent(source, line=None, column=None):
-        def_, = Script(dedent(source), line, column).goto_assignments()
+        def_, = Script(dedent(source)).goto(line, column)
         return def_.parent()
 
     parent = _parent('foo=1\nfoo')
@@ -268,30 +275,71 @@ def test_parent(Script):
 
 def test_parent_on_function(Script):
     code = 'def spam():\n pass'
-    def_, = Script(code, line=1, column=len('def spam')).goto_assignments()
+    def_, = Script(code).goto(line=1, column=len('def spam'))
     parent = def_.parent()
     assert parent.name == ''
     assert parent.type == 'module'
 
 
-def test_parent_on_completion(Script):
-    parent = Script(dedent('''\
+def test_parent_on_completion_and_else(Script):
+    script = Script(dedent('''\
         class Foo():
-            def bar(): pass
-        Foo().bar''')).completions()[0].parent()
+            def bar(name): name
+        Foo().bar'''))
+
+    bar, = script.complete()
+    parent = bar.parent()
     assert parent.name == 'Foo'
     assert parent.type == 'class'
 
-    parent = Script('str.join').completions()[0].parent()
+    param, name, = [d for d in script.get_names(all_scopes=True, references=True)
+                    if d.name == 'name']
+    parent = name.parent()
+    assert parent.name == 'bar'
+    assert parent.type == 'function'
+    parent = name.parent().parent()
+    assert parent.name == 'Foo'
+    assert parent.type == 'class'
+
+    parent = param.parent()
+    assert parent.name == 'bar'
+    assert parent.type == 'function'
+    parent = param.parent().parent()
+    assert parent.name == 'Foo'
+    assert parent.type == 'class'
+
+    parent = Script('str.join').complete()[0].parent()
     assert parent.name == 'str'
     assert parent.type == 'class'
 
 
-def test_parent_on_comprehension():
-    ns = jedi.names('''\
+def test_parent_on_closure(Script):
+    script = Script(dedent('''\
+        class Foo():
+            def bar(name):
+                def inner(): foo
+                return inner'''))
+
+    names = script.get_names(all_scopes=True, references=True)
+    inner_func, inner_reference = filter(lambda d: d.name == 'inner', names)
+    foo, = filter(lambda d: d.name == 'foo', names)
+
+    assert foo.parent().name == 'inner'
+    assert foo.parent().parent().name == 'bar'
+    assert foo.parent().parent().parent().name == 'Foo'
+    assert foo.parent().parent().parent().parent().name == ''
+
+    assert inner_func.parent().name == 'bar'
+    assert inner_func.parent().parent().name == 'Foo'
+    assert inner_reference.parent().name == 'bar'
+    assert inner_reference.parent().parent().name == 'Foo'
+
+
+def test_parent_on_comprehension(Script):
+    ns = Script('''\
     def spam():
         return [i for i in range(5)]
-    ''', all_scopes=True)
+    ''').get_names(all_scopes=True)
 
     assert [name.name for name in ns] == ['spam', 'i']
 
@@ -302,17 +350,17 @@ def test_parent_on_comprehension():
 
 
 def test_type(Script):
-    for c in Script('a = [str()]; a[0].').completions():
+    for c in Script('a = [str()]; a[0].').complete():
         if c.name == '__class__' and False:  # TODO fix.
             assert c.type == 'class'
         else:
             assert c.type in ('function', 'statement')
 
-    for c in Script('list.').completions():
+    for c in Script('list.').complete():
         assert c.type
 
     # Github issue #397, type should never raise an error.
-    for c in Script('import os; os.path.').completions():
+    for c in Script('import os; os.path.').complete():
         assert c.type
 
 
@@ -320,96 +368,97 @@ def test_type_II(Script):
     """
     GitHub Issue #833, `keyword`s are seen as `module`s
     """
-    for c in Script('f').completions():
+    for c in Script('f').complete():
         if c.name == 'for':
             assert c.type == 'keyword'
 
 
 """
-This tests the BaseDefinition.goto_assignments function, not the jedi
+This tests the BaseDefinition.goto function, not the jedi
 function. They are not really different in functionality, but really
 different as an implementation.
 """
 
 
-def test_goto_assignment_repetition(names):
-    defs = names('a = 1; a', references=True, definitions=False)
+def test_goto_repetition(get_names):
+    defs = get_names('a = 1; a', references=True, definitions=False)
     # Repeat on the same variable. Shouldn't change once we're on a
     # definition.
     for _ in range(3):
         assert len(defs) == 1
-        ass = defs[0].goto_assignments()
+        ass = defs[0].goto()
         assert ass[0].description == 'a = 1'
 
 
-def test_goto_assignments_named_params(names):
+def test_goto_named_params(get_names):
     src = """\
             def foo(a=1, bar=2):
                 pass
             foo(bar=1)
           """
-    bar = names(dedent(src), references=True)[-1]
-    param = bar.goto_assignments()[0]
+    bar = get_names(dedent(src), references=True)[-1]
+    param = bar.goto()[0]
     assert (param.line, param.column) == (1, 13)
     assert param.type == 'param'
 
 
-def test_class_call(names):
+def test_class_call(get_names):
     src = 'from threading import Thread; Thread(group=1)'
-    n = names(src, references=True)[-1]
+    n = get_names(src, references=True)[-1]
     assert n.name == 'group'
-    param_def = n.goto_assignments()[0]
+    param_def = n.goto()[0]
     assert param_def.name == 'group'
     assert param_def.type == 'param'
 
 
-def test_parentheses(names):
-    n = names('("").upper', references=True)[-1]
-    assert n.goto_assignments()[0].name == 'upper'
+def test_parentheses(get_names):
+    n = get_names('("").upper', references=True)[-1]
+    assert n.goto()[0].name == 'upper'
 
 
-def test_import(names):
-    nms = names('from json import load', references=True)
+def test_import(get_names):
+    nms = get_names('from json import load', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
-    n = nms[0].goto_assignments()[0]
+    n = nms[0].goto()[0]
     assert n.name == 'json'
     assert n.type == 'module'
 
     assert nms[1].name == 'load'
     assert nms[1].type == 'function'
-    n = nms[1].goto_assignments()[0]
+    n = nms[1].goto()[0]
     assert n.name == 'load'
     assert n.type == 'function'
 
-    nms = names('import os; os.path', references=True)
+    nms = get_names('import os; os.path', references=True)
     assert nms[0].name == 'os'
     assert nms[0].type == 'module'
-    n = nms[0].goto_assignments()[0]
+    n = nms[0].goto()[0]
     assert n.name == 'os'
     assert n.type == 'module'
 
-    n = nms[2].goto_assignments()[0]
-    assert n.name == 'path'
-    assert n.type == 'module'
+    nms = nms[2].goto()
+    assert nms
+    assert all(n.type == 'module' for n in nms)
+    assert 'posixpath' in {n.name for n in nms}
 
-    nms = names('import os.path', references=True)
-    n = nms[0].goto_assignments()[0]
+    nms = get_names('import os.path', references=True)
+    n = nms[0].goto()[0]
     assert n.name == 'os'
     assert n.type == 'module'
-    n = nms[1].goto_assignments()[0]
-    # This is very special, normally the name doesn't chance, but since
+    n = nms[1].goto()[0]
+    # This is very special, normally the name doesn't change, but since
     # os.path is a sys.modules hack, it does.
     assert n.name in ('macpath', 'ntpath', 'posixpath', 'os2emxpath')
     assert n.type == 'module'
 
 
-def test_import_alias(names):
-    nms = names('import json as foo', references=True)
+def test_import_alias(get_names):
+    nms = get_names('import json as foo', references=True)
     assert nms[0].name == 'json'
     assert nms[0].type == 'module'
     assert nms[0]._name.tree_name.parent.type == 'dotted_as_name'
-    n = nms[0].goto_assignments()[0]
+    n = nms[0].goto()[0]
     assert n.name == 'json'
     assert n.type == 'module'
     assert n._name._value.tree_node.type == 'file_input'
@@ -417,7 +466,7 @@ def test_import_alias(names):
     assert nms[1].name == 'foo'
     assert nms[1].type == 'module'
     assert nms[1]._name.tree_name.parent.type == 'dotted_as_name'
-    ass = nms[1].goto_assignments()
+    ass = nms[1].goto()
     assert len(ass) == 1
     assert ass[0].name == 'json'
     assert ass[0].type == 'module'
@@ -430,7 +479,7 @@ def test_added_equals_to_params(Script):
         def foo(bar, baz):
             pass
         """)
-        results = Script(source + rest_source).completions()
+        results = Script(source + rest_source).complete()
         assert len(results) == 1
         return results[0]
 
@@ -449,7 +498,7 @@ def test_builtin_module_with_path(Script):
     a path or not. It shouldn't have a module_path, because that is just
     confusing.
     """
-    semlock, = Script('from _multiprocessing import SemLock').goto_definitions()
+    semlock, = Script('from _multiprocessing import SemLock').infer()
     assert isinstance(semlock._name, CompiledValueName)
     assert semlock.module_path is None
     assert semlock.in_builtin_module() is True
@@ -466,10 +515,32 @@ def test_builtin_module_with_path(Script):
     ]
 )
 def test_execute(Script, code, description):
-    definition, = Script(code).goto_assignments()
+    definition, = Script(code).goto()
     definitions = definition.execute()
     if description is None:
         assert not definitions
     else:
         d, = definitions
         assert d.description == description
+
+
+@pytest.mark.parametrize('goto', [False, True, None])
+@pytest.mark.parametrize(
+    'code, name, file_name', [
+        ('from pkg import Foo; Foo.foo', 'foo', '__init__.py'),
+        ('from pkg import Foo; Foo().foo', 'foo', '__init__.py'),
+        ('from pkg import Foo; Foo.bar', 'bar', 'module.py'),
+        ('from pkg import Foo; Foo().bar', 'bar', 'module.py'),
+    ])
+def test_inheritance_module_path(Script, goto, code, name, file_name):
+    base_path = os.path.join(get_example_dir('inheritance'), 'pkg')
+    whatever_path = os.path.join(base_path, 'NOT_EXISTING.py')
+
+    script = Script(code, path=whatever_path)
+    if goto is None:
+        func, = script.infer()
+    else:
+        func, = script.goto(follow_imports=goto)
+    assert func.type == 'function'
+    assert func.name == name
+    assert func.module_path == os.path.join(base_path, file_name)

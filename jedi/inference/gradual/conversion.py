@@ -59,27 +59,22 @@ def _try_stub_to_python_names(names, prefer_stub_to_compiled=False):
             yield name
             continue
 
-        name_list = name.get_qualified_names()
-        if name_list is None:
-            values = NO_VALUES
-        else:
-            values = _infer_from_stub(
-                module_context,
-                name_list[:-1],
-                ignore_compiled=prefer_stub_to_compiled,
-            )
-        if values and name_list:
-            new_names = values.goto(name_list[-1])
-            for new_name in new_names:
-                yield new_name
-            if new_names:
+        if name.api_type == 'module':
+            values = convert_values(name.infer(), ignore_compiled=prefer_stub_to_compiled)
+            if values:
+                for v in values:
+                    yield v.name
                 continue
-        elif values:
-            for c in values:
-                yield c.name
-            continue
-        # This is the part where if we haven't found anything, just return the
-        # stub name.
+        else:
+            v = name.get_defining_qualified_value()
+            if v is not None:
+                converted = _stub_to_python_value_set(v, ignore_compiled=prefer_stub_to_compiled)
+                if converted:
+                    converted_names = converted.goto(name.get_public_name())
+                    if converted_names:
+                        for n in converted_names:
+                            yield n
+                        continue
         yield name
 
 
@@ -104,45 +99,44 @@ def _python_to_stub_names(names, fallback_to_python=False):
             yield name
             continue
 
-        if name.is_import():
-            for new_name in name.goto():
-                # Imports don't need to be converted, because they are already
-                # stubs if possible.
-                if fallback_to_python or new_name.is_stub():
-                    yield new_name
-            continue
-
-        name_list = name.get_qualified_names()
-        stubs = NO_VALUES
-        if name_list is not None:
-            stub_module = _load_stub_module(module_context.get_value())
-            if stub_module is not None:
-                stubs = ValueSet({stub_module})
-                for name in name_list[:-1]:
-                    stubs = stubs.py__getattribute__(name)
-        if stubs and name_list:
-            new_names = stubs.goto(name_list[-1])
-            for new_name in new_names:
-                yield new_name
-            if new_names:
+        if name.api_type == 'module':
+            found_name = False
+            for n in name.goto():
+                if n.api_type == 'module':
+                    values = convert_values(n.infer(), only_stubs=True)
+                    for v in values:
+                        yield v.name
+                        found_name = True
+                else:
+                    for x in _python_to_stub_names([n], fallback_to_python=fallback_to_python):
+                        yield x
+                        found_name = True
+            if found_name:
                 continue
-        elif stubs:
-            for c in stubs:
-                yield c.name
-            continue
+        else:
+            v = name.get_defining_qualified_value()
+            if v is not None:
+                converted = to_stub(v)
+                if converted:
+                    converted_names = converted.goto(name.get_public_name())
+                    if converted_names:
+                        for n in converted_names:
+                            yield n
+                        continue
         if fallback_to_python:
             # This is the part where if we haven't found anything, just return
             # the stub name.
             yield name
 
 
-def convert_names(names, only_stubs=False, prefer_stubs=False):
+def convert_names(names, only_stubs=False, prefer_stubs=False, prefer_stub_to_compiled=True):
     assert not (only_stubs and prefer_stubs)
     with debug.increase_indent_cm('convert names'):
         if only_stubs or prefer_stubs:
             return _python_to_stub_names(names, fallback_to_python=prefer_stubs)
         else:
-            return _try_stub_to_python_names(names, prefer_stub_to_compiled=True)
+            return _try_stub_to_python_names(
+                names, prefer_stub_to_compiled=prefer_stub_to_compiled)
 
 
 def convert_values(values, only_stubs=False, prefer_stubs=False, ignore_compiled=True):
@@ -162,7 +156,6 @@ def convert_values(values, only_stubs=False, prefer_stubs=False, ignore_compiled
             )
 
 
-# TODO merge with _python_to_stub_names?
 def to_stub(value):
     if value.is_stub():
         return ValueSet([value])

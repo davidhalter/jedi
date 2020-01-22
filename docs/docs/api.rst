@@ -29,9 +29,8 @@ API Documentation
 
 The API consists of a few different parts:
 
-- The main starting points for completions/goto: :class:`.Script` and :class:`.Interpreter`
-- Helpful functions: :func:`.names`, :func:`.preload_module` and
-  :func:`.set_debug_function`
+- The main starting points for complete/goto: :class:`.Script` and :class:`.Interpreter`
+- Helpful functions: :func:`.preload_module` and :func:`.set_debug_function`
 - :ref:`API Result Classes <api-classes>`
 - :ref:`Python Versions/Virtualenv Support <environments>` with functions like
   :func:`.find_system_environments` and :func:`.find_virtualenvs`
@@ -47,7 +46,6 @@ Static Analysis Interface
     :members:
 .. autoclass:: jedi.Interpreter
     :members:
-.. autofunction:: jedi.names
 .. autofunction:: jedi.preload_module
 .. autofunction:: jedi.set_debug_function
 
@@ -76,10 +74,10 @@ Completions:
 
    >>> import jedi
    >>> source = '''import json; json.l'''
-   >>> script = jedi.Script(source, 1, 19, '')
+   >>> script = jedi.Script(source, path='')
    >>> script
    <jedi.api.Script object at 0x2121b10>
-   >>> completions = script.completions()
+   >>> completions = script.complete(1, 19)
    >>> completions
    [<Completion: load>, <Completion: loads>]
    >>> completions[1]
@@ -102,15 +100,15 @@ Definitions / Goto:
     ... inception = my_list[2]
     ... 
     ... inception()'''
-    >>> script = jedi.Script(source, 8, 1, '')
+    >>> script = jedi.Script(source, path='')
     >>>
-    >>> script.goto_assignments()
+    >>> script.goto(8, 1)
     [<Definition inception=my_list[2]>]
     >>>
-    >>> script.goto_definitions()
+    >>> script.infer(8, 1)
     [<Definition def my_func>]
 
-Related names:
+References:
 
 .. sourcecode:: python
 
@@ -120,13 +118,12 @@ Related names:
     ...     x = 4
     ... else:
     ...     del x'''
-    >>> script = jedi.Script(source, 5, 8, '')
-    >>> rns = script.related_names()
+    >>> script = jedi.Script(source, '')
+    >>> rns = script.get_references(5, 8)
     >>> rns
-    [<RelatedName x@3,4>, <RelatedName x@1,0>]
-    >>> rns[0].start_pos
-    (3, 4)
-    >>> rns[0].is_keyword
-    False
-    >>> rns[0].text
-    'x'
+    [<Definition full_name='__main__.x', description='x = 3'>,
+     <Definition full_name='__main__.x', description='x'>]
+    >>> rns[1].line
+    5
+    >>> rns[0].column
+    8

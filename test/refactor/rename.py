@@ -1,6 +1,6 @@
 """
 Test coverage for renaming is mostly being done by testing
-`Script.usages`.
+`Script.get_references`.
 """
 
 # --- simple

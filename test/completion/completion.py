@@ -20,7 +20,7 @@ tuple
 class MyClass:
     @pass_decorator
     def x(foo,
-#? 5 ["tuple"]
+#? 5 []
 tuple,
           ):
         return 1

@@ -8,20 +8,22 @@ import sys
 
 from jedi.parser_utils import get_cached_code_lines
 
+from jedi._compatibility import unwrap
 from jedi import settings
 from jedi.inference import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
-from jedi.inference.base_value import ValueSet, ValueWrapper
+from jedi.inference.base_value import ValueSet, ValueWrapper, NO_VALUES
 from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.value import ModuleValue
-from jedi.inference.cache import inference_state_function_cache
-from jedi.inference.compiled.getattr_static import getattr_static
+from jedi.inference.cache import inference_state_function_cache, \
+    inference_state_method_cache
 from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.inference.compiled.value import create_cached_compiled_object
 from jedi.inference.gradual.conversion import to_stub
-from jedi.inference.context import CompiledContext, TreeContextMixin
+from jedi.inference.context import CompiledContext, CompiledModuleContext, \
+    TreeContextMixin
 
 _sentinel = object()
 
@@ -56,8 +58,13 @@ class MixedObject(ValueWrapper):
         # should be very precise, especially for stuff like `partial`.
         return self.compiled_object.get_signatures()
 
+    @inference_state_method_cache(default=NO_VALUES)
     def py__call__(self, arguments):
-        return (to_stub(self._wrapped_value) or self._wrapped_value).py__call__(arguments)
+        # Fallback to the wrapped value if to stub returns no values.
+        values = to_stub(self._wrapped_value)
+        if not values:
+            values = self._wrapped_value
+        return values.py__call__(arguments)
 
     def get_safe_value(self, default=_sentinel):
         if default is _sentinel:
@@ -72,6 +79,8 @@ class MixedObject(ValueWrapper):
         raise SimpleGetItemNotFound
 
     def _as_context(self):
+        if self.parent_context is None:
+            return MixedModuleContext(self)
         return MixedContext(self)
 
     def __repr__(self):
@@ -85,6 +94,10 @@ class MixedContext(CompiledContext, TreeContextMixin):
     @property
     def compiled_object(self):
         return self._value.compiled_object
+
+
+class MixedModuleContext(CompiledModuleContext, MixedContext):
+    pass
 
 
 class MixedName(compiled.CompiledName):
@@ -105,6 +118,7 @@ class MixedName(compiled.CompiledName):
             if parent_value is None:
                 parent_context = None
             else:
+                assert parent_value is not None
                 parent_context = parent_value.as_context()
 
             if parent_context is None or isinstance(parent_context, MixedContext):
@@ -117,7 +131,7 @@ class MixedName(compiled.CompiledName):
                 })
 
         # TODO use logic from compiled.CompiledObjectFilter
-        access_paths = self.parent_context.access_handle.getattr_paths(
+        access_paths = self._parent_value.access_handle.getattr_paths(
             self.string_name,
             default=None
         )
@@ -146,22 +160,26 @@ def _load_module(inference_state, path):
     ).get_root_node()
     # python_module = inspect.getmodule(python_object)
     # TODO we should actually make something like this possible.
-    #inference_state.modules[python_module.__name__] = module_node
+    # inference_state.modules[python_module.__name__] = module_node
     return module_node
 
 
 def _get_object_to_check(python_object):
     """Check if inspect.getfile has a chance to find the source."""
     if sys.version_info[0] > 2:
-        python_object = inspect.unwrap(python_object)
+        try:
+            python_object = unwrap(python_object)
+        except ValueError:
+            # Can return a ValueError when it wraps around
+            pass
 
-    if (inspect.ismodule(python_object) or
-            inspect.isclass(python_object) or
-            inspect.ismethod(python_object) or
-            inspect.isfunction(python_object) or
-            inspect.istraceback(python_object) or
-            inspect.isframe(python_object) or
-            inspect.iscode(python_object)):
+    if (inspect.ismodule(python_object)
+            or inspect.isclass(python_object)
+            or inspect.ismethod(python_object)
+            or inspect.isfunction(python_object)
+            or inspect.istraceback(python_object)
+            or inspect.isframe(python_object)
+            or inspect.iscode(python_object)):
         return python_object
 
     try:
@@ -249,6 +267,8 @@ def _create(inference_state, access_handle, parent_context, *args):
     compiled_object = create_cached_compiled_object(
         inference_state,
         access_handle,
+        # TODO It looks like we have to use the compiled object as a parent context.
+        #      Why is that?
         parent_context=None if parent_context is None
                        else parent_context.compiled_object.as_context()  # noqa
     )
@@ -277,7 +297,7 @@ def _create(inference_state, access_handle, parent_context, *args):
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
-                is_package=compiled_object.is_package,
+                is_package=compiled_object.is_package(),
             ).as_context()
             if name is not None:
                 inference_state.module_cache.add(string_names, ValueSet([module_context]))

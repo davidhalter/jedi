@@ -32,7 +32,7 @@ Jedi has a focus on autocompletion and goto functionality. Jedi is fast and is
 very well tested. It understands Python and stubs on a deep level.
 
 Jedi has support for different goto functions. It's possible to search for
-usages and list names in a Python file to get information about them.
+references and list names in a Python file to get information about them.
 
 Jedi uses a very simple API to connect with IDE's. There's a reference
 implementation as a `VIM-Plugin <https://github.com/davidhalter/jedi-vim>`_,
@@ -128,9 +128,9 @@ Autocompletion / Goto / Pydoc
 
 Please check the API for a good explanation. There are the following commands:
 
-- ``jedi.Script.goto_assignments``
-- ``jedi.Script.completions``
-- ``jedi.Script.usages``
+- ``jedi.Script.goto``
+- ``jedi.Script.complete``
+- ``jedi.Script.get_references``
 
 The returned objects are very powerful and really all you might need.
 
@@ -149,8 +149,9 @@ This means that in Python you can enable tab completion in a `REPL
 Static Analysis
 ------------------------
 
-To do all forms of static analysis, please try to use ``jedi.names``. It will
-return a list of names that you can use to infer types and so on.
+To do all forms of static analysis, please try to use
+``jedi.Script(...).get_names``. It will return a list of names that you can use
+to infer types and so on.
 
 
 Refactoring

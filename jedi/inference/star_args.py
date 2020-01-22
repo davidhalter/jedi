@@ -14,6 +14,7 @@ The signature here for bar should be `bar(b, c)` instead of bar(*args).
 from jedi._compatibility import Parameter
 from jedi.inference.utils import to_list
 from jedi.inference.names import ParamNameWrapper
+from jedi.inference.helpers import is_big_annoying_library
 
 
 def _iter_nodes_for_param(param_name):
@@ -93,6 +94,14 @@ def _remove_given_params(arguments, param_names):
 
 @to_list
 def process_params(param_names, star_count=3):  # default means both * and **
+    if param_names:
+        if is_big_annoying_library(param_names[0].parent_context):
+            # At first this feature can look innocent, but it does a lot of
+            # type inference in some cases, so we just ditch it.
+            for p in param_names:
+                yield p
+            return
+
     used_names = set()
     arg_callables = []
     kwarg_callables = []
@@ -127,6 +136,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
                 used_names.add(p.string_name)
                 yield p
 
+    # First process *args
     longest_param_names = ()
     found_arg_signature = False
     found_kwarg_signature = False
@@ -172,12 +182,7 @@ def process_params(param_names, star_count=3):  # default means both * and **
     elif arg_names:
         yield arg_names[0]
 
-    for p in kw_only_names:
-        if p.string_name in used_names:
-            continue
-        yield p
-        used_names.add(p.string_name)
-
+    # Then process **kwargs
     for func, arguments in kwarg_callables:
         for signature in func.get_signatures():
             found_kwarg_signature = True
@@ -186,8 +191,16 @@ def process_params(param_names, star_count=3):  # default means both * and **
                         arguments,
                         signature.get_param_names(resolve_stars=False)
                     )), star_count=2):
-                if p.get_kind() != Parameter.KEYWORD_ONLY or not kwarg_names:
-                    yield p
+                if p.get_kind() == Parameter.VAR_KEYWORD:
+                    kwarg_names.append(p)
+                elif p.get_kind() == Parameter.KEYWORD_ONLY:
+                    kw_only_names.append(p)
+
+    for p in kw_only_names:
+        if p.string_name in used_names:
+            continue
+        yield p
+        used_names.add(p.string_name)
 
     if not found_kwarg_signature and original_kwarg_name is not None:
         yield original_kwarg_name

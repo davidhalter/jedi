@@ -252,3 +252,65 @@ def import_issues(foo):
     """
     #? datetime.datetime()
     foo
+
+
+# -----------------
+# Doctest completions
+# -----------------
+
+def doctest_with_gt():
+    """
+    x
+
+    >>> somewhere_in_docstring = 3
+    #? ['import_issues']
+    >>> import_issu
+    #? ['somewhere_in_docstring']
+    >>> somewhere_
+
+    blabla
+
+        >>> haha = 3
+        #? ['haha']
+        >>> hah
+        #? ['doctest_with_space']
+        >>> doctest_with_sp
+    """
+
+def doctest_with_space():
+    """
+    x
+        #? ['import_issues']
+        import_issu
+    """
+
+
+def docstring_rst_identifiers():
+    """
+    #? 30 ['import_issues']
+    hello I'm here `import_iss` blabla
+
+    #? ['import_issues']
+    hello I'm here `import_iss
+
+    #? []
+    hello I'm here import_iss
+    #? []
+    hello I'm here ` import_iss
+
+    #? ['upper']
+    hello I'm here `str.upp
+    """
+
+
+def doctest_without_ending():
+    """
+    #? []
+    import_issu
+    ha
+
+        no_ending = False
+        #? ['import_issues']
+        import_issu
+        #? ['no_ending']
+        no_endin

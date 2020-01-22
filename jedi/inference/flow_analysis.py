@@ -1,5 +1,6 @@
 from jedi.parser_utils import get_flow_branch_keyword, is_scope, get_parent_scope
 from jedi.inference.recursion import execution_allowed
+from jedi.inference.helpers import is_big_annoying_library
 
 
 class Status(object):
@@ -42,6 +43,10 @@ def _get_flow_scopes(node):
 
 
 def reachability_check(context, value_scope, node, origin_scope=None):
+    if is_big_annoying_library(context) \
+            or not context.inference_state.flow_analysis_enabled:
+        return UNSURE
+
     first_flow_scope = get_parent_scope(node, include_flows=True)
     if origin_scope is not None:
         origin_flow_scopes = list(_get_flow_scopes(origin_scope))

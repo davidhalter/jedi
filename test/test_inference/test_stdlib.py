@@ -17,7 +17,7 @@ def test_namedtuple_str(letter, expected, Script):
         Person = collections.namedtuple('Person', 'name smart')
         dave = Person('Dave', False)
         dave.%s""") % letter
-    result = Script(source).completions()
+    result = Script(source).complete()
     completions = set(r.name for r in result)
     assert completions == set(expected)
 
@@ -28,7 +28,7 @@ def test_namedtuple_list(Script):
         Cat = collections.namedtuple('Person', ['legs', u'length', 'large'])
         garfield = Cat(4, '85cm', True)
         garfield.l""")
-    result = Script(source).completions()
+    result = Script(source).complete()
     completions = set(r.name for r in result)
     assert completions == {'legs', 'length', 'large'}
 
@@ -42,7 +42,7 @@ def test_namedtuple_content(Script):
         """)
 
     def d(source):
-        x, = Script(source).goto_definitions()
+        x, = Script(source).infer()
         return x.name
 
     assert d(source + 'unnamed.bar') == 'int'
@@ -60,12 +60,11 @@ def test_nested_namedtuples(Script):
         Dataset = collections.namedtuple('Dataset', ['data'])
         Datasets = collections.namedtuple('Datasets', ['train'])
         train_x = Datasets(train=Dataset('data_value'))
-        train_x.train.'''
-    ))
-    assert 'data' in [c.name for c in s.completions()]
+        train_x.train.'''))
+    assert 'data' in [c.name for c in s.complete()]
 
 
-def test_namedtuple_goto_definitions(Script):
+def test_namedtuple_infer(Script):
     source = dedent("""
         from collections import namedtuple
 
@@ -74,7 +73,7 @@ def test_namedtuple_goto_definitions(Script):
 
     from jedi.api import Script
 
-    d1, = Script(source).goto_definitions()
+    d1, = Script(source).infer()
 
     assert d1.get_line_code() == "class Foo(tuple):\n"
     assert d1.module_path is None
@@ -86,7 +85,7 @@ def test_re_sub(Script, environment):
     version differences.
     """
     def run(code):
-        defs = Script(code).goto_definitions()
+        defs = Script(code).infer()
         return {d.name for d in defs}
 
     names = run("import re; re.sub('a', 'a', 'f')")

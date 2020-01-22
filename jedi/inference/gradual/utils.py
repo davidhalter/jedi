@@ -21,8 +21,6 @@ def load_proper_stub_module(inference_state, file_io, import_names, module_node)
 
     if import_names is not None:
         actual_value_set = inference_state.import_module(import_names, prefer_stubs=False)
-        if not actual_value_set:
-            return None
 
         stub = create_stub_module(
             inference_state, actual_value_set, module_node, file_io, import_names

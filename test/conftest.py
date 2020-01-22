@@ -1,15 +1,25 @@
 import os
-import re
+import sys
 import subprocess
+from itertools import count
 
 import pytest
 
 from . import helpers
 from . import run
 from . import refactor
+from jedi.api.environment import InterpreterEnvironment, get_system_environment
+from jedi.inference.compiled.value import create_from_access_path
+from jedi.inference.imports import _load_python_module
+from jedi.file_io import KnownContentFileIO
+from jedi.inference.base_value import ValueSet
 
-import jedi
-from jedi.api.environment import InterpreterEnvironment
+# For interpreter tests sometimes the path of this directory is in the sys
+# path, which we definitely don't want. So just remove it globally.
+try:
+    sys.path.remove(helpers.test_dir)
+except ValueError:
+    pass
 
 
 def pytest_addoption(parser):
@@ -91,9 +101,15 @@ def collect_static_analysis_tests(base_dir, test_files):
 def venv_path(tmpdir_factory, environment):
     if environment.version_info.major < 3:
         pytest.skip("python -m venv does not exist in Python 2")
+    elif isinstance(environment, InterpreterEnvironment):
+        # The environment can be a tox virtualenv environment which we don't
+        # want, so use the system environment.
+        environment = get_system_environment(
+            '.'.join(str(x) for x in environment.version_info[:2])
+        )
 
     tmpdir = tmpdir_factory.mktemp('venv_path')
-    dirname = os.path.join(tmpdir.dirname, 'venv')
+    dirname = os.path.join(tmpdir.strpath, 'venv')
 
     # We cannot use the Python from tox because tox creates virtualenvs and
     # they have different site.py files that work differently than the default
@@ -111,7 +127,8 @@ def venv_path(tmpdir_factory, environment):
         executable_name = os.path.basename(environment.executable)
         executable_path = os.path.join(prefix, 'bin', executable_name)
 
-    subprocess.call([executable_path, '-m', 'venv', dirname])
+    return_code = subprocess.call([executable_path, '-m', 'venv', dirname])
+    assert return_code == 0, return_code
     return dirname
 
 
@@ -129,3 +146,30 @@ def inference_state(Script):
 @pytest.fixture
 def same_process_inference_state(Script):
     return Script('', environment=InterpreterEnvironment())._inference_state
+
+
+@pytest.fixture
+def disable_typeshed(monkeypatch):
+    from jedi.inference.gradual import typeshed
+    monkeypatch.setattr(typeshed, '_load_from_typeshed', lambda *args, **kwargs: None)
+
+
+@pytest.fixture
+def create_compiled_object(inference_state):
+    return lambda obj: create_from_access_path(
+        inference_state,
+        inference_state.compiled_subprocess.create_simple_object(obj)
+    )
+
+
+@pytest.fixture
+def module_injector():
+    counter = count()
+
+    def module_injector(inference_state, names, code):
+        assert isinstance(names, tuple)
+        file_io = KnownContentFileIO('/foo/bar/module-injector-%s.py' % next(counter), code)
+        v = _load_python_module(inference_state, file_io, names)
+        inference_state.module_cache.add(names, ValueSet([v]))
+
+    return module_injector

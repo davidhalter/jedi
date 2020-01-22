@@ -4,6 +4,7 @@ Helpers for the API
 import re
 from collections import namedtuple
 from textwrap import dedent
+from functools import wraps
 
 from parso.python.parser import Parser
 from parso.python import tree
@@ -13,10 +14,23 @@ from jedi.inference.base_value import NO_VALUES
 from jedi.inference.syntax_tree import infer_atom
 from jedi.inference.helpers import infer_call_of_leaf
 from jedi.inference.compiled import get_string_value_set
-from jedi.cache import call_signature_time_cache
+from jedi.cache import signature_time_cache
 
 
 CompletionParts = namedtuple('CompletionParts', ['path', 'has_dot', 'name'])
+
+
+def start_match(string, like_name):
+    return string.startswith(like_name)
+
+
+def fuzzy_match(string, like_name):
+    if len(like_name) <= 1:
+        return like_name in string
+    pos = string.find(like_name[0])
+    if pos >= 0:
+        return fuzzy_match(string[pos + 1:], like_name[1:])
+    return False
 
 
 def sorted_definitions(defs):
@@ -136,11 +150,9 @@ def get_stack_at_position(grammar, code_lines, leaf, pos):
     )
 
 
-def infer_goto_definition(inference_state, context, leaf):
+def infer(inference_state, context, leaf):
     if leaf.type == 'name':
-        # In case of a name we can just use goto_definition which does all the
-        # magic itself.
-        return inference_state.goto_definitions(context, leaf)
+        return inference_state.infer(context, leaf)
 
     parent = leaf.parent
     definitions = NO_VALUES
@@ -314,7 +326,7 @@ def _get_index_and_key(nodes, position):
     return nodes_before.count(','), key_str
 
 
-def _get_call_signature_details_from_error_node(node, additional_children, position):
+def _get_signature_details_from_error_node(node, additional_children, position):
     for index, element in reversed(list(enumerate(node.children))):
         # `index > 0` means that it's a trailer and not an atom.
         if element == '(' and element.end_pos <= position and index > 0:
@@ -328,33 +340,30 @@ def _get_call_signature_details_from_error_node(node, additional_children, posit
                 return CallDetails(element, children + additional_children, position)
 
 
-def get_call_signature_details(module, position):
+def get_signature_details(module, position):
     leaf = module.get_leaf_for_position(position, include_prefixes=True)
+    # It's easier to deal with the previous token than the next one in this
+    # case.
     if leaf.start_pos >= position:
         # Whitespace / comments after the leaf count towards the previous leaf.
         leaf = leaf.get_previous_leaf()
         if leaf is None:
             return None
 
-    if leaf == ')':
-        # TODO is this ok?
-        if leaf.end_pos == position:
-            leaf = leaf.get_next_leaf()
-
     # Now that we know where we are in the syntax tree, we start to look at
     # parents for possible function definitions.
     node = leaf.parent
     while node is not None:
         if node.type in ('funcdef', 'classdef'):
-            # Don't show call signatures if there's stuff before it that just
-            # makes it feel strange to have a call signature.
+            # Don't show signatures if there's stuff before it that just
+            # makes it feel strange to have a signature.
             return None
 
         additional_children = []
         for n in reversed(node.children):
             if n.start_pos < position:
                 if n.type == 'error_node':
-                    result = _get_call_signature_details_from_error_node(
+                    result = _get_signature_details_from_error_node(
                         n, additional_children, position
                     )
                     if result is not None:
@@ -364,19 +373,25 @@ def get_call_signature_details(module, position):
                     continue
                 additional_children.insert(0, n)
 
+        # Find a valid trailer
         if node.type == 'trailer' and node.children[0] == '(':
-            leaf = node.get_previous_leaf()
-            if leaf is None:
-                return None
-            return CallDetails(node.children[0], node.children, position)
+            # Additionally we have to check that an ending parenthesis isn't
+            # interpreted wrong. There are two cases:
+            # 1. Cursor before paren -> The current signature is good
+            # 2. Cursor after paren -> We need to skip the current signature
+            if not (leaf is node.children[-1] and position >= leaf.end_pos):
+                leaf = node.get_previous_leaf()
+                if leaf is None:
+                    return None
+                return CallDetails(node.children[0], node.children, position)
 
         node = node.parent
 
     return None
 
 
-@call_signature_time_cache("call_signatures_validity")
-def cache_call_signatures(inference_state, context, bracket_leaf, code_lines, user_pos):
+@signature_time_cache("call_signatures_validity")
+def cache_signatures(inference_state, context, bracket_leaf, code_lines, user_pos):
     """This function calculates the cache key."""
     line_index = user_pos[0] - 1
 
@@ -390,8 +405,31 @@ def cache_call_signatures(inference_state, context, bracket_leaf, code_lines, us
         yield None  # Don't cache!
     else:
         yield (module_path, before_bracket, bracket_leaf.start_pos)
-    yield infer_goto_definition(
+    yield infer(
         inference_state,
         context,
         bracket_leaf.get_previous_leaf(),
     )
+
+
+def validate_line_column(func):
+    @wraps(func)
+    def wrapper(self, line=None, column=None, *args, **kwargs):
+        line = max(len(self._code_lines), 1) if line is None else line
+        if not (0 < line <= len(self._code_lines)):
+            raise ValueError('`line` parameter is not in a valid range.')
+
+        line_string = self._code_lines[line - 1]
+        line_len = len(line_string)
+        if line_string.endswith('\r\n'):
+            line_len -= 1
+        if line_string.endswith('\n'):
+            line_len -= 1
+
+        column = line_len if column is None else column
+        if not (0 <= column <= line_len):
+            raise ValueError('`column` parameter (%d) is not in a valid range '
+                             '(0-%d) for line %d (%r).' % (
+                                 column, line_len, line, line_string))
+        return func(self, line, column, *args, **kwargs)
+    return wrapper

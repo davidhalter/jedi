@@ -38,11 +38,14 @@ setup(name='jedi',
       extras_require={
           'testing': [
               # Pytest 5 doesn't support Python 2 and Python 3.4 anymore.
-              'pytest>=3.1.0,<5.0.0',
+              'pytest>=3.9.0,<5.0.0',
               # docopt for sith doctests
               'docopt',
               # coloroma for colored debug output
-              'colorama',
+              'colorama==0.4.1',  # Pinned so it works for Python 3.4
+          ],
+          'qa': [
+              'flake8==3.7.9',
           ],
       },
       package_data={'jedi': ['*.pyi', 'third_party/typeshed/LICENSE',

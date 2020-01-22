@@ -3,12 +3,12 @@ Test all things related to the ``jedi.cache`` module.
 """
 
 
-def test_cache_call_signatures(Script):
+def test_cache_get_signatures(Script):
     """
     See github issue #390.
     """
     def check(column, call_name, path=None):
-        assert Script(s, 1, column, path).call_signatures()[0].name == call_name
+        assert Script(s, path=path).get_signatures(1, column)[0].name == call_name
 
     s = 'str(int())'
 
@@ -26,4 +26,4 @@ def test_cache_call_signatures(Script):
 
 def test_cache_line_split_issues(Script):
     """Should still work even if there's a newline."""
-    assert Script('int(\n').call_signatures()[0].name == 'int'
+    assert Script('int(\n').get_signatures()[0].name == 'int'

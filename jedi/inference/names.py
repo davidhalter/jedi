@@ -3,11 +3,24 @@ from abc import abstractmethod
 from parso.tree import search_ancestor
 
 from jedi._compatibility import Parameter
+from jedi.parser_utils import find_statement_documentation, clean_scope_docstring
 from jedi.inference.utils import unite
 from jedi.inference.base_value import ValueSet, NO_VALUES
 from jedi.inference import docstrings
 from jedi.cache import memoize_method
 from jedi.inference.helpers import deep_ast_copy, infer_call_of_leaf
+from jedi.plugins import plugin_manager
+
+
+def _merge_name_docs(names):
+    doc = ''
+    for name in names:
+        if doc:
+            # In case we have multiple values, just return all of them
+            # separated by a few dashes.
+            doc += '\n' + '-' * 30 + '\n'
+        doc += name.py__doc__()
+    return doc
 
 
 class AbstractNameDefinition(object):
@@ -59,9 +72,19 @@ class AbstractNameDefinition(object):
     def is_import(self):
         return False
 
+    def py__doc__(self):
+        return ''
+
     @property
     def api_type(self):
         return self.parent_context.api_type
+
+    def get_defining_qualified_value(self):
+        """
+        Returns either None or the value that is public and qualified. Won't
+        return a function, because a name in a function is never public.
+        """
+        return None
 
 
 class AbstractArbitraryName(AbstractNameDefinition):
@@ -93,7 +116,7 @@ class AbstractTreeName(AbstractNameDefinition):
         # In case of level == 1, it works always, because it's like a submodule
         # lookup.
         if import_node is not None and not (import_node.level == 1
-                                            and self.get_root_context().is_package):
+                                            and self.get_root_context().get_value().is_package()):
             # TODO improve the situation for when level is present.
             if include_module_names and not import_node.level:
                 return tuple(n.value for n in import_node.get_path_for_name(self.tree_name))
@@ -107,6 +130,13 @@ class AbstractTreeName(AbstractNameDefinition):
         if parent_names is None:
             return None
         return parent_names + (self.tree_name.value,)
+
+    def get_defining_qualified_value(self):
+        if self.is_import():
+            raise NotImplementedError("Shouldn't really happen, please report")
+        elif self.parent_context:
+            return self.parent_context.get_value()  # Might be None
+        return None
 
     def goto(self):
         context = self.parent_context
@@ -165,7 +195,7 @@ class AbstractTreeName(AbstractNameDefinition):
                 new_dotted.children[index - 1:] = []
                 values = context.infer_node(new_dotted)
                 return unite(
-                    value.goto(name, name_context=value.as_context())
+                    value.goto(name, name_context=context)
                     for value in values
                 )
 
@@ -197,6 +227,9 @@ class ValueNameMixin(object):
     def infer(self):
         return ValueSet([self._value])
 
+    def py__doc__(self):
+        return self._value.py__doc__()
+
     def _get_qualified_names(self):
         return self._value.get_qualified_names()
 
@@ -204,6 +237,12 @@ class ValueNameMixin(object):
         if self.parent_context is None:  # A module
             return self._value.as_context()
         return super(ValueNameMixin, self).get_root_context()
+
+    def get_defining_qualified_value(self):
+        context = self.parent_context
+        if context.is_module() or context.is_class():
+            return self.parent_context.get_value()  # Might be None
+        return None
 
     @property
     def api_type(self):
@@ -285,6 +324,21 @@ class TreeNameDefinition(AbstractTreeName):
             node = node.parent
         return indexes
 
+    def py__doc__(self):
+        api_type = self.api_type
+        if api_type in ('function', 'class'):
+            # Make sure the names are not TreeNameDefinitions anymore.
+            return clean_scope_docstring(self.tree_name.get_definition())
+
+        if api_type == 'module':
+            names = self.goto()
+            if self not in names:
+                return _merge_name_docs(names)
+
+        if api_type == 'statement' and self.tree_name.is_definition():
+            return find_statement_documentation(self.tree_name.get_definition())
+        return ''
+
 
 class _ParamMixin(object):
     def maybe_positional_argument(self, include_star=True):
@@ -306,6 +360,9 @@ class _ParamMixin(object):
         if kind == Parameter.VAR_KEYWORD:  # **kwargs
             return '**'
         return ''
+
+    def get_qualified_names(self, include_module_names=False):
+        return None
 
 
 class ParamNameInterface(_ParamMixin):
@@ -434,9 +491,11 @@ class _ActualTreeParamName(BaseTreeParamName):
 
 
 class AnonymousParamName(_ActualTreeParamName):
-    def __init__(self, function_value, tree_name):
-        super(AnonymousParamName, self).__init__(function_value, tree_name)
+    @plugin_manager.decorate(name='goto_anonymous_param')
+    def goto(self):
+        return super(AnonymousParamName, self).goto()
 
+    @plugin_manager.decorate(name='infer_anonymous_param')
     def infer(self):
         values = super(AnonymousParamName, self).infer()
         if values:
@@ -516,7 +575,7 @@ class ImportName(AbstractNameDefinition):
             return m
         # It's almost always possible to find the import or to not find it. The
         # importing returns only one value, pretty much always.
-        return next(iter(import_values))
+        return next(iter(import_values)).as_context()
 
     @memoize_method
     def infer(self):
@@ -531,6 +590,9 @@ class ImportName(AbstractNameDefinition):
     def api_type(self):
         return 'module'
 
+    def py__doc__(self):
+        return _merge_name_docs(self.goto())
+
 
 class SubModuleName(ImportName):
     _level = 1
@@ -540,12 +602,53 @@ class NameWrapper(object):
     def __init__(self, wrapped_name):
         self._wrapped_name = wrapped_name
 
-    @abstractmethod
-    def infer(self):
-        raise NotImplementedError
-
     def __getattr__(self, name):
         return getattr(self._wrapped_name, name)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, self._wrapped_name)
+
+
+class StubNameMixin(object):
+    def py__doc__(self):
+        from jedi.inference.gradual.conversion import convert_names
+        # Stubs are not complicated and we can just follow simple statements
+        # that have an equals in them, because they typically make something
+        # else public. See e.g. stubs for `requests`.
+        names = [self]
+        if self.api_type == 'statement' and '=' in self.tree_name.get_definition().children:
+            names = [v.name for v in self.infer()]
+
+        names = convert_names(names, prefer_stub_to_compiled=False)
+        if self in names:
+            return super(StubNameMixin, self).py__doc__()
+        else:
+            # We have signatures ourselves in stubs, so don't use signatures
+            # from the implementation.
+            return _merge_name_docs(names)
+
+
+# From here on down we make looking up the sys.version_info fast.
+class StubName(StubNameMixin, TreeNameDefinition):
+    def infer(self):
+        inferred = super(StubName, self).infer()
+        if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
+            from jedi.inference.gradual.stub_value import VersionInfo
+            return [VersionInfo(c) for c in inferred]
+        return inferred
+
+
+class ModuleName(ValueNameMixin, AbstractNameDefinition):
+    start_pos = 1, 0
+
+    def __init__(self, value, name):
+        self._value = value
+        self._name = name
+
+    @property
+    def string_name(self):
+        return self._name
+
+
+class StubModuleName(StubNameMixin, ModuleName):
+    pass

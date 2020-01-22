@@ -72,6 +72,10 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
     # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
     # we should not match anything more than x.
     if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
+        if leaf == ':':
+            # Basically happens with foo[:] when the cursor is on the colon
+            from jedi.inference.base_value import NO_VALUES
+            return NO_VALUES
         if trailer.type == 'atom':
             return context.infer_node(trailer)
         return context.infer_node(leaf)
@@ -90,7 +94,7 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
             base = power.children[start]
             if base.type != 'trailer':
                 break
-        trailers = power.children[start + 1: index + 1]
+        trailers = power.children[start + 1:cut]
     else:
         base = power.children[0]
         trailers = power.children[1:cut]
@@ -104,49 +108,6 @@ def infer_call_of_leaf(context, leaf, cut_own_trailer=False):
     for trailer in trailers:
         values = infer_trailer(context, values, trailer)
     return values
-
-
-def call_of_leaf(leaf):
-    """
-    Creates a "call" node that consist of all ``trailer`` and ``power``
-    objects.  E.g. if you call it with ``append``::
-
-        list([]).append(3) or None
-
-    You would get a node with the content ``list([]).append`` back.
-
-    This generates a copy of the original ast node.
-
-    If you're using the leaf, e.g. the bracket `)` it will return ``list([])``.
-    """
-    # TODO this is the old version of this call. Try to remove it.
-    trailer = leaf.parent
-    # The leaf may not be the last or first child, because there exist three
-    # different trailers: `( x )`, `[ x ]` and `.x`. In the first two examples
-    # we should not match anything more than x.
-    if trailer.type != 'trailer' or leaf not in (trailer.children[0], trailer.children[-1]):
-        if trailer.type == 'atom':
-            return trailer
-        return leaf
-
-    power = trailer.parent
-    index = power.children.index(trailer)
-
-    new_power = copy.copy(power)
-    new_power.children = list(new_power.children)
-    new_power.children[index + 1:] = []
-
-    if power.type == 'error_node':
-        start = index
-        while True:
-            start -= 1
-            if power.children[start].type != 'trailer':
-                break
-        transformed = tree.Node('power', power.children[start:])
-        transformed.parent = power.parent
-        return transformed
-
-    return power
 
 
 def get_names_of_node(node):
@@ -257,3 +218,14 @@ def parse_dotted_names(nodes, is_import_from, until_node=None):
 
 def values_from_qualified_names(inference_state, *names):
     return inference_state.import_module(names[:-1]).py__getattribute__(names[-1])
+
+
+def is_big_annoying_library(context):
+    string_names = context.get_root_context().string_names
+    if string_names is None:
+        return False
+
+    # Especially pandas and tensorflow are huge complicated Python libraries
+    # that get even slower than they already are when Jedi tries to undrstand
+    # dynamic features like decorators, ifs and other stuff.
+    return string_names[0] in ('pandas', 'numpy', 'tensorflow', 'matplotlib')

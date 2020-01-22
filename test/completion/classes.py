@@ -382,6 +382,7 @@ getattr(getattr, 1)
 getattr(str, [])
 
 
+# python >= 3.5
 class Base():
     def ret(self, b):
         return b
@@ -399,6 +400,12 @@ class Wrapper2():
 
 #? int()
 Wrapper(Base()).ret(3)
+#? ['ret']
+Wrapper(Base()).ret
+#? int()
+Wrapper(Wrapper(Base())).ret(3)
+#? ['ret']
+Wrapper(Wrapper(Base())).ret
 
 #? int()
 Wrapper2(Base()).ret(3)
@@ -409,6 +416,8 @@ class GetattrArray():
 
 #? int()
 GetattrArray().something[0]
+#? []
+GetattrArray().something
 
 
 # -----------------
@@ -607,3 +616,17 @@ DefaultArg().y()
 DefaultArg.x()
 #? str()
 DefaultArg.y()
+
+
+# -----------------
+# Error Recovery
+# -----------------
+
+from import_tree.pkg.base import MyBase
+
+class C1(MyBase):
+    def f3(self):
+        #! 13 ['def f1']
+        self.f1() . # hey'''
+        #? 13 MyBase.f1
+        self.f1() . # hey'''

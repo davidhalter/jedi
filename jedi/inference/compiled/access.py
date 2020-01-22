@@ -4,6 +4,8 @@ import types
 import sys
 import operator as op
 from collections import namedtuple
+import warnings
+import re
 
 from jedi._compatibility import unicode, is_py3, builtins, \
     py_version, force_unicode
@@ -100,6 +102,15 @@ SignatureParam = namedtuple(
     'SignatureParam',
     'name has_default default default_string has_annotation annotation annotation_string kind_name'
 )
+
+
+def shorten_repr(func):
+    def wrapper(self):
+        r = func(self)
+        if len(r) > 50:
+            r = r[:50] + '..'
+        return r
+    return wrapper
 
 
 def compiled_objects_cache(attribute_name):
@@ -282,6 +293,7 @@ class DirectObjectAccess(object):
         return paths
 
     @_force_unicode_decorator
+    @shorten_repr
     def get_repr(self):
         builtins = 'builtins', '__builtin__'
 
@@ -323,7 +335,7 @@ class DirectObjectAccess(object):
             name = try_to_get_name(type(self._obj))
             if name is None:
                 return ()
-        return tuple(name.split('.'))
+        return tuple(force_unicode(n) for n in name.split('.'))
 
     def dir(self):
         return list(map(force_unicode, dir(self._obj)))
@@ -335,8 +347,23 @@ class DirectObjectAccess(object):
         except TypeError:
             return False
 
-    def is_allowed_getattr(self, name):
+    def is_allowed_getattr(self, name, unsafe=False):
         # TODO this API is ugly.
+        if unsafe:
+            # Unsafe is mostly used to check for __getattr__/__getattribute__.
+            # getattr_static works for properties, but the underscore methods
+            # are just ignored (because it's safer and avoids more code
+            # execution). See also GH #1378.
+
+            # Avoid warnings, see comment in the next function.
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("always")
+                try:
+                    return hasattr(self._obj, name), False
+                except Exception:
+                    # Obviously has an attribute (propably a property) that
+                    # gets executed, so just avoid all exceptions here.
+                    return False, False
         try:
             attr, is_get_descriptor = getattr_static(self._obj, name)
         except AttributeError:
@@ -350,7 +377,11 @@ class DirectObjectAccess(object):
 
     def getattr_paths(self, name, default=_sentinel):
         try:
-            return_obj = getattr(self._obj, name)
+            # Make sure no warnings are printed here, this is autocompletion,
+            # warnings should not be shown. See also GH #1383.
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter("always")
+                return_obj = getattr(self._obj, name)
         except Exception as e:
             if default is _sentinel:
                 if isinstance(e, AttributeError):
@@ -366,6 +397,22 @@ class DirectObjectAccess(object):
         if inspect.ismodule(return_obj):
             return [access]
 
+        try:
+            module = return_obj.__module__
+        except AttributeError:
+            pass
+        else:
+            if module is not None:
+                try:
+                    __import__(module)
+                    # For some modules like _sqlite3, the __module__ for classes is
+                    # different, in this case it's sqlite3. So we have to try to
+                    # load that "original" module, because it's not loaded yet. If
+                    # we don't do that, we don't really have a "parent" module and
+                    # we would fall back to builtins.
+                except ImportError:
+                    pass
+
         module = inspect.getmodule(return_obj)
         if module is None:
             module = inspect.getmodule(type(return_obj))
@@ -374,12 +421,29 @@ class DirectObjectAccess(object):
         return [self._create_access(module), access]
 
     def get_safe_value(self):
-        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice):
+        if type(self._obj) in (bool, bytes, float, int, str, unicode, slice) or self._obj is None:
             return self._obj
         raise ValueError("Object is type %s and not simple" % type(self._obj))
 
     def get_api_type(self):
         return get_api_type(self._obj)
+
+    def get_array_type(self):
+        if isinstance(self._obj, dict):
+            return 'dict'
+        return None
+
+    def get_key_paths(self):
+        def iter_partial_keys():
+            # We could use list(keys()), but that might take a lot more memory.
+            for (i, k) in enumerate(self._obj.keys()):
+                # Limit key listing at some point. This is artificial, but this
+                # way we don't get stalled because of slow completions
+                if i > 50:
+                    break
+                yield k
+
+        return [self._create_access_path(k) for k in iter_partial_keys()]
 
     def get_access_path_tuples(self):
         accesses = [create_access(self._inference_state, o) for o in self._get_objects_path()]
@@ -420,6 +484,27 @@ class DirectObjectAccess(object):
         other_access = other_access_handle.access
         op = _OPERATORS[operator]
         return self._create_access_path(op(self._obj, other_access._obj))
+
+    def get_annotation_name_and_args(self):
+        """
+        Returns Tuple[Optional[str], Tuple[AccessPath, ...]]
+        """
+        if sys.version_info < (3, 5):
+            return None, ()
+
+        name = None
+        args = ()
+        if safe_getattr(self._obj, '__module__', default='') == 'typing':
+            m = re.match(r'typing.(\w+)\[', repr(self._obj))
+            if m is not None:
+                name = m.group(1)
+
+                import typing
+                if sys.version_info >= (3, 8):
+                    args = typing.get_args(self._obj)
+                else:
+                    args = safe_getattr(self._obj, '__args__', default=None)
+        return name, tuple(self._create_access_path(arg) for arg in args)
 
     def needs_type_completions(self):
         return inspect.isclass(self._obj) and self._obj != type
@@ -475,6 +560,17 @@ class DirectObjectAccess(object):
         if o is None:
             return None
 
+        try:
+            # Python 2 doesn't have typing.
+            import typing
+        except ImportError:
+            pass
+        else:
+            try:
+                o = typing.get_type_hints(self._obj).get('return')
+            except Exception:
+                pass
+
         return self._create_access_path(o)
 
     def negate(self):
@@ -485,7 +581,6 @@ class DirectObjectAccess(object):
         Used to return a couple of infos that are needed when accessing the sub
         objects of an objects
         """
-        # TODO is_allowed_getattr might raise an AttributeError
         tuples = dict(
             (force_unicode(name), self.is_allowed_getattr(name))
             for name in self.dir()

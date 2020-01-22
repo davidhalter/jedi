@@ -330,3 +330,16 @@ import abc
 
 #? ['abstractmethod']
 @abc.abstractmethod
+
+# -----------------
+# Goto
+# -----------------
+x = 1
+
+#! 5 []
+@x.foo()
+def f(): pass
+
+#! 1 ['x = 1']
+@x.foo()
+def f(): pass

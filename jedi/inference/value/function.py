@@ -11,7 +11,7 @@ from jedi.inference.signature import TreeSignature
 from jedi.inference.filters import ParserTreeFilter, FunctionExecutionFilter, \
     AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, AbstractNameDefinition, \
-    AnonymousParamName, ParamName
+    AnonymousParamName, ParamName, NameWrapper
 from jedi.inference.base_value import ContextualizedNode, NO_VALUES, \
     ValueSet, TreeValue, ValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues, LazyKnownValue, \
@@ -21,6 +21,7 @@ from jedi.inference.value import iterable
 from jedi import parser_utils
 from jedi.inference.parser_cache import get_yield_exprs
 from jedi.inference.helpers import values_from_qualified_names
+from jedi.inference.gradual.generics import TupleGenericManager
 
 
 class LambdaName(AbstractNameDefinition):
@@ -67,7 +68,7 @@ class FunctionMixin(object):
         if instance is None:
             # Calling the Foo.bar results in the original bar function.
             return ValueSet([self])
-        return ValueSet([BoundMethod(instance, self)])
+        return ValueSet([BoundMethod(instance, class_value.as_context(), self)])
 
     def get_param_names(self):
         return [AnonymousParamName(self, param.name)
@@ -96,9 +97,6 @@ class FunctionMixin(object):
 
 
 class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndClassBase)):
-    def is_function(self):
-        return True
-
     @classmethod
     def from_context(cls, context, tree_node):
         def create(tree_node):
@@ -143,6 +141,15 @@ class FunctionValue(use_metaclass(CachedMetaClass, FunctionMixin, FunctionAndCla
         return [self]
 
 
+class FunctionNameInClass(NameWrapper):
+    def __init__(self, class_context, name):
+        super(FunctionNameInClass, self).__init__(name)
+        self._class_context = class_context
+
+    def get_defining_qualified_value(self):
+        return self._class_context.get_value()  # Might be None.
+
+
 class MethodValue(FunctionValue):
     def __init__(self, inference_state, class_context, *args, **kwargs):
         super(MethodValue, self).__init__(inference_state, *args, **kwargs)
@@ -159,8 +166,15 @@ class MethodValue(FunctionValue):
             return None
         return names + (self.py__name__(),)
 
+    @property
+    def name(self):
+        return FunctionNameInClass(self.class_context, super(MethodValue, self).name)
+
 
 class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
+    def is_function_execution(self):
+        return True
+
     def _infer_annotations(self):
         raise NotImplementedError
 
@@ -276,17 +290,19 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             for lazy_value in self.get_yield_lazy_values()
         )
 
+    def is_generator(self):
+        return bool(get_yield_exprs(self.inference_state, self.tree_node))
+
     def infer(self):
         """
         Created to be used by inheritance.
         """
         inference_state = self.inference_state
         is_coroutine = self.tree_node.parent.type in ('async_stmt', 'async_funcdef')
-        is_generator = bool(get_yield_exprs(inference_state, self.tree_node))
-        from jedi.inference.gradual.typing import GenericClass
+        from jedi.inference.gradual.base import GenericClass
 
         if is_coroutine:
-            if is_generator:
+            if self.is_generator():
                 if inference_state.environment.version_info < (3, 6):
                     return NO_VALUES
                 async_generator_classes = inference_state.typing_module \
@@ -297,7 +313,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                 generics = (yield_values.py__class__(), NO_VALUES)
                 return ValueSet(
                     # In Python 3.6 AsyncGenerator is still a class.
-                    GenericClass(c, generics)
+                    GenericClass(c, TupleGenericManager(generics))
                     for c in async_generator_classes
                 ).execute_annotation()
             else:
@@ -308,10 +324,10 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                 # Only the first generic is relevant.
                 generics = (return_values.py__class__(), NO_VALUES, NO_VALUES)
                 return ValueSet(
-                    GenericClass(c, generics) for c in async_classes
+                    GenericClass(c, TupleGenericManager(generics)) for c in async_classes
                 ).execute_annotation()
         else:
-            if is_generator:
+            if self.is_generator():
                 return ValueSet([iterable.Generator(inference_state, self)])
             else:
                 return self.get_return_values()

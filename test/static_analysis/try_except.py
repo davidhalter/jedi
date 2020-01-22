@@ -17,7 +17,7 @@ except ImportError:
     pass
 try:
     #! 7 import-error
-    import not_existing_import
+    import not_existing_import2
 except AttributeError:
     pass
 

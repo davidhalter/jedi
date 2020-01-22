@@ -69,5 +69,8 @@ class BaseValueSet(object):
     def __eq__(self, other):
         return self._set == other._set
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __hash__(self):
         return hash(self._set)

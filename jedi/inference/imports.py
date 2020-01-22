@@ -15,13 +15,10 @@ import os
 
 from parso.python import tree
 from parso.tree import search_ancestor
-from parso import python_bytes_to_unicode
 
-from jedi._compatibility import (FileNotFoundError, ImplicitNSInfo,
-                                 force_unicode, unicode)
+from jedi._compatibility import ImplicitNSInfo, force_unicode
 from jedi import debug
 from jedi import settings
-from jedi.file_io import KnownContentFileIO, FileIO
 from jedi.parser_utils import get_cached_code_lines
 from jedi.inference import sys_path
 from jedi.inference import helpers
@@ -38,20 +35,14 @@ from jedi.plugins import plugin_manager
 
 class ModuleCache(object):
     def __init__(self):
-        self._path_cache = {}
         self._name_cache = {}
 
     def add(self, string_names, value_set):
-        #path = module.py__file__()
-        #self._path_cache[path] = value_set
         if string_names is not None:
             self._name_cache[string_names] = value_set
 
     def get(self, string_names):
-        return self._name_cache[string_names]
-
-    def get_from_path(self, path):
-        return self._path_cache[path]
+        return self._name_cache.get(string_names)
 
 
 # This memoization is needed, because otherwise we will infinitely loop on
@@ -123,41 +114,7 @@ def _prepare_infer_import(module_context, tree_name):
     importer = Importer(module_context.inference_state, tuple(import_path),
                         module_context, import_node.level)
 
-    #if import_node.is_nested() and not self.nested_resolve:
-    #    scopes = [NestedImportModule(module, import_node)]
     return from_import_name, tuple(import_path), import_node.level, importer.follow()
-
-
-class NestedImportModule(tree.Module):
-    """
-    TODO while there's no use case for nested import module right now, we might
-        be able to use them for static analysis checks later on.
-    """
-    def __init__(self, module, nested_import):
-        self._module = module
-        self._nested_import = nested_import
-
-    def _get_nested_import_name(self):
-        """
-        Generates an Import statement, that can be used to fake nested imports.
-        """
-        i = self._nested_import
-        # This is not an existing Import statement. Therefore, set position to
-        # 0 (0 is not a valid line number).
-        zero = (0, 0)
-        names = [unicode(name) for name in i.namespace_names[1:]]
-        name = helpers.FakeName(names, self._nested_import)
-        new = tree.Import(i._sub_module, zero, zero, name)
-        new.parent = self._module
-        debug.dbg('Generated a nested import: %s', new)
-        return helpers.FakeName(str(i.namespace_names[1]), new)
-
-    def __getattr__(self, name):
-        return getattr(self._module, name)
-
-    def __repr__(self):
-        return "<%s: %s of %s>" % (self.__class__.__name__, self._module,
-                                   self._nested_import)
 
 
 def _add_error(value, name, message):
@@ -216,7 +173,7 @@ class Importer(object):
         self._fixed_sys_path = None
         self._infer_possible = True
         if level:
-            base = module_context.py__package__()
+            base = module_context.get_value().py__package__()
             # We need to care for two cases, the first one is if it's a valid
             # Python import. This import has a properly defined module name
             # chain like `foo.bar.baz` and an import in baz is made for
@@ -272,47 +229,35 @@ class Importer(object):
             for name in self.import_path
         )
 
-    def _sys_path_with_modifications(self):
+    def _sys_path_with_modifications(self, is_completion):
         if self._fixed_sys_path is not None:
             return self._fixed_sys_path
 
-        sys_path_mod = (
-            self._inference_state.get_sys_path()
+        return (
+            # For import completions we don't want to see init paths, but for
+            # inference we want to show the user as much as possible.
+            # See GH #1446.
+            self._inference_state.get_sys_path(add_init_paths=not is_completion)
             + sys_path.check_sys_path_modifications(self._module_context)
         )
-
-        if self._inference_state.environment.version_info.major == 2:
-            file_path = self._module_context.py__file__()
-            if file_path is not None:
-                # Python2 uses an old strange way of importing relative imports.
-                sys_path_mod.append(force_unicode(os.path.dirname(file_path)))
-
-        return sys_path_mod
 
     def follow(self):
         if not self.import_path or not self._infer_possible:
             return NO_VALUES
 
-        import_names = tuple(
-            force_unicode(i.value if isinstance(i, tree.Name) else i)
-            for i in self.import_path
-        )
-        sys_path = self._sys_path_with_modifications()
+        # Check caches first
+        from_cache = self._inference_state.stub_module_cache.get(self._str_import_path)
+        if from_cache is not None:
+            return ValueSet({from_cache})
+        from_cache = self._inference_state.module_cache.get(self._str_import_path)
+        if from_cache is not None:
+            return from_cache
 
-        value_set = [None]
-        for i, name in enumerate(self.import_path):
-            value_set = ValueSet.from_sets([
-                self._inference_state.import_module(
-                    import_names[:i+1],
-                    parent_module_value,
-                    sys_path
-                ) for parent_module_value in value_set
-            ])
-            if not value_set:
-                message = 'No module named ' + '.'.join(import_names)
-                _add_error(self._module_context, name, message)
-                return NO_VALUES
-        return value_set
+        sys_path = self._sys_path_with_modifications(is_completion=False)
+
+        return import_module_by_names(
+            self._inference_state, self.import_path, sys_path, self._module_context
+        )
 
     def _get_module_names(self, search_path=None, in_module=None):
         """
@@ -322,17 +267,19 @@ class Importer(object):
         names = []
         # add builtin module names
         if search_path is None and in_module is None:
-            names += [ImportName(self._module_context, name)
-                      for name in self._inference_state.compiled_subprocess.get_builtin_module_names()]
+            names += [
+                ImportName(self._module_context, name)
+                for name in self._inference_state.compiled_subprocess.get_builtin_module_names()
+            ]
 
         if search_path is None:
-            search_path = self._sys_path_with_modifications()
+            search_path = self._sys_path_with_modifications(is_completion=True)
 
         for name in iter_module_names(self._inference_state, search_path):
             if in_module is None:
                 n = ImportName(self._module_context, name)
             else:
-                n = SubModuleName(in_module, name)
+                n = SubModuleName(in_module.as_context(), name)
             names.append(n)
         return names
 
@@ -355,7 +302,7 @@ class Importer(object):
                         extname = modname[len('flask_'):]
                         names.append(ImportName(self._module_context, extname))
                 # Now the old style: ``flaskext.foo``
-                for dir in self._sys_path_with_modifications():
+                for dir in self._sys_path_with_modifications(is_completion=True):
                     flaskext = os.path.join(dir, 'flaskext')
                     if os.path.isdir(flaskext):
                         names += self._get_module_names([flaskext])
@@ -365,7 +312,9 @@ class Importer(object):
                 # Non-modules are not completable.
                 if value.api_type != 'module':  # not a module
                     continue
-                names += value.sub_modules_dict().values()
+                if not value.is_compiled():
+                    # sub_modules_dict is not implemented for compiled modules.
+                    names += value.sub_modules_dict().values()
 
             if not only_modules:
                 from jedi.inference.gradual.conversion import convert_values
@@ -382,6 +331,36 @@ class Importer(object):
                 # This is just the list of global imports.
                 names += self._get_module_names()
         return names
+
+
+def import_module_by_names(inference_state, import_names, sys_path=None,
+                           module_context=None, prefer_stubs=True):
+    if sys_path is None:
+        sys_path = inference_state.get_sys_path()
+
+    str_import_names = tuple(
+        force_unicode(i.value if isinstance(i, tree.Name) else i)
+        for i in import_names
+    )
+    value_set = [None]
+    for i, name in enumerate(import_names):
+        value_set = ValueSet.from_sets([
+            import_module(
+                inference_state,
+                str_import_names[:i+1],
+                parent_module_value,
+                sys_path,
+                prefer_stubs=prefer_stubs,
+            ) for parent_module_value in value_set
+        ])
+        if not value_set:
+            message = 'No module named ' + '.'.join(str_import_names)
+            if module_context is not None:
+                _add_error(module_context, name, message)
+            else:
+                debug.warning(message)
+            return NO_VALUES
+    return value_set
 
 
 @plugin_manager.decorate()
@@ -434,7 +413,7 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
         from jedi.inference.value.namespace import ImplicitNamespaceValue
         module = ImplicitNamespaceValue(
             inference_state,
-            fullname=file_io_or_ns.name,
+            string_names=tuple(file_io_or_ns.name.split('.')),
             paths=file_io_or_ns.paths,
         )
     elif file_io_or_ns is None:
@@ -443,7 +422,7 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
             return NO_VALUES
     else:
         module = _load_python_module(
-            inference_state, file_io_or_ns, sys_path,
+            inference_state, file_io_or_ns,
             import_names=import_names,
             is_package=is_pkg,
         )
@@ -455,13 +434,8 @@ def import_module(inference_state, import_names, parent_module_value, sys_path):
     return ValueSet([module])
 
 
-def _load_python_module(inference_state, file_io, sys_path=None,
+def _load_python_module(inference_state, file_io,
                         import_names=None, is_package=False):
-    try:
-        return inference_state.module_cache.get_from_path(file_io.path)
-    except KeyError:
-        pass
-
     module_node = inference_state.parse(
         file_io=file_io,
         cache=True,
@@ -493,13 +467,12 @@ def _load_builtin_module(inference_state, import_names=None, sys_path=None):
     return module
 
 
-def _load_module_from_path(inference_state, file_io, base_names):
+def load_module_from_path(inference_state, file_io, base_names=None):
     """
     This should pretty much only be used for get_modules_containing_name. It's
     here to ensure that a random path is still properly loaded into the Jedi
     module structure.
     """
-    e_sys_path = inference_state.get_sys_path()
     path = file_io.path
     if base_names:
         module_name = os.path.basename(path)
@@ -510,73 +483,16 @@ def _load_module_from_path(inference_state, file_io, base_names):
         else:
             import_names = base_names + (module_name,)
     else:
+        e_sys_path = inference_state.get_sys_path()
         import_names, is_package = sys_path.transform_path_to_dotted(e_sys_path, path)
 
     module = _load_python_module(
         inference_state, file_io,
-        sys_path=e_sys_path,
         import_names=import_names,
         is_package=is_package,
     )
     inference_state.module_cache.add(import_names, ValueSet([module]))
     return module
-
-
-def get_module_contexts_containing_name(inference_state, module_contexts, name):
-    """
-    Search a name in the directories of modules.
-    """
-    def check_directory(folder_io):
-        for file_name in folder_io.list():
-            if file_name.endswith('.py'):
-                yield folder_io.get_file_io(file_name)
-
-    def check_fs(file_io, base_names):
-        try:
-            code = file_io.read()
-        except FileNotFoundError:
-            return None
-        code = python_bytes_to_unicode(code, errors='replace')
-        if name not in code:
-            return None
-        new_file_io = KnownContentFileIO(file_io.path, code)
-        m = _load_module_from_path(inference_state, new_file_io, base_names)
-        if isinstance(m, compiled.CompiledObject):
-            return None
-        return m.as_context()
-
-    # skip non python modules
-    used_mod_paths = set()
-    folders_with_names_to_be_checked = []
-    for module_context in module_contexts:
-        path = module_context.py__file__()
-        if path not in used_mod_paths:
-            file_io = module_context.get_value().file_io
-            if file_io is not None:
-                used_mod_paths.add(path)
-                folders_with_names_to_be_checked.append((
-                    file_io.get_parent_folder(),
-                    module_context.py__package__()
-                ))
-        yield module_context
-
-    if not settings.dynamic_params_for_other_modules:
-        return
-
-    def get_file_ios_to_check():
-        for folder_io, base_names in folders_with_names_to_be_checked:
-            for file_io in check_directory(folder_io):
-                yield file_io, base_names
-
-        for p in settings.additional_dynamic_modules:
-            p = os.path.abspath(p)
-            if p not in used_mod_paths:
-                yield FileIO(p), None
-
-    for file_io, base_names in get_file_ios_to_check():
-        m = check_fs(file_io, base_names)
-        if m is not None:
-            yield m
 
 
 def follow_error_node_imports_if_possible(context, name):
@@ -606,4 +522,3 @@ def follow_error_node_imports_if_possible(context, name):
             return Importer(
                 context.inference_state, names, context.get_root_context(), level).follow()
     return None
-

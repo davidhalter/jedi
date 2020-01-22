@@ -9,7 +9,7 @@ from parso.tree import search_ancestor
 
 from jedi._compatibility import use_metaclass
 from jedi.inference import flow_analysis
-from jedi.inference.base_value import ValueSet, Value, ValueWrapper, \
+from jedi.inference.base_value import ValueSet, ValueWrapper, \
     LazyValueWrapper
 from jedi.parser_utils import get_cached_parent_scope
 from jedi.inference.utils import to_list
@@ -246,24 +246,18 @@ class MergedFilter(object):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(str(f) for f in self._filters))
 
 
-class _BuiltinMappedMethod(Value):
+class _BuiltinMappedMethod(ValueWrapper):
     """``Generator.__next__`` ``dict.values`` methods and so on."""
     api_type = u'function'
 
-    def __init__(self, builtin_value, method, builtin_func):
-        super(_BuiltinMappedMethod, self).__init__(
-            builtin_value.inference_state,
-            parent_context=builtin_value
-        )
+    def __init__(self, value, method, builtin_func):
+        super(_BuiltinMappedMethod, self).__init__(builtin_func)
+        self._value = value
         self._method = method
-        self._builtin_func = builtin_func
 
     def py__call__(self, arguments):
         # TODO add TypeError if params are given/or not correct.
-        return self._method(self.parent_context)
-
-    def __getattr__(self, name):
-        return getattr(self._builtin_func, name)
+        return self._method(self._value)
 
 
 class SpecialMethodFilter(DictFilter):

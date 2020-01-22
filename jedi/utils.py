@@ -17,7 +17,7 @@ from jedi import Interpreter
 READLINE_DEBUG = False
 
 
-def setup_readline(namespace_module=__main__):
+def setup_readline(namespace_module=__main__, fuzzy=False):
     """
     Install Jedi completer to :mod:`readline`.
 
@@ -83,7 +83,7 @@ def setup_readline(namespace_module=__main__):
                     logging.debug("Start REPL completion: " + repr(text))
                     interpreter = Interpreter(text, [namespace_module.__dict__])
 
-                    completions = interpreter.completions()
+                    completions = interpreter.complete(fuzzy=fuzzy)
                     logging.debug("REPL completions: %s", completions)
 
                     self.matches = [

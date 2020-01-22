@@ -25,7 +25,7 @@ py__iter__()                           Returns a generator of a set of types.
 py__class__()                          Returns the class of an instance.
 py__simple_getitem__(index: int/str)   Returns a a set of types of the index.
                                        Can raise an IndexError/KeyError.
-py__getitem__(indexes: ValueSet)     Returns a a set of types of the index.
+py__getitem__(indexes: ValueSet)       Returns a a set of types of the index.
 py__file__()                           Only on modules. Returns None if does
                                        not exist.
 py__package__() -> List[str]           Only on modules. For the import system.
@@ -50,23 +50,13 @@ from jedi.inference.base_value import ValueSet, iterator_to_value_set, \
     NO_VALUES
 from jedi.inference.context import ClassContext
 from jedi.inference.value.function import FunctionAndClassBase
+from jedi.inference.gradual.generics import LazyGenericManager, TupleGenericManager
 from jedi.plugins import plugin_manager
-
-
-def apply_py__get__(value, instance, class_value):
-    try:
-        method = value.py__get__
-    except AttributeError:
-        yield value
-    else:
-        for descriptor_value in method(instance, class_value):
-            yield descriptor_value
 
 
 class ClassName(TreeNameDefinition):
     def __init__(self, class_value, tree_name, name_context, apply_decorators):
-        super(ClassName, self).__init__(class_value.as_context(), tree_name)
-        self._name_context = name_context
+        super(ClassName, self).__init__(name_context, tree_name)
         self._apply_decorators = apply_decorators
         self._class_value = class_value
 
@@ -75,13 +65,11 @@ class ClassName(TreeNameDefinition):
         # We're using a different value to infer, so we cannot call super().
         from jedi.inference.syntax_tree import tree_name_to_values
         inferred = tree_name_to_values(
-            self.parent_context.inference_state, self._name_context, self.tree_name)
+            self.parent_context.inference_state, self.parent_context, self.tree_name)
 
         for result_value in inferred:
             if self._apply_decorators:
-                for c in apply_py__get__(result_value,
-                                         instance=None,
-                                         class_value=self._class_value):
+                for c in result_value.py__get__(instance=None, class_value=self._class_value):
                     yield c
             else:
                 yield result_value
@@ -145,8 +133,6 @@ class ClassMixin(object):
 
     def py__call__(self, arguments=None):
         from jedi.inference.value import TreeInstance
-        if arguments is None:
-            arguments = ValuesArguments([])
         return ValueSet([TreeInstance(self.inference_state, self.parent_context, self, arguments)])
 
     def py__class__(self):
@@ -219,7 +205,11 @@ class ClassMixin(object):
             type_ = builtin_from_name(self.inference_state, u'type')
             assert isinstance(type_, ClassValue)
             if type_ != self:
-                for instance in type_.py__call__():
+                # We are not using execute_with_values here, because the
+                # plugin function for type would get executed instead of an
+                # instance creation.
+                args = ValuesArguments([])
+                for instance in type_.py__call__(args):
                     instance_filters = instance.get_filters()
                     # Filter out self filters
                     next(instance_filters)
@@ -227,7 +217,11 @@ class ClassMixin(object):
                     yield next(instance_filters)
 
     def get_signatures(self):
-        init_funcs = self.py__call__().py__getattribute__('__init__')
+        # Since calling staticmethod without a function is illegal, the Jedi
+        # plugin doesn't return anything. Therefore call directly and get what
+        # we want: An instance of staticmethod.
+        args = ValuesArguments([])
+        init_funcs = self.py__call__(args).py__getattribute__('__init__')
         return [sig.bind(self) for sig in init_funcs.get_signatures()]
 
     def _as_context(self):
@@ -278,20 +272,29 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         )]
 
     def py__getitem__(self, index_value_set, contextualized_node):
-        from jedi.inference.gradual.typing import LazyGenericClass
+        from jedi.inference.gradual.base import GenericClass
         if not index_value_set:
             return ValueSet([self])
         return ValueSet(
-            LazyGenericClass(
+            GenericClass(
                 self,
-                index_value,
-                value_of_index=contextualized_node.context,
+                LazyGenericManager(
+                    context_of_index=contextualized_node.context,
+                    index_value=index_value,
+                )
             )
             for index_value in index_value_set
         )
 
+    def with_generics(self, generics_tuple):
+        from jedi.inference.gradual.base import GenericClass
+        return GenericClass(
+            self,
+            TupleGenericManager(generics_tuple)
+        )
+
     def define_generics(self, type_var_dict):
-        from jedi.inference.gradual.typing import GenericClass
+        from jedi.inference.gradual.base import GenericClass
 
         def remap_type_vars():
             """
@@ -309,7 +312,7 @@ class ClassValue(use_metaclass(CachedMetaClass, ClassMixin, FunctionAndClassBase
         if type_var_dict:
             return ValueSet([GenericClass(
                 self,
-                generics=tuple(remap_type_vars())
+                TupleGenericManager(tuple(remap_type_vars()))
             )])
         return ValueSet({self})
 

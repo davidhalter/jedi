@@ -84,7 +84,7 @@ class {typename}(tuple):
     # These methods were added by Jedi.
     # __new__ doesn't really work with Jedi. So adding this to nametuples seems
     # like the easiest way.
-    def __init__(_cls, {arg_list}):
+    def __init__(self, {arg_list}):
         'A helper function for namedtuple.'
         self.__iterable = ({arg_list})
 
@@ -335,7 +335,7 @@ def builtins_isinstance(objects, types, arguments, inference_state):
 
 
 class StaticMethodObject(ValueWrapper):
-    def py__get__(self, instance, klass):
+    def py__get__(self, instance, class_value):
         return ValueSet([self._wrapped_value])
 
 
@@ -363,7 +363,7 @@ class ClassMethodGet(ValueWrapper):
         self._function = function
 
     def get_signatures(self):
-        return self._function.get_signatures()
+        return [sig.bind(self._function) for sig in self._function.get_signatures()]
 
     def py__call__(self, arguments):
         return self._function.execute(ClassMethodArguments(self._class, arguments))
@@ -467,8 +467,6 @@ def collections_namedtuple(value, arguments, callback):
     generated_class = next(module.iter_classdefs())
     parent_context = ModuleValue(
         inference_state, module,
-        file_io=None,
-        string_names=None,
         code_lines=parso.split_lines(code, keepends=True),
     ).as_context()
 
@@ -819,10 +817,10 @@ class EnumInstance(LazyValueWrapper):
 
 
 def tree_name_to_values(func):
-    def wrapper(inference_state, value, tree_name):
-        if tree_name.value == 'sep' and value.is_module() and value.py__name__() == 'os.path':
+    def wrapper(inference_state, context, tree_name):
+        if tree_name.value == 'sep' and context.is_module() and context.py__name__() == 'os.path':
             return ValueSet({
                 compiled.create_simple_object(inference_state, os.path.sep),
             })
-        return func(inference_state, value, tree_name)
+        return func(inference_state, context, tree_name)
     return wrapper

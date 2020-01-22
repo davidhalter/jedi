@@ -58,8 +58,8 @@ class Error(object):
         return self.__unicode__()
 
     def __eq__(self, other):
-        return (self.path == other.path and self.name == other.name and
-                self._start_pos == other._start_pos)
+        return (self.path == other.path and self.name == other.name
+                and self._start_pos == other._start_pos)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -114,19 +114,11 @@ def _check_for_setattr(instance):
 
 def add_attribute_error(name_context, lookup_value, name):
     message = ('AttributeError: %s has no attribute %s.' % (lookup_value, name))
-    from jedi.inference.value.instance import CompiledInstanceName
     # Check for __getattr__/__getattribute__ existance and issue a warning
     # instead of an error, if that happens.
     typ = Error
     if lookup_value.is_instance() and not lookup_value.is_compiled():
-        slot_names = lookup_value.get_function_slot_names(u'__getattr__') + \
-            lookup_value.get_function_slot_names(u'__getattribute__')
-        for n in slot_names:
-            # TODO do we even get here?
-            if isinstance(name, CompiledInstanceName) and \
-                    n.parent_context.obj == object:
-                typ = Warning
-                break
+        # TODO maybe make a warning for __getattr__/__getattribute__
 
         if _check_for_setattr(lookup_value):
             typ = Warning
@@ -157,7 +149,7 @@ def _check_for_exception_catch(node_context, jedi_name, exception, payload=None)
         # Only nodes in try
         iterator = iter(obj.children)
         for branch_type in iterator:
-            colon = next(iterator)
+            next(iterator)  # The colon
             suite = next(iterator)
             if branch_type == 'try' \
                     and not (branch_type.start_pos < jedi_name.start_pos <= suite.end_pos):

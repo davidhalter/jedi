@@ -94,7 +94,8 @@ class Project(object):
         return sys_path
 
     @inference_state_as_method_param_cache()
-    def _get_sys_path(self, inference_state, environment=None, add_parent_paths=True):
+    def _get_sys_path(self, inference_state, environment=None,
+                      add_parent_paths=True, add_init_paths=False):
         """
         Keep this method private for all users of jedi. However internally this
         one is used like a public method.
@@ -110,7 +111,17 @@ class Project(object):
                 suffixed += discover_buildout_paths(inference_state, inference_state.script_path)
 
                 if add_parent_paths:
-                    traversed = list(traverse_parents(inference_state.script_path))
+                    # Collect directories in upward search by:
+                    #   1. Skipping directories with __init__.py
+                    #   2. Stopping immediately when above self._path
+                    traversed = []
+                    for parent_path in traverse_parents(inference_state.script_path):
+                        if not parent_path.startswith(self._path):
+                            break
+                        if not add_init_paths \
+                                and os.path.isfile(os.path.join(parent_path, "__init__.py")):
+                            continue
+                        traversed.append(parent_path)
 
                     # AFAIK some libraries have imports like `foo.foo.bar`, which
                     # leads to the conclusion to by default prefer longer paths

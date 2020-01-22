@@ -15,41 +15,11 @@ except ImportError:
         pydoc_topics = None
 
 
-def get_operator(inference_state, string, pos):
-    return Keyword(inference_state, string, pos)
-
-
 class KeywordName(AbstractArbitraryName):
     api_type = u'keyword'
 
-    def infer(self):
-        return [Keyword(self.inference_state, self.string_name, (0, 0))]
-
-
-class Keyword(object):
-    api_type = u'keyword'
-
-    def __init__(self, inference_state, name, pos):
-        self.name = KeywordName(inference_state, name)
-        self.start_pos = pos
-        self.parent = inference_state.builtins_module
-
-    @property
-    def names(self):
-        """ For a `parsing.Name` like comparision """
-        return [self.name]
-
     def py__doc__(self):
-        return imitate_pydoc(self.name.string_name)
-
-    def get_signatures(self):
-        # TODO this makes no sense, I think Keyword should somehow merge with
-        #   Value to make it easier for the api/classes.py to deal with all
-        #   of it.
-        return []
-
-    def __repr__(self):
-        return '<%s: %s>' % (type(self).__name__, self.name)
+        return imitate_pydoc(self.string_name)
 
 
 def imitate_pydoc(string):
@@ -69,7 +39,9 @@ def imitate_pydoc(string):
         string = h.symbols[string]
         string, _, related = string.partition(' ')
 
-    get_target = lambda s: h.topics.get(s, h.keywords.get(s))
+    def get_target(s):
+        return h.topics.get(s, h.keywords.get(s))
+
     while isinstance(string, str):
         string = get_target(string)
 

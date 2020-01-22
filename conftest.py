@@ -90,12 +90,12 @@ def clean_jedi_cache(request):
 
 @pytest.fixture(scope='session')
 def environment(request):
-    if request.config.option.interpreter_env:
-        return InterpreterEnvironment()
-
     version = request.config.option.env
     if version is None:
         version = os.environ.get('JEDI_TEST_ENVIRONMENT', str(py_version))
+
+    if request.config.option.interpreter_env or version == 'interpreter':
+        return InterpreterEnvironment()
 
     return get_system_environment(version[0] + '.' + version[1:])
 
@@ -106,8 +106,18 @@ def Script(environment):
 
 
 @pytest.fixture(scope='session')
-def names(environment):
-    return partial(jedi.names, environment=environment)
+def get_names(Script):
+    return lambda code, **kwargs: Script(code).get_names(**kwargs)
+
+
+@pytest.fixture(scope='session', params=['goto', 'infer'])
+def goto_or_infer(request, Script):
+    return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
+
+
+@pytest.fixture(scope='session', params=['goto', 'help'])
+def goto_or_help(request, Script):
+    return lambda code, *args, **kwargs: getattr(Script(code), request.param)(*args, **kwargs)
 
 
 @pytest.fixture(scope='session')
@@ -118,7 +128,7 @@ def has_typing(environment):
         return True
 
     script = jedi.Script('import typing', environment=environment)
-    return bool(script.goto_definitions())
+    return bool(script.infer())
 
 
 @pytest.fixture(scope='session')
@@ -153,6 +163,14 @@ def skip_pre_python37(environment):
 @pytest.fixture()
 def skip_pre_python35(environment):
     if environment.version_info < (3, 5):
+        # This if is just needed to avoid that tests ever skip way more than
+        # they should for all Python versions.
+        pytest.skip()
+
+
+@pytest.fixture()
+def skip_pre_python36(environment):
+    if environment.version_info < (3, 6):
         # This if is just needed to avoid that tests ever skip way more than
         # they should for all Python versions.
         pytest.skip()

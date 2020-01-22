@@ -66,13 +66,13 @@ def test_error_in_environment(inference_state, Script, environment):
     with pytest.raises(jedi.InternalError):
         inference_state.compiled_subprocess._test_raise_error(KeyboardInterrupt)
     # Jedi should still work.
-    def_, = Script('str').goto_definitions()
+    def_, = Script('str').infer()
     assert def_.name == 'str'
 
 
 def test_stdout_in_subprocess(inference_state, Script):
     inference_state.compiled_subprocess._test_print(stdout='.')
-    Script('1').goto_definitions()
+    Script('1').infer()
 
 
 def test_killed_subprocess(inference_state, Script, environment):
@@ -83,9 +83,9 @@ def test_killed_subprocess(inference_state, Script, environment):
     # Since the process was terminated (and nobody knows about it) the first
     # Jedi call fails.
     with pytest.raises(jedi.InternalError):
-        Script('str').goto_definitions()
+        Script('str').infer()
 
-    def_, = Script('str').goto_definitions()
+    def_, = Script('str').infer()
     # Jedi should now work again.
     assert def_.name == 'str'
 

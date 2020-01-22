@@ -6,6 +6,7 @@ python:
   - 3.5
   - 3.6
   - 3.7
+  - 3.8
 
 env:
   - JEDI_TEST_ENVIRONMENT=27
@@ -13,27 +14,31 @@ env:
   - JEDI_TEST_ENVIRONMENT=35
   - JEDI_TEST_ENVIRONMENT=36
   - JEDI_TEST_ENVIRONMENT=37
+  - JEDI_TEST_ENVIRONMENT=38
+  - JEDI_TEST_ENVIRONMENT=interpreter
 
 matrix:
   include:
-    - python: 3.6
+    - python: 3.7
       env:
-        - TOXENV=cov
-        - JEDI_TEST_ENVIRONMENT=36
+        - TOXENV=cov-py37
+        - JEDI_TEST_ENVIRONMENT=37
     # For now ignore pypy, there are so many issues that we don't really need
     # to run it.
     #- python: pypy
-    - python: 3.8-dev
-      env:
-        - JEDI_TEST_ENVIRONMENT=38
+    # The 3.9 dev build does not seem to be available end 2019.
+    #- python: 3.9-dev
+    #  env:
+    #    - JEDI_TEST_ENVIRONMENT=39
 install:
     - pip install --quiet tox-travis
+    - sudo apt-get -y install python3-venv
 script:
     - |
       # Setup/install Python for $JEDI_TEST_ENVIRONMENT.
       set -ex
       test_env_version=${JEDI_TEST_ENVIRONMENT:0:1}.${JEDI_TEST_ENVIRONMENT:1:1}
-      if [ "$TRAVIS_PYTHON_VERSION" != "$test_env_version" ]; then
+      if [ "$TRAVIS_PYTHON_VERSION" != "$test_env_version" ] && [ "$JEDI_TEST_ENVIRONMENT" != "interpreter" ]; then
         python_bin=python$test_env_version
         python_path="$(which $python_bin || true)"
         if [ -z "$python_path" ]; then
@@ -59,7 +64,7 @@ script:
     - tox
 after_script:
     - |
-      if [ $TOXENV == "cov" ]; then
+      if [ $TOXENV == "cov-py37" ]; then
         pip install --quiet codecov coveralls
         coverage xml
         coverage report -m

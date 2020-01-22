@@ -6,6 +6,7 @@ from jedi.plugins import stdlib
 from jedi.plugins import flask
 from jedi.plugins import django
 from jedi.plugins import plugin_manager
+from jedi.plugins import pytest
 
 
-plugin_manager.register(stdlib, flask, django)
+plugin_manager.register(stdlib, flask, pytest, django)

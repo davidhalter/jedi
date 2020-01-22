@@ -17,7 +17,7 @@ from jedi.inference.compiled.access import _sentinel
 from jedi.inference.cache import inference_state_function_cache
 from jedi.inference.helpers import reraise_getitem_errors
 from jedi.inference.signature import BuiltinSignature
-from jedi.inference.context import CompiledContext
+from jedi.inference.context import CompiledContext, CompiledModuleContext
 
 
 class CheckAttribute(object):
@@ -50,7 +50,10 @@ class CompiledObject(Value):
         return_annotation = self.access_handle.get_return_annotation()
         if return_annotation is not None:
             # TODO the return annotation may also be a string.
-            return create_from_access_path(self.inference_state, return_annotation).execute_annotation()
+            return create_from_access_path(
+                self.inference_state,
+                return_annotation
+            ).execute_annotation()
 
         try:
             self.access_handle.getattr_paths(u'__call__')
@@ -181,10 +184,12 @@ class CompiledObject(Value):
     def _ensure_one_filter(self, is_instance):
         return CompiledObjectFilter(self.inference_state, self, is_instance)
 
-    @CheckAttribute(u'__getitem__')
     def py__simple_getitem__(self, index):
         with reraise_getitem_errors(IndexError, KeyError, TypeError):
-            access = self.access_handle.py__simple_getitem__(index)
+            try:
+                access = self.access_handle.py__simple_getitem__(index)
+            except AttributeError:
+                return super(CompiledObject, self).py__simple_getitem__(index)
         if access is None:
             return NO_VALUES
 
@@ -257,10 +262,35 @@ class CompiledObject(Value):
             return default
 
     def execute_operation(self, other, operator):
-        return create_from_access_path(
-            self.inference_state,
-            self.access_handle.execute_operation(other.access_handle, operator)
-        )
+        try:
+            return ValueSet([create_from_access_path(
+                self.inference_state,
+                self.access_handle.execute_operation(other.access_handle, operator)
+            )])
+        except TypeError:
+            return NO_VALUES
+
+    def execute_annotation(self):
+        if self.access_handle.get_repr() == 'None':
+            # None as an annotation doesn't need to be executed.
+            return ValueSet([self])
+
+        name, args = self.access_handle.get_annotation_name_and_args()
+        arguments = [
+            ValueSet([create_from_access_path(self.inference_state, path)])
+            for path in args
+        ]
+        if name == 'Union':
+            return ValueSet.from_sets(arg.execute_annotation() for arg in arguments)
+        elif name:
+            # While with_generics only exists on very specific objects, we
+            # should probably be fine, because we control all the typing
+            # objects.
+            return ValueSet([
+                v.with_generics(arguments)
+                for v in self.inference_state.typing_module.py__getattribute__(name)
+            ]).execute_annotation()
+        return super(CompiledObject, self).execute_annotation()
 
     def negate(self):
         return create_from_access_path(self.inference_state, self.access_handle.negate())
@@ -268,19 +298,47 @@ class CompiledObject(Value):
     def get_metaclasses(self):
         return NO_VALUES
 
+    file_io = None  # For modules
+
     def _as_context(self):
+        if self.parent_context is None:
+            return CompiledModuleContext(self)
         return CompiledContext(self)
+
+    @property
+    def array_type(self):
+        return self.access_handle.get_array_type()
+
+    def get_key_values(self):
+        return [
+            create_from_access_path(self.inference_state, k)
+            for k in self.access_handle.get_key_paths()
+        ]
 
 
 class CompiledName(AbstractNameDefinition):
-    def __init__(self, inference_state, parent_context, name):
+    def __init__(self, inference_state, parent_value, name):
         self._inference_state = inference_state
-        self.parent_context = parent_context
+        self.parent_context = parent_value.as_context()
+        self._parent_value = parent_value
         self.string_name = name
+
+    def py__doc__(self):
+        value, = self.infer()
+        return value.py__doc__()
 
     def _get_qualified_names(self):
         parent_qualified_names = self.parent_context.get_qualified_names()
+        if parent_qualified_names is None:
+            return None
         return parent_qualified_names + (self.string_name,)
+
+    def get_defining_qualified_value(self):
+        context = self.parent_context
+        if context.is_module() or context.is_class():
+            return self.parent_context.get_value()  # Might be None
+
+        return None
 
     def __repr__(self):
         try:
@@ -300,7 +358,7 @@ class CompiledName(AbstractNameDefinition):
     @underscore_memoization
     def infer(self):
         return ValueSet([_create_from_name(
-            self._inference_state, self.parent_context, self.string_name
+            self._inference_state, self._parent_value, self.string_name
         )])
 
 
@@ -385,28 +443,36 @@ class CompiledObjectFilter(AbstractFilter):
         self.is_instance = is_instance
 
     def get(self, name):
+        access_handle = self.compiled_object.access_handle
         return self._get(
             name,
-            lambda: self.compiled_object.access_handle.is_allowed_getattr(name),
-            lambda: self.compiled_object.access_handle.dir(),
+            lambda name, unsafe: access_handle.is_allowed_getattr(name, unsafe),
+            lambda name: name in access_handle.dir(),
             check_has_attribute=True
         )
 
-    def _get(self, name, allowed_getattr_callback, dir_callback, check_has_attribute=False):
+    def _get(self, name, allowed_getattr_callback, in_dir_callback, check_has_attribute=False):
         """
         To remove quite a few access calls we introduced the callback here.
         """
-        has_attribute, is_descriptor = allowed_getattr_callback()
-        if check_has_attribute and not has_attribute:
-            return []
-
         # Always use unicode objects in Python 2 from here.
         name = force_unicode(name)
 
-        if (is_descriptor and not self._inference_state.allow_descriptor_getattr) or not has_attribute:
+        if self._inference_state.allow_descriptor_getattr:
+            pass
+
+        has_attribute, is_descriptor = allowed_getattr_callback(
+            name,
+            unsafe=self._inference_state.allow_descriptor_getattr
+        )
+        if check_has_attribute and not has_attribute:
+            return []
+
+        if (is_descriptor or not has_attribute) \
+                and not self._inference_state.allow_descriptor_getattr:
             return [self._get_cached_name(name, is_empty=True)]
 
-        if self.is_instance and name not in dir_callback():
+        if self.is_instance and not in_dir_callback(name):
             return []
         return [self._get_cached_name(name)]
 
@@ -421,11 +487,16 @@ class CompiledObjectFilter(AbstractFilter):
         from jedi.inference.compiled import builtin_from_name
         names = []
         needs_type_completions, dir_infos = self.compiled_object.access_handle.get_dir_infos()
+        # We could use `unsafe` here as well, especially as a parameter to
+        # get_dir_infos. But this would lead to a lot of property executions
+        # that are probably not wanted. The drawback for this is that we
+        # have a different name for `get` and `values`. For `get` we always
+        # execute.
         for name in dir_infos:
             names += self._get(
                 name,
-                lambda: dir_infos[name],
-                lambda: dir_infos.keys(),
+                lambda name, unsafe: dir_infos[name],
+                lambda name: name in dir_infos,
             )
 
         # ``dir`` doesn't include the type names.
@@ -435,7 +506,11 @@ class CompiledObjectFilter(AbstractFilter):
         return names
 
     def _create_name(self, name):
-        return self.name_class(self._inference_state, self.compiled_object, name)
+        return self.name_class(
+            self._inference_state,
+            self.compiled_object,
+            name
+        )
 
     def __repr__(self):
         return "<%s: %s>" % (self.__class__.__name__, self.compiled_object)

@@ -3,6 +3,42 @@
 Changelog
 ---------
 
+0.16.0 (2020--)
++++++++++++++++++++
+
+
+- **Added** ``Script.get_context`` to get information where you currently are.
+- Goto on a function/attribute in a class now goes to the definition in its
+  super class.
+- Dict key completions are working now. e.g. ``d = {1000: 3}; d[10`` will
+  expand to ``1000``.
+- Completion for "proxies" works now. These are classes that have a
+  ``__getattr__(self, name)`` method that does a ``return getattr(x, name)``.
+- Understanding of Pytest fixtures.
+- Tensorflow, Numpy and Pandas completions should now be about 4-10x faster
+  after loading them initially.
+- Big **Script API Changes**:
+    - The line and column parameters of ``jedi.Script`` are now deprecated
+    - ``completions`` deprecated, use ``complete`` instead
+    - ``goto_assignments`` deprecated, use ``goto`` instead
+    - ``goto_definitions`` deprecated, use ``infer`` instead
+    - ``call_signatures`` deprecated, use ``get_signatures`` instead
+    - ``usages`` deprecated, use ``get_references`` instead
+    - ``jedi.names`` deprecated, use ``jedi.Script(...).get_names()``
+- ``BaseDefinition.goto_assignments`` renamed to ``BaseDefinition.goto``
+- Python 2 support deprecated. For this release it is best effort. Python 2 has
+  reached the end of its life and now it's just about a smooth transition.
+
+0.15.2 (2019-12-20)
++++++++++++++++++++
+
+- Signatures are now detected a lot better
+- Add fuzzy completions with ``Script(...).completions(fuzzy=True)``
+- Files bigger than one MB (about 20kLOC) get cropped to avoid getting
+  stuck completely.
+- Many small Bugfixes
+- A big refactoring around contexts/values
+
 0.15.1 (2019-08-13)
 +++++++++++++++++++
 
@@ -23,7 +59,7 @@ New APIs:
 
 - ``Definition.get_signatures() -> List[Signature]``. Signatures are similar to
   ``CallSignature``. ``Definition.params`` is therefore deprecated.
-- ``Signature.to_string()`` to format call signatures.
+- ``Signature.to_string()`` to format signatures.
 - ``Signature.params -> List[ParamDefinition]``, ParamDefinition has the
   following additional attributes ``infer_default()``, ``infer_annotation()``,
   ``to_string()``, and ``kind``.

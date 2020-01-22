@@ -177,8 +177,8 @@ def get_executed_param_names_and_issues(function_value, arguments):
         for k in set(param_dict) - set(keys_used):
             param = param_dict[k]
 
-            if not (non_matching_keys or had_multiple_value_error or
-                    param.star_count or param.default):
+            if not (non_matching_keys or had_multiple_value_error
+                    or param.star_count or param.default):
                 # add a warning only if there's not another one.
                 for contextualized_node in arguments.get_calling_nodes():
                     m = _error_argument_count(funcdef, len(unpacked_va))
