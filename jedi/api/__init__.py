@@ -286,24 +286,6 @@ class Script(object):
 
     def _goto(self, line, column, follow_imports=False, follow_builtin_imports=False,
               only_stubs=False, prefer_stubs=False):
-        def filter_follow_imports(names):
-            for name in names:
-                if name.is_import():
-                    new_names = list(filter_follow_imports(name.goto()))
-                    found_builtin = False
-                    if follow_builtin_imports:
-                        for new_name in new_names:
-                            if new_name.start_pos is None:
-                                found_builtin = True
-
-                    if found_builtin:
-                        yield name
-                    else:
-                        for new_name in new_names:
-                            yield new_name
-                else:
-                    yield name
-
         tree_name = self._module_node.get_name_of_position((line, column))
         if tree_name is None:
             # Without a name we really just want to jump to the result e.g.
@@ -328,7 +310,7 @@ class Script(object):
             names = list(name.goto())
 
         if follow_imports:
-            names = filter_follow_imports(names)
+            names = helpers.filter_follow_imports(names)
         names = convert_names(
             names,
             only_stubs=only_stubs,

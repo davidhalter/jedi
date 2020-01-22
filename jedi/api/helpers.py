@@ -170,6 +170,28 @@ def infer(inference_state, context, leaf):
     return definitions
 
 
+def filter_follow_imports(names, follow_builtin_imports=False):
+    for name in names:
+        if name.is_import():
+            new_names = list(filter_follow_imports(
+                name.goto(),
+                follow_builtin_imports=follow_builtin_imports,
+            ))
+            found_builtin = False
+            if follow_builtin_imports:
+                for new_name in new_names:
+                    if new_name.start_pos is None:
+                        found_builtin = True
+
+            if found_builtin:
+                yield name
+            else:
+                for new_name in new_names:
+                    yield new_name
+        else:
+            yield name
+
+
 class CallDetails(object):
     def __init__(self, bracket_leaf, children, position):
         ['bracket_leaf', 'call_index', 'keyword_name_str']

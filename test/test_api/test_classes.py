@@ -544,3 +544,17 @@ def test_inheritance_module_path(Script, goto, code, name, file_name):
     assert func.type == 'function'
     assert func.name == name
     assert func.module_path == os.path.join(base_path, file_name)
+
+
+def test_definition_goto_follow_imports(Script):
+    dumps = Script('from json import dumps\ndumps').get_names(references=True)[-1]
+    assert dumps.description == 'dumps'
+    no_follow, = dumps.goto()
+    assert no_follow.description == 'def dumps'
+    assert no_follow.line == 1
+    assert no_follow.column == 17
+    assert no_follow.module_name == '__main__'
+    follow, = dumps.goto(follow_imports=True)
+    assert follow.description == 'def dumps'
+    assert follow.line != 1
+    assert follow.module_name == 'json'

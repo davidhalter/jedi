@@ -20,6 +20,7 @@ from jedi.inference.gradual.conversion import convert_names, convert_values
 from jedi.inference.base_value import ValueSet
 from jedi.api.keywords import KeywordName
 from jedi.api import completion_cache
+from jedi.api.helpers import filter_follow_imports
 
 
 def _sort_names_by_start_pos(names):
@@ -368,13 +369,17 @@ class BaseDefinition(object):
         )
         return self.goto(**kwargs)
 
-    def _goto(self, only_stubs=False, prefer_stubs=False):
+    def _goto(self, follow_imports=False, follow_builtin_imports=False,
+              only_stubs=False, prefer_stubs=False):
 
         if not self._name.is_value_name:
             return []
 
+        names = self._name.goto()
+        if follow_imports:
+            names = filter_follow_imports(names, follow_builtin_imports)
         names = convert_names(
-            self._name.goto(),
+            names,
             only_stubs=only_stubs,
             prefer_stubs=prefer_stubs,
         )
