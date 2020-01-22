@@ -52,7 +52,7 @@ def test_basedefinition_type(Script, names):
         definitions += script.infer(len(lines), len('variable'))
 
         script2 = Script(source, path=None)
-        definitions += script2.find_references(4, len('class C'))
+        definitions += script2.get_references(4, len('class C'))
 
         source_param = "def f(a): return a"
         script_param = Script(source_param, path=None)

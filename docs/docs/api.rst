@@ -119,7 +119,7 @@ References:
     ... else:
     ...     del x'''
     >>> script = jedi.Script(source, '')
-    >>> rns = script.find_references(5, 8)
+    >>> rns = script.get_references(5, 8)
     >>> rns
     [<Definition full_name='__main__.x', description='x = 3'>,
      <Definition full_name='__main__.x', description='x'>]

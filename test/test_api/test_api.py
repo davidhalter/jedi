@@ -68,7 +68,7 @@ def test_line_number_errors(Script):
 
     # ok
     Script(s).find_signatures(1, 0)
-    Script(s).find_references(1, len(s))
+    Script(s).get_references(1, len(s))
 
 
 def _check_number(Script, source, result='float'):
@@ -163,7 +163,7 @@ def test_goto_definition_not_multiple(Script):
 
 
 def test_reference_description(Script):
-    descs = [u.description for u in Script("foo = ''; foo").find_references()]
+    descs = [u.description for u in Script("foo = ''; foo").get_references()]
     assert set(descs) == {"foo = ''", 'foo'}
 
 

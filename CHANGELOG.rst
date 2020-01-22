@@ -23,7 +23,7 @@ Changelog
     - ``goto_assignments`` deprecated, use ``goto`` instead
     - ``goto_definitions`` deprecated, use ``infer`` instead
     - ``call_signatures`` deprecated, use ``find_signatures`` instead
-    - ``usages`` deprecated, use ``find_references`` instead
+    - ``usages`` deprecated, use ``get_references`` instead
     - ``jedi.names`` deprecated, use ``jedi.Script(...).names()``
 - ``BaseDefinition.goto_assignments`` renamed to ``BaseDefinition.goto``
 - Python 2 support deprecated. For this release it is best effort. Python 2 has

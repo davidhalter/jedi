@@ -363,10 +363,10 @@ class Script(object):
 
     def usages(self, **kwargs):
         # Deprecated, will be removed.
-        return self.find_references(*self._pos, **kwargs)
+        return self.get_references(*self._pos, **kwargs)
 
     @validate_line_column
-    def find_references(self, line=None, column=None, **kwargs):
+    def get_references(self, line=None, column=None, **kwargs):
         """
         Return :class:`classes.Definition` objects, which contain all
         names that point to the definition of the name under the cursor. This

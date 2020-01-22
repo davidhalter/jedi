@@ -57,7 +57,7 @@ def rename(script, new_name):
     :param script: The source Script object.
     :return: list of changed lines/changed files
     """
-    return Refactoring(_rename(script.find_references(), new_name))
+    return Refactoring(_rename(script.get_references(), new_name))
 
 
 def _rename(names, replace_str):
@@ -169,7 +169,7 @@ def inline(script):
     definitions = script.goto()
     assert len(definitions) == 1
     stmt = definitions[0]._definition
-    references = script.find_references()
+    references = script.get_references()
     inlines = [r for r in references
                if not stmt.start_pos <= (r.line, r.column) <= stmt.end_pos]
     inlines = sorted(inlines, key=lambda x: (x.module_path, x.line, x.column),

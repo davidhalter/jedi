@@ -130,7 +130,7 @@ Please check the API for a good explanation. There are the following commands:
 
 - ``jedi.Script.goto``
 - ``jedi.Script.complete``
-- ``jedi.Script.find_references``
+- ``jedi.Script.get_references``
 
 The returned objects are very powerful and really all you might need.
 

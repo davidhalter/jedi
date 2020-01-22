@@ -204,7 +204,7 @@ class IntegrationTestCase(BaseTestCase):
             TEST_COMPLETIONS: self.run_completion,
             TEST_INFERENCE: self.run_inference,
             TEST_GOTO: self.run_goto,
-            TEST_REFERENCES: self.run_find_references,
+            TEST_REFERENCES: self.run_get_references,
         }
         if (self.path.endswith('pytest.py') or self.path.endswith('conftest.py')) \
                 and environment.executable != os.path.realpath(sys.executable):
@@ -261,8 +261,8 @@ class IntegrationTestCase(BaseTestCase):
         comp_str = str(sorted(str(r.description) for r in result))
         return compare_cb(self, comp_str, self.correct)
 
-    def run_find_references(self, compare_cb, environment):
-        result = self.script(environment).find_references(self.line_nr, self.column)
+    def run_get_references(self, compare_cb, environment):
+        result = self.script(environment).get_references(self.line_nr, self.column)
         self.correct = self.correct.strip()
         compare = sorted(
             (('stub:' if r.is_stub() else '')
