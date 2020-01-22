@@ -220,7 +220,7 @@ def test_param_endings(Script):
     Params should be represented without the comma and whitespace they have
     around them.
     """
-    sig, = Script('def x(a, b=5, c=""): pass\n x(').find_signatures()
+    sig, = Script('def x(a, b=5, c=""): pass\n x(').get_signatures()
     assert [p.description for p in sig.params] == ['param a', 'param b=5', 'param c=""']
 
 

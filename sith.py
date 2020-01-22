@@ -95,7 +95,7 @@ class TestCase(object):
             args = json.load(f)
         return cls(*args)
 
-    operations = ['complete', 'goto', 'infer', 'get_references', 'find_signatures']
+    operations = ['complete', 'goto', 'infer', 'get_references', 'get_signatures']
 
     @classmethod
     def generate(cls, file_path):

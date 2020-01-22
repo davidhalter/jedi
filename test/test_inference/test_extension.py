@@ -13,7 +13,7 @@ def test_completions(Script):
     assert len(s.complete()) >= 15
 
 
-def test_find_signatures_extension(Script):
+def test_get_signatures_extension(Script):
     if os.name == 'nt':
         func = 'LoadLibrary'
         params = 1
@@ -21,14 +21,14 @@ def test_find_signatures_extension(Script):
         func = 'dlopen'
         params = 2
     s = Script('import _ctypes; _ctypes.%s(' % (func,))
-    sigs = s.find_signatures()
+    sigs = s.get_signatures()
     assert len(sigs) == 1
     assert len(sigs[0].params) == params
 
 
-def test_find_signatures_stdlib(Script):
+def test_get_signatures_stdlib(Script):
     s = Script('import math; math.cos(')
-    sigs = s.find_signatures()
+    sigs = s.get_signatures()
     assert len(sigs) == 1
     assert len(sigs[0].params) == 1
 

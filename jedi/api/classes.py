@@ -730,7 +730,7 @@ class BaseSignature(Definition):
 
 class Signature(BaseSignature):
     """
-    `Signature` objects is the return value of `Script.find_signatures`.
+    `Signature` objects is the return value of `Script.get_signatures`.
     It knows what functions you are currently in. e.g. `isinstance(` would
     return the `isinstance` function with its params. Without `(` it would
     return nothing.

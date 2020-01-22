@@ -6,7 +6,7 @@ from parso import parse
 
 def test_form_feed_characters(Script):
     s = "\f\nclass Test(object):\n    pass"
-    Script(s).find_signatures(line=2, column=18)
+    Script(s).get_signatures(line=2, column=18)
 
 
 def check_p(src):

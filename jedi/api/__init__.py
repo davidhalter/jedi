@@ -205,7 +205,7 @@ class Script(object):
         with debug.increase_indent_cm('complete'):
             completion = Completion(
                 self._inference_state, self._get_module_context(), self._code_lines,
-                (line, column), self.find_signatures, fuzzy=fuzzy,
+                (line, column), self.get_signatures, fuzzy=fuzzy,
             )
             return completion.complete()
 
@@ -394,10 +394,10 @@ class Script(object):
 
     def call_signatures(self):
         # Deprecated, will be removed.
-        return self.find_signatures(*self._pos)
+        return self.get_signatures(*self._pos)
 
     @validate_line_column
-    def find_signatures(self, line=None, column=None):
+    def get_signatures(self, line=None, column=None):
         """
         Return the function object of the call you're currently in.
 

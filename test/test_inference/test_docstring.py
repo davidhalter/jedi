@@ -428,7 +428,7 @@ def test_basic_str_init_signature(Script, disable_typeshed):
         class Foo(str):
             pass
         Foo(''')
-    c, = Script(code).find_signatures()
+    c, = Script(code).get_signatures()
     assert c.name == 'Foo'
 
 

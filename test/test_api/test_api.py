@@ -67,7 +67,7 @@ def test_line_number_errors(Script):
         Script(s).goto(1, -1)
 
     # ok
-    Script(s).find_signatures(1, 0)
+    Script(s).get_signatures(1, 0)
     Script(s).get_references(1, len(s))
 
 

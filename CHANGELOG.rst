@@ -22,7 +22,7 @@ Changelog
     - ``completions`` deprecated, use ``complete`` instead
     - ``goto_assignments`` deprecated, use ``goto`` instead
     - ``goto_definitions`` deprecated, use ``infer`` instead
-    - ``call_signatures`` deprecated, use ``find_signatures`` instead
+    - ``call_signatures`` deprecated, use ``get_signatures`` instead
     - ``usages`` deprecated, use ``get_references`` instead
     - ``jedi.names`` deprecated, use ``jedi.Script(...).names()``
 - ``BaseDefinition.goto_assignments`` renamed to ``BaseDefinition.goto``

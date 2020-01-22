@@ -557,7 +557,7 @@ def test_partial_signatures(code, expected, index):
     b = functools.partial(func, 1)
     c = functools.partial(func, 1, c=2)
 
-    sig, = jedi.Interpreter(code, [locals()]).find_signatures()
+    sig, = jedi.Interpreter(code, [locals()]).get_signatures()
     assert sig.name == 'partial'
     assert [p.name for p in sig.params] == expected
     assert index == sig.index
