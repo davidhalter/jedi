@@ -3,20 +3,20 @@
 Changelog
 ---------
 
-0.16.0 (2020--)
+0.16.0 (2020-01-24)
 +++++++++++++++++++
 
 
 - **Added** ``Script.get_context`` to get information where you currently are.
-- Goto on a function/attribute in a class now goes to the definition in its
-  super class.
+- Completions/type inference of **Pytest fixtures**.
+- Tensorflow, Numpy and Pandas completions should now be about **4-10x faster**
 - Dict key completions are working now. e.g. ``d = {1000: 3}; d[10`` will
   expand to ``1000``.
 - Completion for "proxies" works now. These are classes that have a
   ``__getattr__(self, name)`` method that does a ``return getattr(x, name)``.
-- Understanding of Pytest fixtures.
-- Tensorflow, Numpy and Pandas completions should now be about 4-10x faster
   after loading them initially.
+- Goto on a function/attribute in a class now goes to the definition in its
+  super class.
 - Big **Script API Changes**:
     - The line and column parameters of ``jedi.Script`` are now deprecated
     - ``completions`` deprecated, use ``complete`` instead
@@ -28,8 +28,8 @@ Changelog
 - ``BaseDefinition.goto_assignments`` renamed to ``BaseDefinition.goto``
 - Add follow_imports to ``Definition.goto``. Now its signature matches
   ``Script.goto``.
-- Python 2 support deprecated. For this release it is best effort. Python 2 has
-  reached the end of its life and now it's just about a smooth transition.
+- **Python 2 support deprecated**. For this release it is best effort. Python 2
+  has reached the end of its life and now it's just about a smooth transition.
 
 0.15.2 (2019-12-20)
 +++++++++++++++++++
