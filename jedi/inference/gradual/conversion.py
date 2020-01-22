@@ -130,7 +130,9 @@ def _python_to_stub_names(names, fallback_to_python=False):
 
 
 def convert_names(names, only_stubs=False, prefer_stubs=False, prefer_stub_to_compiled=True):
-    assert not (only_stubs and prefer_stubs)
+    if only_stubs and prefer_stubs:
+        raise ValueError("You cannot use both of only_stubs and prefer_stubs.")
+
     with debug.increase_indent_cm('convert names'):
         if only_stubs or prefer_stubs:
             return _python_to_stub_names(names, fallback_to_python=prefer_stubs)

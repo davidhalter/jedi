@@ -369,7 +369,6 @@ class BaseDefinition(object):
         return self.goto(**kwargs)
 
     def _goto(self, only_stubs=False, prefer_stubs=False):
-        assert not (only_stubs and prefer_stubs)
 
         if not self._name.is_value_name:
             return []
