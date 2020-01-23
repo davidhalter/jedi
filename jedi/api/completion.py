@@ -41,7 +41,7 @@ def get_signature_param_names(signatures):
 
 
 def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cached_name):
-    comp_dct = {}
+    comp_dct = set()
     if settings.case_insensitive_completion:
         like_name = like_name.lower()
     for name in completion_names:
@@ -62,10 +62,8 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cac
                 cached_name=cached_name,
             )
             k = (new.name, new.complete)  # key
-            if k in comp_dct and settings.no_completion_duplicates:
-                comp_dct[k]._same_name_completions.append(new)
-            else:
-                comp_dct[k] = new
+            if k not in comp_dct:
+                comp_dct.add(k)
                 yield new
 
 

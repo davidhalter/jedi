@@ -17,7 +17,6 @@ Completion output
 
 .. autodata:: case_insensitive_completion
 .. autodata:: add_bracket_after_function
-.. autodata:: no_completion_duplicates
 
 
 Filesystem cache
@@ -66,12 +65,6 @@ add_bracket_after_function = False
 """
 Adds an opening bracket after a function, because that's normal behaviour.
 Removed it again, because in VIM that is not very practical.
-"""
-
-no_completion_duplicates = True
-"""
-If set, completions with the same name don't appear in the output anymore,
-but are in the `same_name_completions` attribute.
 """
 
 # ----------------
