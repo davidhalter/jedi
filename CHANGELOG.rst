@@ -31,6 +31,9 @@ Changelog
   has reached the end of its life and now it's just about a smooth transition.
 - Removed ``settings.no_completion_duplicates``. It wasn't tested and nobody
   was probably using it anyway.
+- Removed ``settings.use_filesystem_cache`` and
+  ``settings.additional_dynamic_modules``, they have no usage anymore. Pretty
+  much nobody was probably using them.
 
 0.15.2 (2019-12-20)
 +++++++++++++++++++

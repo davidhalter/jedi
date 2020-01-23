@@ -23,17 +23,6 @@ def test_auto_import_modules_imports(auto_import_json, Script):
     assert isinstance(main._name, CompiledValueName)
 
 
-def test_additional_dynamic_modules(monkeypatch, Script):
-    # We could add further tests, but for now it's even more important that
-    # this doesn't fail.
-    monkeypatch.setattr(
-        settings,
-        'additional_dynamic_modules',
-        ['/foo/bar/jedi_not_existing_file.py']
-    )
-    assert not Script('def some_func(f):\n f.').complete()
-
-
 def test_cropped_file_size(monkeypatch, get_names, Script):
     code = 'class Foo(): pass\n'
     monkeypatch.setattr(

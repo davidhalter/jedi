@@ -23,7 +23,6 @@ Filesystem cache
 ~~~~~~~~~~~~~~~~
 
 .. autodata:: cache_directory
-.. autodata:: use_filesystem_cache
 
 
 Parser
@@ -38,7 +37,6 @@ Dynamic stuff
 .. autodata:: dynamic_array_additions
 .. autodata:: dynamic_params
 .. autodata:: dynamic_params_for_other_modules
-.. autodata:: additional_dynamic_modules
 .. autodata:: auto_import_modules
 
 
@@ -70,11 +68,6 @@ Removed it again, because in VIM that is not very practical.
 # ----------------
 # Filesystem cache
 # ----------------
-
-use_filesystem_cache = True
-"""
-Use filesystem cache to save once parsed files with pickle.
-"""
 
 if platform.system().lower() == 'windows':
     _cache_directory = os.path.join(os.getenv('APPDATA') or '~', 'Jedi',
@@ -131,12 +124,6 @@ the params of a function.
 dynamic_params_for_other_modules = True
 """
 Do the same for other modules.
-"""
-
-additional_dynamic_modules = []
-"""
-Additional modules in which |jedi| checks if statements are to be found. This
-is practical for IDEs, that want to administrate their modules themselves.
 """
 
 dynamic_flow_information = True
