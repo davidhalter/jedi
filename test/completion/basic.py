@@ -204,6 +204,19 @@ if r:
     r
 
 # -----------------
+# del
+# -----------------
+
+deleted_var = 3
+del deleted_var
+#? int()
+deleted_var
+#? ['deleted_var']
+deleted_var
+#! ['deleted_var = 3']
+deleted_var
+
+# -----------------
 # within docstrs
 # -----------------
 

@@ -20,7 +20,6 @@ from parso.python.tree import Name
 
 from jedi import settings
 from jedi.inference.arguments import TreeArguments
-from jedi.inference import helpers
 from jedi.inference.value import iterable
 from jedi.inference.base_value import NO_VALUES
 from jedi.parser_utils import is_scope
@@ -38,7 +37,17 @@ def filter_name(filters, name_or_str):
         if names:
             break
 
-    return list(names)
+    return list(_remove_del_stmt(names))
+
+
+def _remove_del_stmt(names):
+    # Catch del statements and remove them from results.
+    for name in names:
+        if name.tree_name is not None:
+            definition = name.tree_name.get_definition()
+            if definition is not None and definition.type == 'del_stmt':
+                continue
+        yield name
 
 
 def check_flow_information(value, flow, search_name, pos):

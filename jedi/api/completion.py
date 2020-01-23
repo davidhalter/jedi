@@ -64,6 +64,11 @@ def filter_names(inference_state, completion_names, stack, like_name, fuzzy, cac
             k = (new.name, new.complete)  # key
             if k not in comp_dct:
                 comp_dct.add(k)
+                tree_name = name.tree_name
+                if tree_name is not None:
+                    definition = tree_name.get_definition()
+                    if definition is not None and definition.type == 'del_stmt':
+                        continue
                 yield new
 
 

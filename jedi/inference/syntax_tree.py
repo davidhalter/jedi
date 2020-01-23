@@ -725,7 +725,9 @@ def tree_name_to_values(inference_state, context, tree_name):
         # the static analysis report.
         exceptions = context.infer_node(tree_name.get_previous_sibling().get_previous_sibling())
         types = exceptions.execute_with_values()
-    elif node.type == 'param':
+    elif typ == 'param':
+        types = NO_VALUES
+    elif typ == 'del_stmt':
         types = NO_VALUES
     else:
         raise ValueError("Should not happen. type: %s" % typ)
