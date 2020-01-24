@@ -29,6 +29,8 @@ Changelog
   ``Script.goto``.
 - **Python 2 support deprecated**. For this release it is best effort. Python 2
   has reached the end of its life and now it's just about a smooth transition.
+  Bugs for Python 2 will not be fixed anymore and a third of the tests are
+  already skipped.
 - Removed ``settings.no_completion_duplicates``. It wasn't tested and nobody
   was probably using it anyway.
 - Removed ``settings.use_filesystem_cache`` and
