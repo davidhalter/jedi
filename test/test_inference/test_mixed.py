@@ -19,7 +19,7 @@ def test_on_code():
 
 
 @pytest.mark.skipif('sys.version_info < (3,5)')
-def test_generics():
+def test_generics_without_definition():
     # Used to raise a recursion error
     T = TypeVar('T')
 
@@ -40,7 +40,7 @@ def test_generics():
             self.stack.push(1)
 
     s = StackWrapper()
-    print(interpreter('s.stack.pop().', locals()).complete())
+    assert not interpreter('s.stack.pop().', locals()).complete()
 
 
 def test_mixed_module_cache():
