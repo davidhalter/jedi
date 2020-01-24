@@ -292,15 +292,16 @@ def _create(inference_state, access_handle, parent_context, *args):
             # TODO this __name__ is probably wrong.
             name = compiled_object.get_root_context().py__name__()
             string_names = tuple(name.split('.'))
-            module_context = ModuleValue(
+            module_value = ModuleValue(
                 inference_state, module_node,
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
                 is_package=compiled_object.is_package(),
-            ).as_context()
+            )
             if name is not None:
-                inference_state.module_cache.add(string_names, ValueSet([module_context]))
+                inference_state.module_cache.add(string_names, ValueSet([module_value]))
+            module_context = module_value.as_context()
         else:
             if parent_context.tree_node.get_root_node() != module_node:
                 # This happens e.g. when __module__ is wrong, or when using
