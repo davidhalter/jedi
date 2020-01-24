@@ -86,31 +86,11 @@ class CompiledObject(Value):
             for access in self.access_handle.py__bases__()
         )
 
-    def py__path__(self):
-        paths = self.access_handle.py__path__()
-        if paths is None:
-            return None
-        return map(cast_path, paths)
-
-    def is_package(self):
-        return self.py__path__() is not None
-
-    @property
-    def string_names(self):
-        # For modules
-        name = self.py__name__()
-        if name is None:
-            return ()
-        return tuple(name.split('.'))
-
     def get_qualified_names(self):
         return self.access_handle.get_qualified_names()
 
     def py__bool__(self):
         return self.access_handle.py__bool__()
-
-    def py__file__(self):
-        return cast_path(self.access_handle.py__file__())
 
     def is_class(self):
         return self.access_handle.is_class()
@@ -298,11 +278,7 @@ class CompiledObject(Value):
     def get_metaclasses(self):
         return NO_VALUES
 
-    file_io = None  # For modules
-
     def _as_context(self):
-        if self.parent_context is None:
-            return CompiledModuleContext(self)
         return CompiledContext(self)
 
     @property
@@ -314,6 +290,33 @@ class CompiledObject(Value):
             create_from_access_path(self.inference_state, k)
             for k in self.access_handle.get_key_paths()
         ]
+
+
+class CompiledModule(CompiledObject):
+    file_io = None  # For modules
+
+    def _as_context(self):
+        return CompiledModuleContext(self)
+
+    def py__path__(self):
+        paths = self.access_handle.py__path__()
+        if paths is None:
+            return None
+        return map(cast_path, paths)
+
+    def is_package(self):
+        return self.py__path__() is not None
+
+    @property
+    def string_names(self):
+        # For modules
+        name = self.py__name__()
+        if name is None:
+            return ()
+        return tuple(name.split('.'))
+
+    def py__file__(self):
+        return cast_path(self.access_handle.py__file__())
 
 
 class CompiledName(AbstractNameDefinition):
@@ -624,4 +627,8 @@ def create_from_access_path(inference_state, access_path):
 @inference_state_function_cache()
 def create_cached_compiled_object(inference_state, access_handle, parent_context):
     assert not isinstance(parent_context, CompiledObject)
-    return CompiledObject(inference_state, access_handle, parent_context)
+    if parent_context is None:
+        cls = CompiledModule
+    else:
+        cls = CompiledObject
+    return cls(inference_state, access_handle, parent_context)
