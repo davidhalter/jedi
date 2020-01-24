@@ -191,7 +191,7 @@ class ClassMixin(object):
                 yield f
 
         for cls in self.py__mro__():
-            if isinstance(cls, compiled.CompiledObject):
+            if cls.is_compiled():
                 for filter in cls.get_filters(is_instance=is_instance):
                     yield filter
             else:
