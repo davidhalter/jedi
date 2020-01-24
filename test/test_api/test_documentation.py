@@ -89,3 +89,11 @@ def test_version_info(Script):
 
     c, = s.completions()
     assert c.docstring() == 'sys.version_info\n\nVersion information as a named tuple.'
+
+
+def test_builtin_docstring(Script, goto_or_help_or_infer):
+    d, = goto_or_help_or_infer('open')
+
+    doc = d.docstring()
+    assert doc.startswith('open(file: Union[')
+    assert 'Open file' in doc or 'Open a file' in doc

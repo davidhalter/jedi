@@ -228,7 +228,12 @@ class ValueNameMixin(object):
         return ValueSet([self._value])
 
     def py__doc__(self):
-        return self._value.py__doc__()
+        doc = self._value.py__doc__()
+        if not doc and self._value.is_stub():
+            from jedi.inference.gradual.conversion import convert_names
+            names = convert_names([self], prefer_stub_to_compiled=False)
+            return _merge_name_docs(names)
+        return doc
 
     def _get_qualified_names(self):
         return self._value.get_qualified_names()
