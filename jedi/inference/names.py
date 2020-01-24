@@ -634,7 +634,7 @@ class StubName(StubNameMixin, TreeNameDefinition):
         inferred = super(StubName, self).infer()
         if self.string_name == 'version_info' and self.get_root_context().py__name__() == 'sys':
             from jedi.inference.gradual.stub_value import VersionInfo
-            return [VersionInfo(c) for c in inferred]
+            return ValueSet(VersionInfo(c) for c in inferred)
         return inferred
 
 

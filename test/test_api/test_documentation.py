@@ -75,3 +75,17 @@ def test_attribute_docstrings(goto_or_help, expected_doc, to_execute):
 
     d, = goto_or_help(code + to_execute)
     assert d.docstring() == expected_doc
+
+
+def test_version_info(Script):
+    """
+    Version info is a bit special, because it needs to be fast for some ifs, so
+    it's a special object that we have to check.
+    """
+    s = Script(dedent("""\
+        import sys
+
+        sys.version_info"""))
+
+    c, = s.completions()
+    assert c.docstring() == 'sys.version_info\n\nVersion information as a named tuple.'
