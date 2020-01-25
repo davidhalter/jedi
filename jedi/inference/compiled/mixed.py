@@ -31,8 +31,8 @@ class MixedObject(ValueWrapper):
     A ``MixedObject`` is used in two ways:
 
     1. It uses the default logic of ``parser.python.tree`` objects,
-    2. except for getattr calls. The names dicts are generated in a fashion
-       like ``CompiledObject``.
+    2. except for getattr calls and signatures. The names dicts are generated
+       in a fashion like ``CompiledObject``.
 
     This combined logic makes it possible to provide more powerful REPL
     completion. It allows side effects that are not noticable with the default
@@ -143,16 +143,12 @@ class MixedObjectFilter(compiled.CompiledObjectFilter):
 
 @inference_state_function_cache()
 def _load_module(inference_state, path):
-    module_node = inference_state.parse(
+    return inference_state.parse(
         path=path,
         cache=True,
         diff_cache=settings.fast_parser,
         cache_path=settings.cache_directory
     ).get_root_node()
-    # python_module = inspect.getmodule(python_object)
-    # TODO we should actually make something like this possible.
-    # inference_state.modules[python_module.__name__] = module_node
-    return module_node
 
 
 def _get_object_to_check(python_object):
