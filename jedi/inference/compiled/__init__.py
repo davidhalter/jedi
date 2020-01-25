@@ -16,7 +16,11 @@ def builtin_from_name(inference_state, string):
     return value
 
 
-class CompiledValue(LazyValueWrapper):
+class ExactValue(LazyValueWrapper):
+    """
+    This class represents exact values, that makes operations like additions
+    and exact boolean values possible, while still being a "normal" stub.
+    """
     def __init__(self, compiled_obj):
         self.inference_state = compiled_obj.inference_state
         self._compiled_obj = compiled_obj
@@ -25,7 +29,7 @@ class CompiledValue(LazyValueWrapper):
         if name in ('get_safe_value', 'execute_operation', 'access_handle',
                     'negate', 'py__bool__', 'is_compiled'):
             return getattr(self._compiled_obj, name)
-        return super(CompiledValue, self).__getattribute__(name)
+        return super(ExactValue, self).__getattribute__(name)
 
     def _get_wrapped_value(self):
         instance, = builtin_from_name(
@@ -46,7 +50,7 @@ def create_simple_object(inference_state, obj):
         inference_state,
         inference_state.compiled_subprocess.create_simple_object(obj)
     )
-    return CompiledValue(compiled_obj)
+    return ExactValue(compiled_obj)
 
 
 def get_string_value_set(inference_state):
