@@ -3,12 +3,13 @@
 Changelog
 ---------
 
-0.16.0 (2020-01-24)
+0.16.0 (2020-01-26)
 +++++++++++++++++++
 
 - **Added** ``Script.get_context`` to get information where you currently are.
 - Completions/type inference of **Pytest fixtures**.
 - Tensorflow, Numpy and Pandas completions should now be about **4-10x faster**
+  after the first time they are used.
 - Dict key completions are working now. e.g. ``d = {1000: 3}; d[10`` will
   expand to ``1000``.
 - Completion for "proxies" works now. These are classes that have a
