@@ -13,12 +13,12 @@ from jedi import settings
 from jedi.cache import memoize_method
 from jedi.inference import compiled
 from jedi.file_io import FileIO
+from jedi.inference.names import NameWrapper
 from jedi.inference.base_value import ValueSet, ValueWrapper, NO_VALUES
 from jedi.inference.value import ModuleValue
 from jedi.inference.cache import inference_state_function_cache, \
     inference_state_method_cache
 from jedi.inference.compiled.access import ALLOWED_GETITEM_TYPES, get_api_type
-from jedi.inference.compiled.value import create_cached_compiled_object, create_from_name
 from jedi.inference.gradual.conversion import to_stub
 from jedi.inference.context import CompiledContext, CompiledModuleContext, \
     TreeContextMixin
@@ -48,11 +48,9 @@ class MixedObject(ValueWrapper):
         self.compiled_object = compiled_object
         self.access_handle = compiled_object.access_handle
 
-    def get_tree_value(self):
-        return self._wrapped_value
-
     def get_filters(self, *args, **kwargs):
-        yield MixedObjectFilter(self.inference_state, self)
+        yield MixedObjectFilter(
+            self.inference_state, self.compiled_object, self._wrapped_value)
 
     def get_signatures(self):
         # Prefer `inspect.signature` over somehow analyzing Python code. It
@@ -102,10 +100,14 @@ class MixedModuleContext(CompiledModuleContext, MixedContext):
     pass
 
 
-class MixedName(compiled.CompiledName):
+class MixedName(NameWrapper):
     """
     The ``CompiledName._compiled_object`` is our MixedObject.
     """
+    def __init__(self, wrapped_name, parent_tree_value):
+        super(MixedName, self).__init__(wrapped_name)
+        self._parent_tree_value = parent_tree_value
+
     @property
     def start_pos(self):
         values = list(self.infer())
@@ -116,18 +118,8 @@ class MixedName(compiled.CompiledName):
 
     @memoize_method
     def infer(self):
-        # TODO use logic from compiled.CompiledObjectFilter
-        access_paths = self._parent_value.access_handle.getattr_paths(
-            self.string_name,
-            default=None
-        )
-        assert len(access_paths)
-        tree_value = self._parent_value.get_tree_value()
-        compiled_object = create_from_name(
-            self._inference_state,
-            self._parent_value.compiled_object,
-            self.string_name
-        )
+        compiled_object = self._wrapped_name.infer_compiled_object()
+        tree_value = self._parent_tree_value
         if tree_value.is_instance() or tree_value.is_class():
             tree_values = tree_value.py__getattribute__(self.string_name)
             if compiled_object.is_function():
@@ -136,13 +128,17 @@ class MixedName(compiled.CompiledName):
         module_context = tree_value.get_root_context()
         return _create(self._inference_state, compiled_object, module_context)
 
-    @property
-    def api_type(self):
-        return next(iter(self.infer())).api_type
-
 
 class MixedObjectFilter(compiled.CompiledObjectFilter):
-    name_class = MixedName
+    def __init__(self, inference_state, compiled_object, tree_value):
+        super(MixedObjectFilter, self).__init__(inference_state, compiled_object)
+        self._tree_value = tree_value
+
+    def _create_name(self, name):
+        return MixedName(
+            super(MixedObjectFilter, self)._create_name(name),
+            self._tree_value,
+        )
 
 
 @inference_state_function_cache()

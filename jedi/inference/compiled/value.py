@@ -354,9 +354,10 @@ class CompiledName(AbstractNameDefinition):
 
     @memoize_method
     def infer(self):
-        return ValueSet([create_from_name(
-            self._inference_state, self._parent_value, self.string_name
-        )])
+        return ValueSet([self.infer_compiled_object()])
+
+    def infer_compiled_object(self):
+        return create_from_name(self._inference_state, self._parent_value, self.string_name)
 
 
 class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
@@ -432,8 +433,6 @@ class EmptyCompiledName(AbstractNameDefinition):
 
 
 class CompiledObjectFilter(AbstractFilter):
-    name_class = CompiledName
-
     def __init__(self, inference_state, compiled_object, is_instance=False):
         self._inference_state = inference_state
         self.compiled_object = compiled_object
@@ -503,7 +502,7 @@ class CompiledObjectFilter(AbstractFilter):
         return names
 
     def _create_name(self, name):
-        return self.name_class(
+        return CompiledName(
             self._inference_state,
             self.compiled_object,
             name
