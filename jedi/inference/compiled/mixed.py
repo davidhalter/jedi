@@ -10,15 +10,14 @@ from jedi.parser_utils import get_cached_code_lines
 
 from jedi._compatibility import unwrap
 from jedi import settings
+from jedi.cache import memoize_method
 from jedi.inference import compiled
-from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
 from jedi.inference.base_value import ValueSet, ValueWrapper, NO_VALUES
 from jedi.inference.value import ModuleValue
 from jedi.inference.cache import inference_state_function_cache, \
     inference_state_method_cache
-from jedi.inference.compiled.access import compiled_objects_cache, \
-    ALLOWED_GETITEM_TYPES, get_api_type
+from jedi.inference.compiled.access import ALLOWED_GETITEM_TYPES, get_api_type
 from jedi.inference.compiled.value import create_cached_compiled_object, create_from_name
 from jedi.inference.gradual.conversion import to_stub
 from jedi.inference.context import CompiledContext, CompiledModuleContext, \
@@ -115,7 +114,7 @@ class MixedName(compiled.CompiledName):
             return 0, 0
         return values[0].name.start_pos
 
-    @underscore_memoization
+    @memoize_method
     def infer(self):
         # TODO use logic from compiled.CompiledObjectFilter
         access_paths = self._parent_value.access_handle.getattr_paths(
@@ -258,6 +257,7 @@ def _find_syntax_node_name(inference_state, python_object):
     return module_node, tree_node, file_io, code_lines
 
 
+@inference_state_function_cache()
 def _create(inference_state, compiled_object, module_context):
     # TODO accessing this is bad, but it probably doesn't matter that much,
     # because we're working with interpreteters only here.

@@ -7,7 +7,7 @@ from functools import partial
 from jedi import debug
 from jedi.inference.utils import to_list
 from jedi._compatibility import force_unicode, Parameter, cast_path
-from jedi.cache import underscore_memoization, memoize_method
+from jedi.cache import memoize_method
 from jedi.inference.filters import AbstractFilter
 from jedi.inference.names import AbstractNameDefinition, ValueNameMixin, \
     ParamNameInterface
@@ -139,7 +139,7 @@ class CompiledObject(Value):
     def __repr__(self):
         return '<%s: %s>' % (self.__class__.__name__, self.access_handle.get_repr())
 
-    @underscore_memoization
+    @memoize_method
     def _parse_function_doc(self):
         doc = self.py__doc__()
         if doc is None:
@@ -150,15 +150,6 @@ class CompiledObject(Value):
     @property
     def api_type(self):
         return self.access_handle.get_api_type()
-
-    @underscore_memoization
-    def _cls(self):
-        """
-        We used to limit the lookups for instantiated objects like list(), but
-        this is not the case anymore. Python itself
-        """
-        # Ensures that a CompiledObject is returned that is not an instance (like list)
-        return self
 
     def get_filters(self, is_instance=False, origin_scope=None):
         yield self._ensure_one_filter(is_instance)
@@ -361,7 +352,7 @@ class CompiledName(AbstractNameDefinition):
             return "instance"
         return next(iter(api)).api_type
 
-    @underscore_memoization
+    @memoize_method
     def infer(self):
         return ValueSet([create_from_name(
             self._inference_state, self._parent_value, self.string_name
