@@ -145,12 +145,6 @@ class ClassMixin(object):
     def py__name__(self):
         return self.name.string_name
 
-    def get_param_names(self):
-        for value_ in self.py__getattribute__(u'__init__'):
-            if value_.is_function():
-                return list(value_.get_param_names())[1:]
-        return []
-
     @inference_state_method_generator_cache()
     def py__mro__(self):
         mro = [self]

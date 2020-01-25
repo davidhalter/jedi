@@ -195,14 +195,6 @@ class _BaseTreeInstance(AbstractInstanceValue):
                 # Propably from the metaclass.
                 yield f
 
-    def _get_annotation_init_functions(self):
-        filter = next(self.class_value.get_filters())
-        for init_name in filter.get('__init__'):
-            for init in init_name.infer():
-                if init.is_function():
-                    for signature in init.get_signatures():
-                        yield signature.value
-
     @inference_state_method_cache()
     def create_instance_context(self, class_context, node):
         new = node

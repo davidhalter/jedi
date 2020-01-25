@@ -80,6 +80,9 @@ class FunctionMixin(object):
             return LambdaName(self)
         return ValueName(self, self.tree_node.name)
 
+    def is_function(self):
+        return True
+
     def py__name__(self):
         return self.name.string_name
 
