@@ -426,10 +426,10 @@ class DictLiteralValue(_DictMixin, SequenceLiteralValue, _DictKeyMixin):
 
     def py__simple_getitem__(self, index):
         """Here the index is an int/str. Raises IndexError/KeyError."""
-        compiled_obj_index = compiled.create_simple_object(self.inference_state, index)
+        compiled_value_index = compiled.create_simple_object(self.inference_state, index)
         for key, value in self.get_tree_entries():
             for k in self._defining_context.infer_node(key):
-                for key_v in k.execute_operation(compiled_obj_index, u'=='):
+                for key_v in k.execute_operation(compiled_value_index, u'=='):
                     if key_v.get_safe_value():
                         return self._defining_context.infer_node(value)
         raise SimpleGetItemNotFound('No key found in dictionary %s.' % self)

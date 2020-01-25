@@ -24,9 +24,9 @@ class MixedModuleContext(ModuleContext):
         super(MixedModuleContext, self).__init__(tree_module_value)
         self._namespace_objects = [NamespaceObject(n) for n in namespaces]
 
-    def _get_mixed_object(self, compiled_object):
+    def _get_mixed_object(self, compiled_value):
         return mixed.MixedObject(
-            compiled_object=compiled_object,
+            compiled_value=compiled_value,
             tree_value=self._value
         )
 
@@ -35,7 +35,7 @@ class MixedModuleContext(ModuleContext):
             yield filter
 
         for namespace_obj in self._namespace_objects:
-            compiled_object = _create(self.inference_state, namespace_obj)
-            mixed_object = self._get_mixed_object(compiled_object)
+            compiled_value = _create(self.inference_state, namespace_obj)
+            mixed_object = self._get_mixed_object(compiled_value)
             for filter in mixed_object.get_filters(*args, **kwargs):
                 yield filter

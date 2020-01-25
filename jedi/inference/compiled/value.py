@@ -354,15 +354,15 @@ class CompiledName(AbstractNameDefinition):
 
     @memoize_method
     def infer(self):
-        return ValueSet([self.infer_compiled_object()])
+        return ValueSet([self.infer_compiled_value()])
 
-    def infer_compiled_object(self):
+    def infer_compiled_value(self):
         return create_from_name(self._inference_state, self._parent_value, self.string_name)
 
 
 class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
-    def __init__(self, compiled_obj, signature_param):
-        self.parent_context = compiled_obj.parent_context
+    def __init__(self, compiled_value, signature_param):
+        self.parent_context = compiled_value.parent_context
         self._signature_param = signature_param
 
     @property
@@ -393,8 +393,8 @@ class SignatureParamName(ParamNameInterface, AbstractNameDefinition):
 
 
 class UnresolvableParamName(ParamNameInterface, AbstractNameDefinition):
-    def __init__(self, compiled_obj, name, default):
-        self.parent_context = compiled_obj.parent_context
+    def __init__(self, compiled_value, name, default):
+        self.parent_context = compiled_value.parent_context
         self.string_name = name
         self._default = default
 
@@ -433,13 +433,13 @@ class EmptyCompiledName(AbstractNameDefinition):
 
 
 class CompiledValueFilter(AbstractFilter):
-    def __init__(self, inference_state, compiled_object, is_instance=False):
+    def __init__(self, inference_state, compiled_value, is_instance=False):
         self._inference_state = inference_state
-        self.compiled_object = compiled_object
+        self.compiled_value = compiled_value
         self.is_instance = is_instance
 
     def get(self, name):
-        access_handle = self.compiled_object.access_handle
+        access_handle = self.compiled_value.access_handle
         return self._get(
             name,
             lambda name, unsafe: access_handle.is_allowed_getattr(name, unsafe),
@@ -482,7 +482,7 @@ class CompiledValueFilter(AbstractFilter):
     def values(self):
         from jedi.inference.compiled import builtin_from_name
         names = []
-        needs_type_completions, dir_infos = self.compiled_object.access_handle.get_dir_infos()
+        needs_type_completions, dir_infos = self.compiled_value.access_handle.get_dir_infos()
         # We could use `unsafe` here as well, especially as a parameter to
         # get_dir_infos. But this would lead to a lot of property executions
         # that are probably not wanted. The drawback for this is that we
@@ -504,12 +504,12 @@ class CompiledValueFilter(AbstractFilter):
     def _create_name(self, name):
         return CompiledName(
             self._inference_state,
-            self.compiled_object,
+            self.compiled_value,
             name
         )
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.compiled_object)
+        return "<%s: %s>" % (self.__class__.__name__, self.compiled_value)
 
 
 docstr_defaults = {
@@ -582,15 +582,15 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def create_from_name(inference_state, compiled_object, name):
-    access_paths = compiled_object.access_handle.getattr_paths(name, default=None)
-    parent_context = compiled_object
+def create_from_name(inference_state, compiled_value, name):
+    access_paths = compiled_value.access_handle.getattr_paths(name, default=None)
+    parent_context = compiled_value
     if parent_context.is_class():
         parent_context = parent_context.parent_context
 
     value = None
     for access_path in access_paths:
-        value = create_cached_compiled_object(
+        value = create_cached_compiled_value(
             inference_state,
             access_path,
             parent_context=None if value is None else value.as_context(),
@@ -608,7 +608,7 @@ def _normalize_create_args(func):
 def create_from_access_path(inference_state, access_path):
     value = None
     for name, access in access_path.accesses:
-        value = create_cached_compiled_object(
+        value = create_cached_compiled_value(
             inference_state,
             access,
             parent_context=None if value is None else value.as_context()
@@ -618,7 +618,7 @@ def create_from_access_path(inference_state, access_path):
 
 @_normalize_create_args
 @inference_state_function_cache()
-def create_cached_compiled_object(inference_state, access_handle, parent_context):
+def create_cached_compiled_value(inference_state, access_handle, parent_context):
     assert not isinstance(parent_context, CompiledValue)
     if parent_context is None:
         cls = CompiledModule

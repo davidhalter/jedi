@@ -21,23 +21,23 @@ class ExactValue(LazyValueWrapper):
     This class represents exact values, that makes operations like additions
     and exact boolean values possible, while still being a "normal" stub.
     """
-    def __init__(self, compiled_obj):
-        self.inference_state = compiled_obj.inference_state
-        self._compiled_obj = compiled_obj
+    def __init__(self, compiled_value):
+        self.inference_state = compiled_value.inference_state
+        self._compiled_value = compiled_value
 
     def __getattribute__(self, name):
         if name in ('get_safe_value', 'execute_operation', 'access_handle',
                     'negate', 'py__bool__', 'is_compiled'):
-            return getattr(self._compiled_obj, name)
+            return getattr(self._compiled_value, name)
         return super(ExactValue, self).__getattribute__(name)
 
     def _get_wrapped_value(self):
         instance, = builtin_from_name(
-            self.inference_state, self._compiled_obj.name.string_name).execute_with_values()
+            self.inference_state, self._compiled_value.name.string_name).execute_with_values()
         return instance
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self._compiled_obj)
+        return '<%s: %s>' % (self.__class__.__name__, self._compiled_value)
 
 
 def create_simple_object(inference_state, obj):
@@ -46,11 +46,11 @@ def create_simple_object(inference_state, obj):
     versions.
     """
     assert type(obj) in (int, float, str, bytes, unicode, slice, complex, bool), obj
-    compiled_obj = create_from_access_path(
+    compiled_value = create_from_access_path(
         inference_state,
         inference_state.compiled_subprocess.create_simple_object(obj)
     )
-    return ExactValue(compiled_obj)
+    return ExactValue(compiled_value)
 
 
 def get_string_value_set(inference_state):

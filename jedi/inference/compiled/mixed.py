@@ -43,19 +43,19 @@ class MixedObject(ValueWrapper):
     fewer special cases, because we in Python you don't have the same freedoms
     to modify the runtime.
     """
-    def __init__(self, compiled_object, tree_value):
+    def __init__(self, compiled_value, tree_value):
         super(MixedObject, self).__init__(tree_value)
-        self.compiled_object = compiled_object
-        self.access_handle = compiled_object.access_handle
+        self.compiled_value = compiled_value
+        self.access_handle = compiled_value.access_handle
 
     def get_filters(self, *args, **kwargs):
         yield MixedObjectFilter(
-            self.inference_state, self.compiled_object, self._wrapped_value)
+            self.inference_state, self.compiled_value, self._wrapped_value)
 
     def get_signatures(self):
         # Prefer `inspect.signature` over somehow analyzing Python code. It
         # should be very precise, especially for stuff like `partial`.
-        return self.compiled_object.get_signatures()
+        return self.compiled_value.get_signatures()
 
     @inference_state_method_cache(default=NO_VALUES)
     def py__call__(self, arguments):
@@ -67,14 +67,14 @@ class MixedObject(ValueWrapper):
 
     def get_safe_value(self, default=_sentinel):
         if default is _sentinel:
-            return self.compiled_object.get_safe_value()
+            return self.compiled_value.get_safe_value()
         else:
-            return self.compiled_object.get_safe_value(default)
+            return self.compiled_value.get_safe_value(default)
 
     def py__simple_getitem__(self, index):
-        python_object = self.compiled_object.access_handle.access._obj
+        python_object = self.compiled_value.access_handle.access._obj
         if type(python_object) in ALLOWED_GETITEM_TYPES:
-            return self.compiled_object.py__simple_getitem__(index)
+            return self.compiled_value.py__simple_getitem__(index)
         return self._wrapped_value.py__simple_getitem__(index)
 
     def _as_context(self):
@@ -92,8 +92,8 @@ class MixedObject(ValueWrapper):
 
 class MixedContext(CompiledContext, TreeContextMixin):
     @property
-    def compiled_object(self):
-        return self._value.compiled_object
+    def compiled_value(self):
+        return self._value.compiled_value
 
 
 class MixedModuleContext(CompiledModuleContext, MixedContext):
@@ -102,7 +102,7 @@ class MixedModuleContext(CompiledModuleContext, MixedContext):
 
 class MixedName(NameWrapper):
     """
-    The ``CompiledName._compiled_object`` is our MixedObject.
+    The ``CompiledName._compiled_value`` is our MixedObject.
     """
     def __init__(self, wrapped_name, parent_tree_value):
         super(MixedName, self).__init__(wrapped_name)
@@ -118,20 +118,20 @@ class MixedName(NameWrapper):
 
     @memoize_method
     def infer(self):
-        compiled_object = self._wrapped_name.infer_compiled_object()
+        compiled_value = self._wrapped_name.infer_compiled_value()
         tree_value = self._parent_tree_value
         if tree_value.is_instance() or tree_value.is_class():
             tree_values = tree_value.py__getattribute__(self.string_name)
-            if compiled_object.is_function():
-                return ValueSet({MixedObject(compiled_object, v) for v in tree_values})
+            if compiled_value.is_function():
+                return ValueSet({MixedObject(compiled_value, v) for v in tree_values})
 
         module_context = tree_value.get_root_context()
-        return _create(self._inference_state, compiled_object, module_context)
+        return _create(self._inference_state, compiled_value, module_context)
 
 
 class MixedObjectFilter(compiled.CompiledValueFilter):
-    def __init__(self, inference_state, compiled_object, tree_value):
-        super(MixedObjectFilter, self).__init__(inference_state, compiled_object)
+    def __init__(self, inference_state, compiled_value, tree_value):
+        super(MixedObjectFilter, self).__init__(inference_state, compiled_value)
         self._tree_value = tree_value
 
     def _create_name(self, name):
@@ -250,33 +250,33 @@ def _find_syntax_node_name(inference_state, python_object):
 
 
 @inference_state_function_cache()
-def _create(inference_state, compiled_object, module_context):
+def _create(inference_state, compiled_value, module_context):
     # TODO accessing this is bad, but it probably doesn't matter that much,
     # because we're working with interpreteters only here.
-    python_object = compiled_object.access_handle.access._obj
+    python_object = compiled_value.access_handle.access._obj
     result = _find_syntax_node_name(inference_state, python_object)
     if result is None:
         # TODO Care about generics from stuff like `[1]` and don't return like this.
         if type(python_object) in (dict, list, tuple):
-            return ValueSet({compiled_object})
+            return ValueSet({compiled_value})
 
-        tree_values = to_stub(compiled_object)
+        tree_values = to_stub(compiled_value)
         if not tree_values:
-            return ValueSet({compiled_object})
+            return ValueSet({compiled_value})
     else:
         module_node, tree_node, file_io, code_lines = result
 
         if module_context is None or module_context.tree_node != module_node:
-            root_compiled_object = compiled_object.get_root_context().get_value()
+            root_compiled_value = compiled_value.get_root_context().get_value()
             # TODO this __name__ might be wrong.
-            name = root_compiled_object.py__name__()
+            name = root_compiled_value.py__name__()
             string_names = tuple(name.split('.'))
             module_value = ModuleValue(
                 inference_state, module_node,
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
-                is_package=root_compiled_object.is_package(),
+                is_package=root_compiled_value.is_package(),
             )
             if name is not None:
                 inference_state.module_cache.add(string_names, ValueSet([module_value]))
@@ -284,11 +284,11 @@ def _create(inference_state, compiled_object, module_context):
 
         tree_values = ValueSet({module_context.create_value(tree_node)})
         if tree_node.type == 'classdef':
-            if not compiled_object.is_class():
+            if not compiled_value.is_class():
                 # Is an instance, not a class.
                 tree_values = tree_values.execute_with_values()
 
     return ValueSet(
-        MixedObject(compiled_object, tree_value=tree_value)
+        MixedObject(compiled_value, tree_value=tree_value)
         for tree_value in tree_values
     )

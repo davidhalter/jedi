@@ -432,7 +432,7 @@ class CompiledInstanceClassFilter(AbstractFilter):
         return self._convert(self._class_filter.values())
 
     def _convert(self, names):
-        klass = self._class_filter.compiled_object
+        klass = self._class_filter.compiled_value
         return [
             CompiledInstanceName(self._instance.inference_state, self._instance, klass, n)
             for n in names
