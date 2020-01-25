@@ -14,7 +14,6 @@ from jedi.inference import compiled
 from jedi.cache import underscore_memoization
 from jedi.file_io import FileIO
 from jedi.inference.base_value import ValueSet, ValueWrapper, NO_VALUES
-from jedi.inference.helpers import SimpleGetItemNotFound
 from jedi.inference.value import ModuleValue
 from jedi.inference.cache import inference_state_function_cache, \
     inference_state_method_cache
@@ -50,6 +49,9 @@ class MixedObject(ValueWrapper):
         self.compiled_object = compiled_object
         self.access_handle = compiled_object.access_handle
 
+    def get_tree_value(self):
+        return self._wrapped_value
+
     def get_filters(self, *args, **kwargs):
         yield MixedObjectFilter(self.inference_state, self)
 
@@ -76,7 +78,7 @@ class MixedObject(ValueWrapper):
         python_object = self.compiled_object.access_handle.access._obj
         if type(python_object) in ALLOWED_GETITEM_TYPES:
             return self.compiled_object.py__simple_getitem__(index)
-        raise SimpleGetItemNotFound
+        return self._wrapped_value.py__simple_getitem__(index)
 
     def _as_context(self):
         if self.parent_context is None:
@@ -137,6 +139,17 @@ class MixedName(compiled.CompiledName):
             default=None
         )
         assert len(access_paths)
+        tree_value = self._parent_value.get_tree_value()
+        if tree_value.is_instance() or tree_value.is_class():
+            from jedi.inference.compiled.value import _create_from_name
+            tree_values = tree_value.py__getattribute__(self.string_name)
+            compiled_object = _create_from_name(
+                self._inference_state,
+                self._parent_value.compiled_object,
+                self.string_name
+            )
+            if compiled_object.is_function():
+                return ValueSet({MixedObject(compiled_object, v) for v in tree_values})
         values = [None]
         for access in access_paths:
             values = ValueSet.from_sets(access_to_value(v, access) for v in values)
@@ -310,7 +323,6 @@ def _create(inference_state, access_handle, parent_context, *args):
                 # Python's TypeVar('foo').__module__ will be typing.
                 return ValueSet({compiled_object})
             module_context = parent_context.get_root_context()
-
         tree_values = ValueSet({module_context.create_value(tree_node)})
         if tree_node.type == 'classdef':
             if not access_handle.is_class():

@@ -42,10 +42,12 @@ def test_generics_without_definition():
 
 @pytest.mark.parametrize(
     'code, expected', [
-        ('Foo.method()', 'int'),
-        ('Foo.method()', 'int'),
+        ('Foo().method()', 'str'),
+        ('Foo.method()', 'str'),
+        ('foo.method()', 'str'),
         ('Foo().read()', 'str'),
         ('Foo.read()', 'str'),
+        ('foo.read()', 'str'),
     ]
 )
 def test_generics_methods(code, expected, class_findable):
@@ -62,6 +64,8 @@ def test_generics_methods(code, expected, class_findable):
     class Foo(Reader[str]):
         def transform(self) -> int:
             return 42
+
+    foo = Foo()
 
     defs = jedi.Interpreter(code, [locals()]).infer()
     if class_findable:

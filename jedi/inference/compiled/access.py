@@ -315,6 +315,9 @@ class DirectObjectAccess(object):
     def is_class(self):
         return inspect.isclass(self._obj)
 
+    def is_function(self):
+        return inspect.isfunction(self._obj) or inspect.ismethod(self._obj)
+
     def is_module(self):
         return inspect.ismodule(self._obj)
 

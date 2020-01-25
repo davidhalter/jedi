@@ -95,6 +95,9 @@ class CompiledObject(Value):
     def is_class(self):
         return self.access_handle.is_class()
 
+    def is_function(self):
+        return self.access_handle.is_function()
+
     def is_module(self):
         return self.access_handle.is_module()
 
