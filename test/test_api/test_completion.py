@@ -429,3 +429,10 @@ def test_completion_cache(Script, module_injector):
     cls, = c.infer()
     assert cls.type == 'class'
     assert cls.docstring() == 'foo()\n\ndoc2'
+
+
+def test_typing_module_completions(Script):
+    for c in Script('import typing; typing.').completions():
+        # Just make sure that there are no errors
+        c.type
+        c.docstring()

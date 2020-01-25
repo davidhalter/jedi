@@ -232,7 +232,8 @@ class ValueNameMixin(object):
         if not doc and self._value.is_stub():
             from jedi.inference.gradual.conversion import convert_names
             names = convert_names([self], prefer_stub_to_compiled=False)
-            return _merge_name_docs(names)
+            if self not in names:
+                return _merge_name_docs(names)
         return doc
 
     def _get_qualified_names(self):
