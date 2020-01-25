@@ -113,34 +113,6 @@ def shorten_repr(func):
     return wrapper
 
 
-def compiled_objects_cache(attribute_name):
-    def decorator(func):
-        """
-        This decorator caches just the ids, oopposed to caching the object itself.
-        Caching the id has the advantage that an object doesn't need to be
-        hashable.
-        """
-        def wrapper(inference_state, obj, parent_context=None):
-            cache = getattr(inference_state, attribute_name)
-            # Do a very cheap form of caching here.
-            key = id(obj)
-            try:
-                cache[key]
-                return cache[key][0]
-            except KeyError:
-                # TODO wuaaaarrghhhhhhhh
-                if attribute_name == 'mixed_cache':
-                    result = func(inference_state, obj, parent_context)
-                else:
-                    result = func(inference_state, obj)
-                # Need to cache all of them, otherwise the id could be overwritten.
-                cache[key] = result, obj, parent_context
-                return result
-        return wrapper
-
-    return decorator
-
-
 def create_access(inference_state, obj):
     return inference_state.compiled_subprocess.get_or_create_access_handle(obj)
 
