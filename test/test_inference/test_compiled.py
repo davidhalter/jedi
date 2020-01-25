@@ -50,7 +50,7 @@ def test_parse_function_doc_illegal_docstr():
 
 def test_doc(inference_state):
     """
-    Even CompiledObject docs always return empty docstrings - not None, that's
+    Even CompiledValue docs always return empty docstrings - not None, that's
     just a Jedi API definition.
     """
     str_ = compiled.create_simple_object(inference_state, u'')
@@ -135,7 +135,7 @@ def test_parent_context(same_process_inference_state, attribute, expected_name, 
         dt = datetime(2000, 1, 1)
         ret_int = _return_int
 
-    o = compiled.CompiledObject(
+    o = compiled.CompiledValue(
         same_process_inference_state,
         DirectObjectAccess(same_process_inference_state, C)
     )
@@ -165,7 +165,7 @@ def test_parent_context(same_process_inference_state, attribute, expected_name, 
     ]
 )
 def test_qualified_names(same_process_inference_state, obj, expected_names):
-    o = compiled.CompiledObject(
+    o = compiled.CompiledValue(
         same_process_inference_state,
         DirectObjectAccess(same_process_inference_state, obj)
     )

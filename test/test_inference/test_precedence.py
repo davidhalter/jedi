@@ -1,4 +1,4 @@
-from jedi.inference.compiled import CompiledObject
+from jedi.inference.compiled import CompiledValue
 
 import pytest
 
@@ -15,4 +15,4 @@ def test_equals(Script, environment, source):
     script = Script(source)
     node = script._module_node.children[0]
     first, = script._get_module_context().infer_node(node)
-    assert isinstance(first, CompiledObject) and first.get_safe_value() is True
+    assert isinstance(first, CompiledValue) and first.get_safe_value() is True

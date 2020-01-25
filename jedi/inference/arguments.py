@@ -18,7 +18,7 @@ def try_iter_content(types, depth=0):
     """Helper method for static analysis."""
     if depth > 10:
         # It's possible that a loop has references on itself (especially with
-        # CompiledObject). Therefore don't loop infinitely.
+        # CompiledValue). Therefore don't loop infinitely.
         return
 
     for typ in types:

@@ -32,13 +32,13 @@ class MixedObject(ValueWrapper):
 
     1. It uses the default logic of ``parser.python.tree`` objects,
     2. except for getattr calls and signatures. The names dicts are generated
-       in a fashion like ``CompiledObject``.
+       in a fashion like ``CompiledValue``.
 
     This combined logic makes it possible to provide more powerful REPL
     completion. It allows side effects that are not noticable with the default
     parser structure to still be completeable.
 
-    The biggest difference from CompiledObject to MixedObject is that we are
+    The biggest difference from CompiledValue to MixedObject is that we are
     generally dealing with Python code and not with C code. This will generate
     fewer special cases, because we in Python you don't have the same freedoms
     to modify the runtime.
@@ -129,7 +129,7 @@ class MixedName(NameWrapper):
         return _create(self._inference_state, compiled_object, module_context)
 
 
-class MixedObjectFilter(compiled.CompiledObjectFilter):
+class MixedObjectFilter(compiled.CompiledValueFilter):
     def __init__(self, inference_state, compiled_object, tree_value):
         super(MixedObjectFilter, self).__init__(inference_state, compiled_object)
         self._tree_value = tree_value

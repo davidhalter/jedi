@@ -41,9 +41,9 @@ class CheckAttribute(object):
         return partial(self.func, instance)
 
 
-class CompiledObject(Value):
+class CompiledValue(Value):
     def __init__(self, inference_state, access_handle, parent_context=None):
-        super(CompiledObject, self).__init__(inference_state, parent_context)
+        super(CompiledValue, self).__init__(inference_state, parent_context)
         self.access_handle = access_handle
 
     def py__call__(self, arguments):
@@ -58,7 +58,7 @@ class CompiledObject(Value):
         try:
             self.access_handle.getattr_paths(u'__call__')
         except AttributeError:
-            return super(CompiledObject, self).py__call__(arguments)
+            return super(CompiledValue, self).py__call__(arguments)
         else:
             if self.access_handle.is_class():
                 from jedi.inference.value import CompiledInstance
@@ -156,14 +156,14 @@ class CompiledObject(Value):
 
     @memoize_method
     def _ensure_one_filter(self, is_instance):
-        return CompiledObjectFilter(self.inference_state, self, is_instance)
+        return CompiledValueFilter(self.inference_state, self, is_instance)
 
     def py__simple_getitem__(self, index):
         with reraise_getitem_errors(IndexError, KeyError, TypeError):
             try:
                 access = self.access_handle.py__simple_getitem__(index)
             except AttributeError:
-                return super(CompiledObject, self).py__simple_getitem__(index)
+                return super(CompiledValue, self).py__simple_getitem__(index)
         if access is None:
             return NO_VALUES
 
@@ -174,7 +174,7 @@ class CompiledObject(Value):
         if all_access_paths is None:
             # This means basically that no __getitem__ has been defined on this
             # object.
-            return super(CompiledObject, self).py__getitem__(index_value_set, contextualized_node)
+            return super(CompiledValue, self).py__getitem__(index_value_set, contextualized_node)
         return ValueSet(
             create_from_access_path(self.inference_state, access)
             for access in all_access_paths
@@ -186,7 +186,7 @@ class CompiledObject(Value):
         # just start with __getitem__(0). This is especially true for
         # Python 2 strings, where `str.__iter__` is not even defined.
         if not self.access_handle.has_iter():
-            for x in super(CompiledObject, self).py__iter__(contextualized_node):
+            for x in super(CompiledValue, self).py__iter__(contextualized_node):
                 yield x
 
         access_path_list = self.access_handle.py__iter__list()
@@ -264,7 +264,7 @@ class CompiledObject(Value):
                 v.with_generics(arguments)
                 for v in self.inference_state.typing_module.py__getattribute__(name)
             ]).execute_annotation()
-        return super(CompiledObject, self).execute_annotation()
+        return super(CompiledValue, self).execute_annotation()
 
     def negate(self):
         return create_from_access_path(self.inference_state, self.access_handle.negate())
@@ -286,7 +286,7 @@ class CompiledObject(Value):
         ]
 
 
-class CompiledModule(CompiledObject):
+class CompiledModule(CompiledValue):
     file_io = None  # For modules
 
     def _as_context(self):
@@ -432,7 +432,7 @@ class EmptyCompiledName(AbstractNameDefinition):
         return NO_VALUES
 
 
-class CompiledObjectFilter(AbstractFilter):
+class CompiledValueFilter(AbstractFilter):
     def __init__(self, inference_state, compiled_object, is_instance=False):
         self._inference_state = inference_state
         self.compiled_object = compiled_object
@@ -619,9 +619,9 @@ def create_from_access_path(inference_state, access_path):
 @_normalize_create_args
 @inference_state_function_cache()
 def create_cached_compiled_object(inference_state, access_handle, parent_context):
-    assert not isinstance(parent_context, CompiledObject)
+    assert not isinstance(parent_context, CompiledValue)
     if parent_context is None:
         cls = CompiledModule
     else:
-        cls = CompiledObject
+        cls = CompiledValue
     return cls(inference_state, access_handle, parent_context)

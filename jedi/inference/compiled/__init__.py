@@ -1,6 +1,6 @@
 from jedi._compatibility import unicode
-from jedi.inference.compiled.value import CompiledObject, CompiledName, \
-    CompiledObjectFilter, CompiledValueName, create_from_access_path
+from jedi.inference.compiled.value import CompiledValue, CompiledName, \
+    CompiledValueFilter, CompiledValueName, create_from_access_path
 from jedi.inference.base_value import LazyValueWrapper
 
 

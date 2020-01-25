@@ -5,7 +5,7 @@ from parso.python.tree import search_ancestor
 from jedi import debug
 from jedi import settings
 from jedi.inference import compiled
-from jedi.inference.compiled.value import CompiledObjectFilter
+from jedi.inference.compiled.value import CompiledValueFilter
 from jedi.inference.helpers import values_from_qualified_names, is_big_annoying_library
 from jedi.inference.filters import AbstractFilter, AnonymousFunctionExecutionFilter
 from jedi.inference.names import ValueName, TreeNameDefinition, ParamName, \
@@ -189,7 +189,7 @@ class _BaseTreeInstance(AbstractInstanceValue):
         for f in class_filters:
             if isinstance(f, ClassFilter):
                 yield InstanceClassFilter(self, f)
-            elif isinstance(f, CompiledObjectFilter):
+            elif isinstance(f, CompiledValueFilter):
                 yield CompiledInstanceClassFilter(self, f)
             else:
                 # Propably from the metaclass.

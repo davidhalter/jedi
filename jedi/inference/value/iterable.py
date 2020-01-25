@@ -634,7 +634,7 @@ class Slice(LazyValueWrapper):
 
     def get_safe_value(self, default=sentinel):
         """
-        Imitate CompiledObject.obj behavior and return a ``builtin.slice()``
+        Imitate CompiledValue.obj behavior and return a ``builtin.slice()``
         object.
         """
         def get(element):
