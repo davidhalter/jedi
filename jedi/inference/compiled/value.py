@@ -363,7 +363,7 @@ class CompiledName(AbstractNameDefinition):
 
     @underscore_memoization
     def infer(self):
-        return ValueSet([_create_from_name(
+        return ValueSet([create_from_name(
             self._inference_state, self._parent_value, self.string_name
         )])
 
@@ -592,7 +592,7 @@ def _parse_function_doc(doc):
     return param_str, ret
 
 
-def _create_from_name(inference_state, compiled_object, name):
+def create_from_name(inference_state, compiled_object, name):
     access_paths = compiled_object.access_handle.getattr_paths(name, default=None)
     parent_context = compiled_object
     if parent_context.is_class():

@@ -19,7 +19,7 @@ from jedi.inference.cache import inference_state_function_cache, \
     inference_state_method_cache
 from jedi.inference.compiled.access import compiled_objects_cache, \
     ALLOWED_GETITEM_TYPES, get_api_type
-from jedi.inference.compiled.value import create_cached_compiled_object
+from jedi.inference.compiled.value import create_cached_compiled_object, create_from_name
 from jedi.inference.gradual.conversion import to_stub
 from jedi.inference.context import CompiledContext, CompiledModuleContext, \
     TreeContextMixin
@@ -117,22 +117,6 @@ class MixedName(compiled.CompiledName):
 
     @underscore_memoization
     def infer(self):
-        def access_to_value(parent_value, access):
-            if parent_value is None:
-                parent_context = None
-            else:
-                assert parent_value is not None
-                parent_context = parent_value.as_context()
-
-            if parent_context is None or isinstance(parent_context, MixedContext):
-                return _create(self._inference_state, access, parent_context=parent_context)
-            else:
-                return ValueSet({
-                    create_cached_compiled_object(
-                        parent_context.inference_state, access, parent_context
-                    )
-                })
-
         # TODO use logic from compiled.CompiledObjectFilter
         access_paths = self._parent_value.access_handle.getattr_paths(
             self.string_name,
@@ -140,20 +124,18 @@ class MixedName(compiled.CompiledName):
         )
         assert len(access_paths)
         tree_value = self._parent_value.get_tree_value()
+        compiled_object = create_from_name(
+            self._inference_state,
+            self._parent_value.compiled_object,
+            self.string_name
+        )
         if tree_value.is_instance() or tree_value.is_class():
-            from jedi.inference.compiled.value import _create_from_name
             tree_values = tree_value.py__getattribute__(self.string_name)
-            compiled_object = _create_from_name(
-                self._inference_state,
-                self._parent_value.compiled_object,
-                self.string_name
-            )
             if compiled_object.is_function():
                 return ValueSet({MixedObject(compiled_object, v) for v in tree_values})
-        values = [None]
-        for access in access_paths:
-            values = ValueSet.from_sets(access_to_value(v, access) for v in values)
-        return values
+
+        module_context = tree_value.get_root_context()
+        return _create(self._inference_state, compiled_object, module_context)
 
     @property
     def api_type(self):
@@ -276,20 +258,10 @@ def _find_syntax_node_name(inference_state, python_object):
     return module_node, tree_node, file_io, code_lines
 
 
-@compiled_objects_cache('mixed_cache')
-def _create(inference_state, access_handle, parent_context, *args):
-    compiled_object = create_cached_compiled_object(
-        inference_state,
-        access_handle,
-        # TODO It looks like we have to use the compiled object as a parent context.
-        #      Why is that?
-        parent_context=None if parent_context is None
-                       else parent_context.compiled_object.as_context()  # noqa
-    )
-
+def _create(inference_state, compiled_object, module_context):
     # TODO accessing this is bad, but it probably doesn't matter that much,
     # because we're working with interpreteters only here.
-    python_object = access_handle.access._obj
+    python_object = compiled_object.access_handle.access._obj
     result = _find_syntax_node_name(inference_state, python_object)
     if result is None:
         # TODO Care about generics from stuff like `[1]` and don't return like this.
@@ -302,30 +274,25 @@ def _create(inference_state, access_handle, parent_context, *args):
     else:
         module_node, tree_node, file_io, code_lines = result
 
-        if parent_context is None:
-            # TODO this __name__ is probably wrong.
-            name = compiled_object.get_root_context().py__name__()
+        if module_context is None or module_context.tree_node != module_node:
+            root_compiled_object = compiled_object.get_root_context().get_value()
+            # TODO this __name__ might be wrong.
+            name = root_compiled_object.py__name__()
             string_names = tuple(name.split('.'))
             module_value = ModuleValue(
                 inference_state, module_node,
                 file_io=file_io,
                 string_names=string_names,
                 code_lines=code_lines,
-                is_package=compiled_object.is_package(),
+                is_package=root_compiled_object.is_package(),
             )
             if name is not None:
                 inference_state.module_cache.add(string_names, ValueSet([module_value]))
             module_context = module_value.as_context()
-        else:
-            if parent_context.tree_node.get_root_node() != module_node:
-                # This happens e.g. when __module__ is wrong, or when using
-                # TypeVar('foo'), where Jedi uses 'foo' as the name and
-                # Python's TypeVar('foo').__module__ will be typing.
-                return ValueSet({compiled_object})
-            module_context = parent_context.get_root_context()
+
         tree_values = ValueSet({module_context.create_value(tree_node)})
         if tree_node.type == 'classdef':
-            if not access_handle.is_class():
+            if not compiled_object.is_class():
                 # Is an instance, not a class.
                 tree_values = tree_values.execute_with_values()
 
