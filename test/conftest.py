@@ -13,6 +13,7 @@ from jedi.inference.compiled.value import create_from_access_path
 from jedi.inference.imports import _load_python_module
 from jedi.file_io import KnownContentFileIO
 from jedi.inference.base_value import ValueSet
+from jedi.api.interpreter import MixedModuleContext
 
 # For interpreter tests sometimes the path of this directory is in the sys
 # path, which we definitely don't want. So just remove it globally.
@@ -173,3 +174,14 @@ def module_injector():
         inference_state.module_cache.add(names, ValueSet([v]))
 
     return module_injector
+
+
+@pytest.fixture(params=[False, True])
+def class_findable(monkeypatch, request):
+    if not request.param:
+        monkeypatch.setattr(
+            MixedModuleContext,
+            '_get_mixed_object',
+            lambda self, compiled_object: compiled_object.as_context()
+        )
+    return request.param

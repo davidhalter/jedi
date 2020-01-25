@@ -84,9 +84,10 @@ class MixedObject(ValueWrapper):
         return MixedContext(self)
 
     def __repr__(self):
-        return '<%s: %s>' % (
+        return '<%s: %s; %s>' % (
             type(self).__name__,
-            self.access_handle.get_repr()
+            self.access_handle.get_repr(),
+            self._wrapped_value,
         )
 
 

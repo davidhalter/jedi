@@ -18,7 +18,7 @@ else:
     eval(compile("""def exec_(source, global_map):
                         exec source in global_map """, 'blub', 'exec'))
 
-if py_version > 34:
+if py_version > 35:
     import typing
 else:
     typing = None

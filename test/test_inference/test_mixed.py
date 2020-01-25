@@ -1,6 +1,4 @@
-import sys
-if sys.version_info > (3, 5):
-    from typing import Generic, TypeVar, List
+from typing import Generic, TypeVar, List
 
 import pytest
 
@@ -18,7 +16,6 @@ def test_on_code():
     assert i.infer()
 
 
-@pytest.mark.skipif('sys.version_info < (3,5)')
 def test_generics_without_definition():
     # Used to raise a recursion error
     T = TypeVar('T')
@@ -41,6 +38,37 @@ def test_generics_without_definition():
 
     s = StackWrapper()
     assert not interpreter('s.stack.pop().', locals()).complete()
+
+
+@pytest.mark.parametrize(
+    'code, expected', [
+        ('Foo.method()', 'int'),
+        ('Foo.method()', 'int'),
+        ('Foo().read()', 'str'),
+        ('Foo.read()', 'str'),
+    ]
+)
+def test_generics_methods(code, expected, class_findable):
+    T = TypeVar("T")
+
+    class Reader(Generic[T]):
+        @classmethod
+        def read(cls) -> T:
+            return cls()
+
+        def method(self) -> T:
+            return 1
+
+    class Foo(Reader[str]):
+        def transform(self) -> int:
+            return 42
+
+    defs = jedi.Interpreter(code, [locals()]).infer()
+    if class_findable:
+        def_, = defs
+        assert def_.name == expected
+    else:
+        assert not defs
 
 
 def test_mixed_module_cache():
