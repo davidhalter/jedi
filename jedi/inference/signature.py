@@ -118,9 +118,10 @@ class TreeSignature(AbstractSignature):
 
 
 class BuiltinSignature(AbstractSignature):
-    def __init__(self, value, return_string, is_bound=False):
+    def __init__(self, value, return_string, function_value=None, is_bound=False):
         super(BuiltinSignature, self).__init__(value, is_bound)
         self._return_string = return_string
+        self.__function_value = function_value
 
     @property
     def annotation_string(self):
@@ -128,10 +129,16 @@ class BuiltinSignature(AbstractSignature):
 
     @property
     def _function_value(self):
-        return self.value
+        if self.__function_value is None:
+            return self.value
+        return self.__function_value
 
     def bind(self, value):
-        return BuiltinSignature(value, self._return_string, is_bound=True)
+        return BuiltinSignature(
+            value, self._return_string,
+            function_value=self.value,
+            is_bound=True
+        )
 
 
 class SignatureWrapper(_SignatureMixin):
