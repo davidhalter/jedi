@@ -17,7 +17,7 @@ collect_ignore = [
     'build/',
     'test/examples',
 ]
-if sys.version_info < (3, 5):
+if sys.version_info < (3, 6):
     # Python 2 not supported syntax
     collect_ignore.append('test/test_inference/test_mixed.py')
 
