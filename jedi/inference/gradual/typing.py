@@ -81,7 +81,8 @@ class TypingModuleName(NameWrapper):
         elif name == 'TypedDict':
             # TODO doesn't even exist in typeshed/typing.py, yet. But will be
             # added soon.
-            pass
+            yield TypedDictBase.create_cached(
+                inference_state, self.parent_context, self.tree_name)
         elif name in ('no_type_check', 'no_type_check_decorator'):
             # This is not necessary, as long as we are not doing type checking.
             for c in self._wrapped_name.infer():  # Fuck my life Python 2
@@ -339,3 +340,62 @@ class CastFunction(BaseTypingValue):
     @repack_with_argument_clinic('type, object, /')
     def py__call__(self, type_value_set, object_value_set):
         return type_value_set.execute_annotation()
+
+
+class TypedDictBase(BaseTypingValue):
+    """
+    This class has no responsibilities and is just here to make sure that typed
+    dicts can be identified.
+    """
+
+
+class TypedDictClass(Value):
+    """
+    This represents a class defined like:
+
+        class Foo(TypedDict):
+            bar: str
+    """
+    def __init__(self, definition_class):
+        super().__init__(definition_class.inference_state, definition_class.parent_context)
+        self.tree_node = definition_class.tree_node
+        self._definition_class = definition_class
+
+    def get_filters(self, origin_scope=None):
+        """
+        A TypedDict doesn't have attributes.
+        """
+        o, = self.inference_state.builtins_module.py__getattribute__('object')
+        return o.get_filters()
+
+    @property
+    def name(self):
+        return ValueName(self, self.tree_node.name)
+
+    def py__call__(self, arguments):
+        return ValueSet({TypedDict(self._definition_class)})
+
+
+class TypedDict(LazyValueWrapper):
+    """Represents the instance version of ``TypedDictClass``."""
+    def __init__(self, definition_class):
+        self.inference_state = definition_class.inference_state
+        self.parent_context = definition_class.parent_context
+        self.tree_node = definition_class.tree_node
+        self._definition_class = definition_class
+
+    @property
+    def name(self):
+        return ValueName(self, self.tree_node.name)
+
+    def py__simple_getitem__(self, index):
+        return ValueSet({self.inference_state.builtins_module})
+
+    def get_key_values(self):
+        from jedi.inference.compiled import create_simple_object
+        return ValueSet({create_simple_object(self.inference_state, 'baz')})
+
+    def _get_wrapped_value(self):
+        d, = self.inference_state.builtins_module.py__getattribute__('dict')
+        result, = d.execute_with_values()
+        return result

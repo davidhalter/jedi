@@ -258,6 +258,7 @@ class Value(HelperValueMixin, BaseValue):
     def _as_context(self):
         raise NotImplementedError('Not all values need to be converted to contexts: %s', self)
 
+    @property
     def name(self):
         raise NotImplementedError
 

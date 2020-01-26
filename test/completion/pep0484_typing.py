@@ -493,3 +493,44 @@ def dynamic_annotation(x: int):
 
 #? int()
 dynamic_annotation('')
+
+# -------------------------
+# TypeDict
+# -------------------------
+
+# python >= 3.8
+
+class Foo(typing.TypedDict):
+    foo: str
+    bar: List[int]
+    foo
+    #! ['foo: str']
+    foo
+    #? str()
+    foo
+
+#! ['class Foo']
+d: Foo
+#? str()
+d['foo']
+#? str()
+d['bar'][0]
+#?
+d['baz']
+
+#?
+d.foo
+#?
+d.bar
+#! []
+d.foo
+
+#? []
+Foo.set
+#? ['setdefault']
+d.setdefaul
+
+#? 5 ["'foo'"]
+d['fo']
+#? 5 ['"bar"']
+d["bar"]
