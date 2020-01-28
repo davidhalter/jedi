@@ -201,15 +201,15 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             returns = funcdef.iter_return_stmts()
 
         for r in returns:
-            check = flow_analysis.reachability_check(self, funcdef, r)
-            if check is flow_analysis.UNREACHABLE:
-                debug.dbg('Return unreachable: %s', r)
+            if check_yields:
+                value_set |= ValueSet.from_sets(
+                    lazy_value.infer()
+                    for lazy_value in self._get_yield_lazy_value(r)
+                )
             else:
-                if check_yields:
-                    value_set |= ValueSet.from_sets(
-                        lazy_value.infer()
-                        for lazy_value in self._get_yield_lazy_value(r)
-                    )
+                check = flow_analysis.reachability_check(self, funcdef, r)
+                if check is flow_analysis.UNREACHABLE:
+                    debug.dbg('Return unreachable: %s', r)
                 else:
                     try:
                         children = r.children
@@ -218,9 +218,9 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
                         value_set |= ValueSet([ctx])
                     else:
                         value_set |= self.infer_node(children[1])
-            if check is flow_analysis.REACHABLE:
-                debug.dbg('Return reachable: %s', r)
-                break
+                if check is flow_analysis.REACHABLE:
+                    debug.dbg('Return reachable: %s', r)
+                    break
         return value_set
 
     def _get_yield_lazy_value(self, yield_expr):
