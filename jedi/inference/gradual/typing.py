@@ -5,8 +5,9 @@ values.
 
 This file deals with all the typing.py cases.
 """
+import itertools
 from jedi import debug
-from jedi.inference.compiled import builtin_from_name
+from jedi.inference.compiled import builtin_from_name, create_simple_object
 from jedi.inference.base_value import ValueSet, NO_VALUES, Value, \
     LazyValueWrapper
 from jedi.inference.lazy_value import LazyKnownValues
@@ -398,8 +399,14 @@ class TypedDict(LazyValueWrapper):
         return NO_VALUES
 
     def get_key_values(self):
-        from jedi.inference.compiled import create_simple_object
-        return ValueSet({create_simple_object(self.inference_state, 'baz')})
+        filtered_values = itertools.chain.from_iterable((
+            f.values(from_instance=True)
+            for f in self._definition_class.get_filters(is_instance=True)
+        ))
+        return ValueSet({
+            create_simple_object(self.inference_state, v.string_name)
+            for v in filtered_values
+        })
 
     def _get_wrapped_value(self):
         d, = self.inference_state.builtins_module.py__getattribute__('dict')
