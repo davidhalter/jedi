@@ -265,7 +265,7 @@ class BaseFunctionExecutionContext(ValueContext, TreeContextMixin):
             else:
                 types = self.get_return_values(check_yields=True)
                 if types:
-                    yield LazyKnownValues(types)
+                    yield LazyKnownValues(types, min=0, max=float('inf'))
                 return
             last_for_stmt = for_stmt
 

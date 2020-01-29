@@ -156,7 +156,7 @@ a, b = simple()
 #? int() str()
 a
 # For now this is ok.
-#?
+#? int() str()
 b
 
 
