@@ -61,11 +61,13 @@ class Project(object):
         :param sys_path: list of str. You can override the sys path if you
             want. By default the ``sys.path.`` is generated from the
             environment (virtualenvs, etc).
+        :param added_sys_path: list of str. Adds these paths at the end of the
+            sys path.
         :param smart_sys_path: If this is enabled (default), adds paths from
             local directories. Otherwise you will have to rely on your packages
             being properly configured on the ``sys.path``.
         """
-        def py2_comp(path, environment=None, sys_path=None,
+        def py2_comp(path, environment=None, sys_path=None, added_sys_path=True,
                      smart_sys_path=True, _django=False):
             self._path = os.path.abspath(path)
             if isinstance(environment, SameEnvironment):
@@ -74,6 +76,8 @@ class Project(object):
             self._sys_path = sys_path
             self._smart_sys_path = smart_sys_path
             self._django = _django
+            self.added_sys_path = []
+            """The sys path that is going to be added at the end of the """
 
         py2_comp(path, **kwargs)
 
@@ -91,7 +95,7 @@ class Project(object):
             sys_path.remove('')
         except ValueError:
             pass
-        return sys_path
+        return sys_path + self.added_sys_path
 
     @inference_state_as_method_param_cache()
     def _get_sys_path(self, inference_state, environment=None,
