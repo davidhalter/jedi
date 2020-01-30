@@ -87,7 +87,7 @@ class Script(object):
     """
     def __init__(self, source=None, line=None, column=None, path=None,
                  encoding='utf-8', sys_path=None, environment=None,
-                 _project=None):
+                 project=None):
         self._orig_path = path
         # An empty path (also empty string) should always result in no path.
         self.path = os.path.abspath(path) if path else None
@@ -103,7 +103,6 @@ class Script(object):
         if sys_path is not None and not is_py3:
             sys_path = list(map(force_unicode, sys_path))
 
-        project = _project
         if project is None:
             # Load the Python grammar of the current interpreter.
             project = get_default_project(
@@ -112,6 +111,12 @@ class Script(object):
         # TODO deprecate and remove sys_path from the Script API.
         if sys_path is not None:
             project._sys_path = sys_path
+            warnings.warn(
+                "Deprecated since version 0.17.0. Use the project API instead, "
+                "which means Script(project=Project(dir, sys_path=sys_path)) instead.",
+                DeprecationWarning,
+                stacklevel=2
+            )
         self._inference_state = InferenceState(
             project, environment=environment, script_path=self.path
         )
@@ -559,7 +564,7 @@ class Interpreter(Script):
                 raise TypeError("The environment needs to be an InterpreterEnvironment subclass.")
 
         super(Interpreter, self).__init__(source, environment=environment,
-                                          _project=Project(os.getcwd()), **kwds)
+                                          project=Project(os.getcwd()), **kwds)
         self.namespaces = namespaces
         self._inference_state.allow_descriptor_getattr = self._allow_descriptor_getattr_default
 

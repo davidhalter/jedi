@@ -363,7 +363,7 @@ def test_relative_imports_with_multiple_similar_directories(Script, path, empty_
     script = Script(
         "from . ",
         path=os.path.join(dir, path),
-        _project=project,
+        project=project,
     )
     name, import_ = script.complete()
     assert import_.name == 'import'
@@ -376,14 +376,14 @@ def test_relative_imports_with_outside_paths(Script):
     script = Script(
         "from ...",
         path=os.path.join(dir, 'api/whatever/test_this.py'),
-        _project=project,
+        project=project,
     )
     assert [c.name for c in script.complete()] == ['api', 'whatever']
 
     script = Script(
         "from " + '.' * 100,
         path=os.path.join(dir, 'api/whatever/test_this.py'),
-        _project=project,
+        project=project,
     )
     assert not script.complete()
 
@@ -391,13 +391,13 @@ def test_relative_imports_with_outside_paths(Script):
 @cwd_at('test/examples/issue1209/api/whatever/')
 def test_relative_imports_without_path(Script):
     project = Project('.', sys_path=[], smart_sys_path=False)
-    script = Script("from . ", _project=project)
+    script = Script("from . ", project=project)
     assert [c.name for c in script.complete()] == ['api_test1', 'import']
 
-    script = Script("from .. ", _project=project)
+    script = Script("from .. ", project=project)
     assert [c.name for c in script.complete()] == ['import', 'whatever']
 
-    script = Script("from ... ", _project=project)
+    script = Script("from ... ", project=project)
     assert [c.name for c in script.complete()] == ['api', 'import', 'whatever']
 
 
